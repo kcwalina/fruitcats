@@ -563,7 +563,9 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   } else {
     switch (prompt.kind) {
       case 'mulligan':
-        text = `Mulligan: pick any cards to shuffle away and redraw (${picks.size} selected).`;
+        text = `<b>Mulligan.</b> Swap any cards you don't like — you get the same number back, so your hand stays `
+          + `at 6. You'll plant <b>2</b> of them as Treats next, and keep the other <b>4</b>. `
+          + `(${picks.size} selected.)`;
         buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;
         break;
       case 'setupPlant':

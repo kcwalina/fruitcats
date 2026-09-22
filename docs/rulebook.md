@@ -127,11 +127,18 @@ and gives it a **signature mechanic** that only that family has.
 1. Put your Hero Cat in your Den, **Kitten side up**, ready.
 2. Shuffle your deck. Deal the top **9 cards face-down** as your **Lives**, without looking.
 3. Draw **6 cards**.
-4. **Mulligan (once):** set aside any number of cards from your hand, draw that many, then shuffle the set-aside cards into your deck.
+4. **Mulligan (once):** set aside any number of cards from your hand, draw that many, then shuffle the set-aside
+   cards into your deck. You always end up with 6 again — the mulligan costs you nothing, it just changes *which*
+   6 you are choosing from.
 5. **Plant 2** cards from your hand face-down into your Pantry as ready Treats.
 6. Randomly decide who starts with the **Yarn Ball**.
 
 You begin round 1 with 4 cards in hand and 2 Treats.
+
+> **Why mulligan if you plant 2 anyway?** Planting is a choice, not a loss: you plant the two cards you want
+> *least*, and keep the four you want most. A hand of six 5-cost cards is bad however you split it, and the
+> mulligan is your one chance to fix that before the split. Planted cards are not gone either — each one is a
+> Treat that pays for everything you play for the rest of the game.
 
 ---
 

@@ -80,7 +80,9 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'mulligan', title: 'Your opening hand', anchor: '.midbar', also: ['[data-click="btn:confirm"]'], when: (s) => myPrompt(s, 'mulligan'),
-    text: 'You may swap cards you don’t like for new ones, but for your first game just press <b>Keep hand</b>.',
+    text: 'Swap any cards you don’t like: you shuffle them away and draw the <b>same number</b> back, so you still '
+      + 'have 6. Two of them become Treats in a moment and you keep the other four, so a good mulligan is one that '
+      + 'leaves you four cards worth playing. For your first game just press <b>Keep hand</b>.',
     doneWhen: (a) => a.t === 'mulligan',
   },
   {

@@ -1,7 +1,9 @@
 import './style.css';
 import './skin.css';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
-import { renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi } from './tutorial';
+import {
+  renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
+} from './tutorial';
 import {
   CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isLush, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
@@ -714,10 +716,14 @@ function openZoom(url: string) {
   overlay.innerHTML = `<img src="${url}" alt=""><span>Tap anywhere to close</span>`;
   overlay.addEventListener('click', closeZoom);
   document.body.appendChild(overlay);
+  tutorialCardZoomed();
 }
 
 function closeZoom() {
-  document.getElementById('zoom-overlay')?.remove();
+  const overlay = document.getElementById('zoom-overlay');
+  if (!overlay) return;
+  overlay.remove();
+  tutorialZoomClosed();
 }
 
 app.addEventListener('pointerdown', (event) => {

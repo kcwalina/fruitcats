@@ -23,6 +23,8 @@ interface Balloon {
   when?: (s: GameState) => boolean;
   /** Steps only: advance after this human action. Omitted = a Next button. */
   doneWhen?: (a: Action, s: GameState) => boolean;
+  /** Steps only: no Next button — you must do something that isn't a game action (e.g. open a card). */
+  mustDo?: boolean;
   /** Steps only: the moment for this step has passed (e.g. you never played a unit), so skip it. */
   skipIf?: (s: GameState) => boolean;
   /** Steps only: waits for its moment without holding up the steps after it. */
@@ -64,13 +66,21 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'hero', title: 'Your Hero Cat', anchor: '.player.me .hero',
-    text: 'Sunny starts as a <b>Kitten</b> with an ability you can use once per round — hover her picture to read it. '
+    text: 'Sunny starts as a <b>Kitten</b> with an ability you can use once per round. '
       + 'When the <b>Grow Up</b> condition comes true, she becomes a <b>Big Cat</b>: stronger, and able to attack.',
   },
   {
+    // Shown while you have cards in hand (not just at the mulligan), so it can't be skipped past.
+    id: 'zoom', title: 'Read any card 🔍', anchor: '.hand', when: () => !!document.querySelector('.hand .hand-card'), mustDo: true,
+    // You can't play without reading your cards, so this one must be done: it moves on once you've
+    // opened a card (see tutorialCardZoomed).
+    text: 'These are your cards. They’re small, so to read one, <b>press and hold it</b> — it opens full size. '
+      + '<b>Let go</b> and it shrinks back. This works on <b>every card</b>: in your hand, in the Yards, and the Hero Cats. '
+      + '(With a mouse you can also <b>right-click</b> a card.)<br><b>Try it now: press and hold any card until it opens.</b>',
+  },
+  {
     id: 'mulligan', title: 'Your opening hand', anchor: '.midbar', also: ['[data-click="btn:confirm"]'], when: (s) => myPrompt(s, 'mulligan'),
-    text: 'Your cards are at the bottom. <b>Press and hold any card</b> to read it full size — let go to shrink it '
-      + 'back (right-click works too). You may swap cards you don’t like, but for your first game just press <b>Keep hand</b>.',
+    text: 'You may swap cards you don’t like for new ones, but for your first game just press <b>Keep hand</b>.',
     doneWhen: (a) => a.t === 'mulligan',
   },
   {
@@ -274,7 +284,7 @@ export function tutorialBlocksAi(): boolean {
   const s = host?.game();
   if (!s || s.winner !== null) return false;
   const c = current(s);
-  return !!c && (c.kind === 'tip' || !c.b.doneWhen);
+  return !!c && (c.kind === 'tip' || !c.b.doneWhen || !!c.b.mustDo);
 }
 
 export function tutorialAfterAction(action: Action) {
@@ -290,10 +300,27 @@ export function tutorialAfterAction(action: Action) {
     const matches = !!step.doneWhen?.(action, s);
     if (matches && (step.optional || firstRequired)) {
       doneIds.add(step.id);
-      if (!step.optional) for (const earlier of STEPS.slice(0, i)) if (!earlier.doneWhen) doneIds.add(earlier.id);
+      if (!step.optional) for (const earlier of STEPS.slice(0, i)) if (!earlier.doneWhen && !earlier.mustDo) doneIds.add(earlier.id);
     }
     if (!step.optional && step.doneWhen) firstRequired = false;
   }
+}
+
+/** Called when a card is opened full size: finishes the "Read any card" step. */
+export function tutorialCardZoomed() {
+  const s = host?.game();
+  if (!s || current(s)?.b.id !== 'zoom') return;
+  doneIds.add('zoom');
+  zoomedJustNow = true;
+}
+
+/** The card preview that finished the "Read any card" step was just opened; draw the next step once it closes. */
+let zoomedJustNow = false;
+export function tutorialZoomClosed() {
+  if (!zoomedJustNow) return;
+  zoomedJustNow = false;
+  host?.rerender();
+  host?.resumeAi();
 }
 
 function next() {
@@ -332,7 +359,7 @@ export function renderTutorial() {
   const selector = typeof b.anchor === 'function' ? b.anchor(s) : b.anchor;
   const target = selector ? document.querySelector<HTMLElement>(selector) : null;
   const text = typeof b.text === 'function' ? b.text(s) : b.text;
-  const waiting = kind === 'step' && !!b.doneWhen;
+  const waiting = kind === 'step' && (!!b.doneWhen || !!b.mustDo);
   const progress = kind === 'step' ? `<span class="tut-progress">${STEPS.indexOf(b) + 1}/${STEPS.length}</span>` : '<span class="tut-progress">Tip</span>';
 
   layer.innerHTML = `

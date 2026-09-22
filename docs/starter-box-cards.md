@@ -1,6 +1,6 @@
 # Fruitcats — Starter Box Card List
 
-**Set code:** `SB1` · **Version 0.3 (playtest draft)** · Rules: see [rulebook.md](rulebook.md)
+**Set code:** `SB1` · **Version 0.3 (playtest draft)** · Rules: see the [Rulebook](rulebook.md)
 
 The Starter Box contains three ready-to-play 50-card decks built to teach the game and to be a fair fight against each other:
 

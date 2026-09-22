@@ -619,7 +619,7 @@ function renderRules(): string {
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
-      <p><a href="https://github.com/kcwalina/fruitcats/blob/main/docs/rulebook.md" target="_blank" rel="noopener">Full rulebook</a></p>
+      <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>
       <button class="primary" data-click="ui:rules">Got it</button>
     </div>
   </div>`;

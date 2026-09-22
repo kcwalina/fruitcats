@@ -411,22 +411,26 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   const pl = s.players[p];
   const side = heroSide(s, p);
   const key = `hero:${p}`;
-  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Yarn Ball: acts first">${YARN_ICON}${s.yarnTaken === p ? ' kept' : ''}</span>` : '';
-  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">${YARN_ICON} next</span>` : '';
+  // The Yarn Ball sits on the corner of the Hero Cat portrait (next to the name it crowded the Lives).
+  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Yarn Ball: acts first">${YARN_ICON}${s.yarnTaken === p ? '<small>kept</small>' : ''}</span>` : '';
+  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">${YARN_ICON}<small>next</small></span>` : '';
   const canAbility = legal.some((a) => a.t === 'ability');
   const canAttack = legal.some((a) => a.t === 'attack' && a.attacker.kind === 'hero');
   const lives = Array.from({ length: 9 }, (_, i) => `<i class="${i < pl.lives.length ? 'on' : ''}"></i>`).join('');
 
   return `
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
+    <div class="hero-slot">
     <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
          data-click="${key}" data-zoom="${cardUrl(heroKey(s, p))}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       <div class="hero-name">${esc(side.name)}</div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
     </div>
+    ${yarn}${took}
+    </div>
     <div class="stats">
-      <div class="who">${esc(pl.name)} ${yarn}${took} <span class="deck">${esc(pl.deckName)}</span></div>
+      <div class="who">${esc(pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
         <div class="lives" title="${pl.lives.length} Lives left">${lives}<b>${pl.lives.length}</b></div>
         <div class="counters">

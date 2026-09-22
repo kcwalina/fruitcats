@@ -105,7 +105,7 @@ const STEPS: Balloon[] = [
     id: 'yarnBall', title: 'The Yarn Ball', anchor: '[data-click="btn:yarn"]', also: ['.yarn'], optional: true,
     when: (s) => myPrompt(s, 'action') && !!document.querySelector('[data-click="btn:yarn"]'),
     skipIf: (s) => s.round >= 3,
-    text: `Whoever holds the <b>Yarn Ball</b> ${YARN_ICON} acts <b>first</b> each round — you have it now (see the ball by your name). `
+    text: `Whoever holds the <b>Yarn Ball</b> ${YARN_ICON} acts <b>first</b> each round — you have it now (see the ball on your Hero Cat’s picture). `
       + 'It passes to the other player at the end of each round, <b>unless</b> someone presses <b>Take the Yarn</b>: '
       + 'then they go first next round, but must pass for the rest of this one. Take it when you have nothing better to do!',
   },

@@ -1,6 +1,6 @@
 import './style.css';
 import './skin.css';
-import { play as playSound, playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
+import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi } from './tutorial';
 import {
   CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isLush, isSneaky, keywords,
@@ -178,13 +178,6 @@ function startGame(tutorial = false) {
   scheduleAi();
 }
 
-/** The card type named in a "… plays X (targeting Y)." log line, for its sound. */
-function cardTypeOfLog(text: string): string | null {
-  const name = text.match(/ plays? (.+?)(?: targeting .*)?\.$/)?.[1];
-  const def = name ? Object.values(CARDS).find((c) => cardName(c.id) === name) : undefined;
-  return def?.type ?? null;
-}
-
 /** A plain-language reason a card in hand can't be played right now. */
 function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   const def = CARDS[id];
@@ -207,7 +200,6 @@ function select(label: string, options: Action[]) {
   const untargeted = options.filter((a) => !actionTarget(a));
   if (options.length === 1 && untargeted.length === 1) return act(options[0]);
   selection = { label, options };
-  playSound('tick');
   render();
 }
 
@@ -225,7 +217,6 @@ function onClick(key: string) {
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
     if (raw === 'sound') toggleSound();
-    if (raw.startsWith('snd-')) { playSound(raw.slice(4) as Parameters<typeof playSound>[0]); return; }
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'menu'; }
     if (raw === 'again') { startGame(); return; }
     render();
@@ -268,7 +259,6 @@ function onClick(key: string) {
     if (prompt.kind === 'mulligan' || prompt.kind === 'setupPlant' || prompt.kind === 'discard') {
       if (picks.has(value)) picks.delete(value);
       else if (prompt.kind === 'mulligan' || picks.size < prompt.count) picks.add(value);
-      playSound('tick');
       render();
       return;
     }
@@ -300,7 +290,7 @@ function render() {
   app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
-  if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN, cardTypeOfLog); } else stopTutorial();
+  if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN); } else stopTutorial();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
@@ -604,11 +594,6 @@ function renderRules(): string {
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
-      <p><b>Try the sounds:</b></p>
-      <div class="sound-board">${([['unit', 'Unit'], ['trick', 'Trick'], ['toy', 'Toy'], ['pounce', 'Pounce'], ['ability', 'Ability'], ['swipe', 'Attack'],
-        ['hitGood', 'You hit'], ['hitBad', 'You’re hit'], ['fail', 'Attack fails'], ['bonk', 'Trade'], ['poof', 'Defeated'], ['zest', 'Zest'],
-        ['ripen', 'Ripen'], ['lucky', 'Lucky'], ['growUp', 'Grow Up'], ['plant', 'Plant'], ['yarn', 'Yarn'], ['round', 'Round'], ['win', 'Win'], ['lose', 'Lose']] as const)
-        .map(([id, label]) => `<button data-click="ui:snd-${id}">${label}</button>`).join('')}</div>
       <p><a href="https://github.com/kcwalina/fruitcats/blob/main/docs/rulebook.md" target="_blank" rel="noopener">Full rulebook</a></p>
       <button class="primary" data-click="ui:rules">Got it</button>
     </div>

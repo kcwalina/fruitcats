@@ -367,5 +367,3 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .hand-card { aspect-ratio: 0.714; background: var(--img-cardback) center / cover, #f08c2b; }
 .hand-card img { height: 100%; object-fit: cover; }
 
-.sound-board { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.sound-board button { padding: 3px 10px; font-size: 12px; }

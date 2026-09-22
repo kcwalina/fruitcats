@@ -14,3 +14,7 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 2. **Engine** — deterministic TypeScript rules engine, cards as data
 3. **Playtest harness** — heuristic/MCTS bots for statistics, LLM agents for qualitative feedback and balance patches
 4. **Online play** — authoritative server, web client, replays and spectating
+
+## License
+
+Proprietary. Copyright (c) 2026 Krzysztof Cwalina. All rights reserved. See [LICENSE](LICENSE).

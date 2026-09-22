@@ -16,6 +16,15 @@ const cardUrl = (key: string) => `${BASE}cards/sb1/${key}.webp`;
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 for (const [name, file] of [['--img-menu-bg', 'menu-bg'], ['--img-playmat', 'playmat'], ['--img-cardback', 'cardback']])
   document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}.webp`, location.href).href}")`);
+// --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible
+// area (it ignores the toolbars), which made the page scroll; the layout uses this instead.
+function updateViewportHeight() {
+  const h = window.visualViewport?.height ?? window.innerHeight;
+  document.documentElement.style.setProperty('--vh', `${h / 100}px`);
+}
+updateViewportHeight();
+window.addEventListener('resize', updateViewportHeight);
+window.visualViewport?.addEventListener('resize', updateViewportHeight);
 const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
 const heroKey = (s: GameState, p: PlayerId) => `${s.players[p].hero.id}-${s.players[p].hero.grown ? 'bigcat' : 'kitten'}`;
 

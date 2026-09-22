@@ -70,7 +70,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   text-shadow: 0 2px 0 #f29f05, 0 4px 0 #d9641d, 0 7px 0 #8e3b12, 0 12px 20px rgba(60, 20, 0, 0.45);
 }
 .title p {
-  display: inline-block; margin-top: 1vh; padding: 3px 16px; border-radius: 999px; color: #6b4520;
+  display: inline-block; margin-top: calc(var(--vh, 1vh) * 1); padding: 3px 16px; border-radius: 999px; color: #6b4520;
   background: rgba(255, 248, 230, 0.88); box-shadow: 0 2px 8px rgba(60, 30, 5, 0.2);
 }
 .picker h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
@@ -174,7 +174,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 
 /* Prompt bar with a round badge */
-.midbar { gap: 14px; padding: 0.6vh 14px 0.6vh 10px; }
+.midbar { gap: 14px; padding: calc(var(--vh, 1vh) * 0.6) 14px calc(var(--vh, 1vh) * 0.6) 10px; }
 .round {
   flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; align-content: center;
   background: radial-gradient(circle at 35% 30%, #fff1c4, #f1b945 70%, #c98a1d);
@@ -226,7 +226,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   background: rgba(30, 15, 5, 0.72); backdrop-filter: blur(3px); cursor: zoom-out; animation: fade-in 0.15s ease-out;
 }
 #zoom-overlay img {
-  max-height: 84vh; max-width: 92vw; border-radius: 22px;
+  max-height: calc(var(--vh, 1vh) * 84); max-width: 92vw; border-radius: 22px;
   box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
 }
 #zoom-overlay span { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
@@ -236,7 +236,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* ── Treats tray: its own spot at the end of each Yard, with bigger cards and visible changes ── */
 
-:root { --tray-w: clamp(96px, 15vw, 176px); --treat-w: clamp(20px, 3.4vh, 36px); }
+:root { --tray-w: clamp(96px, 15vw, 176px); --treat-w: clamp(20px, calc(var(--vh, 1vh) * 3.4), 36px); }
 .yard { position: relative; padding-left: calc(var(--tray-w) + 16px); padding-right: calc(var(--tray-w) + 16px); }
 .pantry {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: var(--tray-w); max-width: none;
@@ -286,4 +286,37 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   :root { --tray-w: 74px; --treat-w: 16px; }
   .pantry-label span { display: none; }
   .yard { padding-left: 8px; }
+}
+
+/* Phones held sideways (very short screens): drop the extras so everything still fits one screen. */
+@media (max-height: 500px) {
+  :root {
+    --unit-h: clamp(44px, calc(var(--vh, 1vh) * 17), 120px);
+    --card-h: clamp(40px, calc(var(--vh, 1vh) * 15), 120px);
+    --hero-h: clamp(30px, calc(var(--vh, 1vh) * 11), 70px);
+    --treat-w: 13px;
+  }
+  .hero-parade, .picker h2, .coming, .deck-blurb, .title p { display: none; }
+  .title h1 { font-size: calc(var(--vh, 1vh) * 11); }
+  .deck-choice img { max-height: calc(var(--vh, 1vh) * 42); }
+  .deck-name { font-size: 13px; }
+  .play-button { padding: 4px 34px; }
+  .game { padding: 6px; gap: 6px; }
+  .board { padding: 4px 8px; gap: 3px; }
+  .player { padding: 2px 8px; gap: 8px; }
+  .ability, .foe-hand, .counters, .who .deck, .pantry-label span, .log-panel h3 { display: none; }
+  .midbar { min-height: 0; padding: 2px 8px; }
+  .round { width: 34px; height: 34px; }
+  .round small { display: none; }
+  .round b { font-size: 16px; }
+  .prompt { font-size: 12px; line-height: 1.2; }
+  .recap, .notice { -webkit-line-clamp: 1; }
+  .buttons button { padding: 3px 10px; font-size: 13px; }
+  .side { height: 44px; min-height: 0; }
+  .side-buttons { flex-direction: row; }
+  .side-buttons button { padding: 3px 10px; font-size: 12px; }
+  .log { font-size: 11px; }
+  .pantry { padding: 3px 4px 4px; gap: 2px; }
+  .pantry-label { font-size: 10px; padding: 0 6px; }
+  .pantry-label b { font-size: 12px; }
 }

@@ -197,6 +197,39 @@ function startGame(tutorial = false) {
   scheduleAi();
 }
 
+/**
+ * What each keyword means, in plain words. Shown under a card when you enlarge it (press and hold),
+ * because a playtester kept forgetting what Zest did and iOS has no hover to put a tooltip on.
+ * `test` finds the keyword in the card's rules text.
+ */
+const GLOSSARY: { name: string; test: RegExp; text: string }[] = [
+  { name: 'Zest', test: /\bZest\b/, text: 'A bonus if this is not the first card you have played this round. (Citrus)' },
+  { name: 'Ripen', test: /\bRipens?\b/, text: 'At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2. (Orchard)' },
+  { name: 'Sprout', test: /\bSprout\b/, text: 'Put that many cards from the top of your deck into your Treats. (Tropical)' },
+  { name: 'Lush', test: /\bLush\b/, text: 'This bonus is on while you have 7 or more Treats. (Tropical)' },
+  { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero Cat.' },
+  { name: 'Sneaky', test: /\bSneaky\b/, text: 'Can attack straight past enemy Guardians.' },
+  { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero Cat, that player loses 2 Lives instead of 1.' },
+  { name: 'Zoomies', test: /\bZoomies\b/, text: 'Can attack the round it arrives, instead of starting tired.' },
+  { name: 'Tough', test: /\bTough\b/, text: 'Takes that much less damage from every hit.' },
+  { name: 'Lucky', test: /\bLucky\b/, text: 'If this card turns up as a Life you lost, you may play it for free.' },
+  { name: 'Pounce', test: /\bPounce\b/, text: 'Play this out of turn, right after your opponent plays a card or attacks.' },
+  { name: 'Hello', test: /\bHello\b/, text: 'Happens as soon as this card arrives.' },
+  { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens when this unit is defeated.' },
+  { name: 'Grow Up', test: /\bGrow Up\b/, text: 'Once this is true, your Kitten becomes a Big Cat: stronger, and able to attack.' },
+  // "Exhaust:" is the cost of a Hero Cat's ability; "Exhaust an enemy unit" is an effect. One line covers both.
+  { name: 'Exhaust', test: /\bExhaust\b/, text: 'Spend a card for the rest of the round: it tips sideways and cannot attack or be spent again until everything readies next round.' },
+];
+
+/** The rules text of whatever a long press enlarged: a card id, or a Hero Cat side like "SB1-H01-bigcat". */
+function zoomText(key: string): string {
+  const side = /^(.*)-(kitten|bigcat)$/.exec(key);
+  const card = CARDS[side ? side[1] : key];
+  if (!card) return '';
+  if (!side) return card.text ?? '';
+  return (side[2] === 'kitten' ? card.kitten?.text : card.bigCat?.text) ?? '';
+}
+
 /** A plain-language reason a card in hand can't be played right now. */
 function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   const def = CARDS[id];
@@ -409,7 +442,7 @@ function renderPantry(s: GameState, p: PlayerId): string {
     if (change === 'spending') spent++;
     if (change === 'readying') readied++;
     const cls = ['treat', t.exhausted && 'spent', change, mine && 'mine'].filter(Boolean).join(' ');
-    const zoom = mine ? ` data-zoom="${cardUrl(t.card.id)}"` : '';
+    const zoom = mine ? ` data-zoom="${cardUrl(t.card.id)}" data-zoom-card="${t.card.id}"` : '';
     return `<div class="${cls}"${zoom} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
   }).join('');
   const float = planted ? `+${planted} Treat${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
@@ -437,7 +470,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
     <div class="hero-slot">
     <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
-         data-click="${key}" data-zoom="${cardUrl(heroKey(s, p))}">
+         data-click="${key}" data-zoom="${cardUrl(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
     </div>
@@ -481,7 +514,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
     owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
   ].filter(Boolean).join(' ');
   return `
-  <div class="${cls}" data-click="${key}" data-zoom="${cardUrl(u.id)}">
+  <div class="${cls}" data-click="${key}" data-zoom="${cardUrl(u.id)}" data-zoom-card="${u.id}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
@@ -512,7 +545,7 @@ function renderHand(s: GameState, playable: Set<number>): string {
         'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
-      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${cardUrl(c.id)}"><img src="${cardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
+      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${cardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${cardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
     }).join('')}
   </section>`;
 }
@@ -523,7 +556,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   let buttons = '';
 
   if (s.winner !== null) text = 'Game over.';
-  else if (!prompt) text = `<span class="dots">Opponent is thinking</span>`;
+  else if (!prompt) text = `<span class="dots">Opponent's turn — they take one action, then it is yours again</span>`;
   else if (selection) {
     text = `Choose a target for <b>${esc(selection.label)}</b>.`;
     buttons = '<button data-click="btn:cancel">Cancel</button>';
@@ -549,7 +582,10 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         const hints = [];
         if (legal.some((a) => a.t === 'play')) hints.push('play a glowing card');
         if (legal.some((a) => a.t === 'attack')) hints.push('attack with a glowing unit');
-        text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : 'Nothing left to do — pass.'}`;
+        // "One thing, then they go" is the rule players miss most: they line up three attacks and are
+        // surprised the opponent acts in between.
+        text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : 'Nothing left to do — pass.'}`
+          + ` <span class="turn-hint">One thing, then your opponent acts.</span>`;
         buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn ${YARN_ICON}</button>` : ''}
           <button class="primary" data-click="btn:pass">Pass</button>`;
         break;
@@ -727,11 +763,17 @@ let pressAt: { x: number; y: number } | null = null;
 /** The preview was opened by holding, so releasing closes it. */
 let zoomHeld = false;
 
-function openZoom(url: string) {
+function openZoom(url: string, cardKey?: string) {
   closeZoom();
+  const text = cardKey ? zoomText(cardKey) : '';
+  const used = GLOSSARY.filter((k) => k.test.test(text));
+  const glossary = used.length
+    ? `<dl class="zoom-keys">${used.map((k) => `<div><dt>${k.name}</dt><dd>${esc(k.text)}</dd></div>`).join('')}</dl>`
+    : '';
   const overlay = document.createElement('div');
   overlay.id = 'zoom-overlay';
-  overlay.innerHTML = `<img src="${url}" alt=""><span>Tap anywhere to close</span>`;
+  overlay.className = used.length ? 'with-keys' : '';
+  overlay.innerHTML = `<img src="${url}" alt="">${glossary}<span>Tap anywhere to close</span>`;
   overlay.addEventListener('click', closeZoom);
   document.body.appendChild(overlay);
   tutorialCardZoomed();
@@ -753,7 +795,7 @@ app.addEventListener('pointerdown', (event) => {
     pressAt = null;
     drag = null;           // a long press is never also a drag
     suppressClick = true;  // ...nor a click when the finger lifts
-    openZoom(el.dataset.zoom!);
+    openZoom(el.dataset.zoom!, el.dataset.zoomCard);
     zoomHeld = true;
   }, LONG_PRESS_MS);
 }, true);
@@ -780,7 +822,7 @@ app.addEventListener('contextmenu', (event) => {
   if (!el) return;
   event.preventDefault();
   window.clearTimeout(pressTimer);
-  openZoom(el.dataset.zoom!);
+  openZoom(el.dataset.zoom!, el.dataset.zoomCard);
 });
 
 document.addEventListener('keydown', (event) => {

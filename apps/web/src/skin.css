@@ -400,3 +400,21 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .hand-card.playable img { box-shadow: 0 0 0 3px #fff3b0, 0 0 14px 5px rgba(255, 180, 20, 0.95), var(--shadow); }
 @media (prefers-reduced-motion: reduce) { .unit.can-act { animation: none; } }
+
+/* Choosing a deck: the gold glow alone read as decoration, so the chosen deck now also lifts up and
+   wears a badge, while the decks you didn't pick step back. */
+.deck-choice { position: relative; }
+.deck-choices:has(.chosen) .deck-choice:not(.chosen) { filter: saturate(0.55) brightness(0.92); opacity: 0.75; transform: scale(0.96); }
+.deck-choices:has(.chosen) .deck-choice:not(.chosen):hover { filter: none; opacity: 1; transform: scale(0.98) translateY(-3px); }
+.deck-choice.chosen {
+  border-color: var(--gold); transform: translateY(-4px);
+  box-shadow: 0 0 0 5px var(--gold-light), 0 0 30px 8px rgba(255, 190, 60, 0.85), var(--panel-shadow);
+}
+.deck-choice.chosen:hover { transform: translateY(-6px); }
+.deck-choice.chosen::after {
+  content: 'Your deck ✓'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); z-index: 2;
+  padding: 3px 12px; border-radius: 999px; white-space: nowrap;
+  font: 800 12px/1.5 Fredoka, Nunito, sans-serif; color: #fff;
+  background: linear-gradient(#ffb627, #ef7314); box-shadow: 0 0 0 2px #fff6dc, 0 3px 8px rgba(60, 30, 5, 0.45);
+}
+@media (max-width: 640px) { .deck-choice.chosen::after { font-size: 10px; padding: 2px 8px; top: -9px; } }

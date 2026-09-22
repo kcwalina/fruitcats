@@ -30,9 +30,14 @@ npm run dev        # http://localhost:5173 — play against the AI
 - `art/prompts.json` — art direction: shared style plus one subject per illustration
 - `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into `art/sb1/`
 - `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into `art/cards/sb1/`
+- `tools/make_stat_icons.py` — turns the drawn paw and heart into the Power/Health badges: one flat fill, one
+  outline colour, matching framing, and it measures where each number fits
+- `tools/make_icons.py` — cuts the home-screen, PWA, maskable and favicon icons from `art/ui/app-icon.webp`
 
 ```bash
 python tools/generate_art.py          # only draws cards that have no art yet
+python tools/generate_art.py --ui     # interface art: backgrounds, card back, icons
+python tools/make_stat_icons.py       # after redrawing the paw or heart
 python tools/compose_cards.py         # re-run after any card data change; no redraw needed
 ```
 

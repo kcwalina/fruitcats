@@ -100,24 +100,31 @@ def layout(text: str, width: int, f: dict) -> list[list[tuple[str, str]]]:
     return lines
 
 
-def heart(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str, outline: str) -> None:
-    for pad, color in ((6, outline), (0, fill)):
-        rr = r - pad
-        draw.ellipse((cx - rr, cy - rr * 0.95, cx, cy + rr * 0.05), fill=color)
-        draw.ellipse((cx, cy - rr * 0.95, cx + rr, cy + rr * 0.05), fill=color)
-        draw.polygon([(cx - rr * 0.97, cy - rr * 0.35), (cx + rr * 0.97, cy - rr * 0.35), (cx, cy + rr * 1.05)], fill=color)
+ICONS = ROOT / "art" / "ui"
+# Where each badge's number sits and how much room it has, as fractions of the icon, measured by
+# tools/make_stat_icons.py (the centre of the largest circle that fits inside the icon's flat area).
+BADGES = {"icon-paw": (0.496, 0.672, 0.51), "icon-heart": (0.496, 0.539, 0.52)}
+BADGE_INK = "#50231c"      # the icons' own outline colour, so the number is outlined in the same pen
 
 
-def paw(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str, outline: str) -> None:
-    """A cat's paw print: a big pad with four toes over it. The number goes on the pad."""
-    for pad, color in ((6, outline), (0, fill)):
-        rr = r - pad
-        # The pad itself, low and wide, with the number's room in the middle.
-        draw.ellipse((cx - rr * 0.82, cy - rr * 0.34, cx + rr * 0.82, cy + rr * 1.04), fill=color)
-        for dx, dy, tx, ty in ((-0.72, -0.56, 0.25, 0.32), (-0.26, -0.84, 0.27, 0.34),
-                               (0.26, -0.84, 0.27, 0.34), (0.72, -0.56, 0.25, 0.32)):
-            draw.ellipse((cx + rr * (dx - tx), cy + rr * (dy - ty),
-                          cx + rr * (dx + tx), cy + rr * (dy + ty)), fill=color)
+def badge(img: Image.Image, d: ImageDraw.ImageDraw, name: str, cx: int, bottom: int, size: int, value: int) -> None:
+    """A stat badge: the drawn icon standing on `bottom`, with its number on the icon's flat area.
+
+    Lined up by the drawing inside the icon, not by the icon's canvas: the paw is taller than the
+    heart, so a shared centre used to push the paw over the card's frame.
+    """
+    icon = Image.open(ICONS / f"{name}.webp").convert("RGBA")
+    icon = icon.resize((size, round(size * icon.height / icon.width)), Image.LANCZOS)
+    ink = icon.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
+    left, top = cx - (ink[0] + ink[2]) // 2, bottom - ink[3]
+    img.paste(icon, (left, top), icon)
+
+    fx, fy, room = BADGES[name]
+    # Two digits have to fit across the flat area; one digit is about half as wide.
+    width = size * room * 0.92
+    height = min(width / max(len(str(value)), 1.6) * 1.55, size * room * 0.92)
+    centered_ink(d, (left + size * fx, top + icon.height * fy), str(value),
+                 font("seguibl.ttf", round(height)), "white", stroke_width=3, stroke_fill=BADGE_INK)
 
 
 def star(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str) -> None:
@@ -139,6 +146,14 @@ def clover(draw: ImageDraw.ImageDraw, cx: int, cy: int) -> None:
 
 def centered(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, **kw) -> None:
     draw.text(xy, text, font=f, fill=fill, anchor="mm", **kw)
+
+
+def centered_ink(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, **kw) -> None:
+    """Centre the digits themselves. PIL's "mm" centres the font's line box, which sits a few pixels
+    low on a badge because of the descender space below the digits."""
+    box = draw.textbbox((0, 0), text, font=f, anchor="lt", stroke_width=kw.get("stroke_width", 0))
+    draw.text((xy[0] - box[0] - (box[2] - box[0]) / 2, xy[1] - box[1] - (box[3] - box[1]) / 2),
+              text, font=f, fill=fill, anchor="lt", **kw)
 
 
 def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
@@ -231,11 +246,9 @@ def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
 
     # Stats
     if power is not None:
-        paw(d, 96, 968, 58, POWER_COLOR, dark)
-        centered(d, (96, 990), str(power), font("seguibl.ttf", 52), "white", stroke_width=3, stroke_fill=dark)
+        badge(img, d, "icon-paw", 96, 1022, 138, power)      # 1022: clear of the card's frame at 1027
     if health is not None:
-        heart(d, 654, 970, 58, HEALTH_COLOR, dark)
-        centered(d, (654, 962), str(health), font("seguibl.ttf", 54), "white", stroke_width=3, stroke_fill=dark)
+        badge(img, d, "icon-heart", 654, 1022, 138, health)
     centered(d, (W / 2, 1000), FOOTER, font("segoeui.ttf", 17), MUTED)
     return img
 

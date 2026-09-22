@@ -95,7 +95,9 @@ export type EffectKey =
   | 'exhaustEnemy' | 'readyOwn' | 'readyOther'
   | 'buff1' | 'buff2' | 'buff2sneaky'
   | 'draw1' | 'drawIfGuardian'
-  | 'cancelAttack';
+  | 'cancelAttack'
+  // Tropical: ramp
+  | 'damage5' | 'healEach2' | 'readyTreat1' | 'readyTreat2' | 'sprout1' | 'sprout2' | 'drawIfTreats7' | 'buff2readyTreat';
 
 /** An open Pounce window: what the defender is reacting to. */
 export type Window =

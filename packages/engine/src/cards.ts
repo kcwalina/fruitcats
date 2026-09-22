@@ -66,6 +66,8 @@ export interface Behaviour {
   toy?: { power?: number; health?: number; guardian?: boolean };
   /** Tricks that can only be played in a Pounce window of this kind. */
   pounceOnly?: 'attack';
+  /** Units that can't attack until their controller has this many Treats (Lychee Sloth). */
+  attackNeedsTreats?: number;
   /** Hero Cats: Exhaust ability per side, and the Grow Up condition. */
   kitten?: TargetedEffect;
   bigCat?: TargetedEffect;
@@ -89,6 +91,23 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     bigCat: { effect: 'heal3guard', target: 'ownUnit' },
     growUp: (s, p) => livesOf(s, p) <= 6,
   },
+  'SB1-H03': {
+    kitten: { effect: 'readyTreat1' },
+    bigCat: { effect: 'readyTreat2' },
+    growUp: (s, p) => s.players[p].pantry.length >= 8,
+  },
+  // Tropical
+  'SB1-T01': { hello: { effect: 'readyTreat1' } },
+  'SB1-T02': { hello: { effect: 'sprout1' } },
+  'SB1-T05': { attackNeedsTreats: 6 },
+  'SB1-T06': { hello: { effect: 'healEach2' } },
+  'SB1-T07': { hello: { effect: 'drawIfTreats7' } },
+  'SB1-T09': { play: { effect: 'sprout2' } },
+  'SB1-T10': { play: { effect: 'damage5', target: 'anyUnit' } },
+  'SB1-T11': { play: { effect: 'buff2readyTreat', target: 'ownUnit' } },
+  'SB1-T12': { toy: { power: 2, health: 2 } },
+  'SB1-T13': { hello: { effect: 'sprout1' } },
+  'SB1-T14': { hello: { effect: 'readyTreat2' } },
   'SB1-C02': { goodbye: { effect: 'damage1', target: 'anyUnit' } },
   'SB1-C06': { hello: { effect: 'damage1', target: 'anyUnit' } },
   'SB1-C09': { play: { effect: 'damage2', target: 'anyUnit' } },

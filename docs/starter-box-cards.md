@@ -1,15 +1,16 @@
 # Fruitcats — Starter Box Card List
 
-**Set code:** `SB1` · **Version 0.1 (playtest draft)** · Rules: see [rulebook.md](rulebook.md)
+**Set code:** `SB1` · **Version 0.2 (playtest draft)** · Rules: see [rulebook.md](rulebook.md)
 
-The Starter Box contains two ready-to-play 50-card decks built to teach the game and to be a fair fight against each other:
+The Starter Box contains three ready-to-play 50-card decks built to teach the game and to be a fair fight against each other:
 
 - **Zest Rush** — led by *Sunny, the Lemon Lynx* (Citrus). Fast and aggressive: hit early, hit often, finish before the opponent stabilises.
 - **Orchard Guard** — led by *Pippin, the Apple Ragdoll* (Orchard). Patient and sturdy: wall up with Guardians, heal, punish attackers, win the long game.
+- **Mango Tango** — led by *Mochi, the Mango Bengal* (Tropical), the mightiest Hero Cat. Laid-back, then enormous: gather extra Treats early, then drop giants nobody else can afford.
 
-Both decks share the same 14 neutral **Garden** cards, so new players learn one common core.
+All three decks share the same 14 neutral **Garden** cards, so new players learn one common core.
 
-**Totals:** 2 Hero Cats · 6 Cats · 24 family cards · 5 Garden cards = **37 unique cards**, 100 deck cards. Three more Hero Cats are previewed at the end.
+**Totals:** 3 Hero Cats · 9 Cats · 36 family cards · 5 Garden cards = **53 unique cards**, 150 deck cards. Two more Hero Cats are previewed at the end.
 
 ### How to read the tables
 
@@ -40,6 +41,17 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | **Big Cat** — *Pippin, Orchard Keeper* | 3 | **Exhaust:** Heal 3 from a unit you control. It gains Guardian this round. |
 
 *Flops over anywhere. Gets back up every time.*
+
+### SB1-H03 — Mochi, the Mango Bengal *(Tropical)*
+
+*The mightiest of the Hero Cats: the only Big Cat with 4 Power and Fierce.*
+
+| Side | Power | Text |
+|---|---|---|
+| **Kitten** — *Mochi, Sunbeam Kit* | — | **Exhaust:** Ready one of your Treats.<br>**Grow Up:** You have 8 or more Treats. |
+| **Big Cat** — *Mochi, Jungle Monarch* | 4 | Fierce. **Exhaust:** Ready two of your Treats. |
+
+*Lazes all morning. Rules all afternoon.*
 
 ---
 
@@ -137,6 +149,51 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 ---
 
+## Deck 3 — Mango Tango (Tropical)
+
+### Cats (1 copy each)
+
+| ID | Name | Cost | P/H | Text | Qty |
+|---|---|---|---|---|---|
+| SB1-T13 | Papaya, Beach Bum | 3 | 2/4 | **Hello:** Put the top card of your deck into your Pantry as an exhausted Treat. | 1 |
+| SB1-T14 | Coconut, Island Guardian | 5 | 4/6 | Guardian. **Hello:** Ready two of your Treats. | 1 |
+| SB1-T15 | Durian, the Mighty Stink | 8 | 8/8 | Fierce. Sneaky. | 1 |
+
+### Critters
+
+| ID | Name | Cost | P/H | Text | Qty |
+|---|---|---|---|---|---|
+| SB1-T01 | Banana Monkey | 1 | 1/2 | **Hello:** Ready one of your Treats. | 3 |
+| SB1-T02 | Kiwi Bird | 1 | 1/1 | **Hello:** Put the top card of your deck into your Pantry as an exhausted Treat. | 3 |
+| SB1-T03 | Passionfruit Parrot | 2 | 2/2 | Zoomies. | 3 |
+| SB1-T04 | Pineapple Armadillo | 3 | 2/5 | Guardian. | 3 |
+| SB1-T05 | Lychee Sloth | 2 | 2/3 | Can't attack unless you have 6 or more Treats. | 3 |
+| SB1-T06 | Guava Capybara | 4 | 3/5 | **Hello:** Heal 2 from each unit you control. | 3 |
+| SB1-T07 | Mangosteen Tapir | 5 | 5/5 | **Hello:** If you have 7 or more Treats, draw 2 cards. | 3 |
+| SB1-T08 | Jackfruit Elephant | 7 | 7/8 | Guardian. Fierce. | 2 |
+
+### Tricks
+
+| ID | Name | Cost | Text | Qty |
+|---|---|---|---|---|
+| SB1-T09 | Tropical Rain | 3 | Put the top 2 cards of your deck into your Pantry as exhausted Treats. | 3 |
+| SB1-T10 | Coconut Drop | 4 | Lucky. Deal 5 damage to a unit. | 2 |
+| SB1-T11 | Mango Smoothie | 1 | Pounce. A unit you control gets +2 Power this round. Ready one of your Treats. | 3 |
+
+### Toys
+
+| ID | Name | Cost | Text | Qty |
+|---|---|---|---|---|
+| SB1-T12 | Sun Hat | 2 | Attached unit gets +2 Power and +2 Health. | 2 |
+
+### Garden cards — 14
+
+**Deck total:** Cats 3 · Critters 23 · Tricks 8 · Toys 2 · Garden 14 = **50**
+
+**How to play it:** Plant every round and play your "Sprout" cards (Kiwi Bird, Papaya, Tropical Rain) early: every extra Treat brings your giants a round closer. Wall up with Pineapple Armadillos while you grow, and let Lychee Sloths soak up hits until you reach 6 Treats. At 8 Treats Mochi Grows Up. From then on her ability readies two Treats every round, which is what pays for Jackfruit Elephant and Durian on the same turn. Keep a Mango Smoothie for the Pounce window; it refunds its own Treat.
+
+---
+
 ## Garden Cards (neutral, 14 in each deck)
 
 | ID | Name | Type | Cost | P/H | Text | Qty per deck |
@@ -149,7 +206,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 ---
 
-## Preview — Hero Cats of the other three families
+## Preview — Hero Cats of the other two families
 
 Not in the Starter Box; shown so you can see where the game is going. Their decks arrive with the first full set.
 
@@ -159,15 +216,6 @@ Not in the Starter Box; shown so you can see where the game is going. Their deck
 |---|---|---|
 | **Kitten** | — | **Exhaust, pay 1:** Summon a 1/1 Seed Mouse token.<br>**Grow Up:** You control 5 or more units. |
 | **Big Cat** | 2 | Your Critters that cost 2 or less get +1 Power. |
-
-### Mochi, the Mango Bengal *(Tropical)*
-
-*The mightiest of the Hero Cats: the only Big Cat with 4 Power and Fierce.*
-
-| Side | Power | Text |
-|---|---|---|
-| **Kitten** | — | **Exhaust:** Ready one of your Treats.<br>**Grow Up:** You have 8 or more Treats. |
-| **Big Cat** | 4 | Fierce. **Exhaust:** Ready two of your Treats. |
 
 ### Duchess, the Watermelon Persian *(Melon)*
 
@@ -189,4 +237,8 @@ Not in the Starter Box; shown so you can see where the game is going. Their deck
 - **Sakura** does not trigger if a heal effect removes no damage.
 - **Garden Snail (Lucky):** if your Yard already has 6 units, you can't play it for free; it stays in your hand.
 - **Falling Apple** checks that the target is exhausted when played *and* when it resolves.
-- **Apple Crate / Citrus Zester:** one Toy per unit (rule 200.6).
+- **Apple Crate / Citrus Zester / Sun Hat:** one Toy per unit (rule 200.6).
+- **Sprouting** (Kiwi Bird, Papaya, Tropical Rain) moves cards from the top of your deck into the Pantry as exhausted Treats. It never costs a Life: with an empty deck, nothing happens.
+- **Readying Treats** (Mochi, Banana Monkey, Coconut, Mango Smoothie) turns exhausted Treats upright so you can spend them again this round. It never creates new Treats.
+- **Lychee Sloth** counts all your Treats, ready or exhausted, when checking whether it can attack.
+- **Mochi** Grows Up the moment you have 8 Treats, even mid-round from a Sprout effect.

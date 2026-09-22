@@ -17,7 +17,9 @@ export interface AiOptions {
 const BLANK = 'SB1-C04'; // a vanilla card: no Pounce, no Lucky
 // `exhausted` discounts a unit's power while it can't attack or block this round — it is what makes
 // "exhaust an enemy unit" effects worth anything to the AI.
-const W = { life: 12, hand: 1.2, treat: 1.0, power: 1.6, health: 1.1, guardian: 1, fierce: 1.5, sneaky: 1, grown: 6, exhausted: 0.35 };
+// `readyTreat` values Treats still unspent this round — what makes "ready a Treat" effects (Mochi) worth
+// using. It is kept below the value of any card those Treats could buy, so the AI still spends them.
+const W = { life: 12, hand: 1.2, treat: 1.0, power: 1.6, health: 1.1, guardian: 1, fierce: 1.5, sneaky: 1, grown: 6, exhausted: 0.35, readyTreat: 0.4 };
 
 export function evaluate(s: GameState, p: PlayerId): number {
   if (s.winner === p) return 1e6;
@@ -27,6 +29,7 @@ export function evaluate(s: GameState, p: PlayerId): number {
     const pl = s.players[q];
     const sign = q === p ? 1 : -1;
     let v = pl.lives.length * W.life + pl.hand.length * W.hand + Math.min(pl.pantry.length, 8) * W.treat;
+    if (s.prompt?.kind === 'action' || s.prompt?.kind === 'pounce') v += pl.pantry.filter((t) => !t.exhausted).length * W.readyTreat;
     for (const u of pl.yard) {
       const k = keywords(u.id);
       v += unitPower(u) * W.power + (unitHealth(u) - u.damage) * W.health;
@@ -128,7 +131,9 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
     case 'plant': {
       const treats = me.pantry.length;
       const maxCost = Math.max(...[...me.hand, ...me.deck].map((c) => CARDS[c.id].cost ?? 0), 0);
-      if (treats >= Math.max(5, maxCost) || me.hand.length <= 1) return { t: 'skipPlant' };
+      // Ramp decks (and Mochi's Grow Up at 8 Treats) want to keep planting.
+      const growUpAt = me.hero.id === 'SB1-H03' && !me.hero.grown ? 8 : 0;
+      if (treats >= Math.max(5, maxCost, growUpAt) || me.hand.length <= 1) return { t: 'skipPlant' };
       return { t: 'plant', uid: byKeepValue(me.hand, treats + 1)[0].uid };
     }
     default:

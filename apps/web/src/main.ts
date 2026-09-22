@@ -122,7 +122,9 @@ function scheduleAi() {
 }
 
 function startGame() {
-  const theirDeck = myDeck === 'zest-rush' ? 'orchard-guard' : 'zest-rush';
+  // The opponent leads one of the other decks, at random.
+  const others = Object.keys(DECKS).filter((d) => d !== myDeck);
+  const theirDeck = others[Math.floor(Math.random() * others.length)];
   game = createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
   markHumanTurnDone();
   screen = 'game';
@@ -227,10 +229,11 @@ function render() {
 
 function renderMenu(): string {
   // Mochi, the mightiest Hero Cat, takes the centre spot.
-  const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-P02-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
+  const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
   const deckBlurb: Record<string, string> = {
     'zest-rush': 'Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover.',
     'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
+    'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
   };
   return `
   <div class="menu">
@@ -259,7 +262,7 @@ function renderMenu(): string {
         </div>
         <button class="play-button" data-click="menu:play">Play</button>
       </div>
-      <p class="coming">Coming soon: ${['SB1-P01', 'SB1-P02', 'SB1-P03'].map((id) => esc(CARDS[id].name)).join(' · ')}</p>
+      <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
     </section>
   </div>`;
 }

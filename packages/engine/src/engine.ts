@@ -208,7 +208,7 @@ function attackOptions(s: GameState, p: PlayerId): Action[] {
   const me = s.players[p];
   const foe = s.players[other(p)];
   const attackers: { ref: Target; sneaky: boolean }[] = me.yard
-    .filter((u) => !u.exhausted)
+    .filter((u) => !u.exhausted && me.pantry.length >= (behaviour(u.id).attackNeedsTreats ?? 0))
     .map((u) => ({ ref: { kind: 'unit', uid: u.uid }, sneaky: isSneaky(u) }));
   if (me.hero.grown && !me.hero.exhausted) attackers.push({ ref: { kind: 'hero', player: p }, sneaky: false });
 
@@ -667,7 +667,27 @@ function applyEffect(s: GameState, p: PlayerId, effect: EffectKey, target: Targe
     case 'draw1': s.queue.unshift({ t: 'draw', p, n: 1 }); break;
     case 'drawIfGuardian': if (s.players[p].yard.some(isGuardian)) s.queue.unshift({ t: 'draw', p, n: 1 }); break;
     case 'cancelAttack': if (s.window?.kind === 'attack') s.window.cancelled = true; break;
+    case 'damage5': if (u) dealDamage(u, 5); break;
+    case 'healEach2': for (const x of s.players[p].yard) heal(s, p, x, 2); break;
+    case 'readyTreat1': readyTreats_(s, p, 1); break;
+    case 'readyTreat2': readyTreats_(s, p, 2); break;
+    case 'sprout1': sprout(s, p, 1); break;
+    case 'sprout2': sprout(s, p, 2); break;
+    case 'drawIfTreats7': if (s.players[p].pantry.length >= 7) s.queue.unshift({ t: 'draw', p, n: 2 }); break;
+    case 'buff2readyTreat': if (u) u.buffPower += 2; readyTreats_(s, p, 1); break;
   }
+}
+
+function readyTreats_(s: GameState, p: PlayerId, n: number): void {
+  let left = n;
+  for (const t of s.players[p].pantry) if (left > 0 && t.exhausted) { t.exhausted = false; left--; }
+}
+
+/** Put the top cards of the deck into the Pantry as exhausted Treats (running out of deck just stops). */
+function sprout(s: GameState, p: PlayerId, n: number): void {
+  const pl = s.players[p];
+  for (let i = 0; i < n && pl.deck.length; i++) pl.pantry.push({ card: pl.deck.shift()!, exhausted: true });
+  log(s, `${pl.name} now has ${pl.pantry.length} Treats.`, p);
 }
 
 /** Rule 800.1: defeat units, flip Kittens whose Grow Up condition holds. */

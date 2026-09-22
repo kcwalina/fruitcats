@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARDS, DECKS, apply, chooseAction, createGame, deckCardIds, legalActions, randomAction, keywords,
-  type GameState,
+  unitHealth, unitPower, type GameState,
 } from '../src/index';
 
 function playOut(s: GameState, pick: (s: GameState) => ReturnType<typeof chooseAction>, limit = 5000): GameState {
@@ -96,14 +96,90 @@ describe('Mango Tango (Tropical)', () => {
     expect(me.pantry.slice(-2).every((t) => t.exhausted)).toBe(true);
   });
 
-  it('Lychee Sloth cannot attack with fewer than 6 Treats', () => {
+  it('Lychee Sloth can only attack while Lush (7+ Treats)', () => {
     const s = toFirstAction(['mango-tango', 'zest-rush']);
     const me = s.players[0];
     me.yard.push({ uid: 9002, id: 'SB1-T05', damage: 0, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false });
     const slothAttacks = () => legalActions(s).filter((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === 9002);
     expect(slothAttacks()).toHaveLength(0);
     while (me.pantry.length < 6) me.pantry.push({ card: me.deck.shift()!, exhausted: true });
+    expect(slothAttacks()).toHaveLength(0);
+    me.pantry.push({ card: me.deck.shift()!, exhausted: true });
     expect(slothAttacks().length).toBeGreaterThan(0);
+  });
+});
+
+/** Put a card in player 0's hand with enough ready Treats to play it, and play it (declining any Pounce). */
+function playFromHand(s: GameState, id: string, target?: { kind: 'unit'; uid: number }) {
+  const me = s.players[0];
+  const uid = 9000 + s.actions;
+  me.hand.push({ uid, id });
+  while (me.pantry.filter((t) => !t.exhausted).length < (CARDS[id].cost ?? 0)) me.pantry.push({ card: me.deck.shift()!, exhausted: false });
+  apply(s, target ? { t: 'play', uid, target } : { t: 'play', uid });
+  while (s.prompt?.player === 1 && s.prompt.kind === 'pounce') apply(s, { t: 'decline' });
+  return uid;
+}
+
+function enemyUnit(s: GameState, id: string, health = 10) {
+  const uid = 8000 + s.players[1].yard.length;
+  s.players[1].yard.push({ uid, id, damage: 10 - health, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false, ripe: 0 });
+  return { kind: 'unit' as const, uid };
+}
+
+describe('signature mechanics', () => {
+  it('Zest: Citron Fox deals 1 as your first card, 2 when it isn\'t', () => {
+    const first = toFirstAction(['zest-rush', 'orchard-guard'], 3);
+    const t1 = enemyUnit(first, 'SB1-O04'); // Plum Mole: no Tough, so damage lands in full
+    playFromHand(first, 'SB1-C06', t1);
+    expect(first.players[1].yard.find((u) => u.uid === t1.uid)!.damage).toBe(1);
+
+    const second = toFirstAction(['zest-rush', 'orchard-guard'], 3);
+    second.players[0].playedThisRound = 1; // already played a card this round
+    const t2 = enemyUnit(second, 'SB1-O04');
+    playFromHand(second, 'SB1-C06', t2);
+    expect(second.players[1].yard.find((u) => u.uid === t2.uid)!.damage).toBe(2);
+  });
+
+  it('Zest: Orange Corgi enters ready only with Zest', () => {
+    const a = toFirstAction(['zest-rush', 'orchard-guard'], 4);
+    const u1 = playFromHand(a, 'SB1-C04');
+    expect(a.players[0].yard.find((u) => u.uid === u1)!.exhausted).toBe(true);
+    const b = toFirstAction(['zest-rush', 'orchard-guard'], 4);
+    b.players[0].playedThisRound = 1;
+    const u2 = playFromHand(b, 'SB1-C04');
+    expect(b.players[0].yard.find((u) => u.uid === u2)!.exhausted).toBe(false);
+  });
+
+  it('Zest resets at the start of each round', () => {
+    const s = toFirstAction(['zest-rush', 'orchard-guard'], 5);
+    s.players[0].playedThisRound = 3;
+    const round = s.round;
+    for (let i = 0; i < 200 && s.round === round; i++) apply(s, chooseAction(s));
+    expect(s.players[0].playedThisRound).toBe(0);
+  });
+
+  it('Ripen: Plum Mole grows +1/+1 each round, up to +2/+2', () => {
+    const s = toFirstAction(['orchard-guard', 'zest-rush'], 6);
+    s.players[0].yard.push({ uid: 7777, id: 'SB1-O04', damage: 0, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false, ripe: 0 });
+    const mole = () => s.players[0].yard.find((u) => u.uid === 7777)!;
+    const ripeAtRound: number[] = [];
+    // Both players only pass, so nothing can touch the Mole; other prompts (plant, discard) are the AI's.
+    while (s.round < 5) {
+      const r = s.round;
+      apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
+      if (s.round !== r) ripeAtRound.push(mole().ripe ?? 0);
+    }
+    expect(ripeAtRound).toEqual([1, 2, 2, 2]);
+    expect(unitPower(mole())).toBe(2 + 2);
+    expect(unitHealth(mole())).toBe(3 + 2);
+  });
+
+  it('Sprout counts as Treats and turns Lush on at 7', () => {
+    const s = toFirstAction(['mango-tango', 'zest-rush']);
+    const me = s.players[0];
+    while (me.pantry.length < 5) me.pantry.push({ card: me.deck.shift()!, exhausted: false });
+    playFromHand(s, 'SB1-T09'); // Sprout 2
+    expect(me.pantry.length).toBeGreaterThanOrEqual(7);
   });
 });
 

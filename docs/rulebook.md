@@ -1,6 +1,6 @@
 # Fruitcats — Official Rulebook
 
-**Version 0.1 (playtest draft)** · 2 players · ages 8+ · about 10 minutes per game
+**Version 0.3 (playtest draft)** · 2 players · ages 8+ · about 10 minutes per game
 
 > Every cat has nine lives. Make yours count.
 
@@ -27,7 +27,7 @@ This rulebook has three parts:
 
 ## 2. What You Need
 
-- A **Hero Cat** card and a **50-card deck** each (see section 11 for deckbuilding; the [Starter Box](starter-box-cards.md) has two ready-made decks).
+- A **Hero Cat** card and a **50-card deck** each (see section 11 for deckbuilding; the [Starter Box](starter-box-cards.md) has three ready-made decks).
 - The **Yarn Ball** token (any small object works). Whoever holds it acts first each round.
 - **Damage counters** (dice or beads work well).
 
@@ -56,16 +56,19 @@ This rulebook has three parts:
 
 Cats and Critters are both **units**.
 
-### 3.3 The five fruit families
+### 3.3 The five fruit families (classes)
 
-| Family | Personality | Plays like |
-|---|---|---|
-| **Citrus** | Zesty, fast, reckless | Speed and aggression: Zoomies, Sneaky, direct damage |
-| **Berry** | Small, many, loyal | Swarms of cheap critters that boost each other |
-| **Tropical** | Laid-back, then enormous | Extra Treats and huge late-game units |
-| **Orchard** | Kind, patient, protective | Guardians, healing, punishing attackers |
-| **Melon** | Heavy, stubborn, tricky | Tough units and control: exhausting and bouncing enemies |
-| **Garden** | Friends to all | Neutral cards any deck may use |
+Each family is a class: your Hero Cat's family decides which cards you can use, how the deck plays,
+and gives it a **signature mechanic** that only that family has.
+
+| Family | Personality | Plays like | Signature mechanic |
+|---|---|---|---|
+| **Citrus** | Zesty, fast, reckless | Speed and aggression: Zoomies, Sneaky, direct damage | **Zest** — bonuses for chaining cards in one round |
+| **Orchard** | Kind, patient, protective | Guardians, healing, punishing attackers | **Ripen** — units grow stronger every round |
+| **Tropical** | Laid-back, then enormous | Extra Treats and huge late-game units | **Sprout** & **Lush** — extra Treats now, payoffs at 7+ |
+| **Berry** | Small, many, loyal | Swarms of cheap critters that boost each other | *Bunch* (coming with the Berry deck) |
+| **Melon** | Heavy, stubborn, tricky | Tough units and control: exhausting and bouncing enemies | *Rind* (coming with the Melon deck) |
+| **Garden** | Friends to all | Neutral cards any deck may use | — |
 
 ---
 
@@ -195,6 +198,10 @@ Every Kitten has a **Grow Up** condition printed on it (for example, *"Grow Up: 
 | **Hello:** | This effect happens when the unit enters your Yard. |
 | **Goodbye:** | This effect happens when the unit is defeated. |
 | **Grow Up:** | When this condition is true, flip your Kitten to its Big Cat side. |
+| **Zest:** *(Citrus)* | A bonus that applies if you have already played another card this round. |
+| **Ripen** *(Orchard)* | At the start of each round, this unit gets +1 Power and +1 Health, up to +2/+2. |
+| **Sprout N** *(Tropical)* | Put the top N cards of your deck into your Pantry as exhausted Treats. |
+| **Lush** *(Tropical)* | You are Lush while you have 7 or more Treats. |
 
 Other common words:
 
@@ -321,6 +328,13 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **800.5** A Hero Cat keeps its ready/exhausted state when it flips. Effects that applied to the Kitten "this round" continue to apply to the Big Cat.
 - **800.6** "Once per round" abilities may be used or may trigger once between consecutive Start Phases.
 
+### 850. Signature mechanics
+
+- **850.1 Zest.** A player's *cards played this round* counts every card they played since the last Start Phase: as an action, as a Pounce, or for free via Lucky. A "Zest:" bonus applies if that count, including the card with Zest, is 2 or more when the effect resolves. The count resets at the Start Phase.
+- **850.2 Ripen.** In the Start Phase, right after readying, each unit with Ripen gains a *ripeness* of 1, up to 2. A unit gets +1 Power and +1 Health per ripeness. Ripeness is lost when the unit leaves the Yard (rule 200.7).
+- **850.3 Sprout N.** The top N cards of the owner's deck go to the Pantry as exhausted Treats, one at a time. If the deck runs out, the rest of the Sprout does nothing; it never costs a Life.
+- **850.4 Lush.** A player is Lush while their Pantry holds 7 or more Treats, ready or exhausted. It is checked whenever an effect asks.
+
 ### 900. Tunable parameters
 
 The following values are deliberately isolated so playtesting can adjust them without rewriting rules:
@@ -339,6 +353,9 @@ The following values are deliberately isolated so playtesting can adjust them wi
 | Yarn Ball rolls if nobody takes it | yes |
 | Second-player compensation in round 1 | none |
 | Copy limit / Cat limit | 3 / 6 (1 copy each) |
+| Ripen maximum | +2/+2 |
+| Lush threshold | 7 Treats |
+| Zest | 2nd card of the round or later |
 
 ---
 

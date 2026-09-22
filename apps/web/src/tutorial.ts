@@ -119,6 +119,19 @@ const STEPS: Balloon[] = [
 
 const TIPS: Balloon[] = [
   {
+    id: 'zest', title: 'Zest! 🍋', anchor: '.hand-card.zest-on',
+    when: (s) => myPrompt(s, 'action') && !!document.querySelector('.hand-card.zest-on'),
+    text: 'Citrus cards have <b>Zest</b>: a bonus when it isn’t your first card this round. '
+      + 'You’ve already played a card, so the glowing <b>Zest!</b> cards now get their bonus.',
+  },
+  {
+    id: 'ripen', title: 'Ripen 🍎',
+    anchor: (s) => { const u = s.players.flatMap((p) => p.yard).find((x) => (x.ripe ?? 0) > 0); return u ? `[data-click="unit:${u.uid}"]` : undefined; },
+    when: (s) => myPrompt(s) && s.players.some((p) => p.yard.some((u) => (u.ripe ?? 0) > 0)),
+    text: 'Orchard units <b>Ripen</b>: at the start of every round they get +1 Power and +1 Health, '
+      + 'up to +2/+2. Deal with them early, before they grow!',
+  },
+  {
     id: 'lostLife', title: 'You lost a Life', anchor: '.player.me .lives', when: (s) => s.players[ME].lives.length < 9,
     text: 'Ouch! But the lost Life card went into your <b>hand</b> — getting hit gives you more cards to fight back with. '
       + 'If it’s <b>Lucky</b> 🍀, you may even play it for free.',

@@ -2,7 +2,7 @@ import './style.css';
 import './skin.css';
 import { renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi } from './tutorial';
 import {
-  CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isSneaky, keywords,
+  CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isLush, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
   type Action, type GameState, type PlayerId, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -25,6 +25,12 @@ function updateViewportHeight() {
 updateViewportHeight();
 window.addEventListener('resize', updateViewportHeight);
 window.visualViewport?.addEventListener('resize', updateViewportHeight);
+/** Each fruit family is a class with its own signature mechanic. */
+const FAMILY_INFO: Record<string, { mechanic: string; hint: string }> = {
+  Citrus: { mechanic: 'Zest', hint: 'bonuses when it isn’t your first card this round' },
+  Orchard: { mechanic: 'Ripen', hint: 'units grow +1/+1 every round' },
+  Tropical: { mechanic: 'Sprout', hint: 'extra Treats now, Lush payoffs at 7+' },
+};
 const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
 const heroKey = (s: GameState, p: PlayerId) => `${s.players[p].hero.id}-${s.players[p].hero.grown ? 'bigcat' : 'kitten'}`;
 
@@ -128,7 +134,7 @@ function act(action: Action) {
     markHumanTurnDone();
     flash = '';
     notice = plantedNames.length
-      ? `Planted ${plantedNames.join(' and ')} face-down as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'} — ${plantedNames.length > 1 ? 'they' : 'it'} will pay for your other cards. You have ${me.pantry.length} Treats.`
+      ? `Planted ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'} — you have ${me.pantry.length}.`
       : '';
   } catch (error) {
     flash = (error as Error).message;
@@ -310,6 +316,7 @@ function renderMenu(): string {
           <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="menu:${key}">
             <img src="${cardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
             <span class="deck-name">${esc(deck.name)}</span>
+            <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
             <span class="deck-blurb">${deckBlurb[key] ?? ''}</span>
           </button>`).join('')}
       </div>
@@ -382,7 +389,8 @@ function renderPantry(s: GameState, p: PlayerId): string {
   const ready = readyTreats(s, p);
   return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
     <div class="pantry-label">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
-    <div class="treats">${tokens || '<span class="no-treats">none yet</span>'}</div>
+    ${isLush(s, p) && CARDS[pl.hero.id].family === 'Tropical' ? '<div class="lush-badge" title="Lush: 7 or more Treats — Lush bonuses are on">🌴 Lush</div>' : ''}
+    <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens || '<span class="no-treats">none yet</span>'}</div>
     ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
   </div>`;
 }
@@ -431,6 +439,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   const health = unitHealth(u) - u.damage;
   const chips = [
     isGuardian(u) && 'Guardian', isSneaky(u) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
+    k.ripen && (u.ripe ? `🍎+${u.ripe}` : '🍎 Ripen'),
     u.toy && `🧸 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;
@@ -446,8 +455,8 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    <div class="pow ${u.buffPower > 0 || (u.toy && power > (CARDS[u.id].power ?? 0)) ? 'buffed' : ''}">${power}</div>
-    <div class="hp ${u.damage ? 'hurt' : ''}">${health}</div>
+    <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''}">${power}</div>
+    <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''}">${health}</div>
     ${u.exhausted ? '<div class="zzz">zzz</div>' : ''}
   </div>`;
 }
@@ -468,8 +477,9 @@ function renderHand(s: GameState, playable: Set<number>): string {
   const selectedUid = selection?.options.find((a) => a.t === 'play' || a.t === 'pounce') as { uid?: number } | undefined;
   return `<section class="hand">
     ${s.players[HUMAN].hand.map((c) => {
+      const zestOn = (s.players[HUMAN].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
       const cls = [
-        'hand-card', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
+        'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
       return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${cardUrl(c.id)}"><img src="${cardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" loading="lazy"></button>`;
@@ -507,9 +517,9 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         break;
       case 'action': {
         const hints = [];
-        if (legal.some((a) => a.t === 'play')) hints.push('click or drag a glowing card to play it');
-        if (legal.some((a) => a.t === 'attack')) hints.push('click or drag a ready unit onto an enemy to attack');
-        text = `<b>Your action.</b> ${hints.length ? `You can ${hints.join(', or ')}.` : 'Nothing left to do — pass.'}`;
+        if (legal.some((a) => a.t === 'play')) hints.push('play a glowing card');
+        if (legal.some((a) => a.t === 'attack')) hints.push('attack with a glowing unit');
+        text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : 'Nothing left to do — pass.'}`;
         buttons = `${legal.some((a) => a.t === 'takeYarn') ? '<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn 🧶</button>' : ''}
           <button class="primary" data-click="btn:pass">Pass</button>`;
         break;
@@ -571,6 +581,11 @@ function renderRules(): string {
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
+      <p><b>Families (classes):</b> each fruit family has a signature mechanic.
+        <b>Citrus — Zest:</b> a bonus if you’ve already played another card this round.
+        <b>Orchard — Ripen:</b> at the start of each round the unit gets +1/+1 (up to +2/+2).
+        <b>Tropical — Sprout N:</b> put the top N cards of your deck into your Pantry as Treats;
+        <b>Lush:</b> you have 7 or more Treats.</p>
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>

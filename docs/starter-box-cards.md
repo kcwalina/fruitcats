@@ -1,6 +1,6 @@
 # Fruitcats — Starter Box Card List
 
-**Set code:** `SB1` · **Version 0.2 (playtest draft)** · Rules: see [rulebook.md](rulebook.md)
+**Set code:** `SB1` · **Version 0.3 (playtest draft)** · Rules: see [rulebook.md](rulebook.md)
 
 The Starter Box contains three ready-to-play 50-card decks built to teach the game and to be a fair fight against each other:
 
@@ -11,6 +11,14 @@ The Starter Box contains three ready-to-play 50-card decks built to teach the ga
 All three decks share the same 14 neutral **Garden** cards, so new players learn one common core.
 
 **Totals:** 3 Hero Cats · 9 Cats · 36 family cards · 5 Garden cards = **53 unique cards**, 150 deck cards. Two more Hero Cats are previewed at the end.
+
+### Classes and signature mechanics
+
+Each family is a class with its own signature mechanic (rulebook §3.3 and §850):
+
+- **Citrus — Zest:** "Zest:" bonuses apply if you've already played another card this round. Open with a cheap card, then follow up.
+- **Orchard — Ripen:** at the start of each round a Ripen unit gets +1/+1, up to +2/+2. The longer it survives, the bigger it gets.
+- **Tropical — Sprout N & Lush:** Sprout plants the top N cards of your deck as extra Treats; Lush cards get their bonus while you have 7+ Treats.
 
 ### How to read the tables
 
@@ -69,12 +77,12 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 | ID | Name | Cost | P/H | Text | Qty |
 |---|---|---|---|---|---|
-| SB1-C01 | Zest Mouse | 1 | 1/1 | Zoomies. | 3 |
+| SB1-C01 | Zest Mouse | 1 | 1/1 | Zoomies. **Zest:** gets +1 Power this round. | 3 |
 | SB1-C02 | Tangerine Chick | 1 | 1/1 | **Goodbye:** Deal 1 damage to a unit. | 3 |
-| SB1-C03 | Lime Gecko | 2 | 2/1 | Sneaky. | 3 |
-| SB1-C04 | Orange Corgi | 2 | 3/2 | — | 3 |
-| SB1-C05 | Grapefruit Ferret | 3 | 3/2 | Zoomies. | 3 |
-| SB1-C06 | Citron Fox | 3 | 3/3 | **Hello:** Deal 1 damage to a unit. | 3 |
+| SB1-C03 | Lime Gecko | 2 | 2/1 | Sneaky. **Zest:** gets +1 Power this round. | 3 |
+| SB1-C04 | Orange Corgi | 2 | 3/2 | **Zest:** enters ready. | 3 |
+| SB1-C05 | Grapefruit Ferret | 3 | 3/2 | Zoomies. **Zest:** gets +1 Power this round. | 3 |
+| SB1-C06 | Citron Fox | 3 | 3/3 | **Hello:** Deal 1 damage to a unit. **Zest:** deal 2 instead. | 3 |
 | SB1-C07 | Pomelo Ram | 4 | 4/3 | Fierce. | 3 |
 | SB1-C08 | Yuzu Hawk | 5 | 4/4 | Zoomies. Sneaky. | 2 |
 
@@ -83,7 +91,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | ID | Name | Cost | Text | Qty |
 |---|---|---|---|---|
 | SB1-C09 | Sour Spray | 2 | Pounce. Lucky. Deal 2 damage to a unit. | 3 |
-| SB1-C10 | Zest Burst | 3 | Deal 4 damage to a unit. | 2 |
+| SB1-C10 | Zest Burst | 3 | Deal 3 damage to a unit. **Zest:** deal 5 instead. | 2 |
 | SB1-C11 | Peel Out | 2 | Ready a unit you control. | 2 |
 
 ### Toys
@@ -118,8 +126,8 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 |---|---|---|---|---|---|
 | SB1-O01 | Peach Bunny | 1 | 1/2 | **Hello:** Heal 2 from a unit. | 3 |
 | SB1-O02 | Pear Hedgehog | 2 | 2/3 | Guardian. | 3 |
-| SB1-O03 | Cherry Robin | 2 | 2/2 | **Hello:** If you control a Guardian, draw a card. | 3 |
-| SB1-O04 | Plum Mole | 3 | 3/4 | — | 3 |
+| SB1-O03 | Cherry Robin | 2 | 2/2 | Ripen. **Hello:** If you control a Guardian, draw a card. | 3 |
+| SB1-O04 | Plum Mole | 3 | 2/3 | Ripen. | 3 |
 | SB1-O05 | Apricot Owl | 3 | 2/3 | **Hello:** Exhaust an enemy unit. | 3 |
 | SB1-O06 | Apple Badger | 4 | 4/4 | Guardian. | 3 |
 | SB1-O07 | Quince Tortoise | 4 | 2/5 | Guardian. Tough 1. | 2 |
@@ -155,7 +163,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 | ID | Name | Cost | P/H | Text | Qty |
 |---|---|---|---|---|---|
-| SB1-T13 | Papaya, Beach Bum | 3 | 2/4 | **Hello:** Put the top card of your deck into your Pantry as an exhausted Treat. | 1 |
+| SB1-T13 | Papaya, Beach Bum | 3 | 2/4 | **Hello:** Sprout 1. | 1 |
 | SB1-T14 | Coconut, Island Guardian | 5 | 4/6 | Guardian. **Hello:** Ready two of your Treats. | 1 |
 | SB1-T15 | Durian, the Mighty Stink | 8 | 8/8 | Fierce. Sneaky. | 1 |
 
@@ -164,19 +172,19 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | ID | Name | Cost | P/H | Text | Qty |
 |---|---|---|---|---|---|
 | SB1-T01 | Banana Monkey | 1 | 1/2 | **Hello:** Ready one of your Treats. | 3 |
-| SB1-T02 | Kiwi Bird | 1 | 1/1 | **Hello:** Put the top card of your deck into your Pantry as an exhausted Treat. | 3 |
+| SB1-T02 | Kiwi Bird | 1 | 1/1 | **Hello:** Sprout 1. | 3 |
 | SB1-T03 | Passionfruit Parrot | 2 | 2/2 | Zoomies. | 3 |
 | SB1-T04 | Pineapple Armadillo | 3 | 2/5 | Guardian. | 3 |
-| SB1-T05 | Lychee Sloth | 2 | 2/3 | Can't attack unless you have 6 or more Treats. | 3 |
+| SB1-T05 | Lychee Sloth | 2 | 2/3 | Can't attack unless you're Lush. | 3 |
 | SB1-T06 | Guava Capybara | 4 | 3/5 | **Hello:** Heal 2 from each unit you control. | 3 |
-| SB1-T07 | Mangosteen Tapir | 5 | 5/5 | **Hello:** If you have 7 or more Treats, draw 2 cards. | 3 |
+| SB1-T07 | Mangosteen Tapir | 5 | 5/5 | **Hello:** If you're Lush, draw 2 cards. | 3 |
 | SB1-T08 | Jackfruit Elephant | 7 | 7/8 | Guardian. Fierce. | 2 |
 
 ### Tricks
 
 | ID | Name | Cost | Text | Qty |
 |---|---|---|---|---|
-| SB1-T09 | Tropical Rain | 3 | Put the top 2 cards of your deck into your Pantry as exhausted Treats. | 3 |
+| SB1-T09 | Tropical Rain | 3 | Sprout 2. | 3 |
 | SB1-T10 | Coconut Drop | 4 | Lucky. Deal 5 damage to a unit. | 2 |
 | SB1-T11 | Mango Smoothie | 1 | Pounce. A unit you control gets +2 Power this round. Ready one of your Treats. | 3 |
 

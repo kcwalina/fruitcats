@@ -320,3 +320,40 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .pantry-label { font-size: 10px; padding: 0 6px; }
   .pantry-label b { font-size: 12px; }
 }
+
+/* ── Signature mechanics ─────────────────────────────────────────────── */
+
+.deck-class {
+  font: 600 12px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 10px; border-radius: 999px;
+  background: linear-gradient(var(--fam), var(--fam-dark)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+.hp.buffed { background: linear-gradient(#8fe0a0, #2e9d57); }
+.hand-card.zest-on::before {
+  content: '🍋 Zest!'; position: absolute; left: 50%; top: -10px; transform: translateX(-50%); z-index: 7;
+  font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; white-space: nowrap; padding: 1px 8px; border-radius: 999px;
+  background: linear-gradient(#ffd23f, #f29f05); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  animation: zest-pop 0.9s ease-in-out infinite alternate; pointer-events: none;
+}
+@keyframes zest-pop { to { transform: translateX(-50%) scale(1.08); } }
+.lush-badge {
+  font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 0 8px; border-radius: 999px;
+  background: linear-gradient(#7ed08a, #2e8b4a); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* The prompt bar never grows over the Yards: at most two lines per message, and on narrow screens
+   the buttons wrap underneath the text instead of squeezing it into a thin column. */
+.notice, .recap { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.midbar { flex-wrap: wrap; }
+.prompt { flex: 1 1 220px; }
+@media (max-width: 640px) {
+  .midbar { gap: 6px 10px; }
+  .buttons { flex: 1 1 100%; justify-content: flex-end; }
+  .buttons button { padding: 4px 14px; }
+  .notice, .recap { -webkit-line-clamp: 1; }
+}
+
+/* Treats stay on one row inside the tray: they overlap more as the pile grows, so the tray never gets
+   taller than the Yard. */
+.pantry { max-height: calc(100% - 4px); }
+.treats { flex-wrap: nowrap; gap: 0; min-height: calc(var(--treat-w) * 1.45); align-items: center; }
+.treat + .treat { margin-left: min(4px, calc((var(--tray-w) - 16px - var(--n) * var(--treat-w)) / (var(--n) - 1))); }

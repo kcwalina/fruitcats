@@ -43,6 +43,8 @@ export interface Unit {
   buffGuardian: boolean;
   /** A "once per round" ability has been used since the last Start Phase. */
   usedOnce: boolean;
+  /** Orchard's Ripen: +1/+1 per Start Phase survived, up to RIPEN_MAX. */
+  ripe?: number;
 }
 
 export interface Treat {
@@ -66,6 +68,8 @@ export interface PlayerState {
   pantry: Treat[];
   yard: Unit[];
   compost: CardInst[];
+  /** Cards this player has played this round (actions, Pounces and Lucky plays): Citrus's Zest. */
+  playedThisRound?: number;
 }
 
 export type Target = { kind: 'unit'; uid: number } | { kind: 'hero'; player: PlayerId };
@@ -97,7 +101,9 @@ export type EffectKey =
   | 'draw1' | 'drawIfGuardian'
   | 'cancelAttack'
   // Tropical: ramp
-  | 'damage5' | 'healEach2' | 'readyTreat1' | 'readyTreat2' | 'sprout1' | 'sprout2' | 'drawIfTreats7' | 'buff2readyTreat';
+  | 'damage5' | 'healEach2' | 'readyTreat1' | 'readyTreat2' | 'sprout1' | 'sprout2' | 'drawIfTreats7' | 'buff2readyTreat'
+  // Citrus: Zest
+  | 'damage1zest2' | 'damage3zest5' | 'zestBuffSelf1' | 'zestReadySelf';
 
 /** An open Pounce window: what the defender is reacting to. */
 export type Window =

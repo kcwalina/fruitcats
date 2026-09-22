@@ -112,6 +112,30 @@ function best(s: GameState, p: PlayerId, actions: Action[], rnd: () => number): 
   return top;
 }
 
+const hasZestText = (id: string) => /\bZest:/.test(CARDS[id]?.text ?? '');
+
+/**
+ * Citrus's Zest pays off only if another card was played earlier in the round, which a one-step
+ * lookahead can't see. So if the best move is a Zest card played as the first card of the round,
+ * play a worthwhile cheaper card first when there are enough Treats left for the Zest card after it.
+ */
+function zestFirst(s: GameState, p: PlayerId, chosen: Action, candidates: Action[], passScore: number, rnd: () => number): Action | null {
+  if (chosen.t !== 'play' || (s.players[p].playedThisRound ?? 0) > 0) return null;
+  const me = s.players[p];
+  const zestCard = me.hand.find((c) => c.uid === chosen.uid);
+  if (!zestCard || !hasZestText(zestCard.id)) return null;
+  const ready = me.pantry.filter((t) => !t.exhausted).length;
+  const budget = ready - (CARDS[zestCard.id].cost ?? 0);
+  const openers = candidates.filter((a) => {
+    if (a.t !== 'play' || a.uid === chosen.uid) return false;
+    const card = me.hand.find((c) => c.uid === a.uid);
+    return !!card && !hasZestText(card.id) && (CARDS[card.id].cost ?? 0) <= budget;
+  });
+  if (!openers.length) return null;
+  const opener = best(s, p, openers, rnd);
+  return opener.score > passScore + 0.3 ? opener.action : null;
+}
+
 export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const prompt = s.prompt;
   if (!prompt) throw new Error('no decision pending');
@@ -173,7 +197,7 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const passScore = simulate(determinize(s, p, rnd), p, pass);
   if (candidates.length) {
     const top = best(s, p, candidates, rnd);
-    if (top.score > passScore + 0.3) return top.action;
+    if (top.score > passScore + 0.3) return zestFirst(s, p, top.action, candidates, passScore, rnd) ?? top.action;
   }
   // Taking the Yarn locks us into passing for the rest of the round, so only do it as the very last
   // move: the opponent has already passed, and passing now would end the round and hand them the

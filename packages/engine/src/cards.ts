@@ -18,6 +18,7 @@ export interface Keywords {
   fierce: boolean;
   lucky: boolean;
   pounce: boolean;
+  ripen: boolean;
   tough: number;
 }
 
@@ -25,7 +26,7 @@ const keywordCache = new Map<string, Keywords>();
 
 /** Keywords are the sentences of card text that consist of a keyword alone ("Guardian.", "Tough 1."). */
 export function parseKeywords(text = ''): Keywords {
-  const k: Keywords = { zoomies: false, guardian: false, sneaky: false, fierce: false, lucky: false, pounce: false, tough: 0 };
+  const k: Keywords = { zoomies: false, guardian: false, sneaky: false, fierce: false, lucky: false, pounce: false, ripen: false, tough: 0 };
   for (const raw of text.split(/[.\n]/)) {
     const s = raw.trim();
     if (s === 'Zoomies') k.zoomies = true;
@@ -34,6 +35,7 @@ export function parseKeywords(text = ''): Keywords {
     else if (s === 'Fierce') k.fierce = true;
     else if (s === 'Lucky') k.lucky = true;
     else if (s === 'Pounce') k.pounce = true;
+    else if (s === 'Ripen') k.ripen = true;
     else if (/^Tough \d+$/.test(s)) k.tough = Number(s.slice(6));
   }
   return k;
@@ -99,7 +101,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   // Tropical
   'SB1-T01': { hello: { effect: 'readyTreat1' } },
   'SB1-T02': { hello: { effect: 'sprout1' } },
-  'SB1-T05': { attackNeedsTreats: 6 },
+  'SB1-T05': { attackNeedsTreats: 7 }, // Lush
   'SB1-T06': { hello: { effect: 'healEach2' } },
   'SB1-T07': { hello: { effect: 'drawIfTreats7' } },
   'SB1-T09': { play: { effect: 'sprout2' } },
@@ -109,9 +111,13 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   'SB1-T13': { hello: { effect: 'sprout1' } },
   'SB1-T14': { hello: { effect: 'readyTreat2' } },
   'SB1-C02': { goodbye: { effect: 'damage1', target: 'anyUnit' } },
-  'SB1-C06': { hello: { effect: 'damage1', target: 'anyUnit' } },
+  'SB1-C01': { hello: { effect: 'zestBuffSelf1' } },
+  'SB1-C03': { hello: { effect: 'zestBuffSelf1' } },
+  'SB1-C04': { hello: { effect: 'zestReadySelf' } },
+  'SB1-C05': { hello: { effect: 'zestBuffSelf1' } },
+  'SB1-C06': { hello: { effect: 'damage1zest2', target: 'anyUnit' } },
   'SB1-C09': { play: { effect: 'damage2', target: 'anyUnit' } },
-  'SB1-C10': { play: { effect: 'damage4', target: 'anyUnit' } },
+  'SB1-C10': { play: { effect: 'damage3zest5', target: 'anyUnit' } },
   'SB1-C11': { play: { effect: 'readyOwn', target: 'ownUnit' } },
   'SB1-C12': { toy: { power: 2 } },
   'SB1-C13': { hello: { effect: 'readyOther', target: 'ownOtherUnit' } },

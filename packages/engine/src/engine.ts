@@ -21,6 +21,10 @@ export const DRAW_PER_ROUND = 2;
 export const YARD_LIMIT = 6;
 export const HAND_LIMIT = 10;
 export const MAX_ROUNDS = 40;
+/** Orchard's Ripen: +1/+1 at each Start Phase, up to this much. */
+export const RIPEN_MAX = 2;
+/** Tropical's Lush: having at least this many Treats. */
+export const LUSH_TREATS = 7;
 
 export const other = (p: PlayerId): PlayerId => (1 - p) as PlayerId;
 export const cardName = (id: string): string => CARDS[id]?.name.split(',')[0] ?? id;
@@ -80,7 +84,7 @@ export function createGame(options: GameOptions): GameState {
       name: options.names?.[p] ?? `Player ${p + 1}`,
       deckName: DECKS[deckKey].name,
       hero: { id: DECKS[deckKey].hero, grown: false, exhausted: false },
-      deck, hand, lives, pantry: [], yard: [], compost: [],
+      deck, hand, lives, pantry: [], yard: [], compost: [], playedThisRound: 0,
     };
   }
   s.yarn = options.firstPlayer ?? (random(s) < 0.5 ? 0 : 1);
@@ -112,13 +116,18 @@ export function findUnit(s: GameState, uid: number): { unit: Unit; owner: Player
 
 export function unitPower(u: Unit): number {
   const toy = u.toy ? behaviour(u.toy.id).toy?.power ?? 0 : 0;
-  return Math.max(0, (CARDS[u.id].power ?? 0) + toy + u.buffPower);
+  return Math.max(0, (CARDS[u.id].power ?? 0) + toy + u.buffPower + (u.ripe ?? 0));
 }
 
 export function unitHealth(u: Unit): number {
   const toy = u.toy ? behaviour(u.toy.id).toy?.health ?? 0 : 0;
-  return (CARDS[u.id].health ?? 0) + toy;
+  return (CARDS[u.id].health ?? 0) + toy + (u.ripe ?? 0);
 }
+
+/** Citrus's Zest: the player has already played another card this round (the current one counts too). */
+export const hasZest = (s: GameState, p: PlayerId): boolean => (s.players[p].playedThisRound ?? 0) >= 2;
+/** Tropical's Lush: the player has at least LUSH_TREATS Treats. */
+export const isLush = (s: GameState, p: PlayerId): boolean => s.players[p].pantry.length >= LUSH_TREATS;
 
 export const isGuardian = (u: Unit): boolean =>
   keywords(u.id).guardian || u.buffGuardian || !!(u.toy && behaviour(u.toy.id).toy?.guardian);
@@ -349,6 +358,7 @@ export function apply(s: GameState, action: Action): GameState {
     case 'play': {
       const card = takeFromHand(s, p, action.uid);
       pay(s, p, CARDS[card.id].cost ?? 0);
+      me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       s.passes = 0;
       log(s, `${me.name} plays ${cardName(card.id)}${action.target ? ` targeting ${describeTarget(s, action.target)}` : ''}.`, p);
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, closesWindow: true }, { t: 'afterAction' });
@@ -386,6 +396,7 @@ export function apply(s: GameState, action: Action): GameState {
     case 'pounce': {
       const card = takeFromHand(s, p, action.uid);
       pay(s, p, CARDS[card.id].cost ?? 0);
+      me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       log(s, `${me.name} POUNCES with ${cardName(card.id)}${action.target ? ` on ${describeTarget(s, action.target)}` : ''}!`, p);
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, closesWindow: false });
       break;
@@ -394,6 +405,7 @@ export function apply(s: GameState, action: Action): GameState {
       break;
     case 'lucky': {
       const card = takeFromHand(s, p, (prompt as { uid: number }).uid);
+      me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       log(s, `Lucky! ${me.name} plays ${cardName(card.id)} for free.`, p);
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, closesWindow: false });
       break;
@@ -484,10 +496,18 @@ function exec(s: GameState, step: Step): void {
         return;
       }
       log(s, `— Round ${s.round} —`);
-      for (const pl of s.players) {
+      for (const [q, pl] of s.players.entries()) {
         pl.hero.exhausted = false;
+        pl.playedThisRound = 0;
         for (const t of pl.pantry) t.exhausted = false;
-        for (const u of pl.yard) { u.exhausted = false; u.usedOnce = false; }
+        for (const u of pl.yard) {
+          u.exhausted = false;
+          u.usedOnce = false;
+          if (keywords(u.id).ripen && (u.ripe ?? 0) < RIPEN_MAX) {
+            u.ripe = (u.ripe ?? 0) + 1;
+            log(s, `${cardName(u.id)} ripens (+${u.ripe}/+${u.ripe}).`, q as PlayerId);
+          }
+        }
       }
       const first = s.yarn;
       const second = other(first);
@@ -572,11 +592,11 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
     }
     pl.yard.push({
       uid: card.uid, id: card.id, damage: 0, exhausted: !keywords(card.id).zoomies,
-      buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false,
+      buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false, ripe: 0,
     });
     if (b.hello) {
-      if (!b.hello.target) applyEffect(s, p, b.hello.effect, undefined);
-      else if (isLegalTarget(s, p, b.hello.target, target, card.uid)) applyEffect(s, p, b.hello.effect, target);
+      if (!b.hello.target) applyEffect(s, p, b.hello.effect, undefined, card.uid);
+      else if (isLegalTarget(s, p, b.hello.target, target, card.uid)) applyEffect(s, p, b.hello.effect, target, card.uid);
     }
     return;
   }
@@ -648,8 +668,11 @@ function heal(s: GameState, p: PlayerId, u: Unit | undefined, amount: number): v
   }
 }
 
-function applyEffect(s: GameState, p: PlayerId, effect: EffectKey, target: Target | undefined): void {
+function applyEffect(s: GameState, p: PlayerId, effect: EffectKey, target: Target | undefined, selfUid?: number): void {
   const u = target?.kind === 'unit' ? findUnit(s, target.uid)?.unit : undefined;
+  const self = selfUid !== undefined ? findUnit(s, selfUid)?.unit : undefined;
+  const zest = hasZest(s, p);
+  if (zest && effect.includes('zest')) log(s, `Zest!`, p);
   switch (effect) {
     case 'damage1': if (u) dealDamage(u, 1); break;
     case 'damage2': if (u) dealDamage(u, 2); break;
@@ -677,6 +700,10 @@ function applyEffect(s: GameState, p: PlayerId, effect: EffectKey, target: Targe
     case 'sprout2': sprout(s, p, 2); break;
     case 'drawIfTreats7': if (s.players[p].pantry.length >= 7) s.queue.unshift({ t: 'draw', p, n: 2 }); break;
     case 'buff2readyTreat': if (u) u.buffPower += 2; readyTreats_(s, p, 1); break;
+    case 'damage1zest2': if (u) dealDamage(u, zest ? 2 : 1); break;
+    case 'damage3zest5': if (u) dealDamage(u, zest ? 5 : 3); break;
+    case 'zestBuffSelf1': if (self && zest) self.buffPower += 1; break;
+    case 'zestReadySelf': if (self && zest) self.exhausted = false; break;
   }
 }
 

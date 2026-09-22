@@ -26,6 +26,27 @@ Why the rules are the way they are, what we borrowed, and what the playtest engi
 | Hall of Fame hero retirement | FAB Living Legend | Freshens the meta without invalidating collections (rotation) or runaway power creep (Yu-Gi-Oh). |
 | Open decklists, chess clock, ladder rules = tournament rules | Lessons from Hearthstone Conquest & Snap Conquest | Pro play should be the game everyone plays. |
 
+## Classes and signature mechanics (added after playtest feedback: "we need classes")
+
+The fruit families were always classes (they gate deckbuilding), but players didn't *feel* them, because
+all families shared the same keywords in different amounts. Each family now has one mechanic of its own,
+chosen to express its personality — the Hearthstone lesson that a class should have things nobody else does:
+
+| Family | Mechanic | Rule | Why it fits |
+|---|---|---|---|
+| Citrus | **Zest** | Bonus if you've already played another card this round | Fast and flashy: rewards chaining, and pairs with cheap Zoomies openers |
+| Orchard | **Ripen** | +1/+1 at each Start Phase, up to +2/+2 | Patient: fruit that grows on the tree; rewards protecting units with Guardians and heals |
+| Tropical | **Sprout N** / **Lush** | Put N deck cards into the Pantry as Treats / bonus at 7+ Treats | Ramp: grow the resource pile, then cash in |
+| Berry *(planned)* | **Bunch** | e.g. +1 Power for each other Berry Critter you control | Swarm |
+| Melon *(planned)* | **Rind X** | e.g. prevent the first X damage dealt to this unit each round | Tough control |
+
+Simulation notes (100 games per pairing, AI vs AI): the AI initially played Zest cards as the *first* card
+of a round 54% of the time, wasting the bonus; it now opens with a cheaper card when it can afford both
+(31%), raising Zest triggers from 1.6 to 2.5 per game. First-pass Ripen on Pear Hedgehog (a Guardian)
+pushed Orchard Guard to 73% overall, so Ripen moved off Guardians and Plum Mole went from 3/4 to 2/3.
+**Open issue:** Zest Rush still wins only ~25% overall (15% vs Orchard Guard) — its problem is structural
+(aggro into a wall of Guardians and heals) and needs its own balance pass.
+
 ## What we deliberately left out
 
 - **Lanes/arenas** (SWU, TES:L, Artifact): extra depth, but hurts readability and onboarding. Revisit as a set mechanic.

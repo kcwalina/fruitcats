@@ -27,6 +27,8 @@ interface Balloon {
   optional?: boolean;
   /** Prefer the balloon below its target (keeps what's above — e.g. enemy units — visible). */
   below?: boolean;
+  /** Extra things to spotlight and keep uncovered, e.g. the button the step asks you to press. */
+  also?: string[];
 }
 
 const ME: PlayerId = 0;
@@ -55,16 +57,17 @@ const STEPS: Balloon[] = [
       + 'When the <b>Grow Up</b> condition comes true, she becomes a <b>Big Cat</b>: stronger, and able to attack.',
   },
   {
-    id: 'mulligan', title: 'Your opening hand', anchor: '.midbar', when: (s) => myPrompt(s, 'mulligan'),
+    id: 'mulligan', title: 'Your opening hand', anchor: '.midbar', also: ['[data-click="btn:confirm"]'], when: (s) => myPrompt(s, 'mulligan'),
     text: 'Your cards are at the bottom. <b>Press and hold any card</b> to read it full size — let go to shrink it '
       + 'back (right-click works too). You may swap cards you don’t like, but for your first game just press <b>Keep hand</b>.',
     doneWhen: (a) => a.t === 'mulligan',
   },
   {
-    id: 'plant', title: 'Plant 2 Treats', anchor: '.hand', when: (s) => myPrompt(s, 'setupPlant'),
-    text: '<b>Treats</b> are your resources. Each card costs Treats — the number in its top-left corner. '
-      + 'Any card can be planted face-down as a Treat — a planted card is <b>not played</b>, it only pays for others — so pick the ones you want least, like expensive cards. '
-      + '<b>Click 2 cards, then press Plant.</b>',
+    id: 'plant', title: 'Plant 2 Treats', anchor: '.hand', also: ['[data-click="btn:confirm"]'], when: (s) => myPrompt(s, 'setupPlant'),
+    text: '<b>Treats</b> are your resources: a card costs the number of Treats in its top-left corner. '
+      + 'Any card can be planted face-down, and <b>every planted card is worth exactly 1 Treat</b>, however much it costs. '
+      + 'A planted card is <b>not played</b>, so plant the ones you need least right now — at the start, often a card '
+      + 'too expensive to play soon. <b>Click 2 cards, then press Plant.</b>',
     doneWhen: (a) => a.t === 'setupPlant',
   },
   {
@@ -78,7 +81,15 @@ const STEPS: Balloon[] = [
       + 'This bar always says what’s going on and what you can do.',
   },
   {
-    id: 'play', title: 'Play a card', anchor: '.hand', when: (s) => myPrompt(s, 'action'),
+    id: 'yarnBall', title: 'The Yarn Ball 🧶', anchor: '[data-click="btn:yarn"]', also: ['.yarn'], optional: true,
+    when: (s) => myPrompt(s, 'action') && !!document.querySelector('[data-click="btn:yarn"]'),
+    skipIf: (s) => s.round >= 3,
+    text: 'Whoever holds the <b>Yarn Ball</b> 🧶 acts <b>first</b> each round — you have it now (see the 🧶 by your name). '
+      + 'It passes to the other player at the end of each round, <b>unless</b> someone presses <b>Take the Yarn</b>: '
+      + 'then they go first next round, but must pass for the rest of this one. Take it when you have nothing better to do!',
+  },
+  {
+    id: 'play', title: 'Play a card', anchor: '.hand', also: ['[data-click="btn:pass"]'], when: (s) => myPrompt(s, 'action'),
     text: (s) => canPlay(s)
       ? 'Cards that <b>glow yellow</b> are playable right now. <b>Click one</b> (or drag it onto the board) to play it. '
         + 'If it needs a target, the targets light up pink — click one.'
@@ -105,9 +116,9 @@ const STEPS: Balloon[] = [
     doneWhen: (a) => a.t === 'pass' || a.t === 'takeYarn',
   },
   {
-    id: 'newRound', title: 'A new round!', anchor: '.hand', when: (s) => myPrompt(s, 'plant'),
-    text: 'Everything got ready again and you drew 2 cards. You may plant <b>one more Treat</b> — more Treats means bigger cards. '
-      + 'Click a card to plant it, or press Skip.',
+    id: 'newRound', title: 'A new round!', anchor: '.hand', also: ['[data-click="btn:skip"]'], when: (s) => myPrompt(s, 'plant'),
+    text: 'Everything got ready again and you drew 2 cards. You may plant <b>one more card as 1 Treat</b> — more Treats let you '
+      + 'play bigger cards, but every card you plant is one you can’t play. Plant your least useful card, or press Skip.',
     doneWhen: (a) => a.t === 'plant' || a.t === 'skipPlant',
   },
   {
@@ -160,7 +171,7 @@ const TIPS: Balloon[] = [
   },
   {
     id: 'foeYarn', title: 'The Yarn Ball 🧶', anchor: '.player.foe .yarn', when: (s) => s.yarnTaken === FOE,
-    text: 'Your opponent <b>took the Yarn Ball</b>: they will act first next round, but must pass for the rest of this one.',
+    text: 'Your opponent <b>took the Yarn Ball</b> 🧶: they will act first next round, but must pass for the rest of this one.',
   },
   {
     id: 'grown', title: 'Grown up!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,
@@ -286,7 +297,7 @@ export function renderTutorial() {
   const progress = kind === 'step' ? `<span class="tut-progress">${STEPS.indexOf(b) + 1}/${STEPS.length}</span>` : '<span class="tut-progress">Tip</span>';
 
   layer.innerHTML = `
-    ${target ? '<div class="tut-spot"></div>' : '<div class="tut-dim"></div>'}
+    ${target ? '<svg class="tut-shade" aria-hidden="true"><path fill-rule="evenodd"></path></svg><div class="tut-rings"></div>' : '<div class="tut-dim"></div>'}
     <div class="tut-balloon ${target ? '' : 'centered'}" role="dialog" aria-label="${b.title}">
       <div class="tut-head"><b>${b.title}</b>${progress}</div>
       <div class="tut-text">${text}</div>
@@ -300,17 +311,43 @@ export function renderTutorial() {
   const balloon = layer.querySelector<HTMLElement>('.tut-balloon')!;
   if (!target) return;
   const r = target.getBoundingClientRect();
-  const spot = layer.querySelector<HTMLElement>('.tut-spot')!;
-  Object.assign(spot.style, { left: `${r.left - 6}px`, top: `${r.top - 6}px`, width: `${r.width + 12}px`, height: `${r.height + 12}px` });
 
-  // Put the balloon above the target if it fits, otherwise below; keep it on screen.
-  const bw = balloon.offsetWidth, bh = balloon.offsetHeight, gap = 16;
-  const fitsBelow = r.bottom + gap + bh < window.innerHeight - 8;
-  const above = b.below && fitsBelow ? false : r.top - bh - gap > 8;
-  const top = above ? r.top - bh - gap : Math.min(window.innerHeight - bh - 8, r.bottom + gap);
-  const left = Math.max(8, Math.min(window.innerWidth - bw - 8, r.left + r.width / 2 - bw / 2));
+  // Spotlight the target and any button the step asks you to press (e.g. "Plant"), with one shade
+  // that has a hole per highlight. Clicks go straight through the shade to the game.
+  const extras = (b.also ?? []).flatMap((sel) => [...document.querySelectorAll<HTMLElement>(sel)]);
+  const holes = [r, ...extras.map((e) => e.getBoundingClientRect())].filter((x) => x.width && x.height);
+  const W = window.innerWidth, H = window.innerHeight, pad = 6;
+  const rounded = (x: DOMRect) => {
+    const l = x.left - pad, t = x.top - pad, w = x.width + pad * 2, h = x.height + pad * 2, k = 12;
+    return `M${l + k},${t}h${w - 2 * k}a${k},${k} 0 0 1 ${k},${k}v${h - 2 * k}a${k},${k} 0 0 1 -${k},${k}h-${w - 2 * k}a${k},${k} 0 0 1 -${k},-${k}v-${h - 2 * k}a${k},${k} 0 0 1 ${k},-${k}z`;
+  };
+  layer.querySelector('.tut-shade path')!.setAttribute('d', `M0,0H${W}V${H}H0Z ${holes.map(rounded).join(' ')}`);
+  layer.querySelector('.tut-rings')!.innerHTML = holes
+    .map((x) => `<i style="left:${x.left - pad}px;top:${x.top - pad}px;width:${x.width + pad * 2}px;height:${x.height + pad * 2}px"></i>`).join('');
+
+  // Place the balloon where it covers nothing you need: not the highlights, and not the prompt-bar
+  // buttons (a phone playtester couldn't press "Plant" because the balloon sat on top of it).
+  const keepClear = [...holes, ...[...document.querySelectorAll<HTMLElement>('.midbar button, .hero-actions button')].map((e) => e.getBoundingClientRect())];
+  const bw = balloon.offsetWidth, bh = balloon.offsetHeight, gap = 16, margin = 8;
+  const left = Math.max(margin, Math.min(W - bw - margin, r.left + r.width / 2 - bw / 2));
+  const candidates: { top: number; arrow: 'above' | 'below' | 'none' }[] = [
+    ...(b.below ? [] : [{ top: r.top - bh - gap, arrow: 'above' as const }]),
+    { top: r.bottom + gap, arrow: 'below' },
+    ...(b.below ? [{ top: r.top - bh - gap, arrow: 'above' as const }] : []),
+    { top: margin, arrow: 'none' },
+    { top: H - bh - margin, arrow: 'none' },
+  ];
+  const overlap = (top: number) => keepClear.reduce((sum, k) => {
+    const w = Math.min(left + bw, k.right) - Math.max(left, k.left);
+    const h = Math.min(top + bh, k.bottom) - Math.max(top, k.top);
+    return sum + (w > 0 && h > 0 ? w * h : 0);
+  }, 0);
+  const onScreen = candidates.filter((c) => c.top >= margin && c.top + bh <= H - margin);
+  const pick = onScreen.find((c) => overlap(c.top) === 0)
+    ?? [...(onScreen.length ? onScreen : candidates)].sort((a, z) => overlap(a.top) - overlap(z.top))[0];
+  const top = Math.max(margin, Math.min(H - bh - margin, pick.top));
   Object.assign(balloon.style, { left: `${left}px`, top: `${top}px` });
-  balloon.classList.add(above ? 'above' : 'below');
+  balloon.classList.add(pick.arrow === 'none' ? 'floating' : pick.arrow);
   const arrow = layer.querySelector<HTMLElement>('.tut-arrow')!;
   arrow.style.left = `${Math.max(16, Math.min(bw - 16, r.left + r.width / 2 - left))}px`;
 }

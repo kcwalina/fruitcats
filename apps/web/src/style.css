@@ -366,3 +366,21 @@ body.dragging .hand-card:hover { transform: none; }
 .tut-balloon.above .tut-arrow { bottom: -11px; }
 .tut-balloon.below .tut-arrow { top: -11px; border: 3px solid var(--glow); border-bottom-color: transparent; border-right-color: transparent; }
 .tut-balloon.centered .tut-arrow { display: none; }
+
+/* Tutorial shade: one dimming layer with a hole per highlight (clicks pass straight through). */
+.tut-shade { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.tut-shade path { fill: rgba(45, 25, 10, 0.45); }
+.tut-rings i {
+  position: fixed; border-radius: 14px; pointer-events: none; box-shadow: 0 0 0 4px var(--glow);
+  animation: tut-ring 1.4s ease-in-out infinite;
+}
+@keyframes tut-ring { 50% { box-shadow: 0 0 0 7px var(--glow); } }
+.tut-balloon.floating .tut-arrow { display: none; }
+@media (max-width: 640px) {
+  .tut-balloon { font-size: 13px; padding: 10px 12px 8px; }
+  .tut-head b { font-size: 15px; }
+}
+/* A centred balloon keeps its centring while it pops in (the generic pop animation would override
+   the translate and briefly show it off to the side). */
+.tut-balloon.centered { animation-name: pop-centered; }
+@keyframes pop-centered { from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } to { transform: translate(-50%, -50%); } }

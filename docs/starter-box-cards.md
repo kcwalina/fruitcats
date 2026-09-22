@@ -106,7 +106,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 **Cost curve (incl. Garden):** 1-cost: 17 · 2-cost: 14 · 3-cost: 12 · 4-cost: 4 · 5-cost: 3 · Lucky cards: 8
 
-**How to play it:** Plant your expensive cards early — you rarely need more than 5 Treats. Spend the first rounds filling your Yard, then go for the Hero Cat every round. Save *Sour Spray* and *Catnip* for the Pounce window when a Guardian blocks your way. Once the opponent drops to 5 Lives, Sunny Grows Up and her Sneaky boost lets your biggest unit slip past the wall for the final hits. Remember every hit hands your opponent a card — don't dawdle.
+**How to play it:** Every planted card is worth 1 Treat, whatever it costs — and you rarely need more than 5 Treats, so plant cards you won't want soon (often your 5-costs early on) and stop planting once you have enough. Spend the first rounds filling your Yard, then go for the Hero Cat every round. Save *Sour Spray* and *Catnip* for the Pounce window when a Guardian blocks your way. Once the opponent drops to 5 Lives, Sunny Grows Up and her Sneaky boost lets your biggest unit slip past the wall for the final hits. Remember every hit hands your opponent a card — don't dawdle.
 
 ---
 

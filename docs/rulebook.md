@@ -17,7 +17,7 @@ This rulebook has three parts:
 ## 1. The Game in 60 Seconds
 
 - You each have a **Hero Cat** that is always in play, a **50-card deck**, and **9 Lives**.
-- Each round, you may **plant** any one card from your hand face-down as a **Treat**. Treats pay for your other cards. *Any card can be a Treat, so you never get stuck without resources.*
+- Each round, you may **plant** any one card from your hand face-down as a **Treat**. Treats pay for your other cards. *Any card can be a Treat, so you never get stuck without resources* — and every Treat is worth exactly 1, whatever the planted card costs.
 - Players **take turns doing one thing at a time** — play a card, attack, use an ability — back and forth until both pass. You are never waiting long.
 - Attack the rival Hero Cat to knock out a Life. **A lost Life goes into its owner's hand**, so the player who is behind gets more options. Some cards are **Lucky** and play for free when they turn up as a lost Life.
 - Your Hero Cat starts as a **Kitten** and **Grows Up** into a mighty **Big Cat** during the game.

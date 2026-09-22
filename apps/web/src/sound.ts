@@ -1,4 +1,5 @@
 // Sound effects, synthesized with the Web Audio API: no audio files, nothing to license or download.
+// The palette is soft and animal-like (kitten mews, a cat hiss, bubble pops, music-box plucks).
 //
 // Sounds follow the game log, so every event makes a sound whoever caused it (you or the AI):
 // `playLogSounds(game)` is called after each render and plays the entries it hasn't heard yet.
@@ -11,13 +12,15 @@ type SoundName =
   | 'unit' | 'trick' | 'toy' | 'pounce' | 'ability' | 'swipe' | 'hitGood' | 'hitBad' | 'bonk' | 'poof'
   | 'fail' | 'zest' | 'ripen' | 'lucky' | 'growUp' | 'plant' | 'yarn' | 'round' | 'win' | 'lose' | 'tick';
 
-const STORAGE_KEY = 'fruitcats-sound';
+const STORAGE_KEY = 'fruitcats-sound-v2'; // v2: new default (off); earlier choices don't carry over
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let enabled = readSetting();
 
 function readSetting(): boolean {
-  try { return localStorage.getItem(STORAGE_KEY) !== 'off'; } catch { return true; }
+  // Off unless the player turned it on: the current synthesized palette is a placeholder until
+  // recorded sounds replace it.
+  try { return localStorage.getItem(STORAGE_KEY) === 'on'; } catch { return false; }
 }
 
 export const soundEnabled = () => enabled;
@@ -34,9 +37,14 @@ function audio(): AudioContext | null {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return null;
     ctx = new Ctor();
+    // A gentle low-pass on everything keeps the palette soft and round rather than bright and 8-bit.
+    const soften = ctx.createBiquadFilter();
+    soften.type = 'lowpass';
+    soften.frequency.value = 5200;
+    soften.Q.value = 0.5;
     master = ctx.createGain();
-    master.gain.value = 0.5;
-    master.connect(ctx.destination);
+    master.gain.value = 0.55;
+    master.connect(soften).connect(ctx.destination);
   }
   if (ctx.state === 'suspended') void ctx.resume();
   return ctx;
@@ -98,33 +106,93 @@ function noise({ dur, gain = 0.25, at = 0, filter = 1200, q = 1, sweepTo }: { du
   src.stop(t + dur + 0.02);
 }
 
-const notes = (freqs: number[], step: number, opts: Partial<ToneOptions> = {}, at = 0) =>
-  freqs.forEach((freq, i) => tone({ freq, dur: step * 1.6, type: 'triangle', gain: 0.22, ...opts, at: at + i * step }));
+// ── Cute sound palette ───────────────────────────────────────────────────────────────────────────
+//
+// Built from soft, "organic" pieces rather than 8-bit waves: a kalimba/music-box pluck, a kitten
+// "mew" (a voice shaped by two moving formant filters), a cat hiss, bubble pops, a squeaky toy, paw
+// thumps and a springy yarn-ball boing.
 
-// ── The sounds ───────────────────────────────────────────────────────────────────────────────────
+/** A soft kalimba / music-box pluck: a sine with a quickly fading bell-like overtone. */
+function pluck(freq: number, at = 0, gain = 0.2, dur = 0.5) {
+  tone({ freq, dur, type: 'sine', gain, at, attack: 0.004 });
+  tone({ freq: freq * 4, dur: dur * 0.25, type: 'sine', gain: gain * 0.25, at, attack: 0.002 });
+  tone({ freq: freq * 2, dur: dur * 0.5, type: 'sine', gain: gain * 0.2, at, attack: 0.003 });
+}
+
+const plucks = (freqs: number[], step: number, at = 0, gain = 0.18) =>
+  freqs.forEach((f, i) => pluck(f, at + i * step, gain));
+
+/**
+ * A kitten "mew": a buzzy voice source through two band-pass "formants" that slide from an "ee"
+ * shape to an "ow" shape while the pitch rises and falls, with a little vibrato.
+ */
+function mew({ at = 0, from = 780, peak = 1100, to = 640, dur = 0.34, gain = 0.28 } = {}) {
+  const a = audio();
+  if (!a || !master) return;
+  const t = a.currentTime + at;
+  const voice = a.createOscillator();
+  voice.type = 'sawtooth';
+  voice.frequency.setValueAtTime(from, t);
+  voice.frequency.linearRampToValueAtTime(peak, t + dur * 0.35);
+  voice.frequency.linearRampToValueAtTime(to, t + dur);
+  const vibrato = a.createOscillator();
+  const depth = a.createGain();
+  vibrato.frequency.value = 8;
+  depth.gain.value = 22;
+  vibrato.connect(depth).connect(voice.frequency);
+
+  const env = a.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(gain, t + 0.04);
+  env.gain.setValueAtTime(gain, t + dur * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  for (const [f1, f2, q, g] of [[1900, 1150, 6, 1], [520, 820, 4, 0.8]] as const) {
+    const formant = a.createBiquadFilter();
+    formant.type = 'bandpass';
+    formant.Q.value = q;
+    formant.frequency.setValueAtTime(f1, t);
+    formant.frequency.linearRampToValueAtTime(f2, t + dur);
+    const level = a.createGain();
+    level.gain.value = g;
+    voice.connect(formant).connect(level).connect(env);
+  }
+  env.connect(master);
+  voice.start(t); vibrato.start(t);
+  voice.stop(t + dur + 0.05); vibrato.stop(t + dur + 0.05);
+}
+
+/** A little bubble pop: a sine that jumps up in pitch very quickly. */
+const bubble = (at = 0, from = 380, to = 1150, gain = 0.26) => tone({ freq: from, to, dur: 0.09, type: 'sine', gain, at, attack: 0.002 });
+
+/** A soft paw thump. */
+const thump = (at = 0, gain = 0.3) => { tone({ freq: 170, to: 90, dur: 0.12, type: 'sine', gain, at }); noise({ dur: 0.04, filter: 700, gain: gain * 0.25, at }); };
 
 const SOUNDS: Record<SoundName, (at: number) => void> = {
-  unit: (at) => { tone({ freq: 520, to: 880, dur: 0.12, type: 'triangle', gain: 0.28, at }); tone({ freq: 1320, dur: 0.08, gain: 0.08, at: at + 0.05 }); },
-  trick: (at) => { noise({ dur: 0.28, filter: 600, sweepTo: 3200, q: 2, gain: 0.22, at }); tone({ freq: 700, to: 1400, dur: 0.2, gain: 0.08, at }); },
-  toy: (at) => { tone({ freq: 1560, dur: 0.12, type: 'square', gain: 0.06, at }); tone({ freq: 2340, dur: 0.18, gain: 0.08, at: at + 0.04 }); },
-  pounce: (at) => { noise({ dur: 0.16, filter: 2500, sweepTo: 800, q: 3, gain: 0.3, at }); tone({ freq: 900, to: 420, dur: 0.14, type: 'sawtooth', gain: 0.07, at }); },
-  ability: (at) => notes([880, 1175, 1568, 2093], 0.055, { type: 'sine', gain: 0.14 }, at),
-  swipe: (at) => noise({ dur: 0.18, filter: 900, sweepTo: 2600, q: 1.5, gain: 0.2, at }),
-  hitGood: (at) => { noise({ dur: 0.12, filter: 300, q: 0.7, gain: 0.45, at }); tone({ freq: 140, to: 60, dur: 0.18, gain: 0.35, at }); notes([784, 1047, 1319], 0.07, { gain: 0.18 }, at + 0.08); },
-  hitBad: (at) => { noise({ dur: 0.14, filter: 250, q: 0.7, gain: 0.45, at }); tone({ freq: 180, to: 70, dur: 0.3, type: 'triangle', gain: 0.35, at }); tone({ freq: 330, to: 220, dur: 0.25, type: 'sine', gain: 0.12, at: at + 0.1 }); },
-  bonk: (at) => { tone({ freq: 260, to: 120, dur: 0.12, type: 'square', gain: 0.1, at }); noise({ dur: 0.07, filter: 500, gain: 0.25, at }); },
-  poof: (at) => { noise({ dur: 0.35, filter: 1800, sweepTo: 300, q: 0.8, gain: 0.25, at }); tone({ freq: 600, to: 180, dur: 0.3, gain: 0.08, at }); },
-  fail: (at) => { tone({ freq: 440, to: 330, dur: 0.16, type: 'triangle', gain: 0.2, at }); tone({ freq: 330, to: 150, dur: 0.32, type: 'triangle', gain: 0.2, at: at + 0.16 }); },
-  zest: (at) => { tone({ freq: 1200, to: 2400, dur: 0.12, type: 'square', gain: 0.06, at }); notes([1568, 2093], 0.05, { gain: 0.12 }, at + 0.06); },
-  ripen: (at) => notes([392, 523, 659], 0.07, { type: 'sine', gain: 0.16 }, at),
-  lucky: (at) => notes([1319, 1568, 1976, 2637, 3136], 0.045, { type: 'sine', gain: 0.12 }, at),
-  growUp: (at) => { notes([523, 659, 784, 1047], 0.1, { gain: 0.22 }, at); tone({ freq: 1047, dur: 0.5, type: 'triangle', gain: 0.18, at: at + 0.4 }); tone({ freq: 1319, dur: 0.5, gain: 0.1, at: at + 0.4 }); },
-  plant: (at) => { tone({ freq: 220, to: 140, dur: 0.1, type: 'sine', gain: 0.3, at }); noise({ dur: 0.05, filter: 1200, gain: 0.08, at }); },
-  yarn: (at) => { tone({ freq: 400, to: 700, dur: 0.1, gain: 0.18, at }); tone({ freq: 500, to: 850, dur: 0.1, gain: 0.14, at: at + 0.12 }); },
-  round: (at) => { tone({ freq: 988, dur: 0.6, gain: 0.12, at }); tone({ freq: 1976, dur: 0.4, gain: 0.04, at }); },
-  win: (at) => notes([523, 659, 784, 1047, 1319, 1568], 0.09, { gain: 0.22 }, at),
-  lose: (at) => notes([523, 466, 415, 349], 0.16, { type: 'triangle', gain: 0.2 }, at),
-  tick: (at) => tone({ freq: 1400, dur: 0.04, type: 'square', gain: 0.04, at }),
+  unit: (at) => { bubble(at); pluck(1047, at + 0.06, 0.12, 0.3); },                                  // a new friend pops in
+  trick: (at) => { noise({ dur: 0.3, filter: 900, sweepTo: 4000, q: 1.2, gain: 0.08, at }); plucks([1319, 1760, 2349], 0.05, at + 0.04, 0.1); }, // sparkle
+  toy: (at) => { tone({ freq: 900, to: 1500, dur: 0.08, gain: 0.18, at }); tone({ freq: 1500, to: 1000, dur: 0.1, gain: 0.16, at: at + 0.08 }); }, // squeaky toy
+  pounce: (at) => noise({ dur: 0.32, filter: 4200, q: 0.9, gain: 0.22, at }),                          // cat hiss!
+  ability: (at) => plucks([784, 988, 1175, 1568], 0.07, at, 0.15),                                    // music-box
+  swipe: (at) => noise({ dur: 0.14, filter: 1400, sweepTo: 2600, q: 1.2, gain: 0.1, at }),            // soft paw swish
+  hitGood: (at) => { thump(at, 0.32); mew({ at: at + 0.08, from: 820, peak: 1250, to: 900 }); },       // happy mew
+  hitBad: (at) => { thump(at, 0.34); mew({ at: at + 0.08, from: 700, peak: 760, to: 430, dur: 0.45 }); }, // sad mew
+  bonk: (at) => { thump(at, 0.24); bubble(at + 0.02, 600, 300, 0.1); },                               // soft bonk
+  poof: (at) => { noise({ dur: 0.35, filter: 1600, sweepTo: 350, q: 0.7, gain: 0.12, at }); bubble(at + 0.05, 700, 1400, 0.14); }, // poof + pop
+  fail: (at) => {                                                                                       // springy "boing" that droops
+    const a = audio(); if (!a || !master) return;
+    tone({ freq: 520, to: 260, dur: 0.45, type: 'sine', gain: 0.24, at });
+    tone({ freq: 530, to: 250, dur: 0.45, type: 'sine', gain: 0.12, at: at + 0.01 });
+  },
+  zest: (at) => { noise({ dur: 0.12, filter: 5000, q: 0.8, gain: 0.06, at }); plucks([1568, 2093], 0.06, at, 0.14); }, // fizz + ting
+  ripen: (at) => plucks([523, 659, 784], 0.09, at, 0.14),                                             // growing
+  lucky: (at) => plucks([1568, 1976, 2349, 3136], 0.06, at, 0.1),                                      // twinkle
+  growUp: (at) => { plucks([523, 659, 784, 1047], 0.1, at, 0.16); mew({ at: at + 0.42, from: 700, peak: 1150, to: 820, dur: 0.5 }); }, // fanfare + big meow
+  plant: (at) => thump(at, 0.26),                                                                      // pat it into the soil
+  yarn: (at) => { bubble(at, 300, 700, 0.18); bubble(at + 0.16, 300, 650, 0.13); bubble(at + 0.27, 300, 600, 0.09); }, // bouncing ball
+  round: (at) => plucks([1319, 988], 0.12, at, 0.1),                                                  // gentle chime
+  win: (at) => { plucks([523, 659, 784, 1047, 1319], 0.09, at, 0.16); mew({ at: at + 0.5, from: 800, peak: 1300, to: 1000, dur: 0.45 }); },
+  lose: (at) => { plucks([659, 587, 523, 440], 0.16, at, 0.14); mew({ at: at + 0.66, from: 650, peak: 700, to: 420, dur: 0.55, gain: 0.22 }); },
+  tick: (at) => tone({ freq: 1760, dur: 0.035, type: 'sine', gain: 0.07, at }),                       // tiny tap
 };
 
 export function play(name: SoundName, at = 0) {

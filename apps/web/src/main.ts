@@ -225,6 +225,7 @@ function onClick(key: string) {
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
     if (raw === 'sound') toggleSound();
+    if (raw.startsWith('snd-')) { playSound(raw.slice(4) as Parameters<typeof playSound>[0]); return; }
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'menu'; }
     if (raw === 'again') { startGame(); return; }
     render();
@@ -496,7 +497,7 @@ function renderHand(s: GameState, playable: Set<number>): string {
         'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
-      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${cardUrl(c.id)}"><img src="${cardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" loading="lazy"></button>`;
+      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${cardUrl(c.id)}"><img src="${cardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
     }).join('')}
   </section>`;
 }
@@ -518,7 +519,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;
         break;
       case 'setupPlant':
-        text = `Pick <b>${prompt.count}</b> cards to plant face-down as <b>Treats</b>. Treats pay for your other cards — planted cards are <b>not played</b>, so choose ones you need least (expensive cards are a good choice).`;
+        text = `Pick <b>${prompt.count}</b> cards to plant face-down as <b>Treats</b>. Each planted card becomes <b>1 Treat</b>, whatever it costs, and is <b>not played</b> — so plant cards you need least right now.`;
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Plant ${picks.size}/${prompt.count}</button>`;
         break;
       case 'discard':
@@ -526,7 +527,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Discard ${picks.size}/${prompt.count}</button>`;
         break;
       case 'plant':
-        text = `<b>New round!</b> You may plant one card face-down as an extra <b>Treat</b> (it pays for cards; it won't be played). Click a card, or Skip.`;
+        text = `<b>New round!</b> You may plant one card face-down as <b>1 more Treat</b> (it won't be played). Click a card, or Skip.`;
         buttons = '<button data-click="btn:skip">Skip</button>';
         break;
       case 'action': {
@@ -603,6 +604,11 @@ function renderRules(): string {
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
+      <p><b>Try the sounds:</b></p>
+      <div class="sound-board">${([['unit', 'Unit'], ['trick', 'Trick'], ['toy', 'Toy'], ['pounce', 'Pounce'], ['ability', 'Ability'], ['swipe', 'Attack'],
+        ['hitGood', 'You hit'], ['hitBad', 'You’re hit'], ['fail', 'Attack fails'], ['bonk', 'Trade'], ['poof', 'Defeated'], ['zest', 'Zest'],
+        ['ripen', 'Ripen'], ['lucky', 'Lucky'], ['growUp', 'Grow Up'], ['plant', 'Plant'], ['yarn', 'Yarn'], ['round', 'Round'], ['win', 'Win'], ['lose', 'Lose']] as const)
+        .map(([id, label]) => `<button data-click="ui:snd-${id}">${label}</button>`).join('')}</div>
       <p><a href="https://github.com/kcwalina/fruitcats/blob/main/docs/rulebook.md" target="_blank" rel="noopener">Full rulebook</a></p>
       <button class="primary" data-click="ui:rules">Got it</button>
     </div>

@@ -42,8 +42,11 @@ function renderDoc(doc: string): { toc: string; body: string } {
       heading({ tokens, depth }) {
         const html = this.parser.parseInline(tokens);
         const id = slug(html);
-        if (depth === 2) toc.push(`<li><a href="#${id}">${html}</a></li>`);
-        return `<h${depth} id="${id}"><a class="anchor" href="#${id}">${html}</a></h${depth}>\n`;
+        if (depth === 2 || depth === 3) toc.push(`<li${depth === 3 ? ' class="sub"' : ''}><a href="#${id}">${html}</a></li>`);
+        // The "#" is a real link you can tap on a phone; docs.ts also copies it to the clipboard.
+        return `<h${depth} id="${id}">${html}`
+          + `<a class="anchor" href="#${id}" aria-label="Copy a link to this section" title="Copy a link to this section">#</a>`
+          + `</h${depth}>\n`;
       },
       link({ href, tokens }) {
         const text = this.parser.parseInline(tokens);

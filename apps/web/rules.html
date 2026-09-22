@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./src/docs.css" />
+    <script type="module" src="./src/docs.ts"></script>
   </head>
   <body>
     <header class="topbar">
@@ -32,14 +33,6 @@
           <!-- doc:toc -->
         </details>
       </nav>
-      <script>
-        // The contents sit open beside the text on wide screens and fold away above them on phones.
-        const toc = document.getElementById('toc');
-        const wide = matchMedia('(min-width: 900px)');
-        toc.open = wide.matches;
-        wide.addEventListener('change', () => (toc.open = wide.matches));
-        toc.addEventListener('click', (e) => { if (!wide.matches && e.target.closest('a')) toc.open = false; });
-      </script>
       <main class="doc">
         <!-- doc:body -->
       </main>

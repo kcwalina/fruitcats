@@ -31,6 +31,42 @@ This rulebook has three parts:
 - The **Yarn Ball** token (any small object works). Whoever holds it acts first each round.
 - **Damage counters** (dice or beads work well).
 
+Or play the digital version against the AI at **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** — no
+download, no account, and it keeps score for you.
+
+### 2.1 Putting the game on your home screen
+
+The game is a web page, so you can pin it next to your other apps and it will open full screen, without the
+browser's address bar.
+
+**iPhone and iPad**
+
+1. Open **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** in **Safari** (this only works in Safari).
+2. Tap the **Share** button — the square with an arrow pointing up. It is at the bottom of the screen on an
+   iPhone, and at the top right on an iPad.
+3. Scroll down the list and tap **Add to Home Screen**.
+4. The name *Fruitcats* and Mochi's picture appear. Tap **Add** (top right).
+
+Mochi's face is now on your home screen. Tap it and the game fills the screen, with no browser bars.
+
+**Android**
+
+Open the site in **Chrome**, tap the **⋮** menu, then **Add to Home screen** (or **Install app**), then
+**Install**.
+
+**Windows and Mac**
+
+In Chrome or Edge, open the site and click the **install** icon at the right-hand end of the address bar — a
+small screen with an arrow — then **Install**.
+
+**Good to know**
+
+- It is the website, so you always get the newest version: no updates to install. Reopen the game to pick up
+  changes.
+- It needs an internet connection; there is no offline mode yet.
+- Tap the **speaker** in the top-right corner of the menu to turn the sound on or off.
+- Already pinned an older icon? Delete it from the home screen and add the game again to get Mochi's picture.
+
 ---
 
 ## 3. The Cards

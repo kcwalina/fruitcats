@@ -552,6 +552,7 @@ function renderRules(): string {
       <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero Cat’s ability, <b>Take the Yarn</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
       <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero Cat takes a Life — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Zoomies</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
+      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>

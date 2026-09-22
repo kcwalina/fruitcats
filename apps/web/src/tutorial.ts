@@ -56,8 +56,8 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'mulligan', title: 'Your opening hand', anchor: '.midbar', when: (s) => myPrompt(s, 'mulligan'),
-    text: 'Your cards are at the bottom. Hover any card to see it big. You may swap cards you don’t like, '
-      + 'but for your first game just press <b>Keep hand</b>.',
+    text: 'Your cards are at the bottom. <b>Press and hold any card</b> to read it full size — let go to shrink it '
+      + 'back (right-click works too). You may swap cards you don’t like, but for your first game just press <b>Keep hand</b>.',
     doneWhen: (a) => a.t === 'mulligan',
   },
   {

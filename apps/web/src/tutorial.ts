@@ -9,6 +9,8 @@
 
 import { isGuardian, legalActions, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 
+const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/yarn.webp" alt="Yarn Ball">`;
+
 type Text = string | ((s: GameState) => string);
 
 interface Balloon {
@@ -81,10 +83,10 @@ const STEPS: Balloon[] = [
       + 'This bar always says what’s going on and what you can do.',
   },
   {
-    id: 'yarnBall', title: 'The Yarn Ball 🧶', anchor: '[data-click="btn:yarn"]', also: ['.yarn'], optional: true,
+    id: 'yarnBall', title: 'The Yarn Ball', anchor: '[data-click="btn:yarn"]', also: ['.yarn'], optional: true,
     when: (s) => myPrompt(s, 'action') && !!document.querySelector('[data-click="btn:yarn"]'),
     skipIf: (s) => s.round >= 3,
-    text: 'Whoever holds the <b>Yarn Ball</b> 🧶 acts <b>first</b> each round — you have it now (see the 🧶 by your name). '
+    text: `Whoever holds the <b>Yarn Ball</b> ${YARN_ICON} acts <b>first</b> each round — you have it now (see the ball by your name). `
       + 'It passes to the other player at the end of each round, <b>unless</b> someone presses <b>Take the Yarn</b>: '
       + 'then they go first next round, but must pass for the rest of this one. Take it when you have nothing better to do!',
   },
@@ -170,8 +172,8 @@ const TIPS: Balloon[] = [
       + 'unless they are <b>Sneaky</b>.',
   },
   {
-    id: 'foeYarn', title: 'The Yarn Ball 🧶', anchor: '.player.foe .yarn', when: (s) => s.yarnTaken === FOE,
-    text: 'Your opponent <b>took the Yarn Ball</b> 🧶: they will act first next round, but must pass for the rest of this one.',
+    id: 'foeYarn', title: 'The Yarn Ball', anchor: '.player.foe .yarn', when: (s) => s.yarnTaken === FOE,
+    text: `Your opponent <b>took the Yarn Ball</b> ${YARN_ICON}: they will act first next round, but must pass for the rest of this one.`,
   },
   {
     id: 'grown', title: 'Grown up!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,

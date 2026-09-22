@@ -367,3 +367,13 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .hand-card { aspect-ratio: 0.714; background: var(--img-cardback) center / cover, #f08c2b; }
 .hand-card img { height: 100%; object-fit: cover; }
 
+
+/* The painted Yarn Ball */
+.yarn-ico { height: 1.4em; width: auto; vertical-align: -0.35em; filter: drop-shadow(0 1px 1px rgba(80, 40, 10, 0.35)); }
+.yarn { display: inline-flex; align-items: center; gap: 2px; padding: 0; border: none; background: none; box-shadow: none;
+  font-size: 12px; font-weight: 800; color: #b4402a; }
+.yarn .yarn-ico { height: 34px; margin: -8px 0; animation: yarn-wobble 3s ease-in-out infinite; }
+[data-click="btn:yarn"] .yarn-ico { height: 22px; margin: -4px 0 -4px 2px; }
+.tut-balloon .yarn-ico { height: 22px; }
+@keyframes yarn-wobble { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { .yarn .yarn-ico { animation: none; } }

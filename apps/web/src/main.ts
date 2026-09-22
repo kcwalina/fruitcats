@@ -13,6 +13,8 @@ import {
 const BASE = import.meta.env.BASE_URL;
 const artUrl = (key: string) => `${BASE}sb1/${key}.webp`;
 const cardUrl = (key: string) => `${BASE}cards/sb1/${key}.webp`;
+/** The painted Yarn Ball (the 🧶 emoji looks like a small blue dot on some devices). */
+const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Ball">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 for (const [name, file] of [['--img-menu-bg', 'menu-bg'], ['--img-playmat', 'playmat'], ['--img-cardback', 'cardback']])
@@ -404,8 +406,8 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   const pl = s.players[p];
   const side = heroSide(s, p);
   const key = `hero:${p}`;
-  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Yarn Ball: acts first">🧶${s.yarnTaken === p ? ' kept' : ''}</span>` : '';
-  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">🧶 next</span>` : '';
+  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Yarn Ball: acts first">${YARN_ICON}${s.yarnTaken === p ? ' kept' : ''}</span>` : '';
+  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">${YARN_ICON} next</span>` : '';
   const canAbility = legal.some((a) => a.t === 'ability');
   const canAttack = legal.some((a) => a.t === 'attack' && a.attacker.kind === 'hero');
   const lives = Array.from({ length: 9 }, (_, i) => `<i class="${i < pl.lives.length ? 'on' : ''}"></i>`).join('');
@@ -525,7 +527,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         if (legal.some((a) => a.t === 'play')) hints.push('play a glowing card');
         if (legal.some((a) => a.t === 'attack')) hints.push('attack with a glowing unit');
         text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : 'Nothing left to do — pass.'}`;
-        buttons = `${legal.some((a) => a.t === 'takeYarn') ? '<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn 🧶</button>' : ''}
+        buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn ${YARN_ICON}</button>` : ''}
           <button class="primary" data-click="btn:pass">Pass</button>`;
         break;
       }

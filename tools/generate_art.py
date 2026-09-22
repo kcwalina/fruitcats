@@ -167,7 +167,10 @@ def draw_ui(items: dict, args) -> int:
     token = access_token()
 
     def draw(key: str, item: dict) -> bool:
-        body = json.dumps({"prompt": item["prompt"], "n": 1, "size": item["size"], "quality": "high"}).encode()
+        request = {"prompt": item["prompt"], "n": 1, "size": item["size"], "quality": "high"}
+        if item.get("transparent"):  # icons: keep the alpha channel
+            request.update(background="transparent", output_format="png")
+        body = json.dumps(request).encode()
         url = f"{endpoint}/openai/deployments/{deployment}/images/generations?api-version={API_VERSION}"
         try:
             data = post(url, token, body, "application/json")["data"][0]["b64_json"]
@@ -175,7 +178,10 @@ def draw_ui(items: dict, args) -> int:
             print(f"  {key}: FAILED {error}", flush=True)
             return False
         path = out_dir / f"{key}.webp"
-        Image.open(io.BytesIO(base64.b64decode(data))).convert("RGB").save(path, quality=88, method=6)
+        image = Image.open(io.BytesIO(base64.b64decode(data))).convert("RGBA" if item.get("transparent") else "RGB")
+        if item.get("resize"):
+            image = image.resize((item["resize"], item["resize"] * image.height // image.width), Image.LANCZOS)
+        image.save(path, quality=88, method=6)
         print(f"  {key}: {path.relative_to(ROOT)} ({path.stat().st_size // 1024} KB)", flush=True)
         return True
 

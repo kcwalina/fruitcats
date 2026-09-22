@@ -82,6 +82,12 @@
     "cardback": {
       "size": "1024x1536",
       "prompt": "The back of a collectible card for a cute cat trading card game, in a polished storybook illustration style. A symmetrical ornate design: a large golden cat paw print in the centre inside a circular wreath of tiny fruits (lemon, red apple, mango, strawberry, watermelon slice) and leaves, on a rich warm orange and cream geometric pattern, framed by a thin decorative gold border with rounded corners. No text, no letters, no numbers, no logos."
+    },
+    "yarn": {
+      "size": "1024x1024",
+      "transparent": true,
+      "resize": 256,
+      "prompt": "A game icon of a single round ball of yarn, in a polished chibi storybook cartoon style with bold clean outlines and soft cel shading: a plump, fluffy ball of warm coral-pink wool with clearly visible wound strands crossing over it in several directions, a little shine highlight, and one loose strand of yarn curling out from the ball in a playful loop. Centred and fully in frame, filling most of the image, on a fully transparent background. No shadow on the ground, no knitting needles, no cat, no text, no letters, no borders."
     }
   }
 }

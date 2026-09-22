@@ -12,8 +12,10 @@ import {
 const BASE = import.meta.env.BASE_URL;
 const artUrl = (key: string) => `${BASE}sb1/${key}.webp`;
 const cardUrl = (key: string) => `${BASE}cards/sb1/${key}.webp`;
+// Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
+// (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 for (const [name, file] of [['--img-menu-bg', 'menu-bg'], ['--img-playmat', 'playmat'], ['--img-cardback', 'cardback']])
-  document.documentElement.style.setProperty(name, `url(${BASE}ui/${file}.webp)`);
+  document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}.webp`, location.href).href}")`);
 const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
 const heroKey = (s: GameState, p: PlayerId) => `${s.players[p].hero.id}-${s.players[p].hero.grown ? 'bigcat' : 'kitten'}`;
 
@@ -41,7 +43,7 @@ interface Selection {
   options: Action[];
 }
 
-const DIFFICULTY = { kitten: { label: 'Kitten', skill: 0.55 }, cat: { label: 'Cat', skill: 0.85 }, bigcat: { label: 'Big Cat', skill: 1 } };
+const DIFFICULTY = { kitten: { label: 'Kitten', skill: 0.55 }, cat: { label: 'Cat', skill: 0.85 }, tiger: { label: 'Tiger', skill: 1 } };
 type Difficulty = keyof typeof DIFFICULTY;
 
 let screen: Screen = 'menu';

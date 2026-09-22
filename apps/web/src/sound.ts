@@ -12,12 +12,13 @@ import type { GameState, PlayerId } from '@fruitcats/engine';
 
 type SoundName = 'card' | 'ability' | 'hitGood' | 'hitBad' | 'fail';
 
-/** Sound files in art/sounds (served from the site root). A missing entry is silent for now. */
-const FILES: Partial<Record<SoundName, string>> = {
+/** Sound files in art/sounds (served from the site root). */
+const FILES: Record<SoundName, string> = {
   card: 'sounds/card-played.mp3',
   ability: 'sounds/ability.mp3',
   fail: 'sounds/attack-fail.mp3',
-  // hitGood / hitBad: still being picked in the sound lab.
+  hitGood: 'sounds/hit-good.mp3', // you hit their Hero Cat: paw punch + little meow
+  hitBad: 'sounds/hit-bad.mp3',   // they hit yours: big soft thump + meow
 };
 
 const STORAGE_KEY = 'fruitcats-sound-v3'; // v3: recorded sounds, on by default

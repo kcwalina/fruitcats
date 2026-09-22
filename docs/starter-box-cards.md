@@ -160,7 +160,9 @@ Not in the Starter Box; shown so you can see where the game is going. Their deck
 | **Kitten** | — | **Exhaust, pay 1:** Summon a 1/1 Seed Mouse token.<br>**Grow Up:** You control 5 or more units. |
 | **Big Cat** | 2 | Your Critters that cost 2 or less get +1 Power. |
 
-### Rajah, the Mango Bengal *(Tropical)*
+### Mochi, the Mango Bengal *(Tropical)*
+
+*The mightiest of the Hero Cats: the only Big Cat with 4 Power and Fierce.*
 
 | Side | Power | Text |
 |---|---|---|

@@ -257,8 +257,17 @@ def main() -> int:
         print(f"art pending for: {', '.join(pending)}")
 
     # Gallery grouped by deck
+    def label(key: str) -> str:
+        card_id, _, side = key.partition("-kitten") if key.endswith("-kitten") else key.partition("-bigcat")
+        card = cards[card_id]
+        if card["type"] == "Hero Cat":
+            face = card["kitten"] if key.endswith("-kitten") else card["bigCat"]
+            return f'{face["name"]} ({"Kitten" if key.endswith("-kitten") else "Big Cat"})'
+        return card["name"]
+
     def cell(key: str, qty: str = "") -> str:
-        return f'<img src="{key}.webp" width="180" alt="{key}"><br><sub>{key}{qty}</sub>'
+        name = label(key).replace('"', "&quot;")
+        return f'<img src="{key}.webp" width="180" alt="{name}"><br><b>{name}</b><br><sub>{key}{qty}</sub>'
 
     def grid(entries: list[str]) -> str:
         rows = [entries[i:i + 4] for i in range(0, len(entries), 4)]
@@ -280,7 +289,10 @@ def main() -> int:
     previews = [c for c in data["cards"] if c.get("preview")]
     if previews:
         entries = [cell(f'{c["id"]}-{s}') for c in previews for s in ("kitten", "bigcat")]
-        sections.append(f"## Preview Hero Cats\n\n<table>\n{grid(entries)}\n</table>\n")
+        names = ", ".join(c["name"] for c in previews)
+        sections.append(f"## Preview Hero Cats\n\nNot in the Starter Box yet: {names}. "
+                        "Mochi, the Mango Bengal is the mightiest Hero Cat, the only Big Cat with 4 Power and Fierce.\n\n"
+                        f"<table>\n{grid(entries)}\n</table>\n")
     (out_dir / "README.md").write_text("\n".join(sections), encoding="utf-8")
     return 0
 

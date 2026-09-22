@@ -65,10 +65,10 @@
     },
     {
       "id": "SB1-P02", "type": "Hero Cat", "family": "Tropical", "preview": true,
-      "name": "Rajah, the Mango Bengal",
+      "name": "Mochi, the Mango Bengal",
       "flavor": "Lazes all morning. Rules all afternoon.",
-      "kitten": { "name": "Rajah, Sunbeam Kit", "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats." },
-      "bigCat": { "name": "Rajah, Jungle Monarch", "power": 4, "text": "Fierce. Exhaust: Ready two of your Treats." }
+      "kitten": { "name": "Mochi, Sunbeam Kit", "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats." },
+      "bigCat": { "name": "Mochi, Jungle Monarch", "power": 4, "text": "Fierce. Exhaust: Ready two of your Treats." }
     },
     {
       "id": "SB1-P03", "type": "Hero Cat", "family": "Melon", "preview": true,

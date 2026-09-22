@@ -248,7 +248,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   background: linear-gradient(var(--parchment), var(--parchment-2)); border-radius: 999px; padding: 1px 10px;
   box-shadow: 0 1px 3px rgba(40, 20, 5, 0.35);
 }
-.pantry-label b { font-size: 16px; color: #2f8a46; }
+.pantry-label b { color: #2f8a46; }
 .treats { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; min-height: calc(var(--treat-w) * 1.4); }
 .treat {
   width: var(--treat-w); aspect-ratio: 0.7; border-radius: 4px; border: 1.5px solid #fff3d0;
@@ -342,7 +342,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .log { font-size: 11px; }
   .pantry { padding: 3px 4px 4px; gap: 2px; }
   .pantry-label { font-size: 10px; padding: 0 6px; }
-  .pantry-label b { font-size: 12px; }
 }
 
 /* ── Signature mechanics ─────────────────────────────────────────────── */
@@ -456,3 +455,12 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .side-buttons button { flex: 1 1 0; max-width: 150px; padding: 8px 10px; font-size: 14px; }
   .side-buttons .sound-toggle { flex: 0 0 auto; max-width: none; padding: 8px 14px; }
 }
+
+/* Menu links (Rules) look like the other corner buttons. */
+.menu-link {
+  display: inline-block; text-align: center; font: 600 15px Fredoka, Nunito, sans-serif; color: #5a3413;
+  padding: 7px 18px; border-radius: 14px; background: linear-gradient(#fffaf0, #f1d9a6);
+  box-shadow: 0 3px 0 #c08f4a, 0 5px 10px rgba(60, 30, 5, 0.25), inset 0 1px 0 #fff;
+}
+.menu-link:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.menu-link:active { transform: translateY(2px); box-shadow: 0 1px 0 #c08f4a, inset 0 1px 0 #fff; }

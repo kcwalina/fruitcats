@@ -108,9 +108,15 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
    corner, out of the way. */
 .start-row { display: flex; justify-content: center; width: 100%; }
 .menu-corner {
-  position: fixed; top: 12px; right: 12px; z-index: 5; max-width: min(360px, 46vw);
-  display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px;
+  position: fixed; top: 12px; right: 12px; z-index: 5;
+  display: grid; grid-auto-flow: row; justify-items: stretch; gap: 8px; text-align: center;
 }
+.menu-corner > * { position: static; }
+/* The opponent choice reads as a little list, one difficulty per line. */
+.menu-corner .difficulty { flex-direction: column; align-items: stretch; gap: 4px; }
+.menu-corner .difficulty span { margin: 0 0 2px; }
+.menu-corner .menu-sound { align-self: flex-end; }
+.menu-link { text-decoration: none; }
 .difficulty { display: flex; gap: 6px; align-items: center; }
 .difficulty span { color: var(--muted); font-weight: 700; font-size: 14px; margin-right: 4px; }
 .difficulty .chosen { border-color: var(--accent); background: #fff0e3; }
@@ -161,7 +167,7 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 /* Pantry: one small face-down card per Treat */
 .pantry { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 34%; }
 .pantry-label { font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
-.pantry-label b { color: var(--good); font-size: 14px; }
+.pantry-label b { color: var(--good); }
 .treats { display: flex; flex-wrap: wrap; gap: 4px; }
 .treat {
   width: clamp(18px, calc(var(--vh, 1vh) * 2.4), 26px); aspect-ratio: 0.72; border-radius: 4px; border: 2px solid white;
@@ -333,7 +339,8 @@ body.dragging .hand-card:hover { transform: none; }
 }
 /* Narrower than a desktop: the corner would sit on top of the hero parade, so start the menu below it. */
 @media (max-width: 1100px) {
-  .menu { padding-top: calc(var(--vh, 1vh) * 1.5 + 92px); }
+  /* The corner list is tall here, so the parade shows its three main cats and stays clear of it. */
+  .parade-cat.c0, .parade-cat.c4 { display: none; }
   .coming { display: none; }                 /* the space goes to the menu instead */
 }
 /* Too narrow for a corner: the settings sit in a row at the top of the menu instead. */
@@ -341,13 +348,18 @@ body.dragging .hand-card:hover { transform: none; }
   .menu { padding-top: calc(var(--vh, 1vh) * 1.5); }
   .menu-corner { position: static; order: -1; flex-direction: row; align-items: center; justify-content: center;
     flex-wrap: wrap; width: 100%; gap: 8px; }
+  .menu-corner .difficulty { flex-direction: row; align-items: center; gap: 4px; padding: 3px 6px; }
+  /* Keep the strip short so Play still fits at the bottom. */
+  .menu-corner { gap: 6px; }
+  .menu-corner .difficulty button { padding: 4px 10px; font-size: 13px; }
+  .menu-corner .tutorial-button, .menu-corner .menu-link { padding: 5px 14px; font-size: 14px; }
 }
 @media (max-width: 640px) {
   .deck-blurb, .difficulty span, .title p { display: none; }   /* room for Play at the bottom */
-  .hero-parade { height: calc(var(--vh, 1vh) * 19); }
-  .parade-cat.c0, .parade-cat.c4 { --h: calc(var(--vh, 1vh) * 12); }
-  .parade-cat.c1, .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 14); }
-  .parade-cat.c2 { --h: calc(var(--vh, 1vh) * 18); }
+  .title h1 { font-size: clamp(30px, calc(var(--vh, 1vh) * 5.5), 48px); }
+  .hero-parade { height: calc(var(--vh, 1vh) * 16); }
+  .parade-cat.c1, .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 12); }
+  .parade-cat.c2 { --h: calc(var(--vh, 1vh) * 15); }
   .ability, .foe-hand, .counters span:nth-child(n + 3), .who .deck { display: none; }
   .board { padding: 6px; }
   .hand { padding: 0 8px; }

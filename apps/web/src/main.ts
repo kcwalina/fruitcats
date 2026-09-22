@@ -332,6 +332,7 @@ function renderMenu(): string {
           <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
       </div>
       <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
+      <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
     </div>
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
@@ -416,7 +417,7 @@ function renderPantry(s: GameState, p: PlayerId): string {
   return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
     <div class="pantry-label">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
     ${isLush(s, p) && CARDS[pl.hero.id].family === 'Tropical' ? '<div class="lush-badge" title="Lush: 7 or more Treats — Lush bonuses are on">🌴 Lush</div>' : ''}
-    <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens || '<span class="no-treats">none yet</span>'}</div>
+    <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens}</div>
     ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
   </div>`;
 }
@@ -438,7 +439,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
     <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
          data-click="${key}" data-zoom="${cardUrl(heroKey(s, p))}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
-      <div class="hero-name">${esc(side.name)}</div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
     </div>
     ${yarn}${took}

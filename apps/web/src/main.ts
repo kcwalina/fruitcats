@@ -170,7 +170,10 @@ function startGame(tutorial = false) {
     ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
     : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
   resetLogSounds(game);
-  if (tutorial) startTutorial({ game: () => game, rerender: render, resumeAi: scheduleAi });
+  if (tutorial) startTutorial({
+    game: () => game, rerender: render, resumeAi: scheduleAi,
+    selection: () => selection && { label: selection.label, attack: selection.options.every((a) => a.t === 'attack') },
+  });
   else stopTutorial();
   markHumanTurnDone();
   screen = 'game';

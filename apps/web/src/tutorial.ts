@@ -7,7 +7,7 @@
 //   • Tips — shown once, the first time something new happens (a lost Life, a Pounce chance, ...).
 // While a "read this" balloon is open the AI waits, so nothing happens behind your back.
 
-import { isGuardian, legalActions, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
+import { cardName, isGuardian, legalActions, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 
 const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/yarn.webp" alt="Yarn Ball">`;
 
@@ -30,7 +30,9 @@ interface Balloon {
   /** Prefer the balloon below its target (keeps what's above — e.g. enemy units — visible). */
   below?: boolean;
   /** Extra things to spotlight and keep uncovered, e.g. the button the step asks you to press. */
-  also?: string[];
+  also?: string[] | ((s: GameState) => string[]);
+  /** Things the balloon must not cover, without spotlighting them (e.g. the enemy you're about to attack). */
+  avoid?: string[];
 }
 
 const ME: PlayerId = 0;
@@ -41,6 +43,13 @@ const myPrompt = (s: GameState, kind?: string) =>
 const canPlay = (s: GameState) => myPrompt(s, 'action') && legalActions(s).some((a) => a.t === 'play');
 const canAttack = (s: GameState) =>
   myPrompt(s, 'action') && legalActions(s).some((a) => a.t === 'attack' && a.attacker.kind === 'unit');
+/** What you've picked and are now choosing a target for, if anything. */
+const picked = () => host?.selection() ?? null;
+/** Names of your units that can attack right now. */
+const attackerNames = (s: GameState) => [...new Set(legalActions(s)
+  .flatMap((a) => (a.t === 'attack' && a.attacker.kind === 'unit' ? [a.attacker.uid] : []))
+  .map((uid) => cardName(s.players[ME].yard.find((u) => u.uid === uid)?.id ?? '')))].filter(Boolean);
+const list = (names: string[]) => names.map((n) => `<b>${n}</b>`).join(names.length > 2 ? ', ' : ' and ');
 
 const STEPS: Balloon[] = [
   {
@@ -105,9 +114,35 @@ const STEPS: Balloon[] = [
       + 'until next round, unless they have <b>Zoomies</b>. The number on the left is Power, the heart is Health.',
   },
   {
-    id: 'attack', title: 'Attack!', anchor: '.yard.me .unit.can-act', when: canAttack, optional: true, below: true, skipIf: (s) => s.round >= 5,
-    text: 'Units with a <b>yellow glow</b> can attack. Click one (or drag it) onto a target: an enemy unit — '
-      + 'they damage each other — or the enemy <b>Hero Cat</b> to knock out a Life.',
+    id: 'attack', title: 'Attack!', optional: true, below: true, skipIf: (s) => s.round >= 5,
+    avoid: ['.player.foe', '.yard.foe'],
+    // The text and highlights follow what you've picked (an attacker, or a card from your hand).
+    when: canAttack,
+    anchor: () => {
+      const sel = picked();
+      return !sel ? '.yard.me .unit.can-act' : sel.attack ? '.targetable' : '[data-click="btn:cancel"]';
+    },
+    also: () => {
+      const sel = picked();
+      return !sel ? ['.yard.me .unit.can-act'] : ['.targetable', '[data-click="btn:cancel"]'];
+    },
+    text: (s) => {
+      const sel = picked();
+      if (sel?.attack)
+        return document.querySelector('.player.foe .hero.targetable')
+          ? 'Now click a <b>pink target</b>: an enemy unit — they damage each other — or the enemy <b>Hero Cat</b> '
+            + 'to knock out a Life. (Changed your mind? Press <b>Cancel</b>.)'
+          : 'Now click the <b>pink target</b>. Their <b>Guardian</b> protects the Hero Cat, so it must be attacked first; '
+            + 'your units damage each other. (Changed your mind? Press <b>Cancel</b>.)';
+      if (sel)
+        return `<b>${sel.label}</b> is a card from your hand. Cards in your hand are <b>played</b>, not used to attack — `
+          + 'you can still play it by clicking a pink target. To <b>attack</b>, press <b>Cancel</b>, then click a unit '
+          + 'with a <b>Ready!</b> tag in your Yard.';
+      const names = attackerNames(s);
+      return `Units in your <b>Yard</b> with a glowing <b>Ready!</b> tag can attack${names.length ? ` — right now: ${list(names)}` : ''}. `
+        + 'Click one (or drag it) onto a target: an enemy unit, or the enemy <b>Hero Cat</b> to knock out a Life. '
+        + '<i>Cards in your hand don’t attack — they’re played.</i>';
+    },
     doneWhen: (a) => a.t === 'attack',
   },
   {
@@ -190,6 +225,8 @@ export interface TutorialHost {
   rerender(): void;
   /** Let the AI continue once a balloon is closed. */
   resumeAi(): void;
+  /** What you've picked and are choosing a target for: an attacker (attack) or a card from your hand. */
+  selection(): { label: string; attack: boolean } | null;
 }
 
 let host: TutorialHost | null = null;
@@ -316,7 +353,8 @@ export function renderTutorial() {
 
   // Spotlight the target and any button the step asks you to press (e.g. "Plant"), with one shade
   // that has a hole per highlight. Clicks go straight through the shade to the game.
-  const extras = (b.also ?? []).flatMap((sel) => [...document.querySelectorAll<HTMLElement>(sel)]);
+  const also = typeof b.also === 'function' ? b.also(s) : b.also ?? [];
+  const extras = also.flatMap((sel) => [...document.querySelectorAll<HTMLElement>(sel)]);
   const holes = [r, ...extras.map((e) => e.getBoundingClientRect())].filter((x) => x.width && x.height);
   const W = window.innerWidth, H = window.innerHeight, pad = 6;
   const rounded = (x: DOMRect) => {
@@ -329,7 +367,8 @@ export function renderTutorial() {
 
   // Place the balloon where it covers nothing you need: not the highlights, and not the prompt-bar
   // buttons (a phone playtester couldn't press "Plant" because the balloon sat on top of it).
-  const keepClear = [...holes, ...[...document.querySelectorAll<HTMLElement>('.midbar button, .hero-actions button')].map((e) => e.getBoundingClientRect())];
+  const keepClear = [...holes, ...[...document.querySelectorAll<HTMLElement>(['.midbar button', '.hero-actions button', ...(b.avoid ?? [])].join(','))]
+    .map((e) => e.getBoundingClientRect())];
   const bw = balloon.offsetWidth, bh = balloon.offsetHeight, gap = 16, margin = 8;
   const left = Math.max(margin, Math.min(W - bw - margin, r.left + r.width / 2 - bw / 2));
   const candidates: { top: number; arrow: 'above' | 'below' | 'none' }[] = [

@@ -90,8 +90,8 @@ let foeFrom = 0;
 let foeUnitsBefore = new Set<number>();
 /** Opponent units already on screen, so the arrival animation plays once per unit, not per re-render. */
 let renderedFoeUnits = new Set<number>();
-/** Treat counts already on screen per player, so newly planted Treats get a short "pop". */
-let renderedTreats: [number, number] = [0, 0];
+/** Each Treat's state on screen last time (card uid → spent?), so planting, spending and readying animate once. */
+let renderedTreats = new Map<number, boolean>();
 /** A friendly confirmation of the player's own last move (e.g. what they just planted). */
 let notice = '';
 
@@ -271,7 +271,7 @@ function render() {
   document.body.className = screen === 'menu' ? 'menu-screen' : 'game-screen';
   app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
-  renderedTreats = game ? [game.players[0].pantry.length, game.players[1].pantry.length] : [0, 0];
+  renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') renderTutorial(); else stopTutorial();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
@@ -351,23 +351,30 @@ function renderGame(): string {
 }
 
 /**
- * The Pantry: one small face-down card per Treat. Ready Treats stand upright, spent ones lie sideways.
- * You may look at your own Treats (rule 4), so yours show their art and preview on hover.
+ * The Treats tray at the end of each Yard: one face-down card per Treat. Ready Treats stand upright,
+ * spent ones lie sideways. Planting, spending and readying each animate once, with a floating label,
+ * so you can see resources move. You may look at your own Treats (rule 4) — hold one to read it.
  */
-function renderPantry(s: GameState, p: PlayerId, ready: number): string {
+function renderPantry(s: GameState, p: PlayerId): string {
   const pl = s.players[p];
-  const seen = renderedTreats[p];
-  const tokens = pl.pantry.map((t, i) => {
-    const mine = p === HUMAN;
-    const cls = ['treat', t.exhausted && 'spent', i >= seen && 'new', mine && 'mine'].filter(Boolean).join(' ');
-    // Treats are face-down: shown as card backs so they never look like units in play. You may
-    // still peek at your own (rule 4) — hover one to see it in the side panel.
-    const art = mine ? ` data-zoom="${cardUrl(t.card.id)}"` : '';
-    return `<div class="${cls}"${art} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
+  const mine = p === HUMAN;
+  let planted = 0, spent = 0, readied = 0;
+  const tokens = pl.pantry.map((t) => {
+    const before = renderedTreats.get(t.card.uid);
+    const change = before === undefined ? 'new' : !before && t.exhausted ? 'spending' : before && !t.exhausted ? 'readying' : '';
+    if (change === 'new') planted++;
+    if (change === 'spending') spent++;
+    if (change === 'readying') readied++;
+    const cls = ['treat', t.exhausted && 'spent', change, mine && 'mine'].filter(Boolean).join(' ');
+    const zoom = mine ? ` data-zoom="${cardUrl(t.card.id)}"` : '';
+    return `<div class="${cls}"${zoom} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
   }).join('');
-  return `<div class="pantry" title="Treats are face-down cards used to pay for other cards. They all get ready again at the start of each round.">
-    <div class="pantry-label">Treats <b>${ready}</b>/${pl.pantry.length} ready</div>
+  const float = planted ? `+${planted} Treat${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
+  const ready = readyTreats(s, p);
+  return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
+    <div class="pantry-label">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
     <div class="treats">${tokens || '<span class="no-treats">none yet</span>'}</div>
+    ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
   </div>`;
 }
 
@@ -375,7 +382,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   const pl = s.players[p];
   const side = heroSide(s, p);
   const key = `hero:${p}`;
-  const ready = readyTreats(s, p);
   const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Yarn Ball: acts first">🧶${s.yarnTaken === p ? ' kept' : ''}</span>` : '';
   const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">🧶 next</span>` : '';
   const canAbility = legal.some((a) => a.t === 'ability');
@@ -402,7 +408,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
       </div>
       <div class="ability" title="${esc(side.text)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
     </div>
-    ${renderPantry(s, p, ready)}
     ${p === HUMAN && (canAbility || canAttack) ? `<div class="hero-actions">
       ${canAbility ? '<button data-click="btn:ability">Use ability</button>' : ''}
       ${canAttack ? '<button data-click="btn:heroattack">Big Cat attack</button>' : ''}
@@ -442,6 +447,7 @@ function renderYard(s: GameState, p: PlayerId, targets: Set<string>, attackers: 
   const yard = s.players[p].yard;
   return `<section class="yard ${p === HUMAN ? 'me' : 'foe'}">
     ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === HUMAN ? 'Your' : 'Their'} Yard is empty</div>`}
+    ${renderPantry(s, p)}
   </section>`;
 }
 

@@ -68,8 +68,8 @@ const STEPS: Balloon[] = [
     doneWhen: (a) => a.t === 'setupPlant',
   },
   {
-    id: 'pantry', title: 'Your Treats', anchor: '.player.me .pantry',
-    text: 'Here are your Treats. Playing a card spends them — spent Treats turn sideways. '
+    id: 'pantry', title: 'Your Treats', anchor: '.yard.me .pantry',
+    text: 'Your Treats live in this tray next to your Yard. Playing a card spends them — spent Treats turn sideways. '
       + 'They all come back at the start of every round, and you can plant one more each round.',
   },
   {

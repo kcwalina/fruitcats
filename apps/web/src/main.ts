@@ -50,6 +50,18 @@ const humanize = (text: string) =>
     .replace(/\bYou (\w+) their\b/g, 'You $1 your')
     .replace(/(?<!^)(?<![.!] )\bYour\b/g, 'your');
 
+/** The sound toggle: a drawn speaker (the emoji was too small and fuzzy to read). */
+function soundButton(extraClass = ''): string {
+  const on = soundEnabled();
+  const waves = on
+    ? '<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+    : '<path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  return `<button data-click="ui:sound" class="sound-toggle ${extraClass} ${on ? 'on' : 'off'}"
+      title="Sound ${on ? 'on' : 'off'}" aria-label="Sound ${on ? 'on' : 'off'}" aria-pressed="${on}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.2v13.6L7.2 14.5H4z" fill="currentColor"/>${waves}</svg>
+    </button>`;
+}
+
 const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 // ── App state ────────────────────────────────────────────────────────────────────────────────────
@@ -312,7 +324,7 @@ function renderMenu(): string {
   };
   return `
   <div class="menu">
-    <button data-click="ui:sound" class="sound-toggle menu-sound" title="Sound on/off">${soundEnabled() ? '🔊' : '🔇'}</button>
+    ${soundButton('menu-sound')}
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
     </div>
@@ -332,13 +344,15 @@ function renderMenu(): string {
           </button>`).join('')}
       </div>
       <div class="start-row">
-        <div class="difficulty">
-          <span>Opponent:</span>
-          ${Object.entries(DIFFICULTY).map(([key, d]) => `
-            <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
-        </div>
         <button class="play-button" data-click="menu:play">Play</button>
-        <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
+        <div class="start-side">
+          <div class="difficulty">
+            <span>Opponent:</span>
+            ${Object.entries(DIFFICULTY).map(([key, d]) => `
+              <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
+          </div>
+          <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
+        </div>
       </div>
       <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
     </section>
@@ -368,7 +382,7 @@ function renderGame(): string {
       <div class="inspector"><img id="zoom" src="${cardUrl(heroKey(s, HUMAN))}" alt=""></div>
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
-        <button data-click="ui:sound" class="sound-toggle" title="Sound on/off">${soundEnabled() ? '🔊' : '🔇'}</button>
+        ${soundButton()}
         <button data-click="ui:quit">Menu</button>
       </div>
       <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>

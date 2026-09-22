@@ -418,3 +418,21 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   background: linear-gradient(#ffb627, #ef7314); box-shadow: 0 0 0 2px #fff6dc, 0 3px 8px rgba(60, 30, 5, 0.45);
 }
 @media (max-width: 640px) { .deck-choice.chosen::after { font-size: 10px; padding: 2px 8px; top: -9px; } }
+
+/* The sound toggle: a drawn speaker, so it reads at button size. */
+.sound-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; }
+.sound-toggle svg { width: 22px; height: 22px; display: block; }
+.sound-toggle.off { color: var(--muted); }
+.sound-toggle.off svg { opacity: 0.85; }
+.menu-sound { border-radius: 999px; padding: 6px; }
+@media (max-width: 640px) { .sound-toggle svg { width: 20px; height: 20px; } }
+
+/* Phone: there is no room for the Story, so drop it and let the three buttons share the bottom strip.
+   (A rounded phone screen was clipping the Menu button in the corner.) */
+@media (max-width: 640px) {
+  .log-panel { display: none; }
+  .side { height: auto; min-height: 0; flex: none; align-items: stretch; }
+  .side-buttons { flex: none; flex-direction: row; justify-content: center; gap: 8px; width: 100%; }
+  .side-buttons button { flex: 1 1 0; max-width: 150px; padding: 8px 10px; font-size: 14px; }
+  .side-buttons .sound-toggle { flex: 0 0 auto; max-width: none; padding: 8px 14px; }
+}

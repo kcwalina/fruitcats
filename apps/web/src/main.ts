@@ -654,13 +654,15 @@ app.addEventListener('mouseover', (event) => {
 
 // ── Long press: show a card enlarged ─────────────────────────────────────────────────────────────
 //
-// Press and hold any card (in hand, on the board, a Hero Cat, your Treats) to read it full size.
-// Moving the pointer cancels it (that's a drag), and the release after a long press isn't a click.
-// Right-click does the same on desktop.
+// Press and hold any card (in hand, on the board, a Hero Cat, your Treats) to read it full size;
+// let go and it shrinks back. Moving the pointer cancels it (that's a drag), and the release after a
+// long press isn't a click. Right-click opens the same preview on desktop, until you click.
 
 const LONG_PRESS_MS = 450;
 let pressTimer: number | undefined;
 let pressAt: { x: number; y: number } | null = null;
+/** The preview was opened by holding, so releasing closes it. */
+let zoomHeld = false;
 
 function openZoom(url: string) {
   closeZoom();
@@ -685,6 +687,7 @@ app.addEventListener('pointerdown', (event) => {
     drag = null;           // a long press is never also a drag
     suppressClick = true;  // ...nor a click when the finger lifts
     openZoom(el.dataset.zoom!);
+    zoomHeld = true;
   }, LONG_PRESS_MS);
 }, true);
 
@@ -699,6 +702,7 @@ for (const type of ['pointerup', 'pointercancel'] as const) {
   window.addEventListener(type, () => {
     window.clearTimeout(pressTimer);
     pressAt = null;
+    if (zoomHeld) { zoomHeld = false; closeZoom(); }
     // The click (if any) fires right after pointerup; afterwards stop swallowing clicks.
     if (suppressClick) window.setTimeout(() => { suppressClick = false; }, 0);
   }, true);

@@ -357,3 +357,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .pantry { max-height: calc(100% - 4px); }
 .treats { flex-wrap: nowrap; gap: 0; min-height: calc(var(--treat-w) * 1.45); align-items: center; }
 .treat + .treat { margin-left: min(4px, calc((var(--tray-w) - 16px - var(--n) * var(--treat-w)) / (var(--n) - 1))); }
+
+/* Sound toggle */
+.sound-toggle { flex: 0 0 auto !important; padding-left: 12px !important; padding-right: 12px !important; }
+.menu-sound { position: fixed; top: 12px; right: 12px; z-index: 5; }

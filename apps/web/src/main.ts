@@ -1,5 +1,6 @@
 import './style.css';
 import './skin.css';
+import { play as playSound, playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi } from './tutorial';
 import {
   CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isLush, isSneaky, keywords,
@@ -166,6 +167,7 @@ function startGame(tutorial = false) {
   game = tutorial
     ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
     : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
+  resetLogSounds(game);
   if (tutorial) startTutorial({ game: () => game, rerender: render, resumeAi: scheduleAi });
   else stopTutorial();
   markHumanTurnDone();
@@ -174,6 +176,13 @@ function startGame(tutorial = false) {
   picks = new Set();
   render();
   scheduleAi();
+}
+
+/** The card type named in a "… plays X (targeting Y)." log line, for its sound. */
+function cardTypeOfLog(text: string): string | null {
+  const name = text.match(/ plays? (.+?)(?: targeting .*)?\.$/)?.[1];
+  const def = name ? Object.values(CARDS).find((c) => cardName(c.id) === name) : undefined;
+  return def?.type ?? null;
 }
 
 /** A plain-language reason a card in hand can't be played right now. */
@@ -198,6 +207,7 @@ function select(label: string, options: Action[]) {
   const untargeted = options.filter((a) => !actionTarget(a));
   if (options.length === 1 && untargeted.length === 1) return act(options[0]);
   selection = { label, options };
+  playSound('tick');
   render();
 }
 
@@ -214,6 +224,7 @@ function onClick(key: string) {
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
+    if (raw === 'sound') toggleSound();
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'menu'; }
     if (raw === 'again') { startGame(); return; }
     render();
@@ -256,6 +267,7 @@ function onClick(key: string) {
     if (prompt.kind === 'mulligan' || prompt.kind === 'setupPlant' || prompt.kind === 'discard') {
       if (picks.has(value)) picks.delete(value);
       else if (prompt.kind === 'mulligan' || picks.size < prompt.count) picks.add(value);
+      playSound('tick');
       render();
       return;
     }
@@ -287,7 +299,7 @@ function render() {
   app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
-  if (screen === 'game') renderTutorial(); else stopTutorial();
+  if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN, cardTypeOfLog); } else stopTutorial();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
@@ -302,6 +314,7 @@ function renderMenu(): string {
   };
   return `
   <div class="menu">
+    <button data-click="ui:sound" class="sound-toggle menu-sound" title="Sound on/off">${soundEnabled() ? '🔊' : '🔇'}</button>
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
     </div>
@@ -357,6 +370,7 @@ function renderGame(): string {
       <div class="inspector"><img id="zoom" src="${cardUrl(heroKey(s, HUMAN))}" alt=""></div>
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
+        <button data-click="ui:sound" class="sound-toggle" title="Sound on/off">${soundEnabled() ? '🔊' : '🔇'}</button>
         <button data-click="ui:quit">Menu</button>
       </div>
       <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>

@@ -7,6 +7,19 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 - [Rulebook](docs/rulebook.md) — how to play, tournament rules, comprehensive rules
 - [Starter Box card list](docs/starter-box-cards.md) — two ready-to-play 50-card decks
 - [Design notes](docs/design-notes.md) — research, rationale, and balance hypotheses to test
+- [Starter Box card images](art/cards/sb1/README.md) — every card, rendered
+
+## Card data and art
+
+- `cards/sb1.json` — the Starter Box card data (the single source of truth for card text and stats)
+- `art/prompts.json` — art direction: shared style plus one subject per illustration
+- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into `art/sb1/`
+- `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into `art/cards/sb1/`
+
+```bash
+python tools/generate_art.py          # only draws cards that have no art yet
+python tools/compose_cards.py         # re-run after any card data change; no redraw needed
+```
 
 ## Roadmap
 

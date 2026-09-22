@@ -1,0 +1,62 @@
+{
+  "style": "Cute collectible trading card game illustration in a polished chibi storybook cartoon style: bold clean outlines, soft cel shading, vibrant saturated colours, big expressive sparkly eyes, warm and friendly mood. One clear main subject, centred and fully in frame, with a softly painted background scene. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks.",
+  "families": {
+    "Citrus": "Background: a sunny Mediterranean citrus grove with lemon and orange trees, warm yellow and orange light.",
+    "Orchard": "Background: a cosy autumn apple orchard with golden afternoon light, warm reds, greens and browns.",
+    "Garden": "Background: a fresh cottage vegetable garden with leafy greens, flowers and morning light.",
+    "Berry": "Background: a lush berry patch full of strawberries and raspberries, pinks, reds and purples.",
+    "Tropical": "Background: a tropical jungle clearing with palm leaves, mangoes and a golden sunset.",
+    "Melon": "Background: a lazy summer melon patch with big striped watermelons, soft greens and pinks."
+  },
+  "subjects": {
+    "SB1-H01-kitten": "A tiny fluffy lemon-yellow lynx kitten with little black ear tufts and faint lemon-slice markings on its fur, bouncing playfully along a sunny garden wall, full of impatient energy.",
+    "SB1-H01-bigcat": "A heroic grown-up lemon-yellow lynx with black ear tufts, citrus-peel markings and a small crown of lemon leaves, leaping boldly through a sunny lemon grove with a confident grin.",
+    "SB1-H02-kitten": "A floppy cream-coloured ragdoll kitten with apple-red ears, face and tail, lying belly-up and totally relaxed among fallen red apples, big blue eyes.",
+    "SB1-H02-bigcat": "A large gentle ragdoll cat with cream fur and apple-red points, wearing a wreath of apple blossoms, standing protectively in front of an apple tree and holding a softly glowing red apple, calm blue eyes.",
+
+    "SB1-C01": "A tiny white mouse with lemon-yellow tufts of fur, zooming at top speed with motion streaks behind it, clutching a lemon wedge.",
+    "SB1-C02": "A round fluffy tangerine-orange baby chick with a single leaf sprouting from its head, standing on a tangerine and looking hilariously grumpy and petty.",
+    "SB1-C03": "A sly lime-green gecko perfectly camouflaged against a wall covered in lime-green vines and limes, only its big golden eyes and cheeky smile giving it away.",
+    "SB1-C04": "A chubby orange corgi wearing an orange-peel bandana, running happily on short legs through an orange grove, tongue out.",
+    "SB1-C05": "A slinky cream ferret with pink-grapefruit markings, joyfully bouncing sideways mid-air in a happy war dance, grapefruit halves on the ground.",
+    "SB1-C06": "A clever pale-yellow citron fox with a big fluffy tail, smirking while holding a knobbly citron fruit, sparkles of citrus zest drifting in the air.",
+    "SB1-C07": "A fluffy pale-green pomelo-coloured ram with big curled horns, charging head-first with determined eyebrows, pomelos rolling out of its way.",
+    "SB1-C08": "A golden yuzu-yellow hawk swooping down from a bright sky with wings spread wide and keen eyes, yuzu fruits on the branches below.",
+    "SB1-C09": "A cheeky cartoon lemon being squeezed by a small paw, squirting a sparkling jet of sour juice in a big arc, a surprised critter squinting in the background.",
+    "SB1-C10": "A juicy orange exploding into a bright starburst of zest, peel pieces and sparkling juice droplets flying outward in every direction.",
+    "SB1-C11": "A long spiral of orange peel unwinding like a racetrack, with a dust cloud and speed streaks where something just zoomed away.",
+    "SB1-C12": "A cute kitchen zester with a lemon-yellow handle presented like a treasured magical toy, fresh curls of lemon zest and little sparkles around it.",
+    "SB1-C13": "A lean athletic orange tabby cat with clementine-orange stripes and a clementine leaf tucked behind one ear, sprinting through a sunny alley and grinning back over its shoulder.",
+    "SB1-C14": "A yellow-green bergamot-coloured cat spinning at the heart of a whirlwind of leaves and citrus slices, fur swirling, with a mischievous expression.",
+    "SB1-C15": "A sleek panther-like cat with deep blood-orange crimson fur and glowing amber eyes, prowling low and dangerous, glowing blood-orange halves around it in dusky light.",
+
+    "SB1-O01": "A soft peach-coloured bunny with fuzzy fur, gently cradling a glowing peach, kind eyes, pastel blossoms around.",
+    "SB1-O02": "A round hedgehog with pear-green spines, standing stubbornly in front of a big pear, cute defiant face.",
+    "SB1-O03": "A little robin with a bright cherry-red breast singing happily on a cherry branch, a pair of cherries hanging beside it, floating musical feel.",
+    "SB1-O04": "A velvety plum-purple mole with a pink nose and tiny squinting eyes, popping out of a burrow under a plum tree while hugging a plum.",
+    "SB1-O05": "A round apricot-orange owl perched on a branch giving a stern but adorable look with huge round eyes, apricots hanging on the branch.",
+    "SB1-O06": "A sturdy badger with a black-and-white striped face standing guard with crossed arms in front of an apple tree, a red apple at its feet.",
+    "SB1-O07": "A wise old tortoise with a golden quince-yellow shell and a tiny white beard, sitting patiently under a quince tree.",
+    "SB1-O08": "A big cuddly purple-brown fig-coloured bear standing tall with paws raised, mighty yet huggable, figs hanging from the branches.",
+    "SB1-O09": "A cute cat arching its back and hissing with its fur puffed up and ears flat, dramatic shockwave rings pushing autumn leaves away.",
+    "SB1-O10": "A steaming mug of warm apple cider with a cinnamon stick and an apple slice, resting on a cosy knitted blanket by a glowing fireplace.",
+    "SB1-O11": "A big shiny red apple falling from a branch with motion streaks, about to bonk a startled critter below.",
+    "SB1-O12": "A sturdy wooden apple crate full of red apples, with a happy cat peeking out of it like a cosy fort.",
+    "SB1-O13": "An elegant siamese cat with pale pink fur and cherry-blossom-pink points, sitting serenely under a blossoming cherry tree with petals drifting around.",
+    "SB1-O14": "An elderly green-apple-coloured cat wearing round spectacles and a knitted shawl, holding a basket of green apples, warm grandmotherly smile.",
+    "SB1-O15": "A huge fluffy maine coon cat with red-gold honeycrisp-apple fur lying peacefully in an orchard while tiny critters nap on its back, a true gentle giant.",
+
+    "SB1-G01": "A tiny golden hamster peeking out of a denim pocket, cheeks stuffed with sunflower seeds, tiny fists raised bravely.",
+    "SB1-G02": "A smiling garden snail whose spiral shell sprouts a little green seedling, sitting on a dewy leaf.",
+    "SB1-G03": "A white duck wearing a little postman cap and satchel, carrying a blank envelope in its bill, waddling along a garden path.",
+    "SB1-G04": "A sprig of catnip leaves glowing with green sparkles and swirls, a blissed-out cat sniffing it in the background.",
+    "SB1-G05": "A sleepy critter curled up on a soft cushion under a crescent moon, with dreamy floating bubbles and little stars.",
+
+    "SB1-P01-kitten": "A tiny pink strawberry tabby kitten with red stripes and seed-like freckles, sticky with jam, surrounded by baby mice.",
+    "SB1-P01-bigcat": "A proud pink strawberry tabby cat with red stripes wearing a strawberry-leaf crown, leading a crowd of tiny berry critters through a berry patch.",
+    "SB1-P02-kitten": "A sleepy mango-orange bengal kitten with spots, lounging in a warm sunbeam on a big palm leaf.",
+    "SB1-P02-bigcat": "A regal mango-orange bengal cat with bold rosette spots, standing tall on a jungle rock at sunset surrounded by mangoes.",
+    "SB1-P03-kitten": "A pampered fluffy pink persian kitten with a flat face and a green rind-striped collar, lounging haughtily on a velvet cushion.",
+    "SB1-P03-bigcat": "A grand fluffy pink persian cat wearing a green rind-striped cape and a tiara of watermelon seeds, seated on a throne of watermelon slices."
+  }
+}

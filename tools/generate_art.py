@@ -118,7 +118,11 @@ def main() -> int:
         if not subject:
             print(f"  {key}: no prompt in art/prompts.json, skipped", flush=True)
             return False
-        prompt = f'{prompts["style"]}\n\nSubject: {subject}\n\n{prompts["families"][card["family"]]}'
+        # Hero Cats are drawn as plush mascots (their own style); the rest of the set is painted.
+        hero = card["type"] == "Hero Cat"
+        style = prompts["heroStyle"] if hero else prompts["style"]
+        background = (prompts["heroFamilies"] if hero else prompts["families"])[card["family"]]
+        prompt = f'{style}\n\nSubject: {subject}\n\n{background}'
 
         try:
             if args.reference:

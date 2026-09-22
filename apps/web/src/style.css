@@ -249,17 +249,24 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 /* Hand: overlapping cards that shrink when the hand is big. */
 .hand { display: flex; justify-content: center; align-items: flex-end; height: var(--card-h); padding: 0 24px; min-width: 0; }
 .hand-card {
-  flex: 0 1 var(--card-w); min-width: 0; padding: 0; margin: 0 -6px; border: none; background: none; border-radius: 9px;
-  transition: transform 0.15s, filter 0.15s; filter: brightness(0.8) saturate(0.7); align-self: flex-start;
+  position: relative; flex: 0 1 var(--card-w); min-width: 0; padding: 0; margin: 0 -6px; border: none; background: none;
+  border-radius: 9px; transition: transform 0.15s, filter 0.15s; filter: brightness(0.8) saturate(0.7); align-self: flex-start;
 }
 .hand-card img { width: 100%; display: block; border-radius: 8px; box-shadow: var(--shadow); }
 .hand-card.playable { filter: none; }
 .hand-card.playable img { box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
-.hand-card:hover { transform: translateY(-10%) scale(1.06); z-index: 5; filter: none; box-shadow: none; }
-.hand-card.picked { transform: translateY(-16%); }
-.hand-card.picked img { box-shadow: 0 0 0 4px var(--accent), var(--shadow); }
-.hand-card.selected { transform: translateY(-20%) scale(1.06); }
-.hand-card.selected img { box-shadow: 0 0 0 4px var(--accent), var(--shadow); }
+/* Hover only nudges cards that aren't chosen; a chosen card keeps ONE fixed position whether or not the
+   mouse is over it, so clicking never makes it bounce (the old hover and "picked" offsets fought). */
+.hand-card:not(.picked):not(.selected):hover { transform: translateY(-8%); z-index: 5; filter: none; }
+.hand-card.picked, .hand-card.selected, .hand-card.picked:hover, .hand-card.selected:hover {
+  transform: translateY(-22%); z-index: 6; filter: none; transition: none;
+}
+.hand-card.picked img, .hand-card.selected img { box-shadow: 0 0 0 5px var(--accent), 0 8px 18px rgba(90, 40, 0, 0.35); }
+.hand-card.picked::after, .hand-card.selected::after {
+  content: '✓'; position: absolute; top: -8px; right: -6px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: white; font: 800 15px Nunito, sans-serif;
+  border: 2px solid white; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); pointer-events: none;
+}
 .hand-card.lucky img { box-shadow: 0 0 0 4px var(--good), 0 0 20px rgba(46, 157, 87, 0.7); }
 
 /* Drag and drop */

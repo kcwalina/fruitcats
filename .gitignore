@@ -2,3 +2,12 @@ node_modules/
 dist/
 *.tsbuildinfo
 __pycache__/
+
+# Never commit secrets
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+secrets.json
+.claude/settings.local.json

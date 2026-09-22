@@ -240,10 +240,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .yard { position: relative; padding-left: calc(var(--tray-w) + 16px); padding-right: calc(var(--tray-w) + 16px); }
 .pantry {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: var(--tray-w); max-width: none;
-  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 6px 8px;
-  background: linear-gradient(#c88a4c, #8e5626); border-radius: 16px;
-  box-shadow: inset 0 2px 0 rgba(255, 230, 180, 0.55), inset 0 -3px 6px rgba(60, 25, 5, 0.45), 0 0 0 2px #6d3f18,
-    0 6px 14px rgba(40, 20, 5, 0.45);
+  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px 0 0;
+  background: none; border-radius: 0; box-shadow: none;
 }
 .pantry-label {
   font: 600 12px Fredoka, Nunito, sans-serif; color: #5a3413; white-space: nowrap;
@@ -254,7 +252,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .treats { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; min-height: calc(var(--treat-w) * 1.4); }
 .treat {
   width: var(--treat-w); aspect-ratio: 0.7; border-radius: 4px; border: 1.5px solid #fff3d0;
-  box-shadow: 0 2px 4px rgba(30, 15, 5, 0.5); transition: none;
+  box-shadow: 0 2px 4px rgba(30, 15, 5, 0.5); transition: none; position: relative; z-index: 1;
 }
 .treat.spent { transform: rotate(90deg) scale(0.82); filter: grayscale(0.8) brightness(0.85); opacity: 0.75; }
 .treat.new { animation: treat-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
@@ -271,7 +269,33 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   0% { transform: rotate(90deg) scale(0.82); filter: grayscale(0.8); }
   60% { box-shadow: 0 0 0 3px var(--gold-light), 0 0 16px 5px rgba(120, 220, 120, 0.8); }
 }
-.no-treats { color: #ffe9c2; font: 600 12px Fredoka, Nunito, sans-serif; font-style: normal; }
+.no-treats {
+  position: relative; z-index: 1; color: #b0415c; font: 600 11px Fredoka, Nunito, sans-serif; font-style: normal;
+}
+
+/* The tray is a cat's food bowl seen from above: a round rim around a sloping inner wall and a floor with
+   a paw print, and the Treats piled in the middle. ::before shades the inner wall and carries the paw. */
+.pantry { --bowl-d: min(var(--tray-w), var(--treat-w) * 4); }
+.treats {
+  --treat-w: calc(var(--bowl-d) * 0.2);
+  position: relative; width: var(--bowl-d); height: var(--bowl-d); min-height: 0; flex: none; border-radius: 50%;
+  flex-wrap: wrap; justify-content: center; align-content: center; gap: 0; padding: calc(var(--bowl-d) * 0.2);
+  background: radial-gradient(circle closest-side, #fde6eb 0 56%, #f3a9b9 63%, #e27892 76%, #c9506b 81%,
+    #ffc4d1 84%, #ff9fb3 92%, #d65a75 98%, transparent 100%);
+  filter: drop-shadow(0 4px 5px rgba(40, 15, 10, 0.45));
+}
+.treats::before {
+  content: ''; position: absolute; inset: 19%; border-radius: 50%; pointer-events: none;
+  box-shadow: inset 0 calc(var(--bowl-d) * 0.05) calc(var(--bowl-d) * 0.06) rgba(90, 20, 40, 0.35);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23e98aa0' fill-opacity='.45'%3E%3Cellipse cx='10' cy='13.5' rx='4.6' ry='3.8'/%3E%3Cellipse cx='4.2' cy='8.6' rx='1.9' ry='2.4'/%3E%3Cellipse cx='8' cy='5.2' rx='1.9' ry='2.5'/%3E%3Cellipse cx='12' cy='5.2' rx='1.9' ry='2.5'/%3E%3Cellipse cx='15.8' cy='8.6' rx='1.9' ry='2.4'/%3E%3C/svg%3E")
+    center / 55% no-repeat;
+}
+/* Treats tumble into a loose pile: each sits at a slight tilt and they overlap as the bowl fills. */
+.treats .treat { margin: calc(var(--treat-w) * -0.22) calc(var(--treat-w) * -0.14); }
+.treat:nth-child(4n + 1) { rotate: -9deg; }
+.treat:nth-child(4n + 2) { rotate: 7deg; }
+.treat:nth-child(4n + 3) { rotate: -3deg; }
+.treat:nth-child(4n) { rotate: 11deg; }
 .tray-float {
   position: absolute; left: 50%; top: -6px; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
   font: 700 16px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 10px; border-radius: 999px;
@@ -352,12 +376,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .notice, .recap { -webkit-line-clamp: 1; }
 }
 
-/* Treats stay on one row inside the tray: they overlap more as the pile grows, so the tray never gets
-   taller than the Yard. */
+/* The tray never gets taller than the Yard: Treats pile up inside the fixed-size bowl. */
 .pantry { max-height: calc(100% - 4px); }
-.treats { flex-wrap: nowrap; gap: 0; min-height: calc(var(--treat-w) * 1.45); align-items: center; }
-.treat + .treat { margin-left: min(4px, calc((var(--tray-w) - 16px - var(--n) * var(--treat-w)) / (var(--n) - 1))); }
-
 /* Sound toggle */
 .sound-toggle { flex: 0 0 auto !important; padding-left: 12px !important; padding-right: 12px !important; }
 .menu-sound { position: fixed; top: 12px; right: 12px; z-index: 5; }

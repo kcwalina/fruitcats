@@ -324,7 +324,15 @@ function renderMenu(): string {
   };
   return `
   <div class="menu">
-    ${soundButton('menu-sound')}
+    <div class="menu-corner">
+      ${soundButton('menu-sound')}
+      <div class="difficulty">
+        <span>Opponent:</span>
+        ${Object.entries(DIFFICULTY).map(([key, d]) => `
+          <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
+      </div>
+      <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
+    </div>
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
     </div>
@@ -345,14 +353,6 @@ function renderMenu(): string {
       </div>
       <div class="start-row">
         <button class="play-button" data-click="menu:play">Play</button>
-        <div class="start-side">
-          <div class="difficulty">
-            <span>Opponent:</span>
-            ${Object.entries(DIFFICULTY).map(([key, d]) => `
-              <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
-          </div>
-          <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
-        </div>
       </div>
       <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
     </section>

@@ -1,4 +1,5 @@
 import './style.css';
+import { renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi } from './tutorial';
 import {
   CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
@@ -108,10 +109,11 @@ function act(action: Action) {
   const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
   try {
     apply(game, action);
+    tutorialAfterAction(action);
     markHumanTurnDone();
     flash = '';
     notice = plantedNames.length
-      ? `Planted ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'} — you now have ${me.pantry.length} (see Treats in your bar below).`
+      ? `Planted ${plantedNames.join(' and ')} face-down as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'} — ${plantedNames.length > 1 ? 'they' : 'it'} will pay for your other cards. You have ${me.pantry.length} Treats.`
       : '';
   } catch (error) {
     flash = (error as Error).message;
@@ -125,20 +127,26 @@ function act(action: Action) {
 function scheduleAi() {
   window.clearTimeout(aiTimer);
   if (!game || game.winner !== null || game.prompt?.player !== AI) return;
+  if (tutorialBlocksAi()) return; // resumed when the balloon is closed
   const delay = aiDelayScale * (game.prompt.kind === 'pounce' || game.prompt.kind === 'plant' ? 450 : 850);
   aiTimer = window.setTimeout(() => {
     if (!game || game.prompt?.player !== AI) return;
-    apply(game, chooseAction(game, { skill: DIFFICULTY[difficulty].skill }));
+    apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill }));
     render();
     scheduleAi();
   }, delay);
 }
 
-function startGame() {
-  // The opponent leads one of the other decks, at random.
+function startGame(tutorial = false) {
+  // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
+  // with you going first, so its balloons can talk about specific cards.
   const others = Object.keys(DECKS).filter((d) => d !== myDeck);
-  const theirDeck = others[Math.floor(Math.random() * others.length)];
-  game = createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
+  const theirDeck = tutorial ? 'orchard-guard' : others[Math.floor(Math.random() * others.length)];
+  game = tutorial
+    ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
+    : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
+  if (tutorial) startTutorial({ game: () => game, rerender: render, resumeAi: scheduleAi });
+  else stopTutorial();
   markHumanTurnDone();
   screen = 'game';
   selection = null;
@@ -178,13 +186,14 @@ function onClick(key: string) {
 
   if (kind === 'menu') {
     if (raw === 'play') startGame();
+    else if (raw === 'tutorial') startGame(true);
     else if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); }
     else if (raw in DECKS) { myDeck = raw; render(); }
     return;
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
-    if (raw === 'quit') { window.clearTimeout(aiTimer); game = null; screen = 'menu'; }
+    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'menu'; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
@@ -256,6 +265,7 @@ function render() {
   app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = game ? [game.players[0].pantry.length, game.players[1].pantry.length] : [0, 0];
+  if (screen === 'game') renderTutorial(); else stopTutorial();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
@@ -294,6 +304,7 @@ function renderMenu(): string {
             <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
         </div>
         <button class="play-button" data-click="menu:play">Play</button>
+        <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
       </div>
       <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
     </section>
@@ -342,10 +353,12 @@ function renderPantry(s: GameState, p: PlayerId, ready: number): string {
   const tokens = pl.pantry.map((t, i) => {
     const mine = p === HUMAN;
     const cls = ['treat', t.exhausted && 'spent', i >= seen && 'new', mine && 'mine'].filter(Boolean).join(' ');
-    const art = mine ? ` style="background-image:url(${artUrl(t.card.id)})" data-zoom="${cardUrl(t.card.id)}"` : '';
+    // Treats are face-down: shown as card backs so they never look like units in play. You may
+    // still peek at your own (rule 4) — hover one to see it in the side panel.
+    const art = mine ? ` data-zoom="${cardUrl(t.card.id)}"` : '';
     return `<div class="${cls}"${art} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
   }).join('');
-  return `<div class="pantry" title="Treats pay for cards. They all get ready again at the start of each round.">
+  return `<div class="pantry" title="Treats are face-down cards used to pay for other cards. They all get ready again at the start of each round.">
     <div class="pantry-label">Treats <b>${ready}</b>/${pl.pantry.length} ready</div>
     <div class="treats">${tokens || '<span class="no-treats">none yet</span>'}</div>
   </div>`;
@@ -459,7 +472,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;
         break;
       case 'setupPlant':
-        text = `Plant <b>${prompt.count}</b> cards face-down as Treats (your resources). Pick cards you need least.`;
+        text = `Pick <b>${prompt.count}</b> cards to plant face-down as <b>Treats</b>. Treats pay for your other cards — planted cards are <b>not played</b>, so choose ones you need least (expensive cards are a good choice).`;
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Plant ${picks.size}/${prompt.count}</button>`;
         break;
       case 'discard':
@@ -467,7 +480,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Discard ${picks.size}/${prompt.count}</button>`;
         break;
       case 'plant':
-        text = `<b>New round!</b> Click a card in your hand to plant it as a Treat, or skip.`;
+        text = `<b>New round!</b> You may plant one card face-down as an extra <b>Treat</b> (it pays for cards; it won't be played). Click a card, or Skip.`;
         buttons = '<button data-click="btn:skip">Skip</button>';
         break;
       case 'action': {

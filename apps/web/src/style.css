@@ -157,7 +157,10 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .treats { display: flex; flex-wrap: wrap; gap: 4px; }
 .treat {
   width: clamp(18px, 2.4vh, 26px); aspect-ratio: 0.72; border-radius: 4px; border: 2px solid white;
-  background: radial-gradient(circle at 30% 30%, #f7c878, #d38b3c); background-size: cover; background-position: center;
+  /* A face-down card back: a cookie-coloured card with a paw-print pattern. */
+  background:
+    radial-gradient(circle at 50% 42%, #fff4d6 0 22%, transparent 23%),
+    repeating-linear-gradient(45deg, #e9a34d 0 4px, #d38b3c 4px 8px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); transition: transform 0.25s, filter 0.25s;
 }
 .treat.mine { cursor: help; }
@@ -326,3 +329,38 @@ body.dragging .hand-card:hover { transform: none; }
   .board { padding: 6px; }
   .hand { padding: 0 8px; }
 }
+
+/* ── Tutorial balloons ─────────────────────────────────────────────── */
+
+.tutorial-button { font-size: clamp(13px, 2vh, 16px); padding: 0.6vh 18px; border-color: var(--good); color: var(--good); background: #f0fbf2; }
+
+#tutorial { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+/* The spotlight dims everything around the thing being explained; clicks pass straight through it. */
+.tut-spot {
+  position: fixed; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 4px var(--glow), 0 0 0 9999px rgba(45, 25, 10, 0.45);
+  animation: tut-glow 1.4s ease-in-out infinite; transition: all 0.25s ease;
+}
+@keyframes tut-glow { 50% { box-shadow: 0 0 0 7px var(--glow), 0 0 0 9999px rgba(45, 25, 10, 0.45); } }
+.tut-dim { position: fixed; inset: 0; background: rgba(45, 25, 10, 0.45); pointer-events: none; }
+.tut-balloon {
+  position: fixed; width: min(360px, calc(100vw - 16px)); pointer-events: auto;
+  background: #fffdf7; color: var(--ink); border: 3px solid var(--glow); border-radius: 18px;
+  padding: 12px 14px 10px; box-shadow: 0 12px 32px rgba(60, 30, 5, 0.35); animation: pop 0.25s ease-out;
+  font-size: 14px; line-height: 1.4;
+}
+.tut-balloon.centered { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 16px)); }
+.tut-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.tut-head b { font-family: Fredoka, Nunito, sans-serif; font-size: 17px; color: #c2560c; }
+.tut-progress { font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.tut-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; }
+.tut-actions button { padding: 4px 16px; }
+.tut-skip { border: none; background: none; color: var(--muted); font-size: 12px; padding: 4px 0 !important; text-decoration: underline; }
+.tut-wait { font-weight: 800; color: var(--good); font-size: 13px; }
+.tut-arrow {
+  position: absolute; width: 18px; height: 18px; background: #fffdf7; transform: translateX(-50%) rotate(45deg);
+  border: 3px solid var(--glow); border-top-color: transparent; border-left-color: transparent;
+}
+.tut-balloon.above .tut-arrow { bottom: -11px; }
+.tut-balloon.below .tut-arrow { top: -11px; border: 3px solid var(--glow); border-bottom-color: transparent; border-right-color: transparent; }
+.tut-balloon.centered .tut-arrow { display: none; }

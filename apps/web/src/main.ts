@@ -652,8 +652,71 @@ app.addEventListener('mouseover', (event) => {
   if (el && zoom && zoom.src !== el.dataset.zoom) zoom.src = el.dataset.zoom!;
 });
 
+// ── Long press: show a card enlarged ─────────────────────────────────────────────────────────────
+//
+// Press and hold any card (in hand, on the board, a Hero Cat, your Treats) to read it full size.
+// Moving the pointer cancels it (that's a drag), and the release after a long press isn't a click.
+// Right-click does the same on desktop.
+
+const LONG_PRESS_MS = 450;
+let pressTimer: number | undefined;
+let pressAt: { x: number; y: number } | null = null;
+
+function openZoom(url: string) {
+  closeZoom();
+  const overlay = document.createElement('div');
+  overlay.id = 'zoom-overlay';
+  overlay.innerHTML = `<img src="${url}" alt=""><span>Tap anywhere to close</span>`;
+  overlay.addEventListener('click', closeZoom);
+  document.body.appendChild(overlay);
+}
+
+function closeZoom() {
+  document.getElementById('zoom-overlay')?.remove();
+}
+
+app.addEventListener('pointerdown', (event) => {
+  const el = (event.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
+  if (!el || event.button !== 0) return;
+  pressAt = { x: event.clientX, y: event.clientY };
+  window.clearTimeout(pressTimer);
+  pressTimer = window.setTimeout(() => {
+    pressAt = null;
+    drag = null;           // a long press is never also a drag
+    suppressClick = true;  // ...nor a click when the finger lifts
+    openZoom(el.dataset.zoom!);
+  }, LONG_PRESS_MS);
+}, true);
+
+window.addEventListener('pointermove', (event) => {
+  if (pressAt && Math.hypot(event.clientX - pressAt.x, event.clientY - pressAt.y) > 8) {
+    window.clearTimeout(pressTimer);
+    pressAt = null;
+  }
+}, true);
+
+for (const type of ['pointerup', 'pointercancel'] as const) {
+  window.addEventListener(type, () => {
+    window.clearTimeout(pressTimer);
+    pressAt = null;
+    // The click (if any) fires right after pointerup; afterwards stop swallowing clicks.
+    if (suppressClick) window.setTimeout(() => { suppressClick = false; }, 0);
+  }, true);
+}
+
+app.addEventListener('contextmenu', (event) => {
+  const el = (event.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
+  if (!el) return;
+  event.preventDefault();
+  window.clearTimeout(pressTimer);
+  openZoom(el.dataset.zoom!);
+});
+
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && selection) { selection = null; render(); }
+  if (event.key === 'Escape') {
+    if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
+    if (selection) { selection = null; render(); }
+  }
 });
 
 // Dev-only hook for automated UI testing and debugging in the console.

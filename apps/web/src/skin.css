@@ -219,3 +219,17 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .game { padding: 12px; }
   .log-panel h3 { display: none; }
 }
+
+/* Long-press / right-click card preview */
+#zoom-overlay {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; align-content: center; gap: 12px;
+  background: rgba(30, 15, 5, 0.72); backdrop-filter: blur(3px); cursor: zoom-out; animation: fade-in 0.15s ease-out;
+}
+#zoom-overlay img {
+  max-height: 84vh; max-width: 92vw; border-radius: 22px;
+  box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
+}
+#zoom-overlay span { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+@keyframes fade-in { from { opacity: 0; } }
+/* Stop the browser's own long-press menu / text selection on cards. */
+[data-zoom] { -webkit-touch-callout: none; user-select: none; }

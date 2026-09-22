@@ -11,6 +11,10 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 
 ## Play it
 
+**[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** — play against the AI in your browser, on a phone, tablet or desktop.
+
+Or run it locally:
+
 ```bash
 npm install
 npm run dev        # http://localhost:5173 — play against the AI

@@ -14,6 +14,7 @@
   --parchment-edge: #dcb66e;
   --ink: #3b2513;
   --muted: #86694b;
+  --paw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='16.2' rx='8' ry='6.6'/%3E%3Cellipse cx='3.8' cy='9.6' rx='2.7' ry='3.3'/%3E%3Cellipse cx='9' cy='6.1' rx='2.9' ry='3.6'/%3E%3Cellipse cx='15' cy='6.1' rx='2.9' ry='3.6'/%3E%3Cellipse cx='20.2' cy='9.6' rx='2.7' ry='3.3'/%3E%3C/svg%3E");
   --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21.3 1.9 11.5a6.1 6.1 0 0 1 10.1-7 6.1 6.1 0 0 1 10.1 7z'/%3E%3C/svg%3E");
   --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(120, 70, 20, 0.12), 0 6px 16px rgba(50, 25, 5, 0.28);
 }
@@ -157,14 +158,33 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   background: linear-gradient(var(--fam), var(--fam-dark)); color: #fff; font-weight: 600;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
-.pow { border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35); background: radial-gradient(circle at 35% 30%, #ff8a5c, #d4431b); }
-.pow.buffed { background: radial-gradient(circle at 35% 30%, #7fd68a, #2e9d57); }
-.hp {
-  border: none; border-radius: 0; padding-top: 2px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
-  background: linear-gradient(#ff8fb0, #d63b70);
-  -webkit-mask: var(--heart) center / contain no-repeat; mask: var(--heart) center / contain no-repeat;
+/* Power is a paw print, Health a heart. The shape is drawn by ::before so the mask never clips the
+   number: masking the badge itself used to cut the digit off at the edges of the heart. */
+.pow, .hp {
+  border: none; border-radius: 0; background: none; box-shadow: none; isolation: isolate;
+  text-shadow: 0 1px 2px rgba(70, 20, 0, 0.55), 0 0 4px rgba(0, 0, 0, 0.35);
 }
-.hp.hurt { background: linear-gradient(#c2456b, #7d1233); }
+.pow::before, .hp::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+}
+.pow::before {
+  /* The paw reaches well above the badge so that its pad — where the number sits — fills the badge. */
+  inset: -46% -18% -4%;
+  background: linear-gradient(#ff9a6d, #d4431b);
+  -webkit-mask-image: var(--paw); mask-image: var(--paw);
+}
+.pow.buffed::before { background: linear-gradient(#8fe0a0, #2e9d57); }
+.hp::before {
+  inset: -14% -8%;
+  background: linear-gradient(#ff8fb0, #d63b70);
+  -webkit-mask-image: var(--heart); mask-image: var(--heart);
+}
+.hp.hurt::before { background: linear-gradient(#c2456b, #7d1233); }
+.hp { padding-top: 2%; }   /* the digit sits in the body of the heart, not its notch */
 .chips span { background: rgba(255, 250, 235, 0.95); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
 .unit.can-act { box-shadow: 0 0 0 3px var(--gold-light), 0 0 16px 4px rgba(255, 200, 70, 0.85), 0 6px 12px rgba(40, 20, 5, 0.4); }
 .unit.fresh { box-shadow: 0 0 0 3px #ffb08a, 0 0 14px 3px rgba(255, 130, 80, 0.6), 0 6px 12px rgba(40, 20, 5, 0.4); }
@@ -350,7 +370,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   font: 600 12px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 10px; border-radius: 999px;
   background: linear-gradient(var(--fam), var(--fam-dark)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
 }
-.hp.buffed { background: linear-gradient(#8fe0a0, #2e9d57); }
+.hp.buffed::before { background: linear-gradient(#8fe0a0, #2e9d57); }
 .hand-card.zest-on::before {
   content: '🍋 Zest!'; position: absolute; left: 50%; top: -10px; transform: translateX(-50%); z-index: 7;
   font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; white-space: nowrap; padding: 1px 8px; border-radius: 999px;

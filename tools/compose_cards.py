@@ -108,6 +108,18 @@ def heart(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str, outlin
         draw.polygon([(cx - rr * 0.97, cy - rr * 0.35), (cx + rr * 0.97, cy - rr * 0.35), (cx, cy + rr * 1.05)], fill=color)
 
 
+def paw(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str, outline: str) -> None:
+    """A cat's paw print: a big pad with four toes over it. The number goes on the pad."""
+    for pad, color in ((6, outline), (0, fill)):
+        rr = r - pad
+        # The pad itself, low and wide, with the number's room in the middle.
+        draw.ellipse((cx - rr * 0.82, cy - rr * 0.34, cx + rr * 0.82, cy + rr * 1.04), fill=color)
+        for dx, dy, tx, ty in ((-0.72, -0.56, 0.25, 0.32), (-0.26, -0.84, 0.27, 0.34),
+                               (0.26, -0.84, 0.27, 0.34), (0.72, -0.56, 0.25, 0.32)):
+            draw.ellipse((cx + rr * (dx - tx), cy + rr * (dy - ty),
+                          cx + rr * (dx + tx), cy + rr * (dy + ty)), fill=color)
+
+
 def star(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str) -> None:
     import math
     points = []
@@ -219,9 +231,8 @@ def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
 
     # Stats
     if power is not None:
-        d.ellipse((42, 922, 150, 1030), fill=dark)
-        d.ellipse((48, 928, 144, 1024), fill=POWER_COLOR)
-        centered(d, (96, 973), str(power), font("seguibl.ttf", 58), "white", stroke_width=3, stroke_fill=dark)
+        paw(d, 96, 968, 58, POWER_COLOR, dark)
+        centered(d, (96, 990), str(power), font("seguibl.ttf", 52), "white", stroke_width=3, stroke_fill=dark)
     if health is not None:
         heart(d, 654, 970, 58, HEALTH_COLOR, dark)
         centered(d, (654, 962), str(health), font("seguibl.ttf", 54), "white", stroke_width=3, stroke_fill=dark)

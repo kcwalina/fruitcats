@@ -519,8 +519,8 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''}">${power}</div>
-    <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''}">${health}</div>
+    <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
+    <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     ${u.exhausted ? '<div class="zzz">zzz</div>' : ''}
   </div>`;
 }

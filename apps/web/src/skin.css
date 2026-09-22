@@ -495,3 +495,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* The rhythm of the game: one action each, back and forth. */
 .turn-hint { color: var(--muted); font-weight: 600; white-space: nowrap; }
 @media (max-width: 640px) { .turn-hint { white-space: normal; } }
+
+/* Buffed stats can reach two digits, which would spill over the badge at board size. */
+.pow.two-digit, .hp.two-digit { font-size: clamp(9px, 10cqw, 13px); letter-spacing: -0.04em; }

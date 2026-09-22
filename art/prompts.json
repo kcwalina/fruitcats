@@ -69,5 +69,19 @@
     "SB1-T13": "A laid-back papaya-orange cat with a pale green belly lounging in a hammock between two palm trees, sunglasses pushed up on its head.",
     "SB1-T14": "A strong brown-and-cream coconut-coloured cat with a white chest standing protectively on a sandy beach, one paw resting on a coconut, calm and brave.",
     "SB1-T15": "A huge spiky-furred olive-green durian-coloured cat with a mischievous grin, surrounded by comical visible wavy stink lines that make nearby critters flee."
+  },
+  "ui": {
+    "menu-bg": {
+      "size": "1536x1024",
+      "prompt": "A dreamy painted landscape for the title screen of a cute card game, in a polished storybook cartoon style with soft cel shading: rolling hills covered in orchards of lemon, apple and mango trees under a warm golden-hour sky, fluffy peach-coloured clouds, soft glowing light and gentle bokeh, a calm open meadow in the centre with lots of empty space. No animals, no characters, no text, no letters, no logos, no borders."
+    },
+    "playmat": {
+      "size": "1536x1024",
+      "prompt": "Seen from directly above: a cosy wooden garden table used as a card game play mat, in a polished storybook cartoon style. Smooth pale honey-coloured wood planks with soft grain, warm dappled sunlight and gentle leaf shadows, a few blossom petals and small leaves scattered only near the edges. Very calm and low in contrast, with a large empty centre so that cards placed on it stand out. No objects in the centre, no characters, no text, no letters, no borders."
+    },
+    "cardback": {
+      "size": "1024x1536",
+      "prompt": "The back of a collectible card for a cute cat trading card game, in a polished storybook illustration style. A symmetrical ornate design: a large golden cat paw print in the centre inside a circular wreath of tiny fruits (lemon, red apple, mango, strawberry, watermelon slice) and leaves, on a rich warm orange and cream geometric pattern, framed by a thin decorative gold border with rounded corners. No text, no letters, no numbers, no logos."
+    }
   }
 }

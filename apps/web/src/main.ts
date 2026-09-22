@@ -1,4 +1,5 @@
 import './style.css';
+import './skin.css';
 import { renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi } from './tutorial';
 import {
   CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isSneaky, keywords,
@@ -11,6 +12,9 @@ import {
 const BASE = import.meta.env.BASE_URL;
 const artUrl = (key: string) => `${BASE}sb1/${key}.webp`;
 const cardUrl = (key: string) => `${BASE}cards/sb1/${key}.webp`;
+for (const [name, file] of [['--img-menu-bg', 'menu-bg'], ['--img-playmat', 'playmat'], ['--img-cardback', 'cardback']])
+  document.documentElement.style.setProperty(name, `url(${BASE}ui/${file}.webp)`);
+const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
 const heroKey = (s: GameState, p: PlayerId) => `${s.players[p].hero.id}-${s.players[p].hero.grown ? 'bigcat' : 'kitten'}`;
 
 /** The engine logs in the third person; the human player is "You", so fix up the grammar. */
@@ -262,6 +266,7 @@ function onClick(key: string) {
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
 
 function render() {
+  document.body.className = screen === 'menu' ? 'menu-screen' : 'game-screen';
   app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = game ? [game.players[0].pantry.length, game.players[1].pantry.length] : [0, 0];
@@ -336,7 +341,7 @@ function renderGame(): string {
         <button data-click="ui:rules">Rules</button>
         <button data-click="ui:quit">Menu</button>
       </div>
-      <ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul>
+      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
     </aside>
     ${s.winner !== null ? renderGameOver(s) : ''}
     ${showRules ? renderRules() : ''}
@@ -377,7 +382,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
 
   return `
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
-    <div class="hero ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
+    <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
          data-click="${key}" data-zoom="${cardUrl(heroKey(s, p))}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       <div class="hero-name">${esc(side.name)}</div>
@@ -415,7 +420,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   const key = `unit:${u.uid}`;
   const selected = selection?.options.some((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === u.uid);
   const cls = [
-    'unit', u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected',
+    'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected',
     owner === AI && !foeUnitsBefore.has(u.uid) && 'fresh',
     owner === AI && !renderedFoeUnits.has(u.uid) && 'arriving',
     owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
@@ -516,7 +521,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
     ? `<div class="recap"><b>Opponent:</b> ${recap.map((t) => esc(t.replace(/^Opponent('s)? /, (_, pos) => (pos ? 'their ' : '')))).join(' → ')}</div>`
     : '';
   return `<section class="midbar">
-    <div class="round">Round ${s.round}</div>
+    <div class="round"><small>Round</small><b>${s.round}</b></div>
     <div class="prompt">${notice ? `<div class="notice">✓ ${esc(notice)}</div>` : ''}${recapLine}${text}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
     <div class="buttons">${buttons}</div>
   </section>`;

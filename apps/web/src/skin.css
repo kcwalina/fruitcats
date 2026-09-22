@@ -1,0 +1,221 @@
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   Skin — painted backdrops, parchment panels and chunky game buttons, so the shell matches the
+   painted cards. style.css owns the layout; this layer only changes how things look.
+   The images come from art/ui/ and are passed in as CSS variables by main.ts.
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --wood-dark: #5b3417;
+  --wood: #8a5427;
+  --gold: #e7b24a;
+  --gold-light: #ffe6a3;
+  --parchment: #fffaf0;
+  --parchment-2: #f5e3bb;
+  --parchment-edge: #dcb66e;
+  --ink: #3b2513;
+  --muted: #86694b;
+  --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21.3 1.9 11.5a6.1 6.1 0 0 1 10.1-7 6.1 6.1 0 0 1 10.1 7z'/%3E%3C/svg%3E");
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(120, 70, 20, 0.12), 0 6px 16px rgba(50, 25, 5, 0.28);
+}
+
+/* Backdrops */
+body.menu-screen {
+  background: linear-gradient(rgba(255, 236, 200, 0.12), rgba(80, 40, 10, 0.18)), var(--img-menu-bg) center / cover no-repeat, #f3c27a;
+}
+body.game-screen {
+  background: linear-gradient(rgba(35, 18, 5, 0.45), rgba(35, 18, 5, 0.6)), var(--img-menu-bg) center / cover no-repeat, #4a2a12;
+}
+
+/* Buttons: soft 3D that presses down on click. :where() keeps this base style at the lowest
+   specificity so the special buttons (.primary, .play-button, .tutorial-button, .chosen) override it. */
+button:where(:not(.hand-card, .deck-choice)) {
+  font-family: Fredoka, Nunito, sans-serif; font-weight: 600; letter-spacing: 0.2px;
+  border: none; border-radius: 14px; padding: 7px 18px; color: #5a3413;
+  background: linear-gradient(#fffaf0, #f1d9a6);
+  box-shadow: 0 3px 0 #c08f4a, 0 5px 10px rgba(60, 30, 5, 0.25), inset 0 1px 0 #fff;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s;
+}
+button:where(:not(.hand-card, .deck-choice)):where(:hover:not(:disabled)) {
+  transform: translateY(-1px); filter: brightness(1.04);
+  box-shadow: 0 4px 0 #c08f4a, 0 7px 12px rgba(60, 30, 5, 0.28), inset 0 1px 0 #fff;
+}
+button:where(:not(.hand-card, .deck-choice)):where(:active:not(:disabled)) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #c08f4a, 0 2px 4px rgba(60, 30, 5, 0.25), inset 0 1px 0 #fff;
+}
+button.primary, .play-button {
+  color: #fff; text-shadow: 0 1px 0 rgba(120, 45, 0, 0.55);
+  background: linear-gradient(#ffb95c, #f2761b);
+  box-shadow: 0 3px 0 #ad4d0b, 0 6px 12px rgba(120, 50, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+button.primary:hover:not(:disabled), .play-button:hover {
+  box-shadow: 0 4px 0 #ad4d0b, 0 8px 14px rgba(120, 50, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+button.primary:active:not(:disabled), .play-button:active {
+  box-shadow: 0 1px 0 #ad4d0b, 0 2px 4px rgba(120, 50, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.tutorial-button {
+  color: #fff; text-shadow: 0 1px 0 rgba(0, 70, 20, 0.5); border: none;
+  background: linear-gradient(#8fd997, #3d9d52);
+  box-shadow: 0 3px 0 #276c37, 0 6px 12px rgba(20, 70, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+button:disabled { filter: grayscale(0.6); opacity: 0.55; }
+
+
+/* ── Menu ─────────────────────────────────────────────────────────────── */
+
+.title h1 {
+  background: none; -webkit-background-clip: initial; background-clip: initial; filter: none;
+  color: #fff7df; letter-spacing: 1px;
+  text-shadow: 0 2px 0 #f29f05, 0 4px 0 #d9641d, 0 7px 0 #8e3b12, 0 12px 20px rgba(60, 20, 0, 0.45);
+}
+.title p {
+  display: inline-block; margin-top: 1vh; padding: 3px 16px; border-radius: 999px; color: #6b4520;
+  background: rgba(255, 248, 230, 0.88); box-shadow: 0 2px 8px rgba(60, 30, 5, 0.2);
+}
+.picker h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
+.parade-cat { border-color: #fff6dc; box-shadow: 0 0 0 3px var(--gold), 0 10px 22px rgba(60, 25, 5, 0.4); }
+.deck-choice {
+  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
+  box-shadow: var(--panel-shadow); transition: transform 0.15s, box-shadow 0.15s;
+}
+.deck-choice:hover { transform: translateY(-3px); }
+.deck-choice.chosen {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px var(--gold-light), 0 0 26px 6px rgba(255, 200, 80, 0.75), var(--panel-shadow);
+}
+.deck-name { color: var(--ink); }
+.deck-blurb { color: var(--muted); }
+.difficulty {
+  background: rgba(255, 248, 230, 0.88); padding: 5px 8px; border-radius: 16px; box-shadow: 0 2px 8px rgba(60, 30, 5, 0.2);
+}
+.difficulty button { padding: 5px 12px; font-size: 14px; }
+.difficulty .chosen {
+  background: linear-gradient(#fff2c9, #ffd97a); box-shadow: 0 3px 0 #c8942c, 0 0 0 2px var(--gold), inset 0 1px 0 #fff;
+}
+.coming { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.85); }
+
+/* ── Board: a painted table in a wooden frame with a gold inlay ─────────── */
+
+.board {
+  background: var(--img-playmat) center / cover, #e7c68c;
+  border-radius: 26px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 236, 180, 0.7), inset 0 0 60px rgba(90, 45, 5, 0.35),
+    0 0 0 6px var(--wood), 0 0 0 8px var(--gold), 0 0 0 11px var(--wood-dark), 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+.game { padding: 16px; }
+
+/* Parchment panels */
+.player, .midbar, .log-panel {
+  background: linear-gradient(var(--parchment), var(--parchment-2));
+  border: 2px solid var(--parchment-edge); border-radius: 16px; box-shadow: var(--panel-shadow);
+}
+.player { background: linear-gradient(rgba(255, 250, 240, 0.95), rgba(245, 227, 187, 0.95)); }
+.player.thinking { box-shadow: 0 0 0 3px var(--gold), 0 0 18px 4px rgba(255, 200, 80, 0.55), var(--panel-shadow); }
+.who { font-family: Fredoka, Nunito, sans-serif; font-weight: 600; font-size: 16px; color: var(--ink); }
+.counters span {
+  background: rgba(255, 255, 255, 0.6); border-radius: 999px; padding: 0 8px; box-shadow: inset 0 0 0 1px rgba(160, 110, 50, 0.25);
+}
+.yarn { border-color: var(--gold); background: #fffdf5; }
+
+/* Lives: little hearts */
+.lives { gap: 2px; }
+.lives i {
+  width: 15px; height: 14px; border-radius: 0; background: #d8c2a0; box-shadow: none;
+  -webkit-mask: var(--heart) center / contain no-repeat; mask: var(--heart) center / contain no-repeat;
+}
+.lives i.on { background: linear-gradient(#ff9dba, #e0457b 60%, #b92f5f); }
+.lives b { font-family: Fredoka, Nunito, sans-serif; color: #b92f5f; font-size: 16px; }
+
+/* Hero portrait: gold frame */
+.hero { border: 3px solid var(--gold); box-shadow: 0 0 0 2px #fff6dc, 0 5px 12px rgba(50, 25, 5, 0.35); }
+.hero.grown { border-color: #ffd257; box-shadow: 0 0 0 2px #fff6dc, 0 0 16px 4px rgba(255, 210, 90, 0.8); }
+.hero-name { font-family: Fredoka, Nunito, sans-serif; }
+.hero-actions button { padding: 4px 12px; font-size: 13px; background: linear-gradient(#fff4d6, #ffd98a); }
+
+/* Card backs (opponent's hand, Treats) use the painted card back */
+.card-back, .treat {
+  background: var(--img-cardback) center / cover, #f08c2b;
+  border: 1.5px solid #fff3d0; border-radius: 4px;
+}
+.card-back { width: 28px; height: 42px; box-shadow: 0 2px 5px rgba(40, 20, 5, 0.4); }
+.pantry-label b { color: #2f8a46; }
+
+/* Units: mini cards framed in their family colour */
+.fam-citrus { --fam: #f29f05; --fam-dark: #a86400; }
+.fam-orchard { --fam: #d64545; --fam-dark: #8e2a2a; }
+.fam-garden { --fam: #5fa84d; --fam-dark: #3b7430; }
+.fam-tropical { --fam: #f2780c; --fam-dark: #a24e05; }
+.fam-berry { --fam: #d6336c; --fam-dark: #8f1d46; }
+.fam-melon { --fam: #3fa66b; --fam-dark: #25714a; }
+.unit {
+  border: 3px solid var(--fam, #fff); background: var(--parchment);
+  box-shadow: 0 0 0 1.5px var(--fam-dark, #999), 0 6px 12px rgba(40, 20, 5, 0.4);
+}
+.uname {
+  background: linear-gradient(var(--fam), var(--fam-dark)); color: #fff; font-weight: 600;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+.pow { border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35); background: radial-gradient(circle at 35% 30%, #ff8a5c, #d4431b); }
+.pow.buffed { background: radial-gradient(circle at 35% 30%, #7fd68a, #2e9d57); }
+.hp {
+  border: none; border-radius: 0; padding-top: 2px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  background: linear-gradient(#ff8fb0, #d63b70);
+  -webkit-mask: var(--heart) center / contain no-repeat; mask: var(--heart) center / contain no-repeat;
+}
+.hp.hurt { background: linear-gradient(#c2456b, #7d1233); }
+.chips span { background: rgba(255, 250, 235, 0.95); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
+.unit.can-act { box-shadow: 0 0 0 3px var(--gold-light), 0 0 16px 4px rgba(255, 200, 70, 0.85), 0 6px 12px rgba(40, 20, 5, 0.4); }
+.unit.fresh { box-shadow: 0 0 0 3px #ffb08a, 0 0 14px 3px rgba(255, 130, 80, 0.6), 0 6px 12px rgba(40, 20, 5, 0.4); }
+.empty-yard {
+  color: rgba(90, 50, 15, 0.55); font-family: Fredoka, Nunito, sans-serif; font-size: 15px; font-style: normal;
+  padding: 8px 18px; border: 2px dashed rgba(140, 90, 40, 0.3); border-radius: 14px;
+}
+
+/* Prompt bar with a round badge */
+.midbar { gap: 14px; padding: 0.6vh 14px 0.6vh 10px; }
+.round {
+  flex: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; align-content: center;
+  background: radial-gradient(circle at 35% 30%, #fff1c4, #f1b945 70%, #c98a1d);
+  box-shadow: 0 0 0 3px #fff6dc, 0 0 0 5px #c98a1d, 0 4px 10px rgba(80, 40, 0, 0.35);
+  color: #6b3a0c; line-height: 1;
+}
+.round small { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.round b { font-size: 22px; }
+.prompt { color: var(--ink); }
+
+/* Side panel */
+.inspector img { border-radius: 16px; box-shadow: 0 0 0 3px var(--gold), 0 10px 24px rgba(0, 0, 0, 0.45); }
+.log-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 6px 4px 4px; }
+.log-panel h3 {
+  margin: 0 8px 4px; font: 600 14px Fredoka, Nunito, sans-serif; color: #8e4a12; text-align: center;
+  border-bottom: 1px dashed var(--parchment-edge); padding-bottom: 4px;
+}
+.log { background: none; box-shadow: none; border-radius: 0; padding: 2px 10px; }
+.log li.me { color: #1f5d85; }
+.log li.foe { color: #a02f2f; }
+.log li.sys { color: #9a6a2c; }
+
+/* Overlays */
+.game-over, .rules {
+  background: linear-gradient(var(--parchment), var(--parchment-2));
+  border: 3px solid var(--gold); box-shadow: 0 0 0 4px #fff6dc, 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.game-over h2 { font-family: Fredoka, Nunito, sans-serif; text-shadow: 0 2px 0 rgba(255, 255, 255, 0.7); }
+.game-over img { box-shadow: 0 0 0 3px var(--gold), 0 8px 18px rgba(0, 0, 0, 0.3); }
+
+/* Tutorial balloons in the same parchment */
+.tut-balloon { background: linear-gradient(var(--parchment), #fbeccb); border-color: var(--gold); }
+.tut-arrow { background: #fbeccb; border-color: var(--gold); }
+.tut-balloon.above .tut-arrow { border-top-color: transparent; border-left-color: transparent; }
+.tut-balloon.below .tut-arrow {
+  background: var(--parchment); border: 3px solid var(--gold); border-bottom-color: transparent; border-right-color: transparent;
+}
+.tut-skip, .tut-skip:hover, .tut-skip:active { box-shadow: none !important; background: none !important; }
+
+/* Narrow screens: the side strip panels keep the parchment look */
+@media (max-width: 1000px) {
+  .game { padding: 12px; }
+  .log-panel h3 { display: none; }
+}

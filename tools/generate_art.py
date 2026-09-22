@@ -93,10 +93,13 @@ def main() -> int:
     parser.add_argument("--quality", default="medium", choices=["low", "medium", "high"])
     parser.add_argument("--reference", type=Path, help="style reference image (uses /images/edits)")
     parser.add_argument("--jobs", type=int, default=4, help="parallel requests")
+    parser.add_argument("--ui", action="store_true", help="draw the interface art (backgrounds, card back) into art/ui/")
     args = parser.parse_args()
 
     cards = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))["cards"]
     prompts = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))
+    if args.ui:
+        return draw_ui(prompts["ui"], args)
     out_dir = ROOT / "art" / args.set
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -149,6 +152,36 @@ def main() -> int:
 
     print(f"\ndrew {len(todo) - failed} of {len(todo)}")
     return 1 if failed else 0
+
+
+def draw_ui(items: dict, args) -> int:
+    """Interface art: each entry has its own full prompt and size, and is saved to art/ui/<key>.webp."""
+    out_dir = ROOT / "art" / "ui"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    endpoint, deployment = MODELS[args.model]
+    todo = [(k, v) for k, v in items.items() if (not args.only or k in args.only)
+            and (args.force or not (out_dir / f"{k}.webp").exists())]
+    if not todo:
+        print("Nothing to draw (all UI art exists; use --force to redraw).")
+        return 0
+    token = access_token()
+
+    def draw(key: str, item: dict) -> bool:
+        body = json.dumps({"prompt": item["prompt"], "n": 1, "size": item["size"], "quality": "high"}).encode()
+        url = f"{endpoint}/openai/deployments/{deployment}/images/generations?api-version={API_VERSION}"
+        try:
+            data = post(url, token, body, "application/json")["data"][0]["b64_json"]
+        except (RuntimeError, KeyError, IndexError, OSError) as error:
+            print(f"  {key}: FAILED {error}", flush=True)
+            return False
+        path = out_dir / f"{key}.webp"
+        Image.open(io.BytesIO(base64.b64decode(data))).convert("RGB").save(path, quality=88, method=6)
+        print(f"  {key}: {path.relative_to(ROOT)} ({path.stat().st_size // 1024} KB)", flush=True)
+        return True
+
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        results = list(pool.map(lambda job: draw(*job), todo))
+    return 0 if all(results) else 1
 
 
 if __name__ == "__main__":

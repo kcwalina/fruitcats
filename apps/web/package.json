@@ -1,0 +1,13 @@
+{
+  "name": "@fruitcats/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p ../../tsconfig.json --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fruitcats/engine": "*"
+  }
+}

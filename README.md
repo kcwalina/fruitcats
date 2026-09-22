@@ -9,6 +9,17 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 - [Design notes](docs/design-notes.md) — research, rationale, and balance hypotheses to test
 - [Starter Box card images](art/cards/sb1/README.md) — every card, rendered
 
+## Play it
+
+```bash
+npm install
+npm run dev        # http://localhost:5173 — play against the AI
+```
+
+- `packages/engine` — the rules engine (a deterministic state machine implementing the comprehensive rules) and the AI opponent
+- `apps/web` — the browser client (Vite + TypeScript, no framework)
+- `npm test` — engine tests; `npm run sim -- 200` — AI-vs-AI playtest: win rates, first-player advantage, game length
+
 ## Card data and art
 
 - `cards/sb1.json` — the Starter Box card data (the single source of truth for card text and stats)

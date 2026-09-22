@@ -32,7 +32,9 @@ export function evaluate(s: GameState, p: PlayerId): number {
     if (s.prompt?.kind === 'action' || s.prompt?.kind === 'pounce') v += pl.pantry.filter((t) => !t.exhausted).length * W.readyTreat;
     for (const u of pl.yard) {
       const k = keywords(u.id);
-      v += unitPower(u) * W.power + (unitHealth(u) - u.damage) * W.health;
+      // "This round" Power buffs are worth little once the unit can't attack any more this round.
+      const tempPower = u.buffPower * (u.exhausted ? 0.9 : 0.4);
+      v += (unitPower(u) - tempPower) * W.power + (unitHealth(u) - u.damage) * W.health;
       if (u.exhausted && s.prompt?.kind !== 'plant') v -= unitPower(u) * W.exhausted;
       if (isGuardian(u)) v += W.guardian;
       if (k.fierce) v += W.fierce;

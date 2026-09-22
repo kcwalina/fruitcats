@@ -18,7 +18,10 @@ const VERBS: Record<string, string> = {
   discards: 'discard', wins: 'win', starts: 'start', POUNCES: 'POUNCE', attacks: 'attack', uses: 'use',
 };
 const humanize = (text: string) =>
-  text.replace(/\bYou's\b/g, 'Your').replace(/\bYou (\w+)\b/g, (m, verb: string) => (VERBS[verb] ? `You ${VERBS[verb]}` : m));
+  text.replace(/\bYou's\b/g, 'Your')
+    .replace(/\bYou (\w+)\b/g, (m, verb: string) => (VERBS[verb] ? `You ${VERBS[verb]}` : m))
+    .replace(/\bYou (\w+) their\b/g, 'You $1 your')
+    .replace(/(?<!^)(?<![.!] )\bYour\b/g, 'your');
 
 const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -80,6 +83,10 @@ let foeFrom = 0;
 let foeUnitsBefore = new Set<number>();
 /** Opponent units already on screen, so the arrival animation plays once per unit, not per re-render. */
 let renderedFoeUnits = new Set<number>();
+/** Treat counts already on screen per player, so newly planted Treats get a short "pop". */
+let renderedTreats: [number, number] = [0, 0];
+/** A friendly confirmation of the player's own last move (e.g. what they just planted). */
+let notice = '';
 
 function markHumanTurnDone() {
   if (!game) return;
@@ -91,15 +98,21 @@ function markHumanTurnDone() {
 function foeRecap(s: GameState): string[] {
   return s.log.slice(foeFrom)
     .filter((e) => e.player === AI && !/plants? |keeps their hand|mulligans/.test(e.text))
-    .map((e) => humanize(e.text).replace(/(?<!^)\bYour\b/g, 'your'));
+    .map((e) => humanize(e.text));
 }
 
 function act(action: Action) {
   if (!game) return;
-  markHumanTurnDone();
+  const me = game.players[HUMAN];
+  const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
+  const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
   try {
     apply(game, action);
+    markHumanTurnDone();
     flash = '';
+    notice = plantedNames.length
+      ? `Planted ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'} — you now have ${me.pantry.length} (see Treats in your bar below).`
+      : '';
   } catch (error) {
     flash = (error as Error).message;
   }
@@ -132,6 +145,23 @@ function startGame() {
   picks = new Set();
   render();
   scheduleAi();
+}
+
+/** A plain-language reason a card in hand can't be played right now. */
+function whyUnplayable(s: GameState, id: string, promptKind: string): string {
+  const def = CARDS[id];
+  const name = cardName(id);
+  const ready = readyTreats(s, HUMAN);
+  const k = keywords(id);
+  if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Pounce cards can be played while your opponent is acting — ${name} isn't one.`;
+  if (promptKind !== 'action') return `You can't play cards right now.`;
+  if (id === 'SB1-O09') return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
+  if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Treats — you have ${ready} ready. Spent Treats come back at the start of next round.`;
+  const yard = s.players[HUMAN].yard;
+  if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
+  if (def.type === 'Cat' && yard.some((u) => u.id === id)) return `${name} is already in your Yard, and Cats are one of a kind.`;
+  if (def.type === 'Toy') return `${name} needs one of your units without a Toy to attach to.`;
+  return `${name} has no legal target right now.`;
 }
 
 function select(label: string, options: Action[]) {
@@ -203,7 +233,7 @@ function onClick(key: string) {
     const card = game.players[HUMAN].hand.find((c) => c.uid === value)!;
     const options = legal.filter((a) => (a.t === 'play' || a.t === 'pounce') && a.uid === value);
     if (!options.length) {
-      flash = prompt.kind === 'pounce' ? `${cardName(card.id)} can't Pounce here.` : `You can't play ${cardName(card.id)} right now.`;
+      flash = whyUnplayable(game, card.id, prompt.kind);
       render();
       return;
     }
@@ -225,6 +255,9 @@ function onClick(key: string) {
 function render() {
   app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
+  renderedTreats = game ? [game.players[0].pantry.length, game.players[1].pantry.length] : [0, 0];
+  // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
+  if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
 
 function renderMenu(): string {
@@ -278,7 +311,7 @@ function renderGame(): string {
 
   return `
   <div class="game">
-    <main class="board">
+    <main class="board ${targets.size ? 'targeting' : ''}">
       ${renderPlayer(s, AI, targets)}
       ${renderYard(s, AI, targets, attackers)}
       ${renderMidbar(s, legal)}
@@ -296,6 +329,25 @@ function renderGame(): string {
     </aside>
     ${s.winner !== null ? renderGameOver(s) : ''}
     ${showRules ? renderRules() : ''}
+  </div>`;
+}
+
+/**
+ * The Pantry: one small face-down card per Treat. Ready Treats stand upright, spent ones lie sideways.
+ * You may look at your own Treats (rule 4), so yours show their art and preview on hover.
+ */
+function renderPantry(s: GameState, p: PlayerId, ready: number): string {
+  const pl = s.players[p];
+  const seen = renderedTreats[p];
+  const tokens = pl.pantry.map((t, i) => {
+    const mine = p === HUMAN;
+    const cls = ['treat', t.exhausted && 'spent', i >= seen && 'new', mine && 'mine'].filter(Boolean).join(' ');
+    const art = mine ? ` style="background-image:url(${artUrl(t.card.id)})" data-zoom="${cardUrl(t.card.id)}"` : '';
+    return `<div class="${cls}"${art} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
+  }).join('');
+  return `<div class="pantry" title="Treats pay for cards. They all get ready again at the start of each round.">
+    <div class="pantry-label">Treats <b>${ready}</b>/${pl.pantry.length} ready</div>
+    <div class="treats">${tokens || '<span class="no-treats">none yet</span>'}</div>
   </div>`;
 }
 
@@ -323,7 +375,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
       <div class="stat-row">
         <div class="lives" title="${pl.lives.length} Lives left">${lives}<b>${pl.lives.length}</b></div>
         <div class="counters">
-          <span title="Treats ready / total">🍪 ${ready}/${pl.pantry.length}</span>
           <span title="Cards in hand">✋ ${pl.hand.length}</span>
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
           <span title="Compost (discard pile)">🍂 ${pl.compost.length}</span>
@@ -331,6 +382,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
       </div>
       <div class="ability" title="${esc(side.text)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
     </div>
+    ${renderPantry(s, p, ready)}
     ${p === HUMAN && (canAbility || canAttack) ? `<div class="hero-actions">
       ${canAbility ? '<button data-click="btn:ability">Use ability</button>' : ''}
       ${canAttack ? '<button data-click="btn:heroattack">Big Cat attack</button>' : ''}
@@ -415,7 +467,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Discard ${picks.size}/${prompt.count}</button>`;
         break;
       case 'plant':
-        text = `Round ${s.round}: click a card to plant it as a Treat, or skip.`;
+        text = `<b>New round!</b> Click a card in your hand to plant it as a Treat, or skip.`;
         buttons = '<button data-click="btn:skip">Skip</button>';
         break;
       case 'action': {
@@ -445,13 +497,14 @@ function renderMidbar(s: GameState, legal: Action[]): string {
     }
   }
   // What the opponent just did, so its moves don't go unnoticed between your own.
-  const recap = foeRecap(s).slice(-3);
+  // (Hidden during a Pounce window, whose own prompt already describes the opponent's move.)
+  const recap = humanPrompt()?.kind === 'pounce' ? [] : foeRecap(s).slice(-3);
   const recapLine = recap.length
     ? `<div class="recap"><b>Opponent:</b> ${recap.map((t) => esc(t.replace(/^Opponent('s)? /, (_, pos) => (pos ? 'their ' : '')))).join(' → ')}</div>`
     : '';
   return `<section class="midbar">
     <div class="round">Round ${s.round}</div>
-    <div class="prompt">${recapLine}${text}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
+    <div class="prompt">${notice ? `<div class="notice">✓ ${esc(notice)}</div>` : ''}${recapLine}${text}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
     <div class="buttons">${buttons}</div>
   </section>`;
 }

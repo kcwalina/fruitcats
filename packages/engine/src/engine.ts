@@ -246,8 +246,10 @@ export function legalActions(s: GameState): Action[] {
       actions.push(...attackOptions(s, p));
       if (!me.hero.exhausted) {
         const ability = me.hero.grown ? behaviour(me.hero.id).bigCat : behaviour(me.hero.id).kitten;
+        // Don't offer an ability that would do nothing (readying Treats when none are spent).
+        const pointless = ability?.effect.startsWith('readyTreat') && !me.pantry.some((t) => t.exhausted);
         if (ability?.target) for (const target of targetsFor(s, p, ability.target)) actions.push({ t: 'ability', target });
-        else if (ability) actions.push({ t: 'ability' });
+        else if (ability && !pointless) actions.push({ t: 'ability' });
       }
       if (s.yarnTaken === null) actions.push({ t: 'takeYarn' });
       actions.push({ t: 'pass' });

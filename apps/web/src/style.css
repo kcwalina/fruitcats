@@ -28,7 +28,9 @@
 
 * { box-sizing: border-box; }
 
-html, body { margin: 0; height: 100%; overflow: hidden; }
+/* `clip` (unlike `hidden`) can't be scrolled programmatically, so a focused or enlarged card
+   can never shift the whole page sideways. */
+html, body { margin: 0; height: 100%; overflow: clip; }
 
 body {
   background:
@@ -111,13 +113,13 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 
 .game {
   display: grid; grid-template-columns: minmax(0, 1fr) clamp(220px, 22vw, 300px); gap: 12px;
-  height: 100%; padding: 10px; overflow: hidden;
+  height: 100%; padding: 10px; overflow: clip;
 }
 .board {
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr) auto auto; gap: 0.8vh;
   background: linear-gradient(var(--felt), var(--felt-dark));
   border-radius: 22px; padding: 1vh 14px; box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.5), var(--shadow);
-  min-height: 0; min-width: 0; overflow: hidden;
+  min-height: 0; min-width: 0; overflow: clip;
 }
 
 /* Player bars */
@@ -148,6 +150,22 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
   font-size: 12px; color: var(--ink); line-height: 1.25; overflow: hidden;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
+/* Pantry: one small face-down card per Treat */
+.pantry { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 34%; }
+.pantry-label { font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.pantry-label b { color: var(--good); font-size: 14px; }
+.treats { display: flex; flex-wrap: wrap; gap: 4px; }
+.treat {
+  width: clamp(18px, 2.4vh, 26px); aspect-ratio: 0.72; border-radius: 4px; border: 2px solid white;
+  background: radial-gradient(circle at 30% 30%, #f7c878, #d38b3c); background-size: cover; background-position: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); transition: transform 0.25s, filter 0.25s;
+}
+.treat.mine { cursor: help; }
+.treat.spent { transform: rotate(90deg) scale(0.85); filter: grayscale(0.85) brightness(0.9); opacity: 0.65; }
+.treat.new { animation: planted 0.6s ease-out; }
+@keyframes planted { from { transform: translateY(-24px) scale(1.8); opacity: 0; } }
+.no-treats { font-size: 12px; color: var(--muted); font-style: italic; }
+.notice { color: var(--good); font-size: 13px; font-weight: 700; margin-bottom: 2px; }
 .hero-actions { display: flex; gap: 8px; flex: none; }
 .hero-actions button { padding: 3px 12px; font-size: 13px; background: #fff0e3; border-color: var(--accent); }
 .foe-hand { display: flex; flex: none; padding-left: 14px; }
@@ -193,8 +211,18 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .unit.can-act { cursor: pointer; box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
 .unit.can-act:hover { transform: translateY(-4px); }
 .unit.selected { box-shadow: 0 0 0 4px var(--accent), var(--shadow); transform: translateY(-5px); }
-.targetable, .unit.targetable { cursor: crosshair; box-shadow: 0 0 0 4px var(--target), 0 0 18px rgba(255, 95, 126, 0.7); animation: pulse 1s ease-in-out infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--target), 0 0 4px rgba(255, 95, 126, 0.3); } }
+.targetable, .unit.targetable {
+  cursor: crosshair; outline: 4px solid var(--target); outline-offset: 2px;
+  box-shadow: 0 0 22px 4px rgba(255, 95, 126, 0.75); animation: pulse 0.9s ease-in-out infinite;
+}
+.targetable::after {
+  content: '🎯 target'; position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3;
+  background: var(--target); color: white; font: 700 12px Fredoka, sans-serif; padding: 2px 8px; border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); white-space: nowrap; pointer-events: none;
+}
+@keyframes pulse { 50% { outline-color: #ffb3c1; box-shadow: 0 0 8px 1px rgba(255, 95, 126, 0.4); } }
+/* While choosing a target, everything that isn't one steps back. */
+.board.targeting .unit:not(.targetable), .board.targeting .hero:not(.targetable) { filter: brightness(0.7) saturate(0.5); }
 
 /* Midbar */
 .midbar {
@@ -205,7 +233,8 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .prompt { flex: 1; line-height: 1.3; font-size: 14px; min-width: 0; }
 .flash { color: #b3261e; font-size: 13px; font-weight: 700; }
 .recap {
-  color: #9c2f2f; font-size: 13px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #9c2f2f; font-size: 13px; margin-bottom: 2px; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   animation: recap-in 0.35s ease-out;
 }
 @keyframes recap-in { from { opacity: 0; transform: translateY(-4px); } }
@@ -226,7 +255,7 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .hand-card img { width: 100%; display: block; border-radius: 8px; box-shadow: var(--shadow); }
 .hand-card.playable { filter: none; }
 .hand-card.playable img { box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
-.hand-card:hover { transform: translateY(-38%) scale(1.35); z-index: 5; filter: none; box-shadow: none; }
+.hand-card:hover { transform: translateY(-10%) scale(1.06); z-index: 5; filter: none; box-shadow: none; }
 .hand-card.picked { transform: translateY(-16%); }
 .hand-card.picked img { box-shadow: 0 0 0 4px var(--accent), var(--shadow); }
 .hand-card.selected { transform: translateY(-20%) scale(1.06); }

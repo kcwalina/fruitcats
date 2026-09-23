@@ -147,6 +147,30 @@
       "size": "1024x1024",
       "resize": 256,
       "transparent": true
+    },
+    "icon-home": {
+      "prompt": "A cute little cottage seen from the front: a warm red pointed roof, cream walls, a round-topped brown door in the middle and one small square window, with a tiny chimney. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
+      "size": "1024x1024",
+      "resize": 256,
+      "transparent": true
+    },
+    "diff-kitten": {
+      "prompt": "Only ONE character and only its head: no body, no paws, no second cat. The head of a chunky rounded plush toy cat seen from the front, with a minimal sewn-on face: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three long straight whiskers on each side. A small round kitten head in soft pastel peach, rounder and softer than a grown cat, with big round ears, eyes gently closed in a happy curve, a small pink bow on one ear. Gentle and harmless. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
+      "size": "1024x1024",
+      "resize": 256,
+      "transparent": true
+    },
+    "diff-cat": {
+      "prompt": "Only ONE character and only its head: no body, no paws, no second cat. The head of a chunky rounded plush toy cat seen from the front, with a minimal sewn-on face: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three long straight whiskers on each side. A grown cat in warm ginger orange with pointy ears and a confident little grin. Friendly but ready to play. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
+      "size": "1024x1024",
+      "resize": 256,
+      "transparent": true
+    },
+    "diff-tiger": {
+      "prompt": "The head of a chunky rounded plush toy cat seen from the front, with a minimal sewn-on face: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three long straight whiskers on each side. A fierce little tiger cub in bright orange with bold black tiger stripes on the forehead and cheeks, pointy ears, eyebrows tilted in a determined look and one tiny fang showing. Cute, not scary. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
+      "size": "1024x1024",
+      "resize": 256,
+      "transparent": true
     }
   },
   "heroStyle": "A cute collectible mascot character drawn as a soft plush toy, in a simple flat kawaii sticker style: one chunky rounded cat with bold clean black outlines, completely flat colours, no gradients and almost no shading. The body is plain and simple with stubby little legs, small paws and a short tail. The face is minimal and sewn-on looking: two tiny black dot eyes set wide apart, a small soft smile, two round pink blush ovals on the cheeks, three short black stripes on the forehead, and three long straight black whiskers on each side of the face. The cat wears a soft fruit-shaped hood over its head and back, with its two little cat ears poking out through the hood. One single character, centred, facing the viewer, whole body in frame with room around it, on a plain soft pastel background with a few simple doodled sparkles. Toy-like and huggable, never realistic, no fur texture, no photo realism, no 3D render. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks.",

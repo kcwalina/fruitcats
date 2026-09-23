@@ -86,13 +86,18 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .deck-name { color: var(--ink); }
 .deck-blurb { color: var(--muted); }
-.difficulty {
-  background: rgba(255, 248, 230, 0.88); padding: 5px 8px; border-radius: 16px; box-shadow: 0 2px 8px rgba(60, 30, 5, 0.2);
+.difficulty-choice {
+  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
+  box-shadow: var(--panel-shadow); transition: transform 0.15s, box-shadow 0.15s;
 }
-.difficulty button { padding: 5px 12px; font-size: 14px; }
-.difficulty .chosen {
-  background: linear-gradient(#fff2c9, #ffd97a); box-shadow: 0 3px 0 #c8942c, 0 0 0 2px var(--gold), inset 0 1px 0 #fff;
+.difficulty-choice:hover { transform: translateY(-2px); }
+.difficulty-choice.chosen {
+  border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light), 0 0 20px 4px rgba(255, 190, 60, 0.7), var(--panel-shadow);
 }
+.difficulty-choices:has(.chosen) .difficulty-choice:not(.chosen) { opacity: 0.9; filter: saturate(0.75); }
+.diff-name { color: var(--ink); }
+.diff-sub { color: var(--muted); }
+.difficulty-choice img { filter: drop-shadow(0 1px 1px rgba(80, 40, 10, 0.25)); }
 .coming { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.85); }
 
 /* Home mode tiles: parchment cards like the deck choices. The ones not built yet are faded, with a tag. */
@@ -111,7 +116,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   font: 700 11px/1.5 Fredoka, Nunito, sans-serif; color: #fff; background: #75573a;   /* 6:1 with white */
   box-shadow: 0 0 0 2px #fff6dc, 0 2px 5px rgba(60, 30, 5, 0.35);
 }
-.home-note, .setup-note { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.9); }
+.home-note { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.9); }
 .setup-bar h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
 
 /* ── Board: a painted table in a wooden frame with a gold inlay ─────────── */
@@ -501,9 +506,9 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .footer-button:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .footer-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #276c37, inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 .btn-ico { filter: drop-shadow(0 1px 1px rgba(0, 50, 10, 0.35)); }
-/* The gear: a round cream button like the others, never stretched to fill a row. */
-.settings-button { border-radius: 999px; }
-.side-buttons .settings-button { flex: 0 0 44px; width: 44px; max-width: none; padding: 0; }
+/* Round icon buttons (the gear, Home on the Solo screen): cream like the others, never stretched. */
+.icon-button { border-radius: 999px; }
+.side-buttons .icon-button { flex: 0 0 44px; width: 44px; max-width: none; padding: 0; }
 /* Settings panel: parchment like the rules, with the choices as a gold segmented control. */
 .settings { border-radius: 24px; padding: 22px 24px; }
 .settings h2 { font-family: Fredoka, Nunito, sans-serif; color: var(--ink); }

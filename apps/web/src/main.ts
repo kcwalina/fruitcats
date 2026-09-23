@@ -55,7 +55,7 @@ const humanize = (text: string) =>
 
 /** The gear that opens Settings: in Home's corner, in the Solo header, and beside Rules in a game. */
 function settingsButton(extraClass = ''): string {
-  return `<button data-click="ui:settings" class="settings-button ${extraClass}" title="Settings" aria-label="Settings">
+  return `<button data-click="ui:settings" class="icon-button settings-button ${extraClass}" title="Settings" aria-label="Settings">
       <img src="${BASE}ui/icon-settings.webp" alt=""></button>`;
 }
 
@@ -81,7 +81,11 @@ const PLAYED_KEY = 'fruitcats-played';
 const hasPlayed = () => { try { return localStorage.getItem(PLAYED_KEY) === 'yes'; } catch { return false; } };
 const markPlayed = () => { try { localStorage.setItem(PLAYED_KEY, 'yes'); } catch { /* private mode: not remembered */ } };
 
-const DIFFICULTY = { kitten: { label: 'Kitten', skill: 0.55 }, cat: { label: 'Cat', skill: 0.85 }, tiger: { label: 'Tiger', skill: 1 } };
+const DIFFICULTY = {
+  kitten: { label: 'Kitten', blurb: 'Gentle, for learning', skill: 0.55 },
+  cat: { label: 'Cat', blurb: 'A fair match', skill: 0.85 },
+  tiger: { label: 'Tiger', blurb: 'Plays its best', skill: 1 },
+};
 type Difficulty = keyof typeof DIFFICULTY;
 
 let screen: Screen = 'home';
@@ -506,12 +510,14 @@ function renderHome(): string {
     </div>
     <header class="title">
       <h1>Fruitcats</h1>
-      <p>Every cat has nine lives. Make yours count.</p>
+      <p>A cozy card game of fruit-hooded cats.</p>
     </header>
-    ${saved ? `<div class="home-actions">
-      <button class="play-button continue-button" data-click="home:continue">Continue<small>${saved}</small></button>
-    </div>` : ''}
-    <nav class="modes">
+    <nav class="modes" style="--n:${MODES.length + (saved ? 1 : 0)}">
+      ${saved ? `
+        <button class="mode-card continue-card" data-click="home:continue">
+          <img src="${artUrl(`${loadGame()!.game.players[HUMAN].hero.id}-kitten`)}" alt="">
+          <span class="mode-text"><span class="mode-name">Continue Previous Game</span><span class="mode-sub">${saved}</span></span>
+        </button>` : ''}
       ${MODES.map((m) => `
         <button class="mode-card ${m.soon ? 'soon' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
           <img src="${BASE}ui/mode-${m.key}.webp" alt="">
@@ -551,25 +557,30 @@ function renderDeckPicker(): string {
 }
 
 function renderSolo(): string {
-  const saved = savedGameLabel();
   return `
   <div class="menu solo">
     <div class="setup-bar">
-      <button class="back-button" data-click="ui:back">‹ Home</button>
+      <button class="icon-button back-button" data-click="ui:back" title="Home" aria-label="Home">
+        <img src="${BASE}ui/icon-home.webp" alt=""></button>
       <h2>Solo game</h2>
       ${settingsButton()}
     </div>
     <div class="setup-body">
       ${renderDeckPicker()}
-      <div class="difficulty">
-        <span>Opponent:</span>
-        ${Object.entries(DIFFICULTY).map(([key, d]) => `
-          <button class="${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}">${d.label}</button>`).join('')}
-      </div>
+      <section class="picker difficulty-picker">
+        <h2>Difficulty</h2>
+        <div class="difficulty-choices">
+          ${Object.entries(DIFFICULTY).map(([key, d]) => `
+            <button class="difficulty-choice ${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}" aria-pressed="${key === difficulty}">
+              <img src="${BASE}ui/diff-${key}.webp" alt="">
+              <span class="diff-name">${d.label}</span>
+              <span class="diff-sub">${d.blurb}</span>
+            </button>`).join('')}
+        </div>
+      </section>
     </div>
     <div class="setup-footer">
-      ${saved ? `<p class="setup-note">This replaces your unfinished game (${saved}).</p>` : ''}
-      <button class="play-button" data-click="solo:play">${saved ? 'New game' : 'Play'}</button>
+      <button class="play-button" data-click="solo:play">Play</button>
     </div>
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;

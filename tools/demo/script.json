@@ -1,36 +1,964 @@
 {
   "title": "Fruitcats — how to play",
   "voice": "alloy",
+  "deck": "zest-rush",
+  "foe": "mango-tango",
+  "seed": 14620,
   "scenes": [
     {
       "id": "intro",
-      "caption": "Fruitcats — knock out all 9 of their hearts",
-      "say": "Fruitcats is a card game about fruit-flavoured cats. Each side has a Hero Cat with nine hearts, and you win by knocking out all nine of theirs. The game walks you through your first match, so you can just press play — but here is the whole thing in a minute."
+      "beats": [
+        {
+          "id": "intro-1",
+          "say": "Welcome to Fruitcats, a card game about fruit flavoured cats. In this video I'll play one real game, slowly, and show you exactly where to click at every step. You don't need to know anything about card games to follow along.",
+          "do": [
+            {
+              "title": [
+                "Fruitcats",
+                "How to play"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "intro-2",
+          "say": "Here's the goal. Each player leads one Hero Cat, and each Hero Cat has nine lives. Knock out all nine of your opponent's lives, and you win.",
+          "do": [
+            {
+              "title": [
+                "Nine lives each",
+                "Knock out all nine of your opponent's to win"
+              ]
+            },
+            {
+              "at": 1
+            },
+            {
+              "title": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "beats": [
+        {
+          "id": "menu-decks",
+          "caption": "Pick a Hero Cat — each one comes with its own deck",
+          "say": "This is the start screen. First you pick your Hero Cat. Each one comes with its own deck of cards, and each deck plays differently.",
+          "do": [
+            {
+              "wait": 800
+            },
+            {
+              "spot": [
+                ".deck-choices"
+              ],
+              "label": "Three Hero Cats"
+            }
+          ]
+        },
+        {
+          "id": "menu-pick",
+          "caption": "Pick a Hero Cat — each one comes with its own deck",
+          "say": "Orchard Guard is patient and sturdy. Mango Tango collects extra Treats and then plays giants. And Zest Rush is fast and fierce. For this game, I'll click Zest Rush.",
+          "do": [
+            {
+              "move": "[data-click=\"menu:orchard-guard\"]"
+            },
+            {
+              "wait": 1500
+            },
+            {
+              "move": "[data-click=\"menu:mango-tango\"]"
+            },
+            {
+              "wait": 1500
+            },
+            {
+              "click": "[data-click=\"menu:zest-rush\"]",
+              "label": "Click Zest Rush"
+            }
+          ]
+        },
+        {
+          "id": "menu-level",
+          "caption": "Choose how strong your opponent is",
+          "say": "Up in the corner you choose how strong the computer opponent is. Kitten is the gentlest, so I'll click Kitten. Next to it is a button called New? Tutorial. It starts a guided practice game, with tips that pop up as you play. The very first time you press Play, you get that guided game automatically.",
+          "do": [
+            {
+              "spot": [
+                ".difficulty"
+              ],
+              "label": "Opponent strength"
+            },
+            {
+              "click": "[data-click=\"menu:kitten\"]",
+              "label": "Click Kitten"
+            },
+            {
+              "wait": 700
+            },
+            {
+              "spot": [
+                ".tutorial-button"
+              ],
+              "label": "A guided practice game"
+            }
+          ]
+        },
+        {
+          "id": "menu-play",
+          "caption": "Click Play to start",
+          "say": "Now click the big Play button, and the game begins.",
+          "do": [
+            {
+              "at": 0.4
+            },
+            {
+              "startGame": true,
+              "label": "Click Play"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "board",
+      "beats": [
+        {
+          "id": "board-halves",
+          "caption": "Your side is at the bottom, your opponent is at the top",
+          "say": "This is the board. Everything at the bottom is yours. Everything at the top belongs to your opponent.",
+          "do": [
+            {
+              "spot": [
+                ".player.me",
+                ".yard.me",
+                ".hand"
+              ],
+              "label": "Your side"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".player.foe",
+                ".yard.foe"
+              ],
+              "label": "Your opponent"
+            }
+          ]
+        },
+        {
+          "id": "board-hero",
+          "caption": "Your Hero Cat",
+          "say": "Down here is your Hero Cat, Sunny, the Lemon Lynx. Next to her is her special ability, written out in words.",
+          "do": [
+            {
+              "spot": [
+                ".player.me .hero"
+              ],
+              "label": "Your Hero Cat"
+            },
+            {
+              "at": 0.55
+            },
+            {
+              "spot": [
+                ".player.me .ability"
+              ],
+              "label": "Her ability"
+            }
+          ]
+        },
+        {
+          "id": "board-lives",
+          "caption": "The pink hearts are Lives — nine each",
+          "say": "These nine pink hearts are your lives. Your opponent's lives are up at the top. Every time a Hero Cat gets hit, one heart goes out.",
+          "do": [
+            {
+              "spot": [
+                ".player.me .lives"
+              ],
+              "label": "Your 9 Lives"
+            },
+            {
+              "at": 0.45
+            },
+            {
+              "spot": [
+                ".player.foe .lives"
+              ],
+              "label": "Their 9 Lives"
+            }
+          ]
+        },
+        {
+          "id": "board-hand",
+          "caption": "Your hand: the cards you can play",
+          "say": "Along the bottom is your hand. These are the cards you hold. Your opponent has a hand too, but you only see the backs of their cards.",
+          "do": [
+            {
+              "spot": [
+                ".hand"
+              ],
+              "label": "Your hand"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".foe-hand"
+              ],
+              "label": "Their hand, face down"
+            }
+          ]
+        },
+        {
+          "id": "board-yard",
+          "caption": "The Yard is where your cats go when you play them",
+          "say": "This empty strip is your Yard. When you play a cat, it goes into your Yard, and from there it can attack. On the right end of it is your Treat bowl. We'll fill that in a moment.",
+          "do": [
+            {
+              "spot": [
+                ".yard.me"
+              ],
+              "label": "Your Yard"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".pantry.me"
+              ],
+              "label": "Your Treats"
+            }
+          ]
+        },
+        {
+          "id": "board-midbar",
+          "caption": "The middle bar tells you what to do next",
+          "say": "And this bar across the middle is the most useful part of the screen. It always tells you what the game is waiting for, and the buttons you need appear here, on the right.",
+          "do": [
+            {
+              "spot": [
+                ".midbar .prompt"
+              ],
+              "label": "What to do now"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".midbar .buttons"
+              ],
+              "label": "Buttons appear here"
+            }
+          ]
+        },
+        {
+          "id": "board-side",
+          "caption": "Rules, and a story of every move",
+          "say": "On the far right, the Rules button shows a short summary of the rules at any time, and the Story so far lists every move, in case you miss one.",
+          "do": [
+            {
+              "spot": [
+                "[data-click=\"ui:rules\"]"
+              ],
+              "label": "Quick rules"
+            },
+            {
+              "at": 0.5
+            },
+            {
+              "spot": [
+                ".log-panel"
+              ],
+              "label": "Every move so far"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mulligan",
+      "beats": [
+        {
+          "id": "mull-what",
+          "caption": "Mulligan: swap cards you don't want",
+          "say": "You start with six cards. First, you may swap any of them for new ones. This is called a mulligan. You always get the same number of cards back, so it costs you nothing.",
+          "do": [
+            {
+              "spot": [
+                ".hand"
+              ],
+              "label": "Your first 6 cards"
+            }
+          ]
+        },
+        {
+          "id": "mull-pick",
+          "caption": "Click cards to pick them, then click Replace",
+          "say": "Cards with a big number in the top left corner are expensive, and you can't play them early on. So I'll click the two most expensive cards. See how they lift up? That means they're picked. The button changes to say Replace two. Click it.",
+          "do": [
+            {
+              "at": 0.25
+            },
+            {
+              "act": "mulligan",
+              "count": 2
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "plant",
-      "caption": "Treats are the money — every planted card is worth 1",
-      "say": "Cards cost Treats, and Treats are made from cards. You bury two of your six face down, and each becomes one Treat, whatever it cost. So bury the expensive ones and keep the cheap cards to play."
+      "beats": [
+        {
+          "id": "plant-why",
+          "caption": "Treats are what you pay with",
+          "say": "Now the most important idea in the game. To play a card, you pay for it with Treats. And you get Treats by planting cards from your hand, face down.",
+          "do": [
+            {
+              "foe": true
+            },
+            {
+              "spot": [
+                ".midbar .prompt"
+              ],
+              "label": "Plant 2 cards"
+            }
+          ]
+        },
+        {
+          "id": "plant-rule",
+          "caption": "Every planted card = 1 Treat, whatever it costs",
+          "say": "Every planted card is worth exactly one Treat, no matter what's printed on it. A planted card is never played. So plant the two cards you want the least.",
+          "do": [
+            {
+              "spot": [
+                ".hand"
+              ],
+              "label": "Pick the 2 you need least"
+            }
+          ]
+        },
+        {
+          "id": "plant-do",
+          "caption": "Click two cards, then click Plant",
+          "say": "I'll click one card, and a second card. The button now says Plant two out of two. Click it.",
+          "do": [
+            {
+              "act": "setupPlant"
+            }
+          ]
+        },
+        {
+          "id": "plant-bowl",
+          "caption": "Two Treats in your bowl",
+          "say": "And there they are. Two face down cards in your Treat bowl. The number says two ready. That means you can spend two Treats this round.",
+          "do": [
+            {
+              "spot": [
+                ".pantry.me"
+              ],
+              "label": "2 Treats, ready to spend"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "beats": [
+        {
+          "id": "read-hold",
+          "caption": "Press and hold any card to read it",
+          "say": "Cards are small, so to read one, press and hold it. With a mouse, hold the button down. It opens full size.",
+          "do": [
+            {
+              "expect": [
+                "humanActionPrompt",
+                "humanHasYarn"
+              ]
+            },
+            {
+              "at": 0.35
+            },
+            {
+              "pressDown": "$handUnit",
+              "label": "Press and hold a card"
+            }
+          ]
+        },
+        {
+          "id": "read-cost",
+          "caption": "The number in the top-left corner is the cost",
+          "say": "The number in the top left corner is what it costs, in Treats. Underneath, it tells you whether you can afford it right now. At the bottom of the card, the paw is its attack power, and the heart is its health.",
+          "do": [
+            {
+              "spot": [
+                "#zoom-overlay .zoom-cost"
+              ],
+              "label": "Cost, and what you have"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                "#zoom-overlay img"
+              ],
+              "label": "Paw = power, heart = health"
+            }
+          ]
+        },
+        {
+          "id": "read-keys",
+          "caption": "Special words are explained right there",
+          "say": "Special words on the card are explained here too. Let go of the button, and the card shrinks back.",
+          "do": [
+            {
+              "spot": [
+                "#zoom-overlay .zoom-info"
+              ],
+              "label": "What the words mean"
+            },
+            {
+              "at": 0.75
+            },
+            {
+              "spot": null
+            },
+            {
+              "release": true
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "play",
-      "caption": "Spend a Treat to put a cat on the table",
-      "say": "The number in a card's corner is its price. Spend the Treats and the cat comes down onto your side. It arrives sleepy, so it can attack from the next round."
+      "beats": [
+        {
+          "id": "play-glow",
+          "caption": "Glowing cards are the ones you can play now",
+          "say": "You hold the yarn ball, so you go first. Cards that glow are the ones you can afford right now. To play one, just click it.",
+          "do": [
+            {
+              "spot": [
+                ".player.me .yarn"
+              ],
+              "label": "The Yarn Ball: you go first"
+            },
+            {
+              "at": 0.35
+            },
+            {
+              "spot": [
+                ".hand .hand-card.playable"
+              ],
+              "label": "You can play these"
+            },
+            {
+              "at": 0.8
+            },
+            {
+              "spot": null
+            },
+            {
+              "act": "play",
+              "unit": true,
+              "cost": 1,
+              "zoomies": false,
+              "untargeted": true
+            }
+          ]
+        },
+        {
+          "id": "play-arrived",
+          "caption": "A new cat is tired: it can attack next round",
+          "say": "The cat jumps into your Yard, and one Treat was spent. Notice it's tilted, and marked new. A cat that just arrived is still settling in. It can't attack this round, but it wakes up at the start of the next one.",
+          "do": [
+            {
+              "spot": [
+                "$played"
+              ],
+              "label": "New: rests this round"
+            },
+            {
+              "at": 0.4
+            },
+            {
+              "spot": [
+                ".pantry.me"
+              ],
+              "label": "1 Treat spent"
+            },
+            {
+              "at": 0.7
+            },
+            {
+              "spot": [
+                "$played"
+              ],
+              "label": "New: rests this round"
+            },
+            {
+              "expect": "playedResting"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "turns",
-      "caption": "One action each, back and forth",
-      "say": "You each do one thing at a time, back and forth — so you cannot line up three attacks in a row, and nothing you do goes unanswered."
+      "beats": [
+        {
+          "id": "turns-foe",
+          "caption": "You take turns: one action each",
+          "say": "Now it's your opponent's go. Players take turns doing one thing at a time. You do one thing, then they do one thing, then you again. Watch the middle bar. It tells you what they just did. They played a cat too, a Passionfruit Parrot.",
+          "do": [
+            {
+              "at": 0.3
+            },
+            {
+              "foe": true
+            },
+            {
+              "expect": "foeHasUnit"
+            },
+            {
+              "spot": [
+                ".midbar .recap"
+              ],
+              "label": "What they just did"
+            },
+            {
+              "at": 0.8
+            },
+            {
+              "spot": [
+                ".yard.foe .unit"
+              ],
+              "label": "Their new cat"
+            }
+          ]
+        },
+        {
+          "id": "turns-zoom",
+          "caption": "Zoomies: this cat can attack straight away",
+          "say": "My turn again. I have one Treat left. Some cats have a special word, Zoomies. A cat with Zoomies arrives wide awake, so it can attack straight away. I'll play this little mouse. It has Zoomies.",
+          "do": [
+            {
+              "at": 0.6
+            },
+            {
+              "act": "play",
+              "unit": true,
+              "cost": 1,
+              "zoomies": true,
+              "untargeted": true
+            },
+            {
+              "spot": [
+                "$played"
+              ],
+              "label": "Zoomies: wide awake"
+            },
+            {
+              "expect": "playedAwake"
+            }
+          ]
+        },
+        {
+          "id": "turns-hit",
+          "caption": "Their Parrot attacked your Hero Cat: you lost a Life",
+          "say": "Uh oh. Their parrot has Zoomies too, and it just attacked my Hero Cat. That's a hit, and I lost a life. Look, only eight pink hearts left.",
+          "do": [
+            {
+              "foe": true
+            },
+            {
+              "expect": "humanLostLife"
+            },
+            {
+              "spot": [
+                ".midbar .recap"
+              ],
+              "label": "Their Parrot attacked Sunny"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".player.me .lives"
+              ],
+              "label": "8 Lives left"
+            }
+          ]
+        },
+        {
+          "id": "turns-lifecard",
+          "caption": "A lost Life becomes a card in your hand",
+          "say": "But here's the twist. Every life is really a hidden card. When you lose one, that card goes into your hand. So the player who's behind gets extra cards, and the game stays close.",
+          "do": [
+            {
+              "spot": [
+                ".hand .hand-card@last"
+              ],
+              "label": "Your lost Life, now in your hand"
+            }
+          ]
+        },
+        {
+          "id": "turns-lucky",
+          "caption": "Lucky cards can be played for free",
+          "say": "And if that card has the word Lucky on it, you may play it straight away, for free. The middle bar will ask you, and you click Play for free, or Keep in hand. This one isn't Lucky, so it just stays in my hand.",
+          "do": [
+            {
+              "spot": [
+                ".midbar"
+              ],
+              "label": "Lucky? It asks here"
+            }
+          ]
+        },
+        {
+          "id": "turns-pass",
+          "caption": "Nothing left to do? Click Pass",
+          "say": "My Treats are all spent now, and I'll keep my mouse at home this round. When there's nothing more you want to do, click Pass. When both players pass, one after the other, the round is over.",
+          "do": [
+            {
+              "spot": [
+                ".pantry.me"
+              ],
+              "label": "No Treats left"
+            },
+            {
+              "at": 0.45
+            },
+            {
+              "spot": null
+            },
+            {
+              "act": "pass"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "round2",
+      "beats": [
+        {
+          "id": "r2-start",
+          "caption": "A new round: draw 2 cards, everything wakes up",
+          "say": "A new round begins. Each player draws two cards. All your cats wake up, and all your spent Treats are ready to use again.",
+          "do": [
+            {
+              "foe": true
+            },
+            {
+              "expect": "humanPlantPrompt"
+            },
+            {
+              "spot": [
+                ".yard.me"
+              ],
+              "label": "Awake again"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".pantry.me"
+              ],
+              "label": "Treats ready again"
+            }
+          ]
+        },
+        {
+          "id": "r2-plant",
+          "caption": "Each round you may plant one more Treat",
+          "say": "At the start of every round, you may also plant one more card as a Treat. More Treats means bigger cards later on. Click the card you want to plant, then click Bury it. Or, if you want to keep all your cards, click Skip.",
+          "do": [
+            {
+              "spot": [
+                ".midbar .buttons"
+              ],
+              "label": "Skip, if you'd rather not"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": null
+            },
+            {
+              "act": "plant"
+            }
+          ]
+        },
+        {
+          "id": "r2-yarn",
+          "caption": "The Yarn Ball switches sides each round",
+          "say": "The yarn ball moved to my opponent, so this round they go first. It switches sides every round, so both players get a turn at starting. And their parrot attacks me again. Seven lives left.",
+          "do": [
+            {
+              "expect": "foeHasYarn"
+            },
+            {
+              "spot": [
+                ".player.foe .yarn"
+              ],
+              "label": "They go first now"
+            },
+            {
+              "at": 0.55
+            },
+            {
+              "foe": true
+            },
+            {
+              "spot": [
+                ".player.me .lives"
+              ],
+              "label": "7 Lives left"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "attack",
-      "caption": "Attack their cat, or their Hero Cat to take a heart",
-      "say": "Once a cat is awake, click it and click what it should hit. Their cat, and the two trade damage. Their Hero Cat, and a heart goes out — that card lands in their hand, so falling behind gives you more to play with."
+      "beats": [
+        {
+          "id": "atk-ready",
+          "caption": "Awake cats glow yellow: they can attack",
+          "say": "Time to hit back. My cats are awake now, and a cat that can attack glows yellow. To attack, you first click your cat.",
+          "do": [
+            {
+              "expect": "canAttackUnit"
+            },
+            {
+              "spot": [
+                ".yard.me .unit.can-act"
+              ],
+              "label": "Ready to attack"
+            }
+          ]
+        },
+        {
+          "id": "atk-cancel",
+          "caption": "Click your cat — the targets light up",
+          "say": "When you click it, everything it can attack lights up in pink. If you change your mind, click Cancel.",
+          "do": [
+            {
+              "act": "attack",
+              "target": "unit",
+              "defeats": true,
+              "onlyCancel": true
+            }
+          ]
+        },
+        {
+          "id": "atk-unit",
+          "caption": "Click your cat, then click what it attacks",
+          "say": "Now for real. I click my hamster, then click the enemy cat I want to hit, their parrot. The two cats hit each other at the same time. Each one's paw number comes off the other one's heart.",
+          "do": [
+            {
+              "act": "attack",
+              "target": "unit",
+              "defeats": true
+            }
+          ]
+        },
+        {
+          "id": "atk-result",
+          "caption": "When a cat's health runs out, it's defeated",
+          "say": "Both had two power, and neither could survive two damage. So both cats are defeated, and they leave the Yard. That was a fair trade, and it stops that parrot from hitting me again.",
+          "do": [
+            {
+              "spot": [
+                ".yard.foe",
+                ".yard.me"
+              ],
+              "label": "Both defeated"
+            },
+            {
+              "at": 0.85
+            },
+            {
+              "foe": true
+            }
+          ]
+        },
+        {
+          "id": "atk-hero",
+          "caption": "Attack the enemy Hero Cat to knock out a Life",
+          "say": "Now the big one. Instead of a cat, you can attack the enemy Hero Cat. I click my mouse, then click their Hero Cat, at the top.",
+          "do": [
+            {
+              "expect": "canAttackHero"
+            },
+            {
+              "at": 0.3
+            },
+            {
+              "act": "attack",
+              "target": "hero"
+            }
+          ]
+        },
+        {
+          "id": "atk-life",
+          "caption": "A hit on a Hero Cat knocks out one Life",
+          "say": "A hit! One of their lives goes out, so they're down to eight. And just like mine, that life goes into their hand.",
+          "do": [
+            {
+              "expect": "foeLives8"
+            },
+            {
+              "spot": [
+                ".player.foe .lives"
+              ],
+              "label": "One Life gone"
+            },
+            {
+              "at": 0.6
+            },
+            {
+              "spot": [
+                ".foe-hand"
+              ],
+              "label": "…and into their hand"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "more",
+      "beats": [
+        {
+          "id": "more-yarn",
+          "caption": "Take the Yarn: go first next round",
+          "say": "Two more buttons worth knowing. Take the yarn means you'll go first next round. But taking it ends your turns for this round, so only take it when you're done.",
+          "do": [
+            {
+              "expect": [
+                "canTakeYarn"
+              ]
+            },
+            {
+              "move": "[data-click=\"btn:yarn\"]"
+            },
+            {
+              "spot": [
+                "[data-click=\"btn:yarn\"]"
+              ],
+              "label": "Take the Yarn"
+            }
+          ]
+        },
+        {
+          "id": "more-ability",
+          "caption": "Your Hero Cat's ability",
+          "say": "And your Hero Cat has an ability you can use once each round. When it's available, a Use ability button appears under your Hero Cat. When your opponent is down to five lives, Sunny grows up into a Big Cat, and then she can attack too.",
+          "do": [
+            {
+              "spot": [
+                ".player.me .hero",
+                ".player.me .ability"
+              ],
+              "label": "Once per round"
+            }
+          ]
+        },
+        {
+          "id": "more-pass",
+          "caption": "Nothing left to do? Click Pass",
+          "say": "I'm done for this round, so I'll click Pass again.",
+          "do": [
+            {
+              "spot": null
+            },
+            {
+              "act": "pass"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "outro",
-      "caption": "Play it at fruitcats.viamochi.com",
-      "say": "Nine hearts, and the game is yours. Press play at fruitcats dot viamochi dot com — the walkthrough will take it from there."
+      "beats": [
+        {
+          "id": "outro-recap",
+          "caption": "Plant Treats · play cats · attack · take all 9 Lives",
+          "say": "And that's how it works. Plant Treats. Play cats by clicking them. Attack by clicking your cat, then its target. And click Pass when you're done. Keep going, round after round, until one Hero Cat has lost all nine lives.",
+          "do": [
+            {
+              "spot": [
+                ".pantry.me"
+              ],
+              "label": "1. Plant Treats"
+            },
+            {
+              "at": 0.22
+            },
+            {
+              "spot": [
+                ".yard.me"
+              ],
+              "label": "2. Play cats"
+            },
+            {
+              "at": 0.42
+            },
+            {
+              "spot": [
+                ".player.foe .hero"
+              ],
+              "label": "3. Attack"
+            },
+            {
+              "at": 0.62
+            },
+            {
+              "spot": [
+                ".midbar .buttons"
+              ],
+              "label": "4. Pass when done"
+            }
+          ]
+        },
+        {
+          "id": "outro-end",
+          "say": "If you'd like a helping hand, click the New? Tutorial button on the start screen for a guided first game. Have fun, and good luck!",
+          "do": [
+            {
+              "spot": null
+            },
+            {
+              "title": [
+                "Fruitcats",
+                "Play free at fruitcats.viamochi.com"
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

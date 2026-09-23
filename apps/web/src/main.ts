@@ -108,6 +108,25 @@ let showRules = false;
 let flash = '';
 /** Multiplier on the AI's "thinking" pause; the dev hook sets it to 0 for automated UI tests. */
 let aiDelayScale = 1;
+/**
+ * Dev only: `?seed=N&foe=<deck>` deals the same game and makes the AI play the same moves every time,
+ * so the tutorial video (tools/demo) can script a whole game in advance.
+ */
+const devParams = import.meta.env.DEV ? new URLSearchParams(location.search) : null;
+const devSeed = devParams?.has('seed') ? Number(devParams.get('seed')) : undefined;
+const devFoe = devParams?.get('foe') ?? undefined;
+let aiRandom: (() => number) | undefined;
+
+/** The same small seeded generator the engine's simulator uses (tools/demo/director.mjs mirrors it). */
+function mulberry(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 const app = document.getElementById('app')!;
 
@@ -192,7 +211,7 @@ function scheduleAi() {
   const delay = aiDelayScale * (game.prompt.kind === 'pounce' || game.prompt.kind === 'plant' ? 450 : 850);
   aiTimer = window.setTimeout(() => {
     if (!game || game.prompt?.player !== AI) return;
-    apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill }));
+    apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill, random: aiRandom }));
     render();
     scheduleAi();
   }, delay);
@@ -202,10 +221,12 @@ function startGame(tutorial = false) {
   // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
   // with you going first, so its balloons can talk about specific cards.
   const others = Object.keys(DECKS).filter((d) => d !== myDeck);
-  const theirDeck = tutorial ? 'orchard-guard' : others[Math.floor(Math.random() * others.length)];
+  const theirDeck = tutorial ? 'orchard-guard'
+    : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   game = tutorial
     ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
-    : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
+    : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
+  aiRandom = devSeed === undefined || tutorial ? undefined : mulberry(devSeed);
   tutorialGame = tutorial;
   resetLogSounds(game);
   unitArrivals.clear();
@@ -999,6 +1020,7 @@ if (import.meta.env.DEV) {
     fruitcats: {
       get game() { return game; }, chooseAction, legalActions, apply, render, CARDS,
       set fast(on: boolean) { aiDelayScale = on ? 0 : 1; },
+      set aiDelay(scale: number) { aiDelayScale = scale; },
     },
   });
 }

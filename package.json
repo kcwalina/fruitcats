@@ -12,7 +12,8 @@
     "preview": "npm run preview -w @fruitcats/web",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "sim": "tsx packages/engine/scripts/simulate.ts"
+    "sim": "tsx packages/engine/scripts/simulate.ts",
+    "demo:record": "tsx tools/demo/record.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

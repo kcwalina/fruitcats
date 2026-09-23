@@ -2,8 +2,10 @@
 
     python tools/demo/narrate.py
 
-One MP3 per scene in tools/demo/out/audio/. Auth is the signed-in Azure CLI (`az login`): the key is
-read from the Azure account at run time and never printed or written anywhere.
+One MP3 per beat in tools/demo/out/audio/, and out/durations.json with how long each one runs: the
+recorder holds every beat on screen for as long as its narration. Beats whose words haven't changed
+are not spoken again. Auth is the signed-in Azure CLI (`az login`): the key is read from the Azure
+account at run time and never printed or written anywhere.
 """
 
 import json
@@ -18,13 +20,14 @@ import av
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out" / "audio"
+DURATIONS = HERE / "out" / "durations.json"
 ACCOUNT, GROUP = "mochi-openai-eastus2", "mochi-ai"
 ENDPOINT = "https://eastus2.api.cognitive.microsoft.com"
 DEPLOYMENT = "gpt-4o-mini-tts"
 API_VERSION = "2025-03-01-preview"
 # How the narrator should sound; gpt-4o-mini-tts takes free-text direction.
-STYLE = ("Warm, friendly and unhurried, like someone teaching a board game to a friend across the table. "
-         "Clear and upbeat, never salesy or breathless.")
+STYLE = ("Warm, friendly and patient, like someone teaching a board game to a friend who has never played one. "
+         "Speak slowly and clearly, with a short pause after each sentence. Calm and upbeat, never salesy or rushed.")
 
 
 def azure_key() -> str:
@@ -58,15 +61,24 @@ def seconds(path: Path) -> float:
 def main() -> int:
     script = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
     OUT.mkdir(parents=True, exist_ok=True)
-    key = azure_key()
-    total = 0.0
-    for scene in script["scenes"]:
-        path = OUT / f"{scene['id']}.mp3"
-        speak(key, scene["say"], script.get("voice", "alloy"), path)
+    voice = script.get("voice", "alloy")
+    known = json.loads(DURATIONS.read_text(encoding="utf-8")) if DURATIONS.exists() else {}
+    beats = [beat for scene in script["scenes"] for beat in scene["beats"] if beat.get("say")]
+    key = None
+    durations, total = {}, 0.0
+    for beat in beats:
+        path = OUT / f"{beat['id']}.mp3"
+        old = known.get(beat["id"], {})
+        fresh = path.exists() and old.get("text") == beat["say"] and old.get("voice") == voice and old.get("style") == STYLE
+        if not fresh:
+            key = key or azure_key()
+            speak(key, beat["say"], voice, path)
         length = seconds(path)
+        durations[beat["id"]] = {"seconds": length, "text": beat["say"], "voice": voice, "style": STYLE}
         total += length
-        print(f"  {scene['id']:<9} {length:5.1f}s  {path.stat().st_size // 1024} KB")
-    print(f"\nnarration: {total:.0f}s ({total / 60:.1f} min)")
+        print(f"  {beat['id']:<16} {length:5.1f}s  {'(kept)' if fresh else ''}")
+    DURATIONS.write_text(json.dumps(durations, indent=2), encoding="utf-8")
+    print(f"\nnarration: {total:.0f}s ({total / 60:.1f} min) over {len(beats)} beats")
     return 0
 
 

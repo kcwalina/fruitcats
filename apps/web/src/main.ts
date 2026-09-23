@@ -5,6 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
+import { openShowcase, renderShowcase, showcaseClick, showcaseEscape } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
@@ -51,8 +52,9 @@ const humanize = (text: string) =>
 const HUMAN: PlayerId = 0;
 const AI: PlayerId = 1;
 
-/** Home: the game modes. Solo: deck and difficulty for a game against the AI. Decks: the deck builder. */
-type Screen = 'home' | 'solo' | 'decks' | 'game';
+/** Home: the game modes. Solo: deck and difficulty for a game against the AI. Decks: the deck builder.
+ *  Collection: your Display Case and the Binder. */
+type Screen = 'home' | 'solo' | 'decks' | 'collection' | 'game';
 interface Selection {
   label: string;
   options: Action[];
@@ -320,6 +322,7 @@ function onClick(key: string) {
     homeNote = '';
     if (raw === 'solo') screen = 'solo';
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
+    else if (raw === 'collection') { openShowcase(); screen = 'collection'; }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
     else if (raw === 'tutorial') { startGame(true); return; }
     else if (raw === 'soon') homeNote = MODES.find((m) => m.key === key.split(':')[2])?.soon ?? '';
@@ -340,6 +343,10 @@ function onClick(key: string) {
   }
   if (kind === 'deck') {
     deckClick(raw, key.split(':')[2] ?? '', { render });
+    return;
+  }
+  if (kind === 'col') {
+    showcaseClick(raw, key.split(':').slice(2).join(':'), { render });
     return;
   }
   if (kind === 'set') {
@@ -470,7 +477,8 @@ function render() {
   document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
   // Scrolling lists (the deck builder's cards) keep their place when the screen is redrawn.
   const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')].map((el) => [el.dataset.keepScroll, el.scrollTop]));
-  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder() : renderGame())
+  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder()
+    : screen === 'collection' ? renderShowcase() : renderGame())
     + (showSettings ? renderSettings() : '');
   for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]')) el.scrollTop = scrolled.get(el.dataset.keepScroll) ?? 0;
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
@@ -481,15 +489,16 @@ function render() {
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
 
-/** The home screen's game modes. Solo and the Deck builder work so far; the others say what they will be. */
+/** The home screen's game modes. Solo, the Collection and the Deck builder work so far; the others say what they will be. */
 const MODES = [
   { key: 'solo', name: 'Solo', sub: 'Play against the AI', soon: '' },
+  { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: '' },
+  { key: 'collection', name: 'Collection', sub: 'Your cards on display', soon: '' },
   { key: 'friend', name: 'Friend', sub: 'Play someone you know',
     soon: 'Play a friend online: send them a link, they pick a deck, and you each play on your own device.' },
   { key: 'ranked', name: 'Ranked', sub: 'Climb the ladder',
     soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   { key: 'store', name: 'Store', sub: 'New decks', soon: 'A store for new decks to play with.' },
-  { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: '' },
 ];
 
 /** The unfinished game, for the Continue button: "Round 4 · Sunny vs Pippin". */
@@ -1140,6 +1149,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && showSettings) { showSettings = false; render(); return; }
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
+    if (screen === 'collection' && showcaseEscape({ render })) return;
     if (selection) { selection = null; render(); }
   }
 });

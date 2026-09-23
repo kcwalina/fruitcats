@@ -1,0 +1,146 @@
+/* The Collection: a wooden Display Case over a Binder of card pockets, a full-screen card, and the
+   wallpaper sheet. Loaded after style.css and skin.css (showcase.ts is imported by main.ts). */
+
+.menu.collection {
+  justify-content: flex-start; gap: 10px;
+  padding-top: max(calc(var(--vh, 1vh) * 1.5), env(safe-area-inset-top));
+  padding-bottom: 0;
+}
+.menu.collection .setup-bar { flex: none; }
+.collection-body {
+  flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 980px;
+  display: flex; flex-direction: column; gap: 18px; padding: 4px 4px max(20px, env(safe-area-inset-bottom));
+  scrollbar-width: thin; scrollbar-color: rgba(120, 70, 20, 0.35) transparent;
+}
+.collection-body > * { flex: none; }
+
+/* ── Display Case: a warm wooden cabinet with a glass shine and one shelf ── */
+
+.display-case {
+  --wood: #9a5b2c; --wood-dark: #5e3214; --wood-light: #c98a4f;
+  position: relative; padding: 12px 18px 0; border-radius: 20px;
+  background:
+    repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.04) 0 3px, transparent 3px 11px),
+    linear-gradient(#6b3a18, #4a260d);
+  border: 8px solid var(--wood);
+  border-image: linear-gradient(var(--wood-light), var(--wood), var(--wood-dark)) 1;
+  border-radius: 0;
+  box-shadow: 0 10px 26px rgba(40, 18, 3, 0.5), inset 0 0 40px rgba(0, 0, 0, 0.55);
+}
+/* Glass: a soft diagonal reflection across the whole case. */
+.display-case::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.09) 28%, transparent 36%, transparent 62%, rgba(255, 255, 255, 0.06) 68%, transparent 74%);
+}
+.case-title {
+  margin: 0 auto 8px; width: max-content; padding: 2px 16px; border-radius: 6px;
+  font: 700 14px/1.4 Fredoka, Nunito, sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+  color: #5a3413; background: linear-gradient(#ffe6a3, #e7b24a); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+.case-shelf {
+  display: flex; justify-content: center; align-items: flex-end; gap: clamp(10px, 3vw, 34px);
+  padding: 6px 0 14px; position: relative;
+}
+/* The shelf board the cards stand on. */
+.case-shelf::after {
+  content: ''; position: absolute; left: -18px; right: -18px; bottom: 0; height: 14px;
+  background: linear-gradient(var(--wood-light), var(--wood) 45%, var(--wood-dark));
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
+}
+button.case-slot {
+  padding: 0; border: none; background: none; box-shadow: none; border-radius: 12px;
+  width: min(30%, 190px, calc(var(--vh, 1vh) * 22)); transform: translateY(-4px);
+}
+button.case-slot:hover:not(:disabled) { transform: translateY(-10px); box-shadow: none; }
+.case-slot .holo { display: block; }
+.case-slot img { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.55)); }
+
+/* ── Foil: a rainbow sheen and a glint that follow the pointer (--mx/--my, set in showcase.ts) ── */
+
+.holo { position: relative; display: block; border-radius: 4.5% / 3.2%; overflow: hidden; isolation: isolate; }
+.holo img { display: block; width: 100%; border-radius: inherit; }
+.holo::before, .holo::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
+.holo::before {
+  background: linear-gradient(115deg, #ff6b6b, #ffd36b, #7bff9a, #6bd5ff, #b07bff, #ff6bd0, #ff6b6b);
+  background-size: 300% 300%; background-position: var(--mx, 50%) var(--my, 50%);
+  mix-blend-mode: soft-light; opacity: 0.7; animation: holo-drift 6s ease-in-out infinite;
+}
+.holo::after {
+  background: radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.55), transparent 40%);
+  mix-blend-mode: overlay;
+}
+@keyframes holo-drift { 50% { background-position: calc(var(--mx, 50%) + 40%) calc(var(--my, 50%) + 30%); } }
+@media (prefers-reduced-motion: reduce) { .holo::before { animation: none; } }
+
+/* ── Binder: pockets in collector-number order ── */
+
+.binder {
+  padding: 14px; border-radius: 18px;
+  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
+  box-shadow: var(--panel-shadow); text-align: left;
+}
+.binder-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.binder-head h3 { margin: 0; font-size: 20px; color: var(--ink); }
+.binder-count { font-weight: 700; color: var(--muted); }
+.binder-count b { color: var(--good); font-size: 18px; }
+.binder-filters { margin: 0 auto 12px; }
+.binder-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px 10px; }
+.pocket {
+  position: relative; display: block; padding: 5px; border-radius: 12px; border: none;
+  background: rgba(120, 80, 40, 0.1); box-shadow: inset 0 1px 3px rgba(80, 40, 10, 0.25);
+}
+button.pocket { background: rgba(120, 80, 40, 0.1); box-shadow: inset 0 1px 3px rgba(80, 40, 10, 0.25); padding: 5px; }
+button.pocket:hover:not(:disabled) { box-shadow: inset 0 1px 3px rgba(80, 40, 10, 0.25), 0 0 0 3px var(--glow); }
+.pocket img { display: block; width: 100%; aspect-ratio: 0.714; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 5px rgba(60, 30, 5, 0.3); }
+/* A card you don't have yet: its shadow waits in the pocket. */
+.pocket.missing img { filter: brightness(0) opacity(0.22); box-shadow: none; }
+.pocket-number { display: block; margin-top: 4px; text-align: center; font: 700 11px/1.3 Fredoka, Nunito, sans-serif; color: #75573a; white-space: nowrap; }
+.pocket-soon {
+  position: absolute; left: 0; right: 0; top: 40%; text-align: center; font: 700 11px Fredoka, Nunito, sans-serif; color: #75573a;
+}
+.pocket-copies {
+  position: absolute; top: 9px; right: 9px; padding: 0 7px; border-radius: 999px;
+  font: 800 12px/1.6 Nunito, sans-serif; color: #fff; background: var(--accent);
+}
+
+/* ── Inspect: one card, full screen ── */
+
+.inspect-overlay {
+  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(30, 15, 5, 0.8); backdrop-filter: blur(4px); animation: fade-in 0.15s ease-out;
+}
+.inspect-card {
+  width: min(88vw, calc(var(--vh, 1vh) * 62 * 0.714)); border-radius: 22px;
+  box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
+}
+.inspect-card:not(.holo) img { display: block; width: 100%; border-radius: 22px; }
+.inspect-card.holo { border-radius: 22px; }
+.inspect-info { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(420px, 100%); }
+.inspect-meta { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); text-align: center; }
+.face-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: min(260px, 100%); }
+button.wallpaper-button { min-height: 46px; padding: 8px 28px; font-size: 17px; }
+.inspect-close { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; font: 700 20px/1 Fredoka, Nunito, sans-serif; }
+
+/* ── Wallpaper sheet ── */
+
+.wall-overlay { z-index: 70; }
+.overlay .wall-sheet { width: min(380px, 100%); text-align: center; display: flex; flex-direction: column; gap: 12px; max-height: 100%; }
+.wall-sheet h2 { margin: 0; }
+.wall-preview {
+  display: block; align-self: center; height: min(calc(var(--vh, 1vh) * 46), 440px); aspect-ratio: 9 / 19.5; object-fit: cover;
+  border-radius: 18px; box-shadow: 0 0 0 5px #2b1a0e, 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+.wall-preview.drawing { display: grid; place-items: center; background: #3a2414; color: #fff4dc; font-weight: 700; }
+.wall-sheet .chip-row { width: 100%; }
+.wall-how { margin: 0; font-size: 13.5px; font-weight: 700; color: #6b5139; line-height: 1.35; }
+
+@media (max-width: 640px) {
+  .collection .setup-bar h2 { font-size: 22px; }
+  .display-case { padding: 10px 10px 0; border-width: 6px; }
+  .case-shelf::after { left: -10px; right: -10px; }
+  .binder { padding: 10px; }
+  .binder-pages { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .binder-filters { width: 100%; gap: 4px; }
+  .binder-filters button.chip { padding: 0 2px; font-size: 11.5px; text-overflow: clip; }
+}

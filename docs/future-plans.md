@@ -90,9 +90,25 @@ Needs accounts.
 - A deck made of existing card behaviours is pure data and ships without an engine release. A deck with
   **new mechanics** needs new `EffectKey`/`BEHAVIOURS` code, so it ships with an engine update.
 - For online play, the server must check that a player owns the deck they bring.
-- Payments: Stripe Checkout, with a webhook that records what each account owns. Sell fixed decks, not
-  random packs; randomized paid packs bring loot-box rules in several countries. A wrapped mobile app
-  would have to use Apple's and Google's in-app purchase systems.
+- **What's sold:** fixed decks and single cards the player sees before buying. No random paid packs:
+  they bring loot-box rules in several countries. Singles go in a cart with an order minimum, because
+  payment fees would eat a $0.99 purchase.
+- **Accounts:** a *Via Mochi account* (Via Mochi is the business; Fruitcats is its first app), shared by
+  future apps, with Apple, Google and email-code sign-in. It is kept apart from the invite-only mochi
+  family accounts. Accounts need age 13+, and buying needs 18+ or a parent's approval.
+- **Payments:** a Merchant of Record (Paddle first), which is the legal seller and handles tax and refunds.
+  A webhook records what each account owns. A native iOS app would use Apple's in-app purchases, writing
+  to the same entitlements.
+- **Staging:** everything to do with purchases is hidden from the public until launch. A separate playtest
+  build and site, a server-side tester list and a sandbox checkout keep it that way. The git tag
+  `pre-store` marks main before any store work.
+- **Done: the Collection** ([apps/web/src/showcase.ts](../apps/web/src/showcase.ts)) is live for everyone:
+  - a Display Case with the three starter Hero Cats as foils
+  - a Binder of the set in collector-number order, with preview cards as shadows
+  - a full-screen view of any card
+  - a phone wallpaper that makes the whole screen the card ([apps/web/src/wallpaper.ts](../apps/web/src/wallpaper.ts)),
+    saved through the share sheet, then set in Photos
+  Bought cards will show up here, and choosing the Display Case's cards comes with the Store.
 
 ## Suggested order
 

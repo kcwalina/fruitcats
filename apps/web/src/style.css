@@ -646,14 +646,19 @@ body.dragging .hand-card:hover { transform: none; }
 }
 @media (max-width: 640px) {
   .deck-blurb, .title p { display: none; }   /* room for Play at the bottom */
-  .modes { flex-direction: column; flex-wrap: nowrap; width: 100%; max-width: 420px; gap: 8px; }
-  .mode-card { width: 100%; flex-direction: row; gap: 12px; padding: 6px 10px; border-radius: 16px; }
-  .mode-card img { width: calc(var(--vh, 1vh) * 6.5); height: calc(var(--vh, 1vh) * 6.5); min-width: 44px; min-height: 44px; border-radius: 10px; }
+  /* Two columns of tiles (icon over name, no subtitle), so six modes take three rows. Continue spans both. */
+  .modes { display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 420px; gap: 8px; }
+  .mode-card { width: 100%; gap: 4px; padding: 8px 6px 6px; border-radius: 16px; }
+  .mode-card img { width: min(calc(var(--vh, 1vh) * 8.5), 84px); height: min(calc(var(--vh, 1vh) * 8.5), 84px); min-width: 44px; min-height: 44px; border-radius: 12px; }
+  .mode-card:not(.continue-card) .mode-sub { display: none; }
+  .continue-card { grid-column: 1 / -1; flex-direction: row; gap: 12px; padding: 6px 10px; }
+  .continue-card img { width: 52px; height: 52px; min-width: 0; min-height: 0; border-radius: 10px; }
   .home .hero-parade { height: calc(var(--vh, 1vh) * 13); }
   .home .parade-cat.c1, .home .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 10); }
   .home .parade-cat.c2 { --h: calc(var(--vh, 1vh) * 12.5); }
-  .mode-text { align-items: flex-start; text-align: left; }
-  .soon-tag { position: static; margin-left: auto; }
+  .mode-name { font-size: 16px; }
+  .continue-card .mode-text { align-items: flex-start; text-align: left; }
+  .soon-tag { top: 4px; right: 4px; padding: 0 7px; font-size: 10px; }
   .home-note { font-size: 13px; }
   .title h1 { font-size: clamp(30px, calc(var(--vh, 1vh) * 5.5), 48px); }
   .hero-parade { height: calc(var(--vh, 1vh) * 16); }
@@ -724,7 +729,7 @@ body.dragging .hand-card:hover { transform: none; }
 .tut-balloon.centered { animation-name: pop-centered; }
 @keyframes pop-centered { from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } to { transform: translate(-50%, -50%); } }
 
-/* Short phones (iPhone SE and the like): Home has six rows with Continue, so tighten it to still fit. */
+/* Short phones (iPhone SE and the like): Home has four rows with Continue, so tighten it to still fit. */
 @media (max-width: 640px) and (max-height: 740px) {
   .home .title p { display: none; }
   .home .hero-parade { height: calc(var(--vh, 1vh) * 11); }
@@ -732,7 +737,8 @@ body.dragging .hand-card:hover { transform: none; }
   .home .parade-cat.c1, .home .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 8.5); }
   .home .modes { gap: 6px; }
   .home .mode-card { padding-top: 4px; padding-bottom: 4px; }
-  .home .mode-card img { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+  .home .mode-card img { width: 52px; height: 52px; min-width: 44px; min-height: 44px; }
+  .home .continue-card img { width: 44px; height: 44px; }
   /* Solo: compact Difficulty tiles (face and name only) and a little less spacing. */
   .solo .setup-body { gap: 14px; padding: 14px 0 16px; }
   .solo .difficulty-choice { flex-direction: row; justify-content: center; gap: 6px; padding: 6px 4px; }

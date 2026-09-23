@@ -98,6 +98,12 @@ let tutorialGame = false;
 let selection: Selection | null = null;
 let picks = new Set<number>();
 let aiTimer: number | undefined;
+/**
+ * An action that is about to happen and needs a second click. Planting buries a card for good and
+ * Take the Yarn costs the rest of your round, and both used to fire on the first click — a playtester
+ * kept planting cards they had only meant to look at.
+ */
+let confirming: 'yarn' | null = null;
 let showRules = false;
 let flash = '';
 /** Multiplier on the AI's "thinking" pause; the dev hook sets it to 0 for automated UI tests. */
@@ -173,6 +179,7 @@ function act(action: Action) {
     flash = (error as Error).message;
   }
   selection = null;
+  confirming = null;
   picks = new Set();
   render();
   scheduleAi();
@@ -225,6 +232,7 @@ function startGame(tutorial = false) {
   markHumanTurnDone();
   screen = 'game';
   selection = null;
+  confirming = null;
   picks = new Set();
   render();
   scheduleAi();
@@ -324,16 +332,20 @@ function onClick(key: string) {
   if (kind === 'btn') {
     switch (raw) {
       case 'pass': return act({ t: 'pass' });
-      case 'yarn': return act({ t: 'takeYarn' });
+      case 'yarn':
+        if (confirming !== 'yarn') { confirming = 'yarn'; render(); return; }
+        confirming = null;
+        return act({ t: 'takeYarn' });
       case 'decline': return act({ t: 'decline' });
       case 'skip': return act({ t: 'skipPlant' });
       case 'keep': return act({ t: 'keepLucky' });
       case 'free': return act(legal.find((a) => a.t === 'lucky' && !a.target)!);
-      case 'cancel': selection = null; render(); return;
+      case 'cancel': selection = null; confirming = null; picks = new Set(); render(); return;
       case 'confirm':
         if (prompt.kind === 'mulligan') return act({ t: 'mulligan', uids: [...picks] });
         if (prompt.kind === 'setupPlant') return act({ t: 'setupPlant', uids: [...picks] });
         if (prompt.kind === 'discard') return act({ t: 'discard', uids: [...picks] });
+        if (prompt.kind === 'plant' && picks.size === 1) return act({ t: 'plant', uid: [...picks][0] });
         return;
       case 'ability': return select('your Hero Cat ability', legal.filter((a) => a.t === 'ability'));
       case 'heroattack':
@@ -349,7 +361,12 @@ function onClick(key: string) {
       render();
       return;
     }
-    if (prompt.kind === 'plant') return act({ t: 'plant', uid: value });
+    if (prompt.kind === 'plant') {           // pick it, then confirm: this buries the card for good
+      if (picks.has(value)) picks.delete(value);
+      else { picks.clear(); picks.add(value); }
+      render();
+      return;
+    }
     const card = game.players[HUMAN].hand.find((c) => c.uid === value)!;
     const options = legal.filter((a) => (a.t === 'play' || a.t === 'pounce') && a.uid === value);
     if (!options.length) {
@@ -668,11 +685,23 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         text = `Too many cards: discard <b>${prompt.count}</b>.`;
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Discard ${picks.size}/${prompt.count}</button>`;
         break;
-      case 'plant':
-        text = `<b>New round!</b> You may plant one card face-down as <b>1 more Treat</b> (it won't be played). Click a card, or Skip.`;
-        buttons = '<button data-click="btn:skip">Skip</button>';
+      case 'plant': {
+        const chosen = picks.size === 1 ? s.players[HUMAN].hand.find((c) => c.uid === [...picks][0]) : undefined;
+        text = chosen
+          ? `Bury <b>${esc(cardName(chosen.id))}</b> as a Treat? It pays for other cards and can’t be played.`
+          : '<b>New round!</b> You may bury one card face-down as <b>1 more Treat</b> (it won’t be played). Click a card, or Skip.';
+        buttons = `${chosen ? '<button class="primary" data-click="btn:confirm">Bury it</button>'
+          + '<button data-click="btn:cancel">Cancel</button>' : ''}
+          <button data-click="btn:skip">Skip</button>`;
         break;
+      }
       case 'action': {
+        if (confirming === 'yarn') {
+          text = `Take the <b>Yarn Ball</b>? You’ll act first next round, but you can only <b>pass</b> for the rest of this one.`;
+          buttons = `<button class="primary" data-click="btn:yarn">Take it ${YARN_ICON}</button>`
+            + '<button data-click="btn:cancel">Cancel</button>';
+          break;
+        }
         const hints = [];
         if (legal.some((a) => a.t === 'play')) hints.push('play a glowing card');
         if (legal.some((a) => a.t === 'attack')) hints.push('attack with a glowing unit');

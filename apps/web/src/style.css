@@ -178,11 +178,19 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 }
 .setup-footer { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
 .setup-footer .play-button { min-width: 240px; }
-/* An unfinished Solo game: Continue it, or start a new one (which replaces it). */
-.resume-buttons { display: flex; justify-content: center; align-items: stretch; gap: 10px; }
-.resume-buttons .play-button { min-width: 200px; }
-button.new-game-button { min-width: 130px; font-size: 17px; }
-.resume-note { font: 700 13px Fredoka, Nunito, sans-serif; color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.9); }
+/* An unfinished Solo game: resume it, or start a new one (which replaces it). Two matching buttons,
+   each saying under its name what it will do: which game it resumes, which settings it starts with. */
+.resume-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(100%, 520px); margin-top: 8px; }
+.setup-footer .play-button.twin {
+  min-width: 0; padding: 10px 8px 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border-radius: 18px;
+}
+.twin-name { font-size: clamp(18px, calc(var(--vh, 1vh) * 2.6), 22px); line-height: 1.15; text-shadow: 0 2px 0 rgba(160, 70, 0, 0.45); }
+.twin-sub .nowrap { white-space: nowrap; }
+.twin-sub {
+  max-width: 100%; text-wrap: balance;
+  font-size: 12.5px; font-weight: 700; line-height: 1.2; color: #fff; text-shadow: 0 1px 0 rgba(150, 60, 0, 0.5);
+}
 
 /* Phones: the decks become a list of rows with room for their descriptions, the opponent choice is a
    full-width control, and Play spans the bottom where a thumb reaches it. */
@@ -205,9 +213,8 @@ button.new-game-button { min-width: 130px; font-size: 17px; }
   :is(.solo, .newdeck) .deck-blurb { display: block; font-size: 12.5px; line-height: 1.3; margin-top: 2px; }
   .solo .difficulty-choices { width: 100%; }
   .solo .setup-footer .play-button { width: 100%; min-width: 0; padding: 12px 0; font-size: 20px; }
-  .solo .resume-buttons { width: 100%; }
-  .solo .resume-buttons .play-button { flex: 2; width: auto; }
-  .solo button.new-game-button { flex: 1; min-width: 0; }
+  .solo .setup-footer .play-button.twin { padding: 10px 6px 11px; font-size: inherit; }
+  .solo .twin-sub { font-size: 11.5px; }
 }
 
 /* ── Deck builder ─────────────────────────────────────────────────────── */

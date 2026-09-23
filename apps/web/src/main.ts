@@ -510,10 +510,10 @@ const MODE_GROUPS = [
 ];
 const MODES = MODE_GROUPS.flat();
 
-/** The unfinished game, for the Continue button: "Round 4 · Sunny vs Pippin". */
+/** The unfinished game, for the Resume button: "Round 4 · Sunny vs Pippin". */
 function savedGameLabel(): string | null {
   const saved = loadGame()?.game;
-  return saved ? `Round ${saved.round} · ${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}` : null;
+  return saved ? `Round ${saved.round} · <span class="nowrap">${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}</span>` : null;
 }
 
 function renderHome(): string {
@@ -538,7 +538,7 @@ function renderHome(): string {
           // or on Solo, that a game is waiting to be continued.
           const resume = m.key === 'solo' && saved;
           const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
-            : resume ? `<span class="mode-sub continue-line">Continue · Round ${loadGame()!.game.round}</span>`
+            : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
             : `<span class="mode-sub">${m.sub}</span>`;
           return `
         <button class="mode-card ${m.soon ? 'soon' : ''} ${resume ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
@@ -599,6 +599,7 @@ function renderDeckPicker(): string {
 }
 
 function renderSolo(): string {
+  const saved = savedGameLabel();
   return `
   <div class="menu solo">
     <div class="setup-bar">
@@ -621,12 +622,13 @@ function renderSolo(): string {
       </section>
     </div>
     <div class="setup-footer">
-      ${savedGameLabel() ? `
+      ${saved ? `
       <div class="resume-buttons">
-        <button class="play-button" data-click="home:continue">Continue</button>
-        <button class="new-game-button" data-click="solo:play" title="Start a new game with the deck and difficulty above; it replaces the unfinished one">New game</button>
-      </div>
-      <span class="resume-note">${savedGameLabel()}</span>` : '<button class="play-button" data-click="solo:play">Play</button>'}
+        <button class="play-button twin" data-click="home:continue">
+          <span class="twin-name">Resume game</span><span class="twin-sub">${saved}</span></button>
+        <button class="play-button twin" data-click="solo:play" title="Start a new game with the deck and difficulty above; it replaces the unfinished one">
+          <span class="twin-name">New game</span><span class="twin-sub">${esc(deckForKey(myDeck)?.name ?? '')} · ${DIFFICULTY[difficulty].label}</span></button>
+      </div>` : '<button class="play-button" data-click="solo:play">Play</button>'}
     </div>
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;

@@ -3,6 +3,9 @@ import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { count, summary } from './progress';
+import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { deckClick, openDeckBuilder, renameDeck, renderDeckBuilder } from './deckbuilder';
+import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
@@ -14,9 +17,6 @@ import {
 
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
 
-const BASE = import.meta.env.BASE_URL;
-const artUrl = (key: string) => `${BASE}sb1/${key}.webp`;
-const cardUrl = (key: string) => `${BASE}cards/sb1/${key}.webp`;
 /** The painted Yarn Ball (the 🧶 emoji looks like a small blue dot on some devices). */
 const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Ball">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
@@ -33,13 +33,6 @@ function updateViewportHeight() {
 updateViewportHeight();
 window.addEventListener('resize', updateViewportHeight);
 window.visualViewport?.addEventListener('resize', updateViewportHeight);
-/** Each fruit family is a class with its own signature mechanic. */
-const FAMILY_INFO: Record<string, { mechanic: string; hint: string }> = {
-  Citrus: { mechanic: 'Zest', hint: 'bonuses when it isn’t your first card this round' },
-  Orchard: { mechanic: 'Ripen', hint: 'units grow +1/+1 every round' },
-  Tropical: { mechanic: 'Sprout', hint: 'extra Treats now, Lush payoffs at 7+' },
-};
-const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
 const heroKey = (s: GameState, p: PlayerId) => `${s.players[p].hero.id}-${s.players[p].hero.grown ? 'bigcat' : 'kitten'}`;
 
 /** The engine logs in the third person; the human player is "You", so fix up the grammar. */
@@ -53,21 +46,13 @@ const humanize = (text: string) =>
     .replace(/\bYou (\w+) their\b/g, 'You $1 your')
     .replace(/(?<!^)(?<![.!] )\bYour\b/g, 'your');
 
-/** The gear that opens Settings: in Home's corner, in the Solo header, and beside Rules in a game. */
-function settingsButton(extraClass = ''): string {
-  return `<button data-click="ui:settings" class="icon-button settings-button ${extraClass}" title="Settings" aria-label="Settings">
-      <img src="${BASE}ui/icon-settings.webp" alt=""></button>`;
-}
-
-const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-
 // ── App state ────────────────────────────────────────────────────────────────────────────────────
 
 const HUMAN: PlayerId = 0;
 const AI: PlayerId = 1;
 
-/** Home: the game modes. Solo: deck and difficulty for a game against the AI. */
-type Screen = 'home' | 'solo' | 'game';
+/** Home: the game modes. Solo: deck and difficulty for a game against the AI. Decks: the deck builder. */
+type Screen = 'home' | 'solo' | 'decks' | 'game';
 interface Selection {
   label: string;
   options: Action[];
@@ -91,7 +76,8 @@ type Difficulty = keyof typeof DIFFICULTY;
 let screen: Screen = 'home';
 /** What a "Coming soon" mode will do, shown on the home screen after tapping it. */
 let homeNote = '';
-let myDeck = 'zest-rush';
+/** A starter deck's key, or `custom:<id>` for one of your own (see mydecks.ts). */
+let myDeck = loadChosenDeck();
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
@@ -227,12 +213,14 @@ function scheduleAi() {
 function startGame(tutorial = false) {
   // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
   // with you going first, so its balloons can talk about specific cards.
-  const others = Object.keys(DECKS).filter((d) => d !== myDeck);
+  // Against your own deck, it leads a starter with a different Hero Cat.
+  const mine = deckForKey(myDeck) ?? DECKS['zest-rush'];
+  const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
   const theirDeck = tutorial ? 'orchard-guard'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   game = tutorial
     ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
-    : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
+    : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
   aiRandom = devSeed === undefined || tutorial ? undefined : mulberry(devSeed);
   tutorialGame = tutorial;
   resetLogSounds(game);
@@ -331,6 +319,7 @@ function onClick(key: string) {
   if (kind === 'home') {
     homeNote = '';
     if (raw === 'solo') screen = 'solo';
+    else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
     else if (raw === 'tutorial') { startGame(true); return; }
     else if (raw === 'soon') homeNote = MODES.find((m) => m.key === key.split(':')[2])?.soon ?? '';
@@ -341,8 +330,19 @@ function onClick(key: string) {
     // Always a normal game: the guided one is the Tutorial, which Home puts first until you've played.
     if (raw === 'play') { startGame(); return; }
     if (raw in DIFFICULTY) difficulty = raw as Difficulty;
-    else if (raw in DECKS) myDeck = raw;
+    else {
+      const deckKey = key.slice('solo:'.length);   // your own decks' keys have a colon: custom:<id>
+      const deck = deckForKey(deckKey);
+      if (deck && isReady(deck)) { myDeck = deckKey; saveChosenDeck(deckKey); }
+    }
     render();
+    return;
+  }
+  if (kind === 'deck') {
+    deckClick(raw, key.split(':')[2] ?? '', {
+      render,
+      playWith: (deckKey) => { myDeck = deckKey; saveChosenDeck(deckKey); screen = 'solo'; render(); },
+    });
     return;
   }
   if (kind === 'set') {
@@ -471,8 +471,11 @@ function resumeSavedGame(): boolean {
 
 function render() {
   document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
-  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : renderGame())
+  // Scrolling lists (the deck builder's cards) keep their place when the screen is redrawn.
+  const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')].map((el) => [el.dataset.keepScroll, el.scrollTop]));
+  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder() : renderGame())
     + (showSettings ? renderSettings() : '');
+  for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]')) el.scrollTop = scrolled.get(el.dataset.keepScroll) ?? 0;
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN); } else stopTutorial();
@@ -481,7 +484,7 @@ function render() {
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
 
-/** The home screen's game modes. Only Solo is playable so far; the others say what they will be. */
+/** The home screen's game modes. Solo and the Deck builder work so far; the others say what they will be. */
 const MODES = [
   { key: 'solo', name: 'Solo', sub: 'Play against the AI', soon: '' },
   { key: 'friend', name: 'Friend', sub: 'Play someone you know',
@@ -489,7 +492,7 @@ const MODES = [
   { key: 'ranked', name: 'Ranked', sub: 'Climb the ladder',
     soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   { key: 'store', name: 'Store', sub: 'New decks', soon: 'A store for new decks to play with.' },
-  { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: 'Build your own decks from the cards you have.' },
+  { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: '' },
 ];
 
 /** The unfinished game, for the Continue button: "Round 4 · Sunny vs Pippin". */
@@ -540,9 +543,14 @@ function renderDeckPicker(): string {
     'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
     'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
   };
+  // Your own decks, once they have all 50 cards, sit below the starters.
+  const mine = listDecks().filter(isReady);
+  // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
+  const chosen = deckForKey(myDeck);
+  if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
   return `
     <section class="picker">
-      <h2>Choose your Hero Cat</h2>
+      <h2>Choose your deck</h2>
       <div class="deck-choices">
         ${Object.entries(DECKS).map(([key, deck]) => `
           <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}">
@@ -553,6 +561,16 @@ function renderDeckPicker(): string {
             <span class="deck-blurb">${deckBlurb[key] ?? ''}</span>
           </button>`).join('')}
       </div>
+      ${mine.length ? `
+      <h3 class="my-decks-title">Your decks</h3>
+      <div class="deck-choices my-deck-choices">
+        ${mine.map((d) => `
+          <button class="deck-choice mine ${customKey(d.id) === myDeck ? 'chosen' : ''}" data-click="solo:${customKey(d.id)}">
+            <img class="deck-art" src="${artUrl(`${d.hero}-kitten`)}" alt="">
+            <span class="deck-name">${esc(d.name)}</span>
+            <span class="deck-class ${famClass(d.hero)}">${esc(cardName(d.hero))} · ${esc(CARDS[d.hero].family)}</span>
+          </button>`).join('')}
+      </div>` : `<button class="link-button" data-click="home:decks">Or build your own deck</button>`}
     </section>`;
 }
 
@@ -560,8 +578,7 @@ function renderSolo(): string {
   return `
   <div class="menu solo">
     <div class="setup-bar">
-      <button class="icon-button back-button" data-click="ui:back" title="Home" aria-label="Home">
-        <img src="${BASE}ui/icon-home.webp" alt=""></button>
+      ${backButton()}
       <h2>Solo game</h2>
       ${settingsButton()}
     </div>
@@ -934,6 +951,16 @@ function renderRules(): string {
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────────────────────────
+
+// The deck builder's name box: saved when you leave it or press Enter.
+app.addEventListener('change', (event) => {
+  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename]');
+  if (input) renameDeck(input.value);
+});
+app.addEventListener('keydown', (event) => {
+  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename]');
+  if (input && event.key === 'Enter') input.blur();
+});
 
 app.addEventListener('click', (event) => {
   if (suppressClick) { suppressClick = false; return; }

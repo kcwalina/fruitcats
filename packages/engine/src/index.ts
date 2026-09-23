@@ -1,7 +1,10 @@
 export * from './types';
 export {
-  CARDS, DECKS, BEHAVIOURS, behaviour, keywords, parseKeywords, isUnitCard, deckCardIds,
+  CARDS, DECKS, BEHAVIOURS, behaviour, keywords, parseKeywords, isUnitCard, deckCardIds, resolveDeck,
 } from './cards';
+export {
+  DECK_RULES, NEUTRAL_FAMILY, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem,
+} from './decks';
 export type { DeckList, Keywords, Behaviour } from './cards';
 export {
   createGame, apply, legalActions, playOptions, targetsFor, findUnit, unitPower, unitHealth,

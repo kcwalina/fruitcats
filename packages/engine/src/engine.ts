@@ -7,7 +7,8 @@
 // randomness comes from the seed stored in the state, so a seed plus the action list replays a game.
 
 import {
-  CARDS, GRANNY_SMITH, SAKURA, SANGUINE, behaviour, deckCardIds, DECKS, isUnitCard, keywords,
+  CARDS, GRANNY_SMITH, SAKURA, SANGUINE, behaviour, deckCardIds, isUnitCard, keywords, resolveDeck,
+  type DeckList,
 } from './cards';
 import type {
   Action, CardInst, EffectKey, GameState, PlayerId, PlayerState, Prompt, Step, Target, TargetSpec, Unit, Window,
@@ -55,7 +56,8 @@ function shuffle<T>(s: GameState, items: T[]): void {
 // ── Setup ────────────────────────────────────────────────────────────────────────────────────────
 
 export interface GameOptions {
-  decks: [string, string];
+  /** A starter deck's key ('zest-rush') or a whole deck list (a player's own deck). */
+  decks: [string | DeckList, string | DeckList];
   names?: [string, string];
   seed?: number;
   /** Force the starting Yarn Ball holder (random otherwise). */
@@ -81,18 +83,18 @@ export function createGame(options: GameOptions): GameState {
     startingYarn: 0,
   };
   for (const p of [0, 1] as PlayerId[]) {
-    const deckKey = options.decks[p];
+    const list = resolveDeck(options.decks[p]);
     // Shuffle first, then number the cards: numbering the sorted deck list would let anyone who sees
     // a uid (an opponent's card in hand, say) work out which card it is.
-    const ids = deckCardIds(deckKey);
+    const ids = deckCardIds(list);
     shuffle(s, ids);
     const deck = ids.map((id) => ({ uid: s.nextUid++, id }));
     const lives = deck.splice(0, LIVES);
     const hand = deck.splice(0, STARTING_HAND);
     s.players[p] = {
       name: options.names?.[p] ?? `Player ${p + 1}`,
-      deckName: DECKS[deckKey].name,
-      hero: { id: DECKS[deckKey].hero, grown: false, exhausted: false },
+      deckName: list.name,
+      hero: { id: list.hero, grown: false, exhausted: false },
       deck, hand, lives, pantry: [], yard: [], compost: [], playedThisRound: 0,
     };
   }

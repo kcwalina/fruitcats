@@ -79,9 +79,14 @@ Needs the server from #2 plus accounts.
 
 Needs accounts.
 
-- `createGame` takes deck **keys** (`'zest-rush'`), and `DECKS`/`CARDS` are loaded once from a single
-  `sb1.json`. Change `createGame` to accept a `DeckList` directly, and add a card registry that can load
-  several sets.
+- **Done:** `createGame` accepts a `DeckList` as well as a starter key, and the deck builder
+  ([apps/web/src/deckbuilder.ts](../apps/web/src/deckbuilder.ts)) checks decks against rulebook §11.1 with
+  `deckProblems` in [packages/engine/src/decks.ts](../packages/engine/src/decks.ts). Still to do: a card
+  registry that can load several sets (`DECKS`/`CARDS` come from a single `sb1.json`).
+- What a player owns comes from `owned(id)` in [apps/web/src/collection.ts](../apps/web/src/collection.ts):
+  for now, the three starter decks added together. Purchases change that function (and move it behind the
+  account), and the deck builder follows. Players' decks are in this browser's localStorage
+  ([apps/web/src/mydecks.ts](../apps/web/src/mydecks.ts)) until accounts can hold them.
 - A deck made of existing card behaviours is pure data and ships without an engine release. A deck with
   **new mechanics** needs new `EffectKey`/`BEHAVIOURS` code, so it ships with an engine update.
 - For online play, the server must check that a player owns the deck they bring.

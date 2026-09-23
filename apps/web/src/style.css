@@ -181,24 +181,157 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 /* Phones: the decks become a list of rows with room for their descriptions, the opponent choice is a
    full-width control, and Play spans the bottom where a thumb reaches it. */
 @media (max-width: 640px) {
-  .solo .setup-bar { gap: 8px; }
-  .solo .setup-bar h2 { font-size: 22px; }
-  .solo .setup-bar button { height: 44px; }
-  .solo .setup-body { flex: none; justify-content: flex-start; gap: 20px; padding: 20px 0 24px; }
-  .solo .picker { width: 100%; gap: 10px; }
-  .solo .picker h2 { margin: 0; font-size: 18px; }
-  .solo .deck-choices { flex-direction: column; width: 100%; gap: 10px; }
-  .solo .deck-choice {
+  :is(.solo, .decks) .setup-bar { gap: 8px; }
+  :is(.solo, .decks) .setup-bar h2 { font-size: 22px; }
+  :is(.solo, .decks) .setup-bar button { height: 44px; }
+  :is(.solo, .newdeck) .setup-body { flex: none; justify-content: flex-start; gap: 20px; padding: 20px 0 24px; }
+  :is(.solo, .newdeck) .picker { width: 100%; gap: 10px; }
+  :is(.solo, .newdeck) .picker h2 { margin: 0; font-size: 18px; }
+  :is(.solo, .newdeck) .deck-choices { flex-direction: column; width: 100%; gap: 10px; }
+  :is(.solo, .newdeck) .deck-choice {
     width: 100%; display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto 1fr;
     column-gap: 12px; row-gap: 2px; align-items: start; text-align: left; padding: 8px 12px 8px 8px; border-radius: 16px;
   }
-  .solo .deck-choice img { display: none; }
-  .solo .deck-choice img.deck-art { display: block; grid-row: 1 / 4; width: 64px; height: 64px; object-fit: cover; border-radius: 12px; }
-  .solo .deck-name { font-size: 18px; line-height: 1.2; }
-  .solo .deck-class { justify-self: start; }
-  .solo .deck-blurb { display: block; font-size: 12.5px; line-height: 1.3; margin-top: 2px; }
+  :is(.solo, .newdeck) .deck-choice img { display: none; }
+  :is(.solo, .newdeck) .deck-choice img.deck-art { display: block; grid-row: 1 / 4; width: 64px; height: 64px; object-fit: cover; border-radius: 12px; }
+  :is(.solo, .newdeck) .deck-name { font-size: 18px; line-height: 1.2; }
+  :is(.solo, .newdeck) .deck-class { justify-self: start; }
+  :is(.solo, .newdeck) .deck-blurb { display: block; font-size: 12.5px; line-height: 1.3; margin-top: 2px; }
   .solo .difficulty-choices { width: 100%; }
   .solo .setup-footer .play-button { width: 100%; min-width: 0; padding: 12px 0; font-size: 20px; }
+}
+
+/* ── Deck builder ─────────────────────────────────────────────────────── */
+
+/* Solo: your own decks, as a row of small tiles under the starters. */
+.menu.solo { overflow-y: auto; }
+.my-decks-title { margin: 10px 0 12px; font-size: 16px; }
+.my-deck-choices { flex-wrap: wrap; }
+.deck-choice.mine {
+  width: auto; min-width: 220px; max-width: 300px; display: grid; grid-template-columns: 48px 1fr; grid-template-rows: auto auto;
+  column-gap: 10px; row-gap: 2px; align-items: center; text-align: left; padding: 8px 14px 8px 8px;
+}
+.deck-choice.mine img.deck-art { display: block; grid-row: 1 / 3; width: 48px; height: 48px; object-fit: cover; border-radius: 10px; }
+.deck-choice.mine .deck-name { font-size: 16px; }
+.deck-choice.mine .deck-class { justify-self: start; }
+.link-button { font-size: 14px; }
+
+/* Your decks */
+.menu.decks { justify-content: flex-start; gap: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.menu.decks .setup-bar { flex: none; }
+.decks-body {
+  flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 900px; display: flex; flex-direction: column;
+  gap: 18px; padding: 4px 4px 12px; text-align: left;
+}
+.deck-group h3 { margin: 0 0 8px; font-size: 18px; }
+.deck-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.deck-tile { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; text-align: left; min-height: 80px; }
+.deck-tile-art { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; flex: none; }
+.deck-tile-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.deck-tile .deck-name { font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck-tile-sub { font-size: 12.5px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.deck-status { font-size: 13px; font-weight: 700; }
+.new-plus { width: 64px; height: 64px; flex: none; display: grid; place-items: center; font: 700 40px/1 Fredoka, Nunito, sans-serif; border-radius: 12px; }
+.deck-rules { font-size: 14px; line-height: 1.45; padding: 10px 16px; border-radius: 16px; }
+.deck-rules summary { font-weight: 800; cursor: pointer; }
+.deck-rules ul { margin: 8px 0 2px; padding-left: 20px; }
+
+/* The builder: header, filters, then the cards you have beside the deck. */
+.menu.builder { max-width: 1300px; gap: 8px; justify-content: flex-start; }
+.deck-name-input {
+  font: 700 clamp(18px, calc(var(--vh, 1vh) * 3), 26px) Fredoka, Nunito, sans-serif; text-align: center;
+  width: min(420px, 100%); min-width: 0; padding: 4px 10px; border-radius: 12px; border: 2px dashed transparent;
+  background: transparent; color: var(--ink);
+}
+.deck-name-input:hover, .deck-name-input:focus { border-color: var(--line); background: var(--panel); outline: none; }
+.build-head { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 16px; width: 100%; font-size: 14px; }
+.build-lead { display: flex; align-items: center; gap: 8px; }
+.build-lead img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px var(--fam, #fff); }
+.build-status { font-weight: 800; color: #9c4a12; }
+.build-status.ready { color: var(--good); }
+.build-message { flex-basis: 100%; margin: 0; }
+.filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; width: 100%; }
+.chip-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+button.chip { padding: 4px 12px; font-size: 13px; min-height: 32px; border-radius: 999px; }
+.build-main { flex: 1; min-height: 0; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
+.pool {
+  min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  align-content: start; gap: 12px 10px; padding: 8px 6px 16px;
+}
+.pool-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); font-weight: 700; }
+.pool-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+button.pool-face, .pool-face {
+  display: block; width: 100%; padding: 0; border: none; border-radius: 9px; background: none; box-shadow: none;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.pool-face img {
+  display: block; width: 100%; aspect-ratio: 0.714; object-fit: cover; border-radius: 9px; box-shadow: var(--shadow);
+  pointer-events: none; -webkit-user-drag: none;
+}
+.pool-card.in-deck .pool-face img { box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
+.pool-card.blocked .pool-face img { filter: grayscale(0.7) brightness(0.9); opacity: 0.5; }
+.pool-foot { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 28px; }
+.pips { display: flex; gap: 4px; }
+.pips i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b07a3a; background: rgba(255, 255, 255, 0.6); }
+.pips i.on { background: var(--accent); border-color: #c4561a; }
+button.pool-remove { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 18px; line-height: 1; }
+.pool-count {
+  position: absolute; top: 6px; right: 6px; padding: 1px 8px; border-radius: 999px; font-weight: 800; font-size: 13px;
+  background: var(--accent); color: #fff;
+}
+
+.deck-panel { min-height: 0; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; text-align: left; }
+.deck-toggle { display: none; }
+.deck-panel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; }
+.curve { display: flex; gap: 6px; height: 72px; flex: none; }
+.curve-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; font-size: 11px; font-weight: 700; }
+.curve-bar { width: 100%; max-width: 26px; border-radius: 4px 4px 0 0; background: linear-gradient(#ffb95c, #f2761b); min-height: 2px; }
+.curve-n { color: var(--muted); min-height: 14px; }
+.curve-cost { color: var(--ink); border-top: 1px solid var(--line); width: 100%; text-align: center; }
+.deck-lines { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
+.deck-lines li {
+  display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px;
+  padding: 3px 4px 3px 8px; border-left: 4px solid var(--fam, var(--line)); margin-bottom: 3px; border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55); font-size: 14px; user-select: none; -webkit-user-select: none;
+}
+.deck-lines li.deck-empty { display: block; border: none; color: var(--muted); font-weight: 700; background: none; }
+.line-cost {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 12px;
+  background: #f2c14e; color: #5a3413;
+}
+.line-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.line-name small { font-weight: 700; color: var(--muted); }
+.line-qty { font-weight: 800; min-width: 18px; text-align: center; }
+button.line-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 16px; line-height: 1; }
+.deck-actions { display: flex; flex-direction: column; gap: 8px; flex: none; }
+.deck-actions .play-button { font-size: 18px; padding: 10px 12px; }
+button.delete-deck { font-size: 13px; padding: 6px 12px; }
+button.delete-deck.confirming { background: #b3261e; color: #fff; }
+.back-arrow { font: 700 32px/1 Fredoka, Nunito, sans-serif; margin-top: -4px; }
+
+/* Phones and narrow windows: the cards fill the screen and the deck is a bar at the bottom that opens
+   into a sheet. */
+@media (max-width: 760px) {
+  .menu.builder { padding-bottom: 0; }
+  .build-main { grid-template-columns: minmax(0, 1fr); }
+  .pool { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .deck-panel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom); max-height: calc(var(--vh, 1vh) * 75);
+  }
+  .deck-toggle {
+    display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 56px; padding: 8px 20px;
+    border-radius: 0; font-size: 17px;
+  }
+  .deck-panel-body { display: none; }
+  .sheet-open .deck-panel { height: calc(var(--vh, 1vh) * 75); }
+  .sheet-open .deck-panel-body { display: flex; }
+  .build-head { font-size: 13px; gap: 4px 12px; }
+  .filters { gap: 6px; }
+  .chip-row { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; width: 100%; padding-bottom: 2px; scrollbar-width: none; }
+  button.chip { flex: none; }
+  .deck-tiles { grid-template-columns: minmax(0, 1fr); }
+  .deck-choice.mine { width: 100%; max-width: none; }
 }
 
 /* ── Game layout ──────────────────────────────────────────────────────── */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, apply, chooseAction, createGame, deckCardIds, legalActions, randomAction, keywords,
-  unitHealth, unitPower, type GameState,
+  CARDS, DECKS, addProblem, apply, chooseAction, createGame, deckCardIds, deckProblems, legalActions, randomAction,
+  keywords, unitHealth, unitPower, type DeckList, type GameState,
 } from '../src/index';
 
 function playOut(s: GameState, pick: (s: GameState) => ReturnType<typeof chooseAction>, limit = 5000): GameState {
@@ -22,11 +22,8 @@ function rng(seed: number) {
 describe('card data', () => {
   it('builds legal 50-card decks', () => {
     for (const key of Object.keys(DECKS)) {
-      const ids = deckCardIds(key);
-      expect(ids).toHaveLength(50);
-      const cats = ids.filter((id) => CARDS[id].type === 'Cat');
-      expect(cats.length).toBeLessThanOrEqual(6);
-      expect(new Set(cats).size).toBe(cats.length);
+      expect(deckCardIds(key)).toHaveLength(50);
+      expect(deckProblems(DECKS[key])).toEqual([]);
     }
   });
 
@@ -34,6 +31,67 @@ describe('card data', () => {
     expect(keywords('SB1-O07')).toMatchObject({ guardian: true, tough: 1 });
     expect(keywords('SB1-C09')).toMatchObject({ pounce: true, lucky: true });
     expect(keywords('SB1-O03').guardian).toBe(false); // "If you control a Guardian" is not the keyword
+  });
+});
+
+describe('deckbuilding (rulebook 11.1)', () => {
+  const withCards = (cards: Record<string, number>, hero = 'SB1-H01'): DeckList => ({ name: 'Test', hero, cards });
+  const zest = () => withCards({ ...DECKS['zest-rush'].cards });
+
+  it('needs exactly 50 cards', () => {
+    const deck = zest();
+    deck.cards['SB1-G05'] = 1;
+    expect(deckProblems(deck)).toEqual(['Add 1 more card.']);
+    deck.cards['SB1-G05'] = 3;
+    expect(deckProblems(deck)).toEqual(['Remove 1 card.']);
+  });
+
+  it('allows one family besides the Hero Cat\'s, plus Garden', () => {
+    const deck = zest();
+    deck.cards['SB1-C01'] = 1;
+    deck.cards['SB1-O01'] = 2;
+    expect(deckProblems(deck)).toEqual([]);
+    expect(addProblem(deck, 'SB1-T01')).toMatch(/already uses Orchard/);
+    deck.cards['SB1-O01'] = 1;
+    deck.cards['SB1-T01'] = 1;
+    expect(deckProblems(deck)[0]).toMatch(/one other family/);
+  });
+
+  it('limits copies: 3 of a card, 1 of each Cat, 6 Cats', () => {
+    const deck = zest();
+    expect(addProblem(deck, 'SB1-C01')).toMatch(/at most 3 copies/);
+    expect(addProblem(deck, 'SB1-C13')).toMatch(/one of a kind/);
+    deck.cards['SB1-C13'] = 2;
+    deck.cards['SB1-C01'] = 2;
+    expect(deckProblems(deck)).toEqual([expect.stringMatching(/one of a kind/)]);
+
+    const cats = withCards({ 'SB1-C13': 1, 'SB1-C14': 1, 'SB1-C15': 1, 'SB1-O13': 1, 'SB1-O14': 1, 'SB1-O15': 1 });
+    expect(addProblem(cats, 'SB1-T13')).toMatch(/one other family/);
+    expect(addProblem(cats, 'SB1-O13')).toMatch(/one of a kind/);
+    cats.cards['SB1-O13'] = 0;
+    expect(addProblem(cats, 'SB1-O13')).toBeNull();
+  });
+
+  it('checks the collection when given one', () => {
+    const owned = (id: string) => (id === 'SB1-C08' ? 2 : 3);
+    const deck = zest();
+    expect(deckProblems(deck, owned)).toEqual([]);
+    expect(addProblem(deck, 'SB1-C08', owned)).toMatch(/only 2 copies/);
+    deck.cards['SB1-C08'] = 3;
+    deck.cards['SB1-C01'] = 2;
+    expect(deckProblems(deck, owned)).toEqual([expect.stringMatching(/only 2 copies/)]);
+  });
+
+  it('keeps Hero Cats out of the deck', () => {
+    expect(addProblem(withCards({}), 'SB1-H02')).toMatch(/Hero Cat/);
+  });
+
+  it('starts a game with a deck list', () => {
+    const mine = withCards({ ...DECKS['zest-rush'].cards }, 'SB1-H01');
+    mine.name = 'My deck';
+    const s = createGame({ decks: [mine, 'orchard-guard'], seed: 3 });
+    expect(s.players[0].deckName).toBe('My deck');
+    expect(s.players[0].hero.id).toBe('SB1-H01');
   });
 });
 

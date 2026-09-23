@@ -456,8 +456,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* Choosing a deck: the gold glow alone read as decoration, so the chosen deck now also lifts up and
    wears a badge, while the decks you didn't pick step back. */
 .deck-choice { position: relative; }
-.deck-choices:has(.chosen) .deck-choice:not(.chosen) { filter: saturate(0.55) brightness(0.92); opacity: 0.75; transform: scale(0.96); }
-.deck-choices:has(.chosen) .deck-choice:not(.chosen):hover { filter: none; opacity: 1; transform: scale(0.98) translateY(-3px); }
+.picker:has(.deck-choice.chosen) .deck-choice:not(.chosen) { filter: saturate(0.55) brightness(0.92); opacity: 0.75; transform: scale(0.96); }
+.picker:has(.deck-choice.chosen) .deck-choice:not(.chosen):hover { filter: none; opacity: 1; transform: scale(0.98) translateY(-3px); }
 .deck-choice.chosen {
   border-color: var(--gold); transform: translateY(-4px);
   box-shadow: 0 0 0 5px var(--gold-light), 0 0 30px 8px rgba(255, 190, 60, 0.85), var(--panel-shadow);
@@ -474,7 +474,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   /* Solo's deck rows: the badge sits in the row's corner, the rows don't shrink or lift. */
   .solo .deck-choice.chosen::after { top: 8px; right: 10px; left: auto; transform: none; }
   .solo .deck-choice.chosen, .solo .deck-choice.chosen:hover { transform: none; }
-  .solo .deck-choices:has(.chosen) .deck-choice:not(.chosen) { transform: none; opacity: 0.9; filter: saturate(0.7); }
+  .solo .picker:has(.deck-choice.chosen) .deck-choice:not(.chosen) { transform: none; opacity: 0.9; filter: saturate(0.7); }
+  .newdeck .deck-art { box-shadow: 0 0 0 2px #fff6dc; }
   .solo .deck-art { box-shadow: 0 0 0 2px #fff6dc; }
 }
 
@@ -562,3 +563,34 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* What this device has played, shown to the player rather than sent anywhere. */
 .progress-note { color: var(--muted); font-size: 12px; font-style: italic; }
+
+/* ── Deck builder ────────────────────────────────────────────────────── */
+
+.deck-tile, .deck-rules, .deck-panel {
+  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
+  box-shadow: var(--panel-shadow); color: var(--ink);
+}
+.deck-tile:hover { transform: translateY(-2px); }
+.deck-tile .deck-class { display: inline-block; }
+.deck-tile-art { box-shadow: 0 0 0 2px #fff6dc, 0 0 0 4px var(--fam, var(--parchment-edge)); }
+.deck-status { color: #9c4a12; }
+.deck-status.ready { color: #2f8a46; }
+.starter-tag {
+  font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 8px; border-radius: 999px;
+  background: linear-gradient(#b08a5a, #7a5530);
+}
+.new-deck { border-style: dashed; }
+.new-plus { color: #fff; background: linear-gradient(#ffb95c, #f2761b); text-shadow: 0 1px 0 rgba(120, 45, 0, 0.55); }
+.chip.chosen {
+  color: #fff; text-shadow: 0 1px 0 rgba(120, 45, 0, 0.5); background: linear-gradient(#ffb95c, #f2761b);
+  box-shadow: 0 2px 0 #ad4d0b, inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.chip.chosen:is(.fam-citrus, .fam-orchard, .fam-tropical, .fam-garden) {
+  background: linear-gradient(var(--fam), var(--fam-dark)); box-shadow: 0 2px 0 var(--fam-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.build-head { background: rgba(255, 250, 240, 0.85); border-radius: 14px; padding: 6px 14px; box-shadow: 0 0 0 1px rgba(120, 70, 20, 0.12); }
+.link-button { background: none; box-shadow: none; text-decoration: underline; color: #7a4a1c; }
+@media (max-width: 760px) {
+  .deck-panel { border-bottom: none; box-shadow: 0 -6px 20px rgba(50, 25, 5, 0.35); }
+  .deck-toggle { background: linear-gradient(#fffaf0, #f1d9a6); box-shadow: none; }
+}

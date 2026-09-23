@@ -147,10 +147,17 @@ export function isUnitCard(id: string): boolean {
   return type === 'Cat' || type === 'Critter';
 }
 
+/** A starter deck by key, or a deck list as it is (a player's own deck). */
+export function resolveDeck(deck: string | DeckList): DeckList {
+  if (typeof deck !== 'string') return deck;
+  const list = DECKS[deck];
+  if (!list) throw new Error(`Unknown deck '${deck}'`);
+  return list;
+}
+
 /** Expand a decklist into card ids (hero excluded). */
-export function deckCardIds(deckKey: string): string[] {
-  const deck = DECKS[deckKey];
-  if (!deck) throw new Error(`Unknown deck '${deckKey}'`);
+export function deckCardIds(deckOrKey: string | DeckList): string[] {
+  const deck = resolveDeck(deckOrKey);
   const ids: string[] = [];
   for (const [id, qty] of Object.entries(deck.cards)) for (let i = 0; i < qty; i++) ids.push(id);
   return ids;

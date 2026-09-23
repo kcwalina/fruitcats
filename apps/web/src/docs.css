@@ -37,33 +37,25 @@ a:hover { color: var(--orchard); }
 .topbar {
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right));
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
   background: linear-gradient(var(--wood), var(--wood-dark));
   box-shadow: inset 0 -3px 0 var(--gold), 0 4px 14px rgba(40, 20, 5, 0.35);
 }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold-light); }
-.brand img { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 0 0 2px var(--gold); }
-.brand span { font-family: Fredoka, Nunito, sans-serif; font-weight: 700; font-size: 24px; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
-.pages { display: flex; align-items: center; gap: 6px; }
-.pages a:not(.play) {
-  font-family: Fredoka, Nunito, sans-serif; font-weight: 600; font-size: 16px; text-decoration: none;
-  color: var(--gold-light); padding: 7px 12px; border-radius: 12px;
-}
-.pages a:not(.play):hover { background: rgba(255, 230, 163, 0.14); color: #fff; }
-.pages a[aria-current='page'] { background: rgba(255, 230, 163, 0.2); box-shadow: inset 0 0 0 2px rgba(231, 178, 74, 0.7); }
-.play {
-  margin-left: 6px;
-  font-family: Fredoka, Nunito, sans-serif; font-weight: 600; font-size: 16px; text-decoration: none; white-space: nowrap;
-  color: #fff; padding: 8px 18px; border-radius: 14px;
-  background: linear-gradient(#ffa24d, #e8671a);
-  box-shadow: 0 3px 0 #a8430c, 0 5px 10px rgba(40, 20, 5, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+/* Like the game's Solo screen: a round Home button on the left, the page's name in the middle, and an
+   empty slot on the right so the name stays centred. To play, go Home. */
+.home-button, .topbar-balance { width: 44px; height: 44px; flex: none; }
+.home-button {
+  display: grid; place-items: center; border-radius: 999px;
+  background: linear-gradient(#fffaf0, #f1d9a6);
+  box-shadow: 0 3px 0 #c08f4a, 0 5px 10px rgba(40, 20, 5, 0.35), inset 0 1px 0 #fff;
   transition: transform 0.08s, box-shadow 0.08s, filter 0.12s;
 }
-.play:hover { color: #fff; filter: brightness(1.06); }
-.play:active { transform: translateY(3px); box-shadow: 0 0 0 #a8430c, 0 2px 4px rgba(40, 20, 5, 0.35); }
-@media (max-width: 480px) {
-  .brand span { display: none; }
-  .pages a:not(.play) { padding: 7px 9px; }
+.home-button img { width: 30px; height: 30px; object-fit: contain; }
+.home-button:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.home-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #c08f4a, inset 0 1px 0 #fff; }
+.page-title {
+  margin: 0; font: 700 24px/1.2 Fredoka, Nunito, sans-serif; color: var(--gold-light); text-align: center;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
 }
 
 /* ── Layout: contents beside the rules on wide screens, folded above them on phones ───────────── */
@@ -110,6 +102,7 @@ a:hover { color: var(--orchard); }
   font-size: 0.7em; vertical-align: 0.1em;
 }
 .doc .anchor:hover, .doc .anchor:focus { opacity: 1; }
+.doc h1 .anchor { display: none; }
 .copied {
   margin-left: 8px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; vertical-align: 0.15em;
   font: 700 12px Nunito, sans-serif; color: #fff; background: #3d9d52;
@@ -154,7 +147,9 @@ a:hover { color: var(--orchard); }
   width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%;
   font-size: 22px; font-weight: 800; text-decoration: none; color: var(--wood-dark);
   background: linear-gradient(#fffaf0, #f1d9a6); box-shadow: 0 3px 0 #c08f4a, 0 5px 12px rgba(60, 30, 5, 0.3);
+  opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s;
 }
+.to-top.shown { opacity: 1; pointer-events: auto; transform: none; }
 .to-top:hover { color: var(--accent); }
 
 /* A heavy reference section, folded away so the page opens as a beginner's page. */

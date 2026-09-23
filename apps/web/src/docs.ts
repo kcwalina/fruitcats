@@ -2,7 +2,8 @@
 //
 //  • the contents sit open beside the text on wide screens and fold away above them on phones;
 //  • every heading has a "#" link: clicking it copies the link to that section, for sending to
-//    playtesters ("read §8 Attacking": https://fruitcats.viamochi.com/rules.html#8-attacking).
+//    playtesters ("read §8 Attacking": https://fruitcats.viamochi.com/rules.html#8-attacking);
+//  • "Back to top" shows up only after you've scrolled down.
 
 const toc = document.getElementById('toc') as HTMLDetailsElement | null;
 if (toc) {
@@ -12,6 +13,14 @@ if (toc) {
   toc.addEventListener('click', (e) => {
     if (!wide.matches && (e.target as HTMLElement).closest('a')) toc.open = false;
   });
+}
+
+// "Back to top" appears only once you've scrolled a screen or so down.
+const toTop = document.querySelector<HTMLElement>('.to-top');
+if (toTop) {
+  const update = () => toTop.classList.toggle('shown', window.scrollY > window.innerHeight * 0.8);
+  window.addEventListener('scroll', update, { passive: true });
+  update();
 }
 
 const flash = (anchor: HTMLElement, text: string) => {

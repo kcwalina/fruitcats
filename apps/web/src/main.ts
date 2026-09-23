@@ -5,7 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
-import { openShowcase, renderShowcase, showcaseClick, showcaseEscape } from './showcase';
+import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
@@ -322,7 +322,7 @@ function onClick(key: string) {
     homeNote = '';
     if (raw === 'solo') screen = 'solo';
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
-    else if (raw === 'collection') { openShowcase(); screen = 'collection'; }
+    else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
     else if (raw === 'tutorial') { startGame(true); return; }
     else if (raw === 'soon') homeNote = MODES.find((m) => m.key === key.split(':')[2])?.soon ?? '';
@@ -1147,6 +1147,7 @@ app.addEventListener('contextmenu', (event) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && showSettings) { showSettings = false; render(); return; }
+  if (screen === 'collection' && !showSettings && showcaseArrow(event.key, { render })) return;
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
     if (screen === 'collection' && showcaseEscape({ render })) return;

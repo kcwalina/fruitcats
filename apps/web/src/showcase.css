@@ -14,46 +14,167 @@
 }
 .collection-body > * { flex: none; }
 
-/* ── Display Case: a warm wooden cabinet with a glass shine and one shelf ── */
+/* ── Display Case: a jeweller's showcase. Deep velvet behind glass, a brushed-gold bezel, warm spotlights,
+   and each card sealed in a clear collector's slab that turns into the spotlight (showcase.ts sets
+   data-pos on each slab; the slabs keep their elements, so they glide from place to place). ── */
 
 .display-case {
-  --wood: #9a5b2c; --wood-dark: #5e3214; --wood-light: #c98a4f;
-  position: relative; padding: 12px 18px 0; border-radius: 20px;
+  --gold-1: #fff1c4; --gold-2: #f0c96a; --gold-3: #c8923a; --gold-4: #7d5217;
+  --card-w: min(200px, 30vw, calc(var(--vh, 1vh) * 21));
+  position: relative; border-radius: 26px; padding: 14px 14px 12px; overflow: hidden; isolation: isolate;
   background:
-    repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.04) 0 3px, transparent 3px 11px),
-    linear-gradient(#6b3a18, #4a260d);
-  border: 8px solid var(--wood);
-  border-image: linear-gradient(var(--wood-light), var(--wood), var(--wood-dark)) 1;
-  border-radius: 0;
-  box-shadow: 0 10px 26px rgba(40, 18, 3, 0.5), inset 0 0 40px rgba(0, 0, 0, 0.55);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .8 0 0 0 0 .9 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 38%, #5a1838 0%, #3a0e25 38%, #1c0612 75%, #0e0309 100%);
+  box-shadow:
+    0 0 0 2px var(--gold-4), 0 0 0 4px var(--gold-2), 0 0 0 5px var(--gold-1), 0 0 0 7px var(--gold-3), 0 0 0 9px #4a2e0b,
+    0 22px 50px rgba(20, 5, 0, 0.65), inset 0 0 70px rgba(0, 0, 0, 0.75);
+  margin: 9px;   /* room for the bezel, which is drawn outside the box */
 }
-/* Glass: a soft diagonal reflection across the whole case. */
+/* A warm light strip along the top of the case, and the glass: soft reflections across everything. */
+.display-case::before {
+  content: ''; position: absolute; left: 6%; right: 6%; top: 0; height: 3px; border-radius: 3px; z-index: 3; pointer-events: none;
+  background: linear-gradient(90deg, transparent, #ffe9b0 20%, #fff6dc 50%, #ffe9b0 80%, transparent);
+  box-shadow: 0 0 18px 4px rgba(255, 214, 140, 0.55);
+}
 .display-case::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.09) 28%, transparent 36%, transparent 62%, rgba(255, 255, 255, 0.06) 68%, transparent 74%);
+  content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
+  background:
+    linear-gradient(112deg, transparent 18%, rgba(255, 255, 255, 0.07) 24%, rgba(255, 255, 255, 0.02) 31%, transparent 33%),
+    linear-gradient(112deg, transparent 64%, rgba(255, 255, 255, 0.05) 68%, transparent 71%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 230, 170, 0.12);
 }
-.case-title {
-  margin: 0 auto 8px; width: max-content; padding: 2px 16px; border-radius: 6px;
-  font: 700 14px/1.4 Fredoka, Nunito, sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
-  color: #5a3413; background: linear-gradient(#ffe6a3, #e7b24a); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+
+/* The engraved plaque. */
+.case-plaque { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 2px; }
+.case-plaque h3 {
+  flex: none; white-space: nowrap; margin: 0; padding: 3px 18px 4px; border-radius: 4px;
+  font: 700 13px/1.3 Fredoka, Nunito, sans-serif; letter-spacing: 3.5px; text-transform: uppercase; color: #4a2c06;
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 45%, var(--gold-3) 55%, var(--gold-2));
+  box-shadow: 0 0 0 1px var(--gold-4), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 3px 8px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 0 rgba(255, 250, 225, 0.7);
 }
-.case-shelf {
-  display: flex; justify-content: center; align-items: flex-end; gap: clamp(10px, 3vw, 34px);
-  padding: 6px 0 14px; position: relative;
+.plaque-rule { flex: 0 1 70px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-2)); }
+.plaque-rule:last-child { transform: scaleX(-1); }
+
+/* The stage: slabs stand on a lacquered plinth, the one in the middle under the spotlight. */
+.case-stage {
+  position: relative; height: calc(var(--card-w) * 1.9 + 24px); perspective: 1100px; touch-action: pan-y;
+  user-select: none; -webkit-user-select: none;
 }
-/* The shelf board the cards stand on. */
-.case-shelf::after {
-  content: ''; position: absolute; left: -18px; right: -18px; bottom: 0; height: 14px;
-  background: linear-gradient(var(--wood-light), var(--wood) 45%, var(--wood-dark));
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
+.case-lights {
+  position: absolute; inset: -14px -14px 0; pointer-events: none;
+  background:
+    radial-gradient(40% 70% at 50% 0%, rgba(255, 226, 160, 0.34), transparent 70%),
+    radial-gradient(22% 55% at 16% 0%, rgba(255, 210, 150, 0.14), transparent 70%),
+    radial-gradient(22% 55% at 84% 0%, rgba(255, 210, 150, 0.14), transparent 70%);
 }
-button.case-slot {
-  padding: 0; border: none; background: none; box-shadow: none; border-radius: 12px;
-  width: min(30%, 190px, calc(var(--vh, 1vh) * 22)); transform: translateY(-4px);
+.case-floor {
+  position: absolute; left: -14px; right: -14px; bottom: 0; height: 30%; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(50% 60% at 50% 0%, rgba(255, 215, 150, 0.16), transparent 70%),
+    linear-gradient(180deg, #2a0b1b 0%, #12040c 100%);
+  border-top: 1px solid rgba(255, 220, 160, 0.3);
+  box-shadow: inset 0 10px 18px rgba(0, 0, 0, 0.5);
 }
-button.case-slot:hover:not(:disabled) { transform: translateY(-10px); box-shadow: none; }
-.case-slot .holo { display: block; }
-.case-slot img { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.55)); }
+
+button.slab-wrap {
+  position: absolute; left: 50%; bottom: 13%; z-index: 2; width: var(--card-w); padding: 0; border: none; background: none;
+  box-shadow: none; border-radius: 16px; transform-style: preserve-3d; -webkit-tap-highlight-color: transparent;
+  --x: 0px; --ry: 0deg; --s: 1;
+  transform: translateX(-50%) translateX(var(--x)) rotateY(var(--ry)) scale(var(--s));
+  transform-origin: 50% 100%;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.7s, opacity 0.7s;
+}
+button.slab-wrap:hover:not(:disabled) { box-shadow: none; transform: translateX(-50%) translateX(var(--x)) rotateY(var(--ry)) scale(var(--s)); }
+button.slab-wrap:active { transform: translateX(-50%) translateX(var(--x)) rotateY(var(--ry)) scale(calc(var(--s) * 0.98)); }
+.slab-wrap[data-pos='center'] { z-index: 3; --s: 1.08; }
+.slab-wrap[data-pos='left'] { --x: calc(var(--card-w) * -0.98); --ry: 32deg; --s: 0.8; filter: brightness(0.62) saturate(0.85); }
+.slab-wrap[data-pos='right'] { --x: calc(var(--card-w) * 0.98); --ry: -32deg; --s: 0.8; filter: brightness(0.62) saturate(0.85); }
+.slab-wrap[data-pos='hidden'] { --s: 0.5; opacity: 0; pointer-events: none; }
+
+/* The spotlight's beam, only on the slab in the middle. */
+.beam {
+  position: absolute; left: 50%; bottom: 60%; width: 220%; height: 140%; transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 232, 180, 0.22), rgba(255, 232, 180, 0.04) 70%, transparent);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); filter: blur(6px);
+  opacity: 0; transition: opacity 0.7s;
+}
+.slab-wrap[data-pos='center'] .beam { opacity: 1; }
+
+.slab-float { display: block; animation: slab-float 6s ease-in-out infinite; }
+@keyframes slab-float { 50% { transform: translateY(-6px); } }
+
+/* The slab: thick clear acrylic with a gold grading label, a card window, glare, and a reflection below. */
+.slab {
+  --tx: 0; --ty: 0;
+  position: relative; display: block; padding: 7px 7px 9px; border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.07) 38%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0.16));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.25),
+    0 18px 30px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.35);
+  transform: rotateY(calc(var(--tx) * 12deg)) rotateX(calc(var(--ty) * -10deg));
+  transition: transform 0.25s ease-out;
+  -webkit-box-reflect: below 8px linear-gradient(transparent 72%, rgba(255, 255, 255, 0.2));
+}
+.slab::after {   /* glare that slides as the slab tilts, and sweeps across now and then */
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.28) 47%, rgba(255, 255, 255, 0.06) 53%, transparent 62%);
+  background-size: 250% 100%; background-position: calc(50% - var(--tx) * 40%) 0;
+}
+.slab-wrap[data-pos='center'] .slab::after { animation: glare-sweep 7s ease-in-out infinite; }
+@keyframes glare-sweep { 0%, 70% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
+
+.slab-label {
+  display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center;
+  margin-bottom: 6px; padding: 4px 8px; border-radius: 6px; text-align: left;
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 50%, var(--gold-3));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 0 1px var(--gold-4), 0 2px 4px rgba(0, 0, 0, 0.35);
+  color: #3d2404;
+}
+.slab-label b { font: 700 clamp(11px, calc(var(--card-w) * 0.075), 15px)/1.1 Fredoka, Nunito, sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slab-no { grid-column: 1; font: 700 clamp(8px, calc(var(--card-w) * 0.05), 10.5px)/1.2 Nunito, sans-serif; letter-spacing: 0.6px; color: #6b4410; }
+.slab-label em {
+  grid-column: 2; grid-row: 1 / 3; font: 700 clamp(8px, calc(var(--card-w) * 0.055), 11px)/1 Fredoka, Nunito, sans-serif;
+  font-style: normal; letter-spacing: 1.2px; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; color: #fff;
+  background: linear-gradient(115deg, #ff6b9a, #ffb35c, #7ee08f, #5cc6ff, #b27cff);
+  text-shadow: 0 1px 1px rgba(60, 20, 40, 0.6); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.slab-window { border-radius: 8px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.45); }
+.slab-window img { border-radius: 8px; -webkit-user-drag: none; }
+
+/* Twinkles in the spotlight. */
+.sparkle {
+  position: absolute; z-index: 4; width: var(--size); height: var(--size); pointer-events: none; background: #fff6da;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  opacity: 0; animation: twinkle 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 230, 170, 0.9));
+}
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: 0; } }
+
+/* Under the stage: arrows either side of the name of the card in the spotlight. */
+.case-nav { position: relative; z-index: 5; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; margin-top: 4px; }
+button.case-arrow {
+  width: 44px; height: 44px; padding: 0 0 4px; border-radius: 50%; font: 600 30px/1 Fredoka, Nunito, sans-serif; color: #fff1c4;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(255, 225, 160, 0.45), 0 4px 10px rgba(0, 0, 0, 0.45);
+  display: grid; place-items: center;
+}
+button.case-arrow:hover:not(:disabled) { box-shadow: inset 0 0 0 1px rgba(255, 225, 160, 0.8), 0 4px 14px rgba(255, 200, 120, 0.3); }
+.case-caption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
+.caption-name {
+  font: 700 clamp(15px, 2.2vw, 19px)/1.2 Fredoka, Nunito, sans-serif; letter-spacing: 0.3px;
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 60%, var(--gold-3)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.caption-sub { font: 600 11.5px/1.2 Nunito, sans-serif; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(255, 230, 190, 0.6); }
+.case-dots { display: flex; gap: 6px; margin-top: 4px; }
+.case-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 230, 190, 0.3); transition: background 0.3s, transform 0.3s; }
+.case-dots i.on { background: var(--gold-2); transform: scale(1.35); box-shadow: 0 0 6px rgba(255, 210, 120, 0.8); }
+
+@media (prefers-reduced-motion: reduce) {
+  .slab-float, .sparkle, .slab-wrap[data-pos='center'] .slab::after { animation: none; }
+  button.slab-wrap { transition: none; }
+}
 
 /* ── Foil: a rainbow sheen and a glint that follow the pointer (--mx/--my, set in showcase.ts) ── */
 
@@ -116,6 +237,13 @@ button.pocket:hover:not(:disabled) { box-shadow: inset 0 1px 3px rgba(80, 40, 10
 }
 .inspect-card:not(.holo) img { display: block; width: 100%; border-radius: 22px; }
 .inspect-card.holo { border-radius: 22px; }
+.inspect-stage { position: relative; display: flex; align-items: center; justify-content: center; gap: 18px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.inspect-stage button.case-arrow { flex: none; background: rgba(40, 20, 8, 0.55); }
+.inspect-card img { -webkit-user-drag: none; }
+.inspect-card.from-right { animation: slide-from-right 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.inspect-card.from-left { animation: slide-from-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes slide-from-right { from { transform: translateX(60px) rotate(3deg); opacity: 0; } }
+@keyframes slide-from-left { from { transform: translateX(-60px) rotate(-3deg); opacity: 0; } }
 .inspect-info { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(420px, 100%); }
 .inspect-meta { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); text-align: center; }
 .face-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: min(260px, 100%); }
@@ -137,8 +265,13 @@ button.wallpaper-button { min-height: 46px; padding: 8px 28px; font-size: 17px; 
 
 @media (max-width: 640px) {
   .collection .setup-bar h2 { font-size: 22px; }
-  .display-case { padding: 10px 10px 0; border-width: 6px; }
-  .case-shelf::after { left: -10px; right: -10px; }
+  .display-case { --card-w: min(38vw, calc(var(--vh, 1vh) * 22)); padding: 12px 8px 10px; border-radius: 20px; }
+  .slab-wrap[data-pos='left'] { --x: calc(var(--card-w) * -0.8); }
+  .slab-wrap[data-pos='right'] { --x: calc(var(--card-w) * 0.8); }
+  .inspect-stage { gap: 0; }
+  .inspect-stage button.case-arrow { position: absolute; z-index: 2; }
+  .inspect-prev { left: -6px; }
+  .inspect-next { right: -6px; }
   .binder { padding: 10px; }
   .binder-pages { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .binder-filters { width: 100%; gap: 4px; }

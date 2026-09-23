@@ -4,6 +4,7 @@ import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { finishFrame, yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
@@ -574,8 +575,8 @@ function renderDeckPicker(): string {
       <div class="deck-choices">
         ${Object.entries(DECKS).map(([key, deck]) => `
           <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}">
-            <img src="${cardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
-            <img class="deck-art" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
+            <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
+            <img class="deck-art ${finishFrame(deck.hero)}" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
             <span class="deck-name">${esc(deck.name)}</span>
             <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
             <span class="deck-blurb">${deckBlurb[key] ?? ''}</span>
@@ -654,7 +655,7 @@ function renderGame(): string {
       ${renderHand(s, playable)}
     </main>
     <aside class="side">
-      <div class="inspector"><img id="zoom" src="${cardUrl(heroKey(s, HUMAN))}" alt=""></div>
+      <div class="inspector"><img id="zoom" src="${yourCardUrl(heroKey(s, HUMAN))}" alt=""></div>
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
@@ -683,7 +684,7 @@ function renderPantry(s: GameState, p: PlayerId): string {
     if (change === 'spending') spent++;
     if (change === 'readying') readied++;
     const cls = ['treat', t.exhausted && 'spent', change, mine && 'mine'].filter(Boolean).join(' ');
-    const zoom = mine ? ` data-zoom="${cardUrl(t.card.id)}" data-zoom-card="${t.card.id}"` : '';
+    const zoom = mine ? ` data-zoom="${yourCardUrl(t.card.id)}" data-zoom-card="${t.card.id}"` : '';
     return `<div class="${cls}"${zoom} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
   }).join('');
   const float = planted ? `+${planted} Treat${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
@@ -711,7 +712,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
     <div class="hero-slot">
     <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
-         data-click="${key}" data-zoom="${cardUrl(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
+         data-click="${key}" data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
     </div>
@@ -773,7 +774,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
     owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
   ].filter(Boolean).join(' ');
   return `
-  <div class="${cls}" data-click="${key}" data-zoom="${cardUrl(u.id)}" data-zoom-card="${u.id}"
+  <div class="${cls}" data-click="${key}" data-zoom="${(owner === HUMAN ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
@@ -805,7 +806,7 @@ function renderHand(s: GameState, playable: Set<number>): string {
         'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
-      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${cardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${cardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
+      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
     }).join('')}
   </section>`;
 }

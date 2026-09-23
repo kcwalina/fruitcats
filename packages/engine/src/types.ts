@@ -3,6 +3,9 @@
 
 export type PlayerId = 0 | 1;
 export type CardType = 'Hero Cat' | 'Cat' | 'Critter' | 'Trick' | 'Toy';
+/** How rare a card is printed: a symbol on the card, with no effect on the rules. Rarest last. */
+export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Legendary';
+export const RARITIES: readonly Rarity[] = ['Common', 'Uncommon', 'Rare', 'Legendary'];
 
 export interface HeroSide {
   name: string;
@@ -12,6 +15,7 @@ export interface HeroSide {
 
 export interface CardDef {
   id: string;
+  rarity: Rarity;
   type: CardType;
   family: string;
   name: string;

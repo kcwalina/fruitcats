@@ -4,7 +4,9 @@
 // No website can set the wallpaper itself: the player saves the picture (the share sheet's Save Image
 // on iPhone) and chooses it in Photos.
 
-import { CARDS, type CardDef } from '@fruitcats/engine';
+import { CARDS, type CardDef, type Rarity } from '@fruitcats/engine';
+import type { Finish } from './collection';
+import { drawRarityMark } from './rarity';
 import { BASE, artUrl } from './ui';
 
 /** Main, dark and tint colour of each fruit family, as compose_cards.py draws them. */
@@ -16,6 +18,12 @@ const FAMILIES: Record<string, [string, string, string]> = {
   Tropical: ['#F2780C', '#A24E05', '#FFE6CC'],
   Melon: ['#3FA66B', '#25714A', '#DDF3E6'],
 };
+/** The finishes' chrome, as compose_cards.py prints it: silver with rainbow flashes, gold, a rainbow. */
+const RAINBOW = ['#ff6b6b', '#ffd36b', '#7bff9a', '#6bd5ff', '#b07bff', '#ff6bd0'];
+const HOLO = ['#8e97a3', '#eef1f5', '#d7c2ec', '#a7b0bb', '#f7f9fb', '#bfe6f2', '#7f8894', '#f3dcec', '#8e97a3'];
+const PRISM = ['#ff3d8b', '#ff9f1a', '#ffe23d', '#2ee88a', '#2bb8ff', '#7a5cff', '#e84dff', '#ff3d8b'];
+const GOLD = ['#fff4c2', '#e8b73a', '#8a5a0c', '#f7d774', '#b07d17', '#fff0b0', '#c89224', '#fff4c2'];
+const CHROME_INK: Record<Finish, string> = { standard: '', foil: '#4a5362', gold: '#5a3a04', prismatic: '#3a2a5a' };
 const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C', BADGE_INK = '#50231c';
 const FOOTER = 'Fruitcats · Starter Box · © 2026 Krzysztof Cwalina';
 const FONT = 'Nunito, "Segoe UI", sans-serif';
@@ -160,21 +168,44 @@ interface Parts {
   colors: [string, string, string];
   s: number;
   number: string;
+  rarity: Rarity;
+  finish: Finish;
+  /** The finish's chrome, painted where a standard card has its family's colours; null for standard. */
+  chrome: CanvasGradient | null;
   paw: HTMLImageElement;
   heart: HTMLImageElement;
 }
 
-/** The art in a rounded window, cropped to fill it, with a rainbow sheen for foils. */
-function drawArt(ctx: CanvasRenderingContext2D, art: HTMLImageElement, x0: number, y0: number, x1: number, y1: number, r: number, main: string, s: number, foil: boolean) {
+/** A four-point twinkle, as the Prismatic finish scatters over its art. */
+function twinkle(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  ctx.beginPath();
+  [[0, -1], [0.2, -0.2], [1, 0], [0.2, 0.2], [0, 1], [-0.2, 0.2], [-1, 0], [-0.2, -0.2]]
+    .forEach(([x, y], i) => (i ? ctx.lineTo(cx + x * r, cy + y * r) : ctx.moveTo(cx + x * r, cy + y * r)));
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * The art in a rounded window, cropped to fill it, bordered in the finish's chrome. Finished copies get
+ * a sheen over the art (warm for Gold) and a glint; Prismatic, twinkles too.
+ */
+function drawArt(p: Parts, art: HTMLImageElement, x0: number, y0: number, x1: number, y1: number, r: number) {
+  const { ctx, s, finish, chrome } = p;
+  const main = p.colors[0];
   ctx.save();
   roundRect(ctx, x0, y0, x1, y1, r);
   ctx.clip();
   const scale = Math.max((x1 - x0) / art.naturalWidth, (y1 - y0) / art.naturalHeight);
   const aw = art.naturalWidth * scale, ah = art.naturalHeight * scale;
   ctx.drawImage(art, (x0 + x1 - aw) / 2, (y0 + y1 - ah) / 2, aw, ah);
-  if (foil) {
+  if (finish !== 'standard') {
     const sheen = ctx.createLinearGradient(x0, y0, x1, y1);
-    ['#ff6b6b', '#ffd36b', '#7bff9a', '#6bd5ff', '#b07bff', '#ff6bd0'].forEach((c, i, all) => sheen.addColorStop(i / (all.length - 1), c));
+    if (finish === 'gold') {
+      sheen.addColorStop(0, 'rgba(255, 200, 80, 0.5)');
+      sheen.addColorStop(1, 'rgba(255, 170, 40, 0.35)');
+    } else {
+      RAINBOW.forEach((c, i, all) => sheen.addColorStop(i / (all.length - 1), c));
+    }
     ctx.globalCompositeOperation = 'soft-light';
     ctx.globalAlpha = 0.45;
     ctx.fillStyle = sheen;
@@ -187,11 +218,21 @@ function drawArt(ctx: CanvasRenderingContext2D, art: HTMLImageElement, x0: numbe
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = glint;
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    if (finish === 'prismatic') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#fffbea';
+      ctx.shadowColor = 'rgba(255, 220, 255, 0.9)';
+      ctx.shadowBlur = 14 * s;
+      for (const [fx, fy, size] of [[0.16, 0.14, 26], [0.84, 0.3, 20], [0.24, 0.72, 16], [0.8, 0.84, 22], [0.56, 0.08, 14]]) {
+        twinkle(ctx, x0 + (x1 - x0) * fx, y0 + (y1 - y0) * fy, size * s);
+      }
+    }
   }
   ctx.restore();
   roundRect(ctx, x0, y0, x1, y1, r);
-  ctx.lineWidth = 6 * s;
-  ctx.strokeStyle = main;
+  ctx.lineWidth = (chrome ? 7 : 6) * s;
+  ctx.strokeStyle = chrome ?? main;
   ctx.stroke();
 }
 
@@ -204,8 +245,8 @@ function drawBanner(p: Parts, x0: number, x1: number, top: number): number {
   roundRect(ctx, x0, top, x1, bottom, 26 * s);
   ctx.fillStyle = main;
   ctx.fill();
-  ctx.lineWidth = 4 * s;
-  ctx.strokeStyle = dark;
+  ctx.lineWidth = (p.chrome ? 5 : 4) * s;
+  ctx.strokeStyle = p.chrome ?? dark;
   ctx.stroke();
   const [title, epithet] = face.name.split(/, (.*)/s);
   const textX = x0 + 114 * s;
@@ -230,9 +271,14 @@ function drawBanner(p: Parts, x0: number, x1: number, top: number): number {
   ctx.arc(cx, cy, 51 * s, 0, Math.PI * 2);
   ctx.fillStyle = 'white';
   ctx.fill();
-  ctx.lineWidth = 8 * s;
-  ctx.strokeStyle = dark;
+  ctx.lineWidth = (p.chrome ? 9 : 8) * s;
+  ctx.strokeStyle = p.chrome ?? dark;
   ctx.stroke();
+  if (p.chrome) {   // the cost ring's edges in the chrome's ink
+    ctx.lineWidth = 2 * s;
+    ctx.strokeStyle = CHROME_INK[p.finish];
+    for (const r of [55.5, 46.5]) { ctx.beginPath(); ctx.arc(cx, cy, r * s, 0, Math.PI * 2); ctx.stroke(); }
+  }
   if (card.type === 'Hero Cat') star(ctx, cx, cy, 38 * s, main);
   else {
     ctx.font = `900 ${60 * s}px ${FONT}`;
@@ -244,7 +290,7 @@ function drawBanner(p: Parts, x0: number, x1: number, top: number): number {
   return bottom;
 }
 
-/** The type line ("CRITTER · CITRUS", with the collector number at the right). Returns its bottom. */
+/** The type line ("CRITTER · CITRUS", with the rarity mark and collector number at the right). Returns its bottom. */
 function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   const { ctx, card, side, s } = p;
   const [main, dark, tint] = p.colors;
@@ -252,15 +298,16 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   roundRect(ctx, x0, top, x1, bottom, 14 * s);
   ctx.fillStyle = tint;
   ctx.fill();
-  ctx.lineWidth = 3 * s;
-  ctx.strokeStyle = main;
+  ctx.lineWidth = (p.chrome ? 4 : 3) * s;
+  ctx.strokeStyle = p.chrome ?? main;
   ctx.stroke();
   const kind = side ? `HERO CAT · ${side === 'kitten' ? 'KITTEN' : 'BIG CAT'}` : card.type.toUpperCase();
   // The type on the left, the collector number on the right: the type shrinks to fit beside it, and in
   // a narrow line the number gives way.
   const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `SB1 · ${p.number}`;
   ctx.font = `600 ${20 * s}px ${FONT}`;
-  const numberW = ctx.measureText(numberText).width;
+  const markW = 36 * s;   // the rarity mark, and the gap before the number
+  const numberW = ctx.measureText(numberText).width + markW;
   let size = 25 * s;
   const fits = (room: number) => { ctx.font = `800 ${size}px ${FONT}`; return ctx.measureText(label).width <= room; };
   const withNumber = x1 - x0 - 40 * s - numberW - 16 * s;
@@ -277,6 +324,7 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
     ctx.font = `600 ${20 * s}px ${FONT}`;
     ctx.fillStyle = MUTED;
     ctx.fillText(numberText, x1 - 20 * s, (top + bottom) / 2);
+    drawRarityMark(ctx, p.rarity, x1 - 20 * s - (numberW - markW) - 20 * s, (top + bottom) / 2, 13 * s);
   }
   return bottom;
 }
@@ -353,10 +401,12 @@ function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, foote
 /**
  * Renders the wallpaper for a card: the whole screen is the card. Its coloured edge runs along the
  * screen's edge and every corner inside follows the screen's own rounding, so on an iPhone the border
- * curves with the glass. `side` picks a Hero Cat's Kitten or Big Cat face; `foil` adds a rainbow sheen
- * over the art, as the Display Case shows it; `number` is the collector number ("002/055").
+ * curves with the glass. `side` picks a Hero Cat's Kitten or Big Cat face. `finish` is the copy's
+ * finish, printed as the card is: its chrome (the edge, the art's border, the banner's and type line's
+ * edges, the cost ring) in holographic silver, gold or a rainbow, with a sheen over the art. `rarity`
+ * is the mark before the collector number (`number`, "002/055").
  */
-export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | null, foil: boolean, number: string, device: Device): Promise<Blob> {
+export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | null, finish: Finish, rarity: Rarity, number: string, device: Device): Promise<Blob> {
   const card: CardDef = CARDS[id];
   const colors = FAMILIES[card.family] ?? FAMILIES.Garden;
   const [main, dark] = colors;
@@ -380,21 +430,36 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
   // Measures are in the printed card's pixels (750 × 1050), times s. A phone's card is as wide as the
   // screen; a tablet's detail is a little finer; a computer's column of text is a card's width.
   const s = device === 'phone' ? W / 750 : device === 'tablet' ? W / 900 : H / 820;
-  const p: Parts = { ctx, card, side, colors, s, number, paw, heart };
+  // The chrome: silver and gold in diagonal bands, the prismatic rainbow turning around the centre.
+  let chrome: CanvasGradient | null = null;
+  if (finish !== 'standard') {
+    const stops = { foil: HOLO, gold: GOLD, prismatic: PRISM }[finish];
+    const cycles = finish === 'foil' ? 3 : finish === 'gold' ? 2 : 1;
+    chrome = finish === 'prismatic' ? ctx.createConicGradient(0.6, W / 2, H / 2) : ctx.createLinearGradient(0, 0, W, H);
+    for (let k = 0; k < cycles; k++) {
+      stops.forEach((c, i) => { if (k === 0 || i > 0) chrome!.addColorStop((k + i / (stops.length - 1)) / cycles, c); });
+    }
+  }
+  const p: Parts = { ctx, card, side, colors, s, number, rarity, finish, chrome, paw, heart };
 
   // The card's edge is the screen's edge: a thin coloured border, then the cream face, both curving
   // with the screen's corners (a radius less the border, so the curves run side by side).
   const edge = 16 * s;
   const face = Math.max(corner - edge, 24 * s);
-  ctx.fillStyle = dark;
+  ctx.fillStyle = chrome ?? dark;
   ctx.fillRect(0, 0, W, H);
+  if (chrome) {   // a fine line in the chrome's ink where it meets the card
+    roundRect(ctx, edge - 2 * s, edge - 2 * s, W - edge + 2 * s, H - edge + 2 * s, face + 2 * s);
+    ctx.fillStyle = CHROME_INK[finish];
+    ctx.fill();
+  }
   roundRect(ctx, edge, edge, W - edge, H - edge, face);
   ctx.fillStyle = CREAM;
   ctx.fill();
-  // A fine gold line just inside the border, like a foil-stamped edge.
+  // A fine line just inside the border, like a foil-stamped edge: the chrome's ink on a finished copy.
   roundRect(ctx, edge + 5 * s, edge + 5 * s, W - edge - 5 * s, H - edge - 5 * s, Math.max(face - 5 * s, 20 * s));
   ctx.lineWidth = 2 * s;
-  ctx.strokeStyle = foil ? 'rgba(214, 170, 70, 0.9)' : main;
+  ctx.strokeStyle = chrome ? CHROME_INK[finish] : main;
   ctx.globalAlpha = 0.6;
   ctx.stroke();
   ctx.globalAlpha = 1;
@@ -408,7 +473,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     // Landscape: the art fills the left, and the rest of the card stands in a column on the right.
     const column = Math.min(W * 0.4, 700 * s);
     const artRight = W - pad - column - 24 * s;
-    drawArt(ctx, art, pad, pad, artRight, H - pad, inner, main, s, foil);
+    drawArt(p, art, pad, pad, artRight, H - pad, inner);
     const x0 = artRight + 24 * s, x1 = W - pad;
     const bannerBottom = drawBanner(p, x0, x1, pad);
     const typeBottom = drawTypeLine(p, x0, x1, bannerBottom + 12 * s);
@@ -427,7 +492,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     const textBottom = badges ? statsBottom - 110 * s : statsBottom - 60 * s;
     const below = (16 + 96 + 12 + 52 + 12) * s + 300 * s + (H - textBottom);
     const artBottom = Math.min(H * 0.6, H - below);
-    drawArt(ctx, art, pad, pad, W - pad, artBottom, inner, main, s, foil);
+    drawArt(p, art, pad, pad, W - pad, artBottom, inner);
     const bannerBottom = drawBanner(p, pad - 6 * s, W - pad + 6 * s, artBottom + 16 * s);
     const typeBottom = drawTypeLine(p, pad, W - pad, bannerBottom + 12 * s);
     drawRules(p, pad, typeBottom + 12 * s, W - pad, badges ? textBottom + 40 * s : textBottom, badges ? 40 * s : 0);

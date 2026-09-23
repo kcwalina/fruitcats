@@ -9,7 +9,8 @@ import {
 } from '@fruitcats/engine';
 import { owned, ownedCards, ownedHeroes } from './collection';
 import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
-import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, FAMILY_INFO, artUrl, backButton, esc, famClass, settingsButton } from './ui';
+import { finishFrame, yourCardUrl } from './rarity';
 
 type Page = 'list' | 'new' | 'edit';
 const TYPES = [['all', 'All'], ['Cat', 'Cats'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
@@ -270,9 +271,9 @@ function renderNewDeck(): string {
           ${ownedHeroes().map((id) => {
             const hero = CARDS[id];
             return `
-            <button class="deck-choice" data-click="deck:hero:${id}" data-zoom="${cardUrl(`${id}-kitten`)}" data-zoom-card="${id}-kitten">
-              <img src="${cardUrl(`${id}-kitten`)}" alt="${esc(hero.name)}">
-              <img class="deck-art" src="${artUrl(`${id}-kitten`)}" alt="">
+            <button class="deck-choice" data-click="deck:hero:${id}" data-zoom="${yourCardUrl(`${id}-kitten`)}" data-zoom-card="${id}-kitten">
+              <img src="${yourCardUrl(`${id}-kitten`)}" alt="${esc(hero.name)}">
+              <img class="deck-art ${finishFrame(id)}" src="${artUrl(`${id}-kitten`)}" alt="">
               <span class="deck-name">${esc(cardName(id))}</span>
               <span class="deck-class ${famClass(id)}">${esc(hero.family)} · ${esc(FAMILY_INFO[hero.family]?.mechanic ?? '')}</span>
               <span class="deck-blurb">${esc(capitalize(FAMILY_INFO[hero.family]?.hint ?? ''))}.</span>
@@ -321,7 +322,7 @@ function renderBuilder(): string {
   // Your own deck: its name (tap to rename) with the "saved" line under it, and Done at the top right
   // where a phone's thumb and eye expect it. A starter: a way back, then its name.
   const portrait = `<img class="bar-hero ${famClass(deck.hero)}" src="${artUrl(`${deck.hero}-kitten`)}" alt="${esc(cardName(deck.hero))}"
-      data-zoom="${cardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">`;
+      data-zoom="${yourCardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">`;
   const bar = readOnly
     ? `${backButton('deck:list', 'Your decks')}${portrait}
       <div class="build-title"><h2>${esc(deck.name)}</h2><span class="save-state">Starter deck · can't be changed</span></div>`
@@ -371,8 +372,8 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
   const name = CARDS[id].name;
   const count = deck.cards[id] ?? 0;
   if (readOnly) {
-    return `<div class="pool-card"><div class="pool-face" data-zoom="${cardUrl(id)}" data-zoom-card="${id}">
-      <img src="${cardUrl(id)}" alt="${esc(name)}" decoding="async"></div>
+    return `<div class="pool-card"><div class="pool-face" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
+      <img src="${yourCardUrl(id)}" alt="${esc(name)}" decoding="async"></div>
       <span class="pool-count">×${count}</span></div>`;
   }
   const usable = Math.min(copyLimit(id), owned(id));
@@ -381,9 +382,9 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
   const pips = Array.from({ length: usable }, (_, i) => `<i class="${i < count ? 'on' : ''}"></i>`).join('');
   return `
     <div class="pool-card ${blocked ? 'blocked' : ''} ${maxed ? 'maxed' : ''} ${count ? 'in-deck' : ''}">
-      <button class="pool-face" data-click="deck:add:${id}" data-zoom="${cardUrl(id)}" data-zoom-card="${id}"
+      <button class="pool-face" data-click="deck:add:${id}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}"
         aria-label="Add ${esc(name)} (${count} of ${usable} in deck)">
-        <img src="${cardUrl(id)}" alt="" decoding="async"></button>
+        <img src="${yourCardUrl(id)}" alt="" decoding="async"></button>
       <div class="pool-foot">
         <span class="pips" title="${count} of ${usable} in your deck">${pips}</span>
         ${count ? `<button class="pool-remove" data-click="deck:remove:${id}" aria-label="Remove one ${esc(name)}">−</button>` : ''}
@@ -413,7 +414,7 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           </div>
           <ul class="deck-lines" data-keep-scroll="deck">
             ${ids.length ? ids.map((id) => `
-              <li class="${famClass(id)}" data-zoom="${cardUrl(id)}" data-zoom-card="${id}">
+              <li class="${famClass(id)}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
                 <span class="line-cost">${CARDS[id].cost ?? ''}</span>
                 <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}</span>
                 ${readOnly ? `<span class="line-qty">×${deck.cards[id]}</span>` : `

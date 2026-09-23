@@ -24,6 +24,26 @@ Each family is a class with its own signature mechanic (rulebook §3.3 and §850
 
 `Cost` = Treats to play · `P/H` = Power / Health · `Qty` = copies in the starter deck. Keywords are defined in the rulebook, section 10.
 
+### Rarity
+
+Every card carries a rarity mark on its type line, next to its number. Rarity is cosmetic: it never changes the rules or deck building.
+
+| Mark | Rarity | In the Starter Box |
+|---|---|---|
+| bronze circle | Common | Critters that cost 3 or less (19) |
+| silver diamond | Uncommon | Critters that cost 4 or more, every Trick and Toy (22) |
+| gold star | Rare | the named Cats (9) |
+| crown | Legendary | the Hero Cats (5) |
+
+A card's rarity is set in `cards/sb1.json`. How a particular copy is printed is its *finish*, which belongs to the copy, not the card. Every card exists in each finish, and the finish is the card's chrome: its frame, the art's border, the edges of its name banner and type line, and its cost ring.
+
+| Finish | Chrome | In the app |
+|---|---|---|
+| Standard | the family's colours | — |
+| Foil | holographic silver | a rainbow sheen that follows your finger |
+| Gold | polished gold | a warm light sweeping across |
+| Prismatic | a rainbow, all the way round | a stronger sheen, twinkles, and a glow that runs through every colour |
+
 ### Design budget (used to stat every card)
 
 A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effects are paid for out of that budget: Guardian ≈ 1, Zoomies ≈ 1, Sneaky ≈ 2, Fierce ≈ 2, Tough 1 ≈ 2, "draw a card" ≈ 2, "deal 1 damage" ≈ 1. **Cats get +2 to +3 extra budget** — they are meant to be the strongest cards, balanced by the one-copy rule. These are first-pass numbers for the playtest engine to challenge.

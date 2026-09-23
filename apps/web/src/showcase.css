@@ -65,6 +65,18 @@
   transform: rotateY(calc(var(--d, 0) * -22deg)) scale(calc(1 - var(--ad, 0) * 0.16));
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
+:is(.collection-screen, .viewer-overlay) button.viewer-card.finish-foil,
+:is(.collection-screen, .viewer-overlay) button.viewer-card.finish-foil:hover:not(:disabled) {
+  box-shadow: 0 0 30px rgba(190, 220, 255, 0.45), 0 28px 60px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+:is(.collection-screen, .viewer-overlay) button.viewer-card.finish-gold,
+:is(.collection-screen, .viewer-overlay) button.viewer-card.finish-gold:hover:not(:disabled) {
+  box-shadow: 0 0 34px rgba(255, 196, 70, 0.55), 0 28px 60px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+:is(.collection-screen, .viewer-overlay) button.viewer-card.finish-prismatic,
+:is(.collection-screen, .viewer-overlay) button.viewer-card.finish-prismatic:hover:not(:disabled) {
+  box-shadow: 0 0 40px 6px hsl(var(--spin) 95% 68% / 0.55), 0 0 90px 16px hsl(calc(var(--spin) + 120deg) 95% 70% / 0.25), 0 28px 60px rgba(0, 0, 0, 0.6);
+}
 .viewer-card img { display: block; width: 100%; border-radius: inherit; pointer-events: none; -webkit-user-drag: none; }
 
 .viewer-info { flex: none; text-align: center; padding: 0 16px max(18px, env(safe-area-inset-bottom)); }
@@ -73,9 +85,33 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 .v-sub { margin: 4px 0 0; font: 700 12px/1.3 Nunito, sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255, 255, 255, 0.66); }
-.v-foil {
-  background: linear-gradient(90deg, #ff8fb1, #ffd27a, #8ff0a4, #7fd3ff, #c29bff); -webkit-background-clip: text; background-clip: text; color: transparent;
+/* The card's rarity, and your copy's finish as a small printed-metal tag. */
+.v-rank {
+  display: flex; justify-content: center; align-items: center; gap: 6px; margin: 6px 0 0;
+  font: 700 13px/1 Fredoka, Nunito, sans-serif; letter-spacing: 0.4px; color: rgba(255, 255, 255, 0.85);
 }
+.v-rank .rarity-mark { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+.v-rank em {
+  margin-left: 4px; padding: 4px 8px; border-radius: 6px; font: 700 10.5px/1 Fredoka, Nunito, sans-serif; font-style: normal;
+  letter-spacing: 1.2px; text-transform: uppercase;
+}
+.v-rank em.fin-foil {
+  color: #2e3552; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: linear-gradient(115deg, #8e97a3, #eef1f5 14%, #d7c2ec 24%, #a7b0bb 36%, #f7f9fb 50%, #bfe6f2 60%, #7f8894 72%, #f3dcec 84%, #8e97a3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(70, 80, 120, 0.55);
+}
+.v-rank em.fin-gold {
+  color: #4a2c02; text-shadow: 0 1px 0 rgba(255, 245, 200, 0.7);
+  background: linear-gradient(135deg, #fff4c2, #e8b73a 35%, #b07d17 60%, #f7d774); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 1px #7a5208;
+}
+.v-rank em.fin-prismatic {   /* deep violet, edged in a running rainbow */
+  border: 1.5px solid transparent; color: #fff; text-shadow: 0 0 6px rgba(255, 150, 255, 0.8);
+  background: linear-gradient(#3a1560, #24093f) padding-box,
+    linear-gradient(115deg, #ff3d8b, #ff9f1a, #ffe23d, #2ee88a, #2bb8ff, #7a5cff, #e84dff, #ff3d8b) 0 0 / 250% 100% border-box;
+  box-shadow: 0 0 8px rgba(200, 130, 255, 0.7); animation: prism-label 4s linear infinite;
+}
+@keyframes prism-label { to { background-position: 250% 0; } }
+@media (prefers-reduced-motion: reduce) { .v-rank em.fin-prismatic { animation: none; } }
 .v-dots { display: flex; justify-content: center; gap: 7px; margin-top: 12px; }
 .v-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transition: background 0.3s, transform 0.3s; }
 .v-dots i.on { background: #fff; transform: scale(1.3); }
@@ -149,6 +185,17 @@ button.undo-btn {
 .grid-head { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 14px; }
 .grid-count { font: 700 13px Nunito, sans-serif; letter-spacing: 0.4px; color: rgba(255, 255, 255, 0.72); }
 .grid-count b { color: #fff; font-size: 15px; }
+/* One tile per rarity: its mark, how many you have of how many, and its name. */
+.grid-rarities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; width: min(100%, 460px); }
+.grid-rarities > span {
+  display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 5px;
+  padding: 6px 4px 5px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.grid-rarities > span.complete { background: rgba(120, 210, 110, 0.14); box-shadow: inset 0 0 0 1px rgba(140, 220, 120, 0.4); }
+.grid-rarities .rarity-mark { font-size: 15px; }
+.rarity-count { font: 700 12px/1.2 Fredoka, Nunito, sans-serif; color: rgba(255, 255, 255, 0.65); }
+.rarity-count b { color: #fff; font-size: 15px; }
+.grid-rarities small { grid-column: 1 / 3; text-align: center; font: 700 9.5px/1.3 Nunito, sans-serif; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
 .grid-filters { display: flex; justify-content: center; gap: 6px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .collection-screen button.gchip {
   height: 32px; padding: 0 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85);
@@ -164,6 +211,13 @@ button.undo-btn {
   display: block; width: 100%; aspect-ratio: 0.714; object-fit: cover; border-radius: 4.6% / 3.3%;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
+.tile-card { display: block; width: 100%; border-radius: 4.6% / 3.3%; }
+.tile-card img { box-shadow: none; }
+.tile-card:not(.finished) img, .tile-card.finish-foil, .tile-card.finish-gold, .tile-card.finish-prismatic { box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.tile-card.finish-foil { box-shadow: 0 0 16px rgba(190, 220, 255, 0.45), 0 10px 24px rgba(0, 0, 0, 0.5); }
+.tile-card.finish-gold { box-shadow: 0 0 18px rgba(255, 196, 70, 0.55), 0 10px 24px rgba(0, 0, 0, 0.5); }
+.tile-card.finish-prismatic { box-shadow: 0 0 18px 3px hsl(var(--spin) 95% 68% / 0.6), 0 10px 24px rgba(0, 0, 0, 0.5); }
+.tile-label .rarity-mark { font-size: 12px; vertical-align: -0.2em; }
 .tile-star { color: #ffd76a; }
 .tile-label { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
 .tile-copies {
@@ -195,22 +249,6 @@ button.undo-btn {
   .v-actions { margin-top: 0; }
   .viewer-overlay .viewer { padding-top: 40px; }
 }
-
-/* ── Foil: a rainbow sheen and a glint that follow the pointer (--mx/--my, set in showcase.ts) ── */
-
-.holo { position: relative; display: block; overflow: hidden; isolation: isolate; }
-.holo::before, .holo::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
-.holo::before {
-  background: linear-gradient(115deg, #ff6b6b, #ffd36b, #7bff9a, #6bd5ff, #b07bff, #ff6bd0, #ff6b6b);
-  background-size: 300% 300%; background-position: var(--mx, 50%) var(--my, 50%);
-  mix-blend-mode: soft-light; opacity: 0.55; animation: holo-drift 7s ease-in-out infinite;
-}
-.holo::after {
-  background: radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.45), transparent 42%);
-  mix-blend-mode: overlay;
-}
-@keyframes holo-drift { 50% { background-position: calc(var(--mx, 50%) + 40%) calc(var(--my, 50%) + 30%); } }
-@media (prefers-reduced-motion: reduce) { .holo::before { animation: none; } }
 
 /* ── Wallpaper sheet ── */
 

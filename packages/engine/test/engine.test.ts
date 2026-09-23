@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, addProblem, apply, chooseAction, createGame, deckCardIds, deckProblems, legalActions, randomAction,
+  CARDS, DECKS, RARITIES, addProblem, apply, chooseAction, createGame, deckCardIds, deckProblems, legalActions, randomAction,
   keywords, unitHealth, unitPower, type DeckList, type GameState,
 } from '../src/index';
 
@@ -31,6 +31,13 @@ describe('card data', () => {
     expect(keywords('SB1-O07')).toMatchObject({ guardian: true, tough: 1 });
     expect(keywords('SB1-C09')).toMatchObject({ pounce: true, lucky: true });
     expect(keywords('SB1-O03').guardian).toBe(false); // "If you control a Guardian" is not the keyword
+  });
+
+  it('gives every card a rarity, and every Hero Cat is Legendary', () => {
+    for (const card of Object.values(CARDS)) {
+      expect(RARITIES).toContain(card.rarity);
+      if (card.type === 'Hero Cat') expect(card.rarity).toBe('Legendary');
+    }
   });
 });
 

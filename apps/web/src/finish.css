@@ -1,0 +1,87 @@
+/* Finishes: how one copy of a card shines (rarity.ts). The card's picture is printed in its finish, its
+   frame in holographic silver, gold or a rainbow; on top, Foil has a rainbow sheen, Gold a warm light
+   sweeping across, and Prismatic, the rarest, a stronger sheen, twinkles and a glow that runs through
+   every colour. Sheens follow the pointer through --mx/--my (set in showcase.ts). */
+
+.finished { position: relative; display: block; border-radius: 5.6% / 4%; }
+.finished > img { display: block; width: 100%; border-radius: inherit; }
+
+.holo { overflow: hidden; isolation: isolate; }
+.holo::before, .holo::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; border-radius: inherit; }
+
+/* ── Foil ── */
+.holo::before {
+  background: linear-gradient(115deg, #ff6b6b, #ffd36b, #7bff9a, #6bd5ff, #b07bff, #ff6bd0, #ff6b6b);
+  background-size: 300% 300%; background-position: var(--mx, 50%) var(--my, 50%);
+  mix-blend-mode: soft-light; opacity: 0.7; animation: holo-drift 6s ease-in-out infinite;
+}
+.holo::after {
+  background: radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.55), transparent 40%);
+  mix-blend-mode: overlay;
+}
+@keyframes holo-drift { 50% { background-position: calc(var(--mx, 50%) + 40%) calc(var(--my, 50%) + 30%); } }
+
+/* The frame is printed on the card itself (compose_cards.py: holographic silver, gold or a rainbow).
+   Here each finish only adds light: a glow around the card, and the sheen over it. */
+.finish-foil { box-shadow: 0 0 14px rgba(190, 220, 255, 0.45); }
+.finish-foil::before { opacity: 0.55; }
+
+/* ── Gold ── */
+.finish-gold { box-shadow: 0 0 16px rgba(255, 196, 70, 0.55); }
+.finish-gold::before {   /* a warm light sweeping across now and then */
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 244, 200, 0.9) 48%, rgba(255, 214, 110, 0.55) 52%, transparent 62%);
+  background-size: 260% 100%; mix-blend-mode: screen; opacity: 0.55;
+  animation: gold-sweep 5.5s ease-in-out infinite;
+}
+.finish-gold::after {
+  background:
+    radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255, 226, 150, 0.6), transparent 42%),
+    linear-gradient(rgba(255, 196, 80, 0.14), rgba(255, 170, 40, 0.1));
+  mix-blend-mode: overlay;
+}
+@keyframes gold-sweep { 0%, 55% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
+
+/* ── Prismatic ── */
+@property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.finish-prismatic {   /* a glow that runs through every colour */
+  box-shadow: 0 0 18px 3px hsl(var(--spin) 95% 68% / 0.6), 0 0 42px 8px hsl(calc(var(--spin) + 120deg) 95% 70% / 0.3);
+  animation: prism-spin 6s linear infinite;
+}
+.finish-prismatic::before { opacity: 0.75; animation-duration: 4s; }
+@keyframes prism-spin { to { --spin: 360deg; } }
+
+.fin-spark {
+  position: absolute; z-index: 2; width: calc(var(--s) * 100%); aspect-ratio: 1; pointer-events: none;
+  translate: -50% -50%; background: #fffbea;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  opacity: 0; animation: fin-twinkle 3.4s ease-in-out infinite;
+}
+@keyframes fin-twinkle { 0%, 100% { opacity: 0; transform: scale(0.3) rotate(-40deg); } 45% { opacity: 0.95; transform: scale(1) rotate(0deg); } 62% { opacity: 0; transform: scale(0.8) rotate(10deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .holo::before, .finish-prismatic { animation: none; }
+  .fin-spark { display: none; }
+}
+
+/* ── Rarity mark ── */
+.rarity-mark { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.17em; flex: none; }
+
+/* ── On a Hero Cat's art alone (the deck pickers' thumbnails), which has no printed frame: the image's
+   own border is the frame, and the cream under it only shows where the picture doesn't reach. ── */
+img.fin-frame { box-sizing: border-box; border: 4px solid transparent; }
+img.fin-frame.fin-foil {
+  background: linear-gradient(#fff8ec, #fff8ec) padding-box, linear-gradient(115deg, #8e97a3, #eef1f5 14%, #d7c2ec 24%, #a7b0bb 36%, #f7f9fb 50%, #bfe6f2 60%, #7f8894 72%, #f3dcec 84%, #8e97a3) border-box;
+  box-shadow: 0 0 0 1px rgba(70, 80, 120, 0.55), 0 0 8px rgba(190, 220, 255, 0.5);
+}
+img.fin-frame.fin-gold {
+  background: linear-gradient(#fff8ec, #fff8ec) padding-box,
+    linear-gradient(135deg, #fff4c2, #e8b73a 22%, #8a5a0c 40%, #f7d774 55%, #b07d17 72%, #fff0b0 88%, #c89224) border-box;
+  box-shadow: 0 0 0 1px rgba(90, 55, 5, 0.7), 0 0 12px rgba(255, 196, 70, 0.6);
+}
+img.fin-frame.fin-prismatic {
+  background: linear-gradient(#fff8ec, #fff8ec) padding-box,
+    conic-gradient(from var(--spin), #ff3d8b, #ff9f1a, #ffe23d, #2ee88a, #2bb8ff, #7a5cff, #e84dff, #ff3d8b) border-box;
+  box-shadow: 0 0 0 1px rgba(60, 20, 90, 0.5), 0 0 14px 3px rgba(170, 100, 255, 0.65);
+  animation: prism-spin 5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { img.fin-frame.fin-prismatic { animation: none; } }

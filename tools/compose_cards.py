@@ -2,9 +2,13 @@
 
     python tools/compose_cards.py            # every card in cards/sb1.json
     python tools/compose_cards.py --only SB1-C04
+    python tools/compose_cards.py --finish gold     # only one finish (standard, foil, gold, prismatic)
 
 Reads art from art/<set>/<key>.webp (see tools/generate_art.py) and writes 750x1050 WebP images
-(2.5" x 3.5" at 300 dpi) to art/cards/<set>/, plus a README.md gallery grouped by deck.
+(2.5" x 3.5" at 300 dpi) to art/cards/<set>/, plus a README.md gallery grouped by deck. Every card is
+also printed in each finish, to art/cards/<set>/<finish>/: the same card with its chrome (the frame, the
+art's border, the edges of the name banner and type line, the cost ring) in holographic silver (foil),
+polished gold (gold) or a rainbow (prismatic).
 Card text comes from the card data, never from the image model, so a balance patch only
 needs a re-compose, not a redraw.
 """
@@ -15,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 W, H = 750, 1050
@@ -144,6 +148,100 @@ def clover(draw: ImageDraw.ImageDraw, cx: int, cy: int) -> None:
     draw.line((cx + 2, cy + 4, cx + 12, cy + 24), fill="#2E7D32", width=4)
 
 
+# Rarity marks, as in trading card games: a shape and a metal for each rarity. top, bottom, outline.
+RARITY_MARKS = {
+    "Common":    ("#F2B880", "#8A4A1C", "#4A2408"),     # bronze circle
+    "Uncommon":  ("#F4F6FA", "#7F8B9C", "#2F3842"),     # silver diamond
+    "Rare":      ("#FFE680", "#E0A019", "#6B4500"),     # gold star
+    "Legendary": ("#FF8AD8", "#8B4DFF", "#3F1466"),     # pink-violet crown
+}
+
+
+def rarity_shape(rarity: str, cx: float, cy: float, r: float) -> list[tuple[float, float]] | None:
+    """The mark's outline as a polygon, or None for the Common circle."""
+    import math
+    if rarity == "Uncommon":
+        return [(cx, cy - r), (cx + r * 0.78, cy), (cx, cy + r), (cx - r * 0.78, cy)]
+    if rarity == "Rare":
+        return [(cx + (r if i % 2 == 0 else r * 0.46) * math.cos(math.pi / 2 + i * math.pi / 5),
+                 cy - (r if i % 2 == 0 else r * 0.46) * math.sin(math.pi / 2 + i * math.pi / 5)) for i in range(10)]
+    if rarity == "Legendary":   # a crown: three points over a band
+        w, top, base = r * 1.05, cy - r * 0.85, cy + r * 0.7
+        return [(cx - w, base), (cx - w, top + r * 0.25), (cx - w * 0.5, cy), (cx, top - r * 0.1),
+                (cx + w * 0.5, cy), (cx + w, top + r * 0.25), (cx + w, base)]
+    return None
+
+
+def rarity_mark(img: Image.Image, cx: int, cy: int, r: int, rarity: str) -> None:
+    """The rarity mark centred on (cx, cy), drawn at 4x and scaled down so its edges stay smooth."""
+    top, bottom, outline = RARITY_MARKS[rarity]
+    k, size = 4, 2 * r + 8
+    c, R = size * k / 2, r * k
+    shape = rarity_shape(rarity, c, c, R)
+    mask = Image.new("L", (size * k, size * k), 0)
+    md = ImageDraw.Draw(mask)
+    md.ellipse((c - R, c - R, c + R, c + R), fill=255) if shape is None else md.polygon(shape, fill=255)
+    # The metal: a vertical gradient from light to dark, inside an outline in the metal's own dark ink.
+    grad = Image.new("RGBA", mask.size)
+    gd = ImageDraw.Draw(grad)
+    t, b = Image.new("RGB", (1, 1), top).getpixel((0, 0)), Image.new("RGB", (1, 1), bottom).getpixel((0, 0))
+    for y in range(mask.size[1]):
+        f = min(max((y - (c - R)) / (2 * R), 0), 1)
+        gd.line((0, y, mask.size[0], y), fill=tuple(round(t[i] + (b[i] - t[i]) * f) for i in range(3)) + (255,))
+    tile = Image.new("RGBA", mask.size, (0, 0, 0, 0))
+    ring = mask.filter(ImageFilter.MaxFilter(2 * k + 1))
+    tile.paste(outline, (0, 0), ring)
+    inner = mask.filter(ImageFilter.MinFilter(k + 1))
+    tile.paste(grad, (0, 0), inner)
+    tile = tile.resize((size, size), Image.LANCZOS)
+    img.alpha_composite(tile, (round(cx - size / 2), round(cy - size / 2)))
+
+
+# Finishes: the chrome's colours along the gradient, and the ink that edges it. Foil and prismatic are
+# printed on silver, as real foils are: bands of metal, with the rainbow laid over them.
+FINISHES = ("foil", "gold", "prismatic")
+SILVER = ["#8e97a3", "#eef1f5", "#a7b0bb", "#f7f9fb", "#7f8894", "#dfe4ea", "#8e97a3"]
+RAINBOW = ["#ff3d8b", "#ff9f1a", "#ffe23d", "#2ee88a", "#2bb8ff", "#7a5cff", "#e84dff", "#ff3d8b"]
+CHROME = {
+    "foil":      (SILVER, "#4a5362"),
+    "gold":      (["#fff4c2", "#e8b73a", "#8a5a0c", "#f7d774", "#b07d17", "#fff0b0", "#c89224", "#fff4c2"], "#5a3a04"),
+    "prismatic": (RAINBOW, "#3a2a5a"),
+}
+_textures: dict = {}
+
+
+def chrome_texture(finish: str) -> Image.Image:
+    """The chrome's material, card-sized. Foil is brushed silver with rainbow flashes running across it at
+    another angle; gold is polished bands of gold; prismatic is the rainbow turning around the card's
+    centre, over silver, with a band of light across it."""
+    if finish not in _textures:
+        import numpy as np
+        ys, xs = np.mgrid[0:H, 0:W].astype(float)
+
+        def ramp(stops: list[str], t):
+            rgb = np.array([Image.new("RGB", (1, 1), c).getpixel((0, 0)) for c in stops], float)
+            pos = np.linspace(0, 1, len(stops))
+            return np.stack([np.interp(t % 1.0, pos, rgb[:, c]) for c in range(3)], -1)
+
+        diagonal = (xs * 0.8 + ys * 0.6) / (W * 0.8 + H * 0.6)
+        brushed = (1 + 0.04 * np.sin(ys * 1.9 + np.sin(xs / 23) * 3))[..., None]
+        if finish == "gold":
+            rgb = ramp(CHROME["gold"][0], diagonal * 2) * brushed
+        else:
+            silver = ramp(SILVER, diagonal * 2.5) * brushed
+            if finish == "foil":   # rainbow flashes, strongest where the silver is brightest
+                flash = ramp(RAINBOW, (xs * 0.3 - ys * 0.9) / H * 1.5)
+                light = silver.mean(-1, keepdims=True) / 255
+                rgb = silver + (flash - 128) * 0.42 * light
+            else:
+                conic = ramp(RAINBOW, np.arctan2(ys - H / 2, xs - W / 2) / (2 * np.pi) + 0.1)
+                rgb = conic * 0.78 + silver * 0.22
+                band = np.exp(-(((xs * 0.55 + ys * 0.85) / (W * 0.55 + H * 0.85) - 0.42) / 0.05) ** 2)
+                rgb = rgb + (255 - rgb) * 0.45 * band[..., None]
+        _textures[finish] = Image.fromarray(np.clip(rgb, 0, 255).astype("uint8"), "RGB").convert("RGBA")
+    return _textures[finish]
+
+
 def centered(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, **kw) -> None:
     draw.text(xy, text, font=f, fill=fill, anchor="mm", **kw)
 
@@ -156,18 +254,23 @@ def centered_ink(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, 
               text, font=f, fill=fill, anchor="lt", **kw)
 
 
-def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
+def compose(card: dict, side: str | None, art_path: Path, finish: str = "standard") -> Image.Image:
     main, dark, tint = FAMILIES[card["family"]]
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
     text = face.get("text", "")
     power = face.get("power")
     health = None if side else card.get("health")
+    # Where the chrome goes. A standard card keeps its family's colours there; a finish paints them over.
+    chrome = Image.new("L", (W, H), 0)
+    cd = ImageDraw.Draw(chrome)
 
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle((0, 0, W - 1, H - 1), radius=42, fill=dark)
     d.rounded_rectangle((21, 21, W - 22, H - 22), radius=30, fill=CREAM)
+    cd.rounded_rectangle((0, 0, W - 1, H - 1), radius=42, fill=255)
+    cd.rounded_rectangle((21, 21, W - 22, H - 22), radius=30, fill=0)
 
     # Art
     x0, y0, x1, y1 = ART_BOX
@@ -181,9 +284,11 @@ def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, *art.size), radius=18, fill=255)
     img.paste(art, (x0, y0), mask)
     d.rounded_rectangle(ART_BOX, radius=18, outline=main, width=6)
+    cd.rounded_rectangle(ART_BOX, radius=18, outline=255, width=7)
 
     # Name banner
     d.rounded_rectangle((36, 30, W - 36, 126), radius=26, fill=main, outline=dark, width=4)
+    cd.rounded_rectangle((36, 30, W - 36, 126), radius=26, outline=255, width=5)
     title, _, epithet = name.partition(", ")
     title_font = font("segoeuib.ttf", 42)
     while title_font.getlength(title) > 520 and title_font.size > 26:
@@ -196,6 +301,8 @@ def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
 
     # Cost (or hero star)
     d.ellipse((30, 26, 132, 128), fill="white", outline=dark, width=8)
+    cd.ellipse((30, 26, 132, 128), fill=0)
+    cd.ellipse((30, 26, 132, 128), outline=255, width=9)
     if card["type"] == "Hero Cat":
         star(d, 81, 79, 38, main)
     else:
@@ -212,7 +319,21 @@ def compose(card: dict, side: str | None, art_path: Path) -> Image.Image:
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
     d.text((62, 622), f'{kind} · {card["family"].upper()}',font=font("segoeuib.ttf", 25), fill=dark, anchor="lm")
     key = card["id"] + (f"-{side}" if side else "")
-    d.text((W - 62, 622), key, font=font("segoeui.ttf", 20), fill=MUTED, anchor="rm")
+    key_font = font("segoeui.ttf", 20)
+    d.text((W - 62, 622), key, font=key_font, fill=MUTED, anchor="rm")
+    rarity_mark(img, round(W - 62 - key_font.getlength(key) - 20), 622, 12, card["rarity"])
+    cd.rounded_rectangle((42, 596, W - 42, 648), radius=14, outline=255, width=4)
+
+    # The finish's chrome, edged in its ink where it meets the card.
+    if finish != "standard":
+        img.paste(chrome_texture(finish), (0, 0), chrome)
+        ink = CHROME[finish][1]
+        d.rounded_rectangle((21, 21, W - 22, H - 22), radius=30, outline=ink, width=2)
+        d.rounded_rectangle((1, 1, W - 2, H - 2), radius=41, outline=ink, width=2)
+        d.ellipse((30, 26, 132, 128), outline=ink, width=2)
+        d.ellipse((38, 34, 124, 120), outline=ink, width=2)
+        d.rounded_rectangle(ART_BOX, radius=18, outline=ink, width=1)
+        d.rounded_rectangle((ART_BOX[0] + 7, ART_BOX[1] + 7, ART_BOX[2] - 7, ART_BOX[3] - 7), radius=12, outline=ink, width=1)
 
     # Rules text + flavor, shrinking to fit
     d.rounded_rectangle(TEXT_BOX, radius=18, fill="white", outline="#E2D3BA", width=3)
@@ -257,6 +378,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--set", default="sb1")
     parser.add_argument("--only", nargs="*")
+    parser.add_argument("--finish", choices=("standard", *FINISHES), help="only this finish (default: all)")
     args = parser.parse_args()
 
     data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
@@ -264,6 +386,10 @@ def main() -> int:
     art_dir = ROOT / "art" / args.set
     out_dir = ROOT / "art" / "cards" / args.set
     out_dir.mkdir(parents=True, exist_ok=True)
+    finishes = [args.finish] if args.finish else ["standard", *FINISHES]
+    for f in finishes:
+        if f != "standard":
+            (out_dir / f).mkdir(exist_ok=True)
 
     written, pending = [], []
     for card in data["cards"]:
@@ -274,9 +400,11 @@ def main() -> int:
             art = art_dir / f"{key}.webp"
             if not art.exists():
                 pending.append(key)
-            compose(card, side, art).save(out_dir / f"{key}.webp", quality=90, method=6)
+            for f in finishes:
+                compose(card, side, art, f).save(out_dir / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp"),
+                                                 quality=90, method=6)
             written.append(key)
-    print(f"composed {len(written)} card image(s) into {out_dir.relative_to(ROOT)}")
+    print(f"composed {len(written)} card image(s) in {len(finishes)} finish(es) into {out_dir.relative_to(ROOT)}")
     if pending:
         print(f"art pending for: {', '.join(pending)}")
 

@@ -2,19 +2,19 @@
 // big as the screen allows, swiped through with the phone's own scrolling; the card's art, blurred, fills
 // the screen behind it. All cards is the whole set as a grid (cards you don't have yet are shadows), and
 // tapping one opens the same full-screen view through the cards you're looking at, which is where cards
-// are added to and taken out of the Showcase. Any card can become a wallpaper. What you own comes from collection.ts.
+// are added to and taken out of the Showcase. Any card can become a wallpaper. What you own comes from collection.ts;
+// every card shows its rarity mark, and your copies are shown in their finish (rarity.ts).
 //
 // A Hero Cat's two sides are two cards here: its Kitten and its Big Cat. So the screens deal in card
 // faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
 
 import './showcase.css';
-import { CARDS } from '@fruitcats/engine';
-import { owned } from './collection';
+import { CARDS, RARITIES } from '@fruitcats/engine';
+import { finish, owned } from './collection';
+import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
 import { artUrl, backButton, cardUrl, esc, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
-/** The starter Hero Cats shine as foils, whether or not they're in the Showcase. */
-const FOILS = ['SB1-H01-kitten', 'SB1-H01-bigcat', 'SB1-H02-kitten', 'SB1-H02-bigcat', 'SB1-H03-kitten', 'SB1-H03-bigcat'];
 /** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
 const DEFAULT_SHOWCASE = ['SB1-H03-kitten', 'SB1-H03-bigcat'];
 const SHOWCASE_KEY = 'fruitcats-showcase';
@@ -74,7 +74,8 @@ function setIndex(index: number) {
   else showcaseIndex = index;
 }
 const current = () => { const v = viewer(); return v ? v.list[v.index] : null; };
-const isFoil = (face: string) => FOILS.includes(face);
+/** The finish your copy of this card is in. */
+const finishOf = (face: string) => finish(idOf(face));
 const isFace = (face: string) => !!CARDS[idOf(face)] && facesOf(idOf(face)).includes(face);
 
 function loadShowcase(): string[] {
@@ -134,7 +135,7 @@ async function drawWallpaper() {
   wallpaper = { ...wallpaper, blob: null, url: '', note: '' };
   host.render();
   try {
-    const blob = await renderWallpaper(idOf(face), sideOf(face), isFoil(face), number(face), wallpaper.device);
+    const blob = await renderWallpaper(idOf(face), sideOf(face), finishOf(face), rarity(idOf(face)), number(face), wallpaper.device);
     if (ticket !== drawing || !wallpaper) return;   // closed, or another device picked meanwhile
     wallpaper = { ...wallpaper, blob, url: URL.createObjectURL(blob) };
   } catch {
@@ -274,8 +275,8 @@ function renderViewer(list: string[], index: number): string {
       <div class="viewer-track" data-track>
         ${list.map((face, i) => `
           <div class="viewer-slide">
-            <button class="viewer-card ${isFoil(face) ? 'holo' : ''}" data-click="col:go:${i}" aria-label="${esc(faceName(face))}">
-              <img src="${cardUrl(face)}" alt="" draggable="false" ${Math.abs(i - index) > 2 ? 'loading="lazy"' : ''}></button>
+            <button class="viewer-card ${finishClasses(idOf(face))}" data-click="col:go:${i}" aria-label="${esc(faceName(face))}">
+              <img src="${yourCardUrl(face)}" alt="" draggable="false" ${Math.abs(i - index) > 2 ? 'loading="lazy"' : ''}>${finishSparks(idOf(face))}</button>
           </div>`).join('')}
       </div>
       ${renderInfo(list, index)}
@@ -283,7 +284,7 @@ function renderViewer(list: string[], index: number): string {
 }
 
 function renderInfo(list: string[], index: number): string {
-  const face = list[index], card = CARDS[idOf(face)];
+  const face = list[index], card = CARDS[idOf(face)], f = finishOf(face);
   const kind = sideOf(face) ? sideLabel(face) : card.type;
   // The Showcase is only for looking. Adding and taking out cards happens in All cards, on a card opened there.
   const editing = !!browsing, inShowcase = showcase.includes(face);
@@ -293,7 +294,8 @@ function renderInfo(list: string[], index: number): string {
   return `
       <div class="viewer-info" aria-live="polite">
         <h2 class="v-name">${esc(faceName(face))}</h2>
-        <p class="v-sub">${esc(card.family)} · ${esc(kind)} · ${number(face)}${isFoil(face) ? ' · <span class="v-foil">Foil</span>' : ''}</p>
+        <p class="v-sub">${esc(card.family)} · ${esc(kind)} · ${number(face)}</p>
+        <p class="v-rank">${rarityMark(rarity(idOf(face)))} ${rarity(idOf(face))}${f === 'standard' ? '' : `<em class="fin-${f}">${finishName(f)}</em>`}</p>
         ${position}
         <div class="v-actions">
           <button class="v-arrow" data-click="col:turn:-1" aria-label="Previous card" ${index === 0 ? 'disabled' : ''}>‹</button>
@@ -325,6 +327,13 @@ function renderGrid(): string {
     <div class="collection-grid" data-keep-scroll="grid">
       <div class="grid-head">
         <span class="grid-count"><b>${have}</b> of ${SET.length} cards · Starter Box</span>
+        <div class="grid-rarities">
+          ${RARITIES.map((r) => {
+            const all = SET.filter((id) => rarity(id) === r);
+            const got = all.filter((id) => owned(id) > 0).length;
+            return `<span class="${got === all.length ? 'complete' : ''}">${rarityMark(r)}<span class="rarity-count"><b>${got}</b>/${all.length}</span><small>${r}</small></span>`;
+          }).join('')}
+        </div>
         <div class="grid-filters" role="group" aria-label="Family">
           ${FAMILIES.map((f) => `<button class="gchip ${familyFilter === f ? 'on' : ''}" data-click="col:filter:${f}" aria-pressed="${familyFilter === f}">${f === 'all' ? 'All' : f}</button>`).join('')}
         </div>
@@ -337,13 +346,15 @@ function renderGrid(): string {
 
 function renderTile(face: string): string {
   const copies = owned(idOf(face));
-  const label = `${number(face).split('/')[0]}${sideOf(face) ? ` · ${sideLabel(face)}` : ''}${showcase.includes(face) ? ' <span class="tile-star" title="In your Showcase">★</span>' : ''}`;
+  const label = `${rarityMark(rarity(idOf(face)))} ${number(face).split('/')[0]}${sideOf(face) ? ` · ${sideLabel(face)}` : ''}${showcase.includes(face) ? ' <span class="tile-star" title="In your Showcase">★</span>' : ''}`;
   if (!copies) {
     return `<div class="tile missing"><img src="${cardUrl(face)}" alt="" loading="lazy"><span class="tile-soon">Coming soon</span>
       <span class="tile-label">${label}</span></div>`;
   }
-  return `<button class="tile" data-click="col:open:${face}" aria-label="${esc(faceName(face))}">
-      <img src="${cardUrl(face)}" alt="" loading="lazy" draggable="false">${copies > 1 ? `<span class="tile-copies">×${copies}</span>` : ''}
+  const f = finishOf(face);
+  return `<button class="tile" data-click="col:open:${face}"
+      aria-label="${esc(faceName(face))}, ${rarity(idOf(face))}${f === 'standard' ? '' : `, ${finishName(f)}`}">
+      <span class="tile-card ${finishClasses(idOf(face))}"><img src="${yourCardUrl(face)}" alt="" loading="lazy" draggable="false"></span>${copies > 1 ? `<span class="tile-copies">×${copies}</span>` : ''}
       <span class="tile-label">${label}</span></button>`;
 }
 
@@ -423,7 +434,7 @@ function fadeAmbient(container: Element, face: string) {
   shown.classList.remove('show');
 }
 
-// Foils follow the pointer.
+// Finishes' sheens follow the pointer.
 document.addEventListener('pointermove', (event) => {
   const holo = (event.target as HTMLElement).closest?.<HTMLElement>('.holo');
   if (!holo) return;

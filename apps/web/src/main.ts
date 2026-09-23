@@ -489,17 +489,25 @@ function render() {
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
 
-/** The home screen's game modes. Solo, the Collection and the Deck builder work so far; the others say what they will be. */
-const MODES = [
-  { key: 'solo', name: 'Solo', sub: 'Play against the AI', soon: '' },
-  { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: '' },
-  { key: 'collection', name: 'Collection', sub: 'Your cards on display', soon: '' },
-  { key: 'friend', name: 'Friend', sub: 'Play someone you know',
-    soon: 'Play a friend online: send them a link, they pick a deck, and you each play on your own device.' },
-  { key: 'ranked', name: 'Ranked', sub: 'Climb the ladder',
-    soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
-  { key: 'store', name: 'Store', sub: 'New decks', soon: 'A store for new decks to play with.' },
+/**
+ * The home screen's modes, in two groups with space between them: playing (Solo, Friend, Ranked), then
+ * your cards (Collection, Store, Deck builder). Coming-soon modes say what they will be.
+ */
+const MODE_GROUPS = [
+  [
+    { key: 'solo', name: 'Solo', sub: 'Play against the AI', soon: '' },
+    { key: 'friend', name: 'Friend', sub: 'Play someone you know',
+      soon: 'Play a friend online: send them a link, they pick a deck, and you each play on your own device.' },
+    { key: 'ranked', name: 'Ranked', sub: 'Climb the ladder',
+      soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
+  ],
+  [
+    { key: 'collection', name: 'Collection', sub: 'Your cards on display', soon: '' },
+    { key: 'store', name: 'Store', sub: 'New decks', soon: 'A store for new decks to play with.' },
+    { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: '' },
+  ],
 ];
+const MODES = MODE_GROUPS.flat();
 
 /** The unfinished game, for the Continue button: "Round 4 · Sunny vs Pippin". */
 function savedGameLabel(): string | null {
@@ -521,18 +529,22 @@ function renderHome(): string {
       <h1>Fruitcats</h1>
       <p>A cozy card game of fruit-hooded cats.</p>
     </header>
-    <nav class="modes" style="--n:${MODES.length + (saved ? 1 : 0)}">
-      ${saved ? `
-        <button class="mode-card continue-card" data-click="home:continue">
-          <img src="${artUrl(`${loadGame()!.game.players[HUMAN].hero.id}-kitten`)}" alt="">
-          <span class="mode-text"><span class="mode-name">Continue Previous Game</span><span class="mode-sub">${saved}</span></span>
-        </button>` : ''}
-      ${MODES.map((m) => `
-        <button class="mode-card ${m.soon ? 'soon' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
-          <img src="${BASE}ui/mode-${m.key}.webp" alt="">
-          <span class="mode-text"><span class="mode-name">${m.name}</span><span class="mode-sub">${m.sub}</span></span>
+    <nav class="modes">
+      ${MODE_GROUPS.map((group) => `
+      <div class="mode-group">
+        ${group.map((m) => {
+          // An unfinished game shows on Solo: your Hero Cat, and a ribbon with the round.
+          const resume = m.key === 'solo' && saved;
+          const img = resume ? artUrl(`${loadGame()!.game.players[HUMAN].hero.id}-kitten`) : `${BASE}ui/mode-${m.key}.webp`;
+          return `
+        <button class="mode-card ${m.soon ? 'soon' : ''} ${resume ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
+          <img src="${img}" alt="">
+          <span class="mode-text"><span class="mode-name">${m.name}</span><span class="mode-sub">${resume ? saved : m.sub}</span></span>
           ${m.soon ? '<span class="soon-tag">Coming soon</span>' : ''}
-        </button>`).join('')}
+          ${resume ? `<span class="continue-tag">Continue · Round ${loadGame()!.game.round}</span>` : ''}
+        </button>`;
+        }).join('')}
+      </div>`).join('')}
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
     <footer class="home-footer">
@@ -607,7 +619,12 @@ function renderSolo(): string {
       </section>
     </div>
     <div class="setup-footer">
-      <button class="play-button" data-click="solo:play">Play</button>
+      ${savedGameLabel() ? `
+      <div class="resume-buttons">
+        <button class="play-button" data-click="home:continue">Continue</button>
+        <button class="new-game-button" data-click="solo:play" title="Start a new game with the deck and difficulty above; it replaces the unfinished one">New game</button>
+      </div>
+      <span class="resume-note">${savedGameLabel()}</span>` : '<button class="play-button" data-click="solo:play">Play</button>'}
     </div>
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;

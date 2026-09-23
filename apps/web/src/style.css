@@ -213,6 +213,14 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .deck-choice.mine img.deck-art { display: block; grid-row: 1 / 3; width: 48px; height: 48px; object-fit: cover; border-radius: 10px; }
 .deck-choice.mine .deck-name { font-size: 16px; }
 .deck-choice.mine .deck-class { justify-self: start; }
+.deck-choice.mine { grid-template-rows: auto auto auto; }
+.deck-choice.mine img.deck-art { grid-row: 1 / 4; }
+.deck-choice.mine:disabled { opacity: 0.6; filter: saturate(0.4); }
+.deck-unready { font-size: 12px; font-weight: 700; color: #9c4a12; }
+/* The builder saves as you go: a quiet line says so, and Done goes back to your decks. */
+.save-state { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.save-state.saved { color: var(--good); }
+button.done-deck { padding: 5px 22px; font-size: 15px; }
 .link-button { font-size: 14px; }
 
 /* Your decks */

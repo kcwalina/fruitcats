@@ -10,7 +10,7 @@ import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, apply, cardName, chooseAction, createGame, heroSide, isGuardian, isLush, isSneaky, keywords,
+  CARDS, DECKS, DECK_RULES, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isLush, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
   type Action, type GameState, type PlayerId, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -339,10 +339,7 @@ function onClick(key: string) {
     return;
   }
   if (kind === 'deck') {
-    deckClick(raw, key.split(':')[2] ?? '', {
-      render,
-      playWith: (deckKey) => { myDeck = deckKey; saveChosenDeck(deckKey); screen = 'solo'; render(); },
-    });
+    deckClick(raw, key.split(':')[2] ?? '', { render });
     return;
   }
   if (kind === 'set') {
@@ -543,8 +540,8 @@ function renderDeckPicker(): string {
     'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
     'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
   };
-  // Your own decks, once they have all 50 cards, sit below the starters.
-  const mine = listDecks().filter(isReady);
+  // Your saved decks sit below the starters. One still short of 50 cards shows, but can't be picked yet.
+  const mine = listDecks();
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
@@ -564,12 +561,16 @@ function renderDeckPicker(): string {
       ${mine.length ? `
       <h3 class="my-decks-title">Your decks</h3>
       <div class="deck-choices my-deck-choices">
-        ${mine.map((d) => `
-          <button class="deck-choice mine ${customKey(d.id) === myDeck ? 'chosen' : ''}" data-click="solo:${customKey(d.id)}">
+        ${mine.map((d) => {
+          const ready = isReady(d);
+          return `
+          <button class="deck-choice mine ${customKey(d.id) === myDeck ? 'chosen' : ''}" data-click="solo:${customKey(d.id)}" ${ready ? '' : 'disabled'}>
             <img class="deck-art" src="${artUrl(`${d.hero}-kitten`)}" alt="">
             <span class="deck-name">${esc(d.name)}</span>
             <span class="deck-class ${famClass(d.hero)}">${esc(cardName(d.hero))} · ${esc(CARDS[d.hero].family)}</span>
-          </button>`).join('')}
+            ${ready ? '' : `<span class="deck-unready">Not finished: ${deckSize(d)} / ${DECK_RULES.size} cards</span>`}
+          </button>`;
+        }).join('')}
       </div>` : `<button class="link-button" data-click="home:decks">Or build your own deck</button>`}
     </section>`;
 }
@@ -952,8 +953,8 @@ function renderRules(): string {
 
 // ── Events ───────────────────────────────────────────────────────────────────────────────────────
 
-// The deck builder's name box: saved when you leave it or press Enter.
-app.addEventListener('change', (event) => {
+// The deck builder's name box: part of the draft, like its cards, until Save.
+app.addEventListener('input', (event) => {
   const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename]');
   if (input) renameDeck(input.value);
 });

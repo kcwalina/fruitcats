@@ -1,13 +1,14 @@
 // The deck builder: your decks, a new deck's Hero Cat, and the builder itself (the cards you have on
 // the left, the deck on the right). The rules come from the engine (rulebook §11.1) and the copies you
-// have from collection.ts; decks are saved as you go.
+// have from collection.ts. Every change is saved as it's made, and the header says so, so no work is
+// ever lost; Done just goes back to your decks.
 
 import {
   CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, cardName, catCount, copyLimit, deckSize, otherFamilies,
   type DeckList,
 } from '@fruitcats/engine';
 import { owned, ownedCards, ownedHeroes } from './collection';
-import { createDeck, customKey, deleteDeck, getDeck, isReady, listDecks, problems, saveDeck, type MyDeck } from './mydecks';
+import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
 import { FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 
 type Page = 'list' | 'new' | 'edit';
@@ -17,6 +18,8 @@ type TypeFilter = (typeof TYPES)[number][0];
 let page: Page = 'list';
 /** The deck being built, or a starter being looked at (read-only). */
 let editing: MyDeck | null = null;
+/** A new deck isn't stored until its first change, so backing out of an empty one leaves nothing behind. */
+let isNew = false;
 let starterKey: string | null = null;
 let familyFilter = 'all';
 let typeFilter: TypeFilter = 'all';
@@ -28,8 +31,6 @@ let message = '';
 
 export interface BuilderHost {
   render(): void;
-  /** Leave for the Solo screen with this deck chosen. */
-  playWith(key: string): void;
 }
 
 /** Opening the Deck builder from Home: always your decks first. */
@@ -41,15 +42,32 @@ export function openDeckBuilder(): void {
 
 const shownDeck = (): DeckList | null => editing ?? (starterKey ? DECKS[starterKey] : null);
 
-function edit(deck: MyDeck) {
-  editing = deck;
-  starterKey = null;
+function resetView() {
   page = 'edit';
   familyFilter = 'all';
   typeFilter = 'all';
   sheetOpen = false;
   confirmingDelete = false;
   message = '';
+}
+
+function edit(deck: MyDeck, fresh: boolean) {
+  editing = deck;
+  isNew = fresh;
+  starterKey = null;
+  resetView();
+}
+
+function leave() {
+  page = 'list';
+  editing = null;
+  starterKey = null;
+}
+
+function save() {
+  if (!editing) return;
+  saveDeck(editing);
+  isNew = false;
 }
 
 function change(id: string, delta: number) {
@@ -62,19 +80,19 @@ function change(id: string, delta: number) {
   if (qty > 0) editing.cards[id] = qty;
   else delete editing.cards[id];
   message = '';
-  saveDeck(editing);
+  save();
 }
 
 /** Clicks on `deck:<action>:<arg>`. */
 export function deckClick(action: string, arg: string, host: BuilderHost): void {
   if (action !== 'delete') confirmingDelete = false;
   switch (action) {
-    case 'list': page = 'list'; editing = null; starterKey = null; break;
+    case 'list': leave(); break;
     case 'new': page = 'new'; break;
-    case 'hero': if (ownedHeroes().includes(arg)) edit(createDeck(arg)); break;
-    case 'open': { const deck = getDeck(arg); if (deck) edit(deck); break; }
+    case 'hero': if (ownedHeroes().includes(arg)) edit(newDeck(arg), true); break;
+    case 'open': { const deck = getDeck(arg); if (deck) edit(deck, false); break; }
     case 'starter':
-      if (arg in DECKS) { editing = null; starterKey = arg; page = 'edit'; familyFilter = 'all'; typeFilter = 'all'; sheetOpen = false; message = ''; }
+      if (arg in DECKS) { editing = null; starterKey = arg; resetView(); }
       break;
     case 'add': change(arg, 1); break;
     case 'remove': change(arg, -1); break;
@@ -82,28 +100,33 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     case 'type': typeFilter = TYPES.some(([t]) => t === arg) ? arg as TypeFilter : 'all'; break;
     case 'sheet': sheetOpen = !sheetOpen; break;
     case 'delete':
-      if (!editing) break;
+      if (!editing || isNew) break;
       if (!confirmingDelete) { confirmingDelete = true; break; }
       deleteDeck(editing.id);
       confirmingDelete = false;
-      page = 'list';
-      editing = null;
+      leave();
       break;
-    case 'play': {
-      const key = editing ? customKey(editing.id) : starterKey;
-      const deck = shownDeck();
-      if (key && deck && isReady(deck)) { host.playWith(key); return; }
-      break;
-    }
   }
   host.render();
 }
 
-/** The deck name box: saved when you leave it, without redrawing (you may be tapping a card). */
+/**
+ * The deck name box, saved on every keystroke. It doesn't redraw the screen (that would drop the text
+ * cursor), so the "saved" line is brought up to date by hand.
+ */
 export function renameDeck(name: string): void {
   if (!editing) return;
   editing.name = name.trim().slice(0, 40) || `${cardName(editing.hero)}'s deck`;
-  saveDeck(editing);
+  save();
+  const state = document.querySelector('.save-state');
+  if (state) state.outerHTML = saveState();
+}
+
+/** Tells the player their work is kept, since there's no Save button to press. */
+function saveState(): string {
+  return isNew
+    ? '<span class="save-state">Changes save as you go</span>'
+    : '<span class="save-state saved">All changes saved ✓</span>';
 }
 
 export function renderDeckBuilder(): string {
@@ -262,6 +285,7 @@ function renderBuilder(): string {
       </div>
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Cats <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
+      ${readOnly ? '' : `${saveState()}<button class="primary done-deck" data-click="deck:list">Done</button>`}
       ${message ? `<p class="flash build-message" role="status">${esc(message)}</p>` : ''}
     </div>
     ${readOnly ? '' : renderFilters(order)}
@@ -269,7 +293,7 @@ function renderBuilder(): string {
       <div class="pool" data-keep-scroll="pool">
         ${pool.length ? pool.map((id) => renderPoolCard(deck, id, readOnly)).join('') : '<p class="pool-empty">No cards match these filters.</p>'}
       </div>
-      ${renderDeckPanel(deck, order, readOnly, ready)}
+      ${renderDeckPanel(deck, order, readOnly)}
     </div>
   </div>`;
 }
@@ -308,7 +332,7 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
     </div>`;
 }
 
-function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, ready: boolean): string {
+function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean): string {
   const ids = sortCards(Object.keys(deck.cards), order).sort((a, b) => (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0));
   const size = deckSize(deck);
   // The cost curve: how many cards at each cost, 7 and up together.
@@ -336,10 +360,10 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
                 <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}">+</button>`}
               </li>`).join('') : '<li class="deck-empty">Tap cards to add them to your deck.</li>'}
           </ul>
+          ${readOnly || isNew ? '' : `
           <div class="deck-actions">
-            <button class="play-button" data-click="deck:play" ${ready ? '' : 'disabled'}>Play Solo with this deck</button>
-            ${readOnly ? '' : `<button class="delete-deck ${confirmingDelete ? 'confirming' : ''}" data-click="deck:delete">${confirmingDelete ? 'Tap again to delete' : 'Delete deck'}</button>`}
-          </div>
+            <button class="delete-deck ${confirmingDelete ? 'confirming' : ''}" data-click="deck:delete">${confirmingDelete ? 'Tap again to delete' : 'Delete deck'}</button>
+          </div>`}
         </div>
       </aside>`;
 }

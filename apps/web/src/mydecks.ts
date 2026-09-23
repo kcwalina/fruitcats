@@ -42,10 +42,9 @@ export function saveDeck(deck: MyDeck): void {
   store(decks);
 }
 
-export function createDeck(hero: string): MyDeck {
-  const deck: MyDeck = { id: Date.now().toString(36), name: `${CARDS[hero].name.split(',')[0]}'s deck`, hero, cards: {} };
-  saveDeck(deck);
-  return deck;
+/** A new, empty deck. The builder stores it on its first change. */
+export function newDeck(hero: string): MyDeck {
+  return { id: Date.now().toString(36), name: `${CARDS[hero].name.split(',')[0]}'s deck`, hero, cards: {} };
 }
 
 export function deleteDeck(id: string): void {

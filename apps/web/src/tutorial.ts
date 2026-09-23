@@ -360,9 +360,14 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && layer.querySelector('[data-tut="next"]')) { event.preventDefault(); next(); }
 });
 
-export function renderTutorial() {
+/**
+ * Draw the current step. `hidden`: a panel (Rules, Settings) is open over the game, so the tutorial
+ * steps aside until it closes. The tutorial's layer sits above the game screen, panels included, so
+ * otherwise its balloon and shade would cover the panel and its buttons.
+ */
+export function renderTutorial(hidden = false) {
   const s = host?.game();
-  if (!s || s.winner !== null) { layer.innerHTML = ''; return; }
+  if (hidden || !s || s.winner !== null) { layer.innerHTML = ''; return; }
   const c = current(s);
   if (!c) { layer.innerHTML = ''; return; }
   const { b, kind } = c;

@@ -475,7 +475,7 @@ function render() {
     + (showSettings ? renderSettings() : '');
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
-  if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN); } else stopTutorial();
+  if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, HUMAN); } else stopTutorial();
   persist();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);

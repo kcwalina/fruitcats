@@ -507,8 +507,11 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
  * Everything wakes up at the start of the next round.
  */
 function restingLabel(u: Unit): { tag: string; why: string } {
-  if (!u.exhausted) return { tag: '', why: 'Ready: it can attack this round.' };
   const arrived = unitArrivals.get(u.uid) === game?.round;
+  if (!u.exhausted)
+    return arrived && keywords(u.id).zoomies
+      ? { tag: '', why: 'Zoomies: it can attack the very round it arrives, instead of resting first.' }
+      : { tag: '', why: 'Ready: it can attack this round.' };
   return arrived
     ? { tag: 'new', why: 'Just arrived, so it is still settling in. It wakes up at the start of the next round and can attack then.' }
     : { tag: 'zzz', why: 'Already acted this round. It wakes up at the start of the next round.' };

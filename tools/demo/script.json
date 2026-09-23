@@ -29,8 +29,8 @@
     },
     {
       "id": "play",
-      "caption": "Play a card — it goes into your Yard",
-      "say": "Playing a card puts it in your Yard. Notice it arrives tilted and marked new. A unit that just arrived is still settling in, so it cannot attack this round. It wakes up at the start of the next round."
+      "caption": "Play a card — it arrives resting, unless it has Zoomies",
+      "say": "Playing a card puts it in your Yard. Notice it arrives tilted and marked new. A unit that just arrived is still settling in, so it cannot attack this round: it wakes up at the start of the next one. The exception is Zoomies. About a quarter of this deck has it, and those cats arrive wide awake and can attack straight away."
     },
     {
       "id": "turns",

@@ -12,7 +12,7 @@ import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, t
 import { FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 
 type Page = 'list' | 'new' | 'edit';
-const TYPES = [['all', 'All types'], ['Cat', 'Cats'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
+const TYPES = [['all', 'All'], ['Cat', 'Cats'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
 type TypeFilter = (typeof TYPES)[number][0];
 
 let page: Page = 'list';
@@ -86,6 +86,7 @@ function change(id: string, delta: number) {
 /** Clicks on `deck:<action>:<arg>`. */
 export function deckClick(action: string, arg: string, host: BuilderHost): void {
   if (action !== 'delete') confirmingDelete = false;
+  if (action !== 'add') message = '';
   switch (action) {
     case 'list': leave(); break;
     case 'new': page = 'new'; break;
@@ -267,17 +268,20 @@ function renderBuilder(): string {
     ? `<span class="build-status ready">Starter deck · ${size} cards · fixed</span>`
     : `<span class="build-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : esc(issues[0])}</span>`;
 
-  const title = readOnly
-    ? `<h2>${esc(deck.name)}</h2>`
-    : `<input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done">`;
+  // Your own deck: its name (tap to rename) with the "saved" line under it, and Done at the top right
+  // where a phone's thumb and eye expect it. A starter: its name and a way back.
+  const bar = readOnly
+    ? `${backButton('deck:list', 'Your decks')}<div class="build-title"><h2>${esc(deck.name)}</h2></div><span></span>`
+    : `<span></span>
+      <div class="build-title">
+        <input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done">
+        ${saveState()}
+      </div>
+      <button class="primary done-deck" data-click="deck:list">Done</button>`;
 
   return `
   <div class="menu decks builder ${readOnly ? 'read-only' : ''} ${sheetOpen ? 'sheet-open' : ''}">
-    <div class="setup-bar">
-      ${backButton('deck:list', 'Your decks')}
-      ${title}
-      ${settingsButton()}
-    </div>
+    <div class="setup-bar build-bar">${bar}</div>
     <div class="build-head">
       <div class="build-lead ${famClass(deck.hero)}">
         <img src="${artUrl(`${deck.hero}-kitten`)}" alt="" data-zoom="${cardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">
@@ -285,15 +289,14 @@ function renderBuilder(): string {
       </div>
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Cats <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
-      ${readOnly ? '' : `${saveState()}<button class="primary done-deck" data-click="deck:list">Done</button>`}
-      ${message ? `<p class="flash build-message" role="status">${esc(message)}</p>` : ''}
     </div>
     ${readOnly ? '' : renderFilters(order)}
+    ${message ? `<p class="build-message" role="status">${esc(message)}</p>` : ''}
     <div class="build-main">
       <div class="pool" data-keep-scroll="pool">
         ${pool.length ? pool.map((id) => renderPoolCard(deck, id, readOnly)).join('') : '<p class="pool-empty">No cards match these filters.</p>'}
       </div>
-      ${renderDeckPanel(deck, order, readOnly)}
+      ${renderDeckPanel(deck, order, readOnly, ready)}
     </div>
   </div>`;
 }
@@ -301,11 +304,12 @@ function renderBuilder(): string {
 function renderFilters(order: string[]): string {
   const chip = (group: string, value: string, label: string, active: boolean, cls = '') =>
     `<button class="chip ${cls} ${active ? 'chosen' : ''}" data-click="deck:${group}:${value}" aria-pressed="${active}">${esc(label)}</button>`;
+  // Two rows of equal buttons (family, then type) that always fit a phone's width.
   return `
     <div class="filters">
-      <div class="chip-row">${chip('fam', 'all', 'All families', familyFilter === 'all')}${order.map((f) =>
+      <div class="chip-row" role="group" aria-label="Family" style="--n:${order.length + 1}">${chip('fam', 'all', 'All', familyFilter === 'all')}${order.map((f) =>
         chip('fam', f, f, familyFilter === f, `fam-${f.toLowerCase()}`)).join('')}</div>
-      <div class="chip-row">${TYPES.map(([t, label]) => chip('type', t, label, typeFilter === t)).join('')}</div>
+      <div class="chip-row" role="group" aria-label="Card type" style="--n:${TYPES.length}">${TYPES.map(([t, label]) => chip('type', t, label, typeFilter === t)).join('')}</div>
     </div>`;
 }
 
@@ -332,7 +336,7 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
     </div>`;
 }
 
-function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean): string {
+function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, ready: boolean): string {
   const ids = sortCards(Object.keys(deck.cards), order).sort((a, b) => (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0));
   const size = deckSize(deck);
   // The cost curve: how many cards at each cost, 7 and up together.
@@ -342,7 +346,9 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean): st
   return `
       <aside class="deck-panel">
         <button class="deck-toggle" data-click="deck:sheet" aria-expanded="${sheetOpen}">
-          <span>Deck <b>${size}</b> / ${DECK_RULES.size}</span><span class="toggle-arrow" aria-hidden="true">${sheetOpen ? '▼' : '▲'}</span>
+          <span class="toggle-count"><span>Deck <b>${size}</b> / ${DECK_RULES.size}</span><small>Cats ${catCount(deck)} / ${DECK_RULES.maxCats}</small></span>
+          <span class="toggle-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : size < DECK_RULES.size ? `${DECK_RULES.size - size} to go` : 'Needs a fix'}</span>
+          <span class="toggle-arrow" aria-hidden="true">${sheetOpen ? '▼' : '▲'}</span>
         </button>
         <div class="deck-panel-body">
           <div class="curve" aria-label="Cards by cost">

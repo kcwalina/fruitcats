@@ -217,10 +217,11 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .deck-choice.mine img.deck-art { grid-row: 1 / 4; }
 .deck-choice.mine:disabled { opacity: 0.6; filter: saturate(0.4); }
 .deck-unready { font-size: 12px; font-weight: 700; color: #9c4a12; }
-/* The builder saves as you go: a quiet line says so, and Done goes back to your decks. */
-.save-state { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+/* The builder saves as you go: a quiet line under the deck's name says so, and Done (top right) goes
+   back to your decks. */
+.save-state { font-size: 12px; font-weight: 700; color: var(--muted); line-height: 1.2; }
 .save-state.saved { color: var(--good); }
-button.done-deck { padding: 5px 22px; font-size: 15px; }
+button.done-deck { justify-self: end; min-width: 76px; min-height: 40px; padding: 4px 18px; font-size: 16px; }
 .link-button { font-size: 14px; }
 
 /* Your decks */
@@ -245,10 +246,14 @@ button.done-deck { padding: 5px 22px; font-size: 15px; }
 
 /* The builder: header, filters, then the cards you have beside the deck. */
 .menu.builder { max-width: 1300px; gap: 8px; justify-content: flex-start; }
+/* The name sits in a wide middle column, the side columns match so it stays centred. */
+.build-bar { grid-template-columns: 84px minmax(0, 1fr) 84px; }
+.build-title { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
+.build-title h2 { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deck-name-input {
   font: 700 clamp(18px, calc(var(--vh, 1vh) * 3), 26px) Fredoka, Nunito, sans-serif; text-align: center;
-  width: min(420px, 100%); min-width: 0; padding: 4px 10px; border-radius: 12px; border: 2px dashed transparent;
-  background: transparent; color: var(--ink);
+  width: min(420px, 100%); min-width: 0; padding: 2px 10px; border-radius: 12px; border: 2px dashed transparent;
+  background: transparent; color: var(--ink); text-overflow: ellipsis;
 }
 .deck-name-input:hover, .deck-name-input:focus { border-color: var(--line); background: var(--panel); outline: none; }
 .build-head { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 16px; width: 100%; font-size: 14px; }
@@ -256,10 +261,20 @@ button.done-deck { padding: 5px 22px; font-size: 15px; }
 .build-lead img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px var(--fam, #fff); }
 .build-status { font-weight: 800; color: #9c4a12; }
 .build-status.ready { color: var(--good); }
-.build-message { flex-basis: 100%; margin: 0; }
+/* Why a card can't go in: a note that floats over the cards (so nothing jumps) and fades away. */
+.build-message {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30; width: min(520px, calc(100vw - 32px));
+  margin: 0; padding: 10px 14px; border-radius: 14px; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.35;
+  color: #7a1f16; background: #fff4ec; box-shadow: 0 0 0 2px #e79a7a, 0 8px 22px rgba(60, 25, 5, 0.35);
+  pointer-events: none; animation: note-fade 4.5s ease-in forwards;
+}
+@keyframes note-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+/* Filters: a row of family buttons and a row of type buttons, all the same width. */
 .filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; width: 100%; }
-.chip-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-button.chip { padding: 4px 12px; font-size: 13px; min-height: 32px; border-radius: 999px; }
+.chip-row { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 6px; width: min(460px, 100%); }
+button.chip {
+  padding: 0 4px; font-size: 13px; min-height: 34px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .build-main { flex: 1; min-height: 0; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
 .pool {
   min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
@@ -333,10 +348,18 @@ button.delete-deck.confirming { background: #b3261e; color: #fff; }
   .deck-panel-body { display: none; }
   .sheet-open .deck-panel { height: calc(var(--vh, 1vh) * 75); }
   .sheet-open .deck-panel-body { display: flex; }
-  .build-head { font-size: 13px; gap: 4px 12px; }
+  /* The deck bar at the bottom carries the count and status, so the summary box above the cards goes. */
+  .build-head { display: none; }
+  .build-bar { grid-template-columns: 64px minmax(0, 1fr) 76px; gap: 6px; }
+  .deck-name-input { font-size: 22px; padding: 0 6px; }
   .filters { gap: 6px; }
-  .chip-row { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; width: 100%; padding-bottom: 2px; scrollbar-width: none; }
-  button.chip { flex: none; }
+  .chip-row { width: 100%; gap: 5px; }
+  button.chip { font-size: 12.5px; height: 36px; min-height: 0; }
+  .build-message { bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .toggle-count { display: flex; align-items: baseline; gap: 10px; }
+  .toggle-count small { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .toggle-status { margin-left: auto; margin-right: 12px; font-size: 14px; font-weight: 800; color: #9c4a12; }
+  .toggle-status.ready { color: var(--good); }
   .deck-tiles { grid-template-columns: minmax(0, 1fr); }
   .deck-choice.mine { width: 100%; max-width: none; }
 }

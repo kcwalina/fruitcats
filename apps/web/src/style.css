@@ -408,7 +408,7 @@ button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
   .sheet-open .deck-panel-body { display: flex; }
   /* The deck bar at the bottom carries the count and status, so the summary box above the cards goes. */
   .build-head { display: none; }
-  .deck-name-input { font-size: 19px; }
+  .deck-name-input, .setup-bar.build-bar h2 { font-size: 19px; }   /* a starter's title matches your deck's name */
   .build-bar button.done-deck { min-width: 64px; padding: 4px 14px; }
   .filters { gap: 6px; }
   .chip-row { width: 100%; gap: 5px; }

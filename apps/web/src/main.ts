@@ -2,6 +2,7 @@ import './style.css';
 import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
+import { count, summary } from './progress';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
@@ -77,12 +78,20 @@ interface Selection {
   options: Action[];
 }
 
+/**
+ * Whether this browser has played before. A first-timer pressing the big button gets the walkthrough:
+ * it used to be a small button in the corner, so most people never saw it.
+ */
+const PLAYED_KEY = 'fruitcats-played';
+const hasPlayed = () => { try { return localStorage.getItem(PLAYED_KEY) === 'yes'; } catch { return false; } };
+const markPlayed = () => { try { localStorage.setItem(PLAYED_KEY, 'yes'); } catch { /* private mode: not remembered */ } };
+
 const DIFFICULTY = { kitten: { label: 'Kitten', skill: 0.55 }, cat: { label: 'Cat', skill: 0.85 }, tiger: { label: 'Tiger', skill: 1 } };
 type Difficulty = keyof typeof DIFFICULTY;
 
 let screen: Screen = 'menu';
 let myDeck = 'zest-rush';
-let difficulty: Difficulty = 'cat';
+let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
 let tutorialGame = false;
@@ -196,8 +205,23 @@ function startGame(tutorial = false) {
   if (tutorial) startTutorial({
     game: () => game, rerender: render, resumeAi: scheduleAi,
     selection: () => selection && { label: selection.label, attack: selection.options.every((a) => a.t === 'attack') },
+    skipped: markPlayed,
   });
   else stopTutorial();
+  // Swapping cards before you know what a card costs is a decision made in the dark, so on a first
+  // game the hand is kept for you and the bar says so. (The engine always asks; the app may answer.)
+  if (tutorial && game.prompt?.kind === 'mulligan' && game.prompt.player === HUMAN) {
+    const hand = game.players[HUMAN].hand;
+    const cheap = hand.filter((c) => (CARDS[c.id].cost ?? 0) <= 2 && CARDS[c.id].type !== 'Trick');
+    // A hand with nothing cheap cannot make a first move, so swap its priciest cards: an ordinary
+    // legal mulligan, which cuts dead openings from about 6% to about 2%.
+    const priciest = [...hand].sort((a, b) => (CARDS[b.id].cost ?? 0) - (CARDS[a.id].cost ?? 0)).slice(0, 3);
+    const swap = cheap.length ? [] : priciest.map((c) => c.uid);
+    apply(game, { t: 'mulligan', uids: swap });
+    notice = swap.length
+      ? 'Swapped your 3 priciest cards for fresh ones — that free redraw is called a mulligan.'
+      : 'Kept your opening hand. Every game starts with one free redraw — a mulligan — and I took it for you.';
+  }
   markHumanTurnDone();
   screen = 'game';
   selection = null;
@@ -269,7 +293,8 @@ function onClick(key: string) {
   const value = Number(raw);
 
   if (kind === 'menu') {
-    if (raw === 'play') startGame();
+    if (raw === 'play') startGame(!hasPlayed());        // a first game is the guided one
+    else if (raw === 'straight') { markPlayed(); startGame(); }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); } else render(); }
     else if (raw === 'tutorial') startGame(true);
     else if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); }
@@ -433,7 +458,8 @@ function renderMenu(): string {
       <div class="start-row">
         ${saved ? `<button class="play-button continue-button" data-click="menu:continue">Continue<small>${savedLabel}</small></button>
         <button class="new-game-button" data-click="menu:play" title="Start over with the Hero Cat above; your unfinished game is replaced">New game</button>`
-    : '<button class="play-button" data-click="menu:play">Play</button>'}
+    : `<button class="play-button" data-click="menu:play">${hasPlayed() ? 'Play' : 'Play your first game'}</button>
+        ${hasPlayed() ? '' : '<button class="skip-intro" data-click="menu:straight" title="Start a normal game without the walkthrough">Skip the walkthrough</button>'}`}
       </div>
       <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
     </section>
@@ -705,7 +731,16 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   </section>`;
 }
 
+/** A finished game means the next visit starts normally, and it goes on the tally. */
+let countedGame: GameState | null = null;
+
 function renderGameOver(s: GameState): string {
+  if (countedGame !== s) {
+    countedGame = s;
+    markPlayed();
+    count('finished');
+    if (s.winner === HUMAN) count('won');
+  }
   const won = s.winner === HUMAN;
   const heroP = won ? HUMAN : AI;
   return `<div class="overlay">
@@ -741,6 +776,7 @@ function renderRules(): string {
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
       <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>
+      ${summary() ? `<p class="progress-note">On this device: ${summary()}.</p>` : ''}
       <button class="primary" data-click="ui:rules">Got it</button>
     </div>
   </div>`;

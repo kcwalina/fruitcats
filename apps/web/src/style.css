@@ -413,10 +413,11 @@ body.dragging .hand-card:hover { transform: none; }
 .tut-shade { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .tut-shade path { fill: rgba(45, 25, 10, 0.45); }
 .tut-rings i {
-  position: fixed; border-radius: 14px; pointer-events: none; box-shadow: 0 0 0 4px var(--glow);
+  /* Not var(--glow): that is "you can afford this", and the tutorial must not look like a game cue. */
+  position: fixed; border-radius: 14px; pointer-events: none; box-shadow: 0 0 0 4px #7fd1ff;
   animation: tut-ring 1.4s ease-in-out infinite;
 }
-@keyframes tut-ring { 50% { box-shadow: 0 0 0 7px var(--glow); } }
+@keyframes tut-ring { 50% { box-shadow: 0 0 0 7px #7fd1ff; } }
 .tut-balloon.floating .tut-arrow { display: none; }
 @media (max-width: 640px) {
   .tut-balloon { font-size: 13px; padding: 10px 12px 8px; }

@@ -58,9 +58,26 @@ function renderDoc(doc: string): { toc: string; body: string } {
     },
   });
   // Wide tables scroll sideways on phones instead of widening the page.
-  const body = marked.parse(readFileSync(DOCS + doc, 'utf8'), { async: false })
+  let body = marked.parse(readFileSync(DOCS + doc, 'utf8'), { async: false })
     .replace(/<table>/g, '<div class="table-wrap"><table>').replace(/<\/table>/g, '</table></div>');
+  body = foldAway(body, 'comprehensive rules');
   return { toc: `<ol>${toc.join('')}</ol>`, body };
+}
+
+/**
+ * Fold a heavy reference section away behind a summary. The rules page is a beginner's first stop and
+ * it used to open with the comprehensive rules in full, which reads as "this game is enormous".
+ */
+function foldAway(html: string, needle: string): string {
+  const start = html.search(new RegExp(`<h2[^>]*>[^<]*${needle}`, 'i'));
+  if (start < 0) return html;
+  const after = html.indexOf('<h2', start + 4);
+  const end = after < 0 ? html.length : after;
+  const section = html.slice(start, end);
+  const title = /<h2[^>]*>(.*?)<a class="anchor"/s.exec(section)?.[1]?.trim() ?? 'Comprehensive rules';
+  return html.slice(0, start)
+    + `<details class="fold"><summary>${title} — the exact wording, for judges and rules lawyers</summary>`
+    + section + '</details>' + html.slice(end);
 }
 
 function docsPages(): Plugin {

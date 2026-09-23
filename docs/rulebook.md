@@ -34,38 +34,22 @@ This rulebook has three parts:
 Or play the digital version against the AI at **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** — no
 download, no account, and it keeps score for you.
 
-### 2.1 Putting the game on your home screen
+## 2.5 Your first game in eight steps
 
-The game is a web page, so you can pin it next to your other apps and it will open full screen, without the
-browser's address bar.
+If you are learning at the table, this is the same path the digital walkthrough takes, in the same order.
+Everything else in this rulebook can wait until you have played once.
 
-**iPhone and iPad**
-
-1. Open **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** in **Safari** (this only works in Safari).
-2. Tap the **Share** button — the square with an arrow pointing up. It is at the bottom of the screen on an
-   iPhone, and at the top right on an iPad.
-3. Scroll down the list and tap **Add to Home Screen**.
-4. The name *Fruitcats* and Mochi's picture appear. Tap **Add** (top right).
-
-Mochi's face is now on your home screen. Tap it and the game fills the screen, with no browser bars.
-
-**Android**
-
-Open the site in **Chrome**, tap the **⋮** menu, then **Add to Home screen** (or **Install app**), then
-**Install**.
-
-**Windows and Mac**
-
-In Chrome or Edge, open the site and click the **install** icon at the right-hand end of the address bar — a
-small screen with an arrow — then **Install**.
-
-**Good to know**
-
-- It is the website, so you always get the newest version: no updates to install. Reopen the game to pick up
-  changes.
-- It needs an internet connection; there is no offline mode yet.
-- Tap the **speaker** in the top-right corner of the menu to turn the sound on or off.
-- Already pinned an older icon? Delete it from the home screen and add the game again to get Mochi's picture.
+1. **You win** by knocking out all **9 Lives** of the other Hero Cat.
+2. **Every card has a price** — the number in its top-left corner — and you pay in **Treats**.
+3. **Planting** a card face-down turns it into **1 Treat**, money instead of a cat, whatever it cost. At
+   setup you plant 2: pick the two with the *biggest* numbers, so the cards you keep are ones you can
+   afford to play.
+4. **Playing** a card spends Treats and puts it on your side. Spent Treats stand back up next round.
+5. **A cat that just arrived rests** — it can attack from the next round, unless it has **Zoomies**.
+6. **You each do one thing at a time**, back and forth, until you both pass.
+7. **Attacking**: pick an awake cat of yours, then pick what it hits — their cat (both take damage) or
+   their Hero Cat (they lose a Life).
+8. **A lost Life goes into its owner's hand**, so falling behind gives you cards back.
 
 ---
 
@@ -417,3 +401,41 @@ The following values are deliberately isolated so playtesting can adjust them wi
 **Lost Life:** goes to your hand. **Lucky?** Play it free.
 
 **Win:** knock out the ninth Life.
+
+---
+
+## Putting the game on your home screen
+
+The game is a web page, so you can pin it next to your other apps and it will open full screen, without the
+browser's address bar.
+
+**iPhone and iPad**
+
+1. Open **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** in **Safari** (this only works in Safari).
+2. Tap the **Share** button — the square with an arrow pointing up. It is at the bottom of the screen on an
+   iPhone, and at the top right on an iPad.
+3. Scroll down the list and tap **Add to Home Screen**.
+4. The name *Fruitcats* and Mochi's picture appear. Tap **Add** (top right).
+
+Mochi's face is now on your home screen. Tap it and the game fills the screen, with no browser bars.
+
+**Android**
+
+Open the site in **Chrome**, tap the **⋮** menu, then **Add to Home screen** (or **Install app**), then
+**Install**.
+
+**Windows and Mac**
+
+In Chrome or Edge, open the site and click the **install** icon at the right-hand end of the address bar — a
+small screen with an arrow — then **Install**.
+
+**Good to know**
+
+- It is the website, so you always get the newest version: no updates to install. Reopen the game to pick up
+  changes.
+- It needs an internet connection; there is no offline mode yet.
+- Tap the **speaker** in the top-right corner of the menu to turn the sound on or off.
+- Already pinned an older icon? Delete it from the home screen and add the game again to get Mochi's picture.
+
+---
+

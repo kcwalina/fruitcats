@@ -121,6 +121,9 @@ function describeWindow(s: GameState): string {
 /** Where the opponent's latest moves start in the log, and which of its units are new since then. */
 let foeFrom = 0;
 let foeUnitsBefore = new Set<number>();
+/** The round each unit arrived in: a unit that arrived this round is resting, not spent. */
+const unitArrivals = new Map<number, number>();
+
 /** Opponent units already on screen, so the arrival animation plays once per unit, not per re-render. */
 let renderedFoeUnits = new Set<number>();
 /** Each Treat's state on screen last time (card uid → spent?), so planting, spending and readying animate once. */
@@ -185,6 +188,7 @@ function startGame(tutorial = false) {
     ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
     : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
   resetLogSounds(game);
+  unitArrivals.clear();
   if (tutorial) startTutorial({
     game: () => game, rerender: render, resumeAi: scheduleAi,
     selection: () => selection && { label: selection.label, attack: selection.options.every((a) => a.t === 'attack') },
@@ -497,6 +501,19 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   </section>`;
 }
 
+/**
+ * Why a unit is tilted with "zzz". A unit arrives tired and cannot attack until the next round
+ * (unless it has Zoomies); after it attacks or is exhausted by a card it is spent for the round.
+ * Everything wakes up at the start of the next round.
+ */
+function restingLabel(u: Unit): { tag: string; why: string } {
+  if (!u.exhausted) return { tag: '', why: 'Ready: it can attack this round.' };
+  const arrived = unitArrivals.get(u.uid) === game?.round;
+  return arrived
+    ? { tag: 'new', why: 'Just arrived, so it is still settling in. It wakes up at the start of the next round and can attack then.' }
+    : { tag: 'zzz', why: 'Already acted this round. It wakes up at the start of the next round.' };
+}
+
 function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: Set<number>): string {
   const k = keywords(u.id);
   const power = unitPower(u);
@@ -507,6 +524,8 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
     u.toy && `🧸 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;
+  if (game && !unitArrivals.has(u.uid)) unitArrivals.set(u.uid, game.round);
+  const resting = restingLabel(u);
   const selected = selection?.options.some((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === u.uid);
   const cls = [
     'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected',
@@ -515,13 +534,14 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
     owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
   ].filter(Boolean).join(' ');
   return `
-  <div class="${cls}" data-click="${key}" data-zoom="${cardUrl(u.id)}" data-zoom-card="${u.id}">
+  <div class="${cls}" data-click="${key}" data-zoom="${cardUrl(u.id)}" data-zoom-card="${u.id}"
+       data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
     <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
     <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
-    ${u.exhausted ? '<div class="zzz">zzz</div>' : ''}
+    ${u.exhausted ? `<div class="zzz ${resting.tag}">${resting.tag === 'new' ? 'new' : 'zzz'}</div>` : ''}
   </div>`;
 }
 
@@ -783,7 +803,7 @@ let pressAt: { x: number; y: number } | null = null;
 /** The preview was opened by holding, so releasing closes it. */
 let zoomHeld = false;
 
-function openZoom(url: string, cardKey?: string) {
+function openZoom(url: string, cardKey?: string, state?: string) {
   closeZoom();
   const text = cardKey ? zoomText(cardKey) : '';
   const used = GLOSSARY.filter((k) => k.test.test(text));
@@ -795,8 +815,9 @@ function openZoom(url: string, cardKey?: string) {
     return `<p class="zoom-cost ${enough ? '' : 'short'}">Costs <b>${cost}</b> ${cost === 1 ? 'Treat' : 'Treats'}`
       + `${game ? ` · you have <b>${ready}</b> ready${enough ? '' : ' — not enough yet'}` : ''}</p>`;
   })();
-  const panel = used.length || price
-    ? `<div class="zoom-info">${price}${used.length
+  const status = state ? `<p class="zoom-state">${esc(state)}</p>` : '';
+  const panel = used.length || price || status
+    ? `<div class="zoom-info">${price}${status}${used.length
       ? `<dl class="zoom-keys">${used.map((k) => `<div><dt>${k.name}</dt><dd>${esc(k.text)}</dd></div>`).join('')}</dl>`
       : ''}</div>`
     : '';
@@ -825,7 +846,7 @@ app.addEventListener('pointerdown', (event) => {
     pressAt = null;
     drag = null;           // a long press is never also a drag
     suppressClick = true;  // ...nor a click when the finger lifts
-    openZoom(el.dataset.zoom!, el.dataset.zoomCard);
+    openZoom(el.dataset.zoom!, el.dataset.zoomCard, el.dataset.zoomState);
     zoomHeld = true;
   }, LONG_PRESS_MS);
 }, true);
@@ -852,7 +873,7 @@ app.addEventListener('contextmenu', (event) => {
   if (!el) return;
   event.preventDefault();
   window.clearTimeout(pressTimer);
-  openZoom(el.dataset.zoom!, el.dataset.zoomCard);
+  openZoom(el.dataset.zoom!, el.dataset.zoomCard, el.dataset.zoomState);
 });
 
 document.addEventListener('keydown', (event) => {

@@ -486,6 +486,11 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .zoom-cost.short { color: #a5301d; border-color: #e07a5f; }
 .zoom-cost b { color: #2f8a46; }
 .zoom-cost.short b { color: #a5301d; }
+.zoom-state {
+  margin: 0; max-width: min(92vw, 460px); padding: 6px 14px; border-radius: 14px; text-align: center;
+  font: 600 14px Nunito, sans-serif; color: #5a3413; background: rgba(255, 250, 240, 0.92);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
 .zoom-keys {
   margin: 0; max-width: min(92vw, 460px); max-height: calc(var(--vh, 1vh) * 26); overflow-y: auto;
   padding: 10px 14px; border-radius: 16px; text-align: left;
@@ -507,3 +512,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* Buffed stats can reach two digits, which would spill over the badge at board size. */
 .pow.two-digit, .hp.two-digit { font-size: clamp(9px, 10cqw, 13px); letter-spacing: -0.04em; }
+
+/* A unit that just arrived is resting, not spent: same tilt, different word. */
+.zzz.new { color: #ffe9b0; }

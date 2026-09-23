@@ -122,8 +122,9 @@ const STEPS: Balloon[] = [
   {
     id: 'yard', title: 'Your Yard', anchor: '.yard.me', below: true, when: (s) => s.players[ME].yard.length > 0 && myPrompt(s),
     optional: true, skipIf: (s) => s.round >= 4,
-    text: 'Units you play go into your <b>Yard</b>. New units are tired — tilted, with “zzz” — and can’t attack '
-      + 'until next round, unless they have <b>Zoomies</b>. The number on the left is Power, the heart is Health.',
+    text: 'Units you play go into your <b>Yard</b>. A unit that just arrived is tilted and marked <b>new</b>: it can’t attack '
+      + 'until the next round, unless it has <b>Zoomies</b>. Once it has attacked it tilts again with <b>zzz</b> — spent for '
+      + 'this round. Everything wakes up at the start of each round. The paw is Power, the heart is Health.',
   },
   {
     id: 'attack', title: 'Attack!', optional: true, below: true, skipIf: (s) => s.round >= 5,

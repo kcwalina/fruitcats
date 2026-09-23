@@ -13,10 +13,11 @@ import { owned } from './collection';
 import { artUrl, backButton, cardUrl, esc, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
-/** The Showcase: each starter Hero Cat as a Kitten and a Big Cat. Choosing your own comes with the Store. */
-const SHOWCASE = ['SB1-H01-kitten', 'SB1-H01-bigcat', 'SB1-H03-kitten', 'SB1-H03-bigcat', 'SB1-H02-kitten', 'SB1-H02-bigcat'];
-/** It opens on Mochi's Big Cat, the mightiest. */
-const SHOWCASE_START = 3;
+/** The starter Hero Cats shine as foils, whether or not they're in the Showcase. */
+const FOILS = ['SB1-H01-kitten', 'SB1-H01-bigcat', 'SB1-H02-kitten', 'SB1-H02-bigcat', 'SB1-H03-kitten', 'SB1-H03-bigcat'];
+/** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
+const DEFAULT_SHOWCASE = ['SB1-H03-kitten', 'SB1-H03-bigcat'];
+const SHOWCASE_KEY = 'fruitcats-showcase';
 const FAMILIES = ['all', 'Citrus', 'Orchard', 'Tropical', 'Garden'];
 
 /** Every card in the set, in collector-number order (the order of the set list). */
@@ -42,7 +43,9 @@ type Tab = 'showcase' | 'all';
 let host: ShowcaseHost = { render() {} };
 let tab: Tab = 'showcase';
 let familyFilter = 'all';
-let showcaseIndex = SHOWCASE_START;
+/** The cards you've chosen to show off, in the order you added them. Kept on this device, like your decks. */
+let showcase: string[] = [];
+let showcaseIndex = 0;
 /** A card opened from All cards: the cards it swipes through, and which one is showing. */
 let browsing: { list: string[]; index: number } | null = null;
 /** The wallpaper sheet: the device it's for, and the picture once it's drawn. */
@@ -53,7 +56,8 @@ export function openShowcase(h: ShowcaseHost): void {
   host = h;
   tab = 'showcase';
   familyFilter = 'all';
-  showcaseIndex = SHOWCASE_START;
+  showcase = loadShowcase();
+  showcaseIndex = 0;
   browsing = null;
   closeWallpaper();
 }
@@ -61,15 +65,40 @@ export function openShowcase(h: ShowcaseHost): void {
 /** The cards being looked at one by one, if any: the one opened from All cards, or the Showcase. */
 function viewer(): { list: string[]; index: number } | null {
   if (browsing) return browsing;
-  return tab === 'showcase' ? { list: SHOWCASE, index: showcaseIndex } : null;
+  return tab === 'showcase' && showcase.length ? { list: showcase, index: showcaseIndex } : null;
 }
 function setIndex(index: number) {
   if (browsing) browsing.index = index;
   else showcaseIndex = index;
 }
 const current = () => { const v = viewer(); return v ? v.list[v.index] : null; };
-/** The Showcase's cards shine like foils. */
-const isFoil = (face: string) => SHOWCASE.includes(face);
+const isFoil = (face: string) => FOILS.includes(face);
+const isFace = (face: string) => !!CARDS[idOf(face)] && facesOf(idOf(face)).includes(face);
+
+function loadShowcase(): string[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SHOWCASE_KEY) ?? 'null');
+    if (Array.isArray(saved)) return saved.filter((face) => typeof face === 'string' && isFace(face) && owned(idOf(face)) > 0);
+  } catch { /* unreadable or private mode: start with the default */ }
+  return [...DEFAULT_SHOWCASE];
+}
+
+function saveShowcase() {
+  try { localStorage.setItem(SHOWCASE_KEY, JSON.stringify(showcase)); } catch { /* private mode: kept until the page closes */ }
+}
+
+/** Puts a card in the Showcase (at the end), or takes it out. */
+function toggleShowcase(face: string) {
+  if (!isFace(face) || owned(idOf(face)) === 0) return;
+  const at = showcase.indexOf(face);
+  if (at === -1) showcase = [...showcase, face];
+  else {
+    showcase = showcase.filter((f) => f !== face);
+    // Looking at the Showcase itself: stay on the card that slid into its place (or the new last one).
+    if (!browsing && tab === 'showcase') showcaseIndex = Math.min(showcaseIndex, Math.max(0, showcase.length - 1));
+  }
+  saveShowcase();
+}
 const ownedFaces = () => SET.filter((id) => owned(id) > 0 && (familyFilter === 'all' || CARDS[id].family === familyFilter)).flatMap(facesOf);
 
 function closeWallpaper() {
@@ -125,6 +154,7 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
       break;
     }
     case 'close': browsing = null; closeWallpaper(); break;
+    case 'pin': { const face = current(); if (face) toggleShowcase(face); break; }
     case 'wallpaper':
       if (!current()) break;
       wallpaper = { device: thisDevice(), blob: null, url: '', note: '' };
@@ -176,7 +206,7 @@ export function showcaseArrow(key: string, h: ShowcaseHost): boolean {
 // ── Screens ──────────────────────────────────────────────────────────────────────────────────────
 
 export function renderShowcase(): string {
-  const backdrop = tab === 'showcase' ? SHOWCASE[showcaseIndex] : 'SB1-H03-bigcat';
+  const backdrop = tab === 'showcase' && showcase.length ? showcase[showcaseIndex] : 'SB1-H03-bigcat';
   return `
   <div class="collection-screen">
     ${renderAmbient(backdrop)}
@@ -188,7 +218,7 @@ export function renderShowcase(): string {
       </div>
       ${settingsButton()}
     </div>
-    ${tab === 'showcase' ? renderViewer(SHOWCASE, showcaseIndex) : renderGrid()}
+    ${tab === 'all' ? renderGrid() : showcase.length ? renderViewer(showcase, showcaseIndex) : renderEmptyShowcase()}
   </div>
   ${browsing ? `
   <div class="viewer-overlay" role="dialog" aria-label="Cards">
@@ -234,9 +264,21 @@ function renderInfo(list: string[], index: number): string {
         <div class="v-actions">
           <button class="v-arrow" data-click="col:turn:-1" aria-label="Previous card" ${index === 0 ? 'disabled' : ''}>‹</button>
           <button class="v-wallpaper" data-click="col:wallpaper">${PHONE_ICON} Wallpaper</button>
+          <button class="v-pin ${showcase.includes(face) ? 'on' : ''}" data-click="col:pin" aria-pressed="${showcase.includes(face)}"
+            title="${showcase.includes(face) ? 'Take it out of your Showcase' : 'Add it to your Showcase'}">${showcase.includes(face) ? '★' : '☆'} Showcase</button>
           <button class="v-arrow" data-click="col:turn:1" aria-label="Next card" ${index === list.length - 1 ? 'disabled' : ''}>›</button>
         </div>
       </div>`;
+}
+
+function renderEmptyShowcase(): string {
+  return `
+    <div class="showcase-empty">
+      <p class="empty-star" aria-hidden="true">☆</p>
+      <h2>Your Showcase is empty</h2>
+      <p>Open any card in All cards and tap <b>Showcase</b> under it to show it off here.</p>
+      <button class="v-wallpaper" data-click="col:tab:all">Browse all cards</button>
+    </div>`;
 }
 
 const PHONE_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg>`;
@@ -260,7 +302,7 @@ function renderGrid(): string {
 
 function renderTile(face: string): string {
   const copies = owned(idOf(face));
-  const label = `${number(face).split('/')[0]}${sideOf(face) ? ` · ${sideLabel(face)}` : ''}`;
+  const label = `${number(face).split('/')[0]}${sideOf(face) ? ` · ${sideLabel(face)}` : ''}${showcase.includes(face) ? ' <span class="tile-star" title="In your Showcase">★</span>' : ''}`;
   if (!copies) {
     return `<div class="tile missing"><img src="${cardUrl(face)}" alt="" loading="lazy"><span class="tile-soon">Coming soon</span>
       <span class="tile-label">${label}</span></div>`;

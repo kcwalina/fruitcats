@@ -94,8 +94,28 @@
 :is(.collection-screen, .viewer-overlay) button:is(.v-wallpaper, .v-arrow):hover:not(:disabled) {
   transform: none; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
-/* Touch screens swipe, so the arrows are only for mice and keyboards. */
-@media (hover: none) { .v-arrow { visibility: hidden; } }
+/* In the Showcase or not: a star, filled when it is. */
+.collection-screen button.v-pin, .viewer-overlay button.v-pin {
+  display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 18px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14); color: #fff; font: 700 15px/1 Fredoka, Nunito, sans-serif;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+:is(.collection-screen, .viewer-overlay) button.v-pin:hover:not(:disabled) { transform: none; background: rgba(255, 255, 255, 0.22); }
+:is(.collection-screen, .viewer-overlay) button.v-pin.on { background: linear-gradient(#ffe39a, #f2b940); color: #4a2c06; box-shadow: 0 4px 14px rgba(240, 180, 60, 0.35); }
+/* Touch screens (and phones) swipe, so the arrows are only for mice and keyboards. */
+@media (hover: none), (pointer: coarse), (max-width: 480px) { :is(.collection-screen, .viewer-overlay) button.v-arrow { display: none; } }
+:is(.collection-screen, .viewer-overlay) :is(button.v-pin, button.v-wallpaper) { white-space: nowrap; flex: none; }
+@media (max-width: 380px) {
+  .v-actions { gap: 10px; }
+  :is(.collection-screen, .viewer-overlay) :is(button.v-pin, button.v-wallpaper) { padding: 0 16px; font-size: 14px; }
+}
+
+/* An empty Showcase says how to fill it. */
+.showcase-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; }
+.showcase-empty h2 { margin: 0; font: 700 24px Fredoka, Nunito, sans-serif; }
+.showcase-empty p { margin: 0; max-width: 300px; font: 600 15px/1.45 Nunito, sans-serif; color: rgba(255, 255, 255, 0.75); }
+.showcase-empty .empty-star { font-size: 54px; line-height: 1; color: rgba(255, 225, 150, 0.8); }
+.showcase-empty button.v-wallpaper { margin-top: 8px; }
 
 .viewer-overlay button.viewer-close {
   position: absolute; z-index: 2; top: max(12px, env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; padding: 0;
@@ -127,6 +147,7 @@
   display: block; width: 100%; aspect-ratio: 0.714; object-fit: cover; border-radius: 4.6% / 3.3%;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
+.tile-star { color: #ffd76a; }
 .tile-label { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
 .tile-copies {
   position: absolute; top: 6px; right: 6px; padding: 1px 7px; border-radius: 999px;

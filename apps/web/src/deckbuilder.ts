@@ -319,11 +319,13 @@ function renderBuilder(): string {
     : `<span class="build-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : esc(issues[0])}</span>`;
 
   // Your own deck: its name (tap to rename) with the "saved" line under it, and Done at the top right
-  // where a phone's thumb and eye expect it. A starter: its name and a way back.
+  // where a phone's thumb and eye expect it. A starter: a way back, then its name.
+  const portrait = `<img class="bar-hero ${famClass(deck.hero)}" src="${artUrl(`${deck.hero}-kitten`)}" alt="${esc(cardName(deck.hero))}"
+      data-zoom="${cardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">`;
   const bar = readOnly
-    ? `${backButton('deck:list', 'Your decks')}<div class="build-title"><h2>${esc(deck.name)}</h2></div><span></span>`
-    : `<span></span>
-      <div class="build-title">
+    ? `${backButton('deck:list', 'Your decks')}${portrait}
+      <div class="build-title"><h2>${esc(deck.name)}</h2><span class="save-state">Starter deck · can't be changed</span></div>`
+    : `${portrait}<div class="build-title">
         <label class="name-edit">
           <input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done" autocomplete="off">
           <button class="name-pencil" data-click="deck:rename" aria-label="Rename deck" title="Rename deck">${PENCIL}</button>
@@ -336,8 +338,7 @@ function renderBuilder(): string {
   <div class="menu decks builder ${readOnly ? 'read-only' : ''} ${sheetOpen ? 'sheet-open' : ''}">
     <div class="setup-bar build-bar">${bar}</div>
     <div class="build-head">
-      <div class="build-lead ${famClass(deck.hero)}">
-        <img src="${artUrl(`${deck.hero}-kitten`)}" alt="" data-zoom="${cardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">
+      <div class="build-lead">
         <span><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].join(' + '))}</span>
       </div>
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Cats <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
@@ -375,10 +376,11 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
       <span class="pool-count">×${count}</span></div>`;
   }
   const usable = Math.min(copyLimit(id), owned(id));
-  const blocked = addProblem(deck, id, owned, true) !== null;
+  const maxed = count >= usable;
+  const blocked = !maxed && addProblem(deck, id, owned, true) !== null;
   const pips = Array.from({ length: usable }, (_, i) => `<i class="${i < count ? 'on' : ''}"></i>`).join('');
   return `
-    <div class="pool-card ${blocked ? 'blocked' : ''} ${count ? 'in-deck' : ''}">
+    <div class="pool-card ${blocked ? 'blocked' : ''} ${maxed ? 'maxed' : ''} ${count ? 'in-deck' : ''}">
       <button class="pool-face" data-click="deck:add:${id}" data-zoom="${cardUrl(id)}" data-zoom-card="${id}"
         aria-label="Add ${esc(name)} (${count} of ${usable} in deck)">
         <img src="${cardUrl(id)}" alt="" decoding="async"></button>
@@ -404,6 +406,7 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           <span class="toggle-arrow" aria-hidden="true">${sheetOpen ? '▼' : '▲'}</span>
         </button>
         <div class="deck-panel-body">
+          <p class="sheet-lead"><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].join(' + '))}</p>
           <div class="curve" aria-label="Cards by cost">
             ${buckets.map((n, i) => `<div class="curve-col"><span class="curve-n">${n || ''}</span>
               <span class="curve-bar" style="height:${Math.round((n / tallest) * 100)}%"></span><span class="curve-cost">${i === 6 ? '7+' : i + 1}</span></div>`).join('')}
@@ -416,7 +419,7 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
                 ${readOnly ? `<span class="line-qty">×${deck.cards[id]}</span>` : `
                 <button class="line-btn" data-click="deck:remove:${id}" aria-label="Remove one ${esc(cardName(id))}">−</button>
                 <span class="line-qty">${deck.cards[id]}</span>
-                <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}">+</button>`}
+                <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}" ${addProblem(deck, id, owned, true) ? 'disabled' : ''}>+</button>`}
               </li>`).join('') : '<li class="deck-empty">Tap cards to add them to your deck.</li>'}
           </ul>
           ${readOnly || isNew ? '' : `

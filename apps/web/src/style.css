@@ -219,8 +219,8 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .deck-unready { font-size: 12px; font-weight: 700; color: #9c4a12; }
 /* The builder saves as you go: a quiet line under the deck's name says so, and Done (top right) goes
    back to your decks. */
-.save-state { font-size: 12px; font-weight: 700; color: var(--muted); line-height: 1.2; }
-.save-state.saved { color: var(--good); }
+.save-state { font-size: 12.5px; font-weight: 700; color: #6b5139; line-height: 1.2; }
+.save-state.saved { color: #25773a; }   /* dark green on the parchment bar: easy to read */
 button.done-deck { justify-self: end; min-width: 76px; min-height: 40px; padding: 4px 18px; font-size: 16px; }
 .link-button { font-size: 14px; }
 
@@ -242,7 +242,8 @@ button.done-deck { justify-self: end; min-width: 76px; min-height: 40px; padding
 .deck-tile-sub { font-size: 12.5px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .deck-status { font-size: 13px; font-weight: 700; }
 /* Your own decks: a bin button sits in the tile's right edge, apart from the tile itself. */
-.deck-tile-wrap { position: relative; display: grid; }
+.deck-tile-wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); }
+.deck-tile { min-width: 0; }
 .deck-tile-wrap .deck-tile { padding-right: 60px; }
 button.tile-delete {
   position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; padding: 0;
@@ -256,7 +257,12 @@ button.tile-delete:hover:not(:disabled) { transform: translateY(-50%); }
 .delete-dialog p { margin: 0 0 16px; color: var(--muted); font-weight: 600; line-height: 1.4; }
 .delete-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .delete-buttons button { min-height: 44px; }
-button.delete-deck { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+/* Delete is a quiet red text button under the list, not a big button beside the steppers. */
+button.delete-deck {
+  align-self: center; margin-top: 12px; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; font-size: 14px; background: none; box-shadow: none;
+}
+button.delete-deck:hover { background: rgba(179, 38, 30, 0.08); box-shadow: none; }
 .new-plus { width: 64px; height: 64px; flex: none; display: grid; place-items: center; font: 700 40px/1 Fredoka, Nunito, sans-serif; border-radius: 12px; }
 /* The rules are in the rulebook (§11.1); a link to them sits beside "Your decks". */
 .deck-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
@@ -269,26 +275,34 @@ button.delete-deck { display: inline-flex; align-items: center; justify-content:
 
 /* The builder: header, filters, then the cards you have beside the deck. */
 .menu.builder { max-width: 1300px; gap: 8px; justify-content: flex-start; }
-/* The name sits in a wide middle column, the side columns match so it stays centred. */
-.build-bar { grid-template-columns: 84px minmax(0, 1fr) 84px; }
-.build-title { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
-.build-title h2 { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The header is a parchment bar, like the deck bar at the bottom: text never sits on the painted sky.
+   The name is on the left with a small flat pencil after it and "All changes saved" under it; Done is
+   on the right. A starter has a back button before its name instead. */
+.build-bar {
+  grid-template-columns: auto minmax(0, 1fr) auto; max-width: none; gap: 10px; padding: 6px 10px; border-radius: 18px;
+}
+.read-only .build-bar { grid-template-columns: auto auto minmax(0, 1fr); }
+.bar-hero { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #fff6dc, 0 0 0 4px var(--fam, var(--parchment-edge)); }
+.build-title { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-align: left; }
+.setup-bar.build-bar h2 {   /* beats skin.css's white menu heading: this one sits on parchment */
+  margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: clamp(18px, calc(var(--vh, 1vh) * 3), 24px); color: var(--ink); text-shadow: none;
+}
+.name-edit { display: flex; align-items: center; gap: 0; max-width: 100%; min-width: 0; }
 .deck-name-input {
-  font: 700 clamp(18px, calc(var(--vh, 1vh) * 3), 26px) Fredoka, Nunito, sans-serif; text-align: center;
-  width: min(420px, 100%); min-width: 0; padding: 2px 10px; border-radius: 12px; border: 2px dashed transparent;
-  background: transparent; color: var(--ink); text-overflow: ellipsis;
+  font: 700 clamp(18px, calc(var(--vh, 1vh) * 3), 24px) Fredoka, Nunito, sans-serif; text-align: left; color: var(--ink);
+  width: auto; field-sizing: content; min-width: 4ch; max-width: 100%; padding: 1px 4px; margin-left: -4px;
+  border: 2px solid transparent; border-radius: 8px; background: transparent; text-overflow: ellipsis;
 }
-/* The name looks like a title but shows it can be edited: a dotted underline and a pencil beside it. */
-.name-edit { display: flex; align-items: center; justify-content: center; gap: 2px; max-width: 100%; min-width: 0; }
-.name-edit .deck-name-input {
-  width: auto; field-sizing: content; min-width: 4ch; max-width: 100%;
-  border-bottom: 2px dotted rgba(120, 70, 20, 0.45); border-radius: 10px 10px 4px 4px;
+.deck-name-input:focus { border-color: var(--parchment-edge, #dcb66e); background: #fff; outline: none; }
+.build-bar button.name-pencil {
+  flex: none; width: 32px; height: 32px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 8px;
+  background: none; box-shadow: none; color: #8a5a2b; transform: none;
 }
-.deck-name-input:hover, .deck-name-input:focus { border-color: var(--line); background: var(--panel); outline: none; }
-button.name-pencil { flex: none; width: 34px; height: 34px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; }
+.build-bar button.name-pencil:hover { background: rgba(120, 70, 20, 0.08); box-shadow: none; transform: none; }
 /* New deck: the name box above the Hero Cats. */
 .new-name { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: min(440px, 100%); text-align: left; }
-.new-name span { font: 700 16px Fredoka, Nunito, sans-serif; color: var(--ink); }
+.new-name span { font: 700 18px Fredoka, Nunito, sans-serif; text-align: center; }
 .new-name input {
   font: 700 18px Nunito, sans-serif; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--parchment-edge, #dcb66e);
   background: var(--panel); color: var(--ink); min-width: 0;
@@ -318,6 +332,7 @@ button.chip {
   min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   align-content: start; gap: 12px 10px; padding: 8px 6px 16px;
 }
+.pool { scrollbar-width: thin; scrollbar-color: rgba(120, 70, 20, 0.35) transparent; }
 .pool-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); font-weight: 700; }
 .pool-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 button.pool-face, .pool-face {
@@ -330,7 +345,11 @@ button.pool-face, .pool-face {
 }
 .pool-card.in-deck .pool-face img { box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
 .pool-card.blocked .pool-face img { filter: grayscale(0.7) brightness(0.9); opacity: 0.5; }
-.pool-foot { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 28px; }
+.pool-card.maxed .pool-face img { opacity: 0.72; filter: saturate(0.7); }
+.pool-foot {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 999px;
+  background: rgba(255, 248, 235, 0.88); box-shadow: 0 1px 3px rgba(60, 30, 5, 0.2);
+}
 .pips { display: flex; gap: 4px; }
 .pips i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b07a3a; background: rgba(255, 255, 255, 0.6); }
 .pips i.on { background: var(--accent); border-color: #c4561a; }
@@ -348,7 +367,7 @@ button.pool-remove { width: 28px; height: 28px; padding: 0; border-radius: 50%; 
 .curve-bar { width: 100%; max-width: 26px; border-radius: 4px 4px 0 0; background: linear-gradient(#ffb95c, #f2761b); min-height: 2px; }
 .curve-n { color: var(--muted); min-height: 14px; }
 .curve-cost { color: var(--ink); border-top: 1px solid var(--line); width: 100%; text-align: center; }
-.deck-lines { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
+.deck-lines { flex: 0 1 auto; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
 .deck-lines li {
   display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px;
   padding: 3px 4px 3px 8px; border-left: 4px solid var(--fam, var(--line)); margin-bottom: 3px; border-radius: 6px;
@@ -362,10 +381,11 @@ button.pool-remove { width: 28px; height: 28px; padding: 0; border-radius: 50%; 
 .line-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .line-name small { font-weight: 700; color: var(--muted); }
 .line-qty { font-weight: 800; min-width: 18px; text-align: center; }
-button.line-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 16px; line-height: 1; }
+button.line-btn { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 18px; line-height: 1; }
+button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
+.sheet-lead { margin: 0; font-size: 14px; display: none; }
 .deck-actions { display: flex; flex-direction: column; gap: 8px; flex: none; }
 .deck-actions .play-button { font-size: 18px; padding: 10px 12px; }
-button.delete-deck { font-size: 13px; padding: 6px 12px; }
 
 .back-arrow { font: 700 32px/1 Fredoka, Nunito, sans-serif; margin-top: -4px; }
 
@@ -388,8 +408,8 @@ button.delete-deck { font-size: 13px; padding: 6px 12px; }
   .sheet-open .deck-panel-body { display: flex; }
   /* The deck bar at the bottom carries the count and status, so the summary box above the cards goes. */
   .build-head { display: none; }
-  .build-bar { grid-template-columns: 64px minmax(0, 1fr) 76px; gap: 6px; }
-  .deck-name-input { font-size: 22px; padding: 0 6px; }
+  .deck-name-input { font-size: 19px; }
+  .build-bar button.done-deck { min-width: 64px; padding: 4px 14px; }
   .filters { gap: 6px; }
   .chip-row { width: 100%; gap: 5px; }
   button.chip { font-size: 12.5px; height: 36px; min-height: 0; }
@@ -398,6 +418,7 @@ button.delete-deck { font-size: 13px; padding: 6px 12px; }
   .toggle-count small { font-size: 13px; font-weight: 700; color: var(--muted); }
   .toggle-status { margin-left: auto; margin-right: 12px; font-size: 14px; font-weight: 800; color: #9c4a12; }
   .toggle-status.ready { color: var(--good); }
+  .sheet-lead { display: block; }
   .deck-tiles { grid-template-columns: minmax(0, 1fr); }
   .deck-choice.mine { width: 100%; max-width: none; }
 }

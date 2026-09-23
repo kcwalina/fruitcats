@@ -77,7 +77,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   display: inline-block; margin-top: calc(var(--vh, 1vh) * 1); padding: 3px 16px; border-radius: 999px; color: #6b4520;
   background: rgba(255, 248, 230, 0.88); box-shadow: 0 2px 8px rgba(60, 30, 5, 0.2);
 }
-.picker h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
+.picker h2, .new-name span { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
 .parade-cat { border-color: #fff6dc; box-shadow: 0 0 0 3px var(--gold), 0 10px 22px rgba(60, 25, 5, 0.4); }
 .deck-choice {
   background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
@@ -388,7 +388,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 .deck-class {
   font: 600 12px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 10px; border-radius: 999px;
-  background: linear-gradient(var(--fam), var(--fam-dark)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  background: linear-gradient(color-mix(in srgb, var(--fam) 72%, #3a1a00), var(--fam-dark)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 .hp.buffed::before { background: linear-gradient(#8fe0a0, #2e9d57); }
 .hand-card.zest-on::before {
@@ -575,7 +575,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* ── Deck builder ────────────────────────────────────────────────────── */
 
-.deck-tile, .deck-panel, .rules-link {
+.deck-tile, .deck-panel, .rules-link, .build-bar {
   background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
   box-shadow: var(--panel-shadow); color: var(--ink);
 }

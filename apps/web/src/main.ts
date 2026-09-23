@@ -53,16 +53,10 @@ const humanize = (text: string) =>
     .replace(/\bYou (\w+) their\b/g, 'You $1 your')
     .replace(/(?<!^)(?<![.!] )\bYour\b/g, 'your');
 
-/** The sound toggle: a drawn speaker (the emoji was too small and fuzzy to read). */
-function soundButton(extraClass = ''): string {
-  const on = soundEnabled();
-  const waves = on
-    ? '<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
-    : '<path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
-  return `<button data-click="ui:sound" class="sound-toggle ${extraClass} ${on ? 'on' : 'off'}"
-      title="Sound ${on ? 'on' : 'off'}" aria-label="Sound ${on ? 'on' : 'off'}" aria-pressed="${on}">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.2L12 5.2v13.6L7.2 14.5H4z" fill="currentColor"/>${waves}</svg>
-    </button>`;
+/** The gear that opens Settings: in Home's corner, in the Solo header, and beside Rules in a game. */
+function settingsButton(extraClass = ''): string {
+  return `<button data-click="ui:settings" class="settings-button ${extraClass}" title="Settings" aria-label="Settings">
+      <img src="${BASE}ui/icon-settings.webp" alt=""></button>`;
 }
 
 const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -108,9 +102,15 @@ let aiTimer: number | undefined;
  */
 let confirming: 'yarn' | null = null;
 let showRules = false;
+let showSettings = false;
 let flash = '';
+/** Settings > Opponent speed: Fast shortens the AI's thinking pause. Remembered in this browser. */
+const SPEED_KEY = 'fruitcats-speed';
+type Speed = 'normal' | 'fast';
+const SPEED_SCALE: Record<Speed, number> = { normal: 1, fast: 0.4 };
+let speed: Speed = (() => { try { return localStorage.getItem(SPEED_KEY) === 'fast' ? 'fast' : 'normal'; } catch { return 'normal'; } })();
 /** Multiplier on the AI's "thinking" pause; the dev hook sets it to 0 for automated UI tests. */
-let aiDelayScale = 1;
+let aiDelayScale = SPEED_SCALE[speed];
 /**
  * Dev only: `?seed=N&foe=<deck>` deals the same game and makes the AI play the same moves every time,
  * so the tutorial video (tools/demo) can script a whole game in advance.
@@ -341,9 +341,20 @@ function onClick(key: string) {
     render();
     return;
   }
+  if (kind === 'set') {
+    const choice = key.split(':')[2];
+    if (raw === 'sound' && (choice === 'on') !== soundEnabled()) toggleSound();
+    if (raw === 'speed' && (choice === 'normal' || choice === 'fast')) {
+      speed = choice;
+      aiDelayScale = SPEED_SCALE[speed];
+      try { localStorage.setItem(SPEED_KEY, speed); } catch { /* private mode: not remembered */ }
+    }
+    render();
+    return;
+  }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
-    if (raw === 'sound') toggleSound();
+    if (raw === 'settings') showSettings = !showSettings;
     if (raw === 'back') { screen = 'home'; homeNote = ''; }
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
     if (raw === 'again') { startGame(); return; }
@@ -456,7 +467,8 @@ function resumeSavedGame(): boolean {
 
 function render() {
   document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
-  app.innerHTML = screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : renderGame();
+  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : renderGame())
+    + (showSettings ? renderSettings() : '');
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN); } else stopTutorial();
@@ -486,9 +498,9 @@ function renderHome(): string {
   // Mochi, the mightiest Hero Cat, takes the centre spot.
   const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
   const saved = savedGameLabel();
-  // Until you've played, the Tutorial button at the bottom is green, so it stands out.
   return `
   <div class="menu home">
+    ${settingsButton('corner-settings')}
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
     </div>
@@ -509,9 +521,9 @@ function renderHome(): string {
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
     <footer class="home-footer">
-      <button class="menu-link ${hasPlayed() ? '' : 'tutorial-button'}" data-click="home:tutorial" title="A guided first game with tips">🎓 Tutorial</button>
-      ${soundButton('menu-sound')}
-      <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
+      <button class="footer-button" data-click="home:tutorial" title="A guided first game with tips">
+        <img class="btn-ico" src="${BASE}ui/icon-tutorial.webp" alt="">Tutorial</button>
+      <a class="footer-button" href="${BASE}rules.html"><img class="btn-ico" src="${BASE}ui/icon-rules.webp" alt="">Rules</a>
     </footer>
   </div>`;
 }
@@ -545,7 +557,7 @@ function renderSolo(): string {
     <div class="setup-bar">
       <button class="back-button" data-click="ui:back">‹ Home</button>
       <h2>Solo game</h2>
-      ${soundButton('menu-sound')}
+      ${settingsButton()}
     </div>
     <div class="setup-body">
       ${renderDeckPicker()}
@@ -586,7 +598,7 @@ function renderGame(): string {
       <div class="inspector"><img id="zoom" src="${cardUrl(heroKey(s, HUMAN))}" alt=""></div>
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
-        ${soundButton()}
+        ${settingsButton()}
         <button data-click="ui:quit">Home</button>
       </div>
       <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
@@ -865,6 +877,25 @@ function renderGameOver(s: GameState): string {
   </div>`;
 }
 
+function renderSettings(): string {
+  const choice = (setting: string, value: string, label: string, chosen: boolean) =>
+    `<button class="${chosen ? 'chosen' : ''}" data-click="set:${setting}:${value}" aria-pressed="${chosen}">${label}</button>`;
+  return `<div class="overlay">
+    <div class="settings" role="dialog" aria-label="Settings">
+      <h2>Settings</h2>
+      <div class="setting">
+        <span class="setting-name">Sound</span>
+        <div class="segmented">${choice('sound', 'on', 'On', soundEnabled())}${choice('sound', 'off', 'Off', !soundEnabled())}</div>
+      </div>
+      <div class="setting">
+        <span class="setting-name">Opponent speed<small>How long the computer pauses before each move</small></span>
+        <div class="segmented">${choice('speed', 'normal', 'Normal', speed === 'normal')}${choice('speed', 'fast', 'Fast', speed === 'fast')}</div>
+      </div>
+      <button class="primary settings-done" data-click="ui:settings">Done</button>
+    </div>
+  </div>`;
+}
+
 function renderRules(): string {
   return `<div class="overlay">
     <div class="rules">
@@ -1067,6 +1098,7 @@ app.addEventListener('contextmenu', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && showSettings) { showSettings = false; render(); return; }
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
     if (selection) { selection = null; render(); }

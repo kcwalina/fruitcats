@@ -92,7 +92,7 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .title p { color: var(--muted); font-size: clamp(12px, calc(var(--vh, 1vh) * 2), 18px); margin: calc(var(--vh, 1vh) * 0.4) 0 0; font-style: italic; }
 
 .picker { display: flex; flex-direction: column; align-items: center; gap: calc(var(--vh, 1vh) * 1); min-height: 0; }
-.picker h2 { font-size: clamp(14px, calc(var(--vh, 1vh) * 2.4), 22px); margin: 0; }
+.picker h2 { font-size: clamp(14px, calc(var(--vh, 1vh) * 2.4), 22px); margin: 0 0 14px; }   /* clear of the chosen deck's badge */
 .deck-choices { display: flex; justify-content: center; gap: min(calc(var(--vh, 1vh) * 2.5), 2vw); max-width: 100%; }
 /* Three decks side by side: each is limited by both the screen height and a third of its width. */
 .deck-choice {
@@ -143,6 +143,8 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .mode-name { font-family: Fredoka, Nunito, sans-serif; font-size: clamp(15px, calc(var(--vh, 1vh) * 2.4), 22px); font-weight: 700; line-height: 1.1; }
 .mode-sub { font-size: clamp(11px, calc(var(--vh, 1vh) * 1.5), 14px); font-weight: 600; }
 .soon-tag { position: absolute; top: 14px; right: 6px; }
+/* Continue, and for someone who hasn't played yet the Tutorial, side by side above the modes. */
+.home-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .home-note { min-height: 1.3em; margin: 0; max-width: 520px; font-weight: 700; font-size: 14px; }
 
 /* Solo setup: back, the deck picker, the opponent, Play. */
@@ -382,7 +384,7 @@ body.dragging .hand-card:hover { transform: none; }
   .menu-corner { grid-auto-flow: column; }   /* sound, Tutorial and Rules in one row */
 }
 @media (max-width: 640px) {
-  .deck-blurb, .difficulty span, .title p { display: none; }   /* room for Play at the bottom */
+  .deck-blurb, .title p { display: none; }   /* room for Play at the bottom */
   .modes { flex-direction: column; flex-wrap: nowrap; width: 100%; max-width: 420px; gap: 8px; }
   .mode-card { width: 100%; flex-direction: row; gap: 12px; padding: 6px 10px; border-radius: 16px; }
   .mode-card img { width: calc(var(--vh, 1vh) * 6.5); height: calc(var(--vh, 1vh) * 6.5); min-width: 44px; min-height: 44px; border-radius: 10px; }

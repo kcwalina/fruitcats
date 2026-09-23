@@ -22,7 +22,7 @@ Use it with **someone who has never played a card game**. It takes about fifteen
 
 Let them work. Note the time and what they tried.
 
-1. **Start a game.** (Do they take the walkthrough, or skip it?)
+1. **Start a game.** (Do they pick the Tutorial on the home screen, or go straight to Solo?)
 2. **Put a cat on the table.**
 3. **Say what the number in the corner of a card means.**
 4. **Attack the other cat.**

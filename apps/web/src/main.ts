@@ -334,8 +334,8 @@ function onClick(key: string) {
     return;
   }
   if (kind === 'solo') {
-    if (raw === 'play') { startGame(!hasPlayed()); return; }        // a first game is the guided one
-    if (raw === 'straight') { markPlayed(); startGame(); return; }
+    // Always a normal game: the guided one is the Tutorial, which Home puts first until you've played.
+    if (raw === 'play') { startGame(); return; }
     if (raw in DIFFICULTY) difficulty = raw as Difficulty;
     else if (raw in DECKS) myDeck = raw;
     render();
@@ -486,11 +486,12 @@ function renderHome(): string {
   // Mochi, the mightiest Hero Cat, takes the centre spot.
   const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
   const saved = savedGameLabel();
+  // Until you've played, the Tutorial is a big button above the modes; after that it moves to the corner.
   return `
   <div class="menu home">
     <div class="menu-corner">
       ${soundButton('menu-sound')}
-      <button class="tutorial-button" data-click="home:tutorial" title="A guided first game with tips">New? Tutorial</button>
+      ${hasPlayed() ? '<button class="tutorial-button" data-click="home:tutorial" title="A guided first game with tips">New? Tutorial</button>' : ''}
       <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
     </div>
     <div class="hero-parade">
@@ -500,7 +501,10 @@ function renderHome(): string {
       <h1>Fruitcats</h1>
       <p>Every cat has nine lives. Make yours count.</p>
     </header>
-    ${saved ? `<button class="play-button continue-button" data-click="home:continue">Continue<small>${saved}</small></button>` : ''}
+    ${saved || !hasPlayed() ? `<div class="home-actions">
+      ${saved ? `<button class="play-button continue-button" data-click="home:continue">Continue<small>${saved}</small></button>` : ''}
+      ${hasPlayed() ? '' : '<button class="play-button tutorial-button continue-button" data-click="home:tutorial">Tutorial<small>New? A guided first game</small></button>'}
+    </div>` : ''}
     <nav class="modes">
       ${MODES.map((m) => `
         <button class="mode-card ${m.soon ? 'soon' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
@@ -550,9 +554,8 @@ function renderSolo(): string {
         <button class="${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}">${d.label}</button>`).join('')}
     </div>
     <div class="start-row">
-      <button class="play-button" data-click="solo:play">${saved ? 'New game' : hasPlayed() ? 'Play' : 'Play your first game'}</button>
+      <button class="play-button" data-click="solo:play">${saved ? 'New game' : 'Play'}</button>
     </div>
-    ${saved || hasPlayed() ? '' : '<button class="skip-intro" data-click="solo:straight" title="Start a normal game without the walkthrough">Skip the walkthrough</button>'}
     ${saved ? `<p class="setup-note">This replaces your unfinished game (${saved}).</p>` : ''}
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;

@@ -538,10 +538,5 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* A unit that just arrived is resting, not spent: same tilt, different word. */
 .zzz.new { color: #ffe9b0; }
 
-/* "Skip the walkthrough" sits under the first-game button, quieter than it. */
-.skip-intro {
-  display: block; margin: 8px auto 0; padding: 4px 16px; font-size: 14px;
-  background: rgba(255, 250, 240, 0.75); box-shadow: 0 2px 0 #c08f4a, 0 3px 8px rgba(60, 30, 5, 0.2);
-}
 /* What this device has played, shown to the player rather than sent anywhere. */
 .progress-note { color: var(--muted); font-size: 12px; font-style: italic; }

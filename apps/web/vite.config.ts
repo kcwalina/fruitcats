@@ -20,7 +20,8 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] } },
+  // PORT lets two checkouts (e.g. git worktrees) run dev servers side by side.
+  server: { port: Number(process.env.PORT) || 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] } },
 });
 
 // ── Docs pages ─────────────────────────────────────────────────────────────────────────────────

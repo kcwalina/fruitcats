@@ -133,23 +133,24 @@ export function thisDevice(): Device {
  * The picture's size and its screen's corner radius. On the device it's for, the screen's own pixels;
  * otherwise a big current model: iPhone Pro Max, iPad Pro 12.9", a 4K monitor. Phones and tablets
  * are portrait; computers landscape. Corners: iPhones are rounded by about 14% of their width, iPads
- * by about 2.5%, monitors not at all.
+ * by about 2.5%, monitors not at all. `controls` is how tall a band at the bottom a phone's lock
+ * screen covers with its flashlight and camera buttons (50pt circles, their tops about 105pt up).
  */
-function wallpaperSize(device: Device): { W: number; H: number; corner: number } {
+function wallpaperSize(device: Device): { W: number; H: number; corner: number; controls: number } {
   const ratio = window.devicePixelRatio || 1;
   const short = Math.round(Math.min(screen.width, screen.height) * ratio);
   const long = Math.round(Math.max(screen.width, screen.height) * ratio);
   const mine = device === thisDevice() && short > 0;
   if (device === 'phone') {
     const [W, H] = mine && long / short > 1.6 ? [short, long] : [1290, 2796];
-    return { W, H, corner: W * 0.14 };
+    return { W, H, corner: W * 0.14, controls: 118 * (mine ? ratio : 3) };
   }
   if (device === 'tablet') {
     const [W, H] = mine && long / short < 1.6 ? [short, long] : [2048, 2732];
-    return { W, H, corner: W * 0.025 };
+    return { W, H, corner: W * 0.025, controls: 0 };
   }
   const [W, H] = mine && long >= 1600 ? [long, short] : [3840, 2160];
-  return { W, H, corner: 0 };
+  return { W, H, corner: 0, controls: 0 };
 }
 
 interface Parts {
@@ -336,7 +337,7 @@ function drawRules(p: Parts, x0: number, y0: number, x1: number, y1: number, res
   }
 }
 
-/** The paw (power) and heart (health) badges standing on `bottom` at pawX / heartX, and the footer between them. */
+/** The paw (power) and heart (health) badges standing on `bottom` at pawX / heartX, and the footer centred on footerY. */
 function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, footerY: number, footerSize = 17) {
   const { ctx, card, side, s } = p;
   const face = side ? (side === 'kitten' ? card.kitten! : card.bigCat!) : card;
@@ -359,7 +360,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
   const card: CardDef = CARDS[id];
   const colors = FAMILIES[card.family] ?? FAMILIES.Garden;
   const [main, dark] = colors;
-  const { W, H, corner } = wallpaperSize(device);
+  const { W, H, corner, controls } = wallpaperSize(device);
   const key = side ? `${id}-${side}` : id;
   // The card's fonts, but never waiting more than a moment for them (the fallback font is fine).
   await Promise.race([
@@ -415,17 +416,23 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     drawRules(p, x0, typeBottom + 12 * s, x1, statsBottom - 110 * s, 0);
     drawStats(p, x0 + 70 * s, x1 - 70 * s, statsBottom, statsBottom - 36 * s, 13);
   } else {
-    // Portrait: the art fills the top (behind the lock-screen clock), the card's text below it.
-    const statsBottom = H - edge - 12 * s - cornerLift;
-    const textBottom = statsBottom - 110 * s;
+    // Portrait: the art fills the top (behind the lock-screen clock), the card's text below it. On a
+    // phone the lock screen's flashlight and camera buttons sit in the bottom corners, so the badges
+    // stand above them and the footer runs between them.
+    const statsBottom = controls ? H - controls : H - edge - 12 * s - cornerLift;
+    const footerY = controls ? H - controls * 0.67 : statsBottom - 32 * s;
+    // With no badges to stand there (a Kitten, say), the rules box runs down to the footer.
+    const shown = side ? (side === 'kitten' ? card.kitten! : card.bigCat!) : card;
+    const badges = shown.power !== undefined || (!side && card.health !== undefined);
+    const textBottom = badges ? statsBottom - 110 * s : statsBottom - 60 * s;
     const below = (16 + 96 + 12 + 52 + 12) * s + 300 * s + (H - textBottom);
     const artBottom = Math.min(H * 0.6, H - below);
     drawArt(ctx, art, pad, pad, W - pad, artBottom, inner, main, s, foil);
     const bannerBottom = drawBanner(p, pad - 6 * s, W - pad + 6 * s, artBottom + 16 * s);
     const typeBottom = drawTypeLine(p, pad, W - pad, bannerBottom + 12 * s);
-    drawRules(p, pad, typeBottom + 12 * s, W - pad, textBottom + 40 * s, 40 * s);
+    drawRules(p, pad, typeBottom + 12 * s, W - pad, badges ? textBottom + 40 * s : textBottom, badges ? 40 * s : 0);
     const inset = Math.max(96 * s, corner * 0.55 + 40 * s);
-    drawStats(p, inset, W - inset, statsBottom, statsBottom - 32 * s);
+    drawStats(p, inset, W - inset, statsBottom, footerY);
   }
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));

@@ -82,8 +82,11 @@ export function createGame(options: GameOptions): GameState {
   };
   for (const p of [0, 1] as PlayerId[]) {
     const deckKey = options.decks[p];
-    const deck = deckCardIds(deckKey).map((id) => ({ uid: s.nextUid++, id }));
-    shuffle(s, deck);
+    // Shuffle first, then number the cards: numbering the sorted deck list would let anyone who sees
+    // a uid (an opponent's card in hand, say) work out which card it is.
+    const ids = deckCardIds(deckKey);
+    shuffle(s, ids);
+    const deck = ids.map((id) => ({ uid: s.nextUid++, id }));
     const lives = deck.splice(0, LIVES);
     const hand = deck.splice(0, STARTING_HAND);
     s.players[p] = {

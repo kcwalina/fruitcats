@@ -9,5 +9,7 @@ export {
   RULES_VERSION, LIVES, DECK_SIZE, YARD_LIMIT, HAND_LIMIT, RIPEN_MAX, LUSH_TREATS,
 } from './engine';
 export type { GameOptions } from './engine';
+export { viewFor, HIDDEN } from './view';
+export type { PlayerView } from './view';
 export { chooseAction, randomAction, evaluate, determinize } from './ai';
 export type { AiOptions } from './ai';

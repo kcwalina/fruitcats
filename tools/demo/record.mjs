@@ -373,7 +373,7 @@ function pageDriver(send) {
     state,
     async waitHuman() { await untilHuman(); },
     async startGame(step) {
-      await click('[data-click="menu:play"]', step.label ?? 'Click “Play”');
+      await click('[data-click="solo:play"]', step.label ?? 'Click “Play”');
       for (let i = 0; i < 50 && !(await run('!!window.fruitcats.game')); i++) await wait(100);
     },
     async perform(p, step) {

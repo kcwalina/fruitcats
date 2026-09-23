@@ -126,6 +126,30 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .play-button { font-size: clamp(16px, calc(var(--vh, 1vh) * 2.8), 24px); padding: calc(var(--vh, 1vh) * 0.8) 56px; background: var(--accent); color: white; border-color: #e06d20; }
 .coming { color: var(--muted); font-size: clamp(10px, calc(var(--vh, 1vh) * 1.4), 13px); margin: 0; }
 
+/* Home: the game modes as picture tiles, three then two. Tiles are sized by the screen height, so the
+   whole home screen fits without scrolling. */
+.home .hero-parade { height: calc(var(--vh, 1vh) * 19); }
+.modes {
+  --tile: min(calc(var(--vh, 1vh) * 17), calc((100vw - 80px) / 3));
+  display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--vh, 1vh) * 1.6) 16px;
+  max-width: calc(var(--tile) * 3 + 32px + 72px);
+}
+.mode-card {
+  position: relative; width: calc(var(--tile) + 24px); padding: 10px 12px calc(var(--vh, 1vh) * 1);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; border-radius: 20px;
+}
+.mode-card img { width: var(--tile); height: var(--tile); border-radius: 14px; object-fit: cover; }
+.mode-text { display: flex; flex-direction: column; align-items: center; }
+.mode-name { font-family: Fredoka, Nunito, sans-serif; font-size: clamp(15px, calc(var(--vh, 1vh) * 2.4), 22px); font-weight: 700; line-height: 1.1; }
+.mode-sub { font-size: clamp(11px, calc(var(--vh, 1vh) * 1.5), 14px); font-weight: 600; }
+.soon-tag { position: absolute; top: 14px; right: 6px; }
+.home-note { min-height: 1.3em; margin: 0; max-width: 520px; font-weight: 700; font-size: 14px; }
+
+/* Solo setup: back, the deck picker, the opponent, Play. */
+.setup-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; max-width: 900px; }
+.setup-bar h2 { margin: 0; font-size: clamp(18px, calc(var(--vh, 1vh) * 3.2), 30px); }
+.setup-note { margin: 0; font-size: 13px; font-weight: 700; }
+
 /* ── Game layout ──────────────────────────────────────────────────────── */
 
 .game {
@@ -355,9 +379,19 @@ body.dragging .hand-card:hover { transform: none; }
   .menu-corner { gap: 6px; }
   .menu-corner .difficulty button { padding: 4px 10px; font-size: 13px; }
   .menu-corner .tutorial-button, .menu-corner .menu-link { padding: 5px 14px; font-size: 14px; }
+  .menu-corner { grid-auto-flow: column; }   /* sound, Tutorial and Rules in one row */
 }
 @media (max-width: 640px) {
   .deck-blurb, .difficulty span, .title p { display: none; }   /* room for Play at the bottom */
+  .modes { flex-direction: column; flex-wrap: nowrap; width: 100%; max-width: 420px; gap: 8px; }
+  .mode-card { width: 100%; flex-direction: row; gap: 12px; padding: 6px 10px; border-radius: 16px; }
+  .mode-card img { width: calc(var(--vh, 1vh) * 6.5); height: calc(var(--vh, 1vh) * 6.5); min-width: 44px; min-height: 44px; border-radius: 10px; }
+  .home .hero-parade { height: calc(var(--vh, 1vh) * 13); }
+  .home .parade-cat.c1, .home .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 10); }
+  .home .parade-cat.c2 { --h: calc(var(--vh, 1vh) * 12.5); }
+  .mode-text { align-items: flex-start; text-align: left; }
+  .soon-tag { position: static; margin-left: auto; }
+  .home-note { font-size: 13px; }
   .title h1 { font-size: clamp(30px, calc(var(--vh, 1vh) * 5.5), 48px); }
   .hero-parade { height: calc(var(--vh, 1vh) * 16); }
   .parade-cat.c1, .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 12); }

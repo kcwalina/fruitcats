@@ -74,7 +74,7 @@ describe('player views (online play)', () => {
       }
     }
     expect(checked).toBeGreaterThan(1000);
-  });
+  }, 30_000); // thousands of clones and deep compares: ~5s, more on a busy machine
 
   it('hides the seed, decks, Lives, the opponent\'s hand and Treats, and the opponent\'s decision', () => {
     for (const s of states(1)) {

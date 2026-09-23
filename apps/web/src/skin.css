@@ -95,6 +95,26 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .coming { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.85); }
 
+/* Home mode tiles: parchment cards like the deck choices. The ones not built yet are faded, with a tag. */
+.mode-card {
+  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
+  box-shadow: var(--panel-shadow); transition: transform 0.15s, box-shadow 0.15s;
+}
+.mode-card:hover { transform: translateY(-3px); }
+.mode-card:not(.soon) { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light), 0 0 22px 4px rgba(255, 190, 60, 0.6), var(--panel-shadow); }
+.mode-card img { box-shadow: 0 0 0 2px #fff6dc; }
+.mode-name { color: var(--ink); }
+.mode-sub { color: var(--muted); }
+.mode-card.soon img { filter: saturate(0.45); opacity: 0.8; }
+.mode-card.soon .mode-name, .mode-card.soon .mode-sub { opacity: 0.75; }
+.soon-tag {
+  padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+  font: 700 11px/1.5 Fredoka, Nunito, sans-serif; color: #fff; background: #9a7a58;
+  box-shadow: 0 0 0 2px #fff6dc, 0 2px 5px rgba(60, 30, 5, 0.35);
+}
+.home-note, .setup-note { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.9); }
+.setup-bar h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
+
 /* ── Board: a painted table in a wooden frame with a gold inlay ─────────── */
 
 .board {
@@ -329,7 +349,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
     --hero-h: clamp(30px, calc(var(--vh, 1vh) * 11), 70px);
     --treat-w: 13px;
   }
-  .hero-parade, .picker h2, .coming, .deck-blurb, .title p { display: none; }
+  .hero-parade, .picker h2, .coming, .deck-blurb, .title p, .mode-sub { display: none; }
+  .modes { --tile: min(calc(var(--vh, 1vh) * 24), calc((100vw - 140px) / 5)); flex-wrap: nowrap; max-width: none; }
   .title h1 { font-size: calc(var(--vh, 1vh) * 11); }
   .deck-choice img { max-height: calc(var(--vh, 1vh) * 42); }
   .deck-name { font-size: 13px; }

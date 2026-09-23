@@ -45,11 +45,24 @@
       "beats": [
         {
           "id": "menu-decks",
-          "caption": "Pick a Hero Cat — each one comes with its own deck",
-          "say": "This is the start screen. First you pick your Hero Cat. Each one comes with its own deck of cards, and each deck plays differently.",
+          "caption": "Click Solo to play against the computer",
+          "say": "This is the start screen. The Tutorial button at the bottom starts a guided practice game, with tips that pop up as you play. For this video I'll click Solo, to play against the computer. Then you pick your Hero Cat. Each one comes with its own deck of cards, and each deck plays differently.",
           "do": [
             {
               "wait": 800
+            },
+            {
+              "spot": [
+                ".home-footer [data-click=\"home:tutorial\"]"
+              ],
+              "label": "A guided practice game"
+            },
+            {
+              "click": "[data-click=\"home:solo\"]",
+              "label": "Click Solo"
+            },
+            {
+              "wait": 600
             },
             {
               "spot": [
@@ -65,19 +78,19 @@
           "say": "Orchard Guard is patient and sturdy. Mango Tango collects extra Treats and then plays giants. And Zest Rush is fast and fierce. For this game, I'll click Zest Rush.",
           "do": [
             {
-              "move": "[data-click=\"menu:orchard-guard\"]"
+              "move": "[data-click=\"solo:orchard-guard\"]"
             },
             {
               "wait": 1500
             },
             {
-              "move": "[data-click=\"menu:mango-tango\"]"
+              "move": "[data-click=\"solo:mango-tango\"]"
             },
             {
               "wait": 1500
             },
             {
-              "click": "[data-click=\"menu:zest-rush\"]",
+              "click": "[data-click=\"solo:zest-rush\"]",
               "label": "Click Zest Rush"
             }
           ]
@@ -85,7 +98,7 @@
         {
           "id": "menu-level",
           "caption": "Choose how strong your opponent is",
-          "say": "Up in the corner you choose how strong the computer opponent is. Kitten is the gentlest, so I'll click Kitten. Next to it is a button called New? Tutorial. It starts a guided practice game, with tips that pop up as you play. The very first time you press Play, you get that guided game automatically.",
+          "say": "Below them you choose how strong the computer opponent is. Kitten is the gentlest, so I'll click Kitten.",
           "do": [
             {
               "spot": [
@@ -94,17 +107,8 @@
               "label": "Opponent strength"
             },
             {
-              "click": "[data-click=\"menu:kitten\"]",
+              "click": "[data-click=\"solo:kitten\"]",
               "label": "Click Kitten"
-            },
-            {
-              "wait": 700
-            },
-            {
-              "spot": [
-                ".tutorial-button"
-              ],
-              "label": "A guided practice game"
             }
           ]
         },

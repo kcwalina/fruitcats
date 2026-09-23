@@ -72,7 +72,8 @@ const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const HUMAN: PlayerId = 0;
 const AI: PlayerId = 1;
 
-type Screen = 'menu' | 'game';
+/** Home: the game modes. Solo: deck and difficulty for a game against the AI. */
+type Screen = 'home' | 'solo' | 'game';
 interface Selection {
   label: string;
   options: Action[];
@@ -89,7 +90,9 @@ const markPlayed = () => { try { localStorage.setItem(PLAYED_KEY, 'yes'); } catc
 const DIFFICULTY = { kitten: { label: 'Kitten', skill: 0.55 }, cat: { label: 'Cat', skill: 0.85 }, tiger: { label: 'Tiger', skill: 1 } };
 type Difficulty = keyof typeof DIFFICULTY;
 
-let screen: Screen = 'menu';
+let screen: Screen = 'home';
+/** What a "Coming soon" mode will do, shown on the home screen after tapping it. */
+let homeNote = '';
 let myDeck = 'zest-rush';
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
@@ -321,19 +324,28 @@ function onClick(key: string) {
   const [kind, raw] = key.split(':');
   const value = Number(raw);
 
-  if (kind === 'menu') {
-    if (raw === 'play') startGame(!hasPlayed());        // a first game is the guided one
-    else if (raw === 'straight') { markPlayed(); startGame(); }
-    else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); } else render(); }
-    else if (raw === 'tutorial') startGame(true);
-    else if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); }
-    else if (raw in DECKS) { myDeck = raw; render(); }
+  if (kind === 'home') {
+    homeNote = '';
+    if (raw === 'solo') screen = 'solo';
+    else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
+    else if (raw === 'tutorial') { startGame(true); return; }
+    else if (raw === 'soon') homeNote = MODES.find((m) => m.key === key.split(':')[2])?.soon ?? '';
+    render();
+    return;
+  }
+  if (kind === 'solo') {
+    if (raw === 'play') { startGame(!hasPlayed()); return; }        // a first game is the guided one
+    if (raw === 'straight') { markPlayed(); startGame(); return; }
+    if (raw in DIFFICULTY) difficulty = raw as Difficulty;
+    else if (raw in DECKS) myDeck = raw;
+    render();
     return;
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
     if (raw === 'sound') toggleSound();
-    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'menu'; }
+    if (raw === 'back') { screen = 'home'; homeNote = ''; }
+    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
@@ -411,8 +423,8 @@ function onClick(key: string) {
 // ── Saving ───────────────────────────────────────────────────────────────────────────────────────
 //
 // Every change to the game ends in a render, so that is where it is saved. Closing the tab or going
-// back to the menu keeps the game: the menu then offers to continue it at the same decision, or to
-// start a new one (which replaces it). A finished game is forgotten.
+// back Home keeps the game: the home screen then offers to continue it at the same decision, and a new
+// Solo game replaces it. A finished game is forgotten.
 
 function persist() {
   if (!game || tutorialGame) return;
@@ -443,8 +455,8 @@ function resumeSavedGame(): boolean {
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
 
 function render() {
-  document.body.className = screen === 'menu' ? 'menu-screen' : 'game-screen';
-  app.innerHTML = screen === 'menu' ? renderMenu() : renderGame();
+  document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
+  app.innerHTML = screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : renderGame();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN); } else stopTutorial();
@@ -453,26 +465,32 @@ function render() {
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
 
-function renderMenu(): string {
+/** The home screen's game modes. Only Solo is playable so far; the others say what they will be. */
+const MODES = [
+  { key: 'solo', name: 'Solo', sub: 'Play against the AI', soon: '' },
+  { key: 'friend', name: 'Friend', sub: 'Play someone you know',
+    soon: 'Play a friend online: send them a link, they pick a deck, and you each play on your own device.' },
+  { key: 'ranked', name: 'Ranked', sub: 'Climb the ladder',
+    soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
+  { key: 'store', name: 'Store', sub: 'New decks', soon: 'A store for new decks to play with.' },
+  { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: 'Build your own decks from the cards you have.' },
+];
+
+/** The unfinished game, for the Continue button: "Round 4 · Sunny vs Pippin". */
+function savedGameLabel(): string | null {
+  const saved = loadGame()?.game;
+  return saved ? `Round ${saved.round} · ${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}` : null;
+}
+
+function renderHome(): string {
   // Mochi, the mightiest Hero Cat, takes the centre spot.
   const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
-  const deckBlurb: Record<string, string> = {
-    'zest-rush': 'Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover.',
-    'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
-    'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
-  };
-  const saved = loadGame()?.game;
-  const savedLabel = saved && `Round ${saved.round} · ${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}`;
+  const saved = savedGameLabel();
   return `
-  <div class="menu">
+  <div class="menu home">
     <div class="menu-corner">
       ${soundButton('menu-sound')}
-      <div class="difficulty">
-        <span>Opponent:</span>
-        ${Object.entries(DIFFICULTY).map(([key, d]) => `
-          <button class="${key === difficulty ? 'chosen' : ''}" data-click="menu:${key}">${d.label}</button>`).join('')}
-      </div>
-      <button class="tutorial-button" data-click="menu:tutorial" title="A guided first game with tips">New? Tutorial</button>
+      <button class="tutorial-button" data-click="home:tutorial" title="A guided first game with tips">New? Tutorial</button>
       <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
     </div>
     <div class="hero-parade">
@@ -482,25 +500,61 @@ function renderMenu(): string {
       <h1>Fruitcats</h1>
       <p>Every cat has nine lives. Make yours count.</p>
     </header>
+    ${saved ? `<button class="play-button continue-button" data-click="home:continue">Continue<small>${saved}</small></button>` : ''}
+    <nav class="modes">
+      ${MODES.map((m) => `
+        <button class="mode-card ${m.soon ? 'soon' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
+          <img src="${BASE}ui/mode-${m.key}.webp" alt="">
+          <span class="mode-text"><span class="mode-name">${m.name}</span><span class="mode-sub">${m.sub}</span></span>
+          ${m.soon ? '<span class="soon-tag">Coming soon</span>' : ''}
+        </button>`).join('')}
+    </nav>
+    <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
+  </div>`;
+}
+
+function renderDeckPicker(): string {
+  const deckBlurb: Record<string, string> = {
+    'zest-rush': 'Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover.',
+    'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
+    'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
+  };
+  return `
     <section class="picker">
       <h2>Choose your Hero Cat</h2>
       <div class="deck-choices">
         ${Object.entries(DECKS).map(([key, deck]) => `
-          <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="menu:${key}">
+          <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}">
             <img src="${cardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
             <span class="deck-name">${esc(deck.name)}</span>
             <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
             <span class="deck-blurb">${deckBlurb[key] ?? ''}</span>
           </button>`).join('')}
       </div>
-      <div class="start-row">
-        ${saved ? `<button class="play-button continue-button" data-click="menu:continue">Continue<small>${savedLabel}</small></button>
-        <button class="new-game-button" data-click="menu:play" title="Start over with the Hero Cat above; your unfinished game is replaced">New game</button>`
-    : `<button class="play-button" data-click="menu:play">${hasPlayed() ? 'Play' : 'Play your first game'}</button>
-        ${hasPlayed() ? '' : '<button class="skip-intro" data-click="menu:straight" title="Start a normal game without the walkthrough">Skip the walkthrough</button>'}`}
-      </div>
-      <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
-    </section>
+    </section>`;
+}
+
+function renderSolo(): string {
+  const saved = savedGameLabel();
+  return `
+  <div class="menu solo">
+    <div class="setup-bar">
+      <button class="back-button" data-click="ui:back">‹ Home</button>
+      <h2>Solo game</h2>
+      ${soundButton('menu-sound')}
+    </div>
+    ${renderDeckPicker()}
+    <div class="difficulty">
+      <span>Opponent:</span>
+      ${Object.entries(DIFFICULTY).map(([key, d]) => `
+        <button class="${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}">${d.label}</button>`).join('')}
+    </div>
+    <div class="start-row">
+      <button class="play-button" data-click="solo:play">${saved ? 'New game' : hasPlayed() ? 'Play' : 'Play your first game'}</button>
+    </div>
+    ${saved || hasPlayed() ? '' : '<button class="skip-intro" data-click="solo:straight" title="Start a normal game without the walkthrough">Skip the walkthrough</button>'}
+    ${saved ? `<p class="setup-note">This replaces your unfinished game (${saved}).</p>` : ''}
+    <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;
 }
 

@@ -103,11 +103,11 @@ Needs accounts.
   build and site, a server-side tester list and a sandbox checkout keep it that way. The git tag
   `pre-store` marks main before any store work.
 - **Done: the Collection** ([apps/web/src/showcase.ts](../apps/web/src/showcase.ts)) is live for everyone:
-  - a Display Case with the three starter Hero Cats as foils
+  - a Display Case with the three starter Hero Cats' Kittens and Big Cats as foils
   - a Binder of the set in collector-number order, with preview cards as shadows
-  - a full-screen view of any card
-  - a phone wallpaper that makes the whole screen the card ([apps/web/src/wallpaper.ts](../apps/web/src/wallpaper.ts)),
-    saved through the share sheet, then set in Photos
+  - a full-screen view that swipes from card to card, with a Hero Cat's Kitten and Big Cat as separate cards
+  - wallpapers for a phone, tablet or computer where the whole screen is the card, with its border
+    following the screen's rounded corners ([apps/web/src/wallpaper.ts](../apps/web/src/wallpaper.ts))
   Bought cards will show up here, and choosing the Display Case's cards comes with the Store.
 
 ## Suggested order

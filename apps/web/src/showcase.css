@@ -58,7 +58,7 @@
 
 /* The stage: slabs stand on a lacquered plinth, the one in the middle under the spotlight. */
 .case-stage {
-  position: relative; height: calc(var(--card-w) * 1.9 + 24px); perspective: 1100px; touch-action: pan-y;
+  position: relative; height: calc(var(--card-w) * 2.05 + 34px); perspective: 1100px; touch-action: pan-y;
   user-select: none; -webkit-user-select: none;
 }
 .case-lights {
@@ -256,10 +256,15 @@ button.wallpaper-button { min-height: 46px; padding: 8px 28px; font-size: 17px; 
 .overlay .wall-sheet { width: min(380px, 100%); text-align: center; display: flex; flex-direction: column; gap: 12px; max-height: 100%; }
 .wall-sheet h2 { margin: 0; }
 .wall-preview {
-  display: block; align-self: center; height: min(calc(var(--vh, 1vh) * 46), 440px); aspect-ratio: 9 / 19.5; object-fit: cover;
-  border-radius: 18px; box-shadow: 0 0 0 5px #2b1a0e, 0 8px 20px rgba(0, 0, 0, 0.35);
+  display: block; align-self: center; max-width: 100%; max-height: min(calc(var(--vh, 1vh) * 46), 440px); width: auto; height: auto;
+  box-shadow: 0 0 0 5px #2b1a0e, 0 8px 20px rgba(0, 0, 0, 0.35);
 }
-.wall-preview.drawing { display: grid; place-items: center; background: #3a2414; color: #fff4dc; font-weight: 700; }
+/* The frame around the preview, shaped like the device: a phone's round corners, a tablet's slight ones. */
+.wall-preview.phone { border-radius: 11% / 5%; }
+.wall-preview.tablet { border-radius: 3% / 2.2%; }
+.wall-preview.computer { border-radius: 4px; box-shadow: 0 0 0 4px #2b1a0e, 0 8px 20px rgba(0, 0, 0, 0.35); }
+.wall-preview.drawing { display: grid; place-items: center; height: min(calc(var(--vh, 1vh) * 46), 440px); background: #3a2414; color: #fff4dc; font-weight: 700; }
+.wall-preview.drawing.computer { width: 100%; height: auto; }
 .wall-sheet .chip-row { width: 100%; }
 .wall-how { margin: 0; font-size: 13.5px; font-weight: 700; color: #6b5139; line-height: 1.35; }
 

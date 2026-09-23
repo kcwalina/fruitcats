@@ -449,7 +449,7 @@ function renderPantry(s: GameState, p: PlayerId): string {
   const float = planted ? `+${planted} Treat${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
   const ready = readyTreats(s, p);
   return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
-    <div class="pantry-label">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
+    <div class="pantry-label" title="Treats pay for your cards: a card costs the number in its top-left corner. Spent Treats ready again next round.">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
     ${isLush(s, p) && CARDS[pl.hero.id].family === 'Tropical' ? '<div class="lush-badge" title="Lush: 7 or more Treats — Lush bonuses are on">🌴 Lush</div>' : ''}
     <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens}</div>
     ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
@@ -587,7 +587,24 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         if (legal.some((a) => a.t === 'attack')) hints.push('attack with a glowing unit');
         // "One thing, then they go" is the rule players miss most: they line up three attacks and are
         // surprised the opponent acts in between.
-        text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : 'Nothing left to do — pass.'}`
+        // "Nothing left to do" reads like a bug when the real reason is that you can't afford anything:
+        // about 1 opening in 10 starts with every card costing more than your 2 Treats.
+        let why = 'Nothing left to do — pass.';
+        if (!hints.length) {
+          const costs = s.players[HUMAN].hand.map((c) => CARDS[c.id].cost ?? 0);
+          const cheapest = costs.length ? Math.min(...costs) : 0;
+          const treats = readyTreats(s, HUMAN);
+          if (costs.length && cheapest > treats)
+            why = `<b>You can't afford anything yet:</b> your cheapest card costs <b>${cheapest}</b> and you have `
+              + `<b>${treats}</b> ready ${treats === 1 ? 'Treat' : 'Treats'}. Pass — next round you plant another `
+              + `Treat and draw 2 cards.`;
+          else if (costs.length) {
+            // Affordable but unplayable: say which card and why, e.g. a Toy with no unit to attach to.
+            const blocked = s.players[HUMAN].hand.find((c) => (CARDS[c.id].cost ?? 0) <= treats);
+            why = `<b>Nothing you can play right now.</b> ${blocked ? esc(whyUnplayable(s, blocked.id, 'action')) : ''} Pass.`;
+          }
+        }
+        text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : why}`
           + ` <span class="turn-hint">One thing, then your opponent acts.</span>`;
         buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn ${YARN_ICON}</button>` : ''}
           <button class="primary" data-click="btn:pass">Pass</button>`;
@@ -770,13 +787,23 @@ function openZoom(url: string, cardKey?: string) {
   closeZoom();
   const text = cardKey ? zoomText(cardKey) : '';
   const used = GLOSSARY.filter((k) => k.test.test(text));
-  const glossary = used.length
-    ? `<dl class="zoom-keys">${used.map((k) => `<div><dt>${k.name}</dt><dd>${esc(k.text)}</dd></div>`).join('')}</dl>`
+  const cost = cardKey && !/-(kitten|bigcat)$/.test(cardKey) ? CARDS[cardKey]?.cost : undefined;
+  // Treats are the game's only currency, and a playtester got through a whole game without noticing.
+  const price = cost === undefined ? '' : (() => {
+    const ready = game ? readyTreats(game, HUMAN) : 0;
+    const enough = ready >= cost;
+    return `<p class="zoom-cost ${enough ? '' : 'short'}">Costs <b>${cost}</b> ${cost === 1 ? 'Treat' : 'Treats'}`
+      + `${game ? ` · you have <b>${ready}</b> ready${enough ? '' : ' — not enough yet'}` : ''}</p>`;
+  })();
+  const panel = used.length || price
+    ? `<div class="zoom-info">${price}${used.length
+      ? `<dl class="zoom-keys">${used.map((k) => `<div><dt>${k.name}</dt><dd>${esc(k.text)}</dd></div>`).join('')}</dl>`
+      : ''}</div>`
     : '';
   const overlay = document.createElement('div');
   overlay.id = 'zoom-overlay';
-  overlay.className = used.length ? 'with-keys' : '';
-  overlay.innerHTML = `<img src="${url}" alt="">${glossary}<span>Tap anywhere to close</span>`;
+  overlay.className = panel ? 'with-keys' : '';
+  overlay.innerHTML = `<img src="${url}" alt="">${panel}<span>Tap anywhere to close</span>`;
   overlay.addEventListener('click', closeZoom);
   document.body.appendChild(overlay);
   tutorialCardZoomed();

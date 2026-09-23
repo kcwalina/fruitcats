@@ -477,6 +477,15 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* Enlarged card: what its keywords mean, because iOS has no hover for tooltips and long press is
    already the way you enlarge a card. */
 #zoom-overlay.with-keys img { max-height: calc(var(--vh, 1vh) * 56); }
+.zoom-info { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.zoom-cost {
+  margin: 0; padding: 5px 16px; border-radius: 999px; font: 600 15px Fredoka, Nunito, sans-serif; color: #5a3413;
+  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 2px solid var(--gold);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.zoom-cost.short { color: #a5301d; border-color: #e07a5f; }
+.zoom-cost b { color: #2f8a46; }
+.zoom-cost.short b { color: #a5301d; }
 .zoom-keys {
   margin: 0; max-width: min(92vw, 460px); max-height: calc(var(--vh, 1vh) * 26); overflow-y: auto;
   padding: 10px 14px; border-radius: 16px; text-align: left;

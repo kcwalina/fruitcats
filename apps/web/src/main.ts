@@ -486,14 +486,9 @@ function renderHome(): string {
   // Mochi, the mightiest Hero Cat, takes the centre spot.
   const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
   const saved = savedGameLabel();
-  // Until you've played, the Tutorial is a big button above the modes; after that it moves to the corner.
+  // Until you've played, the Tutorial also gets a big button above the modes.
   return `
   <div class="menu home">
-    <div class="menu-corner">
-      ${soundButton('menu-sound')}
-      ${hasPlayed() ? '<button class="tutorial-button" data-click="home:tutorial" title="A guided first game with tips">New? Tutorial</button>' : ''}
-      <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
-    </div>
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
     </div>
@@ -514,6 +509,11 @@ function renderHome(): string {
         </button>`).join('')}
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
+    <footer class="home-footer">
+      <button class="menu-link" data-click="home:tutorial" title="A guided first game with tips">🎓 Tutorial</button>
+      ${soundButton('menu-sound')}
+      <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
+    </footer>
   </div>`;
 }
 
@@ -530,6 +530,7 @@ function renderDeckPicker(): string {
         ${Object.entries(DECKS).map(([key, deck]) => `
           <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}">
             <img src="${cardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
+            <img class="deck-art" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
             <span class="deck-name">${esc(deck.name)}</span>
             <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
             <span class="deck-blurb">${deckBlurb[key] ?? ''}</span>
@@ -547,16 +548,18 @@ function renderSolo(): string {
       <h2>Solo game</h2>
       ${soundButton('menu-sound')}
     </div>
-    ${renderDeckPicker()}
-    <div class="difficulty">
-      <span>Opponent:</span>
-      ${Object.entries(DIFFICULTY).map(([key, d]) => `
-        <button class="${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}">${d.label}</button>`).join('')}
+    <div class="setup-body">
+      ${renderDeckPicker()}
+      <div class="difficulty">
+        <span>Opponent:</span>
+        ${Object.entries(DIFFICULTY).map(([key, d]) => `
+          <button class="${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}">${d.label}</button>`).join('')}
+      </div>
     </div>
-    <div class="start-row">
+    <div class="setup-footer">
+      ${saved ? `<p class="setup-note">This replaces your unfinished game (${saved}).</p>` : ''}
       <button class="play-button" data-click="solo:play">${saved ? 'New game' : 'Play'}</button>
     </div>
-    ${saved ? `<p class="setup-note">This replaces your unfinished game (${saved}).</p>` : ''}
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;
 }

@@ -94,20 +94,37 @@
 :is(.collection-screen, .viewer-overlay) button:is(.v-wallpaper, .v-arrow):hover:not(:disabled) {
   transform: none; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
-/* In the Showcase or not: a star, filled when it is. */
-.collection-screen button.v-pin, .viewer-overlay button.v-pin {
+/* Adding to the Showcase is a clear, labelled button; a card already in it just says so. Taking one out
+   is a quiet text link below, never the main button, and can be undone. */
+.collection-screen button.v-add, .viewer-overlay button.v-add {
   display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 18px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14); color: #fff; font: 700 15px/1 Fredoka, Nunito, sans-serif;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(#ffe39a, #f2b940); color: #4a2c06; font: 700 15px/1 Fredoka, Nunito, sans-serif;
+  box-shadow: 0 4px 14px rgba(240, 180, 60, 0.3);
 }
-:is(.collection-screen, .viewer-overlay) button.v-pin:hover:not(:disabled) { transform: none; background: rgba(255, 255, 255, 0.22); }
-:is(.collection-screen, .viewer-overlay) button.v-pin.on { background: linear-gradient(#ffe39a, #f2b940); color: #4a2c06; box-shadow: 0 4px 14px rgba(240, 180, 60, 0.35); }
+:is(.collection-screen, .viewer-overlay) button.v-add:hover:not(:disabled) { transform: none; filter: brightness(1.05); box-shadow: 0 4px 14px rgba(240, 180, 60, 0.45); }
+.v-in { display: inline-flex; align-items: center; height: 44px; padding: 0 6px; font: 700 14px/1 Fredoka, Nunito, sans-serif; color: #ffd76a; white-space: nowrap; }
+.collection-screen button.v-remove, .viewer-overlay button.v-remove {
+  display: block; margin: 10px auto 0; height: 32px; padding: 0 12px; border-radius: 8px; background: none; box-shadow: none;
+  color: rgba(255, 255, 255, 0.55); font: 600 13px/1 Nunito, sans-serif; text-decoration: underline; text-underline-offset: 3px;
+}
+:is(.collection-screen, .viewer-overlay) button.v-remove:hover:not(:disabled) { transform: none; box-shadow: none; color: rgba(255, 255, 255, 0.85); }
+
+.undo-bar {
+  position: fixed; z-index: 80; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px; width: max-content; max-width: calc(100vw - 24px); padding: 8px 8px 8px 18px;
+  border-radius: 999px; background: rgba(30, 18, 10, 0.92); color: #fff; font: 600 14px Nunito, sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.12); animation: fade-in 0.2s ease-out;
+}
+button.undo-btn {
+  height: 36px; padding: 0 16px; border-radius: 999px; background: #fff; color: #2b1a0e; box-shadow: none; font: 700 14px Fredoka, Nunito, sans-serif;
+}
+
 /* Touch screens (and phones) swipe, so the arrows are only for mice and keyboards. */
 @media (hover: none), (pointer: coarse), (max-width: 480px) { :is(.collection-screen, .viewer-overlay) button.v-arrow { display: none; } }
-:is(.collection-screen, .viewer-overlay) :is(button.v-pin, button.v-wallpaper) { white-space: nowrap; flex: none; }
+:is(.collection-screen, .viewer-overlay) :is(button.v-add, button.v-wallpaper) { white-space: nowrap; flex: none; }
 @media (max-width: 380px) {
   .v-actions { gap: 10px; }
-  :is(.collection-screen, .viewer-overlay) :is(button.v-pin, button.v-wallpaper) { padding: 0 16px; font-size: 14px; }
+  :is(.collection-screen, .viewer-overlay) :is(button.v-add, button.v-wallpaper) { padding: 0 14px; font-size: 14px; }
 }
 
 /* An empty Showcase says how to fill it. */

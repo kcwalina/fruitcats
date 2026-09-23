@@ -1,8 +1,8 @@
 // The Collection: a gallery for looking at cards. Showcase is your favourite cards, one at a time and as
 // big as the screen allows, swiped through with the phone's own scrolling; the card's art, blurred, fills
 // the screen behind it. All cards is the whole set as a grid (cards you don't have yet are shadows), and
-// tapping one opens the same full-screen view through the cards you're looking at. Any card can become
-// a wallpaper. What you own comes from collection.ts.
+// tapping one opens the same full-screen view through the cards you're looking at, which is where cards
+// are added to and taken out of the Showcase. Any card can become a wallpaper. What you own comes from collection.ts.
 //
 // A Hero Cat's two sides are two cards here: its Kitten and its Big Cat. So the screens deal in card
 // faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
@@ -51,6 +51,8 @@ let browsing: { list: string[]; index: number } | null = null;
 /** The wallpaper sheet: the device it's for, and the picture once it's drawn. */
 let wallpaper: { device: Device; blob: Blob | null; url: string; note: string } | null = null;
 let drawing = 0;
+/** The card just taken out of the Showcase, for the Undo bar. */
+let undo: { face: string; at: number; timer: number } | null = null;
 
 export function openShowcase(h: ShowcaseHost): void {
   host = h;
@@ -87,18 +89,36 @@ function saveShowcase() {
   try { localStorage.setItem(SHOWCASE_KEY, JSON.stringify(showcase)); } catch { /* private mode: kept until the page closes */ }
 }
 
-/** Puts a card in the Showcase (at the end), or takes it out. */
-function toggleShowcase(face: string) {
-  if (!isFace(face) || owned(idOf(face)) === 0) return;
-  const at = showcase.indexOf(face);
-  if (at === -1) showcase = [...showcase, face];
-  else {
-    showcase = showcase.filter((f) => f !== face);
-    // Looking at the Showcase itself: stay on the card that slid into its place (or the new last one).
-    if (!browsing && tab === 'showcase') showcaseIndex = Math.min(showcaseIndex, Math.max(0, showcase.length - 1));
-  }
+/** Puts a card at the end of the Showcase. */
+function addToShowcase(face: string) {
+  if (!isFace(face) || owned(idOf(face)) === 0 || showcase.includes(face)) return;
+  showcase = [...showcase, face];
   saveShowcase();
 }
+
+/** Takes a card out of the Showcase, remembering where it was so Undo can put it back. */
+function removeFromShowcase(face: string) {
+  const at = showcase.indexOf(face);
+  if (at === -1) return;
+  showcase = showcase.filter((f) => f !== face);
+  // Looking at the Showcase itself: stay on the card that slid into its place (or the new last one).
+  if (!browsing && tab === 'showcase') showcaseIndex = Math.min(showcaseIndex, Math.max(0, showcase.length - 1));
+  saveShowcase();
+  window.clearTimeout(undo?.timer);
+  undo = { face, at, timer: window.setTimeout(() => { undo = null; host.render(); }, 6000) };
+}
+
+function undoRemove() {
+  if (!undo) return;
+  window.clearTimeout(undo.timer);
+  const { face, at } = undo;
+  undo = null;
+  if (showcase.includes(face)) return;
+  showcase = [...showcase.slice(0, at), face, ...showcase.slice(at)];
+  if (!browsing && tab === 'showcase') showcaseIndex = at;
+  saveShowcase();
+}
+
 const ownedFaces = () => SET.filter((id) => owned(id) > 0 && (familyFilter === 'all' || CARDS[id].family === familyFilter)).flatMap(facesOf);
 
 function closeWallpaper() {
@@ -154,7 +174,9 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
       break;
     }
     case 'close': browsing = null; closeWallpaper(); break;
-    case 'pin': { const face = current(); if (face) toggleShowcase(face); break; }
+    case 'add': { const face = current(); if (face) addToShowcase(face); break; }
+    case 'remove': { const face = current(); if (face) removeFromShowcase(face); break; }
+    case 'undo': undoRemove(); break;
     case 'wallpaper':
       if (!current()) break;
       wallpaper = { device: thisDevice(), blob: null, url: '', note: '' };
@@ -226,7 +248,17 @@ export function renderShowcase(): string {
     <button class="viewer-close" data-click="col:close" aria-label="Close" title="Close">✕</button>
     ${renderViewer(browsing.list, browsing.index)}
   </div>` : ''}
+  ${renderUndo()}
   ${renderWallpaperSheet()}`;
+}
+
+/** After a card is taken out of the Showcase: what happened, and a way to take it back. */
+function renderUndo(): string {
+  if (!undo) return '';
+  return `<div class="undo-bar" role="status">
+      <span>Removed <b>${esc(faceName(undo.face).split(',')[0])}</b> from your Showcase</span>
+      <button class="undo-btn" data-click="col:undo">Undo</button>
+    </div>`;
 }
 
 /** The current card's art, blurred to a glow of its colours, filling the screen. Two layers, to crossfade. */
@@ -253,6 +285,8 @@ function renderViewer(list: string[], index: number): string {
 function renderInfo(list: string[], index: number): string {
   const face = list[index], card = CARDS[idOf(face)];
   const kind = sideOf(face) ? sideLabel(face) : card.type;
+  // The Showcase is only for looking. Adding and taking out cards happens in All cards, on a card opened there.
+  const editing = !!browsing, inShowcase = showcase.includes(face);
   const position = list.length <= 12
     ? `<span class="v-dots">${list.map((_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('')}</span>`
     : `<span class="v-count">${index + 1} / ${list.length}</span>`;
@@ -263,11 +297,12 @@ function renderInfo(list: string[], index: number): string {
         ${position}
         <div class="v-actions">
           <button class="v-arrow" data-click="col:turn:-1" aria-label="Previous card" ${index === 0 ? 'disabled' : ''}>‹</button>
-          <button class="v-wallpaper" data-click="col:wallpaper">${PHONE_ICON} Wallpaper</button>
-          <button class="v-pin ${showcase.includes(face) ? 'on' : ''}" data-click="col:pin" aria-pressed="${showcase.includes(face)}"
-            title="${showcase.includes(face) ? 'Take it out of your Showcase' : 'Add it to your Showcase'}">${showcase.includes(face) ? '★' : '☆'} Showcase</button>
+          <button class="v-wallpaper" data-click="col:wallpaper">${PHONE_ICON} Make wallpaper</button>
+          ${!editing ? '' : inShowcase ? '<span class="v-in">★ In your Showcase</span>'
+            : '<button class="v-add" data-click="col:add">＋ Add to Showcase</button>'}
           <button class="v-arrow" data-click="col:turn:1" aria-label="Next card" ${index === list.length - 1 ? 'disabled' : ''}>›</button>
         </div>
+        ${editing && inShowcase ? '<button class="v-remove" data-click="col:remove">Remove from Showcase</button>' : ''}
       </div>`;
 }
 
@@ -276,7 +311,7 @@ function renderEmptyShowcase(): string {
     <div class="showcase-empty">
       <p class="empty-star" aria-hidden="true">☆</p>
       <h2>Your Showcase is empty</h2>
-      <p>Open any card in All cards and tap <b>Showcase</b> under it to show it off here.</p>
+      <p>Open any card in All cards and tap <b>＋ Add to Showcase</b> to show it off here.</p>
       <button class="v-wallpaper" data-click="col:tab:all">Browse all cards</button>
     </div>`;
 }

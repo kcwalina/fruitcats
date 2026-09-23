@@ -104,8 +104,9 @@ Needs accounts.
   `pre-store` marks main before any store work.
 - **Done: the Collection** ([apps/web/src/showcase.ts](../apps/web/src/showcase.ts)) is live for everyone:
   - a gallery for just looking at cards, even without playing:
-    - **Showcase:** the cards you choose (☆ Showcase under any card adds or removes it, kept on this device; Mochi's
-      Kitten and Big Cat to start), one at a time and as big as the screen allows. You swipe with the phone's own scrolling, and the card's art, blurred,
+    - **Showcase:** a display of the cards you choose (Mochi's Kitten and Big Cat to start), with nothing to edit
+      there. Cards are added and removed in All cards (Add to Showcase / Remove from Showcase, with Undo); the choice is
+      kept on this device. Cards appear one at a time and as big as the screen allows. You swipe with the phone's own scrolling, and the card's art, blurred,
       fills the screen behind it.
     - **All cards:** the set as a grid, with preview cards as shadows. Tapping a card opens the same full-screen view.
     - A Hero Cat's Kitten and Big Cat are separate cards.

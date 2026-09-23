@@ -9,6 +9,10 @@
   --wood: #8a5427;
   --gold: #e7b24a;
   --gold-light: #ffe6a3;
+  /* "You picked this": the green of the Tutorial/Rules buttons. Gold is decoration, never selection. */
+  --pick: #3d9d52;
+  --pick-dark: #276c37;
+  --pick-tint: #e6f7e8;
   --parchment: #fffaf0;
   --parchment-2: #f5e3bb;
   --parchment-edge: #dcb66e;
@@ -80,10 +84,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   box-shadow: var(--panel-shadow); transition: transform 0.15s, box-shadow 0.15s;
 }
 .deck-choice:hover { transform: translateY(-3px); }
-.deck-choice.chosen {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 4px var(--gold-light), 0 0 26px 6px rgba(255, 200, 80, 0.75), var(--panel-shadow);
-}
 .deck-name { color: var(--ink); }
 .deck-blurb { color: var(--muted); }
 .difficulty-choice {
@@ -91,10 +91,17 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   box-shadow: var(--panel-shadow); transition: transform 0.15s, box-shadow 0.15s;
 }
 .difficulty-choice:hover { transform: translateY(-2px); }
+.difficulty-choice { position: relative; }
 .difficulty-choice.chosen {
-  border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light), 0 0 20px 4px rgba(255, 190, 60, 0.7), var(--panel-shadow);
+  border-color: var(--pick); background: linear-gradient(#f4fcf5, var(--pick-tint));
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--pick), 0 8px 18px rgba(20, 70, 30, 0.35);
 }
-.difficulty-choices:has(.chosen) .difficulty-choice:not(.chosen) { opacity: 0.9; filter: saturate(0.75); }
+.difficulty-choice.chosen::after {
+  content: '✓'; position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; border-radius: 999px;
+  display: grid; place-items: center; font: 800 14px/1 Fredoka, Nunito, sans-serif; color: #fff;
+  background: var(--pick); box-shadow: 0 0 0 2px #fff, 0 2px 5px rgba(20, 70, 30, 0.4);
+}
+.difficulty-choices:has(.chosen) .difficulty-choice:not(.chosen) { opacity: 0.85; filter: saturate(0.6); }
 .diff-name { color: var(--ink); }
 .diff-sub { color: var(--muted); }
 .difficulty-choice img { filter: drop-shadow(0 1px 1px rgba(80, 40, 10, 0.25)); }
@@ -106,7 +113,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   box-shadow: var(--panel-shadow); transition: transform 0.15s, box-shadow 0.15s;
 }
 .mode-card:hover { transform: translateY(-3px); }
-.mode-card:not(.soon) { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light), 0 0 22px 4px rgba(255, 190, 60, 0.6), var(--panel-shadow); }
 .mode-card img { box-shadow: 0 0 0 2px #fff6dc; }
 .mode-name { color: var(--ink); }
 .mode-sub { color: var(--muted); }
@@ -453,28 +459,30 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .hand-card.playable img { box-shadow: 0 0 0 3px #fff3b0, 0 0 14px 5px rgba(255, 180, 20, 0.95), var(--shadow); }
 @media (prefers-reduced-motion: reduce) { .unit.can-act { animation: none; } }
 
-/* Choosing a deck: the gold glow alone read as decoration, so the chosen deck now also lifts up and
-   wears a badge, while the decks you didn't pick step back. */
+/* Choosing a deck: the chosen one gets a bold green border and ring (the same green as the pick on
+   Difficulty), a green tint and a "Your deck" badge; the others step back. Gold glows used to mean both
+   "picked" and "available", so a pick didn't stand out. */
 .deck-choice { position: relative; }
-.deck-choices:has(.chosen) .deck-choice:not(.chosen) { filter: saturate(0.55) brightness(0.92); opacity: 0.75; transform: scale(0.96); }
+.deck-choices:has(.chosen) .deck-choice:not(.chosen) { filter: saturate(0.55) brightness(0.95); opacity: 0.8; transform: scale(0.96); }
 .deck-choices:has(.chosen) .deck-choice:not(.chosen):hover { filter: none; opacity: 1; transform: scale(0.98) translateY(-3px); }
 .deck-choice.chosen {
-  border-color: var(--gold); transform: translateY(-4px);
-  box-shadow: 0 0 0 5px var(--gold-light), 0 0 30px 8px rgba(255, 190, 60, 0.85), var(--panel-shadow);
+  border-color: var(--pick); transform: translateY(-4px); background: linear-gradient(#f4fcf5, var(--pick-tint));
+  box-shadow: 0 0 0 3px #fff, 0 0 0 7px var(--pick), 0 10px 24px rgba(20, 70, 30, 0.4);
 }
 .deck-choice.chosen:hover { transform: translateY(-6px); }
 .deck-choice.chosen::after {
   content: 'Your deck ✓'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); z-index: 2;
   padding: 3px 12px; border-radius: 999px; white-space: nowrap;
-  font: 800 12px/1.5 Fredoka, Nunito, sans-serif; color: #fff;
-  background: linear-gradient(#ffb627, #ef7314); box-shadow: 0 0 0 2px #fff6dc, 0 3px 8px rgba(60, 30, 5, 0.45);
+  font: 800 12px/1.5 Fredoka, Nunito, sans-serif; color: #fff; text-shadow: 0 1px 0 rgba(0, 60, 15, 0.4);
+  background: var(--pick); box-shadow: 0 0 0 2px #fff, 0 3px 8px rgba(20, 70, 30, 0.45);
 }
 @media (max-width: 640px) {
   .deck-choice.chosen::after { font-size: 10px; padding: 2px 8px; top: -9px; }
   /* Solo's deck rows: the badge sits in the row's corner, the rows don't shrink or lift. */
   .solo .deck-choice.chosen::after { top: 8px; right: 10px; left: auto; transform: none; }
   .solo .deck-choice.chosen, .solo .deck-choice.chosen:hover { transform: none; }
-  .solo .deck-choices:has(.chosen) .deck-choice:not(.chosen) { transform: none; opacity: 0.9; filter: saturate(0.7); }
+  .solo .deck-choices:has(.chosen) .deck-choice:not(.chosen) { transform: none; opacity: 0.85; filter: saturate(0.6); }
+  .solo .deck-choice.chosen { box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--pick), 0 6px 16px rgba(20, 70, 30, 0.35); }
   .solo .deck-art { box-shadow: 0 0 0 2px #fff6dc; }
 }
 
@@ -514,8 +522,9 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .settings h2 { font-family: Fredoka, Nunito, sans-serif; color: var(--ink); }
 .setting-name { color: var(--ink); }
 .segmented { background: rgba(255, 248, 230, 0.9); box-shadow: inset 0 0 0 1px rgba(120, 70, 20, 0.15); }
-.segmented .chosen {
-  background: linear-gradient(#fff2c9, #ffd97a); box-shadow: 0 3px 0 #c8942c, 0 0 0 2px var(--gold), inset 0 1px 0 #fff;
+.segmented .chosen {   /* the same green as a chosen deck or difficulty */
+  color: #fff; text-shadow: 0 1px 0 rgba(0, 60, 15, 0.45);
+  background: linear-gradient(#6cc47c, var(--pick)); box-shadow: 0 3px 0 var(--pick-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 /* Enlarged card: what its keywords mean, because iOS has no hover for tooltips and long press is

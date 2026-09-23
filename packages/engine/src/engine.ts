@@ -13,6 +13,12 @@ import type {
   Action, CardInst, EffectKey, GameState, PlayerId, PlayerState, Prompt, Step, Target, TargetSpec, Unit, Window,
 } from './types';
 
+/**
+ * Bump when a change to the rules, the card data or the shape of GameState means a game saved by an
+ * older build can no longer be continued (the web client throws such saves away).
+ */
+export const RULES_VERSION = 1;
+
 export const LIVES = 9;
 export const DECK_SIZE = 50;
 export const STARTING_HAND = 6;

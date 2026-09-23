@@ -1,5 +1,6 @@
 import './style.css';
 import './skin.css';
+import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
@@ -83,6 +84,8 @@ let screen: Screen = 'menu';
 let myDeck = 'zest-rush';
 let difficulty: Difficulty = 'cat';
 let game: GameState | null = null;
+/** The tutorial isn't saved: its balloons can't pick up halfway through. */
+let tutorialGame = false;
 let selection: Selection | null = null;
 let picks = new Set<number>();
 let aiTimer: number | undefined;
@@ -187,6 +190,7 @@ function startGame(tutorial = false) {
   game = tutorial
     ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
     : createGame({ decks: [myDeck, theirDeck], names: ['You', 'Opponent'] });
+  tutorialGame = tutorial;
   resetLogSounds(game);
   unitArrivals.clear();
   if (tutorial) startTutorial({
@@ -266,6 +270,7 @@ function onClick(key: string) {
 
   if (kind === 'menu') {
     if (raw === 'play') startGame();
+    else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); } else render(); }
     else if (raw === 'tutorial') startGame(true);
     else if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); }
     else if (raw in DECKS) { myDeck = raw; render(); }
@@ -340,6 +345,38 @@ function onClick(key: string) {
   }
 }
 
+// ── Saving ───────────────────────────────────────────────────────────────────────────────────────
+//
+// Every change to the game ends in a render, so that is where it is saved. Closing the tab or going
+// back to the menu keeps the game: the menu then offers to continue it at the same decision, or to
+// start a new one (which replaces it). A finished game is forgotten.
+
+function persist() {
+  if (!game || tutorialGame) return;
+  if (game.winner !== null) { clearSave(); return; }
+  saveGame({
+    game, difficulty, unitArrivals: [...unitArrivals], foeFrom, foeUnitsBefore: [...foeUnitsBefore],
+  });
+}
+
+function resumeSavedGame(): boolean {
+  const save = loadGame();
+  if (!save) return false;
+  game = save.game;
+  tutorialGame = false;
+  if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
+  unitArrivals.clear();
+  for (const [uid, round] of save.unitArrivals ?? []) unitArrivals.set(uid, round);
+  foeFrom = save.foeFrom ?? game.log.length;
+  foeUnitsBefore = new Set(save.foeUnitsBefore ?? []);
+  // What's already on the board was on screen before: don't animate it arriving again.
+  renderedFoeUnits = new Set(game.players[AI].yard.map((u) => u.uid));
+  renderedTreats = new Map(game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])));
+  resetLogSounds(game);
+  screen = 'game';
+  return true;
+}
+
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
 
 function render() {
@@ -348,6 +385,7 @@ function render() {
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(); playLogSounds(game, HUMAN); } else stopTutorial();
+  persist();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
 }
@@ -360,6 +398,8 @@ function renderMenu(): string {
     'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
     'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
   };
+  const saved = loadGame()?.game;
+  const savedLabel = saved && `Round ${saved.round} · ${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}`;
   return `
   <div class="menu">
     <div class="menu-corner">
@@ -391,7 +431,9 @@ function renderMenu(): string {
           </button>`).join('')}
       </div>
       <div class="start-row">
-        <button class="play-button" data-click="menu:play">Play</button>
+        ${saved ? `<button class="play-button continue-button" data-click="menu:continue">Continue<small>${savedLabel}</small></button>
+        <button class="new-game-button" data-click="menu:play" title="Start over with the Hero Cat above; your unfinished game is replaced">New game</button>`
+    : '<button class="play-button" data-click="menu:play">Play</button>'}
       </div>
       <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
     </section>

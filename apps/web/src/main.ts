@@ -528,7 +528,7 @@ function renderGame(): string {
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
         ${soundButton()}
-        <button data-click="ui:quit">Menu</button>
+        <button data-click="ui:quit">Home</button>
       </div>
       <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
     </aside>
@@ -600,8 +600,8 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
       <div class="ability" title="${esc(side.text)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
     </div>
     ${p === HUMAN && (canAbility || canAttack) ? `<div class="hero-actions">
-      ${canAbility ? '<button data-click="btn:ability">Use ability</button>' : ''}
-      ${canAttack ? '<button data-click="btn:heroattack">Big Cat attack</button>' : ''}
+      ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
+      ${canAttack ? '<button class="primary" data-click="btn:heroattack">Big Cat attack</button>' : ''}
     </div>` : ''}
     ${p === AI ? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
   </section>`;
@@ -800,7 +800,7 @@ function renderGameOver(s: GameState): string {
       <p>${won ? 'Nine lives well spent.' : 'Every cat lands on its feet eventually.'} (${s.round} rounds)</p>
       <div class="buttons">
         <button class="primary" data-click="ui:again">Play again</button>
-        <button data-click="ui:quit">Menu</button>
+        <button data-click="ui:quit">Home</button>
       </div>
     </div>
   </div>`;

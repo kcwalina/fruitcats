@@ -132,7 +132,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .hero { border: 3px solid var(--gold); box-shadow: 0 0 0 2px #fff6dc, 0 5px 12px rgba(50, 25, 5, 0.35); }
 .hero.grown { border-color: #ffd257; box-shadow: 0 0 0 2px #fff6dc, 0 0 16px 4px rgba(255, 210, 90, 0.8); }
 .hero-name { font-family: Fredoka, Nunito, sans-serif; }
-.hero-actions button { padding: 4px 12px; font-size: 13px; background: linear-gradient(#fff4d6, #ffd98a); }
+/* Hero Cat actions look exactly like Pass: same orange, same size (the rules below size both). */
 
 /* Card backs (opponent's hand, Treats) use the painted card back */
 .card-back, .treat {
@@ -344,7 +344,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .round b { font-size: 16px; }
   .prompt { font-size: 12px; line-height: 1.2; }
   .recap, .notice { -webkit-line-clamp: 1; }
-  .buttons button { padding: 3px 10px; font-size: 13px; }
+  .buttons button, .hero-actions button { padding: 3px 10px; font-size: 13px; }
   .side { height: 44px; min-height: 0; }
   .side-buttons { flex-direction: row; }
   .side-buttons button { padding: 3px 10px; font-size: 12px; }
@@ -380,7 +380,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 @media (max-width: 640px) {
   .midbar { gap: 6px 10px; }
   .buttons { flex: 1 1 100%; justify-content: flex-end; }
-  .buttons button { padding: 4px 14px; }
+  .buttons button, .hero-actions button { padding: 4px 14px; }
   .notice, .recap { -webkit-line-clamp: 1; }
 }
 
@@ -408,7 +408,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   margin-top: -4px; padding: 0 5px; border-radius: 999px; font: 800 10px/1.4 Fredoka, Nunito, sans-serif; color: #fff;
   background: #d9533b; box-shadow: 0 0 0 1.5px #fff;
 }
-[data-click="btn:yarn"] .yarn-ico { height: 22px; margin: -4px 0 -4px 2px; }
+/* Centred, with negative margins, so the icon never makes Take the Yarn taller than Pass beside it. */
+[data-click="btn:yarn"] .yarn-ico { height: 22px; margin: -6px 0 -6px 2px; vertical-align: middle; }
 .tut-balloon .yarn-ico { height: 22px; }
 @keyframes yarn-wobble { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
 @media (prefers-reduced-motion: reduce) { .yarn .yarn-ico { animation: none; } }
@@ -456,7 +457,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 @media (max-width: 640px) { .sound-toggle svg { width: 20px; height: 20px; } }
 
 /* Phone: there is no room for the Story, so drop it and let the three buttons share the bottom strip.
-   (A rounded phone screen was clipping the Menu button in the corner.) */
+   (A rounded phone screen was clipping the Home button in the corner.) */
 @media (max-width: 640px) {
   .log-panel { display: none; }
   .side { height: auto; min-height: 0; flex: none; align-items: stretch; }

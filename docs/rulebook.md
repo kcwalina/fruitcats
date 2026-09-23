@@ -2,7 +2,7 @@
 
 **Version 0.3 (playtest draft)** · 2 players · ages 8+ · about 10 minutes per game
 
-> Every cat has nine lives. Make yours count.
+> A cozy card game of fruit-hooded cats.
 
 Fruitcats is a trading card game about fruit-flavoured cats — Lemon Lynxes, Apple Ragdolls, Strawberry Tabbies — and the cute critters who follow them. You lead one **Hero Cat**, gather a crew of critters, and try to knock out all nine of the rival cat's Lives before they get yours.
 

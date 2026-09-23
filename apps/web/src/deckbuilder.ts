@@ -9,7 +9,7 @@ import {
 } from '@fruitcats/engine';
 import { owned, ownedCards, ownedHeroes } from './collection';
 import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
-import { FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 
 type Page = 'list' | 'new' | 'edit';
 const TYPES = [['all', 'All'], ['Cat', 'Cats'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
@@ -25,7 +25,10 @@ let familyFilter = 'all';
 let typeFilter: TypeFilter = 'all';
 /** Phones: the deck list is a sheet over the cards. */
 let sheetOpen = false;
-let confirmingDelete = false;
+/** The deck the "Delete this deck?" dialog is asking about, if it's open. */
+let deleting: string | null = null;
+/** What's typed in New deck's name box, used when the Hero Cat is picked (empty: "Sunny's deck"). */
+let newName = '';
 /** Why the last tapped card couldn't go in. */
 let message = '';
 
@@ -47,7 +50,7 @@ function resetView() {
   familyFilter = 'all';
   typeFilter = 'all';
   sheetOpen = false;
-  confirmingDelete = false;
+  deleting = null;
   message = '';
 }
 
@@ -85,12 +88,20 @@ function change(id: string, delta: number) {
 
 /** Clicks on `deck:<action>:<arg>`. */
 export function deckClick(action: string, arg: string, host: BuilderHost): void {
-  if (action !== 'delete') confirmingDelete = false;
   if (action !== 'add') message = '';
   switch (action) {
     case 'list': leave(); break;
-    case 'new': page = 'new'; break;
-    case 'hero': if (ownedHeroes().includes(arg)) edit(newDeck(arg), true); break;
+    case 'new': page = 'new'; newName = ''; break;
+    case 'hero': {
+      if (!ownedHeroes().includes(arg)) break;
+      const deck = newDeck(arg);
+      const name = newName.trim().slice(0, 40);
+      if (name) deck.name = name;
+      edit(deck, true);
+      if (name) save();   // a deck you've named is kept, even before its first card
+      break;
+    }
+    case 'rename': break;   // the pencil: the name box is focused once the screen is drawn
     case 'open': { const deck = getDeck(arg); if (deck) edit(deck, false); break; }
     case 'starter':
       if (arg in DECKS) { editing = null; starterKey = arg; resetView(); }
@@ -100,16 +111,36 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     case 'fam': familyFilter = arg; break;
     case 'type': typeFilter = TYPES.some(([t]) => t === arg) ? arg as TypeFilter : 'all'; break;
     case 'sheet': sheetOpen = !sheetOpen; break;
-    case 'delete':
-      if (!editing || isNew) break;
-      if (!confirmingDelete) { confirmingDelete = true; break; }
-      deleteDeck(editing.id);
-      confirmingDelete = false;
-      leave();
+    // Deleting asks first, in a dialog: from a deck's tile in Your decks, or from inside the builder.
+    case 'delete': if (getDeck(arg)) deleting = arg; break;
+    case 'keep': deleting = null; break;
+    case 'confirmdelete':
+      if (deleting) {
+        deleteDeck(deleting);
+        if (editing?.id === deleting) leave();
+        deleting = null;
+      }
       break;
   }
   host.render();
+  if (action === 'rename') {
+    const input = document.querySelector<HTMLInputElement>('[data-rename]');
+    input?.focus();
+    input?.select();
+  }
 }
+
+/** Typing in a name box: New deck's, or the builder's (which renames the deck as you type). */
+export function deckInput(input: HTMLInputElement): void {
+  if (input.matches('[data-newname]')) newName = input.value;
+  else if (input.matches('[data-rename]')) renameDeck(input.value);
+}
+
+// Tapping a name box selects the whole name, so typing replaces it.
+document.addEventListener('focusin', (event) => {
+  const input = event.target as HTMLElement;
+  if (input.matches?.('[data-rename], [data-newname]')) (input as HTMLInputElement).select();
+});
 
 /**
  * The deck name box, saved on every keystroke. It doesn't redraw the screen (that would drop the text
@@ -131,11 +162,37 @@ function saveState(): string {
 }
 
 export function renderDeckBuilder(): string {
+  return renderPage() + renderDeleteDialog();
+}
+
+function renderPage(): string {
   if (page === 'new') return renderNewDeck();
   if (page === 'edit' && shownDeck()) return renderBuilder();
   page = 'list';
   return renderDeckList();
 }
+
+function renderDeleteDialog(): string {
+  const deck = deleting ? getDeck(deleting) : undefined;
+  if (!deck) return '';
+  return `<div class="overlay">
+    <div class="settings delete-dialog" role="alertdialog" aria-label="Delete deck">
+      <img class="delete-art" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
+      <h2>Delete “${esc(deck.name)}”?</h2>
+      <p>${deckSize(deck) ? `Its ${deckSize(deck)} ${deckSize(deck) === 1 ? 'card goes' : 'cards go'} back to your collection. ` : ''}This can't be undone.</p>
+      <div class="delete-buttons">
+        <button data-click="deck:keep">Keep it</button>
+        <button class="danger" data-click="deck:confirmdelete">Delete deck</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/** A small pencil, for renaming. */
+const PENCIL = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>`;
+
+/** A small bin, for the Delete buttons. */
+const BIN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>`;
 
 // ── Your decks ───────────────────────────────────────────────────────────────────────────────────
 
@@ -164,12 +221,16 @@ function renderDeckList(): string {
     </div>
     <div class="decks-body">
       <section class="deck-group">
-        <h3>Your decks</h3>
+        <div class="deck-group-head">
+          <h3>Your decks</h3>
+          <a class="rules-link" href="${BASE}rules.html#11-1-deckbuilding"><img class="btn-ico" src="${BASE}ui/icon-rules.webp" alt="">Deck building rules</a>
+        </div>
         <div class="deck-tiles">
           ${mine.map((d) => {
             const ready = isReady(d);
             const status = `<span class="deck-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : `${deckSize(d)} / ${DECK_RULES.size} cards`}</span>`;
-            return deckTile(`deck:open:${d.id}`, d, '', status);
+            return `<div class="deck-tile-wrap">${deckTile(`deck:open:${d.id}`, d, '', status)}
+              <button class="tile-delete" data-click="deck:delete:${d.id}" aria-label="Delete ${esc(d.name)}" title="Delete deck">${BIN}</button></div>`;
           }).join('')}
           <button class="deck-tile new-deck" data-click="deck:new">
             <span class="new-plus" aria-hidden="true">+</span>
@@ -184,23 +245,8 @@ function renderDeckList(): string {
           ${Object.entries(DECKS).map(([key, d]) => deckTile(`deck:starter:${key}`, d, '<span class="starter-tag">Starter</span>')).join('')}
         </div>
       </section>
-      ${renderRules()}
     </div>
   </div>`;
-}
-
-/** The deck rules in a few lines, for anyone who hasn't built a deck before. */
-function renderRules(): string {
-  return `
-      <details class="deck-rules">
-        <summary>How deck building works</summary>
-        <ul>
-          <li>A deck is <b>1 Hero Cat</b> and exactly <b>${DECK_RULES.size} cards</b>.</li>
-          <li>Cards come from your Hero Cat's family, <b>one other family</b> if you like, and <b>Garden</b>, which fits every deck.</li>
-          <li>Up to <b>${DECK_RULES.copies} copies</b> of a card. <b>Cats</b> are one of a kind: 1 copy each, and at most ${DECK_RULES.maxCats} Cats.</li>
-          <li>You can use only the copies you have. You start with the cards from all three starter decks.</li>
-        </ul>
-      </details>`;
 }
 
 // ── New deck: choose its Hero Cat ────────────────────────────────────────────────────────────────
@@ -214,6 +260,10 @@ function renderNewDeck(): string {
       ${settingsButton()}
     </div>
     <div class="setup-body">
+      <label class="new-name">
+        <span>Deck name</span>
+        <input data-newname value="${esc(newName)}" maxlength="40" placeholder="e.g. Citrus Rush" enterkeyhint="done" autocomplete="off">
+      </label>
       <section class="picker">
         <h2>Choose its Hero Cat</h2>
         <div class="deck-choices">
@@ -274,7 +324,10 @@ function renderBuilder(): string {
     ? `${backButton('deck:list', 'Your decks')}<div class="build-title"><h2>${esc(deck.name)}</h2></div><span></span>`
     : `<span></span>
       <div class="build-title">
-        <input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done">
+        <label class="name-edit">
+          <input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done" autocomplete="off">
+          <button class="name-pencil" data-click="deck:rename" aria-label="Rename deck" title="Rename deck">${PENCIL}</button>
+        </label>
         ${saveState()}
       </div>
       <button class="primary done-deck" data-click="deck:list">Done</button>`;
@@ -368,7 +421,7 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           </ul>
           ${readOnly || isNew ? '' : `
           <div class="deck-actions">
-            <button class="delete-deck ${confirmingDelete ? 'confirming' : ''}" data-click="deck:delete">${confirmingDelete ? 'Tap again to delete' : 'Delete deck'}</button>
+            <button class="delete-deck" data-click="deck:delete:${editing!.id}">${BIN} Delete deck</button>
           </div>`}
         </div>
       </aside>`;

@@ -575,7 +575,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* ── Deck builder ────────────────────────────────────────────────────── */
 
-.deck-tile, .deck-rules, .deck-panel {
+.deck-tile, .deck-panel, .rules-link {
   background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
   box-shadow: var(--panel-shadow); color: var(--ink);
 }
@@ -603,3 +603,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .deck-panel { border-bottom: none; box-shadow: 0 -6px 20px rgba(50, 25, 5, 0.35); }
   .deck-toggle { background: linear-gradient(#fffaf0, #f1d9a6); box-shadow: none; }
 }
+button.danger {
+  color: #fff; text-shadow: 0 1px 0 rgba(90, 10, 5, 0.5);
+  background: linear-gradient(#e9665a, #c0392b); box-shadow: 0 3px 0 #8e2a1f, 0 6px 12px rgba(120, 30, 10, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+button.tile-delete, button.delete-deck { color: #9c3a26; }

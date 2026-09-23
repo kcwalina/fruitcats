@@ -4,7 +4,7 @@ import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
-import { deckClick, openDeckBuilder, renameDeck, renderDeckBuilder } from './deckbuilder';
+import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
@@ -953,13 +953,13 @@ function renderRules(): string {
 
 // ── Events ───────────────────────────────────────────────────────────────────────────────────────
 
-// The deck builder's name box: part of the draft, like its cards, until Save.
+// The deck builder's name boxes: the deck is renamed as you type (Enter just closes the keyboard).
 app.addEventListener('input', (event) => {
-  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename]');
-  if (input) renameDeck(input.value);
+  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
+  if (input) deckInput(input);
 });
 app.addEventListener('keydown', (event) => {
-  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename]');
+  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
   if (input && event.key === 'Enter') input.blur();
 });
 

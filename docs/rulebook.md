@@ -248,6 +248,7 @@ Other common words:
 - Your deck may contain cards from your **Hero Cat's family**, **one other family of your choice**, and **Garden** cards.
 - Up to **3 copies** of any card — except **Cats: 1 copy each, maximum 6 Cats**.
 - *New players:* start with a single family plus Garden cards. The Starter Box decks are built this way.
+- *In the app:* a deck can use only the copies you own. Everyone starts with every card from the three Starter Box decks, so you have up to 3 copies of most cards, and only 2 of some.
 
 ### 11.2 Tournament play
 

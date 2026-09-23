@@ -15,6 +15,16 @@ if (toc) {
   });
 }
 
+// A link to a section (the deck builder's "Deck building rules" opens §11.1): the browser jumps there
+// before the styles and fonts have loaded, and the page then grows around it, so jump again once it
+// has settled. Instantly: arriving from a link shouldn't glide past thirteen sections.
+const linked = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+if (linked) {
+  const jump = () => linked.scrollIntoView({ behavior: 'instant' });
+  window.addEventListener('load', jump, { once: true });
+  void document.fonts?.ready.then(jump);
+}
+
 // "Back to top" appears only once you've scrolled a screen or so down.
 const toTop = document.querySelector<HTMLElement>('.to-top');
 if (toTop) {

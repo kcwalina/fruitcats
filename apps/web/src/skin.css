@@ -501,6 +501,12 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .menu-link:hover { filter: brightness(1.04); transform: translateY(-1px); }
 .menu-link:active { transform: translateY(2px); box-shadow: 0 1px 0 #c08f4a, inset 0 1px 0 #fff; }
+/* Home's Tutorial, until you've played: green like the other Tutorial buttons, same size as Rules. */
+.home-footer .menu-link.tutorial-button {
+  color: #fff; text-shadow: 0 1px 0 rgba(0, 70, 20, 0.5); font-size: 15px; padding: 7px 18px;
+  background: linear-gradient(#8fd997, #3d9d52);
+  box-shadow: 0 3px 0 #276c37, 0 6px 12px rgba(20, 70, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
 
 /* Enlarged card: what its keywords mean, because iOS has no hover for tooltips and long press is
    already the way you enlarge a card. */

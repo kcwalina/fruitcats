@@ -486,7 +486,7 @@ function renderHome(): string {
   // Mochi, the mightiest Hero Cat, takes the centre spot.
   const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
   const saved = savedGameLabel();
-  // Until you've played, the Tutorial also gets a big button above the modes.
+  // Until you've played, the Tutorial button at the bottom is green, so it stands out.
   return `
   <div class="menu home">
     <div class="hero-parade">
@@ -496,9 +496,8 @@ function renderHome(): string {
       <h1>Fruitcats</h1>
       <p>Every cat has nine lives. Make yours count.</p>
     </header>
-    ${saved || !hasPlayed() ? `<div class="home-actions">
-      ${saved ? `<button class="play-button continue-button" data-click="home:continue">Continue<small>${saved}</small></button>` : ''}
-      ${hasPlayed() ? '' : '<button class="play-button tutorial-button continue-button" data-click="home:tutorial">Tutorial<small>New? A guided first game</small></button>'}
+    ${saved ? `<div class="home-actions">
+      <button class="play-button continue-button" data-click="home:continue">Continue<small>${saved}</small></button>
     </div>` : ''}
     <nav class="modes">
       ${MODES.map((m) => `
@@ -510,7 +509,7 @@ function renderHome(): string {
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
     <footer class="home-footer">
-      <button class="menu-link" data-click="home:tutorial" title="A guided first game with tips">🎓 Tutorial</button>
+      <button class="menu-link ${hasPlayed() ? '' : 'tutorial-button'}" data-click="home:tutorial" title="A guided first game with tips">🎓 Tutorial</button>
       ${soundButton('menu-sound')}
       <a class="menu-link" href="${BASE}rules.html">📖 Rules</a>
     </footer>

@@ -5,7 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
-import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape } from './showcase';
+import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
@@ -481,6 +481,7 @@ function render() {
     : screen === 'collection' ? renderShowcase() : renderGame())
     + (showSettings ? renderSettings() : '');
   for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]')) el.scrollTop = scrolled.get(el.dataset.keepScroll) ?? 0;
+  if (screen === 'collection') showcaseMounted();
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, HUMAN); } else stopTutorial();
@@ -495,16 +496,16 @@ function render() {
  */
 const MODE_GROUPS = [
   [
-    { key: 'solo', name: 'Solo', sub: 'Play against the AI', soon: '' },
-    { key: 'friend', name: 'Friend', sub: 'Play someone you know',
+    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '' },
+    { key: 'friend', name: 'Friend', sub: 'Online',
       soon: 'Play a friend online: send them a link, they pick a deck, and you each play on your own device.' },
-    { key: 'ranked', name: 'Ranked', sub: 'Climb the ladder',
+    { key: 'ranked', name: 'Ranked', sub: 'The ladder',
       soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   ],
   [
-    { key: 'collection', name: 'Collection', sub: 'Your cards on display', soon: '' },
-    { key: 'store', name: 'Store', sub: 'New decks', soon: 'A store for new decks to play with.' },
-    { key: 'decks', name: 'Deck builder', sub: 'Make your own deck', soon: '' },
+    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '' },
+    { key: 'store', name: 'Store', sub: 'New cards', soon: 'A store for new decks and cards.' },
+    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '' },
   ],
 ];
 const MODES = MODE_GROUPS.flat();
@@ -533,15 +534,16 @@ function renderHome(): string {
       ${MODE_GROUPS.map((group) => `
       <div class="mode-group">
         ${group.map((m) => {
-          // An unfinished game shows on Solo: your Hero Cat, and a ribbon with the round.
+          // Every tile is the same: picture, name, and one line under it. That line says "Coming soon",
+          // or on Solo, that a game is waiting to be continued.
           const resume = m.key === 'solo' && saved;
-          const img = resume ? artUrl(`${loadGame()!.game.players[HUMAN].hero.id}-kitten`) : `${BASE}ui/mode-${m.key}.webp`;
+          const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
+            : resume ? `<span class="mode-sub continue-line">Continue · Round ${loadGame()!.game.round}</span>`
+            : `<span class="mode-sub">${m.sub}</span>`;
           return `
         <button class="mode-card ${m.soon ? 'soon' : ''} ${resume ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
-          <img src="${img}" alt="">
-          <span class="mode-text"><span class="mode-name">${m.name}</span><span class="mode-sub">${resume ? saved : m.sub}</span></span>
-          ${m.soon ? '<span class="soon-tag">Coming soon</span>' : ''}
-          ${resume ? `<span class="continue-tag">Continue · Round ${loadGame()!.game.round}</span>` : ''}
+          <img src="${BASE}ui/mode-${m.key}.webp" alt="">
+          <span class="mode-text"><span class="mode-name">${m.name}</span>${status}</span>
         </button>`;
         }).join('')}
       </div>`).join('')}

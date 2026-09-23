@@ -159,8 +159,6 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .mode-text { display: flex; flex-direction: column; align-items: center; }
 .mode-name { font-family: Fredoka, Nunito, sans-serif; font-size: clamp(15px, calc(var(--vh, 1vh) * 2.4), 22px); font-weight: 700; line-height: 1.1; }
 .mode-sub { font-size: clamp(11px, calc(var(--vh, 1vh) * 1.5), 14px); font-weight: 600; }
-.soon-tag { position: absolute; top: 14px; right: 6px; }
-.continue-tag { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); }
 .home-note { min-height: 1.3em; margin: 0; max-width: 520px; font-weight: 700; font-size: 14px; }
 
 /* Solo setup: a header pinned to the top, the two choices as one group in the middle, and Play at the
@@ -663,13 +661,11 @@ body.dragging .hand-card:hover { transform: none; }
   .mode-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
   .mode-card { width: 100%; gap: 4px; padding: 8px 4px 7px; border-radius: 16px; }
   .mode-card img { width: min(calc(var(--vh, 1vh) * 10.5), 96px, 100%); height: auto; aspect-ratio: 1; min-width: 44px; min-height: 44px; border-radius: 12px; }
-  .mode-sub { display: none; }
   .home .hero-parade { height: calc(var(--vh, 1vh) * 13); }
   .home .parade-cat.c1, .home .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 10); }
   .home .parade-cat.c2 { --h: calc(var(--vh, 1vh) * 12.5); }
   .mode-name { font-size: 15px; }
-  .soon-tag, .continue-tag { top: 3px; padding: 0 6px; font-size: 9.5px; }
-  .soon-tag { right: 3px; }
+  .mode-sub { font-size: 11.5px; white-space: nowrap; }
   .home-note { font-size: 13px; }
   .title h1 { font-size: clamp(30px, calc(var(--vh, 1vh) * 5.5), 48px); }
   .hero-parade { height: calc(var(--vh, 1vh) * 16); }

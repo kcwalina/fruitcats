@@ -1,22 +1,22 @@
-// The Collection: a Display Case (a velvet showcase whose cards sit in clear collector's slabs and turn
-// through the spotlight), a Binder of the whole set (cards you don't have yet are shadows in their
-// pockets), a full-screen card you can swipe through, and a wallpaper made from it.
-// What you own comes from collection.ts.
+// The Collection: a gallery for looking at cards. Showcase is your favourite cards, one at a time and as
+// big as the screen allows, swiped through with the phone's own scrolling; the card's art, blurred, fills
+// the screen behind it. All cards is the whole set as a grid (cards you don't have yet are shadows), and
+// tapping one opens the same full-screen view through the cards you're looking at. Any card can become
+// a wallpaper. What you own comes from collection.ts.
 //
-// A Hero Cat's two sides are two cards here: its Kitten and its Big Cat, each with its own picture,
-// pocket and place in the case. So the screens deal in card faces: a card's id, or a Hero Cat's
-// `<id>-kitten` / `<id>-bigcat`.
+// A Hero Cat's two sides are two cards here: its Kitten and its Big Cat. So the screens deal in card
+// faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
 
 import './showcase.css';
 import { CARDS } from '@fruitcats/engine';
 import { owned } from './collection';
-import { backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { artUrl, backButton, cardUrl, esc, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
-/** The Display Case: each starter Hero Cat as a Kitten and a Big Cat. Choosing your own comes with the Store. */
-const CASE = ['SB1-H01-kitten', 'SB1-H01-bigcat', 'SB1-H03-kitten', 'SB1-H03-bigcat', 'SB1-H02-kitten', 'SB1-H02-bigcat'];
+/** The Showcase: each starter Hero Cat as a Kitten and a Big Cat. Choosing your own comes with the Store. */
+const SHOWCASE = ['SB1-H01-kitten', 'SB1-H01-bigcat', 'SB1-H03-kitten', 'SB1-H03-bigcat', 'SB1-H02-kitten', 'SB1-H02-bigcat'];
 /** It opens on Mochi's Big Cat, the mightiest. */
-const CASE_START = 3;
+const SHOWCASE_START = 3;
 const FAMILIES = ['all', 'Citrus', 'Orchard', 'Tropical', 'Garden'];
 
 /** Every card in the set, in collector-number order (the order of the set list). */
@@ -27,42 +27,50 @@ const facesOf = (id: string) => (isHero(id) ? [`${id}-kitten`, `${id}-bigcat`] :
 const idOf = (face: string) => face.replace(/-(kitten|bigcat)$/, '');
 const sideOf = (face: string) => (face.endsWith('-kitten') ? 'kitten' : face.endsWith('-bigcat') ? 'bigcat' : null);
 const sideLabel = (face: string) => (sideOf(face) === 'kitten' ? 'Kitten' : sideOf(face) === 'bigcat' ? 'Big Cat' : '');
-const number = (id: string) => `${String(SET.indexOf(idOf(id)) + 1).padStart(3, '0')}/${String(SET.length).padStart(3, '0')}`;
+const number = (face: string) => `${String(SET.indexOf(idOf(face)) + 1).padStart(3, '0')}/${String(SET.length).padStart(3, '0')}`;
 /** The name on this face: a Kitten and its Big Cat are named differently ("Mochi, Sunbeam Kit"). */
 const faceName = (face: string) => {
   const card = CARDS[idOf(face)], side = sideOf(face);
   return (side === 'kitten' ? card.kitten?.name : side === 'bigcat' ? card.bigCat?.name : card.name) ?? card.name;
 };
-/** "Mochi", not "Mochi, Sunbeam Kit". */
-const shortName = (face: string) => faceName(face).split(',')[0];
 
 export interface ShowcaseHost {
   render(): void;
 }
 
+type Tab = 'showcase' | 'all';
 let host: ShowcaseHost = { render() {} };
+let tab: Tab = 'showcase';
 let familyFilter = 'all';
-/** The Display Case card in the spotlight. */
-let caseIndex = CASE_START;
-/** The full-screen view: the faces it swipes through, which one is showing, and which way it came in. */
-let inspecting: { list: string[]; index: number; from: 'left' | 'right' | '' } | null = null;
+let showcaseIndex = SHOWCASE_START;
+/** A card opened from All cards: the cards it swipes through, and which one is showing. */
+let browsing: { list: string[]; index: number } | null = null;
 /** The wallpaper sheet: the device it's for, and the picture once it's drawn. */
 let wallpaper: { device: Device; blob: Blob | null; url: string; note: string } | null = null;
 let drawing = 0;
 
 export function openShowcase(h: ShowcaseHost): void {
   host = h;
+  tab = 'showcase';
   familyFilter = 'all';
-  caseIndex = CASE_START;
-  inspecting = null;
+  showcaseIndex = SHOWCASE_START;
+  browsing = null;
   closeWallpaper();
 }
 
-const current = () => (inspecting ? inspecting.list[inspecting.index] : null);
-/** The Display Case's cards shine like foils. */
-const isFoil = (face: string) => CASE.includes(face);
-const ownedInFilter = () => SET.filter((id) => owned(id) > 0 && (familyFilter === 'all' || CARDS[id].family === familyFilter)).flatMap(facesOf);
-const wrapIndex = (i: number, n: number) => ((i % n) + n) % n;
+/** The cards being looked at one by one, if any: the one opened from All cards, or the Showcase. */
+function viewer(): { list: string[]; index: number } | null {
+  if (browsing) return browsing;
+  return tab === 'showcase' ? { list: SHOWCASE, index: showcaseIndex } : null;
+}
+function setIndex(index: number) {
+  if (browsing) browsing.index = index;
+  else showcaseIndex = index;
+}
+const current = () => { const v = viewer(); return v ? v.list[v.index] : null; };
+/** The Showcase's cards shine like foils. */
+const isFoil = (face: string) => SHOWCASE.includes(face);
+const ownedFaces = () => SET.filter((id) => owned(id) > 0 && (familyFilter === 'all' || CARDS[id].family === familyFilter)).flatMap(facesOf);
 
 function closeWallpaper() {
   if (wallpaper?.url) URL.revokeObjectURL(wallpaper.url);
@@ -87,52 +95,38 @@ async function drawWallpaper() {
   host.render();
 }
 
-/** Turns the Display Case so card `index` is in the spotlight. Moves the slabs in place, so they glide. */
-function turnCase(index: number) {
-  caseIndex = wrapIndex(index, CASE.length);
-  const stage = document.querySelector('.case-stage');
-  if (!stage) { host.render(); return; }
-  stage.querySelectorAll<HTMLElement>('.slab-wrap').forEach((el, i) => { el.dataset.pos = slabPosition(i); });
-  const caption = document.querySelector('.case-caption');
-  if (caption) caption.outerHTML = renderCaseCaption();
+/** Glides the open viewer to card `index`. */
+function scrollToCard(index: number, smooth = true) {
+  const v = viewer();
+  const track = document.querySelector<HTMLElement>(browsing ? '.viewer-overlay [data-track]' : '[data-track]');
+  if (!v || !track) return;
+  const slide = track.children[Math.max(0, Math.min(index, v.list.length - 1))] as HTMLElement | undefined;
+  if (!slide) return;
+  track.scrollTo({ left: slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'instant' });
 }
 
-/** Where a slab stands: in the spotlight, either side of it, or out of sight behind them. */
-function slabPosition(i: number): string {
-  const offset = wrapIndex(i - caseIndex + 1, CASE.length) - 1;
-  return offset === 0 ? 'center' : offset === -1 ? 'left' : offset === 1 ? 'right' : 'hidden';
-}
-
-/** Shows the next or previous card: in the full-screen view if it's open, otherwise in the Display Case. */
 function step(delta: number) {
-  if (wallpaper) return;
-  if (inspecting) {
-    if (inspecting.list.length < 2) return;
-    inspecting = { ...inspecting, index: wrapIndex(inspecting.index + delta, inspecting.list.length), from: delta > 0 ? 'right' : 'left' };
-    host.render();
-  } else turnCase(caseIndex + delta);
+  const v = viewer();
+  if (!v || wallpaper) return;
+  scrollToCard(v.index + delta);
 }
 
 /** Clicks on `col:<action>:<arg>`. */
 export function showcaseClick(action: string, arg: string, h: ShowcaseHost): void {
   host = h;
   switch (action) {
+    case 'tab': if (arg === 'showcase' || arg === 'all') tab = arg; break;
     case 'filter': if (FAMILIES.includes(arg)) familyFilter = arg; break;
-    case 'slab': {
-      const i = Number(arg);
-      if (i === caseIndex) { inspecting = { list: CASE, index: i, from: '' }; break; }
-      turnCase(i);
-      return;
-    }
+    case 'go': scrollToCard(Number(arg)); return;   // a card beside the one in the middle: bring it over
     case 'turn': step(Number(arg)); return;
-    case 'inspect': {
-      const list = ownedInFilter();
-      if (list.includes(arg)) inspecting = { list, index: list.indexOf(arg), from: '' };
+    case 'open': {
+      const list = ownedFaces();
+      if (list.includes(arg)) browsing = { list, index: list.indexOf(arg) };
       break;
     }
-    case 'close': inspecting = null; closeWallpaper(); break;
+    case 'close': browsing = null; closeWallpaper(); break;
     case 'wallpaper':
-      if (!inspecting) break;
+      if (!current()) break;
       wallpaper = { device: thisDevice(), blob: null, url: '', note: '' };
       void drawWallpaper();
       return;
@@ -161,17 +155,17 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
   host.render();
 }
 
-/** Escape closes the wallpaper sheet, then the card. */
+/** Escape closes the wallpaper sheet, then a card opened from All cards. */
 export function showcaseEscape(h: ShowcaseHost): boolean {
   host = h;
   if (wallpaper) closeWallpaper();
-  else if (inspecting) inspecting = null;
+  else if (browsing) browsing = null;
   else return false;
   host.render();
   return true;
 }
 
-/** The arrow keys turn the case, or page through the full-screen cards. */
+/** The arrow keys go to the next or previous card. */
 export function showcaseArrow(key: string, h: ShowcaseHost): boolean {
   host = h;
   if (key !== 'ArrowLeft' && key !== 'ArrowRight') return false;
@@ -179,117 +173,101 @@ export function showcaseArrow(key: string, h: ShowcaseHost): boolean {
   return true;
 }
 
+// ── Screens ──────────────────────────────────────────────────────────────────────────────────────
+
 export function renderShowcase(): string {
-  const have = SET.filter((id) => owned(id) > 0).length;
-  const shown = SET.filter((id) => familyFilter === 'all' || CARDS[id].family === familyFilter);
+  const backdrop = tab === 'showcase' ? SHOWCASE[showcaseIndex] : 'SB1-H03-bigcat';
   return `
-  <div class="menu collection">
-    <div class="setup-bar">
+  <div class="collection-screen">
+    ${renderAmbient(backdrop)}
+    <div class="collection-top">
       ${backButton()}
-      <h2>Collection</h2>
+      <div class="seg" role="tablist" aria-label="Collection">
+        ${(['showcase', 'all'] as Tab[]).map((t) => `<button class="seg-btn ${tab === t ? 'on' : ''}" role="tab" aria-selected="${tab === t}"
+          data-click="col:tab:${t}">${t === 'showcase' ? 'Showcase' : 'All cards'}</button>`).join('')}
+      </div>
       ${settingsButton()}
     </div>
-    <div class="collection-body" data-keep-scroll="collection">
-      ${renderCase()}
-      <section class="binder" aria-label="Binder">
-        <div class="binder-head">
-          <h3>Starter Box</h3>
-          <span class="binder-count"><b>${have}</b> / ${SET.length} collected</span>
-        </div>
-        <div class="chip-row binder-filters" role="group" aria-label="Family" style="--n:${FAMILIES.length}">
-          ${FAMILIES.map((f) => `<button class="chip ${f === 'all' ? '' : `fam-${f.toLowerCase()}`} ${familyFilter === f ? 'chosen' : ''}"
-            data-click="col:filter:${f}" aria-pressed="${familyFilter === f}">${f === 'all' ? 'All' : f}</button>`).join('')}
-        </div>
-        <div class="binder-pages">
-          ${shown.flatMap(facesOf).map(renderPocket).join('')}
-        </div>
-      </section>
-    </div>
+    ${tab === 'showcase' ? renderViewer(SHOWCASE, showcaseIndex) : renderGrid()}
   </div>
-  ${renderInspect()}`;
+  ${browsing ? `
+  <div class="viewer-overlay" role="dialog" aria-label="Cards">
+    ${renderAmbient(browsing.list[browsing.index])}
+    <button class="viewer-close" data-click="col:close" aria-label="Close" title="Close">✕</button>
+    ${renderViewer(browsing.list, browsing.index)}
+  </div>` : ''}
+  ${renderWallpaperSheet()}`;
 }
 
-// ── Display Case ─────────────────────────────────────────────────────────────────────────────────
-
-/** Twinkles around the spotlight: [left %, top %, size px, delay s]. */
-const SPARKLES = [[22, 18, 10, 0], [78, 14, 8, 1.2], [70, 46, 6, 2.1], [28, 52, 7, 0.7], [50, 6, 9, 1.7], [86, 34, 5, 2.8]];
-
-function renderCase(): string {
-  return `
-      <section class="display-case" aria-label="Display Case">
-        <header class="case-plaque"><span class="plaque-rule"></span><h3>Display Case</h3><span class="plaque-rule"></span></header>
-        <div class="case-stage" data-swipe="case">
-          <span class="case-lights" aria-hidden="true"></span>
-          ${SPARKLES.map(([x, y, size, delay]) => `<i class="sparkle" style="left:${x}%;top:${y}%;--size:${size}px;animation-delay:${delay}s" aria-hidden="true"></i>`).join('')}
-          ${CASE.map((face, i) => `
-            <button class="slab-wrap" data-pos="${slabPosition(i)}" data-click="col:slab:${i}" aria-label="${esc(faceName(face))}">
-              <span class="beam" aria-hidden="true"></span>
-              <span class="slab-float" style="animation-delay:${-i * 1.6}s">
-                <span class="slab">
-                  <span class="slab-label ${famClass(idOf(face))}">
-                    <b>${esc(shortName(face))}</b><span class="slab-no">${number(face).split('/')[0]} · ${sideLabel(face)}</span><em>Foil</em>
-                  </span>
-                  <span class="slab-window holo"><img src="${cardUrl(face)}" alt="" decoding="async" draggable="false"></span>
-                </span>
-              </span>
-            </button>`).join('')}
-          <span class="case-floor" aria-hidden="true"></span>
-        </div>
-        <div class="case-nav">
-          <button class="case-arrow" data-click="col:turn:-1" aria-label="Previous card">‹</button>
-          ${renderCaseCaption()}
-          <button class="case-arrow" data-click="col:turn:1" aria-label="Next card">›</button>
-        </div>
-      </section>`;
-}
-
-function renderCaseCaption(): string {
-  const face = CASE[caseIndex];
-  return `<div class="case-caption" aria-live="polite">
-      <span class="caption-name">${esc(faceName(face))}</span>
-      <span class="caption-sub">${esc(CARDS[idOf(face)].family)} · ${sideLabel(face)} · Foil</span>
-      <span class="case-dots">${CASE.map((_, i) => `<i class="${i === caseIndex ? 'on' : ''}"></i>`).join('')}</span>
+/** The current card's art, blurred to a glow of its colours, filling the screen. Two layers, to crossfade. */
+function renderAmbient(face: string): string {
+  return `<div class="ambient" aria-hidden="true">
+      <div class="ambient-layer show" style="background-image:url(${artUrl(face)})"></div><div class="ambient-layer"></div>
     </div>`;
 }
 
-// ── Binder ───────────────────────────────────────────────────────────────────────────────────────
-
-function renderPocket(face: string): string {
-  const id = idOf(face);
-  const copies = owned(id);
-  const label = `${number(face)}${sideOf(face) ? ` · ${sideLabel(face)}` : ''}`;
-  if (!copies) {
-    return `<div class="pocket missing" title="Coming soon">
-      <img src="${cardUrl(face)}" alt="" decoding="async" loading="lazy">
-      <span class="pocket-number">${label}</span><span class="pocket-soon">Coming soon</span></div>`;
-  }
-  return `<button class="pocket" data-click="col:inspect:${face}" aria-label="${esc(faceName(face))}, ${copies} owned">
-      <img src="${cardUrl(face)}" alt="" decoding="async" loading="lazy">
-      <span class="pocket-number">${label}</span>${copies > 1 ? `<span class="pocket-copies">×${copies}</span>` : ''}</button>`;
+function renderViewer(list: string[], index: number): string {
+  return `
+    <div class="viewer">
+      <div class="viewer-track" data-track>
+        ${list.map((face, i) => `
+          <div class="viewer-slide">
+            <button class="viewer-card ${isFoil(face) ? 'holo' : ''}" data-click="col:go:${i}" aria-label="${esc(faceName(face))}">
+              <img src="${cardUrl(face)}" alt="" draggable="false" ${Math.abs(i - index) > 2 ? 'loading="lazy"' : ''}></button>
+          </div>`).join('')}
+      </div>
+      ${renderInfo(list, index)}
+    </div>`;
 }
 
-// ── One card, full screen ────────────────────────────────────────────────────────────────────────
-
-function renderInspect(): string {
-  if (!inspecting) return '';
-  const face = current()!, id = idOf(face), card = CARDS[id];
-  const many = inspecting.list.length > 1;
-  const kind = sideOf(face) ? `Hero Cat · ${sideLabel(face)}` : card.type;
+function renderInfo(list: string[], index: number): string {
+  const face = list[index], card = CARDS[idOf(face)];
+  const kind = sideOf(face) ? sideLabel(face) : card.type;
+  const position = list.length <= 12
+    ? `<span class="v-dots">${list.map((_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('')}</span>`
+    : `<span class="v-count">${index + 1} / ${list.length}</span>`;
   return `
-  <div class="inspect-overlay" role="dialog" aria-label="${esc(faceName(face))}">
-    <button class="inspect-close icon-button" data-click="col:close" aria-label="Close" title="Close">✕</button>
-    <div class="inspect-stage" data-swipe="inspect">
-      ${many ? '<button class="case-arrow inspect-prev" data-click="col:turn:-1" aria-label="Previous card">‹</button>' : ''}
-      <div class="inspect-card ${isFoil(face) ? 'holo' : ''} ${inspecting.from ? `from-${inspecting.from}` : ''} ${famClass(id)}">
-        <img src="${cardUrl(face)}" alt="${esc(faceName(face))}" draggable="false"></div>
-      ${many ? '<button class="case-arrow inspect-next" data-click="col:turn:1" aria-label="Next card">›</button>' : ''}
-    </div>
-    <div class="inspect-info">
-      <span class="inspect-meta">${esc(card.family)} · ${esc(kind)} · Starter Box ${number(face)}${owned(id) > 1 ? ` · ×${owned(id)}` : ''}${many ? ` · ${inspecting.index + 1} of ${inspecting.list.length}` : ''}</span>
-      <button class="primary wallpaper-button" data-click="col:wallpaper">Make wallpaper</button>
-    </div>
-    ${renderWallpaperSheet()}
-  </div>`;
+      <div class="viewer-info" aria-live="polite">
+        <h2 class="v-name">${esc(faceName(face))}</h2>
+        <p class="v-sub">${esc(card.family)} · ${esc(kind)} · ${number(face)}${isFoil(face) ? ' · <span class="v-foil">Foil</span>' : ''}</p>
+        ${position}
+        <div class="v-actions">
+          <button class="v-arrow" data-click="col:turn:-1" aria-label="Previous card" ${index === 0 ? 'disabled' : ''}>‹</button>
+          <button class="v-wallpaper" data-click="col:wallpaper">${PHONE_ICON} Wallpaper</button>
+          <button class="v-arrow" data-click="col:turn:1" aria-label="Next card" ${index === list.length - 1 ? 'disabled' : ''}>›</button>
+        </div>
+      </div>`;
+}
+
+const PHONE_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg>`;
+
+function renderGrid(): string {
+  const have = SET.filter((id) => owned(id) > 0).length;
+  const shown = SET.filter((id) => familyFilter === 'all' || CARDS[id].family === familyFilter).flatMap(facesOf);
+  return `
+    <div class="collection-grid" data-keep-scroll="grid">
+      <div class="grid-head">
+        <span class="grid-count"><b>${have}</b> of ${SET.length} cards · Starter Box</span>
+        <div class="grid-filters" role="group" aria-label="Family">
+          ${FAMILIES.map((f) => `<button class="gchip ${familyFilter === f ? 'on' : ''}" data-click="col:filter:${f}" aria-pressed="${familyFilter === f}">${f === 'all' ? 'All' : f}</button>`).join('')}
+        </div>
+      </div>
+      <div class="grid">
+        ${shown.map(renderTile).join('')}
+      </div>
+    </div>`;
+}
+
+function renderTile(face: string): string {
+  const copies = owned(idOf(face));
+  const label = `${number(face).split('/')[0]}${sideOf(face) ? ` · ${sideLabel(face)}` : ''}`;
+  if (!copies) {
+    return `<div class="tile missing"><img src="${cardUrl(face)}" alt="" loading="lazy"><span class="tile-soon">Coming soon</span>
+      <span class="tile-label">${label}</span></div>`;
+  }
+  return `<button class="tile" data-click="col:open:${face}" aria-label="${esc(faceName(face))}">
+      <img src="${cardUrl(face)}" alt="" loading="lazy" draggable="false">${copies > 1 ? `<span class="tile-copies">×${copies}</span>` : ''}
+      <span class="tile-label">${label}</span></button>`;
 }
 
 /** The preview's shape while the picture is drawn: tall for phones, 3:4 for tablets, wide for computers. */
@@ -321,48 +299,58 @@ function renderWallpaperSheet(): string {
     </div>`;
 }
 
-// ── Touch and pointer ────────────────────────────────────────────────────────────────────────────
+// ── The swiping viewer ───────────────────────────────────────────────────────────────────────────
 
-// Foils follow the pointer, and the slab in the spotlight tilts toward it.
-let tilted: HTMLElement | null = null;
+/**
+ * Called after every redraw of the Collection: puts the viewer on its card (without animating), and
+ * follows its scrolling. Cards turn and fade as they leave the middle, and when another card settles
+ * there, its name and the backdrop change without redrawing the screen (which would stop the scroll).
+ */
+export function showcaseMounted(): void {
+  const track = document.querySelector<HTMLElement>(browsing ? '.viewer-overlay [data-track]' : '.collection-screen [data-track]');
+  const v = viewer();
+  if (!track || !v) return;
+  const container = track.closest('.viewer-overlay, .collection-screen')!;
+  const slides = [...track.children] as HTMLElement[];
+  scrollToCard(v.index, false);
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    const middle = track.scrollLeft + track.clientWidth / 2;
+    let nearest = 0, best = Infinity;
+    slides.forEach((slide, i) => {
+      const offset = (slide.offsetLeft + slide.offsetWidth / 2 - middle) / slide.offsetWidth;
+      const d = Math.max(-1.5, Math.min(1.5, offset));
+      slide.style.setProperty('--d', d.toFixed(3));
+      slide.style.setProperty('--ad', Math.min(1, Math.abs(d)).toFixed(3));
+      if (Math.abs(offset) < best) { best = Math.abs(offset); nearest = i; }
+    });
+    const now = viewer();
+    if (now && nearest !== now.index) {
+      setIndex(nearest);
+      const info = container.querySelector('.viewer-info');
+      if (info) info.outerHTML = renderInfo(now.list, nearest);
+      fadeAmbient(container, now.list[nearest]);
+    }
+  };
+  track.addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(update); }, { passive: true });
+  update();
+}
+
+function fadeAmbient(container: Element, face: string) {
+  const [a, b] = [...container.querySelectorAll<HTMLElement>(':scope > .ambient > .ambient-layer')];
+  if (!a || !b) return;
+  const [shown, hidden] = a.classList.contains('show') ? [a, b] : [b, a];
+  hidden.style.backgroundImage = `url(${artUrl(face)})`;
+  hidden.classList.add('show');
+  shown.classList.remove('show');
+}
+
+// Foils follow the pointer.
 document.addEventListener('pointermove', (event) => {
-  const target = event.target as HTMLElement;
-  const holo = target.closest?.<HTMLElement>('.holo');
-  if (holo) {
-    const r = holo.getBoundingClientRect();
-    holo.style.setProperty('--mx', `${((event.clientX - r.left) / r.width) * 100}%`);
-    holo.style.setProperty('--my', `${((event.clientY - r.top) / r.height) * 100}%`);
-  }
-  const slab = target.closest?.<HTMLElement>('.slab-wrap[data-pos="center"] .slab');
-  if (tilted && tilted !== slab) { tilted.style.removeProperty('--tx'); tilted.style.removeProperty('--ty'); }
-  tilted = slab ?? null;
-  if (slab) {
-    const r = slab.getBoundingClientRect();
-    slab.style.setProperty('--tx', (((event.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
-    slab.style.setProperty('--ty', (((event.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
-  }
+  const holo = (event.target as HTMLElement).closest?.<HTMLElement>('.holo');
+  if (!holo) return;
+  const r = holo.getBoundingClientRect();
+  holo.style.setProperty('--mx', `${((event.clientX - r.left) / r.width) * 100}%`);
+  holo.style.setProperty('--my', `${((event.clientY - r.top) / r.height) * 100}%`);
 });
-
-// Swiping sideways over the case (or the full-screen card) turns to the next card. The tap that ends a
-// swipe mustn't also count as a click.
-let swipe: { x: number; y: number } | null = null;
-let swallowClick = false;
-document.addEventListener('pointerdown', (event) => {
-  swipe = (event.target as HTMLElement).closest?.('[data-swipe]') ? { x: event.clientX, y: event.clientY } : null;
-});
-document.addEventListener('pointerup', (event) => {
-  if (!swipe) return;
-  const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
-  swipe = null;
-  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
-  swallowClick = true;
-  setTimeout(() => { swallowClick = false; }, 400);
-  step(dx < 0 ? 1 : -1);
-});
-document.addEventListener('pointercancel', () => { swipe = null; });
-document.addEventListener('click', (event) => {
-  if (!swallowClick) return;
-  swallowClick = false;
-  event.stopPropagation();
-  event.preventDefault();
-}, true);

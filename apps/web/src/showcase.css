@@ -1,259 +1,183 @@
-/* The Collection: a wooden Display Case over a Binder of card pockets, a full-screen card, and the
-   wallpaper sheet. Loaded after style.css and skin.css (showcase.ts is imported by main.ts). */
+/* The Collection: a gallery for looking at cards. Dark, with the current card's art blurred into a glow
+   behind it; the cards as big as the screen allows; a grid of the whole set. Loaded after style.css and
+   skin.css, so its rules win where they meet the shared button styles. */
 
-.menu.collection {
-  justify-content: flex-start; gap: 10px;
-  padding-top: max(calc(var(--vh, 1vh) * 1.5), env(safe-area-inset-top));
-  padding-bottom: 0;
+.collection-screen, .viewer-overlay {
+  position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
+  background: #120a06; color: #fff;
 }
-.menu.collection .setup-bar { flex: none; }
-.collection-body {
-  flex: 1; min-height: 0; overflow-y: auto; width: 100%; max-width: 980px;
-  display: flex; flex-direction: column; gap: 18px; padding: 4px 4px max(20px, env(safe-area-inset-bottom));
-  scrollbar-width: thin; scrollbar-color: rgba(120, 70, 20, 0.35) transparent;
-}
-.collection-body > * { flex: none; }
+.viewer-overlay { z-index: 60; animation: fade-in 0.2s ease-out; }
 
-/* ── Display Case: a jeweller's showcase. Deep velvet behind glass, a brushed-gold bezel, warm spotlights,
-   and each card sealed in a clear collector's slab that turns into the spotlight (showcase.ts sets
-   data-pos on each slab; the slabs keep their elements, so they glide from place to place). ── */
-
-.display-case {
-  --gold-1: #fff1c4; --gold-2: #f0c96a; --gold-3: #c8923a; --gold-4: #7d5217;
-  --card-w: min(200px, 30vw, calc(var(--vh, 1vh) * 21));
-  position: relative; border-radius: 26px; padding: 14px 14px 12px; overflow: hidden; isolation: isolate;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .8 0 0 0 0 .9 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    radial-gradient(120% 90% at 50% 38%, #5a1838 0%, #3a0e25 38%, #1c0612 75%, #0e0309 100%);
-  box-shadow:
-    0 0 0 2px var(--gold-4), 0 0 0 4px var(--gold-2), 0 0 0 5px var(--gold-1), 0 0 0 7px var(--gold-3), 0 0 0 9px #4a2e0b,
-    0 22px 50px rgba(20, 5, 0, 0.65), inset 0 0 70px rgba(0, 0, 0, 0.75);
-  margin: 9px;   /* room for the bezel, which is drawn outside the box */
+/* The glow: the card's own art, blurred and dimmed, crossfading as the cards change (showcase.ts). */
+.ambient { position: absolute; inset: -12%; z-index: -1; pointer-events: none; }
+.ambient-layer {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  filter: blur(46px) saturate(1.5) brightness(0.62); transform: scale(1.1);
+  opacity: 0; transition: opacity 0.7s ease;
 }
-/* A warm light strip along the top of the case, and the glass: soft reflections across everything. */
-.display-case::before {
-  content: ''; position: absolute; left: 6%; right: 6%; top: 0; height: 3px; border-radius: 3px; z-index: 3; pointer-events: none;
-  background: linear-gradient(90deg, transparent, #ffe9b0 20%, #fff6dc 50%, #ffe9b0 80%, transparent);
-  box-shadow: 0 0 18px 4px rgba(255, 214, 140, 0.55);
-}
-.display-case::after {
-  content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
-  background:
-    linear-gradient(112deg, transparent 18%, rgba(255, 255, 255, 0.07) 24%, rgba(255, 255, 255, 0.02) 31%, transparent 33%),
-    linear-gradient(112deg, transparent 64%, rgba(255, 255, 255, 0.05) 68%, transparent 71%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 230, 170, 0.12);
+.ambient-layer.show { opacity: 1; }
+.ambient::after {   /* a vignette, so the edges fall off into darkness and white text always reads */
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 42%, transparent 0%, rgba(10, 5, 2, 0.35) 60%, rgba(10, 5, 2, 0.8) 100%);
 }
 
-/* The engraved plaque. */
-.case-plaque { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 2px; }
-.case-plaque h3 {
-  flex: none; white-space: nowrap; margin: 0; padding: 3px 18px 4px; border-radius: 4px;
-  font: 700 13px/1.3 Fredoka, Nunito, sans-serif; letter-spacing: 3.5px; text-transform: uppercase; color: #4a2c06;
-  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 45%, var(--gold-3) 55%, var(--gold-2));
-  box-shadow: 0 0 0 1px var(--gold-4), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 3px 8px rgba(0, 0, 0, 0.6);
-  text-shadow: 0 1px 0 rgba(255, 250, 225, 0.7);
+/* Top: Home, the Showcase / All cards switch, Settings. */
+.collection-top {
+  display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 12px; flex: none;
+  padding: max(10px, env(safe-area-inset-top)) 14px 6px; width: 100%; max-width: 900px; margin: 0 auto;
 }
-.plaque-rule { flex: 0 1 70px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-2)); }
-.plaque-rule:last-child { transform: scaleX(-1); }
+.seg {
+  justify-self: center; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.collection-screen button.seg-btn {
+  min-width: 108px; height: 34px; padding: 0 16px; border-radius: 999px; background: transparent; box-shadow: none;
+  color: rgba(255, 255, 255, 0.78); font: 700 14px/1 Fredoka, Nunito, sans-serif; letter-spacing: 0.2px;
+}
+.collection-screen button.seg-btn:hover:not(:disabled) { transform: none; box-shadow: none; color: #fff; }
+.collection-screen button.seg-btn.on { background: #fff; color: #2b1a0e; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
 
-/* The stage: slabs stand on a lacquered plinth, the one in the middle under the spotlight. */
-.case-stage {
-  position: relative; height: calc(var(--card-w) * 2.05 + 34px); perspective: 1100px; touch-action: pan-y;
-  user-select: none; -webkit-user-select: none;
+/* ── The viewer: one card at a time, swiped with the phone's own scrolling ── */
+
+.viewer {
+  --card-w: min(72vw, calc((var(--vh, 1vh) * 100 - 290px) * 0.714), 430px);
+  flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center;
 }
-.case-lights {
-  position: absolute; inset: -14px -14px 0; pointer-events: none;
-  background:
-    radial-gradient(40% 70% at 50% 0%, rgba(255, 226, 160, 0.34), transparent 70%),
-    radial-gradient(22% 55% at 16% 0%, rgba(255, 210, 150, 0.14), transparent 70%),
-    radial-gradient(22% 55% at 84% 0%, rgba(255, 210, 150, 0.14), transparent 70%);
+.viewer-track {
+  display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; flex: none;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
+  /* Room above and below for the cards' shadows (a scrolling strip clips whatever sticks out), taken
+     back with negative margins so the layout doesn't grow. */
+  padding: 50px calc(50% - var(--card-w) / 2) 80px; margin: -28px 0 -50px;
 }
-.case-floor {
-  position: absolute; left: -14px; right: -14px; bottom: 0; height: 30%; pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(50% 60% at 50% 0%, rgba(255, 215, 150, 0.16), transparent 70%),
-    linear-gradient(180deg, #2a0b1b 0%, #12040c 100%);
-  border-top: 1px solid rgba(255, 220, 160, 0.3);
-  box-shadow: inset 0 10px 18px rgba(0, 0, 0, 0.5);
+.viewer-track::-webkit-scrollbar { display: none; }
+.viewer-slide { flex: none; width: var(--card-w); scroll-snap-align: center; scroll-snap-stop: always; perspective: 1400px; }
+/* Cards beside the middle one turn away, shrink and dim, by how far they are from it (--d, set on scroll). */
+.collection-screen button.viewer-card, .viewer-overlay button.viewer-card {
+  display: block; width: 100%; padding: 0; border: none; background: #000; border-radius: 4.6% / 3.3%;
+  transform: rotateY(calc(var(--d, 0) * -22deg)) scale(calc(1 - var(--ad, 0) * 0.16));
+  opacity: calc(1 - var(--ad, 0) * 0.45);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  touch-action: pan-x; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+}
+.collection-screen button.viewer-card:hover:not(:disabled), .viewer-overlay button.viewer-card:hover:not(:disabled) {
+  transform: rotateY(calc(var(--d, 0) * -22deg)) scale(calc(1 - var(--ad, 0) * 0.16));
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.viewer-card img { display: block; width: 100%; border-radius: inherit; pointer-events: none; -webkit-user-drag: none; }
+
+.viewer-info { flex: none; text-align: center; padding: 0 16px max(18px, env(safe-area-inset-bottom)); }
+.v-name {
+  margin: 0; font: 700 clamp(21px, calc(var(--vh, 1vh) * 3.1), 30px)/1.15 Fredoka, Nunito, sans-serif; color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.v-sub { margin: 4px 0 0; font: 700 12px/1.3 Nunito, sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255, 255, 255, 0.66); }
+.v-foil {
+  background: linear-gradient(90deg, #ff8fb1, #ffd27a, #8ff0a4, #7fd3ff, #c29bff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.v-dots { display: flex; justify-content: center; gap: 7px; margin-top: 12px; }
+.v-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transition: background 0.3s, transform 0.3s; }
+.v-dots i.on { background: #fff; transform: scale(1.3); }
+.v-count { display: block; margin-top: 10px; font: 700 13px Nunito, sans-serif; color: rgba(255, 255, 255, 0.7); }
+.v-actions { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 14px; }
+.collection-screen button.v-wallpaper, .viewer-overlay button.v-wallpaper {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 22px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14); color: #fff; font: 700 15px/1 Fredoka, Nunito, sans-serif;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.collection-screen button.v-arrow, .viewer-overlay button.v-arrow {
+  width: 44px; height: 44px; padding: 0 0 3px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.1); color: #fff; font: 600 28px/1 Fredoka, Nunito, sans-serif;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+:is(.collection-screen, .viewer-overlay) button:is(.v-wallpaper, .v-arrow):hover:not(:disabled) {
+  transform: none; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+/* Touch screens swipe, so the arrows are only for mice and keyboards. */
+@media (hover: none) { .v-arrow { visibility: hidden; } }
+
+.viewer-overlay button.viewer-close {
+  position: absolute; z-index: 2; top: max(12px, env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; padding: 0;
+  border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.14); color: #fff;
+  font: 700 18px/1 Fredoka, Nunito, sans-serif; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.viewer-overlay .viewer { padding-top: max(56px, calc(env(safe-area-inset-top) + 44px)); }
+
+/* ── All cards: the set as a grid ── */
+
+.collection-grid { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 6px 14px max(20px, env(safe-area-inset-bottom)); }
+.collection-grid::-webkit-scrollbar { display: none; }
+.grid-head, .grid { width: 100%; max-width: 900px; margin: 0 auto; }
+.grid-head { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 14px; }
+.grid-count { font: 700 13px Nunito, sans-serif; letter-spacing: 0.4px; color: rgba(255, 255, 255, 0.72); }
+.grid-count b { color: #fff; font-size: 15px; }
+.grid-filters { display: flex; justify-content: center; gap: 6px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.collection-screen button.gchip {
+  height: 32px; padding: 0 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85);
+  font: 700 13px/1 Fredoka, Nunito, sans-serif; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+.collection-screen button.gchip:hover:not(:disabled) { transform: none; background: rgba(255, 255, 255, 0.18); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); }
+.collection-screen button.gchip.on { background: #fff; color: #2b1a0e; box-shadow: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; }
+.tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.collection-screen button.tile { padding: 0; border: none; background: none; box-shadow: none; border-radius: 0; }
+.collection-screen button.tile:hover:not(:disabled) { transform: translateY(-3px); box-shadow: none; }
+.tile img {
+  display: block; width: 100%; aspect-ratio: 0.714; object-fit: cover; border-radius: 4.6% / 3.3%;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.tile-label { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
+.tile-copies {
+  position: absolute; top: 6px; right: 6px; padding: 1px 7px; border-radius: 999px;
+  font: 800 11px/1.5 Nunito, sans-serif; color: #fff; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(6px);
+}
+/* A card you don't have yet: its silhouette, waiting. */
+.tile.missing img { filter: brightness(0) opacity(0.35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15); }
+.tile-soon {
+  position: absolute; left: 0; right: 0; top: 42%; text-align: center; font: 700 12px Fredoka, Nunito, sans-serif; color: rgba(255, 255, 255, 0.55);
 }
 
-button.slab-wrap {
-  position: absolute; left: 50%; bottom: 13%; z-index: 2; width: var(--card-w); padding: 0; border: none; background: none;
-  box-shadow: none; border-radius: 16px; transform-style: preserve-3d; -webkit-tap-highlight-color: transparent;
-  --x: 0px; --ry: 0deg; --s: 1;
-  transform: translateX(-50%) translateX(var(--x)) rotateY(var(--ry)) scale(var(--s));
-  transform-origin: 50% 100%;
-  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.7s, opacity 0.7s;
+@media (max-width: 640px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
+  .collection-screen button.seg-btn { min-width: 96px; padding: 0 12px; }
+  .grid-filters { gap: 5px; }
+  .collection-screen button.gchip { flex: none; padding: 0 11px; font-size: 12.5px; }
 }
-button.slab-wrap:hover:not(:disabled) { box-shadow: none; transform: translateX(-50%) translateX(var(--x)) rotateY(var(--ry)) scale(var(--s)); }
-button.slab-wrap:active { transform: translateX(-50%) translateX(var(--x)) rotateY(var(--ry)) scale(calc(var(--s) * 0.98)); }
-.slab-wrap[data-pos='center'] { z-index: 3; --s: 1.08; }
-.slab-wrap[data-pos='left'] { --x: calc(var(--card-w) * -0.98); --ry: 32deg; --s: 0.8; filter: brightness(0.62) saturate(0.85); }
-.slab-wrap[data-pos='right'] { --x: calc(var(--card-w) * 0.98); --ry: -32deg; --s: 0.8; filter: brightness(0.62) saturate(0.85); }
-.slab-wrap[data-pos='hidden'] { --s: 0.5; opacity: 0; pointer-events: none; }
 
-/* The spotlight's beam, only on the slab in the middle. */
-.beam {
-  position: absolute; left: 50%; bottom: 60%; width: 220%; height: 140%; transform: translateX(-50%); pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 232, 180, 0.22), rgba(255, 232, 180, 0.04) 70%, transparent);
-  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); filter: blur(6px);
-  opacity: 0; transition: opacity 0.7s;
-}
-.slab-wrap[data-pos='center'] .beam { opacity: 1; }
-
-.slab-float { display: block; animation: slab-float 6s ease-in-out infinite; }
-@keyframes slab-float { 50% { transform: translateY(-6px); } }
-
-/* The slab: thick clear acrylic with a gold grading label, a card window, glare, and a reflection below. */
-.slab {
-  --tx: 0; --ty: 0;
-  position: relative; display: block; padding: 7px 7px 9px; border-radius: 14px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.07) 38%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0.16));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.25),
-    0 18px 30px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.35);
-  transform: rotateY(calc(var(--tx) * 12deg)) rotateX(calc(var(--ty) * -10deg));
-  transition: transform 0.25s ease-out;
-  -webkit-box-reflect: below 8px linear-gradient(transparent 72%, rgba(255, 255, 255, 0.2));
-}
-.slab::after {   /* glare that slides as the slab tilts, and sweeps across now and then */
-  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.28) 47%, rgba(255, 255, 255, 0.06) 53%, transparent 62%);
-  background-size: 250% 100%; background-position: calc(50% - var(--tx) * 40%) 0;
-}
-.slab-wrap[data-pos='center'] .slab::after { animation: glare-sweep 7s ease-in-out infinite; }
-@keyframes glare-sweep { 0%, 70% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
-
-.slab-label {
-  display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center;
-  margin-bottom: 6px; padding: 4px 8px; border-radius: 6px; text-align: left;
-  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 50%, var(--gold-3));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 0 1px var(--gold-4), 0 2px 4px rgba(0, 0, 0, 0.35);
-  color: #3d2404;
-}
-.slab-label b { font: 700 clamp(11px, calc(var(--card-w) * 0.075), 15px)/1.1 Fredoka, Nunito, sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.slab-no { grid-column: 1; font: 700 clamp(8px, calc(var(--card-w) * 0.05), 10.5px)/1.2 Nunito, sans-serif; letter-spacing: 0.6px; color: #6b4410; }
-.slab-label em {
-  grid-column: 2; grid-row: 1 / 3; font: 700 clamp(8px, calc(var(--card-w) * 0.055), 11px)/1 Fredoka, Nunito, sans-serif;
-  font-style: normal; letter-spacing: 1.2px; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; color: #fff;
-  background: linear-gradient(115deg, #ff6b9a, #ffb35c, #7ee08f, #5cc6ff, #b27cff);
-  text-shadow: 0 1px 1px rgba(60, 20, 40, 0.6); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-.slab-window { border-radius: 8px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.45); }
-.slab-window img { border-radius: 8px; -webkit-user-drag: none; }
-
-/* Twinkles in the spotlight. */
-.sparkle {
-  position: absolute; z-index: 4; width: var(--size); height: var(--size); pointer-events: none; background: #fff6da;
-  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
-  opacity: 0; animation: twinkle 3.6s ease-in-out infinite;
-  filter: drop-shadow(0 0 4px rgba(255, 230, 170, 0.9));
-}
-@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: 0; } }
-
-/* Under the stage: arrows either side of the name of the card in the spotlight. */
-.case-nav { position: relative; z-index: 5; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; margin-top: 4px; }
-button.case-arrow {
-  width: 44px; height: 44px; padding: 0 0 4px; border-radius: 50%; font: 600 30px/1 Fredoka, Nunito, sans-serif; color: #fff1c4;
-  background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 0 0 1px rgba(255, 225, 160, 0.45), 0 4px 10px rgba(0, 0, 0, 0.45);
-  display: grid; place-items: center;
-}
-button.case-arrow:hover:not(:disabled) { box-shadow: inset 0 0 0 1px rgba(255, 225, 160, 0.8), 0 4px 14px rgba(255, 200, 120, 0.3); }
-.case-caption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
-.caption-name {
-  font: 700 clamp(15px, 2.2vw, 19px)/1.2 Fredoka, Nunito, sans-serif; letter-spacing: 0.3px;
-  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 60%, var(--gold-3)); -webkit-background-clip: text; background-clip: text; color: transparent;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.caption-sub { font: 600 11.5px/1.2 Nunito, sans-serif; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(255, 230, 190, 0.6); }
-.case-dots { display: flex; gap: 6px; margin-top: 4px; }
-.case-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 230, 190, 0.3); transition: background 0.3s, transform 0.3s; }
-.case-dots i.on { background: var(--gold-2); transform: scale(1.35); box-shadow: 0 0 6px rgba(255, 210, 120, 0.8); }
-
-@media (prefers-reduced-motion: reduce) {
-  .slab-float, .sparkle, .slab-wrap[data-pos='center'] .slab::after { animation: none; }
-  button.slab-wrap { transition: none; }
+/* Phones held sideways (and other short screens): the name and buttons share one row under the cards,
+   and the details and dots give way, so the cards keep as much height as possible. */
+@media (max-height: 500px) {
+  .collection-top { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 0; }
+  .viewer { --card-w: calc((var(--vh, 1vh) * 100 - 128px) * 0.714); }
+  .viewer-track { padding-top: 30px; padding-bottom: 46px; margin: -22px 0 -40px; }
+  .viewer-info { display: flex; justify-content: center; align-items: center; gap: 16px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .v-name { font-size: 19px; }
+  .v-sub, .v-dots, .v-count { display: none; }
+  .v-actions { margin-top: 0; }
+  .viewer-overlay .viewer { padding-top: 40px; }
 }
 
 /* ── Foil: a rainbow sheen and a glint that follow the pointer (--mx/--my, set in showcase.ts) ── */
 
-.holo { position: relative; display: block; border-radius: 4.5% / 3.2%; overflow: hidden; isolation: isolate; }
-.holo img { display: block; width: 100%; border-radius: inherit; }
+.holo { position: relative; display: block; overflow: hidden; isolation: isolate; }
 .holo::before, .holo::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
 .holo::before {
   background: linear-gradient(115deg, #ff6b6b, #ffd36b, #7bff9a, #6bd5ff, #b07bff, #ff6bd0, #ff6b6b);
   background-size: 300% 300%; background-position: var(--mx, 50%) var(--my, 50%);
-  mix-blend-mode: soft-light; opacity: 0.7; animation: holo-drift 6s ease-in-out infinite;
+  mix-blend-mode: soft-light; opacity: 0.55; animation: holo-drift 7s ease-in-out infinite;
 }
 .holo::after {
-  background: radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.55), transparent 40%);
+  background: radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.45), transparent 42%);
   mix-blend-mode: overlay;
 }
 @keyframes holo-drift { 50% { background-position: calc(var(--mx, 50%) + 40%) calc(var(--my, 50%) + 30%); } }
 @media (prefers-reduced-motion: reduce) { .holo::before { animation: none; } }
 
-/* ── Binder: pockets in collector-number order ── */
-
-.binder {
-  padding: 14px; border-radius: 18px;
-  background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
-  box-shadow: var(--panel-shadow); text-align: left;
-}
-.binder-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.binder-head h3 { margin: 0; font-size: 20px; color: var(--ink); }
-.binder-count { font-weight: 700; color: var(--muted); }
-.binder-count b { color: var(--good); font-size: 18px; }
-.binder-filters { margin: 0 auto 12px; }
-.binder-pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px 10px; }
-.pocket {
-  position: relative; display: block; padding: 5px; border-radius: 12px; border: none;
-  background: rgba(120, 80, 40, 0.1); box-shadow: inset 0 1px 3px rgba(80, 40, 10, 0.25);
-}
-button.pocket { background: rgba(120, 80, 40, 0.1); box-shadow: inset 0 1px 3px rgba(80, 40, 10, 0.25); padding: 5px; }
-button.pocket:hover:not(:disabled) { box-shadow: inset 0 1px 3px rgba(80, 40, 10, 0.25), 0 0 0 3px var(--glow); }
-.pocket img { display: block; width: 100%; aspect-ratio: 0.714; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 5px rgba(60, 30, 5, 0.3); }
-/* A card you don't have yet: its shadow waits in the pocket. */
-.pocket.missing img { filter: brightness(0) opacity(0.22); box-shadow: none; }
-.pocket-number { display: block; margin-top: 4px; text-align: center; font: 700 11px/1.3 Fredoka, Nunito, sans-serif; color: #75573a; white-space: nowrap; }
-.pocket-soon {
-  position: absolute; left: 0; right: 0; top: 40%; text-align: center; font: 700 11px Fredoka, Nunito, sans-serif; color: #75573a;
-}
-.pocket-copies {
-  position: absolute; top: 9px; right: 9px; padding: 0 7px; border-radius: 999px;
-  font: 800 12px/1.6 Nunito, sans-serif; color: #fff; background: var(--accent);
-}
-
-/* ── Inspect: one card, full screen ── */
-
-.inspect-overlay {
-  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 14px; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-  background: rgba(30, 15, 5, 0.8); backdrop-filter: blur(4px); animation: fade-in 0.15s ease-out;
-}
-.inspect-card {
-  width: min(88vw, calc(var(--vh, 1vh) * 62 * 0.714)); border-radius: 22px;
-  box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
-}
-.inspect-card:not(.holo) img { display: block; width: 100%; border-radius: 22px; }
-.inspect-card.holo { border-radius: 22px; }
-.inspect-stage { position: relative; display: flex; align-items: center; justify-content: center; gap: 18px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-.inspect-stage button.case-arrow { flex: none; background: rgba(40, 20, 8, 0.55); }
-.inspect-card img { -webkit-user-drag: none; }
-.inspect-card.from-right { animation: slide-from-right 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.inspect-card.from-left { animation: slide-from-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes slide-from-right { from { transform: translateX(60px) rotate(3deg); opacity: 0; } }
-@keyframes slide-from-left { from { transform: translateX(-60px) rotate(-3deg); opacity: 0; } }
-.inspect-info { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(420px, 100%); }
-.inspect-meta { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); text-align: center; }
-.face-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: min(260px, 100%); }
-button.wallpaper-button { min-height: 46px; padding: 8px 28px; font-size: 17px; }
-.inspect-close { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; font: 700 20px/1 Fredoka, Nunito, sans-serif; }
-
 /* ── Wallpaper sheet ── */
 
 .wall-overlay { z-index: 70; }
-.overlay .wall-sheet { width: min(380px, 100%); text-align: center; display: flex; flex-direction: column; gap: 12px; max-height: 100%; }
+.overlay .wall-sheet { width: min(380px, 100%); text-align: center; display: flex; flex-direction: column; gap: 12px; max-height: 100%; color: var(--ink); }
 .wall-sheet h2 { margin: 0; }
 .wall-preview {
   display: block; align-self: center; max-width: 100%; max-height: min(calc(var(--vh, 1vh) * 46), 440px); width: auto; height: auto;
@@ -267,18 +191,3 @@ button.wallpaper-button { min-height: 46px; padding: 8px 28px; font-size: 17px; 
 .wall-preview.drawing.computer { width: 100%; height: auto; }
 .wall-sheet .chip-row { width: 100%; }
 .wall-how { margin: 0; font-size: 13.5px; font-weight: 700; color: #6b5139; line-height: 1.35; }
-
-@media (max-width: 640px) {
-  .collection .setup-bar h2 { font-size: 22px; }
-  .display-case { --card-w: min(38vw, calc(var(--vh, 1vh) * 22)); padding: 12px 8px 10px; border-radius: 20px; }
-  .slab-wrap[data-pos='left'] { --x: calc(var(--card-w) * -0.8); }
-  .slab-wrap[data-pos='right'] { --x: calc(var(--card-w) * 0.8); }
-  .inspect-stage { gap: 0; }
-  .inspect-stage button.case-arrow { position: absolute; z-index: 2; }
-  .inspect-prev { left: -6px; }
-  .inspect-next { right: -6px; }
-  .binder { padding: 10px; }
-  .binder-pages { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .binder-filters { width: 100%; gap: 4px; }
-  .binder-filters button.chip { padding: 0 2px; font-size: 11.5px; text-overflow: clip; }
-}

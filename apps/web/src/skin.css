@@ -117,18 +117,9 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .mode-name { color: var(--ink); }
 .mode-sub { color: var(--muted); }
 .mode-card.soon img { filter: saturate(0.45); opacity: 0.8; }
-.soon-tag {
-  padding: 2px 10px; border-radius: 999px; white-space: nowrap;
-  font: 700 11px/1.5 Fredoka, Nunito, sans-serif; color: #fff; background: #75573a;   /* 6:1 with white */
-  box-shadow: 0 0 0 2px #fff6dc, 0 2px 5px rgba(60, 30, 5, 0.35);
-}
-/* An unfinished game: a gold ribbon on the Solo tile, whose picture is your Hero Cat. */
-.continue-tag {
-  padding: 2px 10px; border-radius: 999px; white-space: nowrap;
-  font: 700 11px/1.5 Fredoka, Nunito, sans-serif; color: #4a2c06;
-  background: linear-gradient(#ffe9a8, #f0c050 55%, #d99a2b);
-  box-shadow: 0 0 0 2px #fff6dc, 0 2px 5px rgba(60, 30, 5, 0.35);
-}
+/* The line under a tile's name: "Coming soon" quietly, a game to continue in gold. */
+.mode-sub.soon-line { font-style: italic; }
+.mode-sub.continue-line { color: #9a5a00; font-weight: 800; }
 .home-note { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.9); }
 .setup-bar h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
 
@@ -366,10 +357,12 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
     --hero-h: clamp(30px, calc(var(--vh, 1vh) * 11), 70px);
     --treat-w: 13px;
   }
-  .hero-parade, .picker h2, .coming, .deck-blurb, .title p, .mode-sub { display: none; }
+  .hero-parade, .picker h2, .coming, .deck-blurb, .title p { display: none; }
   /* The two groups side by side in one row: each tile's share of the width, less its padding and the gaps. */
   .modes { --tile: min(calc(var(--vh, 1vh) * 24), calc((100vw - 120px) / 6 - 30px)); --group-gap: 36px; flex-direction: row; }
   .mode-group { gap: 12px; }
+  .mode-name { font-size: 13px; white-space: nowrap; }   /* one line each, so the tiles stay the same height */
+  .mode-sub { font-size: 10px; white-space: nowrap; }
   .title h1 { font-size: calc(var(--vh, 1vh) * 11); }
   .deck-choice img { max-height: calc(var(--vh, 1vh) * 42); }
   .deck-name { font-size: 13px; }

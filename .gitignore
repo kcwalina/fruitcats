@@ -12,3 +12,6 @@ __pycache__/
 secrets.json
 .claude/settings.local.json
 art/sound-lab/
+
+# Recorded demo footage: frames, narration and the rendered video (rebuild with tools/demo)
+tools/demo/out/

@@ -19,7 +19,7 @@ const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const PORT = 9300 + Math.floor(Math.random() * 400);   // a fresh port per run, so a stale headless Edge cannot block us
 const SIZE = { width: 1280, height: 800 };
 const CAPTURE_FPS = 8;
-const URL = 'http://localhost:5173/';
+const URL = process.env.FRUITCATS_URL ?? 'http://localhost:5173/';
 
 const script = JSON.parse(readFileSync(join(HERE, 'script.json'), 'utf8'));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -198,133 +198,96 @@ async function main() {
     await wait(4000);
     await run(send, setup);
 
-    // 1. Title card
+    // 1. Title card over the menu
     await run(send, `window.__title(true, 'Fruitcats', 'How to play')`);
     await caption('');
-    await capture(send, 'intro', 6);
-    await run(send, `window.__title(false)`);
-
-    // 2. The menu: show each deck being chosen
-    await caption(scene.menu.caption);
-    await capture(send, 'menu', 8, async () => {
-      for (const deck of ['orchard-guard', 'mango-tango', 'zest-rush']) {
-        await run(send, click(`[data-click="menu:${deck}"]`));
-        await wait(1200);
-      }
-      await run(send, click('[data-click="menu:kitten"]'));   // the gentle opponent keeps the page responsive
-      await wait(900);
-    });
-
-    // 3. Mulligan
-    await caption(scene.mulligan.caption);
-    await capture(send, 'mulligan', 7, async () => {
-      await run(send, click('[data-click="menu:play"]'));      // the game starts as this scene begins
-      console.log('    mulligan prompt:', await run(send, waitFor('mulligan')));
-      await run(send, `(() => { const c = document.querySelectorAll('.hand .hand-card'); c[0]?.click(); c[3]?.click(); return true; })()`);
-      await wait(1600);
-      await run(send, click('[data-click="btn:confirm"]'));
+    await capture(send, 'intro', 7, async () => {
+      // A normal game, not the walkthrough: the video is the walkthrough's trailer, not a copy of it.
+      await run(send, `(() => { try { localStorage.setItem('fruitcats-played', 'yes'); } catch {} return true; })()`);
       await wait(1500);
+      await run(send, `window.__title(false)`);
+      await run(send, click('[data-click="menu:zest-rush"]'));
+      await wait(700);
+      await run(send, click('[data-click="menu:kitten"]'));   // the gentle opponent keeps the page responsive
+      await wait(700);
     });
 
-    // 4. Planting Treats
+    // 2. Treats: keep the hand, then bury the two priciest cards
     await caption(scene.plant.caption);
-    await capture(send, 'plant', 10, async () => {
-      console.log('    plant prompt:', await run(send, waitFor('setupPlant')));
-      await run(send, `(() => { const c = document.querySelectorAll('.hand .hand-card'); c[c.length - 1]?.click(); return true; })()`);
-      await wait(1200);
-      await run(send, `(() => { const c = document.querySelectorAll('.hand .hand-card'); c[c.length - 2]?.click(); return true; })()`);
-      await wait(1200);
+    await capture(send, 'plant', 12, async () => {
+      await run(send, click('[data-click="menu:play"]'));
+      console.log('    mulligan:', await run(send, waitFor('mulligan')));
       await run(send, click('[data-click="btn:confirm"]'));
-      await wait(2000);
-    });
-
-    // 5. A card's cost and keywords, via the long-press preview
-    await caption(scene.cost.caption);
-    await capture(send, 'cost', 9, async () => {
-      console.log('    action prompt:', await run(send, waitFor('action')));
-      await run(send, `(() => {
-        const card = document.querySelector('.hand .hand-card');
-        if (!card) return 'no hand';
-        const r = card.getBoundingClientRect();
-        card.querySelector('img').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: r.x + 20, clientY: r.y + 20 }));
+      console.log('    plant:', await run(send, waitFor('setupPlant')));
+      await wait(900);
+      // The two priciest, which is what the game now teaches.
+      await run(send, `(async () => {
+        const fc = window.fruitcats;
+        const priced = [...fc.game.players[0].hand].map((c) => [c.uid, fc.CARDS?.[c.id]?.cost ?? 0]).sort((a, b) => b[1] - a[1]);
+        for (const [uid] of priced.slice(0, 2)) {
+          document.querySelector('[data-click="hand:' + uid + '"]')?.click();
+          await new Promise((r) => setTimeout(r, 900));
+        }
         return true; })()`);
-      await wait(4500);
-      await run(send, `(() => { window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 })); return true; })()`);
-      await wait(1200);
+      await wait(700);
+      await run(send, click('[data-click="btn:confirm"]'));
+      await wait(1800);
     });
 
-    // 6. Playing a card
+    // 3. Spending Treats to put a cat down
     await caption(scene.play.caption);
-    await capture(send, 'play', 8, async () => {
+    await capture(send, 'play', 10, async () => {
+      console.log('    action:', await run(send, waitFor('action')));
+      await wait(900);
       await run(send, `(async () => {
         const fc = window.fruitcats;
         for (let i = 0; i < 40; i++) {
           const g = fc.game;
           if (g.prompt?.player === 0 && g.prompt.kind === 'action') {
-            // Only a play that puts a unit in the Yard shows what the caption is talking about.
             for (const play of fc.legalActions(g).filter((a) => a.t === 'play')) {
               const before = g.players[0].yard.length;
               fc.apply(g, play); fc.render();
-              if (g.players[0].yard.length > before) return 'played a unit';
+              if (g.players[0].yard.length > before) return 'unit down';
               break;
             }
           }
           fc.apply(g, fc.chooseAction(g, { skill: 0.5 })); fc.render();
-          await new Promise((r) => setTimeout(r, 120));
+          await new Promise((r) => setTimeout(r, 140));
         }
         return 'none'; })()`);
-      await wait(2500);
+      await wait(2200);
     });
 
-    // 7. The back-and-forth rhythm
+    // 4. The back-and-forth
     await caption(scene.turns.caption);
     await capture(send, 'turns', 9, async () => {
       for (let i = 0; i < 5; i++) { await run(send, autoMove); await wait(900); }
       await run(send, waitForHuman);
     });
 
-    // 8. An attack
+    // 5. An attack, and a heart going out
     await caption(scene.attack.caption);
-    await capture(send, 'attack', 9, async () => {
-      await run(send, `(async () => {
-        const fc = window.fruitcats;
-        for (let i = 0; i < 60; i++) {
-          const g = fc.game;
-          if (g.winner !== null) return 'over';
-          if (g.prompt?.player === 0 && g.prompt.kind === 'action') {
-            const atk = fc.legalActions(g).find((a) => a.t === 'attack');
-            if (atk) { fc.apply(g, atk); fc.render(); return 'attacked'; }
-          }
-          fc.apply(g, fc.chooseAction(g, { skill: 0.5 })); fc.render();
-          await new Promise((r) => setTimeout(r, 110));
-        }
-        return 'none'; })()`);
-      await wait(2500);
-    });
-
-    // 9. Losing a Life
-    await caption(scene.life.caption);
-    await capture(send, 'life', 9, async () => {
+    await capture(send, 'attack', 14, async () => {
       await run(send, `(async () => {
         const fc = window.fruitcats;
         const lives = () => fc.game.players.map((p) => p.lives.length).join('-');
         const before = lives();
-        for (let i = 0; i < 80 && lives() === before; i++) {
-          if (fc.game.winner !== null) break;
-          fc.apply(fc.game, fc.chooseAction(fc.game, { skill: 0.5 })); fc.render();
-          await new Promise((r) => setTimeout(r, 110));
+        for (let i = 0; i < 90; i++) {
+          const g = fc.game;
+          if (g.winner !== null) return 'over';
+          if (lives() !== before) return 'a heart went out';
+          if (g.prompt?.player === 0 && g.prompt.kind === 'action') {
+            const atk = fc.legalActions(g).find((a) => a.t === 'attack');
+            if (atk) { fc.apply(g, atk); fc.render(); await new Promise((r) => setTimeout(r, 900)); continue; }
+          }
+          fc.apply(g, fc.chooseAction(g, { skill: 0.5 })); fc.render();
+          await new Promise((r) => setTimeout(r, 130));
         }
-        return lives(); })()`);
-      await wait(2200);
+        return 'none'; })()`);
+      await wait(2000);
     });
 
-    // 10. The Yarn Ball
-    await caption(scene.yarn.caption);
-    await capture(send, 'yarn', 8, async () => {
-      for (let i = 0; i < 6; i++) { await run(send, autoMove); await wait(700); }
-    });
-
-    // 11. Sign-off
+    // 6. Sign-off
     await caption('');
     await run(send, `window.__title(true, 'Fruitcats', 'fruitcats.viamochi.com')`);
     await capture(send, 'outro', 7);

@@ -968,7 +968,7 @@ document.addEventListener('keydown', (event) => {
 if (import.meta.env.DEV) {
   Object.assign(window, {
     fruitcats: {
-      get game() { return game; }, chooseAction, legalActions, apply, render,
+      get game() { return game; }, chooseAction, legalActions, apply, render, CARDS,
       set fast(on: boolean) { aiDelayScale = on ? 0 : 1; },
     },
   });

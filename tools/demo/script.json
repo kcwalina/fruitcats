@@ -4,58 +4,33 @@
   "scenes": [
     {
       "id": "intro",
-      "caption": "Fruitcats — a trading card game about fruit-flavoured cats",
-      "say": "This is Fruitcats, a trading card game about fruit flavoured cats and the critters who follow them. Each player leads one Hero Cat and has nine lives. Knock out all nine of your rival's lives and you win. Let me show you a game."
-    },
-    {
-      "id": "menu",
-      "caption": "Pick a Hero Cat — each deck plays differently",
-      "say": "You start by picking a Hero Cat. Zest Rush is fast and fierce, Orchard Guard is patient and sturdy, and Mango Tango gathers treats and then drops giants. I'll take Zest Rush, and play against the middle difficulty."
-    },
-    {
-      "id": "mulligan",
-      "caption": "Mulligan: swap any cards — you get the same number back",
-      "say": "You draw six cards. The mulligan lets you shuffle away any you don't like and draw the same number back, so it costs you nothing. It just decides which six you are working with."
+      "caption": "Fruitcats — knock out all 9 of their hearts",
+      "say": "Fruitcats is a card game about fruit-flavoured cats. Each side has a Hero Cat with nine hearts, and you win by knocking out all nine of theirs. The game walks you through your first match, so you can just press play — but here is the whole thing in a minute."
     },
     {
       "id": "plant",
-      "caption": "Treats are the currency — every planted card is worth 1 Treat",
-      "say": "Now the important part. Treats are the only currency in the game. You plant two cards face down into your bowl, and each one becomes exactly one Treat, whatever it cost. So you plant the two cards you want least, and keep the other four."
-    },
-    {
-      "id": "cost",
-      "caption": "A card costs the number in its top-left corner",
-      "say": "Every card has a cost, the number in its top left corner. To play it you spend that many ready Treats. Press and hold any card to see it full size, what it costs, and what its keywords mean."
+      "caption": "Treats are the money — every planted card is worth 1",
+      "say": "Cards cost Treats, and Treats are made from cards. You bury two of your six face down, and each becomes one Treat, whatever it cost. So bury the expensive ones and keep the cheap cards to play."
     },
     {
       "id": "play",
-      "caption": "Play a card — it arrives resting, unless it has Zoomies",
-      "say": "Playing a card puts it in your Yard. Notice it arrives tilted and marked new. A unit that just arrived is still settling in, so it cannot attack this round: it wakes up at the start of the next one. The exception is Zoomies. About a quarter of this deck has it, and those cats arrive wide awake and can attack straight away."
+      "caption": "Spend a Treat to put a cat on the table",
+      "say": "The number in a card's corner is its price. Spend the Treats and the cat comes down onto your side. It arrives sleepy, so it can attack from the next round."
     },
     {
       "id": "turns",
       "caption": "One action each, back and forth",
-      "say": "Turns alternate one action at a time. You play a card, then your opponent acts, then you again. You never sit and watch a long turn, but you also cannot line up three attacks in a row. The round ends when you both pass."
+      "say": "You each do one thing at a time, back and forth — so you cannot line up three attacks in a row, and nothing you do goes unanswered."
     },
     {
       "id": "attack",
-      "caption": "Attack a unit, or the enemy Hero Cat to knock out a Life",
-      "say": "Once a unit is awake, you can attack. Send it at an enemy unit and they damage each other, using the paw for power and the heart for health. Or send it at the enemy Hero Cat: that is a hit, and they lose a life."
-    },
-    {
-      "id": "life",
-      "caption": "A lost Life goes to its owner's hand — Lucky cards play free",
-      "say": "Here is the twist that keeps games close. A lost life does not vanish. It goes into that player's hand, so whoever is behind gets more cards. And if it happens to be a Lucky card, they may play it immediately, for free."
-    },
-    {
-      "id": "yarn",
-      "caption": "The Yarn Ball decides who acts first",
-      "say": "The yarn ball decides who acts first each round. It passes to the other player at the end of every round, unless someone takes it deliberately, which costs them the rest of their round."
+      "caption": "Attack their cat, or their Hero Cat to take a heart",
+      "say": "Once a cat is awake, click it and click what it should hit. Their cat, and the two trade damage. Their Hero Cat, and a heart goes out — that card lands in their hand, so falling behind gives you more to play with."
     },
     {
       "id": "outro",
-      "caption": "Play it now at fruitcats.viamochi.com",
-      "say": "That is the whole game: plant treats, play cats, attack, and take all nine lives. There is a guided tutorial built in if you want to be walked through your first match. Play it now at fruitcats dot viamochi dot com."
+      "caption": "Play it at fruitcats.viamochi.com",
+      "say": "Nine hearts, and the game is yours. Press play at fruitcats dot viamochi dot com — the walkthrough will take it from there."
     }
   ]
 }

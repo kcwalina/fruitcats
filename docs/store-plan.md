@@ -1,8 +1,8 @@
 # Store plan: selling cards
 
 This document covers the Store: how Fruitcats sells decks and cards on the web, iPhone, Android and Steam.
-It records the decisions made so far and the steps, in order. Other features (the Collection, the Deck
-builder, PvP) are in [future-plans.md](future-plans.md).
+It records the decisions made so far and the steps, in order. Other features still to build (PvP, the ladder)
+are in [future-plans.md](future-plans.md).
 
 Last updated 2026-09-23.
 

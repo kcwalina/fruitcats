@@ -6,7 +6,8 @@
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, TERMS_VERSION, accountExists, avatarCatalog, avatarUrl, chooseAvatar, myAvatars, resend, session,
+  AuthError, TERMS_VERSION, accountExists, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  resend, restoredOnSignIn, session,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
@@ -125,23 +126,33 @@ function welcomeStep(): string {
   return `
     <img class="account-cat" src="${BASE}sb1/SB1-P01-bigcat.webp" alt="">
     <h2 id="account-title">${pending?.flow === 'signUp' ? 'Welcome to Via Mochi' : 'Welcome back'}${s?.displayName ? `, ${esc(s.displayName)}` : ''}!</h2>
-    <p class="account-why">You’re signed in on this device. Your collection is kept in your account.</p>
+    <p class="account-why">${restoredOnSignIn ? 'Your account was going to be deleted: signing in has kept it, with everything in it.'
+      : 'You’re signed in on this device. Your collection is kept in your account.'}</p>
     <button class="primary account-go" data-click="acct:done">Continue</button>`;
 }
 
 /** Settings' Account panel: opened from its row, so Sign out is never next to the everyday settings. */
 let panel = false;
 let confirmingSignOut = false;
+let confirmingDelete = false;
+let panelNote = '';
+let panelBusy = false;
 export const accountPanelOpen = () => panel;
-export function closeAccountPanel() { panel = false; confirmingSignOut = false; picking = false; }
+export function closeAccountPanel() { panel = false; confirmingSignOut = false; confirmingDelete = false; picking = false; panelNote = ''; }
 
 const initial = (name: string) => esc(name.trim().charAt(0).toUpperCase() || '?');
 
 /**
  * A Pawtrait, however big `cls` makes it. Legend Pawtraits are unmistakable at any size: a turning rainbow-gold foil
- * ring, a golden glow and a shine that sweeps across. Everyday ones are a plain picture with a white ring.
+ * ring, a golden glow and a shine that sweeps across. A set's Signature card (Reaper, for Heat Wave) gets a step above:
+ * a turning ring of molten lava with a flickering glow and rising embers. Everyday ones are a plain picture.
  */
+const SIGNATURE = new Set(['legend-reaper']);
 export function pawtrait(id: string, cls: string): string {
+  if (SIGNATURE.has(id)) {
+    return `<span class="signature-frame ${cls}"><img src="${avatarUrl(id)}" alt="">`
+      + `<span class="sig-embers" aria-hidden="true">${'<i></i>'.repeat(7)}</span></span>`;
+  }
   if (!id.startsWith('legend-')) return `<img class="${cls}" src="${avatarUrl(id)}" alt="">`;
   return `<span class="legend-frame ${cls}"><img src="${avatarUrl(id)}" alt=""><span class="legend-shine"></span></span>`;
 }
@@ -284,7 +295,8 @@ export function renderAccountPanel(): string {
     return `${head}
       <p class="account-section-note">You’re not signed in. Solo play works without an account; a free Via Mochi account adds:</p>
       ${benefits()}
-      <button class="primary account-section-button" data-click="acct:open">Sign in or create account</button>`;
+      <button class="primary account-section-button" data-click="acct:open">Sign in or create account</button>
+      ${panelNote ? `<p class="account-section-note" role="status"><b>${esc(panelNote)}</b></p>` : ''}`;
   }
   const name = s.displayName || s.email;
   const since = s.signedInAt
@@ -297,13 +309,28 @@ export function renderAccountPanel(): string {
           <button class="danger" data-click="acct:signout">Sign out</button>
         </div>
       </div>` : '<button class="account-section-button" data-click="acct:signoutask">Sign out</button>';
+  const deletion = confirmingDelete ? `
+      <div class="account-confirm" role="alertdialog" aria-label="Delete your account?">
+        <p><b>Delete your Via Mochi account?</b> In 30 days your account, collection, decks and Pawtraits are erased for
+        good, and you’re signed out everywhere now. Changed your mind? Sign in again before then and nothing is lost.</p>
+        <div class="account-confirm-buttons">
+          <button data-click="acct:deletecancel">Keep my account</button>
+          <button class="danger" data-click="acct:delete" ${panelBusy ? 'disabled' : ''}>Delete account</button>
+        </div>
+      </div>` : '';
   return `${head}
       <div class="account-card">
         <button class="account-face-button" data-click="acct:picker" aria-label="Change your Pawtrait">${face()}<span class="account-face-edit">Change</span></button>
         <span class="account-who"><b>${esc(name)}</b><small>${esc(s.email)}</small></span>
       </div>
       <p class="account-section-note">Signed in on this device${since ? ` since ${esc(since)}` : ''}. Your collection and decks are kept in your Via Mochi account.</p>
-      ${signOut}`;
+      ${signOut}
+      <div class="account-more">
+        <button class="link-button" data-click="acct:export" ${panelBusy ? 'disabled' : ''}>Export my data</button>
+        <button class="link-button danger-link" data-click="acct:deleteask">Delete account</button>
+      </div>
+      ${deletion}
+      <p class="account-section-note" role="status">${esc(panelNote)}</p>`;
 }
 
 // ── Events ──────────────────────────────────────────────────────────────────────────────────────
@@ -345,6 +372,30 @@ export async function accountClick(host: Host, action: string) {
   if (action === 'panelback') { closeAccountPanel(); host.render(); return; }
   if (action === 'signoutask') { confirmingSignOut = true; host.render(); return; }
   if (action === 'signoutcancel') { confirmingSignOut = false; host.render(); return; }
+  if (action === 'deleteask') { confirmingDelete = true; confirmingSignOut = false; host.render(); return; }
+  if (action === 'deletecancel') { confirmingDelete = false; host.render(); return; }
+  if (action === 'export') {
+    panelBusy = true; panelNote = 'Gathering your data…'; host.render();
+    try {
+      const file = new Blob([await exportData()], { type: 'application/json' });
+      const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(file), download: 'via-mochi-account.json' });
+      link.click();
+      URL.revokeObjectURL(link.href);
+      panelNote = 'Your data is in via-mochi-account.json.';
+    } catch (e) { panelNote = e instanceof AuthError ? e.message : 'Couldn’t gather your data.'; }
+    panelBusy = false; host.render(); return;
+  }
+  if (action === 'delete') {
+    panelBusy = true; host.render();
+    try {
+      const when = await deleteAccount();
+      await signOutAndForget();
+      confirmingDelete = false;
+      panelNote = `Your account will be deleted on ${when.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}. `
+        + 'Sign in again before then to keep it.';
+    } catch (e) { panelNote = e instanceof AuthError ? e.message : 'Couldn’t delete your account.'; }
+    panelBusy = false; host.render(); return;
+  }
   if (action === 'signout') { await signOutAndForget(); confirmingSignOut = false; host.render(); return; }
   if (action === 'back') { step = 'email'; error = ''; code = ''; pending = null; host.render(); focusFirst(); return; }
   if (action === 'done') { const next = then; open = false; then = null; if (next) next(); host.render(); return; }

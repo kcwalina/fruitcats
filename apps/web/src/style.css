@@ -149,12 +149,13 @@ button.account-face-button:hover { box-shadow: none; }
    they can't be mistaken for everyday ones at any size. */
 @property --legend-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .legend-frame {
-  position: relative; display: block; flex: none; box-sizing: border-box; border-radius: 50%; padding: 7%;
+  position: relative; display: block; flex: none; box-sizing: border-box; border-radius: 50%;
   background: conic-gradient(from var(--legend-turn), #ffd23f, #fff6bf, #ffae00, #ff79c8, #8fd1ff, #b8ffb0, #ffd23f);
   box-shadow: 0 0 0 1.5px #9a5b06, 0 0 14px 3px rgba(255, 190, 40, 0.7), 0 3px 8px rgba(80, 40, 0, 0.35);
   animation: legend-turn 5s linear infinite;
 }
-.legend-frame img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; box-shadow: inset 0 0 0 1px #9a5b06; }
+/* The picture is inset by a share of the frame itself (a padding % would be a share of the container's width). */
+.legend-frame img { position: absolute; inset: 7%; display: block; width: 86%; height: 86%; border-radius: 50%; object-fit: cover; box-shadow: inset 0 0 0 1px #9a5b06; }
 .legend-shine { position: absolute; inset: 7%; border-radius: 50%; overflow: hidden; pointer-events: none; }
 .legend-shine::after {
   content: ''; position: absolute; top: -40%; left: -110%; width: 55%; height: 180%; transform: rotate(18deg);
@@ -164,6 +165,59 @@ button.account-face-button:hover { box-shadow: none; }
 @keyframes legend-turn { to { --legend-turn: 360deg; } }
 @keyframes legend-shine { 0%, 55% { left: -110%; } 100% { left: 170%; } }
 @media (prefers-reduced-motion: reduce) { .legend-frame, .legend-shine::after { animation: none; } }
+/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Reaper, the Carolina
+   Sphynx). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
+   flickers like a fire, and embers rising off it. Markup (as pawtrait() in apps/web/src/account.ts builds it):
+
+     <span class="signature-frame SIZE-CLASS">
+       <img src="…/legend-reaper.webp" alt="">
+       <span class="sig-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+     </span>
+*/
+@property --sig-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.signature-frame {
+  position: relative; display: block; flex: none; box-sizing: border-box; border-radius: 50%; padding: 0;
+  background:
+    conic-gradient(from var(--sig-turn), #3a0d06, #ff5a14, #ffd36b, #ff7a1f, #6b1206, #1c0a06, #c52a0c, #ffb13d, #ff5a14, #3a0d06);
+  box-shadow: 0 0 0 1.5px #1c0a06, 0 0 16px 4px rgba(255, 110, 30, 0.75), 0 3px 10px rgba(40, 10, 0, 0.5);
+  animation: sig-turn 3.2s linear infinite, sig-flicker 1.9s ease-in-out infinite;
+}
+.signature-frame img {
+  /* Inset by a share of the frame itself (a padding % would be a share of the page's width). */
+  position: absolute; z-index: 1; inset: 8%; display: block; width: 84%; height: 84%; border-radius: 50%; object-fit: cover;
+  box-shadow: inset 0 0 0 1px #1c0a06, 0 0 0 2px rgba(255, 160, 60, 0.5);
+}
+.sig-embers { position: absolute; inset: -12% -12% 0; pointer-events: none; z-index: 2; }
+.sig-embers i {
+  position: absolute; bottom: 8%; width: 5%; height: 5%; border-radius: 50%;
+  background: radial-gradient(circle, #fff3c4, #ffb13d 45%, rgba(255, 90, 20, 0) 70%);
+  opacity: 0; animation: sig-ember 2.6s ease-out infinite;
+}
+.sig-embers i:nth-child(1) { left: 14%; animation-delay: 0s; }
+.sig-embers i:nth-child(2) { left: 30%; animation-delay: 0.9s; width: 4%; height: 4%; }
+.sig-embers i:nth-child(3) { left: 48%; animation-delay: 1.7s; }
+.sig-embers i:nth-child(4) { left: 64%; animation-delay: 0.4s; width: 3.5%; height: 3.5%; }
+.sig-embers i:nth-child(5) { left: 80%; animation-delay: 1.3s; }
+.sig-embers i:nth-child(6) { left: 22%; animation-delay: 2.1s; width: 3.5%; height: 3.5%; }
+.sig-embers i:nth-child(7) { left: 72%; animation-delay: 2.4s; width: 4%; height: 4%; }
+@keyframes sig-turn { to { --sig-turn: 360deg; } }
+@keyframes sig-flicker {
+  0%, 100% { box-shadow: 0 0 0 1.5px #1c0a06, 0 0 16px 4px rgba(255, 110, 30, 0.75), 0 3px 10px rgba(40, 10, 0, 0.5); }
+  35% { box-shadow: 0 0 0 1.5px #1c0a06, 0 0 24px 7px rgba(255, 140, 40, 0.9), 0 3px 10px rgba(40, 10, 0, 0.5); }
+  60% { box-shadow: 0 0 0 1.5px #1c0a06, 0 0 13px 3px rgba(255, 90, 20, 0.65), 0 3px 10px rgba(40, 10, 0, 0.5); }
+}
+@keyframes sig-ember {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: translate(6px, -130%) scale(0.4); }
+}
+@media (prefers-reduced-motion: reduce) { .signature-frame, .sig-embers i { animation: none; } .sig-embers { display: none; } }
+.pawtrait.locked .signature-frame img { filter: grayscale(0.55) brightness(0.6); }
+.pawtrait.locked .signature-frame { animation-play-state: paused; }
+.pawtrait.locked .sig-embers { display: none; }
+.legend-frame.board-pawtrait, .signature-frame.board-pawtrait { width: 58px; height: 58px; }
+.signature-frame.account-avatar { background: conic-gradient(from var(--sig-turn), #3a0d06, #ff5a14, #ffd36b, #ff7a1f, #6b1206, #1c0a06, #c52a0c, #ffb13d, #ff5a14, #3a0d06); }
+
 /* The Pawtrait picker: a filter, then a grid of circles. Legend ones wear a gold ring; ones you don't have are dimmed
    and say which card brings them. */
 /* Each player's Pawtrait, on the right of their panel (playtest, with accounts). */
@@ -218,6 +272,8 @@ button.pawtrait:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 
 .account-confirm-buttons { display: flex; gap: 8px; }
 .account-confirm-buttons button { flex: 1; min-height: 44px; }
 button.danger { background: #c8402a; border-color: #a8321f; color: #fff; }
+.account-more { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+button.link-button.danger-link { color: #b8321f; }
 /* The Via Mochi account window (src/account.ts): one narrow card, a step at a time. */
 .account-dialog {
   position: relative; width: min(400px, 100%); max-height: calc(var(--vh, 1vh) * 94); overflow-y: auto;

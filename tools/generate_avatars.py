@@ -70,6 +70,8 @@ AVATARS = {
     "legend-mochi": ("Mochi, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
                      "ears, wearing a bright golden-orange mango hood with a little crown of green palm leaves and a "
                      "small orange bow at the neck, a proud happy smile", None, "art/sb1/SB1-H03-bigcat.webp"),
+    # Nova and Reaper are drawn by the Heat Wave card work to match their cards (art/avatars/legend-nova.webp and
+    # legend-reaper.webp on main); don't redraw them from these older descriptions.
     "legend-nova": ("Nova, the Starfruit Voyager: a sunny golden-tabby cat wearing a bright lemon-yellow hood shaped "
                     "like a five-pointed starfruit star, one small glowing star tucked by its ear, wide-eyed and "
                     "delighted, a wonder-filled smile", None, None),

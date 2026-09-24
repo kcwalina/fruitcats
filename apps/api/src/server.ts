@@ -4,6 +4,8 @@
 //
 //   GET  /healthz
 //   POST /v1/sync   { decks: SyncDeck[], showcase?: SyncShowcase }  →  the merged state, the same shape
+//   GET  /v1/export                  →  everything stored for the signed-in account ("Export my data")
+//   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
 //
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
@@ -38,6 +40,18 @@ async function accountOf(req: IncomingMessage): Promise<string | null> {
     return typeof payload.sub === 'string' && /^[0-9a-f]{32}$/.test(payload.sub) ? payload.sub : null;
   } catch {
     return null;
+  }
+}
+
+/** A service token from viamochi-id about one account and one purpose (e.g. deleting it). */
+async function serviceCall(req: IncomingMessage, userId: string, purpose: string): Promise<boolean> {
+  const auth = req.headers.authorization ?? '';
+  if (!auth.startsWith('Bearer ')) return false;
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'fruitcats-api' });
+    return payload.sub === userId && payload.purpose === purpose;
+  } catch {
+    return false;
   }
 }
 
@@ -99,6 +113,19 @@ async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown 
   return { decks: [...stored.values()], showcase };
 }
 
+/** Everything stored for an account. */
+async function exportAccount(user: string) {
+  const { decks, showcase } = await sync(user, {});
+  return { decks: decks.filter((d) => !d.deleted), showcase };
+}
+
+/** Erase everything stored for an account. */
+async function erase(user: string) {
+  for await (const row of decksTable.listEntities({ queryOptions: { filter: `PartitionKey eq '${user}'` } }))
+    await decksTable.deleteEntity(user, row.rowKey!);
+  await showcaseTable.deleteEntity(user, 'main').catch(() => {});
+}
+
 // ── HTTP ─────────────────────────────────────────────────────────────────────────────────────────
 
 function send(res: ServerResponse, status: number, body: unknown) {
@@ -123,7 +150,7 @@ const server = createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE');
   }
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   try {
@@ -135,6 +162,18 @@ const server = createServer(async (req, res) => {
       const merged = await sync(user, body);
       console.log(JSON.stringify({ event: 'decks.synced', userId: user, decks: merged.decks.length }));
       return send(res, 200, merged);
+    }
+    if (req.url === '/v1/export' && req.method === 'GET') {
+      const user = await accountOf(req);
+      if (!user) return send(res, 401, { error: 'signed_out' });
+      return send(res, 200, await exportAccount(user));
+    }
+    const deleting = /^\/v1\/accounts\/([0-9a-f]{32})$/.exec(req.url ?? '');
+    if (deleting && req.method === 'DELETE') {
+      if (!await serviceCall(req, deleting[1], 'delete-account')) return send(res, 401, { error: 'not_allowed' });
+      await erase(deleting[1]);
+      console.log(JSON.stringify({ event: 'account.data_deleted', userId: deleting[1] }));
+      return send(res, 200, { deleted: true });
     }
     send(res, 404, { error: 'not_found' });
   } catch (e) {

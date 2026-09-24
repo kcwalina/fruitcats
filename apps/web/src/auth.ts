@@ -128,6 +128,7 @@ async function finish(entra: Record<string, any>, email: string): Promise<Sessio
   const r = await request(`${ID_SERVICE}/token`, { method: 'POST', headers: { Authorization: `Bearer ${entra.access_token}` } });
   if (!r.ok) throw new AuthError('exchange', 'Signed in, but Via Mochi couldn’t open your account. Please try again.');
   const ours = await r.json();
+  restoredOnSignIn = !!ours.restored;
   const s: Session = {
     userId: ours.user.id, displayName: ours.user.displayName ?? '', email,
     refreshToken: entra.refresh_token, token: ours.access_token, expires: Date.now() + ours.expires_in * 1000,
@@ -138,12 +139,41 @@ async function finish(entra: Record<string, any>, email: string): Promise<Sessio
   return s;
 }
 
+/** True right after a sign-in that cancelled a scheduled deletion ("Welcome back: your account is kept"). */
+export let restoredOnSignIn = false;
+
+// ── Export and delete ───────────────────────────────────────────────────────────────────────────
+
+const FRUITCATS_API = 'https://fruitcats-api.azurewebsites.net';
+
+/** Everything held for this account, by the account service and by Fruitcats, as one file's contents. */
+export async function exportData(): Promise<string> {
+  const t = await token();
+  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  const get = async (url: string) => {
+    const r = await request(url, { headers: { Authorization: `Bearer ${t}` } });
+    if (!r.ok) throw new AuthError('export', 'Couldn’t gather your data. Please try again.');
+    return r.json();
+  };
+  const [account, fruitcats] = await Promise.all([get(`${ID_SERVICE}/me/export`), get(`${FRUITCATS_API}/v1/export`)]);
+  return JSON.stringify({ exported: new Date().toISOString(), viaMochiAccount: account, fruitcats }, null, 2);
+}
+
+/** Schedule this account's deletion (30 days; signing in again before then cancels it). Returns the date. */
+export async function deleteAccount(): Promise<Date> {
+  const t = await token();
+  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  const r = await request(`${ID_SERVICE}/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+  if (!r.ok) throw new AuthError('delete', 'Couldn’t delete your account. Please try again.');
+  return new Date((await r.json()).deleteAfter);
+}
+
 // ── Avatars ("Pawtraits") ────────────────────────────────────────────────────────────────────────
 
 export interface Avatar { id: string; name: string; kind: 'everyday' | 'legend'; cardId: string | null; cardName: string | null }
 
 /** Bumped when the images are redrawn: browsers keep them for a week. */
-const AVATAR_VERSION = 3;
+const AVATAR_VERSION = 4;
 export const avatarUrl = (id: string) => `${ID_SERVICE}/avatars/${id}.webp?v=${AVATAR_VERSION}`;
 
 let catalog: Avatar[] | null = null;

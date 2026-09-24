@@ -480,13 +480,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 @media (max-width: 640px) {
   .deck-choice.chosen::after { font-size: 10px; padding: 2px 8px; top: -9px; }
-  /* Solo's deck rows: the badge sits in the row's corner, the rows don't shrink or lift. */
-  .solo .deck-choice.chosen::after { top: 8px; right: 10px; left: auto; transform: none; }
-  .solo .deck-choice.chosen, .solo .deck-choice.chosen:hover { transform: none; }
-  .solo .picker:has(.deck-choice.chosen) .deck-choice:not(.chosen) { transform: none; opacity: 0.85; filter: saturate(0.6); }
-  .solo .deck-choice.chosen { box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--pick), 0 6px 16px rgba(20, 70, 30, 0.35); }
+  .solo .deck-choice.chosen { box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--pick), 0 8px 18px rgba(20, 70, 30, 0.35); }
   .newdeck .deck-art { box-shadow: 0 0 0 2px #fff6dc; }
-  .solo .deck-art { box-shadow: 0 0 0 2px #fff6dc; }
 }
 
 

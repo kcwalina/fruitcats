@@ -4,7 +4,7 @@ import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
-import { finishFrame, yourCardUrl } from './rarity';
+import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
@@ -477,12 +477,15 @@ function resumeSavedGame(): boolean {
 function render() {
   document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
   // Scrolling lists (the deck builder's cards) keep their place when the screen is redrawn.
-  const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')].map((el) => [el.dataset.keepScroll, el.scrollTop]));
+  const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')]
+    .map((el) => [el.dataset.keepScroll, [el.scrollTop, el.scrollLeft]] as const));
   app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder()
     : screen === 'collection' ? renderShowcase() : renderGame())
     + (showSettings ? renderSettings() : '');
-  for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]')) el.scrollTop = scrolled.get(el.dataset.keepScroll) ?? 0;
+  for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
+    [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
   if (screen === 'collection') showcaseMounted();
+  if (screen === 'solo') deckCarouselMounted(!scrolled.has('decks'));
   renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, HUMAN); } else stopTutorial();
@@ -564,39 +567,62 @@ function renderDeckPicker(): string {
     'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
     'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
   };
-  // Your saved decks sit below the starters. One still short of 50 cards shows, but can't be picked yet.
-  const mine = listDecks();
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
+  // Every deck is the same card in one carousel: the starters, then your own. One of yours still short
+  // of 50 cards shows, but can't be picked yet.
+  const decks = [
+    ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb[key] ?? '' })),
+    ...listDecks().map((d) => {
+      const ready = isReady(d);
+      return { key: customKey(d.id), deck: d, ready,
+        blurb: ready ? `Your own deck, led by ${esc(cardName(d.hero))}.`
+          : `<span class="deck-unready">Not finished: ${deckSize(d)} / ${DECK_RULES.size} cards</span>` };
+    }),
+  ];
   return `
-    <section class="picker">
+    <section class="picker deck-picker">
       <h2>Choose your deck</h2>
-      <div class="deck-choices">
-        ${Object.entries(DECKS).map(([key, deck]) => `
-          <button class="deck-choice ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}">
-            <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
-            <img class="deck-art ${finishFrame(deck.hero)}" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
-            <span class="deck-name">${esc(deck.name)}</span>
-            <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
-            <span class="deck-blurb">${deckBlurb[key] ?? ''}</span>
-          </button>`).join('')}
+      <div class="deck-carousel">
+        <div class="deck-track" data-keep-scroll="decks">
+          <div class="deck-choices">
+            ${decks.map(({ key, deck, ready, blurb }) => `
+              <button class="deck-choice ${key.startsWith('custom:') ? 'mine' : ''} ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}" ${ready ? '' : 'disabled'}>
+                <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
+                <span class="deck-name">${esc(deck.name)}</span>
+                <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
+                <span class="deck-blurb">${blurb}</span>
+              </button>`).join('')}
+          </div>
+        </div>
+        <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous decks">‹</button>
+        <button class="deck-arrow next" data-deck-scroll="1" aria-label="More decks">›</button>
       </div>
-      ${mine.length ? `
-      <h3 class="my-decks-title">Your decks</h3>
-      <div class="deck-choices my-deck-choices">
-        ${mine.map((d) => {
-          const ready = isReady(d);
-          return `
-          <button class="deck-choice mine ${customKey(d.id) === myDeck ? 'chosen' : ''}" data-click="solo:${customKey(d.id)}" ${ready ? '' : 'disabled'}>
-            <img class="deck-art" src="${artUrl(`${d.hero}-kitten`)}" alt="">
-            <span class="deck-name">${esc(d.name)}</span>
-            <span class="deck-class ${famClass(d.hero)}">${esc(cardName(d.hero))} · ${esc(CARDS[d.hero].family)}</span>
-            ${ready ? '' : `<span class="deck-unready">Not finished: ${deckSize(d)} / ${DECK_RULES.size} cards</span>`}
-          </button>`;
-        }).join('')}
-      </div>` : `<button class="link-button" data-click="home:decks">Or build your own deck</button>`}
+      ${listDecks().length ? '' : `<button class="link-button" data-click="home:decks">Or build your own deck</button>`}
     </section>`;
+}
+
+/**
+ * The deck carousel, after each render: the chosen deck is slid into view if it's hidden (on arriving,
+ * or after tapping one peeking at the edge), and the arrows show only where there are more decks.
+ */
+function deckCarouselMounted(first: boolean) {
+  const track = app.querySelector<HTMLElement>('.deck-track');
+  const chosen = track?.querySelector<HTMLElement>('.deck-choice.chosen');
+  if (!track) return;
+  if (chosen) {
+    const t = track.getBoundingClientRect(), c = chosen.getBoundingClientRect();
+    if (c.left < t.left || c.right > t.right)
+      track.scrollTo({ left: track.scrollLeft + c.left - t.left - (t.width - c.width) / 2, behavior: first ? 'instant' : 'smooth' });
+  }
+  const carousel = track.parentElement!;
+  const update = () => {
+    carousel.classList.toggle('at-start', track.scrollLeft <= 4);
+    carousel.classList.toggle('at-end', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+  };
+  update();
+  track.addEventListener('scroll', update, { passive: true });
 }
 
 function renderSolo(): string {
@@ -998,6 +1024,10 @@ app.addEventListener('click', (event) => {
   if (suppressClick) { suppressClick = false; return; }
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-click]');
   if (el && !(el as HTMLButtonElement).disabled) onClick(el.dataset.click!);
+  // The deck carousel's arrows (for a mouse; fingers swipe): a page of decks at a time, no redraw.
+  const arrow = (event.target as HTMLElement).closest<HTMLElement>('[data-deck-scroll]');
+  const track = arrow?.parentElement?.querySelector<HTMLElement>('.deck-track');
+  if (arrow && track) track.scrollBy({ left: Number(arrow.dataset.deckScroll) * track.clientWidth * 0.8, behavior: 'smooth' });
 });
 
 // ── Drag and drop ────────────────────────────────────────────────────────────────────────────────

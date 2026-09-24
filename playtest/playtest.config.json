@@ -1,0 +1,67 @@
+{
+  "providers": {
+    "pc2024": {
+      "about": "Ollama on PC2024, from PC2024 itself (where the weekly paw runs). Ollama is not a catsitter GPU tenant: the image generator must be off the card, or the model spills into system RAM.",
+      "baseUrl": "http://localhost:11434/v1",
+      "model": "gpt-oss:20b",
+      "extraBody": {
+        "reasoning": {
+          "effort": "low"
+        }
+      }
+    },
+    "pc2024-lan": {
+      "about": "The same Ollama from another machine on the home network.",
+      "baseUrl": "http://192.168.1.74:11434/v1",
+      "model": "gpt-oss:20b",
+      "extraBody": {
+        "reasoning": {
+          "effort": "low"
+        }
+      }
+    },
+    "pc2024-jarvis": {
+      "about": "JarvisEvo-8B (a Qwen3-VL-8B photo-retouching fine-tune) served by mochi-jarvis's llama-server; take the GPU lease first (POST :5280/api/gpu {\"action\":\"acquire\",\"name\":\"mochi-jarvis\"}).",
+      "baseUrl": "http://192.168.1.74:8088/v1",
+      "model": "jarvisevo"
+    },
+    "fireworks": {
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "apiKeyEnv": "FIREWORKS_API_KEY",
+      "model": "accounts/fireworks/models/gpt-oss-120b",
+      "extraBody": {
+        "reasoning_effort": "low"
+      },
+      "pricesPerMillion": {
+        "input": 0.15,
+        "cachedInput": 0.015,
+        "output": 0.6
+      }
+    },
+    "azure": {
+      "about": "Azure Foundry's OpenAI-compatible endpoint: set AZURE_FOUNDRY_ENDPOINT to https://<resource>.services.ai.azure.com.",
+      "baseUrl": "${AZURE_FOUNDRY_ENDPOINT}/openai/v1",
+      "apiKeyEnv": "AZURE_FOUNDRY_KEY",
+      "apiKeyHeader": "api-key",
+      "model": "gpt-5.4",
+      "pricesPerMillion": {
+        "input": 2.5,
+        "cachedInput": 0.25,
+        "output": 15
+      }
+    }
+  },
+  "weekly": {
+    "provider": "pc2024",
+    "balanceScale": 3,
+    "hours": 6,
+    "parallel": 4,
+    "personas": [
+      "exploit",
+      "aggro",
+      "newcomer"
+    ],
+    "deckIdeas": 6,
+    "maxTokens": 60000000
+  }
+}

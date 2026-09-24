@@ -1,0 +1,6 @@
+{
+  "name": "@fruitcats/playtest",
+  "private": true,
+  "type": "module",
+  "description": "Automated playtesting: bot balance runs, the deploy gate, LLM playtesters and the PC2024 runner."
+}

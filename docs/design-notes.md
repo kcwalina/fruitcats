@@ -81,6 +81,16 @@ pairing: Zest 40% → 44%, Orchard 52% → 53%, Mango 58% → 53%. **Open issue:
 
 Win rate per deck and matchup matrix · starting-Yarn-holder win rate · game length (rounds, actions) · per-card win rate when drawn / played / planted · plant rate per card (cards that are *always* planted are dead designs) · Lucky trigger frequency and swing · comeback rate (winner was behind on Lives at round 4) · Grow Up rate and timing · Pounce usage and "Treats left ready" bluff rate · decisions per action and branching factor · skill differentiation (strong bot vs. weak bot margin) · LLM-persona qualitative reports (confusing rules, unfun moments, dominant lines).
 
+Built in `playtest/` (see its README): the matchup matrix, starting-Yarn rate, game length, per-card win
+rate when played, Grow Up rate and timing, cards left in hand, the strong-vs-weak bot margin, random and
+mutated decks against the starters, LLM-persona reports and LLM-designed decks. Still to do: per-card
+drawn/planted rates, Lucky swing, comeback rate, Pounce and bluff rates, branching factor.
+
+The same work replaced the bot's fixed planting rule (plant to 5 Treats, or 8 for Mochi) with a general
+one: plant to the priciest card, plus one spare when that costs 6 or more, plus whatever the Hero Cat's
+Grow Up counts in Treats. In bot-vs-bot duels the spare Treat was worth +8 points to Orchard Guard and
+nothing to the others, so with a better bot Orchard Guard measures about 58% overall rather than 53%.
+
 ## Research sources
 
 - Mark Rosewater, *Twenty Years, Twenty Lessons* and *Lenticular Design* (magic.wizards.com)

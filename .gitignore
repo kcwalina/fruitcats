@@ -15,3 +15,9 @@ art/sound-lab/
 
 # Recorded demo footage: frames, narration and the rendered video (rebuild with tools/demo)
 tools/demo/out/
+
+# Playtest output (reports are uploaded to the dashboard, not committed)
+playtest/reports/
+playtest/.state/
+playtest/paw/bin/
+playtest/paw/obj/

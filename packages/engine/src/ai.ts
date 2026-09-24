@@ -4,7 +4,7 @@
 // hand is replaced by blank cards, and every player's deck and Lives are reshuffled together, so the
 // lookahead can't peek at draws, Lucky cards or the opponent's Pounces.
 
-import { CARDS, isUnitCard, keywords } from './cards';
+import { CARDS, behaviour, isUnitCard, keywords } from './cards';
 import { apply, isGuardian, legalActions, other, playOptions, unitHealth, unitPower } from './engine';
 import type { Action, CardInst, GameState, PlayerId } from './types';
 
@@ -55,6 +55,30 @@ function keepValue(card: CardInst, treats: number): number {
   if (def.type === 'Cat') v += 3;
   if (cost > treats + 2) v -= 3; // too expensive to use soon
   return v;
+}
+
+/**
+ * How many Treats to plant up to: enough for the priciest card left in hand or deck, one spare when that
+ * card costs 6 or more (so a big turn can still leave a Pounce up), and whatever the Hero Cat's Grow Up
+ * counts in Treats. Measured against the old fixed rule (plant to 5, or 8 for Mochi) in bot duels: the
+ * spare Treat is worth +8 points to Orchard Guard and nothing to the others.
+ */
+function treatTarget(s: GameState, p: PlayerId): number {
+  const me = s.players[p];
+  const treats = me.pantry.length;
+  const maxCost = Math.max(...[...me.hand, ...me.deck].map((c) => CARDS[c.id].cost ?? 0), 0);
+  let target = Math.max(5, maxCost) + (maxCost >= 6 ? 1 : 0);
+  // A Grow Up that a few more Treats would satisfy (Mochi's "8 or more Treats"), found by asking the
+  // hero's own condition rather than naming the hero.
+  const grow = behaviour(me.hero.id).growUp;
+  if (grow && !me.hero.grown && !grow(s, p)) {
+    for (let k = 1; k <= 4; k++) {
+      const pantry = [...me.pantry, ...Array.from({ length: k }, () => me.pantry[0])];
+      const probe = { ...s, players: s.players.map((pl, i) => (i === p ? { ...pl, pantry } : pl)) } as GameState;
+      if (grow(probe, p)) { target = Math.max(target, treats + k); break; }
+    }
+  }
+  return target;
 }
 
 function byKeepValue(hand: CardInst[], treats: number): CardInst[] {
@@ -157,10 +181,7 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
       return { t: 'discard', uids: byKeepValue(me.hand, me.pantry.length).slice(0, prompt.count).map((c) => c.uid) };
     case 'plant': {
       const treats = me.pantry.length;
-      const maxCost = Math.max(...[...me.hand, ...me.deck].map((c) => CARDS[c.id].cost ?? 0), 0);
-      // Ramp decks (and Mochi's Grow Up at 8 Treats) want to keep planting.
-      const growUpAt = me.hero.id === 'SB1-H03' && !me.hero.grown ? 8 : 0;
-      if (treats >= Math.max(5, maxCost, growUpAt) || me.hand.length <= 1) return { t: 'skipPlant' };
+      if (treats >= treatTarget(s, p) || me.hand.length <= 1) return { t: 'skipPlant' };
       return { t: 'plant', uid: byKeepValue(me.hand, treats + 1)[0].uid };
     }
     default:

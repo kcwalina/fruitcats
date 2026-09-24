@@ -132,19 +132,43 @@ const plugin: Plugin = {
 action. All 300 play identically on the data-driven engine. To change how cards play on purpose, re-record
 with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
 
-## Validation (partly built)
+## Validation: check-set
 
-`npm test` checks that every set loads, every card has a rarity (tokens excepted), decks are legal, the
-golden games replay, and each Heat Wave mechanic behaves (`packages/engine/test/heatwave.test.ts`).
-`npm run sim` plays every registered deck, prototypes included, against every other.
+`npm run check-set` (or `npm run check-set -- heat-wave --games 40`) checks a set before it can be played:
 
-Still to build: a `check-set` command for contributors, which would add these checks:
-- **Schema:** the set's JSON is valid.
-- **References:** every id a set names exists.
-- **Rules text:** the text matches what the abilities do (a templater that writes text from abilities).
-- **Balance budget:** a report against each card's cost.
-- **Balance gate:** the deploy's balance thresholds via `runBalance({ quick: true, extraDecks })` in
-  `playtest/balance/gauntlet.ts`.
+- **Structure:** ids start with the set code, and no card appears twice or in another set.
+- **Card basics:** types and rarities are valid, units have stats, and every family is defined.
+- **Abilities:** every trigger, condition, target and action is one the engine or the set's plugin knows,
+  and every summoned token exists.
+- **Rules text:** every keyword appears in the card's rules text.
+- **Decks:** every deck follows the deckbuilding rules.
+- **Art:** every card has an illustration and a composed card.
+- **Budget report:** stats and keywords against each card's cost.
+- **Bots (with `--games`):** a first bot run against the released decks.
+
+Errors fail the check; warnings don't. `npm test` runs the same checks on every set
+(`packages/engine/test/content.test.ts`), so a broken set can't be committed unnoticed.
+
+## Card packs: new sets on a running site
+
+Every set folder is also published as a **card pack**:
+- the index at `/packs/index.json`,
+- each set's data at `/packs/<set>/set.json`,
+- its art at `/<set>/` and `/cards/<set>/`.
+
+The game starts through `apps/web/src/boot.ts`:
+1. It registers the sets it was built with.
+2. It reads the pack index, and registers any **released** pack it doesn't have, or a newer version of
+   one it has. It waits at most 1.5 seconds, so offline or slow starts still work.
+3. Only then does it load the game, so every screen sees the full catalog from its first render.
+
+A pack whose cards need plugin code the game doesn't have is skipped with a console warning (the
+engine's `missingPieces` names what's missing): code only arrives with a new build of the game. In dev,
+`?prototypes` also takes prototype packs, to try a prototype set in the real game.
+
+Today the packs are published with the site itself (`npm run deploy`, which never takes the site down).
+Publishing a pack on its own, without deploying the game, needs a separate place to host packs. That
+decision is still open (see Still to do).
 
 ## The Studio (future: not to build yet)
 
@@ -168,10 +192,12 @@ A designer app, `apps/studio`, for contributors who don't change the code. Its w
 ## Still to do
 
 1. **Pawtraits into the set folders**, once the accounts work lands (it serves them from `art/avatars/`).
-2. **Asset packs for a running site:** publish a set's folder (data and art) without redeploying the game;
-   the site reads a pack index at start-up and registers what it finds.
-3. **`check-set` and the rules-text templater** (above).
-4. **A few Starter Box specifics remain in the web client:** Tropical's Lush badge on the player panel,
-   and the family blurbs in `apps/web/src/ui.ts`. They should come from each set's data.
-5. **The LLM playtesters' rules primer** (`packages/engine/src/text.ts`, RULES_PRIMER) still lists the
-   Starter Box mechanics by hand. It should list the loaded sets' mechanics, so LLM players learn Heat.
+2. **Hosting packs apart from the game,** so a new set can be published without deploying the game:
+   for example an Azure Storage container behind the site. The game already takes packs from
+   `/packs/index.json`, so only the address and a publish command would change.
+3. **The rules-text templater,** so a card's text is written from its abilities. `check-set` checks
+   keywords only, for now.
+4. **The LLM playtesters' rules primer** lists the Starter Box mechanics by hand; the balance-testing
+   work is generating it from the loaded sets.
+5. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
+   Collection's sample finishes (stand-ins until the Store grants real copies).

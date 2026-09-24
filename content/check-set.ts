@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  CARDS, DECKS, MECHANICS, PLUGINS, apply, chooseAction, createGame, deckProblems, registerSet,
+  BUILT_IN_ACTIONS, CARDS, CONDITION_TESTS, DECKS, MECHANICS, PLUGINS, TRIGGERS, apply, chooseAction, createGame, deckProblems, registerSet,
   type Ability, type CardDef, type Condition, type DeckList, type SetData, type TargetSel,
 } from '../packages/engine/src/index';
 import { CONTENT, loadContent, type ContentSet } from './index';
@@ -20,9 +20,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 // ── The vocabulary the engine understands (packages/engine/src/types.ts) ─────────────────────────────
 
-const TRIGGERS = ['play', 'hello', 'goodbye', 'roundStart', 'exhaust', 'damagedAndSurvives', 'defeatsInCombat', 'youHeal'];
-const ACTIONS = ['damage', 'heal', 'buff', 'counter', 'draw', 'exhaust', 'ready', 'readyTreats', 'sprout', 'summon', 'cancelAttack', 'fight'];
-const TESTS = ['not', 'playedThisRound', 'treats', 'lives', 'opponentLives', 'yardHas', 'unitsInComposts', 'compost', 'controlUnits', 'unitHasCounter'];
+const ACTIONS = BUILT_IN_ACTIONS;
+const TESTS = CONDITION_TESTS;
 const CORE_KEYWORDS = ['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce'];
 const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log'];
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];

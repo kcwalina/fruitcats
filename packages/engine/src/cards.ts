@@ -246,6 +246,45 @@ export function deckCardIds(deckOrKey: string | DeckList): string[] {
   return ids;
 }
 
+// ── The built-in vocabulary ──────────────────────────────────────────────────────────────────────
+// What the engine itself understands (src/engine.ts runs each one). Anything else a set's data names
+// must come from a registered plugin.
+
+export const TRIGGERS = ['play', 'hello', 'goodbye', 'roundStart', 'exhaust', 'damagedAndSurvives', 'defeatsInCombat', 'youHeal'];
+export const BUILT_IN_ACTIONS = ['damage', 'heal', 'buff', 'counter', 'draw', 'exhaust', 'ready', 'readyTreats', 'sprout', 'summon', 'cancelAttack', 'fight'];
+export const CONDITION_TESTS = ['not', 'playedThisRound', 'treats', 'lives', 'opponentLives', 'yardHas', 'unitsInComposts', 'compost', 'controlUnits', 'unitHasCounter'];
+
+/**
+ * The actions and conditions a set's cards use that neither the engine nor a registered plugin provides
+ * (its own mechanics count). Empty means the engine can play the set as it is: what a site checks before it
+ * takes a card pack that arrived without a new build.
+ */
+export function missingPieces(data: SetData): string[] {
+  const mechanics = { ...MECHANICS, ...(data.mechanics ?? {}) };
+  const missing = new Set<string>();
+  const condition = (c: Condition | undefined): void => {
+    if (c === undefined) return;
+    if (typeof c === 'string') {
+      if (c !== 'targetIsYours' && mechanics[c]?.kind !== 'condition' && !PLUGINS.some((p) => p.conditions?.[c])) missing.add(`condition ${c}`);
+    } else if ('not' in c) condition(c.not);
+    else if (!CONDITION_TESTS.includes(Object.keys(c)[0])) missing.add(`condition ${Object.keys(c)[0]}`);
+  };
+  const ability = (a: Ability): void => {
+    condition(a.if); condition(a.instead?.if); condition(a.static?.while);
+    for (const act of [...(a.do ?? []), ...(a.instead?.do ?? [])]) {
+      const name = Object.keys(act)[0];
+      if (!BUILT_IN_ACTIONS.includes(name) && !PLUGINS.some((p) => p.actions?.[name])) missing.add(`action ${name}`);
+    }
+  };
+  const all = [...Object.values(data.mechanics ?? {}).flatMap((m) => m.abilities ?? [])];
+  for (const c of [...data.cards, ...(data.tokens ?? [])]) {
+    all.push(...(c.abilities ?? []), ...(c.kitten?.abilities ?? []), ...(c.bigCat?.abilities ?? []));
+    if (c.kitten?.growUp) condition(c.kitten.growUp.if);
+  }
+  all.forEach(ability);
+  return [...missing];
+}
+
 // ── Compatibility ────────────────────────────────────────────────────────────────────────────────
 // Older callers ask for a card's "behaviour": today only a Hero Cat's Grow Up is still asked for this
 // way (the bot's planting rule, the playtest harness's list of playable heroes).

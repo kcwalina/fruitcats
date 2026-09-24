@@ -21,8 +21,11 @@ const DEFAULT_SHOWCASE = () => [`${featuredHero()}-kitten`, `${featuredHero()}-b
 const SHOWCASE_KEY = 'fruitcats-showcase';
 const FAMILIES = () => ['all', ...familiesOf(SET)];
 
-/** Every card in the set, in collector-number order (the order of the set list). */
-const SET = Object.keys(CARDS);
+/**
+ * Every collectable card of the loaded sets, in collector-number order (the order of the set lists).
+ * Tokens (summoned, never collected) and the engine's own stand-in card (in no set) aren't cards to collect.
+ */
+const SET = Object.keys(CARDS).filter((id) => CARDS[id].set && !CARDS[id].token);
 const isHero = (id: string) => CARDS[id]?.type === 'Hero Cat';
 /** A card's faces: a Hero Cat has two. */
 const facesOf = (id: string) => (isHero(id) ? [`${id}-kitten`, `${id}-bigcat`] : [id]);

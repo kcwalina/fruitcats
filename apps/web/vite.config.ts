@@ -1,5 +1,5 @@
-import { cpSync, createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { extname, join, resolve } from 'node:path';
+import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
@@ -140,23 +140,50 @@ function docsPages(): Plugin {
 
 const CONTENT = fileURLToPath(new URL('../../content/', import.meta.url));
 
-/** Each set's folders and the address each is published at. */
-function contentMounts(): { url: string; dir: string }[] {
-  const mounts: { url: string; dir: string }[] = [];
+/** Every set folder in content/: its root, its code and its data. */
+function contentSets(): { root: string; folder: string; code: string; data: Record<string, unknown> }[] {
+  const sets: { root: string; folder: string; code: string; data: Record<string, unknown> }[] = [];
   const dirs = (d: string) => (existsSync(d) ? readdirSync(d).filter((n) => statSync(join(d, n)).isDirectory()) : []);
   for (const year of dirs(CONTENT))
     for (const month of dirs(join(CONTENT, year)))
       for (const folder of dirs(join(CONTENT, year, month))) {
         const root = join(CONTENT, year, month, folder);
-        const setFile = join(root, 'set.json');
-        if (!existsSync(setFile)) continue;
-        const code = String(JSON.parse(readFileSync(setFile, 'utf8')).set).toLowerCase();
-        mounts.push(
-          { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
-          { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
-          { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
-        );
+        if (!existsSync(join(root, 'set.json'))) continue;
+        const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8'));
+        sets.push({ root, folder, code: String(data.set).toLowerCase(), data });
       }
+  // A set that builds on another (Heat Wave uses the Starter Box's Garden cards) comes after it.
+  const needs = (s: { data: Record<string, unknown> }) => (s.data.requires as string[] | undefined) ?? [];
+  return sets.sort((a, b) => (needs(a).includes(String(b.data.set)) ? 1 : needs(b).includes(String(a.data.set)) ? -1 : 0));
+}
+
+/**
+ * The card packs: an index of every set, and each set's data, so a running game can take a set it wasn't
+ * built with (apps/web/src/content.ts, loadPacks). Its art is published beside it (contentMounts).
+ */
+function packFiles(): Record<string, string> {
+  const sets = contentSets();
+  const files: Record<string, string> = {
+    'packs/index.json': JSON.stringify({
+      packs: sets.map((s) => ({
+        set: s.data.set, name: s.data.name, version: s.data.version, status: s.data.status,
+        data: `packs/${s.code}/set.json`, art: `${s.code}/`, cards: `cards/${s.code}/`,
+      })),
+    }, null, 1),
+  };
+  for (const s of sets) files[`packs/${s.code}/set.json`] = JSON.stringify(s.data);
+  return files;
+}
+
+/** Each set's folders and the address each is published at. */
+function contentMounts(): { url: string; dir: string }[] {
+  const mounts: { url: string; dir: string }[] = [];
+  for (const { root, folder, code } of contentSets())
+    mounts.push(
+      { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
+      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
+      { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
+    );
   return mounts.filter((m) => existsSync(m.dir));
 }
 
@@ -175,6 +202,12 @@ function contentAssets(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = decodeURIComponent((req.url ?? '').split('?')[0]);
+        const pack = packFiles()[path.replace(/^\//, '')];
+        if (pack) {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(pack);
+          return;
+        }
         for (const m of contentMounts()) {
           if (!path.startsWith(m.url) && path !== m.url.slice(0, -1)) continue;
           let file = join(m.dir, path.slice(m.url.length));
@@ -189,6 +222,10 @@ function contentAssets(): Plugin {
     },
     writeBundle() {
       for (const m of contentMounts()) cpSync(m.dir, join(outDir, m.url), { recursive: true });
+      for (const [file, text] of Object.entries(packFiles())) {
+        mkdirSync(dirname(join(outDir, file)), { recursive: true });
+        writeFileSync(join(outDir, file), text);
+      }
     },
   };
 }

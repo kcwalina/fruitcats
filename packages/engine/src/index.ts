@@ -2,6 +2,7 @@ export * from './types';
 export {
   CARDS, DECKS, FAMILIES, MECHANICS, SETS, PLUGINS, BEHAVIOURS, BLANK_CARD, behaviour, keywords, keywordsFrom, parseKeywords,
   isUnitCard, isNeutralFamily, deckCardIds, resolveDeck, registerSet, clearCatalog, abilitiesOf, usesCondition,
+  missingPieces, TRIGGERS, BUILT_IN_ACTIONS, CONDITION_TESTS,
 } from './cards';
 export {
   DECK_RULES, NEUTRAL_FAMILY, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem,

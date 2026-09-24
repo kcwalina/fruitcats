@@ -1,4 +1,3 @@
-import './content';     // first: the card sets, before anything reads the catalog
 import './style.css';
 import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';

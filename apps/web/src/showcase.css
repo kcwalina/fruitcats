@@ -49,8 +49,11 @@
   scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
   /* Room above and below for the cards' shadows (a scrolling strip clips whatever sticks out), taken
      back with negative margins so the layout doesn't grow. */
-  padding: 50px calc(50% - var(--card-w) / 2) 80px; margin: -28px 0 -50px;
+  padding: 50px 0 80px; margin: -28px 0 -50px;
 }
+/* Room either side so the first and last cards can come to the middle. Spacers, not padding: iPad
+   Safari doesn't count a scrolling strip's end padding, so with two cards there was nothing to swipe. */
+.viewer-track::before, .viewer-track::after { content: ''; flex: none; align-self: stretch; width: calc(50% - var(--card-w) / 2); }
 /* Swipes are handled in showcase.ts (followDrags), so the browser neither scrolls the strip nor claims a
    finger on it: its overflow is hidden (scrolling it from code still works) and touch-action none. */
 .viewer-track { overflow-x: hidden; touch-action: none; cursor: grab; }

@@ -18,9 +18,11 @@ Big Cat.
 
 The whole Starter Box as a grid, in collector-number order.
 
-- At the top: how many cards you have, and a count for each [rarity](#rarity). A count turns green
-  when you have every card of that rarity.
-- Filter by family: **Citrus**, **Orchard**, **Tropical** or **Garden**.
+- At the top: how many cards of the set you have, with a bar that fills as you collect.
+- **Rarity** filters: **Common**, **Uncommon**, **Rare** or **Legendary**. Each shows how many of that
+  [rarity](#rarity) you have (like **3/5**), or a **✓** once you have them all.
+- **Family** filters: **Citrus**, **Orchard**, **Tropical** or **Garden**. Pick one of each to combine
+  them: Rare Orchard cards, say. Tap **All** to clear a row.
 - **×3** on a card means you have three copies. A **★** by its number means it's in your Showcase.
 - Cards you don't have yet are dark shadows marked *Coming soon*.
 - A Hero Cat's Kitten and Big Cat are two separate cards here, so you can show off either.

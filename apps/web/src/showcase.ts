@@ -9,10 +9,10 @@
 // faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
 
 import './showcase.css';
-import { CARDS, RARITIES } from '@fruitcats/engine';
+import { CARDS, RARITIES, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
-import { BASE, artUrl, backButton, cardUrl, esc, settingsButton } from './ui';
+import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
@@ -43,6 +43,8 @@ type Tab = 'showcase' | 'all';
 let host: ShowcaseHost = { render() {} };
 let tab: Tab = 'showcase';
 let familyFilter = 'all';
+/** All cards shows every rarity, or just one. */
+let rarityFilter: Rarity | 'all' = 'all';
 /** The cards you've chosen to show off, in the order you added them. Kept on this device, like your decks. */
 let showcase: string[] = [];
 let showcaseIndex = 0;
@@ -58,6 +60,7 @@ export function openShowcase(h: ShowcaseHost): void {
   host = h;
   tab = 'showcase';
   familyFilter = 'all';
+  rarityFilter = 'all';
   showcase = loadShowcase();
   showcaseIndex = 0;
   browsing = null;
@@ -120,7 +123,10 @@ function undoRemove() {
   saveShowcase();
 }
 
-const ownedFaces = () => SET.filter((id) => owned(id) > 0 && (familyFilter === 'all' || CARDS[id].family === familyFilter)).flatMap(facesOf);
+/** Whether a card passes All cards' filters: its family and its rarity. */
+const shownByFilters = (id: string) =>
+  (familyFilter === 'all' || CARDS[id].family === familyFilter) && (rarityFilter === 'all' || rarity(id) === rarityFilter);
+const ownedFaces = () => SET.filter((id) => owned(id) > 0 && shownByFilters(id)).flatMap(facesOf);
 
 function closeWallpaper() {
   if (wallpaper?.url) URL.revokeObjectURL(wallpaper.url);
@@ -167,6 +173,8 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
   switch (action) {
     case 'tab': if (arg === 'showcase' || arg === 'all') tab = arg; break;
     case 'filter': if (FAMILIES.includes(arg)) familyFilter = arg; break;
+    case 'clear': familyFilter = 'all'; rarityFilter = 'all'; break;
+    case 'rarity': if (arg === 'all' || (RARITIES as readonly string[]).includes(arg)) rarityFilter = arg as Rarity | 'all'; break;
     case 'go': scrollToCard(Number(arg)); return;   // a card beside the one in the middle: bring it over
     case 'turn': step(Number(arg)); return;
     case 'open': {
@@ -322,25 +330,36 @@ const PHONE_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 
 function renderGrid(): string {
   const have = SET.filter((id) => owned(id) > 0).length;
-  const shown = SET.filter((id) => familyFilter === 'all' || CARDS[id].family === familyFilter).flatMap(facesOf);
+  const shown = SET.filter(shownByFilters).flatMap(facesOf);
+  // Two rows of the game's own chip buttons: Rarity (each with its mark, and how many of it you have)
+  // and Family (each in its colour). The picked chip in each row lights up; the rows combine.
+  const rarityChips = [
+    `<button class="chip fchip ${rarityFilter === 'all' ? 'chosen' : ''}" data-click="col:rarity:all" aria-pressed="${rarityFilter === 'all'}">All</button>`,
+    ...RARITIES.map((r) => {
+      const all = SET.filter((id) => rarity(id) === r), got = all.filter((id) => owned(id) > 0).length;
+      const done = got === all.length;
+      return `<button class="chip fchip ${rarityFilter === r ? 'chosen' : ''}" data-click="col:rarity:${r}" aria-pressed="${rarityFilter === r}"
+        aria-label="${r}, ${got} of ${all.length} collected">${rarityMark(r)}<span>${r}</span><small class="${done ? 'done' : ''}">${done ? '✓' : `${got}/${all.length}`}</small></button>`;
+    }),
+  ].join('');
+  const familyChips = FAMILIES.map((f) => `<button class="chip fchip ${f === 'all' ? '' : famClass(SET.find((id) => CARDS[id].family === f)!)} ${familyFilter === f ? 'chosen' : ''}"
+      data-click="col:filter:${f}" aria-pressed="${familyFilter === f}">${f === 'all' ? '' : '<i class="fam-dot"></i>'}${f === 'all' ? 'All' : f}</button>`).join('');
   return `
     <div class="collection-grid" data-keep-scroll="grid">
       <div class="grid-head">
-        <span class="grid-count"><b>${have}</b> of ${SET.length} cards · Starter Box</span>
-        <div class="grid-rarities">
-          ${RARITIES.map((r) => {
-            const all = SET.filter((id) => rarity(id) === r);
-            const got = all.filter((id) => owned(id) > 0).length;
-            return `<span class="${got === all.length ? 'complete' : ''}">${rarityMark(r)}<span class="rarity-count"><b>${got}</b>/${all.length}</span><small>${r}</small></span>`;
-          }).join('')}
+        <div class="collect-progress">
+          <span class="cp-title">Starter Box</span>
+          <span class="cp-count"><b>${have}</b> of ${SET.length} collected</span>
+          <span class="cp-bar" aria-hidden="true"><i style="width:${(have / SET.length) * 100}%"></i></span>
         </div>
-        <div class="grid-filters" role="group" aria-label="Family">
-          ${FAMILIES.map((f) => `<button class="gchip ${familyFilter === f ? 'on' : ''}" data-click="col:filter:${f}" aria-pressed="${familyFilter === f}">${f === 'all' ? 'All' : f}</button>`).join('')}
-        </div>
+        <div class="filter-row" role="group" aria-label="Rarity"><span class="filter-label">Rarity</span><div class="filter-chips">${rarityChips}</div></div>
+        <div class="filter-row" role="group" aria-label="Family"><span class="filter-label">Family</span><div class="filter-chips">${familyChips}</div></div>
       </div>
-      <div class="grid">
-        ${shown.map(renderTile).join('')}
-      </div>
+      ${shown.length ? `<div class="grid">${shown.map(renderTile).join('')}</div>` : `
+      <div class="grid-empty">
+        <p>No ${rarityFilter === 'all' ? '' : `${rarityFilter} `}${familyFilter === 'all' ? '' : `${familyFilter} `}cards in the Starter Box.</p>
+        <button class="chip fchip" data-click="col:clear">Show all cards</button>
+      </div>`}
     </div>`;
 }
 
@@ -398,6 +417,11 @@ function renderWallpaperSheet(): string {
  * there, its name and the backdrop change without redrawing the screen (which would stop the scroll).
  */
 export function showcaseMounted(): void {
+  // A filter row too long for a phone scrolls sideways: keep its picked chip in sight.
+  document.querySelectorAll<HTMLElement>('.filter-chips').forEach((row) => {
+    const picked = row.querySelector<HTMLElement>('.chosen');
+    if (picked) row.scrollLeft = picked.offsetLeft - (row.clientWidth - picked.offsetWidth) / 2;
+  });
   const track = document.querySelector<HTMLElement>(browsing ? '.viewer-overlay [data-track]' : '.collection-screen [data-track]');
   const v = viewer();
   if (!track || !v) return;

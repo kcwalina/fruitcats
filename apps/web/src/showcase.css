@@ -182,27 +182,53 @@ button.undo-btn {
 .collection-grid { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 6px 14px max(20px, env(safe-area-inset-bottom)); }
 .collection-grid::-webkit-scrollbar { display: none; }
 .grid-head, .grid { width: 100%; max-width: 900px; margin: 0 auto; }
-.grid-head { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 14px; }
-.grid-count { font: 700 13px Nunito, sans-serif; letter-spacing: 0.4px; color: rgba(255, 255, 255, 0.72); }
-.grid-count b { color: #fff; font-size: 15px; }
-/* One tile per rarity: its mark, how many you have of how many, and its name. */
-.grid-rarities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; width: min(100%, 460px); }
-.grid-rarities > span {
-  display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 5px;
-  padding: 6px 4px 5px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+/* The top of All cards: how much of the set you have, then the filters, in one column whose rows all
+   start at the same line: the labels in a column of their own, the chips left-aligned beside them. */
+.grid-head { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 18px; max-width: 740px; }
+.collect-progress { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px 12px; margin-bottom: 4px; }
+.cp-title { font: 700 20px/1.1 Fredoka, Nunito, sans-serif; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
+.cp-count { font: 700 14px Nunito, sans-serif; color: rgba(255, 255, 255, 0.72); }
+.cp-count b { color: #ffd76a; font-size: 17px; }
+.cp-bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4); overflow: hidden; }
+.cp-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f2b940, #ffe39a); box-shadow: 0 0 10px rgba(255, 210, 100, 0.6); }
+
+/* A row of filters: its name, then the game's own raised chip buttons (the picked one lights up green,
+   or in its family's colour). Rows too long for the screen scroll sideways, fading out at the edge. */
+.filter-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 10px; }
+.filter-label { font: 800 11px/1 Nunito, sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.filter-chips { position: relative; display: flex; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 7px; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.collection-screen button.fchip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; min-height: 0; padding: 0 16px;
+  font-size: 15px; overflow: visible;
 }
-.grid-rarities > span.complete { background: rgba(120, 210, 110, 0.14); box-shadow: inset 0 0 0 1px rgba(140, 220, 120, 0.4); }
-.grid-rarities .rarity-mark { font-size: 15px; }
-.rarity-count { font: 700 12px/1.2 Fredoka, Nunito, sans-serif; color: rgba(255, 255, 255, 0.65); }
-.rarity-count b { color: #fff; font-size: 15px; }
-.grid-rarities small { grid-column: 1 / 3; text-align: center; font: 700 9.5px/1.3 Nunito, sans-serif; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
-.grid-filters { display: flex; justify-content: center; gap: 6px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-.collection-screen button.gchip {
-  height: 32px; padding: 0 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85);
-  font: 700 13px/1 Fredoka, Nunito, sans-serif; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+.fchip .rarity-mark { font-size: 16px; }
+/* How many of a rarity you have ("3/5"), or a tick once you have them all. */
+.fchip small { font: 800 12.5px/1 Nunito, sans-serif; color: #7a5a2e; margin-left: 2px; position: relative; top: -1px; }
+.fchip small.done { color: #2f8a46; font-size: 14px; }
+.fchip.chosen small, .fchip.chosen small.done { color: #fff; opacity: 0.9; }
+/* Each family's dot. Citrus is lemon yellow here, so it can't be mistaken for Tropical's mango. */
+.fam-dot {
+  --dot: var(--fam); width: 12px; height: 12px; border-radius: 50%; background: var(--dot);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(90, 50, 15, 0.35);
 }
-.collection-screen button.gchip:hover:not(:disabled) { transform: none; background: rgba(255, 255, 255, 0.18); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); }
-.collection-screen button.gchip.on { background: #fff; color: #2b1a0e; box-shadow: none; }
+.fchip.fam-citrus .fam-dot { --dot: #f6c90e; }
+.fchip.chosen .fam-dot { background: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
+@media (max-width: 640px) {
+  .grid-head { gap: 4px; }
+  .filter-row { grid-template-columns: 52px minmax(0, 1fr); gap: 6px; }
+  .filter-label { font-size: 10px; letter-spacing: 1px; }
+  .filter-chips {
+    gap: 6px; margin-right: -14px; padding-right: 14px;
+    -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent);
+  }
+  .collection-screen button.fchip { height: 38px; padding: 0 13px; gap: 5px; font-size: 14px; }
+  .fchip .rarity-mark { font-size: 14px; }
+}
+
+/* Filters that match nothing (Legendary Garden cards, say). */
+.grid-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 16px; text-align: center; }
+.grid-empty p { margin: 0; font: 700 16px Nunito, sans-serif; color: rgba(255, 255, 255, 0.75); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; }
 .tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .collection-screen button.tile { padding: 0; border: none; background: none; box-shadow: none; border-radius: 0; }
@@ -233,8 +259,6 @@ button.undo-btn {
 @media (max-width: 640px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
   .collection-screen button.seg-btn { min-width: 96px; padding: 0 12px; }
-  .grid-filters { gap: 5px; }
-  .collection-screen button.gchip { flex: none; padding: 0 11px; font-size: 12.5px; }
 }
 
 /* Phones held sideways (and other short screens): the name and buttons share one row under the cards,

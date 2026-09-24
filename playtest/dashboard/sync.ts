@@ -1,5 +1,5 @@
 // reports pending [--pc2024 http://192.168.1.74:5280] | reports mark
-// reports start <nightly|balance|llm-playtest|deck-hunt> [--args "…"] [--request <id>] [--pc2024 …]
+// reports start <nightly|balance|llm-playtest|deck-hunt|llm-compare> [--args "…"] [--request <id>] [--pc2024 …]
 //
 // Gets finished runs ready for the dashboard page (a claude.ai Artifact whose database only its owner
 // writes). Scripts can't write there, a Claude session can: `pending` gathers the runs the dashboard hasn't
@@ -7,7 +7,8 @@
 // writes one JSON file per run, ready for an ArtifactData batch of `set` writes into the `runs` collection.
 // Runs still going on PC2024 come too, as a row with their progress, and are uploaded again each time
 // until they finish. `mark` records the finished ones as uploaded once the batch has gone through. `start`
-// asks PC2024's playtester to start a run: the dashboard's "Start a run" requests go through it.
+// asks PC2024's playtester to start a run (the dashboard's "Start a run" requests and runs a Claude session
+// starts go through it) and writes the new run's row, so the session that started it uploads it at once.
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -42,16 +43,18 @@ function localRuns(): Run[] {
   });
 }
 
-/** PC2024's runs, through catsitter: POST /api/processes/mochi-playtester/forward {method, path, body}. */
+/** PC2024's playtester, through catsitter: POST /api/processes/mochi-playtester/forward {method, path, body}. */
+const forwarder = (catsitter: string) => async (method: string, path: string, body?: unknown) => {
+  const r = await fetch(`${catsitter}/api/processes/mochi-playtester/forward`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ method, path, body }), signal: AbortSignal.timeout(30_000),
+  });
+  if (!r.ok) throw new Error(`catsitter ${path}: HTTP ${r.status}`);
+  return r.json() as Promise<Record<string, unknown>>;
+};
+
 async function pc2024Runs(catsitter: string, skip: Set<string>): Promise<Run[]> {
-  const forward = async (method: string, path: string, body?: unknown) => {
-    const r = await fetch(`${catsitter}/api/processes/mochi-playtester/forward`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ method, path, body }), signal: AbortSignal.timeout(30_000),
-    });
-    if (!r.ok) throw new Error(`catsitter ${path}: HTTP ${r.status}`);
-    return r.json() as Promise<Record<string, unknown>>;
-  };
+  const forward = forwarder(catsitter);
   const list = (await forward('GET', '/runs')).runs as { id: string; result: string; progress?: Record<string, unknown> }[];
   const runs: Run[] = [];
   for (const r of list.filter((x) => !skip.has(x.id))) {
@@ -93,13 +96,30 @@ export async function reportsCommand(): Promise<number> {
     if (!COMMANDS.includes(command)) { console.error(`start: command must be one of ${COMMANDS.join(', ')}`); return 1; }
     const request = arg('request');
     const args = [arg('args') ?? '', request ? `--request ${request}` : ''].join(' ').trim();
-    const r = await fetch(`${(arg('pc2024') ?? 'http://192.168.1.74:5280').replace(/\/$/, '')}/api/processes/mochi-playtester/forward`, {
+    const catsitter = (arg('pc2024') ?? 'http://192.168.1.74:5280').replace(/\/$/, '');
+    const r = await fetch(`${catsitter}/api/processes/mochi-playtester/forward`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ method: 'POST', path: '/run', body: { command, args } }), signal: AbortSignal.timeout(60_000),
     });
     const body = await r.text();
     console.log(body);
-    return r.ok && JSON.parse(body).started ? 0 : 2;
+    if (!(r.ok && JSON.parse(body).started)) return 2;
+    // The dashboard must show a run the moment it starts, not a sync later: wait for the runner to register
+    // it on PC2024 and write its row for the same session to upload right away.
+    const since = Date.now() - 5_000;
+    for (let i = 0; i < 20; i++) {
+      await new Promise((ok) => setTimeout(ok, 3_000));
+      const live = (await pc2024Runs(catsitter, uploaded()).catch(() => []))
+        .find((x) => x.live && Date.parse(x.summary.startedAt) >= since);
+      if (!live) continue;
+      mkdirSync(OUT, { recursive: true });
+      writeFileSync(join(OUT, `${live.summary.id}.json`), JSON.stringify(live.summary));
+      writeFileSync(META, JSON.stringify(dashboardMeta()));
+      console.log(`Upload now: ${join(OUT, `${live.summary.id}.json`)} (collection runs, id ${live.summary.id}); meta in ${META}`);
+      return 0;
+    }
+    console.log('Started, but PC2024 has not listed the run yet; the next sync uploads it.');
+    return 0;
   }
   if (sub !== 'pending') { console.error('Usage: reports pending [--pc2024 http://192.168.1.74:5280] | reports mark'); return 1; }
 

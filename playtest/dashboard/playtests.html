@@ -114,6 +114,8 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 .report code { font: 12px var(--mono); background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
 .empty { color: var(--muted); padding: 24px 4px; }
 .note { color: var(--muted); font-size: 13px; }
+.synced { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.synced.stale { color: var(--warn); font-weight: 700; }
 @media (max-width: 860px) {
   .status, .main, .start { grid-template-columns: minmax(0, 1fr); }
   .runs { max-height: none; }
@@ -128,6 +130,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
       <div class="eyebrow">Fruitcats · automated playtesting</div>
       <h1>Playtests</h1>
       <p id="subtitle">Bot gauntlets, deploy checks and LLM playtesters, newest first.</p>
+      <p id="synced" class="synced" role="status"></p>
     </div>
     <span id="latest-pill" class="pill pass" hidden></span>
   </header>
@@ -165,7 +168,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
     <div>
       <div class="eyebrow">Requests</div>
       <ul id="requests" class="issues"><li class="note">Loading…</li></ul>
-      <div class="legend">A queued run starts within about 10 minutes, while the relay on the laptop is running. PC2024 plays one run at a time; a request waits while another run is going.</div>
+      <div class="legend">A queued run starts at the relay's next sync, within about 10 minutes, and shows under Runs as soon as it starts. PC2024 plays one run at a time; a request waits while another run is going.</div>
     </div>
   </section>
 
@@ -317,8 +320,23 @@ function renderRuns() {
 
 const progressText = (r) => {
   const p = r.progress;
-  return p.total ? `${p.phase}: ${p.done} of ${p.total}` : p.phase;
+  return `${p.total ? `${p.phase}: ${p.done} of ${p.total}` : p.phase}${r.result === 'running' && p.updatedAt ? ` · as of ${timeOf(p.updatedAt)}` : ''}`;
 };
+
+// How fresh the page is: the relay stamps meta/dashboard on every sync with PC2024. Say so plainly, and say
+// when it has stopped, so the page never looks current when it isn't.
+const SYNC_EVERY_MIN = 10;
+function renderSynced() {
+  const el = $('synced');
+  if (!meta.updatedAt) { el.textContent = ''; return; }
+  const ago = Math.max(0, Math.round((Date.now() - when(meta.updatedAt).getTime()) / 60000));
+  const stale = ago > SYNC_EVERY_MIN + 5;
+  el.className = `synced${stale ? ' stale' : ''}`;
+  el.textContent = stale
+    ? `Last synced with PC2024 ${ago >= 120 ? `${Math.round(ago / 60)} h` : `${ago} min`} ago, at ${timeOf(meta.updatedAt)}. The relay on the laptop isn't syncing (is the laptop asleep or the Claude app closed?): runs and progress since then are missing.`
+    : `Synced with PC2024 ${ago ? `${ago} min ago` : 'just now'} (${timeOf(meta.updatedAt)}). Progress updates every ${SYNC_EVERY_MIN} minutes; a run appears the moment it starts.`;
+}
+setInterval(renderSynced, 30_000);
 const progressBar = (r) => `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${r.progress.total}" aria-valuenow="${r.progress.done}"><span style="width:${r.progress.total ? Math.min(100, (100 * r.progress.done) / r.progress.total).toFixed(1) : 0}%"></span></div>`;
 
 // ── Starting runs: the form writes a request; the relay on the laptop sends it to PC2024 ───────────────
@@ -412,7 +430,7 @@ function renderAll() {
     pill.textContent = `Latest: ${latest.result}`;
     $('subtitle').textContent = `${runs.length} runs · last one ${dayOf(latest.startedAt)} at ${timeOf(latest.startedAt)}.`;
   }
-  renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests();
+  renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests(); renderSynced();
 }
 
 let resizeTimer;

@@ -273,6 +273,15 @@ button.pawtrait:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 
 .account-confirm-buttons button { flex: 1; min-height: 44px; }
 button.danger { background: #c8402a; border-color: #a8321f; color: #fff; }
 .account-more { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+/* Friends (Account > Friends). */
+.friend-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: calc(var(--vh, 1vh) * 30); overflow-y: auto; }
+button.friend-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 6px 10px; min-height: 52px; text-align: left; border-radius: 14px; }
+.friend-name { flex: 1; font-weight: 800; overflow-wrap: anywhere; }
+.friend-face { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #fff; }
+.friend-menu { display: flex; justify-content: space-between; padding: 6px 12px 2px; font-size: 14px; }
+.friend-add { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid rgba(120, 70, 20, 0.15); }
+.friend-add h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.friend-code { margin: 0; text-align: center; font: 700 32px Fredoka, Nunito, sans-serif; letter-spacing: 0.12em; color: #b4561a; }
 button.link-button.danger-link { color: #b8321f; }
 /* The Via Mochi account window (src/account.ts): one narrow card, a step at a time. */
 .account-dialog {

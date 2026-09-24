@@ -168,6 +168,43 @@ export async function deleteAccount(): Promise<Date> {
   return new Date((await r.json()).deleteAfter);
 }
 
+// ── Friends ─────────────────────────────────────────────────────────────────────────────────────
+
+export interface Friend { id: string; displayName: string | null; avatar: string; since: string }
+
+async function withToken(path: string, init: RequestInit = {}): Promise<Response> {
+  const t = await token();
+  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  return request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` } });
+}
+
+export async function listFriends(): Promise<Friend[]> {
+  const r = await withToken('/friends');
+  if (!r.ok) throw new AuthError('friends', 'Couldn’t load your friends. Please try again.');
+  return (await r.json()).friends;
+}
+
+/** A new friend code to give someone: "K7M-4Q2", good for 15 minutes and one use. */
+export async function newFriendCode(): Promise<{ code: string; expires: string }> {
+  const r = await withToken('/friends/code', { method: 'POST' });
+  if (!r.ok) throw new AuthError('friends', 'Couldn’t make a code. Please try again.');
+  return r.json();
+}
+
+export async function redeemFriendCode(code: string): Promise<Friend> {
+  const r = await withToken('/friends/redeem', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+  });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new AuthError('friend_code', json.message ?? 'That code didn’t work.');
+  return json.friend;
+}
+
+export async function removeFriend(id: string, block = false): Promise<void> {
+  const r = await withToken(block ? `/friends/${id}/block` : `/friends/${id}`, { method: block ? 'POST' : 'DELETE' });
+  if (!r.ok) throw new AuthError('friends', 'Couldn’t do that. Please try again.');
+}
+
 // ── Avatars ("Pawtraits") ────────────────────────────────────────────────────────────────────────
 
 export interface Avatar { id: string; name: string; kind: 'everyday' | 'legend'; cardId: string | null; cardName: string | null }

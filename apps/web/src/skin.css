@@ -392,7 +392,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   font: 600 12px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 10px; border-radius: 999px;
   background: linear-gradient(color-mix(in srgb, var(--fam) 72%, #3a1a00), var(--fam-dark)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
-.hp.buffed::before { background: linear-gradient(#8fe0a0, #2e9d57); }
+/* Tint the heart green rather than replace it: a background here would swap the heart for a square. */
+.hp.buffed::before { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3)) hue-rotate(155deg) saturate(1.1); }
 .hand-card.zest-on::before {
   content: '🍋 Zest!'; position: absolute; left: 50%; top: -10px; transform: translateX(-50%); z-index: 7;
   font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; white-space: nowrap; padding: 1px 8px; border-radius: 999px;

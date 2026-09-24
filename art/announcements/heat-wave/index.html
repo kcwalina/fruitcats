@@ -17,6 +17,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../avatars/signature-frame.css">
 <style>html,body{margin:0} img{max-width:100%} [hidden]{display:none!important} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -160,6 +161,38 @@
 
   .price-note { margin-top: 28px; color: var(--smoke); font-size: 14px; }
 
+  /* Pawtraits: the avatars that come with Nova and Reaper. The Legend ring matches the game's (apps/web
+     style.css, .legend-frame); Reaper's Signature ring is ../../avatars/signature-frame.css. */
+  .pawtraits { display: grid; grid-template-columns: minmax(0, 1.4fr) auto auto; gap: 24px 40px; align-items: center; margin-top: 44px;
+    padding: 26px 28px; border-radius: 18px; background: var(--basalt); border: 1px solid var(--line); }
+  .pawtraits h3 { font-size: 28px; margin-block: 6px 8px; }
+  .pawtraits p { color: var(--smoke); font-size: 15px; }
+  .pt { justify-items: center; text-align: center; }
+  .pt figcaption { display: block; font: 600 13px/1.3 var(--label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); max-width: 150px; }
+  .pt-img { width: 132px; height: 132px; }
+  @property --legend-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  .legend-frame {
+    position: relative; display: block; flex: none; border-radius: 50%;
+    background: conic-gradient(from var(--legend-turn), #ffd23f, #fff6bf, #ffae00, #ff79c8, #8fd1ff, #b8ffb0, #ffd23f);
+    box-shadow: 0 0 0 1.5px #9a5b06, 0 0 14px 3px rgba(255, 190, 40, 0.7), 0 3px 8px rgba(80, 40, 0, 0.35);
+    animation: legend-turn 5s linear infinite;
+  }
+  .legend-frame img { position: absolute; inset: 7%; width: 86%; height: 86%; border-radius: 50%; object-fit: cover; box-shadow: inset 0 0 0 1px #9a5b06; }
+  .legend-shine { position: absolute; inset: 7%; border-radius: 50%; overflow: hidden; pointer-events: none; }
+  .legend-shine::after {
+    content: ''; position: absolute; top: -40%; left: -110%; width: 55%; height: 180%; transform: rotate(18deg);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+    animation: legend-shine 4s ease-in-out infinite;
+  }
+  @keyframes legend-turn { to { --legend-turn: 360deg; } }
+  @keyframes legend-shine { 0%, 55% { left: -110%; } 100% { left: 170%; } }
+  @media (prefers-reduced-motion: reduce) { .legend-frame, .legend-shine::after { animation: none; } }
+  @media (max-width: 640px) {
+    .pawtraits { grid-template-columns: 1fr 1fr; padding: 22px 18px; }
+    .pawtraits-copy { grid-column: 1 / -1; }
+    .pt-img { width: 112px; height: 112px; }
+  }
+
   /* Compare */
   .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; }
   .compare .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -302,6 +335,21 @@
         <div class="who"><span class="tag">Signature print</span> Legendary Hero Cat · Pepper</div>
         <p><b>Reaper, the Carolina Sphynx.</b> Named for the hottest pepper on Earth, Reaper leads Five Alarm her own way. She finishes off anything already hurt, and once your cats are fully heated, every hit they land takes two Lives.</p>
       </div>
+    </div>
+    <div class="pawtraits" id="pawtraits">
+      <div class="pawtraits-copy">
+        <div class="label">Wear it</div>
+        <h3>Comes with a Pawtrait</h3>
+        <p>Nova and Reaper each come with a Legend Pawtrait, your profile picture in Fruitcats. Nova's wears a turning ring of rainbow gold. Reaper's is the only one that burns: a ring of molten lava, with embers rising off it.</p>
+      </div>
+      <figure class="pt">
+        <span class="legend-frame pt-img"><img src="../../avatars/legend-nova.webp" alt="Nova's Legend Pawtrait"><span class="legend-shine"></span></span>
+        <figcaption>Nova · Legend Pawtrait</figcaption>
+      </figure>
+      <figure class="pt">
+        <span class="signature-frame pt-img"><img src="../../avatars/legend-reaper.webp" alt="Reaper's Signature Pawtrait"><span class="sig-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
+        <figcaption>Reaper · Signature Pawtrait, animated</figcaption>
+      </figure>
     </div>
     <p class="price-note">Prices shown are US prices in US dollars. In other countries, prices are set in your local currency and may differ.</p>
   </section>

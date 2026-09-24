@@ -249,6 +249,8 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .deck-carousel.at-start .deck-arrow.prev, .deck-carousel.at-end .deck-arrow.next { display: none; }
 @media (hover: none) { .deck-arrow { display: none; } }
 @media (max-width: 640px) {
+  /* The choices don't stretch, so Difficulty and Play sit right under the decks, not at the very bottom. */
+  .solo .setup-body { flex: none; padding-bottom: 20px; }
   /* One deck in the middle, big, with its neighbours peeking in at the sides. */
   .solo .deck-choices { --deck-w: min(62vw, calc(var(--vh, 1vh) * 29 * 0.714 + 16px)); gap: 14px; padding: 0 calc(50vw - var(--deck-w) / 2); }
   .solo .deck-choice { padding: 8px 8px 10px; border-radius: 18px; gap: 4px; }
@@ -277,7 +279,6 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .save-state { font-size: 12.5px; font-weight: 700; color: #6b5139; line-height: 1.2; }
 .save-state.saved { color: #25773a; }   /* dark green on the parchment bar: easy to read */
 button.done-deck { justify-self: end; min-width: 76px; min-height: 40px; padding: 4px 18px; font-size: 16px; }
-.link-button { font-size: 14px; }
 
 /* Your decks */
 .menu.decks { justify-content: flex-start; gap: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }

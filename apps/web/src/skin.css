@@ -595,7 +595,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   background: linear-gradient(var(--fam), var(--fam-dark)); box-shadow: 0 2px 0 var(--fam-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 .build-head { background: rgba(255, 250, 240, 0.85); border-radius: 14px; padding: 6px 14px; box-shadow: 0 0 0 1px rgba(120, 70, 20, 0.12); }
-.link-button { background: none; box-shadow: none; text-decoration: underline; color: #7a4a1c; }
 @media (max-width: 760px) {
   .deck-panel { border-bottom: none; box-shadow: 0 -6px 20px rgba(50, 25, 5, 0.35); }
   .deck-toggle { background: linear-gradient(#fffaf0, #f1d9a6); box-shadow: none; }

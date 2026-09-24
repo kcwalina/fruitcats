@@ -599,7 +599,6 @@ function renderDeckPicker(): string {
         <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous decks">‹</button>
         <button class="deck-arrow next" data-deck-scroll="1" aria-label="More decks">›</button>
       </div>
-      ${listDecks().length ? '' : `<button class="link-button" data-click="home:decks">Or build your own deck</button>`}
     </section>`;
 }
 

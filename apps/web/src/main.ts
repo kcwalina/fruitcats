@@ -7,6 +7,7 @@ import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settings
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
 import { ACCOUNTS } from './flags';
+import { startSync } from './sync';
 import {
   accountClick, accountEnter, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
@@ -1252,3 +1253,5 @@ if (import.meta.env.DEV) {
 }
 
 render();
+// Signed in on this device: bring the decks and Showcase up to date with the account.
+if (ACCOUNTS) startSync({ render });

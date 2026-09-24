@@ -18,6 +18,8 @@ import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from
 /** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
 const DEFAULT_SHOWCASE = ['SB1-H03-kitten', 'SB1-H03-bigcat'];
 const SHOWCASE_KEY = 'fruitcats-showcase';
+/** When the Showcase last changed on this device (ms), so sync keeps the newest. */
+const SHOWCASE_AT_KEY = 'fruitcats-showcase-at';
 const FAMILIES = ['all', 'Citrus', 'Orchard', 'Tropical', 'Garden'];
 
 /** Every card in the set, in collector-number order (the order of the set list). */
@@ -89,8 +91,39 @@ function loadShowcase(): string[] {
   return [...DEFAULT_SHOWCASE];
 }
 
+const showcaseListeners: (() => void)[] = [];
+/** Called after the player changes their Showcase (sync listens). */
+export function onShowcaseChanged(fn: () => void) { showcaseListeners.push(fn); }
+
+/** The Showcase as saved on this device, for sync: null if the player never changed it. */
+export function savedShowcase(): { faces: string[]; updatedAt: number } | null {
+  try {
+    const faces = JSON.parse(localStorage.getItem(SHOWCASE_KEY) ?? 'null');
+    const updatedAt = Number(localStorage.getItem(SHOWCASE_AT_KEY) ?? 0) || 0;
+    return Array.isArray(faces) && updatedAt ? { faces, updatedAt } : null;
+  } catch { return null; }
+}
+
+/** The account's Showcase, after a sync. */
+export function applySyncedShowcase(faces: string[], updatedAt: number) {
+  try {
+    localStorage.setItem(SHOWCASE_KEY, JSON.stringify(faces));
+    localStorage.setItem(SHOWCASE_AT_KEY, String(updatedAt));
+  } catch { /* private mode */ }
+  showcase = loadShowcase();
+}
+
+/** Signing out: this device forgets the account's Showcase. */
+export function forgetShowcase() {
+  try { localStorage.removeItem(SHOWCASE_KEY); localStorage.removeItem(SHOWCASE_AT_KEY); } catch { /* private mode */ }
+}
+
 function saveShowcase() {
-  try { localStorage.setItem(SHOWCASE_KEY, JSON.stringify(showcase)); } catch { /* private mode: kept until the page closes */ }
+  try {
+    localStorage.setItem(SHOWCASE_KEY, JSON.stringify(showcase));
+    localStorage.setItem(SHOWCASE_AT_KEY, String(Date.now()));
+  } catch { /* private mode: kept until the page closes */ }
+  showcaseListeners.forEach((fn) => fn());
 }
 
 /** Puts a card at the end of the Showcase. */

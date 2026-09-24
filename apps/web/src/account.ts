@@ -6,9 +6,10 @@
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, TERMS_VERSION, accountExists, avatarCatalog, avatarUrl, chooseAvatar, myAvatars, resend, session, signOut,
+  AuthError, TERMS_VERSION, accountExists, avatarCatalog, avatarUrl, chooseAvatar, myAvatars, resend, session,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
+import { signOutAndForget, startSync } from './sync';
 import { BASE, esc } from './ui';
 
 type Step = 'email' | 'details' | 'code' | 'welcome';
@@ -344,7 +345,7 @@ export async function accountClick(host: Host, action: string) {
   if (action === 'panelback') { closeAccountPanel(); host.render(); return; }
   if (action === 'signoutask') { confirmingSignOut = true; host.render(); return; }
   if (action === 'signoutcancel') { confirmingSignOut = false; host.render(); return; }
-  if (action === 'signout') { signOut(); confirmingSignOut = false; host.render(); return; }
+  if (action === 'signout') { await signOutAndForget(); confirmingSignOut = false; host.render(); return; }
   if (action === 'back') { step = 'email'; error = ''; code = ''; pending = null; host.render(); focusFirst(); return; }
   if (action === 'done') { const next = then; open = false; then = null; if (next) next(); host.render(); return; }
   if (busy) return;
@@ -372,7 +373,7 @@ export async function accountClick(host: Host, action: string) {
   } else if (action === 'code') {
     if (!pending) return;
     if (code.length !== pending.codeLength) { error = `The code has ${pending.codeLength} digits.`; host.render(); return; }
-    await work(host, async () => { await submitCode(pending!, code); step = 'welcome'; });
+    await work(host, async () => { await submitCode(pending!, code); step = 'welcome'; startSync(host); });
   } else if (action === 'resend') {
     if (!pending) return;
     await work(host, async () => { pending = await resend(pending!); code = ''; error = 'We sent a new code.'; });

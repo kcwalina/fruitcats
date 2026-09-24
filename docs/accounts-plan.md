@@ -76,6 +76,13 @@ Last updated 2026-09-24.
     display name and birth year, linked to the Fruitcats app.
   - Native-auth base URL: `https://viamochiplayers.ciamlogin.com/viamochiplayers.onmicrosoft.com`. Entra's codes
     are **8 digits**. `challenge_type` must be sent as `oob%20redirect` (a `+` for the space is rejected).
+- **Code emails from `no-reply@mail.viamochi.com`:**
+  - Entra's email-OTP custom extension (`b2656d02-…`, listener `63d3ab3c-…`, only for the Fruitcats app) calls
+    `viamochi-id` `/otp-email` for each code. The endpoint sends our own email and falls back to Entra's sender on error.
+  - It authenticates as the app **Via Mochi code email** (`3837bef9-3f4a-49e0-93cf-c31c879d211d`), which needs the
+    Graph permission `CustomAuthenticationExtension.Receive.Payload` with **admin consent (granted by the owner)**.
+  - The Communication Services connection string is the Key Vault secret `email-connection-string`, read by the app
+    through a Key Vault reference.
 - **Playtest build:** `npm run build:playtest` builds `apps/web` with the flags in `src/flags.ts` on (`ACCOUNTS`),
   into `dist-playtest/`. The public `npm run build` compiles them out.
 - A separate "Via Mochi" workforce directory was tried and dropped: Microsoft now requires a paid Entra ID P1

@@ -150,6 +150,32 @@ export interface LogEntry {
   text: string;
 }
 
+/**
+ * What just happened, as data, for a screen to animate: one record per visible change, in the order
+ * the rules made them. Public information only (a lost Life's card is secret, so it isn't named).
+ */
+export type GameEvent =
+  | { t: 'play'; p: PlayerId; uid: number; cardId: string; target?: Target; how?: 'pounce' | 'lucky' }
+  | { t: 'ability'; p: PlayerId; heroId: string; target?: Target }
+  | { t: 'attack'; p: PlayerId; attacker: Target; target: Target }
+  | { t: 'clash'; attacker: Target; target: number; dealt: number; taken: number }
+  | { t: 'heroHit'; attacker: Target; p: PlayerId; lives: number }
+  | { t: 'cancelled'; attacker: Target }
+  | { t: 'fizzled'; cardId?: string; attacker?: Target }
+  | { t: 'damage'; uid: number; amount: number; p: PlayerId }
+  | { t: 'heal'; uid: number; amount: number }
+  | { t: 'buff'; uid: number; power?: number; sneaky?: boolean; guardian?: boolean }
+  | { t: 'exhaust'; uid: number }
+  | { t: 'ready'; uid: number }
+  | { t: 'toy'; uid: number; cardId: string }
+  | { t: 'defeated'; uid: number; cardId: string; owner: PlayerId }
+  | { t: 'lifeLost'; p: PlayerId; left: number }
+  | { t: 'growUp'; p: PlayerId }
+  | { t: 'ripen'; uid: number; ripe: number }
+  | { t: 'draw'; p: PlayerId; n: number }
+  | { t: 'round'; n: number }
+  | { t: 'win'; p: PlayerId | 'draw' };
+
 export interface GameState {
   seed: number;
   round: number;
@@ -164,6 +190,8 @@ export interface GameState {
   winner: PlayerId | 'draw' | null;
   nextUid: number;
   log: LogEntry[];
+  /** Everything that happened, for animation. Games saved before events existed may lack it. */
+  events: GameEvent[];
   /** Number of actions applied; a cheap clock for replays and stats. */
   actions: number;
   startingYarn: PlayerId;

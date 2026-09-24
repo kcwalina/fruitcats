@@ -71,7 +71,8 @@ function shuffled<T>(items: T[], rnd: () => number): T[] {
 }
 
 export function determinize(s: GameState, p: PlayerId, rnd: () => number): GameState {
-  const c = structuredClone(s);
+  // The story so far doesn't change the evaluation; leaving it out keeps every clone in the search cheap.
+  const c = structuredClone({ ...s, log: [], events: [] });
   const foe = c.players[other(p)];
   foe.hand = foe.hand.map((h) => ({ uid: h.uid, id: BLANK }));
   for (const pl of c.players) {

@@ -11,7 +11,7 @@ import {
   type DeckList,
 } from './cards';
 import type {
-  Action, CardInst, EffectKey, GameState, PlayerId, PlayerState, Prompt, Step, Target, TargetSpec, Unit, Window,
+  Action, CardInst, EffectKey, GameEvent, GameState, PlayerId, PlayerState, Prompt, Step, Target, TargetSpec, Unit, Window,
 } from './types';
 
 /**
@@ -79,6 +79,7 @@ export function createGame(options: GameOptions): GameState {
     winner: null,
     nextUid: 1,
     log: [],
+    events: [],
     actions: 0,
     startingYarn: 0,
   };
@@ -113,6 +114,11 @@ export function createGame(options: GameOptions): GameState {
 
 function log(s: GameState, text: string, player?: PlayerId): void {
   s.log.push({ round: s.round, player, text });
+}
+
+/** Record what happened for the screen to animate (`??=`: games saved before events existed). */
+function emit(s: GameState, event: GameEvent): void {
+  (s.events ??= []).push(event);
 }
 
 // ── Queries ──────────────────────────────────────────────────────────────────────────────────────
@@ -372,6 +378,7 @@ export function apply(s: GameState, action: Action): GameState {
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       s.passes = 0;
       log(s, `${me.name} plays ${cardName(card.id)}${action.target ? ` targeting ${describeTarget(s, action.target)}` : ''}.`, p);
+      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, target: action.target });
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, closesWindow: true }, { t: 'afterAction' });
       openWindow(s, { kind: 'play', by: p, card, target: action.target });
       break;
@@ -381,6 +388,7 @@ export function apply(s: GameState, action: Action): GameState {
       else findUnit(s, action.attacker.uid)!.unit.exhausted = true;
       s.passes = 0;
       log(s, `${me.name}'s ${describeTarget(s, action.attacker).replace(`${me.name}'s `, '')} attacks ${describeTarget(s, action.target)}.`, p);
+      emit(s, { t: 'attack', p, attacker: action.attacker, target: action.target });
       s.queue.unshift({ t: 'resolveAttack' }, { t: 'afterAction' });
       openWindow(s, { kind: 'attack', by: p, attacker: action.attacker, target: action.target, cancelled: false });
       break;
@@ -390,6 +398,7 @@ export function apply(s: GameState, action: Action): GameState {
       s.passes = 0;
       const ability = (me.hero.grown ? behaviour(me.hero.id).bigCat : behaviour(me.hero.id).kitten)!;
       log(s, `${me.name}'s ${cardName(me.hero.id)} uses their ability${action.target ? ` on ${describeTarget(s, action.target)}` : ''}.`, p);
+      emit(s, { t: 'ability', p, heroId: me.hero.id, target: action.target });
       s.queue.unshift({ t: 'effect', p, effect: ability.effect, target: action.target, sourceId: me.hero.id }, { t: 'afterAction' });
       break;
     }
@@ -409,6 +418,7 @@ export function apply(s: GameState, action: Action): GameState {
       pay(s, p, CARDS[card.id].cost ?? 0);
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       log(s, `${me.name} POUNCES with ${cardName(card.id)}${action.target ? ` on ${describeTarget(s, action.target)}` : ''}!`, p);
+      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, how: 'pounce', target: action.target });
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, closesWindow: false });
       break;
     }
@@ -418,6 +428,7 @@ export function apply(s: GameState, action: Action): GameState {
       const card = takeFromHand(s, p, (prompt as { uid: number }).uid);
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       log(s, `Lucky! ${me.name} plays ${cardName(card.id)} for free.`, p);
+      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, how: 'lucky', target: action.target });
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, closesWindow: false });
       break;
     }
@@ -504,9 +515,11 @@ function exec(s: GameState, step: Step): void {
         const [a, b] = s.players.map((pl) => pl.lives.length);
         s.winner = a === b ? 'draw' : a > b ? 0 : 1;
         log(s, `Round limit reached.`);
+        emit(s, { t: 'win', p: s.winner });
         return;
       }
       log(s, `— Round ${s.round} —`);
+      emit(s, { t: 'round', n: s.round });
       for (const [q, pl] of s.players.entries()) {
         pl.hero.exhausted = false;
         pl.playedThisRound = 0;
@@ -517,6 +530,7 @@ function exec(s: GameState, step: Step): void {
           if (keywords(u.id).ripen && (u.ripe ?? 0) < RIPEN_MAX) {
             u.ripe = (u.ripe ?? 0) + 1;
             log(s, `${cardName(u.id)} ripens (+${u.ripe}/+${u.ripe}).`, q as PlayerId);
+            emit(s, { t: 'ripen', uid: u.uid, ripe: u.ripe });
           }
         }
       }
@@ -541,6 +555,7 @@ function exec(s: GameState, step: Step): void {
         if (card) pl.hand.push(card);
         else missing++;
       }
+      if (step.n > missing) emit(s, { t: 'draw', p: step.p, n: step.n - missing });
       if (missing) {
         log(s, `${pl.name}'s deck is empty!`, step.p);
         s.queue.unshift({ t: 'loseLife', p: step.p, n: missing });
@@ -553,9 +568,11 @@ function exec(s: GameState, step: Step): void {
       if (!card) { s.winner = other(step.p); break; }
       pl.hand.push(card);
       log(s, `${pl.name} loses a Life — ${pl.lives.length} left.`, step.p);
+      emit(s, { t: 'lifeLost', p: step.p, left: pl.lives.length });
       if (!pl.lives.length) {
         s.winner = other(step.p);
         log(s, `${s.players[s.winner].name} wins!`);
+        emit(s, { t: 'win', p: s.winner });
         break;
       }
       if (step.n > 1) s.queue.unshift({ t: 'loseLife', p: step.p, n: step.n - 1 });
@@ -616,6 +633,7 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
     if (found && found.owner === p && !found.unit.toy) {
       found.unit.toy = card;
       log(s, `${cardName(card.id)} is attached to ${cardName(found.unit.id)}.`, p);
+      emit(s, { t: 'toy', uid: found.unit.uid, cardId: card.id });
     } else {
       pl.compost.push(card);
     }
@@ -626,7 +644,10 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
     if (!b.play.target) applyEffect(s, p, b.play.effect, undefined);
     else if (isLegalTarget(s, p, b.play.target, target)) applyEffect(s, p, b.play.effect, target);
     else if (b.play.optionalTarget && !target) applyEffect(s, p, b.play.effect, undefined);
-    else log(s, `${cardName(card.id)} has no legal target and fizzles.`, p);
+    else {
+      log(s, `${cardName(card.id)} has no legal target and fizzles.`, p);
+      emit(s, { t: 'fizzled', cardId: card.id });
+    }
   }
   pl.compost.push(card);
 }
@@ -635,25 +656,35 @@ function resolveAttack(s: GameState): void {
   const w = s.window;
   s.window = null;
   if (!w || w.kind !== 'attack') return;
-  if (w.cancelled) { log(s, `The attack is cancelled!`); return; }
+  if (w.cancelled) { log(s, `The attack is cancelled!`); emit(s, { t: 'cancelled', attacker: w.attacker }); return; }
   const defender = other(w.by);
 
   const attackerUnit = w.attacker.kind === 'unit' ? findUnit(s, w.attacker.uid) : null;
-  if (w.attacker.kind === 'unit' && !attackerUnit) { log(s, `The attacker is gone; the attack fizzles.`); return; }
+  if (w.attacker.kind === 'unit' && !attackerUnit) {
+    log(s, `The attacker is gone; the attack fizzles.`);
+    emit(s, { t: 'fizzled', attacker: w.attacker });
+    return;
+  }
 
   if (w.target.kind === 'hero') {
     const n = attackerFierce(s, w.attacker) ? 2 : 1;
     log(s, `Hit! ${s.players[defender].name} loses ${n} Li${n > 1 ? 'ves' : 'fe'}.`, w.by);
+    emit(s, { t: 'heroHit', attacker: w.attacker, p: defender, lives: n });
     s.queue.unshift({ t: 'loseLife', p: defender, n });
     return;
   }
   const targetUnit = findUnit(s, w.target.uid);
-  if (!targetUnit) { log(s, `The target is gone; the attack fizzles.`); return; }
+  if (!targetUnit) {
+    log(s, `The target is gone; the attack fizzles.`);
+    emit(s, { t: 'fizzled', attacker: w.attacker });
+    return;
+  }
 
   const dealt = dealDamage(targetUnit.unit, attackerPower(s, w.attacker));
   let taken = 0;
   if (attackerUnit) taken = dealDamage(attackerUnit.unit, unitPower(targetUnit.unit));
   log(s, `${cardName(targetUnit.unit.id)} takes ${dealt}${attackerUnit ? `, ${cardName(attackerUnit.unit.id)} takes ${taken}` : ''}.`);
+  emit(s, { t: 'clash', attacker: w.attacker, target: targetUnit.unit.uid, dealt, taken });
 
   if (attackerUnit?.unit.id === SANGUINE) s.queue.unshift({ t: 'sanguine', uid: attackerUnit.unit.uid, foeUid: targetUnit.unit.uid });
   if (targetUnit.unit.id === SANGUINE && attackerUnit) s.queue.unshift({ t: 'sanguine', uid: targetUnit.unit.uid, foeUid: attackerUnit.unit.uid });
@@ -670,6 +701,7 @@ function heal(s: GameState, p: PlayerId, u: Unit | undefined, amount: number): v
   const healed = Math.min(u.damage, amount);
   u.damage -= healed;
   if (healed > 0) {
+    emit(s, { t: 'heal', uid: u.uid, amount: healed });
     const sakura = s.players[p].yard.find((x) => x.id === SAKURA && !x.usedOnce);
     if (sakura) {
       sakura.usedOnce = true;
@@ -685,37 +717,47 @@ function applyEffect(s: GameState, p: PlayerId, effect: EffectKey, target: Targe
   const zest = hasZest(s, p);
   if (zest && effect.includes('zest')) log(s, `Zest!`, p);
   switch (effect) {
-    case 'damage1': if (u) dealDamage(u, 1); break;
-    case 'damage2': if (u) dealDamage(u, 2); break;
-    case 'damage4': if (u) dealDamage(u, 4); break;
-    case 'damageEachEnemy1': for (const e of s.players[other(p)].yard) dealDamage(e, 1); break;
+    case 'damage1': if (u) hurt(s, p, u, 1); break;
+    case 'damage2': if (u) hurt(s, p, u, 2); break;
+    case 'damage4': if (u) hurt(s, p, u, 4); break;
+    case 'damageEachEnemy1': for (const e of s.players[other(p)].yard) hurt(s, p, e, 1); break;
     case 'heal2': heal(s, p, u, 2); break;
     case 'heal3': heal(s, p, u, 3); break;
-    case 'heal3guard': heal(s, p, u, 3); if (u) u.buffGuardian = true; break;
+    case 'heal3guard': heal(s, p, u, 3); if (u) { u.buffGuardian = true; emit(s, { t: 'buff', uid: u.uid, guardian: true }); } break;
     case 'heal3draw': heal(s, p, u, 3); s.queue.unshift({ t: 'draw', p, n: 1 }); break;
     case 'grannyHeal': for (const x of s.players[p].yard) heal(s, p, x, 1); break;
-    case 'exhaustEnemy': if (u) u.exhausted = true; break;
+    case 'exhaustEnemy': if (u) { u.exhausted = true; emit(s, { t: 'exhaust', uid: u.uid }); } break;
     case 'readyOwn':
-    case 'readyOther': if (u) u.exhausted = false; break;
-    case 'buff1': if (u) u.buffPower += 1; break;
-    case 'buff2': if (u) u.buffPower += 2; break;
-    case 'buff2sneaky': if (u) { u.buffPower += 2; u.buffSneaky = true; } break;
+    case 'readyOther': if (u) { u.exhausted = false; emit(s, { t: 'ready', uid: u.uid }); } break;
+    case 'buff1': if (u) buff(s, u, 1); break;
+    case 'buff2': if (u) buff(s, u, 2); break;
+    case 'buff2sneaky': if (u) { u.buffSneaky = true; buff(s, u, 2, true); } break;
     case 'draw1': s.queue.unshift({ t: 'draw', p, n: 1 }); break;
     case 'drawIfGuardian': if (s.players[p].yard.some(isGuardian)) s.queue.unshift({ t: 'draw', p, n: 1 }); break;
     case 'cancelAttack': if (s.window?.kind === 'attack') s.window.cancelled = true; break;
-    case 'damage5': if (u) dealDamage(u, 5); break;
+    case 'damage5': if (u) hurt(s, p, u, 5); break;
     case 'healEach2': for (const x of s.players[p].yard) heal(s, p, x, 2); break;
     case 'readyTreat1': readyTreats_(s, p, 1); break;
     case 'readyTreat2': readyTreats_(s, p, 2); break;
     case 'sprout1': sprout(s, p, 1); break;
     case 'sprout2': sprout(s, p, 2); break;
     case 'drawIfTreats7': if (s.players[p].pantry.length >= 7) s.queue.unshift({ t: 'draw', p, n: 2 }); break;
-    case 'buff2readyTreat': if (u) u.buffPower += 2; readyTreats_(s, p, 1); break;
-    case 'damage1zest2': if (u) dealDamage(u, zest ? 2 : 1); break;
-    case 'damage3zest5': if (u) dealDamage(u, zest ? 5 : 3); break;
-    case 'zestBuffSelf1': if (self && zest) self.buffPower += 1; break;
-    case 'zestReadySelf': if (self && zest) self.exhausted = false; break;
+    case 'buff2readyTreat': if (u) buff(s, u, 2); readyTreats_(s, p, 1); break;
+    case 'damage1zest2': if (u) hurt(s, p, u, zest ? 2 : 1); break;
+    case 'damage3zest5': if (u) hurt(s, p, u, zest ? 5 : 3); break;
+    case 'zestBuffSelf1': if (self && zest) buff(s, self, 1); break;
+    case 'zestReadySelf': if (self && zest) { self.exhausted = false; emit(s, { t: 'ready', uid: self.uid }); } break;
   }
+}
+
+/** Damage from a card or ability (not combat, which `resolveAttack` reports as one clash). */
+function hurt(s: GameState, p: PlayerId, u: Unit, amount: number): void {
+  emit(s, { t: 'damage', uid: u.uid, amount: dealDamage(u, amount), p });
+}
+
+function buff(s: GameState, u: Unit, power: number, sneaky?: boolean): void {
+  u.buffPower += power;
+  emit(s, sneaky ? { t: 'buff', uid: u.uid, power, sneaky } : { t: 'buff', uid: u.uid, power });
 }
 
 function readyTreats_(s: GameState, p: PlayerId, n: number): void {
@@ -743,6 +785,7 @@ function stateCheck(s: GameState): void {
       if (u.toy) pl.compost.push(u.toy);
       pl.compost.push({ uid: u.uid, id: u.id });
       log(s, `${cardName(u.id)} is defeated.`, owner);
+      emit(s, { t: 'defeated', uid: u.uid, cardId: u.id, owner });
       const goodbye = behaviour(u.id).goodbye;
       if (goodbye) triggers.push({ t: 'choosePrompt', p: owner, effect: goodbye.effect, spec: goodbye.target, sourceId: u.id });
     }
@@ -753,6 +796,7 @@ function stateCheck(s: GameState): void {
     if (!hero.grown && behaviour(hero.id).growUp?.(s, owner)) {
       hero.grown = true;
       log(s, `${s.players[owner].name}'s ${cardName(hero.id)} Grows Up into ${CARDS[hero.id].bigCat!.name}!`, owner);
+      emit(s, { t: 'growUp', p: owner });
     }
   }
 }

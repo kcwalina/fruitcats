@@ -348,7 +348,8 @@ function pageDriver(send) {
     const until = Date.now() + timeout;
     for (;;) {
       const s = await state();
-      if (s && (s.winner !== null || s.prompt?.player === 0)) return s;
+      // The state changes before its animation plays (apps/web/src/fx.ts): wait for that too.
+      if (s && (s.winner !== null || s.prompt?.player === 0) && !(await run('!!window.fruitcats.animating'))) return s;
       if (Date.now() > until) throw new ScriptError(`the opponent never handed the turn back (prompt ${s?.prompt?.kind})`);
       await wait(150);
     }

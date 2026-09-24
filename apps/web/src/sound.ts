@@ -5,6 +5,7 @@
 //
 // Sounds follow the game log, so every event makes a sound whoever caused it (you or the AI):
 // `playLogSounds(game)` is called after each render and plays the entries it hasn't heard yet.
+// With animations on, fx.ts plays each sound at the moment its animation lands instead.
 // Browsers (iOS in particular) only allow audio after a user gesture, so the audio context is
 // created/resumed on the first tap or click.
 

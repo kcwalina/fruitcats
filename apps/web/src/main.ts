@@ -2,6 +2,7 @@ import './style.css';
 import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
+import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { yourCardUrl } from './rarity';
@@ -99,7 +100,7 @@ let confirming: 'yarn' | null = null;
 let showRules = false;
 let showSettings = false;
 let flash = '';
-/** Settings > Opponent speed: Fast shortens the AI's thinking pause. Remembered in this browser. */
+/** Settings > Speed: Fast shortens the AI's thinking pause and the animations. Remembered in this browser. */
 const SPEED_KEY = 'fruitcats-speed';
 type Speed = 'normal' | 'fast';
 const SPEED_SCALE: Record<Speed, number> = { normal: 1, fast: 0.4 };
@@ -179,9 +180,28 @@ function foeRecap(s: GameState): string[] {
     .map((e) => humanize(e.text));
 }
 
-function act(action: Action) {
-  if (!game) return;
+/**
+ * Play back what the last `apply` did, starting at event `from` (see fx.ts), before the new state is
+ * drawn. False if the game was left in the meantime, so the caller shouldn't draw it.
+ */
+async function showEvents(from: number): Promise<boolean> {
+  const g = game;
+  if (!g || screen !== 'game' || !animationsEnabled()) return true;
+  const events = g.events.slice(from);
+  if (!hasBeats(events)) return true;
+  await playEvents(events, {
+    human: HUMAN,
+    cardImage: (p, id) => (p === HUMAN ? yourCardUrl : cardUrl)(id),
+    speed: speed === 'fast' ? 0.6 : 1,
+  });
+  resetLogSounds(g); // their sounds played with the animation
+  return game === g;
+}
+
+async function act(action: Action) {
+  if (!game || isAnimating()) return;
   const me = game.players[HUMAN];
+  const from = (game.events ??= []).length;
   const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
   const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
   try {
@@ -198,6 +218,7 @@ function act(action: Action) {
   selection = null;
   confirming = null;
   picks = new Set();
+  if (!(await showEvents(from))) return;
   render();
   scheduleAi();
 }
@@ -207,9 +228,11 @@ function scheduleAi() {
   if (!game || game.winner !== null || game.prompt?.player !== AI) return;
   if (tutorialBlocksAi()) return; // resumed when the balloon is closed
   const delay = aiDelayScale * (game.prompt.kind === 'pounce' || game.prompt.kind === 'plant' ? 450 : 850);
-  aiTimer = window.setTimeout(() => {
-    if (!game || game.prompt?.player !== AI) return;
+  aiTimer = window.setTimeout(async () => {
+    if (!game || game.prompt?.player !== AI || isAnimating()) return;
+    const from = (game.events ??= []).length;
     apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill, random: aiRandom }));
+    if (!(await showEvents(from))) return;
     render();
     scheduleAi();
   }, delay);
@@ -359,6 +382,7 @@ function onClick(key: string) {
   if (kind === 'set') {
     const choice = key.split(':')[2];
     if (raw === 'sound' && (choice === 'on') !== soundEnabled()) toggleSound();
+    if (raw === 'anim') setAnimations(choice === 'on');
     if (raw === 'speed' && (choice === 'normal' || choice === 'fast')) {
       speed = choice;
       aiDelayScale = SPEED_SCALE[speed];
@@ -464,6 +488,7 @@ function resumeSavedGame(): boolean {
   const save = loadGame();
   if (!save) return false;
   game = save.game;
+  game.events ??= []; // saved before events existed
   tutorialGame = false;
   if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
   unitArrivals.clear();
@@ -772,7 +797,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   return `
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
     <div class="hero-slot">
-    <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
+    <div class="hero ${famClass(pl.hero.id)} ${attackMark(key)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
          data-click="${key}" data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
@@ -816,6 +841,13 @@ function restingLabel(u: Unit): { tag: string; why: string } {
     : { tag: 'zzz', why: 'Already acted this round. It wakes up at the start of the next round.' };
 }
 
+/** While an attack waits on a Pounce, the attacker stays raised and its target marked (see fx.ts). */
+function attackMark(key: string): string {
+  const w = game?.window;
+  if (w?.kind !== 'attack' || w.cancelled) return '';
+  return targetKey(w.attacker) === key ? 'fx-attacker' : targetKey(w.target) === key ? 'fx-targeted' : '';
+}
+
 function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: Set<number>): string {
   const k = keywords(u.id);
   const power = unitPower(u);
@@ -830,7 +862,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   const resting = restingLabel(u);
   const selected = selection?.options.some((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === u.uid);
   const cls = [
-    'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected',
+    'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected', attackMark(key),
     owner === AI && !foeUnitsBefore.has(u.uid) && 'fresh',
     owner === AI && !renderedFoeUnits.has(u.uid) && 'arriving',
     owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
@@ -1010,7 +1042,11 @@ function renderSettings(): string {
         <div class="segmented">${choice('sound', 'on', 'On', soundEnabled())}${choice('sound', 'off', 'Off', !soundEnabled())}</div>
       </div>
       <div class="setting">
-        <span class="setting-name">Opponent speed<small>How long the computer pauses before each move</small></span>
+        <span class="setting-name">Animations<small>Show attacks, damage and played cards as they happen</small></span>
+        <div class="segmented">${choice('anim', 'on', 'On', animationsEnabled())}${choice('anim', 'off', 'Off', !animationsEnabled())}</div>
+      </div>
+      <div class="setting">
+        <span class="setting-name">Speed<small>How long the computer pauses, and how fast animations play</small></span>
         <div class="segmented">${choice('speed', 'normal', 'Normal', speed === 'normal')}${choice('speed', 'fast', 'Fast', speed === 'fast')}</div>
       </div>
       <button class="primary settings-done" data-click="ui:settings">Done</button>
@@ -1251,6 +1287,7 @@ if (import.meta.env.DEV) {
       get game() { return game; }, chooseAction, legalActions, apply, render, CARDS,
       set fast(on: boolean) { aiDelayScale = on ? 0 : 1; },
       set aiDelay(scale: number) { aiDelayScale = scale; },
+      get animating() { return isAnimating(); },
     },
   });
 }

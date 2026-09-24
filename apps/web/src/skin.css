@@ -605,3 +605,106 @@ button.danger {
   background: linear-gradient(#e9665a, #c0392b); box-shadow: 0 3px 0 #8e2a1f, 0 6px 12px rgba(120, 30, 10, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 button.tile-delete, button.delete-deck { color: #9c3a26; }
+
+/* ── Event playback (fx.ts): what just happened, shown step by step ──────────────────────────── */
+.fx-layer {
+  position: fixed; inset: 0; z-index: 60; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  background: rgba(30, 14, 3, 0); transition: background 0.25s;
+}
+.fx-layer.dim { background: rgba(30, 14, 3, 0.38); }
+#fx-floats { position: fixed; inset: 0; z-index: 61; pointer-events: none; }
+.fx-caption {
+  position: fixed; translate: -50% -50%; max-width: min(92vw, 620px); width: max-content; pointer-events: none;
+  font: 600 clamp(14px, 2.1vw, 19px)/1.25 Fredoka, Nunito, sans-serif; color: #fff; text-align: center;
+  padding: 7px 18px; border-radius: 999px; background: rgba(40, 20, 6, 0.86);
+  box-shadow: 0 0 0 2px rgba(255, 214, 140, 0.55), 0 8px 22px rgba(20, 8, 0, 0.45); opacity: 0; z-index: 3;
+  transition: top 0.2s ease-out;
+}
+.fx-caption:empty { display: none; }
+/* The caption takes the prompt bar's place: what it asked is out of date until the result is drawn. */
+.fx-playing .midbar :is(.prompt, .buttons) { visibility: hidden; }
+.fx-caption.show { animation: fx-caption 0.22s ease-out forwards; }
+.fx-caption b { color: var(--gold-light); font-weight: 700; }
+@keyframes fx-caption { from { opacity: 0; scale: 0.94; } to { opacity: 1; scale: 1; } }
+.fx-skip {
+  position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom));
+  font: 600 12px Fredoka, Nunito, sans-serif; color: rgba(255, 245, 225, 0.85); padding: 3px 10px; border-radius: 999px;
+  background: rgba(40, 20, 6, 0.55); pointer-events: none; animation: fade-in 0.4s 0.6s both;
+}
+
+/* A played card, big */
+.fx-reveal {
+  position: fixed; height: min(calc(var(--vh, 1vh) * 46), 104vw); aspect-ratio: 5 / 7; translate: -50% -50%;
+  pointer-events: none; filter: drop-shadow(0 18px 30px rgba(20, 8, 0, 0.55));
+}
+.fx-reveal img { width: 100%; height: 100%; object-fit: contain; border-radius: 4.5%; display: block; }
+.fx-reveal.theirs img { box-shadow: 0 0 0 3px rgba(255, 150, 110, 0.9), 0 0 28px 6px rgba(255, 120, 70, 0.55); }
+.fx-reveal.mine img { box-shadow: 0 0 0 3px rgba(255, 226, 150, 0.9), 0 0 28px 6px rgba(255, 205, 90, 0.5); }
+.fx-tag {
+  position: absolute; left: 50%; top: -4%; translate: -50% -50%; rotate: -6deg; white-space: nowrap;
+  font: 700 clamp(18px, 3.4vh, 30px) Fredoka, Nunito, sans-serif; color: #fff; letter-spacing: 0.5px;
+  padding: 2px 16px; border-radius: 12px; background: linear-gradient(#ff8a5b, #d9481f);
+  box-shadow: 0 3px 0 #8f2a0c, 0 8px 16px rgba(60, 15, 0, 0.45); text-shadow: 0 1px 0 rgba(100, 25, 0, 0.6);
+}
+
+/* What is attacking, and what it is aimed at (also while a Pounce window is open) */
+.unit.fx-attacker, .hero.fx-attacker {
+  translate: 0 -8px; z-index: 4;
+  box-shadow: 0 0 0 3px #fff3c4, 0 0 18px 6px rgba(255, 170, 60, 0.9), 0 10px 18px rgba(40, 20, 5, 0.45);
+}
+.unit.fx-targeted, .hero.fx-targeted { z-index: 3; animation: fx-target 0.9s ease-in-out infinite; }
+@keyframes fx-target {
+  0%, 100% { box-shadow: 0 0 0 3px #ff4d4d, 0 0 10px 3px rgba(255, 50, 50, 0.6); }
+  50% { box-shadow: 0 0 0 5px #ff4d4d, 0 0 22px 8px rgba(255, 50, 50, 0.8); }
+}
+.fx-front { position: relative; z-index: 8; }
+.hero.fx-glow { box-shadow: 0 0 0 3px #fff3c4, 0 0 20px 8px rgba(255, 210, 90, 0.9); }
+.fx-flash {
+  position: fixed; pointer-events: none; border-radius: 10px;
+  background: radial-gradient(circle, var(--fx) 0%, transparent 72%); mix-blend-mode: screen;
+}
+.fx-bolt {
+  position: fixed; width: 22px; height: 22px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, #fff 0 22%, #ffd36b 40%, rgba(255, 120, 40, 0.9) 62%, transparent 72%);
+  box-shadow: 0 0 18px 8px rgba(255, 150, 50, 0.7);
+}
+.fx-bolt.heal { background: radial-gradient(circle, #fff 0 22%, #9ff0b0 42%, rgba(40, 190, 90, 0.9) 62%, transparent 72%); box-shadow: 0 0 18px 8px rgba(60, 200, 110, 0.7); }
+.fx-bolt.buff { background: radial-gradient(circle, #fff 0 22%, #fff0a0 42%, rgba(240, 190, 30, 0.9) 62%, transparent 72%); box-shadow: 0 0 18px 8px rgba(250, 200, 50, 0.7); }
+
+/* Numbers and words that float off a card */
+.fx-float {
+  position: fixed; translate: -50% -50%; white-space: nowrap; pointer-events: none;
+  font: 700 clamp(20px, 3.4vh, 30px) Fredoka, Nunito, sans-serif; color: #fff;
+  -webkit-text-stroke: 1.5px rgba(60, 10, 0, 0.7); paint-order: stroke fill;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45); animation: fx-float 1.3s ease-out forwards;
+}
+.fx-float.hurt { color: #ff5a5a; font-size: clamp(26px, 4.6vh, 42px); }
+.fx-float.heal { color: #7df29a; font-size: clamp(24px, 4.2vh, 38px); -webkit-text-stroke-color: rgba(0, 60, 20, 0.7); }
+.fx-float.buff { color: #ffd84a; -webkit-text-stroke: 2px rgba(110, 55, 0, 0.95); }
+.fx-float.info { color: #fff4dc; font-size: clamp(17px, 2.8vh, 24px); }
+.fx-float.big {
+  font-size: clamp(22px, 3.8vh, 34px); color: #fff; padding: 2px 14px; border-radius: 12px; -webkit-text-stroke: 0;
+  background: linear-gradient(#e9565a, #b2232e); box-shadow: 0 3px 0 #7a1219, 0 8px 18px rgba(60, 5, 5, 0.45);
+  text-shadow: 0 1px 0 rgba(90, 0, 0, 0.6);
+}
+@keyframes fx-float {
+  0% { opacity: 0; scale: 0.5; translate: -50% -20%; }
+  15% { opacity: 1; scale: 1.15; translate: -50% -60%; }
+  30% { scale: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; translate: -50% -190%; }
+}
+
+/* A new round */
+.fx-round {
+  position: fixed; left: 50%; top: 45%; translate: -50% -50%; pointer-events: none; text-align: center;
+  font: 700 clamp(56px, 12vh, 110px)/0.9 Fredoka, Nunito, sans-serif; color: #fff;
+  -webkit-text-stroke: 3px #8a4b15; paint-order: stroke fill; text-shadow: 0 6px 18px rgba(30, 12, 0, 0.6);
+}
+.fx-round small { display: block; font-size: 0.34em; letter-spacing: 2px; text-transform: uppercase; -webkit-text-stroke: 2px #8a4b15; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-float { animation-name: fx-fade; }
+  .unit.fx-targeted, .hero.fx-targeted { animation: none; box-shadow: 0 0 0 4px #ff4d4d; }
+}
+@keyframes fx-fade { 0% { opacity: 0; } 15%, 75% { opacity: 1; } 100% { opacity: 0; } }

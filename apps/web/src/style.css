@@ -121,6 +121,142 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 16px; flex: none; }
 .segmented button { width: 80px; min-height: 40px; padding: 0; }   /* both controls line up */
 .settings-done { display: block; width: 100%; margin-top: 16px; min-height: 44px; }
+/* Settings > Account (src/account.ts): a row at the top of Settings opens the Account panel. */
+button.account-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; margin: 0 0 6px; text-align: left;
+  border-radius: 16px; min-height: 64px;
+}
+.account-row .account-who { flex: 1; }
+.account-chevron { font-size: 28px; line-height: 1; color: var(--muted); font-weight: 700; }
+.account-card { display: flex; align-items: center; gap: 12px; }
+.account-avatar {
+  flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 22px Fredoka, Nunito, sans-serif; color: #fff; background: linear-gradient(#ffa35c, #f07a1f); box-shadow: 0 0 0 3px #fff, var(--shadow);
+}
+.account-avatar.small { width: 40px; height: 40px; font-size: 19px; box-shadow: 0 0 0 2px #fff; }
+.account-avatar.is-image { object-fit: cover; background: #fff; }
+.legend-frame.account-avatar { background: conic-gradient(from var(--legend-turn), #ffd23f, #fff6bf, #ffae00, #ff79c8, #8fd1ff, #b8ffb0, #ffd23f); }
+.account-card .account-avatar { width: 72px; height: 72px; }
+button.account-face-button {
+  position: relative; flex: none; padding: 0; border: 0; background: none; box-shadow: none; border-radius: 50%; min-height: 0;
+}
+button.account-face-button:hover { box-shadow: none; }
+.account-face-edit {
+  position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); padding: 1px 8px; border-radius: 999px;
+  background: #fff; border: 2px solid var(--parchment-edge, #dcb66e); font-size: 11px; font-weight: 800; color: #9c4a12;
+}
+/* Legend Pawtraits (src/account.ts, pawtrait()): a turning rainbow-gold foil ring, a glow and a sweeping shine, so
+   they can't be mistaken for everyday ones at any size. */
+@property --legend-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.legend-frame {
+  position: relative; display: block; flex: none; box-sizing: border-box; border-radius: 50%; padding: 7%;
+  background: conic-gradient(from var(--legend-turn), #ffd23f, #fff6bf, #ffae00, #ff79c8, #8fd1ff, #b8ffb0, #ffd23f);
+  box-shadow: 0 0 0 1.5px #9a5b06, 0 0 14px 3px rgba(255, 190, 40, 0.7), 0 3px 8px rgba(80, 40, 0, 0.35);
+  animation: legend-turn 5s linear infinite;
+}
+.legend-frame img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; box-shadow: inset 0 0 0 1px #9a5b06; }
+.legend-shine { position: absolute; inset: 7%; border-radius: 50%; overflow: hidden; pointer-events: none; }
+.legend-shine::after {
+  content: ''; position: absolute; top: -40%; left: -110%; width: 55%; height: 180%; transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: legend-shine 4s ease-in-out infinite;
+}
+@keyframes legend-turn { to { --legend-turn: 360deg; } }
+@keyframes legend-shine { 0%, 55% { left: -110%; } 100% { left: 170%; } }
+@media (prefers-reduced-motion: reduce) { .legend-frame, .legend-shine::after { animation: none; } }
+/* The Pawtrait picker: a filter, then a grid of circles. Legend ones wear a gold ring; ones you don't have are dimmed
+   and say which card brings them. */
+/* Each player's Pawtrait, on the right of their panel (playtest, with accounts). */
+/* Always the last thing on the right, whatever sits between (the opponent's hidden hand, your ability buttons). */
+.player-face { flex: none; margin-left: auto; order: 99; }
+.player-face ~ .foe-hand, .foe-hand + .player-face { margin-left: 0; }
+.board-pawtrait {
+  display: block; width: 52px; height: 52px; border-radius: 50%; object-fit: cover;
+  box-shadow: 0 0 0 3px #fff, 0 2px 6px rgba(60, 30, 10, 0.35);
+}
+.legend-frame.board-pawtrait { width: 58px; height: 58px; }
+
+.pawtrait-filter { align-self: center; }
+.pawtrait-filter button { width: auto; padding: 0 14px; }
+.pawtrait-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 10px; max-height: calc(var(--vh, 1vh) * 50); overflow-y: auto; padding: 6px 4px; }
+button.pawtrait {
+  position: relative; padding: 0; border: 0; background: none; box-shadow: none; border-radius: 50%; aspect-ratio: 1; min-height: 0;
+}
+button.pawtrait:hover:not(:disabled) { transform: translateY(-2px); box-shadow: none; }
+.pawtrait-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 0 0 3px #fff, 0 2px 6px rgba(90, 55, 20, 0.25); }
+.pawtrait-wearing {
+  position: absolute; right: -2px; bottom: -2px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: #3d9d52; color: #fff; font-weight: 900; font-size: 15px; box-shadow: 0 0 0 3px #fff, 0 2px 4px rgba(0, 0, 0, 0.3); z-index: 2;
+}
+.pawtrait.locked .legend-frame img { filter: grayscale(0.55) brightness(0.6); }
+.pawtrait.locked .legend-shine { display: none; }
+/* The picker's shelves. */
+.pawtrait-shelves { max-height: calc(var(--vh, 1vh) * 52); overflow-y: auto; padding: 0 4px; }
+.pawtrait-shelves .pawtrait-grid { max-height: none; overflow: visible; }
+.pawtrait-shelf { margin: 6px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: left; }
+.pawtrait-shelf.legend { margin-top: 14px; color: #a86a00; }
+.pawtrait-shelf small { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.pawtrait-lock {
+  position: absolute; inset: 0; border-radius: 50%; z-index: 1; display: grid; place-content: center; padding: 6px;
+  background: rgba(40, 20, 60, 0.5); color: #fff; font-size: 12px; line-height: 1.1; font-weight: 800; text-align: center;
+  justify-items: center; gap: 2px;
+}
+.pawtrait-lock svg { width: 20px; height: 20px; }
+.pawtrait.legend .pawtrait-lock { inset: 7%; background: rgba(40, 20, 60, 0.35); }
+.account-who { display: flex; flex-direction: column; min-width: 0; }
+.account-who b { font-size: 17px; overflow-wrap: anywhere; }
+.account-who small { color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+.account-panel { display: flex; flex-direction: column; gap: 12px; }
+.account-panel-head { display: flex; align-items: center; justify-content: space-between; }
+.account-panel-head h2 { margin: 0; }
+.account-back { font-size: 28px; line-height: 1; font-weight: 700; }
+.account-back-balance { width: 44px; flex: none; }
+.account-section-note { margin: 0; font-size: 13px; color: var(--muted); font-weight: 600; line-height: 1.4; }
+.account-section-button { min-height: 44px; }
+.account-confirm { border: 2px solid #e8b9a8; background: #fff3ee; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.account-confirm p { margin: 0; font-size: 14px; line-height: 1.4; }
+.account-confirm-buttons { display: flex; gap: 8px; }
+.account-confirm-buttons button { flex: 1; min-height: 44px; }
+button.danger { background: #c8402a; border-color: #a8321f; color: #fff; }
+/* The Via Mochi account window (src/account.ts): one narrow card, a step at a time. */
+.account-dialog {
+  position: relative; width: min(400px, 100%); max-height: calc(var(--vh, 1vh) * 94); overflow-y: auto;
+  background: var(--panel); border-radius: 24px; padding: 22px 24px 14px; box-shadow: var(--shadow); animation: pop 0.25s ease-out;
+  display: flex; flex-direction: column; align-items: stretch; gap: 12px; text-align: center;
+}
+.account-dialog h2 { margin: 0; font-size: 22px; }
+.account-close { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; font-size: 22px; line-height: 1; }
+.account-cat { width: 96px; height: 96px; margin: 0 auto; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: var(--shadow); }
+.account-why { margin: 0; color: var(--muted); font-weight: 600; line-height: 1.35; }
+.account-why b { color: var(--ink); overflow-wrap: anywhere; }
+.account-field { display: flex; flex-direction: column; gap: 6px; text-align: left; font-weight: 700; }
+.account-field small { font-weight: 600; color: var(--muted); font-size: 12.5px; }
+.account-field input {
+  font: 700 18px Nunito, sans-serif; padding: 11px 14px; border-radius: 14px; border: 2px solid var(--parchment-edge, #dcb66e);
+  background: #fff; color: var(--ink); min-width: 0; width: 100%; box-sizing: border-box;
+}
+.account-field input:focus { outline: none; border-color: #3d9d52; box-shadow: 0 0 0 3px rgba(61, 157, 82, 0.25); }
+.account-field input.account-code { font-size: 26px; letter-spacing: 0.3em; text-align: center; font-variant-numeric: tabular-nums; }
+.account-agree { display: flex; align-items: center; gap: 10px; text-align: left; font-weight: 600; }
+.account-agree input { width: 22px; height: 22px; flex: none; accent-color: #3d9d52; }
+.account-agree a { color: #b4561a; font-weight: 800; }
+.account-go { min-height: 48px; font-size: 18px; }
+.account-benefits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.account-benefits li { position: relative; padding-left: 30px; display: flex; flex-direction: column; line-height: 1.3; }
+.account-benefits li::before {
+  content: '✓'; position: absolute; left: 0; top: 1px; width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center; background: #3d9d52; color: #fff; font-size: 12px; font-weight: 900;
+}
+.account-benefits b { font-size: 15px; }
+.account-benefits span { font-size: 13px; color: var(--muted); font-weight: 600; }
+.account-small { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.account-error { margin: 0; min-height: 1.2em; font-weight: 700; color: #b8321f; font-size: 14px; }
+.account-error:empty { min-height: 0; }
+button.link-button {
+  display: inline; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; transform: none;
+  color: #b4561a; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer;
+}
+button.link-button:hover { box-shadow: none; transform: none; }
 .deck-art { display: none; }
 /* Difficulty: three picture tiles, chosen like a deck. */
 .difficulty-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(100%, 480px); }
@@ -511,9 +647,7 @@ button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
 .yarn { background: #fff; border-radius: 999px; padding: 0 8px; font-size: 12px; border: 2px solid var(--glow); }
 .stat-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .lives { display: flex; align-items: center; gap: 3px; }
-.lives i { width: 12px; height: 12px; border-radius: 50%; background: #e7d3b3; display: inline-block; }
-.lives i.on { background: radial-gradient(circle at 35% 30%, #ff9ab3, var(--health)); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2); }
-.lives b { margin-left: 5px; font-size: 14px; }
+
 .counters { display: flex; gap: 12px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .ability {
   font-size: 12px; color: var(--ink); line-height: 1.25; overflow: hidden;

@@ -6,6 +6,11 @@ import { count, summary } from './progress';
 import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
+import { ACCOUNTS } from './flags';
+import {
+  accountClick, accountEnter, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
+  boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
+} from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import {
@@ -321,6 +326,10 @@ function onClick(key: string) {
 
   if (kind === 'home') {
     homeNote = '';
+    // With accounts on, your cards live in your account: signed out, these tiles open "Sign in or create account",
+    // then carry on to where you were going.
+    const needs = ACCOUNTS && !signedIn() ? ACCOUNT_TILES[raw] : undefined;
+    if (needs) { openAccount({ render }, needs, () => onClick(key)); return; }
     if (raw === 'solo') screen = 'solo';
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
     else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
@@ -350,6 +359,11 @@ function onClick(key: string) {
     showcaseClick(raw, key.split(':').slice(2).join(':'), { render });
     return;
   }
+  if (ACCOUNTS && kind === 'acct') {
+    if (raw === 'open') showSettings = false;
+    void accountClick({ render }, key.slice('acct:'.length));
+    return;
+  }
   if (kind === 'set') {
     const choice = key.split(':')[2];
     if (raw === 'sound' && (choice === 'on') !== soundEnabled()) toggleSound();
@@ -363,7 +377,8 @@ function onClick(key: string) {
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
-    if (raw === 'settings') showSettings = !showSettings;
+    // Closing Settings also leaves the Account panel, so Settings opens on its main page next time.
+    if (raw === 'settings') { showSettings = !showSettings; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) warmPawtraits(); } }
     if (raw === 'back') { screen = 'home'; homeNote = ''; }
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
     if (raw === 'again') { startGame(); return; }
@@ -481,7 +496,7 @@ function render() {
     .map((el) => [el.dataset.keepScroll, [el.scrollTop, el.scrollLeft]] as const));
   app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder()
     : screen === 'collection' ? renderShowcase() : renderGame())
-    + (showSettings ? renderSettings() : '');
+    + (showSettings ? renderSettings() : '') + (ACCOUNTS ? renderAccount() : '');
   for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
     [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
   if (screen === 'collection') showcaseMounted();
@@ -514,6 +529,12 @@ const MODE_GROUPS = [
 ];
 const MODES = MODE_GROUPS.flat();
 
+/** With accounts on, the tiles that need one, and the line on why that heads "Sign in or create account". */
+const ACCOUNT_TILES: Record<string, string> = {
+  collection: 'Your collection lives in your Via Mochi account, so it’s on every device.',
+  decks: 'Your decks live in your Via Mochi account, so they’re on every device.',
+};
+
 /** The unfinished game, for the Resume button: "Round 4 · Sunny vs Pippin". */
 function savedGameLabel(): string | null {
   const saved = loadGame()?.game;
@@ -541,7 +562,9 @@ function renderHome(): string {
           // Every tile is the same: picture, name, and one line under it. That line says "Coming soon",
           // or on Solo, that a game is waiting to be continued.
           const resume = m.key === 'solo' && saved;
+          const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES;
           const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
+            : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
             : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
             : `<span class="mode-sub">${m.sub}</span>`;
           return `
@@ -731,7 +754,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">${YARN_ICON}<small>next</small></span>` : '';
   const canAbility = legal.some((a) => a.t === 'ability');
   const canAttack = legal.some((a) => a.t === 'attack' && a.attacker.kind === 'hero');
-  const lives = Array.from({ length: 9 }, (_, i) => `<i class="${i < pl.lives.length ? 'on' : ''}"></i>`).join('');
 
   return `
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
@@ -746,7 +768,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
     <div class="stats">
       <div class="who">${esc(pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
-        <div class="lives" title="${pl.lives.length} Lives left">${lives}<b>${pl.lives.length}</b></div>
+        <div class="lives" title="${pl.lives.length} of 9 Lives left"><span class="life-heart ${pl.lives.length <= 3 ? 'low' : ''}"><b>${pl.lives.length}</b></span></div>
         <div class="counters">
           <span title="Cards in hand">✋ ${pl.hand.length}</span>
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
@@ -760,6 +782,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
       ${canAttack ? '<button class="primary" data-click="btn:heroattack">Big Cat attack</button>' : ''}
     </div>` : ''}
     ${p === AI ? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
+    ${ACCOUNTS ? `<div class="player-face">${boardFace(p === HUMAN ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
 }
 
@@ -965,9 +988,14 @@ function renderGameOver(s: GameState): string {
 function renderSettings(): string {
   const choice = (setting: string, value: string, label: string, chosen: boolean) =>
     `<button class="${chosen ? 'chosen' : ''}" data-click="set:${setting}:${value}" aria-pressed="${chosen}">${label}</button>`;
+  if (ACCOUNTS && accountPanelOpen()) {
+    return `<div class="overlay"><div class="settings account-panel" role="dialog" aria-label="Account">${renderAccountPanel()}
+      <button class="primary settings-done" data-click="ui:settings">Done</button></div></div>`;
+  }
   return `<div class="overlay">
     <div class="settings" role="dialog" aria-label="Settings">
       <h2>Settings</h2>
+      ${ACCOUNTS ? renderAccountRow() : ''}
       <div class="setting">
         <span class="setting-name">Sound</span>
         <div class="segmented">${choice('sound', 'on', 'On', soundEnabled())}${choice('sound', 'off', 'Off', !soundEnabled())}</div>
@@ -1013,10 +1041,14 @@ function renderRules(): string {
 app.addEventListener('input', (event) => {
   const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
   if (input) deckInput(input);
+  const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
+  if (field) accountInput(field);
 });
 app.addEventListener('keydown', (event) => {
   const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
   if (input && event.key === 'Enter') input.blur();
+  const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
+  if (field && event.key === 'Enter') { event.preventDefault(); accountEnter(field, { render }); }
 });
 
 app.addEventListener('click', (event) => {
@@ -1197,6 +1229,8 @@ app.addEventListener('contextmenu', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && ACCOUNTS && accountOpen()) { closeAccount({ render }); return; }
+  if (event.key === 'Escape' && ACCOUNTS && showSettings && accountPanelOpen()) { closeAccountPanel(); render(); return; }
   if (event.key === 'Escape' && showSettings) { showSettings = false; render(); return; }
   if (screen === 'collection' && !showSettings && showcaseArrow(event.key, { render })) return;
   if (event.key === 'Escape') {

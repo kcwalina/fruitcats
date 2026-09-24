@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "npm run dev -w @fruitcats/web",
     "build": "npm run build -w @fruitcats/web",
+    "build:playtest": "npm run build:playtest -w @fruitcats/web",
     "preview": "npm run preview -w @fruitcats/web",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",

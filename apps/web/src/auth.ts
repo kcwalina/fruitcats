@@ -1,0 +1,210 @@
+// Via Mochi sign-in (docs/accounts-plan.md). The only module that knows about Microsoft Entra: the game asks it to
+// start with an email, check a code, and hand out a token; nothing else changes if Entra is ever replaced.
+//
+// Entra's "native authentication" API sends the one-time codes. Browsers can't call it directly, so every call goes
+// through viamochi-id's /auth pass-through. The Entra token is then swapped at viamochi-id for our own Via Mochi
+// token, which is what our APIs accept.
+
+const ID_SERVICE = 'https://viamochi-id.azurewebsites.net';
+const CLIENT_ID = '1ed2eaf3-3330-4328-9ca3-1519f681b6a2';
+const SCOPE = `openid offline_access api://${CLIENT_ID}/play`;
+const BIRTH_YEAR = 'extension_6758f33d2f4d4c119a640bcbadfe8dc5_BirthYear';
+const SESSION_KEY = 'viamochi-session';
+/** The Terms of Use version a new account accepts (docs/legal/terms-of-use.md). */
+export const TERMS_VERSION = '2026-09-draft-1';
+
+export interface Session {
+  userId: string;
+  displayName: string;
+  email: string;
+  /** Entra's refresh token: keeps this device signed in. */
+  refreshToken: string;
+  /** Our Via Mochi token and when it expires (ms since epoch). */
+  token: string;
+  expires: number;
+  /** When this device signed in (ms since epoch). */
+  signedInAt: number;
+  /** The avatar ("Pawtrait") this account wears. */
+  avatar?: string;
+}
+
+/** Where a sign-in stands between the email and the code. Kept only in memory. */
+export interface Pending {
+  flow: 'signIn' | 'signUp';
+  email: string;
+  continuationToken: string;
+  /** "k•••@m•••.com": where the code went, as Entra shows it. */
+  sentTo: string;
+  codeLength: number;
+}
+
+export class AuthError extends Error {
+  constructor(readonly code: string, message: string) { super(message); }
+}
+
+// ── The session on this device ──────────────────────────────────────────────────────────────────
+
+export function session(): Session | null {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null') as Session | null; } catch { return null; }
+}
+
+function saveSession(s: Session | null) {
+  try {
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY);
+  } catch { /* private mode: signed in until the page closes */ }
+}
+
+export function signOut() { saveSession(null); }
+
+/** A Via Mochi token for our APIs, refreshed quietly when it's about to expire. Null when signed out. */
+export async function token(): Promise<string | null> {
+  const s = session();
+  if (!s) return null;
+  if (s.expires - Date.now() > 60_000) return s.token;
+  try {
+    const entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: s.refreshToken, scope: SCOPE });
+    return (await finish(entra, s.email)).token;
+  } catch (e) {
+    // Only a rejected refresh token signs the player out; being offline doesn't.
+    if (e instanceof AuthError && e.code !== 'network') signOut();
+    return null;
+  }
+}
+
+// ── Signing in and creating accounts ────────────────────────────────────────────────────────────
+
+/** Is there already an account for this email? Sends nothing. */
+export async function accountExists(email: string): Promise<boolean> {
+  try {
+    await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
+    return true;
+  } catch (e) {
+    if (e instanceof AuthError && e.code === 'user_not_found') return false;
+    throw e;
+  }
+}
+
+/** Existing account: email the code. */
+export async function startSignIn(email: string): Promise<Pending> {
+  const started = await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
+  return challenge('signIn', email, 'oauth2/v2.0/challenge', started.continuation_token);
+}
+
+/** New account: its details go in first, then the code confirms the email. */
+export async function startSignUp(email: string, displayName: string, birthYear: number): Promise<Pending> {
+  const started = await entraPost('signup/v1.0/start', {
+    username: email, challenge_type: 'oob redirect',
+    attributes: JSON.stringify({ displayName, [BIRTH_YEAR]: String(birthYear) }),
+  });
+  return challenge('signUp', email, 'signup/v1.0/challenge', started.continuation_token);
+}
+
+/** Send the code again. */
+export function resend(p: Pending): Promise<Pending> {
+  return challenge(p.flow, p.email, p.flow === 'signIn' ? 'oauth2/v2.0/challenge' : 'signup/v1.0/challenge', p.continuationToken);
+}
+
+/** Check the code; on success this device is signed in. */
+export async function submitCode(p: Pending, code: string): Promise<Session> {
+  if (p.flow === 'signIn') {
+    const entra = await entraPost('oauth2/v2.0/token', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code, scope: SCOPE });
+    return finish(entra, p.email);
+  }
+  const confirmed = await entraPost('signup/v1.0/continue', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code });
+  const entra = await entraPost('oauth2/v2.0/token', {
+    continuation_token: confirmed.continuation_token, grant_type: 'continuation_token', username: p.email, scope: SCOPE,
+  });
+  return finish(entra, p.email);
+}
+
+async function challenge(flow: Pending['flow'], email: string, path: string, continuationToken: string): Promise<Pending> {
+  const r = await entraPost(path, { continuation_token: continuationToken, challenge_type: 'oob redirect' });
+  if (r.challenge_type !== 'oob') throw new AuthError('redirect', 'This account can’t sign in here yet.');
+  return { flow, email, continuationToken: r.continuation_token, sentTo: r.challenge_target_label ?? email, codeLength: r.code_length ?? 8 };
+}
+
+/** Swap Entra's token for ours and remember the session. */
+async function finish(entra: Record<string, any>, email: string): Promise<Session> {
+  const r = await request(`${ID_SERVICE}/token`, { method: 'POST', headers: { Authorization: `Bearer ${entra.access_token}` } });
+  if (!r.ok) throw new AuthError('exchange', 'Signed in, but Via Mochi couldn’t open your account. Please try again.');
+  const ours = await r.json();
+  const s: Session = {
+    userId: ours.user.id, displayName: ours.user.displayName ?? '', email,
+    refreshToken: entra.refresh_token, token: ours.access_token, expires: Date.now() + ours.expires_in * 1000,
+    signedInAt: session()?.signedInAt ?? Date.now(),
+    avatar: ours.user.avatar,
+  };
+  saveSession(s);
+  return s;
+}
+
+// ── Avatars ("Pawtraits") ────────────────────────────────────────────────────────────────────────
+
+export interface Avatar { id: string; name: string; kind: 'everyday' | 'legend'; cardId: string | null; cardName: string | null }
+
+/** Bumped when the images are redrawn: browsers keep them for a week. */
+const AVATAR_VERSION = 3;
+export const avatarUrl = (id: string) => `${ID_SERVICE}/avatars/${id}.webp?v=${AVATAR_VERSION}`;
+
+let catalog: Avatar[] | null = null;
+/** Every avatar there is. Cached for the session. */
+export async function avatarCatalog(): Promise<Avatar[]> {
+  if (catalog) return catalog;
+  const r = await request(`${ID_SERVICE}/avatars`, {});
+  if (!r.ok) throw new AuthError('avatars', 'Couldn’t load the Pawtraits. Please try again.');
+  return (catalog = await r.json());
+}
+
+/** The avatars this account may wear, and the one it wears. Also refreshes the session's copy. */
+export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> }> {
+  const t = await token();
+  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  const r = await request(`${ID_SERVICE}/me`, { headers: { Authorization: `Bearer ${t}` } });
+  if (!r.ok) throw new AuthError('me', 'Couldn’t load your account. Please try again.');
+  const me = await r.json();
+  const s = session();
+  if (s && s.avatar !== me.avatar) saveSession({ ...s, avatar: me.avatar });
+  return { avatar: me.avatar, owned: new Set<string>(me.avatars) };
+}
+
+/** Wear an avatar. */
+export async function chooseAvatar(id: string): Promise<void> {
+  const t = await token();
+  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  const r = await request(`${ID_SERVICE}/me/avatar`, {
+    method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+  });
+  if (!r.ok) throw new AuthError('avatar', (await r.json().catch(() => ({}))).message ?? 'Couldn’t change your Pawtrait.');
+  const s = session();
+  if (s) saveSession({ ...s, avatar: id });
+}
+
+// ── Talking to Entra through the pass-through ────────────────────────────────────────────────────
+
+async function entraPost(path: string, fields: Record<string, string>): Promise<Record<string, any>> {
+  const body = new URLSearchParams({ client_id: CLIENT_ID, ...fields });
+  const r = await request(`${ID_SERVICE}/auth/${path}`, {
+    method: 'POST', body, headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+  const json = await r.json().catch(() => ({}));
+  if (r.ok && json.challenge_type !== 'redirect') return json;
+  throw toError(r.status, json);
+}
+
+async function request(url: string, init: RequestInit): Promise<Response> {
+  try { return await fetch(url, init); } catch { throw new AuthError('network', 'You seem to be offline. Check your connection and try again.'); }
+}
+
+/** Entra's errors, in words a player understands. */
+function toError(status: number, json: Record<string, any>): AuthError {
+  const error: string = json.error ?? (status === 429 ? 'too_many' : 'unknown');
+  const sub: string = json.suberror ?? '';
+  if (json.challenge_type === 'redirect') return new AuthError('redirect', 'This account can’t sign in here yet.');
+  if (status === 429) return new AuthError('too_many', 'Too many tries. Wait a few minutes, then try again.');
+  if (sub === 'invalid_oob_value') return new AuthError('wrong_code', 'That code doesn’t match. Check the latest email and try again.');
+  if (error === 'expired_token') return new AuthError('expired', 'That code has expired. Send a new one.');
+  if (error === 'user_not_found') return new AuthError('user_not_found', 'There’s no account with that email.');
+  if (error === 'user_already_exists') return new AuthError('user_already_exists', 'There’s already an account with that email. Sign in instead.');
+  if (error === 'invalid_request' && /username/i.test(json.error_description ?? '')) return new AuthError('bad_email', 'That doesn’t look like an email address.');
+  return new AuthError(error, 'Something went wrong signing in. Please try again.');
+}

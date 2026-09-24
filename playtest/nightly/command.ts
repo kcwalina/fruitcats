@@ -16,6 +16,7 @@ import { runBalance } from '../balance/gauntlet';
 import { runLlmPlaytest } from '../llm/command';
 import { runDeckHunt } from '../llm/hunt';
 import { PERSONAS } from '../llm/personas';
+import { playerSpec } from '../llm/players';
 import { getProvider, nightlyConfig } from '../llm/providers';
 
 /** The most recent earlier run of a kind, to compare against. */
@@ -81,7 +82,7 @@ export async function nightlyCommand(): Promise<number> {
         reportProgress(run, 'nightly', 'LLM games', 2, 3);
         log(`LLM games for ${left.toFixed(1)} hours…`);
         const llm = await runLlmPlaytest({
-          provider, personas: cfg.personas.map((k) => PERSONAS[k]).filter(Boolean), games: 100_000,
+          provider, personas: cfg.personas.map((k) => PERSONAS[k]).filter(Boolean), games: 100_000, player: playerSpec(cfg.player),
           parallel: cfg.parallel, hours: left, maxTokens: cfg.maxTokens, quiet: true,
         });
         parts.llm = llm.id;

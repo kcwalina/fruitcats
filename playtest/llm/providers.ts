@@ -17,16 +17,27 @@ export interface ProviderConfig {
   pricesPerMillion?: { input: number; cachedInput?: number; output: number };
 }
 
-export interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string }
+/** OpenAI-style chat messages, including tool calls (an assistant message that calls tools, and each result). */
+export type ChatMessage =
+  | { role: 'system' | 'user'; content: string }
+  | { role: 'assistant'; content: string; tool_calls?: ToolCallWire[] }
+  | { role: 'tool'; tool_call_id: string; content: string };
+
+export interface ToolCallWire { id: string; type: 'function'; function: { name: string; arguments: string } }
+
+/** A tool the model may call: a name, what it's for, and a JSON Schema of its arguments. */
+export interface ToolSpec { name: string; description: string; parameters: Record<string, unknown> }
+
+export interface ToolCall { id: string; name: string; args: Record<string, unknown> }
 
 export interface Usage { input: number; cachedInput: number; output: number }
 
-export interface Reply { text: string; usage: Usage; ms: number }
+export interface Reply { text: string; usage: Usage; ms: number; toolCalls: ToolCall[]; wire?: ToolCallWire[] }
 
 export interface Provider {
   name: string;
   model: string;
-  chat(messages: ChatMessage[], maxTokens?: number): Promise<Reply>;
+  chat(messages: ChatMessage[], maxTokens?: number, tools?: ToolSpec[]): Promise<Reply>;
   listModels(): Promise<string[]>;
   cost(usage: Usage): number | null;
 }
@@ -50,7 +61,7 @@ function fakeProvider(): Provider {
   return {
     name: 'fake',
     model: 'random',
-    async chat(messages) {
+    async chat(messages, _maxTokens, tools) {
       const prompt = messages[messages.length - 1].content;
       const rnd = () => ((n = (n * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
       let text: string;
@@ -73,7 +84,16 @@ function fakeProvider(): Provider {
         const options = [...prompt.matchAll(/^ {2}(\d+)\. /gm)].map((m) => Number(m[1]));
         text = `Random pick.\nAnswer: ${options[Math.floor(rnd() * options.length)] ?? 1}`;
       }
-      return { text, usage: { input: Math.ceil(prompt.length / 4), cachedInput: 0, output: 10 }, ms: 0 };
+      // With tools on offer, answer through the choose tool (after one look at the first choice, to exercise preview).
+      if (tools?.some((t) => t.name === 'choose') && /^ {2}\d+\. /m.test(messages.find((m) => m.role === 'user')?.content ?? '')) {
+        const pick = Number(/Answer: (\d+)/.exec(text)?.[1] ?? 1);
+        const looked = messages.some((m) => m.role === 'tool');
+        const call: ToolCallWire = { id: `call${n}`, type: 'function', function: looked
+          ? { name: 'choose', arguments: JSON.stringify({ choice: pick, reason: 'Random pick.' }) }
+          : { name: 'preview', arguments: JSON.stringify({ choice: 1 }) } };
+        return { text: '', usage: { input: Math.ceil(prompt.length / 4), cachedInput: 0, output: 10 }, ms: 0, toolCalls: [{ id: call.id, name: call.function.name, args: JSON.parse(call.function.arguments) }], wire: [call] };
+      }
+      return { text, usage: { input: Math.ceil(prompt.length / 4), cachedInput: 0, output: 10 }, ms: 0, toolCalls: [] };
     },
     async listModels() { return ['random']; },
     cost() { return 0; },
@@ -114,16 +134,24 @@ export function getProvider(name: string, model?: string, extra: Record<string, 
   return {
     name,
     model: chosen,
-    async chat(messages, maxTokens = 1200) {
+    async chat(messages, maxTokens = 1200, tools) {
       const started = Date.now();
-      const r = await post({ model: chosen, messages, max_tokens: maxTokens, temperature: 0.7, ...cfg.extraBody, ...extra });
+      const toolBody = tools?.length ? { tools: tools.map((t) => ({ type: 'function', function: t })), tool_choice: 'auto' } : {};
+      const r = await post({ model: chosen, messages, max_tokens: maxTokens, temperature: 0.7, ...toolBody, ...cfg.extraBody, ...extra });
       if (!r.ok) throw new Error(`${name} ${chosen}: HTTP ${r.status} ${(await r.text()).slice(0, 300)}`);
       const data = await r.json() as {
-        choices: { message: { content: string | null; reasoning_content?: string } }[];
+        choices: { message: { content: string | null; reasoning_content?: string; tool_calls?: ToolCallWire[] } }[];
         usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } };
       };
       const u = data.usage ?? {};
+      const wire = data.choices[0]?.message?.tool_calls ?? [];
+      const toolCalls = wire.map((c) => {
+        let args: Record<string, unknown> = {};
+        try { args = JSON.parse(c.function.arguments || '{}'); } catch { args = { _unparsed: c.function.arguments }; }
+        return { id: c.id, name: c.function.name, args };
+      });
       return {
+        toolCalls, wire: wire.length ? wire : undefined,
         text: data.choices[0]?.message?.content ?? '',
         usage: { input: u.prompt_tokens ?? 0, cachedInput: u.prompt_tokens_details?.cached_tokens ?? 0, output: u.completion_tokens ?? 0 },
         ms: Date.now() - started,

@@ -68,6 +68,7 @@
       "newcomer"
     ],
     "deckIdeas": 6,
-    "maxTokens": 60000000
+    "maxTokens": 60000000,
+    "player": "informed"
   }
 }

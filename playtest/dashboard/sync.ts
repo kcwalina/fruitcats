@@ -26,7 +26,7 @@ interface Run { summary: RunSummary; report: string; live?: boolean }
 const FINISHED = join(STATE, 'finished.json');
 /** The dashboard's meta/dashboard document: decks, family colors and personas, from this checkout's card data. */
 const META = join(STATE, 'meta.json');
-const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt'];
+const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt', 'llm-compare'];
 
 function uploaded(): Set<string> {
   try { return new Set(JSON.parse(readFileSync(UPLOADED, 'utf8')) as string[]); } catch { return new Set(); }

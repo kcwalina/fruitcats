@@ -135,7 +135,7 @@ sealed partial class PlaytesterServer : UdsPaw
             foreach (string a in args.Split(' ', StringSplitOptions.RemoveEmptyEntries)) psi.ArgumentList.Add(a);
             psi.Environment["PLAYTEST_REPORTS"] = _config.ReportsDir;
             // Runs that play LLM games get the paw's own server when it starts; otherwise they use Ollama.
-            if (_config.InferenceServer && command is ("nightly" or "llm-playtest" or "deck-hunt"))
+            if (_config.InferenceServer && command is ("nightly" or "llm-playtest" or "deck-hunt" or "llm-compare"))
             {
                 string? endpoint = await _llm!.StartAsync(ct);
                 if (endpoint is not null) psi.Environment["PLAYTEST_LLM_URL"] = endpoint;
@@ -310,7 +310,7 @@ sealed partial class PlaytesterServer : UdsPaw
     public async Task<JsonObject> RunAsync(string? command = null, string? args = null)
     {
         command ??= "nightly";
-        if (command is not ("nightly" or "balance" or "llm-playtest" or "deck-hunt"))
+        if (command is not ("nightly" or "balance" or "llm-playtest" or "deck-hunt" or "llm-compare"))
             return new JsonObject { ["started"] = false, ["error"] = $"unknown command {command}" };
         if (args is not null && !SafeArgs().IsMatch(args))
             return new JsonObject { ["started"] = false, ["error"] = "arguments may only contain letters, digits, spaces, dots, commas and dashes" };

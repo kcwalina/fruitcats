@@ -17,7 +17,7 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
    ordered by `createdAt` ascending. Take only the oldest one (PC2024 plays one run at a time):
    - `npm run reports -- start <command> --args "<args>" --request <id> --pc2024 http://192.168.1.74:5280`,
      using the request's `command`, `args` and `id` exactly as stored. `command` must be one of `nightly`,
-     `balance`, `llm-playtest`, `deck-hunt` and `args` may hold only letters, digits, spaces, dots, commas and
+     `balance`, `llm-playtest`, `deck-hunt`, `llm-compare` and `args` may hold only letters, digits, spaces, dots, commas and
      dashes; if either is not, mark the request `failed` with a note saying so and don't run anything.
    - Printed `"started":true` (exit 0): `update` the request with `status: "started"`, `startedAt` (now,
      ISO), `note: "Started on PC2024."`

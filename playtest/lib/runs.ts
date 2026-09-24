@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { CARDS, DECKS, RULES_VERSION } from './engine';
 import { seedFrom } from './rng';
 
-export type RunKind = 'balance-check' | 'balance' | 'llm-playtest' | 'deck-hunt' | 'nightly';
+export type RunKind = 'balance-check' | 'balance' | 'llm-playtest' | 'deck-hunt' | 'nightly' | 'llm-compare';
 export type Verdict = 'pass' | 'warn' | 'block';
 
 export interface Problem { level: 'warn' | 'block'; text: string }

@@ -15,6 +15,7 @@ import { TableClient, TableServiceClient } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
 import { CARDS } from '@fruitcats/engine';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { log } from './logs';
 
 const ID_SERVICE = process.env.VIAMOCHI_ID ?? 'https://viamochi-id.azurewebsites.net';
 const TABLES = process.env.TABLE_ENDPOINT ?? 'https://fruitcatsdata.table.core.windows.net';
@@ -160,24 +161,25 @@ const server = createServer(async (req, res) => {
       if (!user) return send(res, 401, { error: 'signed_out' });
       const body = await readJson(req) as { decks?: unknown[]; showcase?: unknown };
       const merged = await sync(user, body);
-      console.log(JSON.stringify({ event: 'decks.synced', userId: user, decks: merged.decks.length }));
+      log('ops', 'decks.synced', { userId: user, decks: merged.decks.length });
       return send(res, 200, merged);
     }
     if (req.url === '/v1/export' && req.method === 'GET') {
       const user = await accountOf(req);
       if (!user) return send(res, 401, { error: 'signed_out' });
+      log('security', 'account.exported', { userId: user });
       return send(res, 200, await exportAccount(user));
     }
     const deleting = /^\/v1\/accounts\/([0-9a-f]{32})$/.exec(req.url ?? '');
     if (deleting && req.method === 'DELETE') {
       if (!await serviceCall(req, deleting[1], 'delete-account')) return send(res, 401, { error: 'not_allowed' });
       await erase(deleting[1]);
-      console.log(JSON.stringify({ event: 'account.data_deleted', userId: deleting[1] }));
+      log('security', 'account.data_deleted', { userId: deleting[1] });
       return send(res, 200, { deleted: true });
     }
     send(res, 404, { error: 'not_found' });
   } catch (e) {
-    console.error(JSON.stringify({ event: 'error', message: (e as Error).message }));
+    log('ops', 'error', { url: req.url, message: (e as Error).message }, 'error');
     send(res, 500, { error: 'server' });
   }
 });

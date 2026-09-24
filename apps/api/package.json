@@ -10,6 +10,7 @@
   "dependencies": {
     "@azure/data-tables": "^13.3.2",
     "@azure/identity": "^4.13.3",
+    "@azure/storage-blob": "^12.34.0",
     "@fruitcats/engine": "*",
     "jose": "^6.2.12"
   },

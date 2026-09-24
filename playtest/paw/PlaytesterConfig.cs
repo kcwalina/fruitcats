@@ -14,8 +14,9 @@ sealed class PlaytesterConfig
     /// run tests the cards that are live.</summary>
     public string RunnerUrl { get; set; } = "https://fruitcats.viamochi.com/playtest/runner.mjs";
 
-    /// <summary>Node, shipped inside this paw's package (node\node.exe), so PC2024 needs nothing installed.</summary>
-    public string NodeExe { get; set; } = Path.Combine(AppContext.BaseDirectory, "node", "node.exe");
+    /// <summary>Node to run the playtest runner with. Empty means: the one on PATH, then the standard install
+    /// folder, then a copy shipped inside this package (node\node.exe) if a package ever carries one.</summary>
+    public string NodeExe { get; set; } = "";
 
     /// <summary>Where runs are written; each run is a folder with summary.json and report.md.</summary>
     public string ReportsDir { get; set; } = Path.Combine(

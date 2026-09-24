@@ -30,6 +30,9 @@ sealed partial class PlaytesterServer : UdsPaw
     DateTime _runStarted;
     JsonObject? _lastRun;
     string _lastError = "";
+    string? _node;
+
+    const string NodeMissing = @"Node was not found (not configured, not on PATH, not in Program Files\nodejs); playtests cannot run";
 
     public PlaytesterServer() : base("mochi-playtester")
     {
@@ -50,10 +53,17 @@ sealed partial class PlaytesterServer : UdsPaw
             try { _lastRun = JsonNode.Parse(File.ReadAllText(StateFile))?["lastRun"]?.AsObject(); }
             catch (Exception ex) { TraceWarning($"Unreadable {StateFile}: {ex.Message}"); }
         }
-        if (!File.Exists(_config.NodeExe))
+        _node = FindNode();
+        if (_node is null)
         {
-            _lastError = $"node.exe not found at {_config.NodeExe}";
+            // Not fatal: the paw stays up and says why in /health, since a paw that exits early is read by
+            // catsitter as a bad build.
+            _lastError = NodeMissing;
             TraceError(_lastError);
+        }
+        else
+        {
+            Trace($"Using Node at {_node}");
         }
         Trace($"Playtester ready: weekly on {_config.Day} from {_config.StartHour}:00 for {_config.Hours} h; reports in {_config.ReportsDir}");
         return Task.CompletedTask;
@@ -105,12 +115,13 @@ sealed partial class PlaytesterServer : UdsPaw
         string? error = null;
         try
         {
-            if (!File.Exists(_config.NodeExe)) throw new FileNotFoundException($"node.exe not found at {_config.NodeExe}");
+            _node ??= FindNode();
+            if (_node is null) throw new FileNotFoundException(NodeMissing);
             string runner = await DownloadRunnerAsync(ct);
             string id = $"{command}-{_runStarted:yyyyMMdd-HHmmss}";
             string logFile = Path.Combine(LogDir, $"{id}.log");
 
-            ProcessStartInfo psi = new(_config.NodeExe)
+            ProcessStartInfo psi = new(_node)
             {
                 WorkingDirectory = WorkDir,
                 RedirectStandardOutput = true,
@@ -196,6 +207,22 @@ sealed partial class PlaytesterServer : UdsPaw
         catch (Exception ex) { TraceWarning($"Could not save {StateFile}: {ex.Message}"); }
     }
 
+    /// <summary>Node, from the config, else PATH, else the standard install folder, else a copy in this package.</summary>
+    string? FindNode()
+    {
+        if (!string.IsNullOrWhiteSpace(_config.NodeExe))
+            return File.Exists(_config.NodeExe) ? _config.NodeExe : null;
+        IEnumerable<string> onPath = (Environment.GetEnvironmentVariable("PATH") ?? "")
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Select(dir => Path.Combine(dir.Trim('"'), "node.exe"));
+        string[] fallbacks =
+        [
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "nodejs", "node.exe"),
+            Path.Combine(AppContext.BaseDirectory, "node", "node.exe"),
+        ];
+        return onPath.Concat(fallbacks).FirstOrDefault(File.Exists);
+    }
+
     /// <summary>The runner as it is on the live site, written atomically; the last good copy is kept if the
     /// download fails, so a site hiccup doesn't cost the week's run.</summary>
     async Task<string> DownloadRunnerAsync(CancellationToken ct)
@@ -261,7 +288,7 @@ sealed partial class PlaytesterServer : UdsPaw
                 ["running"] = _run is not null ? new JsonObject { ["command"] = _runCommand, ["startedAt"] = _runStarted.ToString("o") } : null,
                 ["lastRun"] = _lastRun?.DeepClone(),
                 ["nextWeekly"] = next.ToString("o"),
-                ["node"] = File.Exists(_config.NodeExe),
+                ["node"] = _node,
                 ["runnerUrl"] = _config.RunnerUrl,
                 ["error"] = _lastError.Length == 0 ? null : _lastError,
             };

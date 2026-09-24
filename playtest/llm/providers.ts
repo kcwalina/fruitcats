@@ -84,7 +84,10 @@ export function getProvider(name: string, model?: string): Provider {
   if (name === 'fake') return fakeProvider();
   const cfg = (config.providers as Record<string, ProviderConfig>)[name];
   if (!cfg) throw new Error(`No provider "${name}" in playtest.config.json (have: ${providerNames().join(', ')}).`);
-  const baseUrl = expand(cfg.baseUrl).replace(/\/$/, '');
+  // On PC2024 the playtester paw runs its own llama-server for a run and passes its address in; without it,
+  // the config's endpoint (Ollama) is used.
+  const override = name === 'pc2024' ? process.env.PLAYTEST_LLM_URL : undefined;
+  const baseUrl = (override ?? expand(cfg.baseUrl)).replace(/\/$/, '');
   const chosen = model ?? cfg.model;
   const headers = (): Record<string, string> => {
     const h: Record<string, string> = { 'content-type': 'application/json' };

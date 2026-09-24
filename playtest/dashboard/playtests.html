@@ -344,7 +344,7 @@ function buildRequest() {
     const deck = $('deck').value, vs = $('vs').value, persona = $('persona').value;
     const name = (k) => meta.decks.find((d) => d.key === k)?.name ?? k;
     return {
-      args: `--provider pc2024 --parallel 2 --games ${n('games')} --persona ${persona}${deck ? ` --deck ${deck} --vs ${vs}` : ''}`,
+      args: `--provider pc2024 --parallel 8 --games ${n('games')} --persona ${persona}${deck ? ` --deck ${deck} --vs ${vs}` : ''}`,
       label: `${n('games')} LLM games${deck ? `, ${name(deck)} vs ${name(vs)}` : ''}${persona === 'all' ? '' : `, ${$('persona').selectedOptions[0].text.toLowerCase()}`}`,
     };
   }

@@ -31,6 +31,7 @@ sealed partial class PlaytesterServer : UdsPaw
     JsonObject? _lastRun;
     string _lastError = "";
     string? _node;
+    LlamaServer? _llm;
 
     const string NodeMissing = @"Node was not found (not configured, not on PATH, not in Program Files\nodejs); playtests cannot run";
 
@@ -53,6 +54,7 @@ sealed partial class PlaytesterServer : UdsPaw
             try { _lastRun = JsonNode.Parse(File.ReadAllText(StateFile))?["lastRun"]?.AsObject(); }
             catch (Exception ex) { TraceWarning($"Unreadable {StateFile}: {ex.Message}"); }
         }
+        _llm = new LlamaServer(_config, Trace, TraceWarning);
         _node = FindNode();
         if (_node is null)
         {
@@ -132,6 +134,12 @@ sealed partial class PlaytesterServer : UdsPaw
             psi.ArgumentList.Add(command);
             foreach (string a in args.Split(' ', StringSplitOptions.RemoveEmptyEntries)) psi.ArgumentList.Add(a);
             psi.Environment["PLAYTEST_REPORTS"] = _config.ReportsDir;
+            // Runs that play LLM games get the paw's own server when it starts; otherwise they use Ollama.
+            if (_config.InferenceServer && command is ("nightly" or "llm-playtest" or "deck-hunt"))
+            {
+                string? endpoint = await _llm!.StartAsync(ct);
+                if (endpoint is not null) psi.Environment["PLAYTEST_LLM_URL"] = endpoint;
+            }
 
             Process process = Process.Start(psi) ?? throw new InvalidOperationException("node did not start");
             ChildProcessJob job = new();
@@ -179,6 +187,7 @@ sealed partial class PlaytesterServer : UdsPaw
         }
         catch (Exception ex) { TraceWarning($"Stopping the runner: {ex.Message}"); }
         job.Dispose();
+        _llm?.Stop();
         lock (log) log.Dispose();
         string? error = code == 0 ? null : $"{command} exited with code {code?.ToString() ?? "?"}; see {logFile}";
         if (error is not null) { _lastError = error; TraceWarning(error); } else _lastError = "";
@@ -269,7 +278,7 @@ sealed partial class PlaytesterServer : UdsPaw
             }
         }
         catch (Exception ex) { TraceWarning($"The runner did not stop cleanly ({ex.Message}); relying on the job object"); }
-        finally { job?.Dispose(); }
+        finally { job?.Dispose(); _llm?.Stop(); }
     }
 
     [PawRoute("GET", "/health")]
@@ -288,6 +297,7 @@ sealed partial class PlaytesterServer : UdsPaw
                 ["lastRun"] = _lastRun?.DeepClone(),
                 ["nextNightly"] = next.ToString("o"),
                 ["node"] = _node,
+                ["inferenceServer"] = _config.InferenceServer ? _llm?.Status : "off (runs use Ollama)",
                 ["runnerUrl"] = _config.RunnerUrl,
                 ["error"] = _lastError.Length == 0 ? null : _lastError,
             };
@@ -304,7 +314,10 @@ sealed partial class PlaytesterServer : UdsPaw
             return new JsonObject { ["started"] = false, ["error"] = $"unknown command {command}" };
         if (args is not null && !SafeArgs().IsMatch(args))
             return new JsonObject { ["started"] = false, ["error"] = "arguments may only contain letters, digits, spaces, dots, commas and dashes" };
-        string? error = await StartRunAsync(command, args ?? (command == "nightly" ? _config.NightlyArgs : ""), CancellationToken.None);
+        // StartRunAsync claims the runner before its first await, so a busy runner or a bad setup answers at once;
+        // the rest (downloading the model the first time, loading it) carries on after this route has answered.
+        Task<string?> start = StartRunAsync(command, args ?? (command == "nightly" ? _config.NightlyArgs : ""), CancellationToken.None);
+        string? error = start.IsCompleted ? await start : null;
         return new JsonObject { ["started"] = error is null, ["error"] = error };
     }
 

@@ -1,12 +1,15 @@
 {
   "providers": {
     "pc2024": {
-      "about": "Ollama on PC2024, from PC2024 itself (where the nightly paw runs). Ollama is not a catsitter GPU tenant: the image generator must be off the card, or the model spills into system RAM.",
+      "about": "PC2024, from PC2024 itself (where the nightly paw runs): the paw's own llama-server for a run (PLAYTEST_LLM_URL, 8 games at once), else Ollama. Ollama is not a catsitter GPU tenant.",
       "baseUrl": "http://localhost:11434/v1",
       "model": "gpt-oss:20b",
       "extraBody": {
         "reasoning": {
           "effort": "low"
+        },
+        "chat_template_kwargs": {
+          "reasoning_effort": "low"
         }
       }
     },
@@ -17,6 +20,9 @@
       "extraBody": {
         "reasoning": {
           "effort": "low"
+        },
+        "chat_template_kwargs": {
+          "reasoning_effort": "low"
         }
       }
     },
@@ -55,7 +61,7 @@
     "provider": "pc2024",
     "balanceScale": 3,
     "hours": 6,
-    "parallel": 4,
+    "parallel": 8,
     "personas": [
       "exploit",
       "aggro",

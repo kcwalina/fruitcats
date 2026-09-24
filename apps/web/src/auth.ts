@@ -5,7 +5,7 @@
 // through viamochi-id's /auth pass-through. The Entra token is then swapped at viamochi-id for our own Via Mochi
 // token, which is what our APIs accept.
 
-const ID_SERVICE = 'https://viamochi-id.azurewebsites.net';
+const ID_SERVICE = 'https://id.viamochi.com';
 const CLIENT_ID = '1ed2eaf3-3330-4328-9ca3-1519f681b6a2';
 const SCOPE = `openid offline_access api://${CLIENT_ID}/play`;
 const BIRTH_YEAR = 'extension_6758f33d2f4d4c119a640bcbadfe8dc5_BirthYear';
@@ -144,7 +144,7 @@ export let restoredOnSignIn = false;
 
 // ── Export and delete ───────────────────────────────────────────────────────────────────────────
 
-const FRUITCATS_API = 'https://fruitcats-api.azurewebsites.net';
+const FRUITCATS_API = 'https://api.fruitcats.viamochi.com';
 
 /** Everything held for this account, by the account service and by Fruitcats, as one file's contents. */
 export async function exportData(): Promise<string> {

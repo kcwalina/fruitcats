@@ -9,7 +9,7 @@ import { session, signOut, token } from './auth';
 import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type MyDeck } from './mydecks';
 import { applySyncedShowcase, forgetShowcase, onShowcaseChanged, savedShowcase } from './showcase';
 
-const API = 'https://fruitcats-api.azurewebsites.net';
+const API = 'https://api.fruitcats.viamochi.com';
 
 interface Host { render(): void }
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }

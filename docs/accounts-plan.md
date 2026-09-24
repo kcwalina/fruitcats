@@ -84,6 +84,19 @@ Last updated 2026-09-24.
     Graph permission `CustomAuthenticationExtension.Receive.Payload` with **admin consent (granted by the owner)**.
   - The Communication Services connection string is the Key Vault secret `email-connection-string`, read by the app
     through a Key Vault reference.
+- **Addresses** (free App Service managed certificates, CNAMEs and `asuid` TXT records in the old zone):
+  `https://id.viamochi.com` (viamochi-id), `https://api.fruitcats.viamochi.com` (fruitcats-api),
+  `https://playtest.fruitcats.viamochi.com` (the playtest site). Tokens keep the issuer
+  `https://viamochi-id.azurewebsites.net`, which is only an identifier.
+- **Observability:** both services write JSON-line logs to Blob Storage (`logs` container: ops, deleted after 30
+  days; `security` container: a year, with an unlocked immutability policy). `node tools/ops.mjs events|tail` reads
+  them as Claude's agent (Storage Blob Data Reader only).
+- **Delete account and Export my data** in the Account panel. Deletion is scheduled 30 days ahead and signs the
+  player out everywhere; `viamochi-id`'s AccountPurge then erases the app data (fruitcats-api, via a service token),
+  the Entra sign-in and the account. It acts in the player tenant as **Via Mochi account service**
+  (`e8493a20-591a-4c0d-9bb2-d41ae48f11f9`, Graph User.ReadWrite.All, **admin consent by the owner**), proved by
+  viamochi-id's managed identity through a federated credential.
+- **Deck and Showcase sync** through `fruitcats-api` (`POST /v1/sync`, Table Storage `decks` and `showcase`).
 - **Playtest build:** `npm run build:playtest` builds `apps/web` with the flags in `src/flags.ts` on (`ACCOUNTS`),
   into `dist-playtest/`. The public `npm run build` compiles them out.
 - A separate "Via Mochi" workforce directory was tried and dropped: Microsoft now requires a paid Entra ID P1

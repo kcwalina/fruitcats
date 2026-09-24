@@ -17,9 +17,6 @@
   --warn-soft: #f8e9cf;
   --block: #b3362b;
   --block-soft: #f6dcd8;
-  --citrus: #e89400;
-  --orchard: #cc3d3d;
-  --tropical: #3f8f2f;
   --band: rgba(15, 110, 99, 0.10);
   --on-accent: #ffffff;
   --display: "Fredoka", "Nunito", system-ui, sans-serif;
@@ -31,14 +28,14 @@
     color-scheme: dark;
     --ground: #121614; --surface: #1a201d; --sunk: #232a26; --ink: #e5ece7; --muted: #9aa8a0; --line: #2f3833;
     --accent: #5cc2b3; --accent-soft: #1d3a35; --pass: #6cc38d; --pass-soft: #1c3526; --warn: #e6ad4f; --warn-soft: #3b2d14;
-    --block: #ef7d70; --block-soft: #3d201c; --citrus: #f5b23a; --orchard: #ec6f6f; --tropical: #7bc86a; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
+    --block: #ef7d70; --block-soft: #3d201c; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --ground: #121614; --surface: #1a201d; --sunk: #232a26; --ink: #e5ece7; --muted: #9aa8a0; --line: #2f3833;
   --accent: #5cc2b3; --accent-soft: #1d3a35; --pass: #6cc38d; --pass-soft: #1c3526; --warn: #e6ad4f; --warn-soft: #3b2d14;
-  --block: #ef7d70; --block-soft: #3d201c; --citrus: #f5b23a; --orchard: #ec6f6f; --tropical: #7bc86a; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
+  --block: #ef7d70; --block-soft: #3d201c; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
 }
 * { box-sizing: border-box; }
 body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 20px 48px; }
@@ -187,11 +184,17 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 </div>
 
 <script>
-const DECKS = [
-  { key: 'zest-rush', name: 'Zest Rush', color: 'var(--citrus)' },
-  { key: 'orchard-guard', name: 'Orchard Guard', color: 'var(--orchard)' },
-  { key: 'mango-tango', name: 'Mango Tango', color: 'var(--tropical)' },
-];
+// Decks, families and personas come from the catalog the relay uploads (meta/catalog), built from the card
+// data, so a new deck appears here by itself. Until it loads, or for a deck it doesn't know, the key stands in.
+let catalog = { decks: [], personas: [] };
+function decks() {
+  const known = catalog.decks.map((d) => ({ key: d.key, name: d.name, color: d.color }));
+  const seen = new Set(known.map((d) => d.key));
+  for (const r of runs) for (const key of Object.keys(starters(r) ?? {})) {
+    if (!seen.has(key)) { seen.add(key); known.push({ key, name: key, color: 'var(--muted)' }); }
+  }
+  return known;
+}
 const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', nightly: 'Nightly run', weekly: 'Weekly run' };
 let runs = [];
 let requests = [];
@@ -246,7 +249,7 @@ function renderDecks() {
   const latest = runs.find((r) => (r.kind === 'balance' || r.kind === 'balance-check') && starters(r));
   if (!latest) { $('decks').innerHTML = '<div class="empty">No bot runs yet.</div>'; return; }
   const o = starters(latest);
-  $('decks').innerHTML = DECKS.filter((d) => o[d.key] !== undefined).map((d) => {
+  $('decks').innerHTML = decks().filter((d) => o[d.key] !== undefined).map((d) => {
     const r = o[d.key];
     const state = r < 0.4 || r > 0.6 ? 'block' : r < 0.45 || r > 0.55 ? 'warn' : 'pass';
     return `<div class="deck"><span class="name">${esc(d.name)}</span>
@@ -285,7 +288,7 @@ function renderTrend() {
   const y = (v) => T + (1 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (H - T - B);
   const grid = [0.3, 0.4, 0.5, 0.6, 0.7].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1" ${v === 0.5 ? '' : 'stroke-dasharray="3 4"'}/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${pct(v)}</text>`).join('');
   const band = `<rect x="${L}" y="${y(0.55)}" width="${W - L - R}" height="${y(0.45) - y(0.55)}" fill="var(--band)"/>`;
-  const lines = DECKS.map((d) => {
+  const lines = decks().map((d) => {
     const pts = points.filter((p) => starters(p)[d.key] !== undefined).map((p) => [x(when(p.startedAt).getTime()), y(starters(p)[d.key])]);
     if (!pts.length) return '';
     const last = pts[pts.length - 1];
@@ -296,7 +299,7 @@ function renderTrend() {
   const sameDay = dayOf(points[0].startedAt) === dayOf(points[points.length - 1].startedAt);
   const stamp = (iso) => (sameDay ? timeOf(iso) : when(iso).toLocaleDateString([], { month: 'short', day: 'numeric' }));
   const labels = [points[0], points[points.length - 1]].map((p, i) => `<text x="${i ? W - R : L}" y="${H - 8}" text-anchor="${i ? 'end' : 'start'}">${esc(stamp(p.startedAt))}</text>`).join('');
-  const key = DECKS.map((d) => `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px"><span class="dot" style="background:${d.color}"></span>${esc(d.name)}</span>`).join('');
+  const key = decks().map((d) => `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px"><span class="dot" style="background:${d.color}"></span>${esc(d.name)}</span>`).join('');
   $('trend').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Starter deck win rates over time">${band}${grid}${lines}${labels}</svg><div class="legend">${key}</div>`;
 }
 
@@ -319,14 +322,14 @@ const progressText = (r) => {
 const progressBar = (r) => `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${r.progress.total}" aria-valuenow="${r.progress.done}"><span style="width:${r.progress.total ? Math.min(100, (100 * r.progress.done) / r.progress.total).toFixed(1) : 0}%"></span></div>`;
 
 // ── Starting runs: the form writes a request; the relay on the laptop sends it to PC2024 ───────────────
-const STARTERS = [['zest-rush', 'Zest Rush'], ['orchard-guard', 'Orchard Guard'], ['mango-tango', 'Mango Tango']];
+const starterOptions = () => catalog.decks.map((d) => [d.key, d.name]);
 const num = (id, label, value, min, max, step = 1) => `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" value="${value}" min="${min}" max="${max}" step="${step}" required></div>`;
 const select = (id, label, options) => `<div class="field"><label for="${id}">${label}</label><select id="${id}">${options.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></div>`;
 function renderOptions() {
   const kind = $('kind').value;
   $('opts').innerHTML = {
-    'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'All three, in turn'], ['exploit', 'Exploit hunter'], ['aggro', 'Aggressive player'], ['newcomer', 'New player']])}</div>
-      <div class="row">${select('deck', 'LLM plays', [['', 'Every matchup, in turn'], ...STARTERS])}${select('vs', 'Against', STARTERS.slice().reverse())}</div>`,
+    'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'Each in turn'], ...catalog.personas.map((p) => [p.key, p.name])])}</div>
+      <div class="row">${select('deck', 'LLM plays', [['', 'Every matchup, in turn'], ...starterOptions()])}${select('vs', 'Against', starterOptions().slice().reverse())}</div>`,
     balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}</div>`,
     'deck-hunt': `<div class="row">${num('ideas', 'Deck ideas', 6, 1, 12)}</div>`,
     nightly: `<div class="row">${num('hours', 'Hours of LLM games', 2, 0.5, 8, 0.5)}</div>`,
@@ -339,7 +342,7 @@ function buildRequest() {
   const n = (id) => Number($(id).value);
   if (kind === 'llm-playtest') {
     const deck = $('deck').value, vs = $('vs').value, persona = $('persona').value;
-    const name = (k) => STARTERS.find(([key]) => key === k)?.[1];
+    const name = (k) => catalog.decks.find((d) => d.key === k)?.name ?? k;
     return {
       args: `--provider pc2024 --parallel 2 --games ${n('games')} --persona ${persona}${deck ? ` --deck ${deck} --vs ${vs}` : ''}`,
       label: `${n('games')} LLM games${deck ? `, ${name(deck)} vs ${name(vs)}` : ''}${persona === 'all' ? '' : `, ${$('persona').selectedOptions[0].text.toLowerCase()}`}`,
@@ -439,6 +442,14 @@ $('runs').addEventListener('click', (e) => {
     (snap) => { runs = snap.docs.map((doc) => doc.data()); renderAll(); },
     () => { $('runs').innerHTML = '<div class="empty">The run data stopped updating. Reload the page to try again.</div>'; },
   );
+  db.doc('meta/catalog').onSnapshot((snap) => {
+    if (!snap.exists) return;
+    catalog = snap.data();
+    const kind = $('kind').value;
+    renderOptions();
+    $('kind').value = kind;
+    renderAll();
+  }, () => { /* the page keeps the deck keys it has */ });
   db.collection('requests').orderBy('createdAt', 'desc').limit(12).onSnapshot(
     (snap) => { requests = snap.docs.map((doc) => doc.data()); renderRequests(); },
     () => { $('requests').innerHTML = '<li class="note">Requests stopped updating. Reload the page to try again.</li>'; },

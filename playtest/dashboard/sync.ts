@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arg } from '../lib/args';
+import { catalog } from '../lib/catalog';
 import { reportsRoot, type RunSummary } from '../lib/runs';
 
 const STATE = fileURLToPath(new URL('../.state/', import.meta.url));
@@ -23,6 +24,8 @@ const REPORT_LIMIT = 120_000;
 
 interface Run { summary: RunSummary; report: string; live?: boolean }
 const FINISHED = join(STATE, 'finished.json');
+/** The dashboard's meta/catalog document: decks, families and personas, from this checkout's card data. */
+const CATALOG = join(STATE, 'catalog.json');
 const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt'];
 
 function uploaded(): Set<string> {
@@ -109,12 +112,13 @@ export async function reportsCommand(): Promise<number> {
   }
   rmSync(OUT, { recursive: true, force: true });
   mkdirSync(OUT, { recursive: true });
+  writeFileSync(CATALOG, JSON.stringify(catalog()));
   writeFileSync(FINISHED, JSON.stringify(runs.filter((r) => !r.live).map((r) => r.summary.id)));
   for (const r of runs) {
     const report = r.report.length > REPORT_LIMIT ? `${r.report.slice(0, REPORT_LIMIT)}\n\n… (cut; the full report is in the run folder)\n` : r.report;
     writeFileSync(join(OUT, `${r.summary.id}.json`), JSON.stringify({ ...r.summary, report }));
   }
-  console.log(`${runs.length} run(s) to upload, one file each, in ${OUT}`);
+  console.log(`${runs.length} run(s) to upload, one file each, in ${OUT}; the catalog in ${CATALOG}`);
   for (const r of runs) console.log(`  ${r.summary.id}  ${r.summary.result}  ${r.live ? `${(r.summary as { progress?: { done: number; total: number } }).progress?.done}/${(r.summary as { progress?: { done: number; total: number } }).progress?.total}` : `${r.summary.problems.length} problem(s)`}`);
   return 0;
 }

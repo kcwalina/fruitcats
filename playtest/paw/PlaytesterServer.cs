@@ -25,6 +25,9 @@ sealed partial class PlaytesterServer : UdsPaw
     PlaytesterConfig _config = new();
     readonly object _gate = new();
     Process? _run;
+    /// <summary>A run is claimed from the moment it is asked for, through the model download and server start,
+    /// until it ends; <see cref="_run"/> is only set once node is running.</summary>
+    bool _busy;
     ChildProcessJob? _job;
     string _runCommand = "";
     DateTime _runStarted;
@@ -89,7 +92,7 @@ sealed partial class PlaytesterServer : UdsPaw
             {
                 await Task.Delay(TimeSpan.FromMinutes(1), ct);
                 bool idle;
-                lock (_gate) idle = _run is null;
+                lock (_gate) idle = !_busy;
                 if (idle && NightlyDue(DateTime.Now))
                     await StartRunAsync("nightly", _config.NightlyArgs, ct);
             }
@@ -109,7 +112,8 @@ sealed partial class PlaytesterServer : UdsPaw
     {
         lock (_gate)
         {
-            if (_run is not null) return $"a {_runCommand} run is already going (since {_runStarted:HH:mm})";
+            if (_busy) return $"a {_runCommand} run is already going (since {_runStarted:HH:mm})";
+            _busy = true;
             _runCommand = command;
             _runStarted = DateTime.UtcNow;
         }
@@ -165,7 +169,8 @@ sealed partial class PlaytesterServer : UdsPaw
             _lastError = error;
             TraceError(error);
             Record(command, _runStarted, exitCode: null, error);
-            lock (_gate) { _run = null; }
+            lock (_gate) { _run = null; _busy = false; }
+            _llm?.Stop();
         }
         return error;
     }
@@ -193,7 +198,7 @@ sealed partial class PlaytesterServer : UdsPaw
         if (error is not null) { _lastError = error; TraceWarning(error); } else _lastError = "";
         Record(command, started, code, error);
         Prune();
-        lock (_gate) { _run = null; _job = null; }
+        lock (_gate) { _run = null; _job = null; _busy = false; }
     }
 
     void Record(string command, DateTime startedUtc, int? exitCode, string? error)
@@ -293,7 +298,7 @@ sealed partial class PlaytesterServer : UdsPaw
         {
             result = new JsonObject
             {
-                ["running"] = _run is not null ? new JsonObject { ["command"] = _runCommand, ["startedAt"] = _runStarted.ToString("o") } : null,
+                ["running"] = _busy ? new JsonObject { ["command"] = _runCommand, ["startedAt"] = _runStarted.ToString("o") } : null,
                 ["lastRun"] = _lastRun?.DeepClone(),
                 ["nextNightly"] = next.ToString("o"),
                 ["node"] = _node,
@@ -360,7 +365,7 @@ sealed partial class PlaytesterServer : UdsPaw
         {
             JsonObject p = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
             bool live;
-            lock (_gate) live = _run is not null;
+            lock (_gate) live = _busy;
             live &= File.GetLastWriteTimeUtc(file) > DateTime.UtcNow.AddMinutes(-15);
             return new JsonObject
             {

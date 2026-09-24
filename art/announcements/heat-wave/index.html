@@ -122,6 +122,10 @@
   .heat q { quotes: none; font-size: 20px; font-weight: 500; }
   .heat p + p { margin-top: 6px; }
 
+  /* A small aside: peppers are fruit */
+  .aside { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: 18px; padding-inline: 24px; }
+  .aside p { color: var(--smoke); font-size: 15px; font-style: italic; }
+
   /* Hero Cat */
   .hero-cat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
   .notes { display: grid; gap: 14px; padding-top: 4px; }
@@ -224,6 +228,11 @@
       <p class="muted">Most cats try not to get hurt. Pepper cats go looking for it. Every hit they shrug off makes them stronger, and they'll even singe their own side to turn up the heat.</p>
     </div>
   </div>
+
+  <aside class="aside">
+    <span class="label">Wait, peppers are fruit?</span>
+    <p>They sure are. To a botanist, anything that grows from a flower and carries seeds is a fruit, so a chili belongs in Fruitcats as much as any lemon. (So does the tomato. Just don't tell the salad.)</p>
+  </aside>
 
   <section id="hero">
     <div class="sec-head">

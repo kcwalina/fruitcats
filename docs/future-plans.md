@@ -5,7 +5,7 @@ Four features we want, and what the current architecture needs to support them:
 1. Close the game and reopen it where you left off
 2. PvP: two people playing each other, not the AI
 3. Ladder boards
-4. A store where players buy new decks
+4. A store where players buy decks and cards (planned in [store-plan.md](store-plan.md))
 
 ## Summary
 
@@ -15,8 +15,8 @@ state machine: the whole game is plain JSON, all randomness comes from a seed st
 ladders and replays.
 
 What's missing is a backend. The site is a static Azure Static Web Apps upload. Three of the four features
-need a server (all but same-device PvP), and they depend on each other in a fixed order: online PvP →
-ladder → store.
+need a server (all but same-device PvP). Online PvP comes before the ladder. The store needs only the
+accounts and API, so it can come first; everything about it is in [store-plan.md](store-plan.md).
 
 ## 1. Close and reopen
 
@@ -75,44 +75,28 @@ Needs the server from #2 plus accounts.
 - Seed + actions work as a **replay record** on the server, which keeps the engine version. That gives
   replays and a way to audit disputed results.
 
-## 4. Store for decks
+## 4. Store
 
-Needs accounts. **The full store plan (decisions and steps) is in [store-plan.md](store-plan.md).**
+Everything about selling decks and cards is in **[store-plan.md](store-plan.md)**: decisions, stores,
+accounts, pricing, legal and phases.
 
-- **Done:** `createGame` accepts a `DeckList` as well as a starter key, and the deck builder
-  ([apps/web/src/deckbuilder.ts](../apps/web/src/deckbuilder.ts)) checks decks against rulebook §11.1 with
-  `deckProblems` in [packages/engine/src/decks.ts](../packages/engine/src/decks.ts). Still to do: a card
-  registry that can load several sets (`DECKS`/`CARDS` come from a single `sb1.json`).
-- What a player owns comes from `owned(id)` in [apps/web/src/collection.ts](../apps/web/src/collection.ts):
-  for now, the three starter decks added together. Purchases change that function (and move it behind the
-  account), and the deck builder follows. Players' decks are in this browser's localStorage
-  ([apps/web/src/mydecks.ts](../apps/web/src/mydecks.ts)) until accounts can hold them.
-- A deck made of existing card behaviours is pure data and ships without an engine release. A deck with
-  **new mechanics** needs new `EffectKey`/`BEHAVIOURS` code, so it ships with an engine update.
-- For online play, the server must check that a player owns the deck they bring.
-- **What's sold:** fixed decks and single cards the player sees before buying. No random paid packs:
-  they bring loot-box rules in several countries. Singles go in a cart with an order minimum, because
-  payment fees would eat a $0.99 purchase.
-- **Accounts:** a *Via Mochi account* (Via Mochi is the business; Fruitcats is its first app), shared by
-  future apps, with Apple, Google and email-code sign-in. It is kept apart from the invite-only mochi
-  family accounts. Accounts need age 13+, and buying needs 18+ or a parent's approval.
-- **Payments:** a Merchant of Record (Paddle first), which is the legal seller and handles tax and refunds.
-  A webhook records what each account owns. A native iOS app would use Apple's in-app purchases, writing
-  to the same entitlements.
-- **Staging:** everything to do with purchases is hidden from the public until launch. A separate playtest
-  build and site, a server-side tester list and a sandbox checkout keep it that way. The git tag
-  `pre-store` marks main before any store work.
-- **Done: the Collection** ([apps/web/src/showcase.ts](../apps/web/src/showcase.ts)) is live for everyone:
-  - a gallery for just looking at cards, even without playing:
-    - **Showcase:** a display of the cards you choose (Mochi's Kitten and Big Cat to start), with nothing to edit
-      there. Cards are added and removed in All cards (Add to Showcase / Remove from Showcase, with Undo); the choice is
-      kept on this device. Cards appear one at a time and as big as the screen allows. You swipe with the phone's own scrolling, and the card's art, blurred,
-      fills the screen behind it.
-    - **All cards:** the set as a grid, with preview cards as shadows. Tapping a card opens the same full-screen view.
-    - A Hero Cat's Kitten and Big Cat are separate cards.
-  - wallpapers for a phone, tablet or computer where the whole screen is the card, with its border
-    following the screen's rounded corners ([apps/web/src/wallpaper.ts](../apps/web/src/wallpaper.ts))
-  Bought cards will show up here, and choosing the Display Case's cards comes with the Store.
+## Collection (done)
+
+[apps/web/src/showcase.ts](../apps/web/src/showcase.ts) is a gallery for just looking at cards, even
+without playing:
+- **Showcase:** the cards you choose (Mochi's Kitten and Big Cat to start). It is display only; cards
+  are added and removed in All cards (Add to Showcase / Remove from Showcase, with Undo). The choice is
+  kept on this device until accounts can hold it. Cards appear one at a time, as big as the screen
+  allows; you swipe with the phone's own scrolling, and the card's art, blurred, fills the screen behind it.
+- **All cards:** the set as a grid, with preview cards as shadows. Tapping a card opens the same
+  full-screen view.
+- A Hero Cat's Kitten and Big Cat are separate cards.
+- **Wallpapers** for a phone, tablet or computer where the whole screen is the card, with its border
+  following the screen's rounded corners ([apps/web/src/wallpaper.ts](../apps/web/src/wallpaper.ts)).
+
+What a player owns comes from `owned(id)` in [apps/web/src/collection.ts](../apps/web/src/collection.ts)
+(for now, the three starter decks together). Purchases will change that function, and the deck builder
+and the Collection follow.
 
 ## Suggested order
 
@@ -120,10 +104,10 @@ Needs accounts. **The full store plan (decisions and steps) is in [store-plan.md
 2. **Engine preparation**, no backend yet: `viewFor`, the Pounce fix, `DeckList` input to `createGame`,
    a multi-set card registry, removing hardcoded seats from `main.ts`. All testable with the existing
    sim and tests. Same-device PvP can ship at the end of this step.
-3. **Backend**: Node running the same engine, WebSockets (Azure Web PubSub or a small container), SWA
-   login, a database. Online PvP goes live here.
+3. **Backend**: Node running the same engine, WebSockets (Azure Web PubSub or a small container), Via Mochi
+   accounts and a database (both set up in the store plan's Phase 3). Online PvP goes live here.
 4. **Ladder** on top of server-decided results.
-5. **Store** on top of accounts.
+5. **Store**: see [store-plan.md](store-plan.md). It needs only the accounts and the API, so it can come before online PvP.
 
 Nothing in the current design has to be thrown away. The hidden-information work in step 2 is where to be
 careful, because getting it wrong means shipping a game where people can cheat.

@@ -1,6 +1,7 @@
 // llm-playtest [--provider pc2024] [--model M] [--persona exploit|aggro|newcomer|all] [--games N]
 //              [--deck KEY|file.json] [--vs KEY|file.json] [--parallel 4] [--hours H] [--budget TOKENS]
 // llm-playtest --bench [--provider pc2024] [--models a,b,c]
+// llm-playtest --bench --concurrency 1,2,4,8 [--seconds 60] [--provider pc2024] [--model M]   (games per day)
 //
 // LLM players against the bot. Without --deck/--vs the games cycle through every pairing of starter decks,
 // and with --persona all through every persona. Each game gets a transcript (every choice with the LLM's
@@ -136,8 +137,50 @@ async function bench(providerName: string, models: string[] | undefined): Promis
   return 0;
 }
 
+/** LLM moves in a real game (about 34 on gpt-oss-20b, measured on PC2024) plus the end-of-game report. */
+const CALLS_PER_GAME = 35;
+
+/**
+ * How many games a day the provider can play, at each level of concurrency: every worker keeps sending real
+ * decisions (16 different mid-game positions, so a cached prompt can't flatter the numbers) for `seconds`,
+ * and the answered moves per minute become games per day.
+ */
+async function throughput(providerName: string, model: string | undefined, levels: number[], seconds: number): Promise<number> {
+  const p = getProvider(providerName, model);
+  const persona = PERSONAS.exploit;
+  const system = `${RULES_PRIMER}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}`;
+  const positions: string[] = [];
+  for (let seed = 1; positions.length < 16; seed++) {
+    const s = createGame({ decks: ['zest-rush', 'orchard-guard', 'mango-tango'].slice(seed % 2, seed % 2 + 2) as [string, string], seed });
+    while (!(s.prompt?.kind === 'action' && s.round >= 2 + (seed % 4)) && s.winner === null) apply(s, chooseAction(s, { random: mulberry(s.actions) }));
+    if (s.winner === null) positions.push(`${describe(s, s.prompt!.player)}\n\n${choicesText(s)}\n\n${ANSWER_REMINDER}`);
+  }
+  console.log(`${p.name} ${p.model}: ${seconds} s at each level\n`);
+  console.log('| Games at once | Moves per minute | Seconds per move (each game) | Answered | Games per day |');
+  console.log('|---|---|---|---|---|');
+  for (const n of levels) {
+    const until = Date.now() + seconds * 1000;
+    let moves = 0, answered = 0, ms = 0, next = 0;
+    const started = Date.now();
+    await Promise.all(Array.from({ length: n }, async () => {
+      while (Date.now() < until) {
+        const r = await p.chat([{ role: 'system', content: system }, { role: 'user', content: positions[next++ % positions.length] }]);
+        moves++; ms += r.ms;
+        if (/answer\s*[:=]\s*\d+/i.test(r.text)) answered++;
+      }
+    }));
+    const minutes = (Date.now() - started) / 60000;
+    const perMinute = moves / minutes;
+    console.log(`| ${n} | ${perMinute.toFixed(1)} | ${(ms / moves / 1000).toFixed(1)} | ${answered}/${moves} | ${Math.round((perMinute * 60 * 24) / CALLS_PER_GAME)} |`);
+  }
+  return 0;
+}
+
 export async function llmPlaytestCommand(): Promise<number> {
   const providerName = arg('provider') ?? 'pc2024';
+  if (flag('bench') && arg('concurrency')) {
+    return throughput(providerName, arg('model'), arg('concurrency')!.split(',').map(Number), numArg('seconds') ?? 60);
+  }
   if (flag('bench')) return bench(providerName, arg('models')?.split(','));
   const personaArg = arg('persona') ?? 'all';
   const personas = personaArg === 'all' ? Object.values(PERSONAS) : personaArg.split(',').map((k) => {

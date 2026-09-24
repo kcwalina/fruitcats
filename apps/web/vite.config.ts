@@ -7,13 +7,15 @@ import { defineConfig, type Plugin } from 'vite';
 // Card art lives in the repo's art/ folder and is served as-is: /sb1/<id>.webp (illustrations)
 // and /cards/sb1/<id>.webp (finished cards).
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
-// rulebook (rules.html), the card list (cards.html), and guides to the Collection and to wallpapers.
+// rulebook (rules.html), the card list (cards.html), what's on a card (anatomy.html), and guides to the
+// Collection and to wallpapers.
 
 /** The documentation's pages, in tab order. `tab` is the section's name in the header; the home has none. */
 const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'documentation.md', html: 'docs.html' },
   { md: 'rulebook.md', html: 'rules.html', tab: 'Rulebook' },
   { md: 'starter-box-cards.md', html: 'cards.html', tab: 'Card list' },
+  { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
   { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
   { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
 ];

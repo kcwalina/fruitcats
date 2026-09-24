@@ -242,6 +242,30 @@ def chrome_texture(finish: str) -> Image.Image:
     return _textures[finish]
 
 
+# A finish's code in the collector line, like the codes on real cards: F(oil), G(old), P(rismatic).
+FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white")}
+
+
+def finish_tag(img: Image.Image, right: int, cy: int, finish: str) -> int:
+    """The finish code on a little tag of the finish's own material, its right edge at `right`.
+    Drawn at 4x and scaled down so its edges stay smooth. Returns the tag's left edge."""
+    letter, ink = FINISH_CODES[finish]
+    k, w, h = 4, 26, 24
+    mask = Image.new("L", (w * k, h * k), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, w * k - 1, h * k - 1), radius=7 * k, fill=255)
+    x0, y0 = right - w, cy - h // 2
+    # The whole card's chrome in miniature, so a Prismatic tag shows every colour, not just one patch.
+    metal = chrome_texture(finish).resize((w * k, h * k), Image.LANCZOS)
+    tile = Image.new("RGBA", (w * k, h * k), (0, 0, 0, 0))
+    tile.paste(metal, (0, 0), mask)
+    td = ImageDraw.Draw(tile)
+    td.rounded_rectangle((0, 0, w * k - 1, h * k - 1), radius=7 * k, outline=CHROME[finish][1], width=2 * k)
+    stroke = {"stroke_width": 2 * k, "stroke_fill": CHROME[finish][1]} if ink == "white" else {}
+    td.text((w * k / 2, h * k / 2 + k), letter, font=font("seguibl.ttf", 16 * k), fill=ink, anchor="mm", **stroke)
+    img.alpha_composite(tile.resize((w, h), Image.LANCZOS), (x0, y0))
+    return x0
+
+
 def centered(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, **kw) -> None:
     draw.text(xy, text, font=f, fill=fill, anchor="mm", **kw)
 
@@ -318,10 +342,14 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
         kind = f'HERO CAT · {"KITTEN" if side == "kitten" else "BIG CAT"}'
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
     d.text((62, 622), f'{kind} · {card["family"].upper()}',font=font("segoeuib.ttf", 25), fill=dark, anchor="lm")
+    # The collector line: rarity mark, card number, and on a finished copy its finish code (F, G or P).
     key = card["id"] + (f"-{side}" if side else "")
     key_font = font("segoeui.ttf", 20)
-    d.text((W - 62, 622), key, font=key_font, fill=MUTED, anchor="rm")
-    rarity_mark(img, round(W - 62 - key_font.getlength(key) - 20), 622, 12, card["rarity"])
+    right = W - 62
+    if finish != "standard":
+        right = finish_tag(img, right, 622, finish) - 8
+    d.text((right, 622), key, font=key_font, fill=MUTED, anchor="rm")
+    rarity_mark(img, round(right - key_font.getlength(key) - 20), 622, 12, card["rarity"])
     cd.rounded_rectangle((42, 596, W - 42, 648), radius=14, outline=255, width=4)
 
     # The finish's chrome, edged in its ink where it meets the card.

@@ -57,6 +57,8 @@ Everything else in this rulebook can wait until you have played once.
 
 ### 3.1 Card anatomy
 
+A labelled picture of a card, with its rarity mark and finish code, is in [Card anatomy](card-anatomy.md).
+
 | Part | Meaning |
 |---|---|
 | **Name** | The card's name. |

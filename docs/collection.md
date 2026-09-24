@@ -55,16 +55,17 @@ The [card list](starter-box-cards.md#rarity) has the full breakdown.
 A finish is how one copy of a card is printed, like the shiny cards in other card games. Every card
 exists in every finish, and a finish never changes how the card plays.
 
-| Finish | How it looks |
-|---|---|
-| **Standard** | The card's frame in its family's colours. |
-| **Foil** | A frame of holographic silver with rainbow flashes, and a rainbow sheen that follows your finger. |
-| **Gold** | A frame of polished gold, with a warm light that sweeps across the card. |
-| **Prismatic** | The rarest: a rainbow frame all the way round, a stronger sheen, twinkles, and a glow that runs through every colour. |
+| Code | Finish | How it looks |
+|---|---|---|
+| (none) | **Standard** | The card's frame in its family's colours. |
+| **F** | **Foil** | A frame of holographic silver with rainbow flashes, and a rainbow sheen that follows your finger. |
+| **G** | **Gold** | A frame of polished gold, with a warm light that sweeps across the card. |
+| **P** | **Prismatic** | The rarest: a rainbow frame all the way round, a stronger sheen, twinkles, and a glow that runs through every colour. |
 
 The finish covers the whole of the card's chrome: its outer frame, the border around the art, the edges
-of its name banner and type line, and the ring around its cost. When you open a card, its rarity and
-finish are shown under its name.
+of its name banner and type line, and the ring around its cost. Its **code** (F, G or P) is printed at the
+end of the card's collector line, after its number, so you can tell a special print even in a picture: see
+[Card anatomy](card-anatomy.md). When you open a card, its rarity and finish are also shown under its name.
 
 Your copies appear in their finish everywhere: in the Collection, the deck builder, your hand and board
 in a game, and on [wallpapers](wallpapers.md). For now the three starter Hero Cats come special:

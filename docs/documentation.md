@@ -21,6 +21,14 @@ Tango, and the Garden cards they share. Also what each card's [rarity mark](star
 
 **[Open the Card list →](starter-box-cards.md)**
 
+## Card anatomy
+
+What everything on a card means, from its cost to its power and health, with a labelled picture. Also how
+to tell a card's [rarity](card-anatomy.md#rarity) and its [finish](card-anatomy.md#finishes) (Foil, Gold
+or Prismatic) from its collector line.
+
+**[Open Card anatomy →](card-anatomy.md)**
+
 ## Collection
 
 Your cards, to look at even when you're not playing: your [Showcase](collection.md#showcase),

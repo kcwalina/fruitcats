@@ -24,6 +24,10 @@ const HOLO = ['#8e97a3', '#eef1f5', '#d7c2ec', '#a7b0bb', '#f7f9fb', '#bfe6f2', 
 const PRISM = ['#ff3d8b', '#ff9f1a', '#ffe23d', '#2ee88a', '#2bb8ff', '#7a5cff', '#e84dff', '#ff3d8b'];
 const GOLD = ['#fff4c2', '#e8b73a', '#8a5a0c', '#f7d774', '#b07d17', '#fff0b0', '#c89224', '#fff4c2'];
 const CHROME_INK: Record<Finish, string> = { standard: '', foil: '#4a5362', gold: '#5a3a04', prismatic: '#3a2a5a' };
+/** Each finish's code in the collector line, and its letter's colour (compose_cards.py's FINISH_CODES). */
+const FINISH_CODES: Record<Exclude<Finish, 'standard'>, [string, string]> = {
+  foil: ['F', '#2e3552'], gold: ['G', '#4a2c02'], prismatic: ['P', 'white'],
+};
 const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C', BADGE_INK = '#50231c';
 const FOOTER = 'Fruitcats · Starter Box · © 2026 Krzysztof Cwalina';
 const FONT = 'Nunito, "Segoe UI", sans-serif';
@@ -307,7 +311,8 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `SB1 · ${p.number}`;
   ctx.font = `600 ${20 * s}px ${FONT}`;
   const markW = 36 * s;   // the rarity mark, and the gap before the number
-  const numberW = ctx.measureText(numberText).width + markW;
+  const tagW = p.finish === 'standard' ? 0 : 34 * s;   // the finish code's tag, and the gap after the number
+  const numberW = ctx.measureText(numberText).width + markW + tagW;
   let size = 25 * s;
   const fits = (room: number) => { ctx.font = `800 ${size}px ${FONT}`; return ctx.measureText(label).width <= room; };
   const withNumber = x1 - x0 - 40 * s - numberW - 16 * s;
@@ -323,10 +328,42 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
     ctx.textAlign = 'right';
     ctx.font = `600 ${20 * s}px ${FONT}`;
     ctx.fillStyle = MUTED;
-    ctx.fillText(numberText, x1 - 20 * s, (top + bottom) / 2);
-    drawRarityMark(ctx, p.rarity, x1 - 20 * s - (numberW - markW) - 20 * s, (top + bottom) / 2, 13 * s);
+    const cy = (top + bottom) / 2;
+    if (tagW) drawFinishTag(p, x1 - 20 * s, cy);
+    ctx.fillText(numberText, x1 - 20 * s - tagW, cy);
+    drawRarityMark(ctx, p.rarity, x1 - 20 * s - (numberW - markW) - 20 * s, cy, 13 * s);
   }
   return bottom;
+}
+
+/** A finish's code in the collector line (F, G or P), on a little tag of the finish's own material. */
+function drawFinishTag(p: Parts, right: number, cy: number) {
+  const { ctx, s, finish } = p;
+  if (finish === 'standard') return;
+  const w = 26 * s, h = 24 * s, x0 = right - w, y0 = cy - h / 2;
+  const metal = ctx.createLinearGradient(x0, y0, right, y0 + h);
+  const stops = { foil: HOLO, gold: GOLD, prismatic: PRISM }[finish];
+  stops.forEach((c, i) => metal.addColorStop(i / (stops.length - 1), c));
+  roundRect(ctx, x0, y0, right, y0 + h, 7 * s);
+  ctx.fillStyle = metal;
+  ctx.fill();
+  ctx.lineWidth = 2 * s;
+  ctx.strokeStyle = CHROME_INK[finish];
+  ctx.stroke();
+  const [letter, ink] = FINISH_CODES[finish];
+  ctx.font = `900 ${16 * s}px ${FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (ink === 'white') {
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3 * s;
+    ctx.strokeText(letter, x0 + w / 2, cy + s);
+  }
+  ctx.fillStyle = ink;
+  ctx.fillText(letter, x0 + w / 2, cy + s);
+  ctx.textAlign = 'right';
+  ctx.font = `600 ${20 * s}px ${FONT}`;
+  ctx.fillStyle = MUTED;
 }
 
 /** The rules text and flavour in a white box, shrinking to fit; `reserve` keeps room at the bottom for the stat badges. */

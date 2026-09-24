@@ -137,6 +137,7 @@ a.page-title:hover { color: #fff; }
 /* The first paragraph under the title is the version line. */
 .doc h1 + p { color: var(--muted); font-size: 15px; margin-top: 0; }
 
+.doc img { display: block; max-width: 100%; height: auto; margin: 18px auto; }
 .doc hr { border: 0; height: 0; margin: 40px 0 32px; }
 
 .doc blockquote {

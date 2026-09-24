@@ -20,7 +20,7 @@
 <style>html,body{margin:0} img{max-width:100%} [hidden]{display:none!important} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600&display=swap">
 <style>
   /* One committed look: the set's own volcanic world, in both viewer themes. */
   :root {
@@ -34,7 +34,7 @@
     --ember: #FF7A2E;
     --chili: #E0321F;
     --gold: #FFC65C;
-    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --display: "Anton", Impact, "Arial Narrow Bold", sans-serif;
     --body: "Barlow", "Segoe UI", system-ui, sans-serif;
     --label: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
   }
@@ -60,7 +60,7 @@
     text-transform: uppercase;
     color: var(--ember);
   }
-  h1, h2, h3 { font-family: var(--display); font-weight: 900; text-wrap: balance; margin: 0; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; }
   h2 { font-size: clamp(30px, 5vw, 44px); line-height: 1; letter-spacing: 0.01em; text-transform: uppercase; }
   h3 { font-size: 24px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.02em; }
   p { margin: 0; max-width: 64ch; }
@@ -76,7 +76,7 @@
   }
   .hero h1 {
     font-size: clamp(64px, 13vw, 148px);
-    line-height: 0.84;
+    line-height: 0.92;
     text-transform: uppercase;
     background: linear-gradient(180deg, var(--gold) 0%, var(--ember) 45%, var(--chili) 100%);
     -webkit-background-clip: text; background-clip: text;
@@ -117,7 +117,7 @@
   .flame {
     width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
     background: radial-gradient(circle at 50% 60%, var(--gold), var(--ember) 45%, var(--chili) 80%);
-    font: 900 26px/1 var(--display); color: var(--ground);
+    font: 400 24px/1 var(--display); color: var(--ground);
   }
   .heat q { quotes: none; font-size: 20px; font-weight: 500; }
   .heat p + p { margin-top: 6px; }
@@ -143,7 +143,7 @@
   .ladder .step { grid-row: span 4; grid-template-rows: subgrid; row-gap: 12px; }
   .ladder .step > :first-child { align-self: end; }
   .step { display: grid; gap: 14px; }
-  .price { font: 900 clamp(40px, 6vw, 60px)/0.9 var(--display); color: var(--ash); font-variant-numeric: tabular-nums; }
+  .price { font: 400 clamp(40px, 6vw, 60px)/1 var(--display); color: var(--ash); font-variant-numeric: tabular-nums; }
   .step.top .price { font-size: clamp(56px, 9vw, 92px); background: linear-gradient(180deg, var(--gold), var(--ember) 55%, var(--chili)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .step p { color: var(--smoke); font-size: 15px; }
   .step p b { color: var(--ash); font-weight: 600; }
@@ -174,21 +174,23 @@
   dialog form { display: flex; justify-content: center; margin-top: 12px; }
   dialog button { font: 600 15px/1 var(--label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash); background: var(--basalt-2); border: 1px solid var(--line); border-radius: 999px; padding: 11px 20px; cursor: pointer; }
 
+  /* iPad upright and small laptops */
   @media (max-width: 860px) {
     header.hero { grid-template-columns: 1fr; padding-block: 36px 16px; }
-    .hero-cards { max-width: 460px; }
-    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .hero-cards { max-width: 480px; margin-inline: auto; }
     .hero-cat { grid-template-columns: 1fr 1fr; }
     .hero-cat .notes { grid-column: 1 / -1; }
-    .ladder { grid-template-columns: 1fr; grid-template-rows: none; row-gap: 40px; }
-    .ladder .step { grid-row: auto; grid-template-rows: none; }
-    .ladder .step:not(.top) .card { max-width: 300px; }
-    .compare { grid-template-columns: 1fr; }
+    .ladder { grid-template-columns: 1fr 1fr; grid-template-rows: none; gap: 40px 24px; }
+    .ladder .step { grid-row: auto; grid-template-rows: none; align-content: start; }
+    .ladder .step.top { grid-column: 1 / -1; }
   }
-  @media (max-width: 480px) {
+  /* Phones */
+  @media (max-width: 640px) {
     body { padding-inline: 16px; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
     .heat { grid-template-columns: 1fr; }
+    .ladder { grid-template-columns: 1fr; }
+    .ladder .step:not(.top) .card { max-width: 300px; }
   }
   @media (prefers-reduced-motion: reduce) { .card img { transition: none; } .card:hover img { transform: none; } }
 </style>
@@ -271,7 +273,7 @@
       <div class="step">
         <button class="card" data-full="../../cards/hw1/foil/HW1-X01.webp"><img src="../../cards/hw1/foil/HW1-X01.webp" alt="Jack, the Pumpkin Knight"></button>
         <div class="price">$1.49</div>
-        <div class="who"><span class="tag tag-foil">Foil print</span> Rare Cat · fits any deck</div>
+        <div class="who"><span class="tag tag-foil">Foil print</span> Rare Cat · any deck</div>
         <p><b>Jack, the Pumpkin Knight.</b> Knock him down and his lantern keeps the watch. A Garden card, so he fights for every deck.</p>
       </div>
       <div class="step">

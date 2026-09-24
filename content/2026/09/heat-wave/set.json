@@ -15,7 +15,8 @@
       ],
       "personality": "Fiery, fearless, hot-headed",
       "playsLike": "Brawlers that get stronger when they're hurt",
-      "mechanic": "Heat"
+      "mechanic": "Heat",
+      "hint": "units that get stronger every time they survive a hit"
     }
   },
   "mechanics": {
@@ -634,7 +635,8 @@
         "SB1-G03": 3,
         "SB1-G04": 3,
         "SB1-G05": 2
-      }
+      },
+      "blurb": "Hot-headed brawlers. Pick fights, heat your own units up, and burn through the yard. Led by Blaze."
     }
   }
 }

@@ -8,16 +8,8 @@ import { CARDS, type CardDef, type Rarity } from '@fruitcats/engine';
 import type { Finish } from './collection';
 import { drawRarityMark } from './rarity';
 import { BASE, artUrl } from './ui';
+import { familyColors } from './sets';
 
-/** Main, dark and tint colour of each fruit family, as compose_cards.py draws them. */
-const FAMILIES: Record<string, [string, string, string]> = {
-  Citrus: ['#F29F05', '#A86400', '#FFF1CC'],
-  Orchard: ['#D64545', '#8E2A2A', '#FBE0DA'],
-  Garden: ['#5FA84D', '#3B7430', '#E3F2DC'],
-  Berry: ['#D6336C', '#8F1D46', '#FBDDE7'],
-  Tropical: ['#F2780C', '#A24E05', '#FFE6CC'],
-  Melon: ['#3FA66B', '#25714A', '#DDF3E6'],
-};
 /** The finishes' chrome, as compose_cards.py prints it: silver with rainbow flashes, gold, a rainbow. */
 const RAINBOW = ['#ff6b6b', '#ffd36b', '#7bff9a', '#6bd5ff', '#b07bff', '#ff6bd0'];
 const HOLO = ['#8e97a3', '#eef1f5', '#d7c2ec', '#a7b0bb', '#f7f9fb', '#bfe6f2', '#7f8894', '#f3dcec', '#8e97a3'];
@@ -459,7 +451,7 @@ function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, foote
  */
 export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | null, finish: Finish, rarity: Rarity, number: string, device: Device): Promise<Blob> {
   const card: CardDef = CARDS[id];
-  const colors = FAMILIES[card.family] ?? FAMILIES.Garden;
+  const colors = familyColors(card.family);
   const [main, dark] = colors;
   const { W, H, corner, controls } = wallpaperSize(device);
   const key = side ? `${id}-${side}` : id;

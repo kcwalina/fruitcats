@@ -11,7 +11,8 @@
         "#A86400",
         "#FFF1CC"
       ],
-      "mechanic": "Zest"
+      "mechanic": "Zest",
+      "hint": "bonuses when it isn’t your first card this round"
     },
     "Orchard": {
       "colors": [
@@ -19,7 +20,8 @@
         "#8E2A2A",
         "#FBE0DA"
       ],
-      "mechanic": "Ripen"
+      "mechanic": "Ripen",
+      "hint": "units grow +1/+1 every round"
     },
     "Tropical": {
       "colors": [
@@ -27,7 +29,8 @@
         "#A24E05",
         "#FFE6CC"
       ],
-      "mechanic": "Lush"
+      "mechanic": "Sprout",
+      "hint": "extra Treats now, Lush payoffs at 7+"
     },
     "Garden": {
       "colors": [
@@ -56,7 +59,7 @@
     "Zest": {
       "family": "Citrus",
       "kind": "condition",
-      "reminder": "A bonus if you've already played another card this round.",
+      "reminder": "A bonus if this is not the first card you have played this round.",
       "if": {
         "playedThisRound": {
           "atLeast": 2
@@ -66,7 +69,7 @@
     "Ripen": {
       "family": "Orchard",
       "kind": "keyword",
-      "reminder": "At the start of each round, this unit gets +1 Power and +1 Health, up to +2/+2.",
+      "reminder": "At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2.",
       "counter": {
         "name": "ripe",
         "power": 1,
@@ -94,17 +97,21 @@
     "Lush": {
       "family": "Tropical",
       "kind": "condition",
-      "reminder": "You're Lush while you have 7 or more Treats.",
+      "reminder": "This bonus is on while you have 7 or more Treats.",
       "if": {
         "treats": {
           "atLeast": 7
         }
+      },
+      "badge": {
+        "icon": "🌴",
+        "title": "Lush: 7 or more Treats — Lush bonuses are on"
       }
     },
     "Sprout": {
       "family": "Tropical",
       "kind": "action",
-      "reminder": "Put the top N cards of your deck into your Treats."
+      "reminder": "Put that many cards from the top of your deck into your Treats."
     }
   },
   "cards": [
@@ -1469,7 +1476,8 @@
         "SB1-G03": 3,
         "SB1-G04": 3,
         "SB1-G05": 2
-      }
+      },
+      "blurb": "Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover."
     },
     "orchard-guard": {
       "name": "Orchard Guard",
@@ -1494,7 +1502,8 @@
         "SB1-G03": 3,
         "SB1-G04": 3,
         "SB1-G05": 3
-      }
+      },
+      "blurb": "Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game."
     },
     "mango-tango": {
       "name": "Mango Tango",
@@ -1520,7 +1529,8 @@
         "SB1-G03": 3,
         "SB1-G04": 3,
         "SB1-G05": 2
-      }
+      },
+      "blurb": "Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat."
     }
   }
 }

@@ -9,7 +9,8 @@ import {
 } from '@fruitcats/engine';
 import { owned, ownedCards, ownedHeroes } from './collection';
 import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
-import { BASE, FAMILY_INFO, artUrl, backButton, esc, famClass, settingsButton } from './ui';
+import { BASE, artUrl, backButton, esc, famClass, settingsButton } from './ui';
+import { familyInfo } from './sets';
 import { finishFrame, yourCardUrl } from './rarity';
 
 type Page = 'list' | 'new' | 'edit';
@@ -275,8 +276,8 @@ function renderNewDeck(): string {
               <img src="${yourCardUrl(`${id}-kitten`)}" alt="${esc(hero.name)}">
               <img class="deck-art ${finishFrame(id)}" src="${artUrl(`${id}-kitten`)}" alt="">
               <span class="deck-name">${esc(cardName(id))}</span>
-              <span class="deck-class ${famClass(id)}">${esc(hero.family)} · ${esc(FAMILY_INFO[hero.family]?.mechanic ?? '')}</span>
-              <span class="deck-blurb">${esc(capitalize(FAMILY_INFO[hero.family]?.hint ?? ''))}.</span>
+              <span class="deck-class ${famClass(id)}">${esc(hero.family)} · ${esc(familyInfo(hero.family)?.mechanic ?? '')}</span>
+              <span class="deck-blurb">${esc(capitalize(familyInfo(hero.family)?.hint ?? ''))}.</span>
             </button>`;
           }).join('')}
         </div>

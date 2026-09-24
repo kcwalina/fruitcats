@@ -5,7 +5,8 @@ import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
-import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { badgeMechanics, deckBlurb, familyInfo, heroParade, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
@@ -14,7 +15,7 @@ import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, DECK_RULES, MECHANICS, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isLush, isSneaky, keywords,
+  CARDS, DECKS, DECK_RULES, MECHANICS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
   type Action, type GameState, type PlayerId, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -243,7 +244,7 @@ function startGame(tutorial = false) {
   // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
   // with you going first, so its balloons can talk about specific cards.
   // Against your own deck, it leads a starter with a different Hero Cat.
-  const mine = deckForKey(myDeck) ?? DECKS['zest-rush'];
+  const mine = deckForKey(myDeck) ?? Object.values(DECKS)[0];
   const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
   const theirDeck = tutorial ? 'orchard-guard'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
@@ -288,11 +289,9 @@ function startGame(tutorial = false) {
  * because a playtester kept forgetting what Zest did and iOS has no hover to put a tooltip on.
  * `test` finds the keyword in the card's rules text.
  */
-const GLOSSARY: { name: string; test: RegExp; text: string }[] = [
-  { name: 'Zest', test: /\bZest\b/, text: 'A bonus if this is not the first card you have played this round. (Citrus)' },
-  { name: 'Ripen', test: /\bRipens?\b/, text: 'At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2. (Orchard)' },
-  { name: 'Sprout', test: /\bSprout\b/, text: 'Put that many cards from the top of your deck into your Treats. (Tropical)' },
-  { name: 'Lush', test: /\bLush\b/, text: 'This bonus is on while you have 7 or more Treats. (Tropical)' },
+/** Set mechanics (Zest, Ripen, Heat…) explain themselves from their set's data; the core keywords are here. */
+const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
+const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero Cat.' },
   { name: 'Sneaky', test: /\bSneaky\b/, text: 'Can attack straight past enemy Guardians.' },
   { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero Cat, that player loses 2 Lives instead of 1.' },
@@ -324,7 +323,7 @@ function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   const k = keywords(id);
   if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Pounce cards can be played while your opponent is acting — ${name} isn't one.`;
   if (promptKind !== 'action') return `You can't play cards right now.`;
-  if (id === 'SB1-O09') return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
+  if (abilitiesOf(id).some((a) => a.pounceOnly === 'attack')) return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
   if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Treats — you have ${ready} ready. Spent Treats come back at the start of next round.`;
   const yard = s.players[HUMAN].yard;
   if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
@@ -559,8 +558,8 @@ function savedGameLabel(): string | null {
 }
 
 function renderHome(): string {
-  // Mochi, the mightiest Hero Cat, takes the centre spot.
-  const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
+  // The mightiest Hero Cat (Mochi) takes the centre spot.
+  const heroes = heroParade().map((id) => `${id}-bigcat`);
   const saved = savedGameLabel();
   return `
   <div class="menu home">
@@ -600,11 +599,6 @@ function renderHome(): string {
 }
 
 function renderDeckPicker(): string {
-  const deckBlurb: Record<string, string> = {
-    'zest-rush': 'Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover.',
-    'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
-    'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
-  };
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
@@ -612,7 +606,7 @@ function renderDeckPicker(): string {
   // Every deck is the same card in one carousel: the starters, then your own. The one in the middle is
   // your deck; one of yours still short of 50 cards can sit there, but you can't play it yet.
   const decks = [
-    ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb[key] ?? '' })),
+    ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb(key) })),
     ...listDecks().map((d) => {
       const ready = isReady(d);
       return { key: customKey(d.id), deck: d, ready,
@@ -630,7 +624,7 @@ function renderDeckPicker(): string {
               <button class="${deckChoiceClass(key, ready)}" data-click="solo:${key}" data-ready="${ready}">
                 <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
                 <span class="deck-name">${esc(deck.name)}</span>
-                <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
+                <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(familyInfo(CARDS[deck.hero].family)?.mechanic ?? '')}</span>
                 <span class="deck-blurb">${blurb}</span>
               </button>`).join('')}
           </div>
@@ -784,7 +778,8 @@ function renderPantry(s: GameState, p: PlayerId): string {
   const ready = readyTreats(s, p);
   return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
     <div class="pantry-label" title="Treats pay for your cards: a card costs the number in its top-left corner. Spent Treats ready again next round.">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
-    ${isLush(s, p) && CARDS[pl.hero.id].family === 'Tropical' ? '<div class="lush-badge" title="Lush: 7 or more Treats — Lush bonuses are on">🌴 Lush</div>' : ''}
+    ${badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
+      .map(([name, m]) => `<div class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</div>`).join('')}
     <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens}</div>
     ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
   </div>`;
@@ -1085,10 +1080,7 @@ function renderRules(): string {
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each fruit family has a signature mechanic.
-        <b>Citrus — Zest:</b> a bonus if you’ve already played another card this round.
-        <b>Orchard — Ripen:</b> at the start of each round the unit gets +1/+1 (up to +2/+2).
-        <b>Tropical — Sprout N:</b> put the top N cards of your deck into your Pantry as Treats;
-        <b>Lush:</b> you have 7 or more Treats.</p>
+        ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(m.family!)} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
@@ -1219,7 +1211,7 @@ let zoomHeld = false;
 function openZoom(url: string, cardKey?: string, state?: string) {
   closeZoom();
   const text = cardKey ? zoomText(cardKey) : '';
-  const used = GLOSSARY.filter((k) => k.test.test(text));
+  const used = glossary().filter((k) => k.test.test(text));
   const cost = cardKey && !/-(kitten|bigcat)$/.test(cardKey) ? CARDS[cardKey]?.cost : undefined;
   // Treats are the game's only currency, and a playtester got through a whole game without noticing.
   const price = cost === undefined ? '' : (() => {

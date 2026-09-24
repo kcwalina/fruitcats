@@ -184,7 +184,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | ID | Name | Cost | P/H | Text | Qty |
 |---|---|---|---|---|---|
 | SB1-T13 | Papaya, Beach Bum | 3 | 2/4 | **Hello:** Sprout 1. | 1 |
-| SB1-T14 | Coconut, Island Guardian | 5 | 4/6 | Guardian. **Hello:** Ready two of your Treats. | 1 |
+| SB1-T14 | Coconut, Island Guardian | 5 | 4/5 | Guardian. **Hello:** Ready two of your Treats. | 1 |
 | SB1-T15 | Durian, the Mighty Stink | 8 | 8/8 | Fierce. Sneaky. | 1 |
 
 ### Critters
@@ -198,7 +198,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | SB1-T05 | Lychee Sloth | 2 | 2/3 | Can't attack unless you're Lush. | 3 |
 | SB1-T06 | Guava Capybara | 4 | 3/5 | **Hello:** Heal 2 from each unit you control. | 3 |
 | SB1-T07 | Mangosteen Tapir | 5 | 5/5 | **Hello:** If you're Lush, draw 2 cards. | 3 |
-| SB1-T08 | Jackfruit Elephant | 7 | 7/8 | Guardian. Fierce. | 2 |
+| SB1-T08 | Jackfruit Elephant | 8 | 7/8 | Guardian. Fierce. | 2 |
 
 ### Tricks
 

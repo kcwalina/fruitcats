@@ -51,6 +51,9 @@
      back with negative margins so the layout doesn't grow. */
   padding: 50px calc(50% - var(--card-w) / 2) 80px; margin: -28px 0 -50px;
 }
+/* Sideways swipes are handled in showcase.ts (followDrags); the browser keeps only vertical panning. */
+.viewer-track { touch-action: pan-y; cursor: grab; }
+.viewer-track.dragging { scroll-snap-type: none; cursor: grabbing; }
 .viewer-track::-webkit-scrollbar { display: none; }
 .viewer-slide { flex: none; width: var(--card-w); scroll-snap-align: center; scroll-snap-stop: always; perspective: 1400px; }
 /* Cards beside the middle one turn away, shrink and dim, by how far they are from it (--d, set on scroll). */

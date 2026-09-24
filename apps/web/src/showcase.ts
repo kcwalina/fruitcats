@@ -450,6 +450,58 @@ export function showcaseMounted(): void {
   };
   track.addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(update); }, { passive: true });
   update();
+  followDrags(track);
+}
+
+/**
+ * Swiping with a finger (or dragging with a mouse) is done here rather than left to the browser: iPad
+ * Safari would not scroll the strip when the finger was on one of its turned (3D) cards. The strip
+ * follows the finger with snapping off, then glides to the card it was flicked towards.
+ */
+function followDrags(track: HTMLElement) {
+  const slides = [...track.children] as HTMLElement[];
+  const centre = (s: HTMLElement) => s.offsetLeft + s.offsetWidth / 2 - track.scrollLeft - track.clientWidth / 2;
+  /** The card nearest the middle right now (the viewer's index only catches up on the next frame). */
+  const nearest = () => slides.reduce((best, s, i) => (Math.abs(centre(s)) < Math.abs(centre(slides[best])) ? i : best), 0);
+  let drag: { id: number; x0: number; left0: number; from: number; x: number; t: number; vx: number; moved: boolean } | null = null;
+  let dragged = false;
+  track.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    drag = { id: e.pointerId, x0: e.clientX, left0: track.scrollLeft, from: nearest(), x: e.clientX, t: e.timeStamp, vx: 0, moved: false };
+    dragged = false;
+  });
+  track.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0;
+    if (!drag.moved) {
+      if (Math.abs(dx) < 8) return;
+      drag.moved = true;
+      track.classList.add('dragging');
+      track.setPointerCapture(e.pointerId);
+    }
+    if (e.timeStamp > drag.t) drag.vx = 0.6 * drag.vx + 0.4 * ((e.clientX - drag.x) / (e.timeStamp - drag.t));
+    drag.x = e.clientX; drag.t = e.timeStamp;
+    track.scrollLeft = drag.left0 - dx;
+  });
+  const end = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (!d.moved) return;
+    // Swallow the click that may follow this pointerup, and only that one.
+    dragged = true;
+    window.setTimeout(() => { dragged = false; }, 0);
+    // The card now nearest the middle; a quick flick turns at least one, even if not carried past halfway.
+    let to = nearest();
+    if (to === d.from && Math.abs(d.vx) > 0.3) to += d.vx < 0 ? 1 : -1;
+    scrollToCard(to);
+    // Snapping comes back once the glide has landed (turning it on mid-glide would jump).
+    window.setTimeout(() => track.classList.remove('dragging'), 600);
+  };
+  track.addEventListener('pointerup', end);
+  track.addEventListener('pointercancel', end);
+  // A drag that ends on a card isn't a tap on it.
+  track.addEventListener('click', (e) => { if (dragged) { dragged = false; e.stopPropagation(); e.preventDefault(); } }, true);
 }
 
 function fadeAmbient(container: Element, face: string) {

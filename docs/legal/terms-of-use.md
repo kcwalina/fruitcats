@@ -17,7 +17,7 @@ to you by a third party, the "Seller" (section 5), under a separate contract bet
 a party to that contract, and we don't receive your payment, charge you, collect taxes or issue refunds.
 
 **By creating a Via Mochi account, or by playing Fruitcats, you agree to these Terms.** If you don't agree, don't use
-the Service. Our Privacy Policy **[to be written and linked]** explains how we handle your information.
+the Service. Our [Privacy Policy](privacy-policy.md) explains how we handle your information.
 
 **Please read section 14 (Disputes).** It includes an agreement to resolve most disputes by individual arbitration and
 a waiver of class actions, with a way to opt out.

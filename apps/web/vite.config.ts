@@ -18,8 +18,9 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
   { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
   { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
-  // Linked from the sign-up screen; no tab of its own.
+  // Linked from the sign-up screen; no tabs of their own.
   { md: 'legal/terms-of-use.md', html: 'terms.html' },
+  { md: 'legal/privacy-policy.md', html: 'privacy.html' },
 ];
 
 // `vite build --mode playtest` (npm run build:playtest) turns on the features still hidden from the public site
@@ -51,7 +52,8 @@ export default defineConfig(({ mode }) => ({
 // Every heading is an anchor, so any section can be sent as a link (wallpapers.html#with-a-shortcut).
 
 const DOCS = fileURLToPath(new URL('../../docs/', import.meta.url));
-const PAGES: Record<string, string> = Object.fromEntries(DOC_PAGES.map((d) => [d.md, d.html]));
+// Keyed by file name, so docs/legal/ pages link to each other as "terms-of-use.md".
+const PAGES: Record<string, string> = Object.fromEntries(DOC_PAGES.map((d) => [d.md.split('/').pop()!, d.html]));
 
 /** The header every docs page shares: Home, "Documentation", and the sections as tabs. */
 function docHeader(current: string): string {

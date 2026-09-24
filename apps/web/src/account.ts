@@ -99,7 +99,8 @@ function detailsStep(): string {
     </label>
     <label class="account-agree">
       <input type="checkbox" data-acct="agree" ${agreed ? 'checked' : ''} ${busy ? 'disabled' : ''}>
-      <span>I agree to the <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a></span>
+      <span>I agree to the <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a> and have read the
+        <a href="${BASE}privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
     </label>
     <button class="primary account-go" data-click="acct:details" ${busy ? 'disabled' : ''}>${busy ? 'Sending your code…' : 'Email me a code'}</button>`;
 }

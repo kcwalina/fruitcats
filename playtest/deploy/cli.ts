@@ -35,7 +35,9 @@ const AZURE = { name: 'fruitcats', group: 'mochi-tcg', subscription: '57c8ee32-8
 const step = (n: number, text: string) => console.log(`\n── ${n}. ${text}`);
 function run(cmd: string, args: string[], opts: { capture?: boolean } = {}): string {
   const r = spawnSync(cmd, args, { cwd: ROOT, shell: true, encoding: 'utf8', stdio: opts.capture ? ['ignore', 'pipe', 'inherit'] : 'inherit' });
-  if (r.status !== 0) throw new Error(`${cmd} ${args.join(' ')} failed (exit ${r.status})`);
+  // Never echo the deployment token: an error message ends up in logs and transcripts.
+  const shown = args.map((a, i) => (args[i - 1] === '--deployment-token' ? '<token>' : a));
+  if (r.status !== 0) throw new Error(`${cmd} ${shown.join(' ')} failed (exit ${r.status})`);
   return r.stdout ?? '';
 }
 

@@ -1,0 +1,639 @@
+{
+  "set": "HW1",
+  "name": "Heat Wave",
+  "version": "0.1.0",
+  "vocabulary": 1,
+  "status": "draft",
+  "requires": [
+    "SB1"
+  ],
+  "note": "Design draft in the proposed data format (docs/card-data-architecture.md). Nothing loads this file yet.",
+  "families": {
+    "Pepper": {
+      "colors": [
+        "#D7261E",
+        "#5A0E0A",
+        "#FFD6C2"
+      ],
+      "personality": "Fiery, fearless, hot-headed",
+      "playsLike": "Brawlers that get stronger when they're hurt",
+      "mechanic": "Heat"
+    }
+  },
+  "mechanics": {
+    "Heat": {
+      "family": "Pepper",
+      "kind": "keyword",
+      "reminder": "Whenever this unit is dealt damage and survives, it gets +1 Power, up to +3.",
+      "counter": {
+        "name": "heat",
+        "power": 1
+      },
+      "abilities": [
+        {
+          "when": "damagedAndSurvives",
+          "target": "self",
+          "do": [
+            {
+              "counter": {
+                "name": "heat",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tokens": [
+    {
+      "id": "HW1-K01",
+      "name": "Jack-o'-Lantern",
+      "type": "Critter",
+      "family": "Garden",
+      "power": 2,
+      "health": 2,
+      "keywords": [
+        "Guardian"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "id": "HW1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Pepper",
+      "name": "Blaze, the Chili Bombay",
+      "flavor": "Hot-headed. Cool-hearted.",
+      "kitten": {
+        "name": "Blaze, Ember Kit",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "damage": 1
+              },
+              {
+                "buff": {
+                  "power": 1
+                }
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "unitsInComposts": {
+              "atLeast": 5
+            }
+          }
+        },
+        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nGrow Up: 5 or more Cats and Critters are in the Composts."
+      },
+      "bigCat": {
+        "name": "Blaze, Wildfire",
+        "power": 3,
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "any"
+            },
+            "do": [
+              {
+                "damage": 1
+              }
+            ],
+            "instead": {
+              "if": "targetIsYours",
+              "do": [
+                {
+                  "damage": 1
+                },
+                {
+                  "buff": {
+                    "power": 2
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "text": "Exhaust: Deal 1 damage to a unit. If it's yours, it gets +2 Power this round."
+      }
+    },
+    {
+      "id": "HW1-P01",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Pepperoncini Bat",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "keywords": [
+        "Heat"
+      ],
+      "flavor": "Hangs upside down. Bites right side up.",
+      "text": "Heat."
+    },
+    {
+      "id": "HW1-P02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Chili Chihuahua",
+      "cost": 1,
+      "power": 2,
+      "health": 1,
+      "abilities": [
+        {
+          "when": "hello",
+          "optional": true,
+          "target": {
+            "unit": "own",
+            "other": true
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "flavor": "Nine pounds. Ninety percent attitude.",
+      "text": "Hello: You may deal 1 damage to another unit you control."
+    },
+    {
+      "id": "HW1-P03",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Jalapeño Honey Badger",
+      "cost": 2,
+      "power": 2,
+      "health": 3,
+      "keywords": [
+        "Heat"
+      ],
+      "flavor": "It doesn't care. About anything.",
+      "text": "Heat."
+    },
+    {
+      "id": "HW1-P04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Serrano Wolf",
+      "cost": 3,
+      "power": 3,
+      "health": 3,
+      "keywords": [
+        "Heat"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "any"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "flavor": "Howls at the moon. The moon backs off.",
+      "text": "Heat. Hello: Deal 1 damage to a unit."
+    },
+    {
+      "id": "HW1-P05",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Chipotle Raccoon",
+      "cost": 3,
+      "power": 2,
+      "health": 4,
+      "keywords": [
+        "Guardian",
+        "Heat"
+      ],
+      "flavor": "Smells like a campfire. Guards like a vault.",
+      "text": "Guardian. Heat."
+    },
+    {
+      "id": "HW1-P06",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Habanero Bull",
+      "cost": 4,
+      "power": 4,
+      "health": 4,
+      "keywords": [
+        "Heat"
+      ],
+      "flavor": "Sees red. Is red.",
+      "text": "Heat."
+    },
+    {
+      "id": "HW1-P07",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Scotch Bonnet Rhino",
+      "cost": 5,
+      "power": 4,
+      "health": 4,
+      "keywords": [
+        "Fierce",
+        "Heat"
+      ],
+      "flavor": "Doesn't stop. Can't stop. Won't stop.",
+      "text": "Fierce. Heat."
+    },
+    {
+      "id": "HW1-P08",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Pepper",
+      "name": "Dragon's Breath Komodo",
+      "cost": 6,
+      "power": 5,
+      "health": 6,
+      "keywords": [
+        "Heat"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "allOther"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "flavor": "Not a real dragon. Nobody tells it that.",
+      "text": "Heat. Hello: Deal 1 damage to each other unit."
+    },
+    {
+      "id": "HW1-P09",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Pepper",
+      "name": "Hot Sauce",
+      "cost": 1,
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "damage": 1
+            },
+            {
+              "buff": {
+                "power": 3
+              }
+            }
+          ]
+        }
+      ],
+      "flavor": "One drop. Maybe two. Okay, the whole bottle.",
+      "text": "Pounce. Deal 1 damage to a unit you control. It gets +3 Power this round."
+    },
+    {
+      "id": "HW1-P10",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Pepper",
+      "name": "Showdown",
+      "cost": 2,
+      "abilities": [
+        {
+          "when": "play",
+          "targets": [
+            {
+              "unit": "own"
+            },
+            {
+              "unit": "enemy"
+            }
+          ],
+          "do": [
+            {
+              "fight": true
+            }
+          ]
+        }
+      ],
+      "text": "A unit you control and an enemy unit deal damage equal to their Power to each other.",
+      "flavor": "This yard ain't big enough for the both of us."
+    },
+    {
+      "id": "HW1-P11",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Pepper",
+      "name": "Ring of Fire",
+      "cost": 3,
+      "keywords": [
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "each": "all"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "flavor": "Everybody in the pit.",
+      "text": "Lucky. Deal 1 damage to each unit."
+    },
+    {
+      "id": "HW1-P12",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Pepper",
+      "name": "Spiked Collar",
+      "cost": 1,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1,
+              "keywords": [
+                "Heat"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "flavor": "Mostly for the look.",
+      "text": "Attached unit gets +1 Power and Heat."
+    },
+    {
+      "id": "HW1-P13",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Pepper",
+      "name": "Jolokia, Ghost Pepper Ninja",
+      "cost": 3,
+      "power": 3,
+      "health": 3,
+      "keywords": [
+        "Sneaky",
+        "Heat"
+      ],
+      "flavor": "You feel the burn before you see her.",
+      "text": "Sneaky. Heat."
+    },
+    {
+      "id": "HW1-P14",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Pepper",
+      "name": "Ancho, Brawl Boss",
+      "cost": 4,
+      "power": 3,
+      "health": 5,
+      "keywords": [
+        "Heat"
+      ],
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1
+            },
+            "to": {
+              "each": "own",
+              "other": true,
+              "filter": {
+                "keyword": "Heat"
+              }
+            }
+          }
+        }
+      ],
+      "flavor": "\"Get up. Walk it off. Hit harder.\"",
+      "text": "Heat. Your other units with Heat get +1 Power."
+    },
+    {
+      "id": "HW1-P15",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Pepper",
+      "name": "Naga, the Molten Tiger",
+      "cost": 6,
+      "power": 5,
+      "health": 6,
+      "keywords": [
+        "Fierce",
+        "Heat"
+      ],
+      "abilities": [
+        {
+          "when": "damagedAndSurvives",
+          "target": {
+            "each": "enemy"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "text": "Fierce. Heat. After Naga survives damage, deal 1 damage to each enemy unit.",
+      "flavor": "Scratch her and the whole yard erupts."
+    },
+    {
+      "id": "HW1-X01",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Garden",
+      "name": "Jack, the Pumpkin Knight",
+      "cost": 4,
+      "power": 3,
+      "health": 4,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "summon": "HW1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Goodbye: Summon a 2/2 Jack-o'-Lantern with Guardian.",
+      "flavor": "Knock him down and his lantern keeps the watch."
+    },
+    {
+      "id": "HW1-X02",
+      "rarity": "Legendary",
+      "type": "Cat",
+      "family": "Tropical",
+      "name": "Nova, the Starfruit Voyager",
+      "cost": 5,
+      "power": 4,
+      "health": 4,
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "sprout": 1
+            }
+          ]
+        },
+        {
+          "static": {
+            "grant": {
+              "keywords": [
+                "Sneaky",
+                "Fierce"
+              ]
+            },
+            "to": "self",
+            "while": "Lush"
+          }
+        }
+      ],
+      "text": "Hello: Sprout 1.\nWhile you're Lush, Nova has Sneaky and Fierce.",
+      "flavor": "Went up for a look around. Came back with a star."
+    },
+    {
+      "id": "HW1-X03",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Pepper",
+      "name": "Reaper, the Carolina Sphynx",
+      "flavor": "The hottest cat alive. Ask anyone who's met her.",
+      "kitten": {
+        "name": "Reaper, Smolder Kit",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "any",
+              "filter": {
+                "damaged": true
+              }
+            },
+            "do": [
+              {
+                "damage": 1
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "unitHasCounter": {
+              "whose": "own",
+              "name": "heat",
+              "atLeast": 3
+            }
+          }
+        },
+        "text": "Exhaust: Deal 1 damage to a damaged unit.\nGrow Up: A unit you control has +3 Heat."
+      },
+      "bigCat": {
+        "name": "Reaper, Final Heat",
+        "power": 3,
+        "abilities": [
+          {
+            "static": {
+              "grant": {
+                "keywords": [
+                  "Fierce"
+                ]
+              },
+              "to": {
+                "each": "own",
+                "filter": {
+                  "counter": {
+                    "name": "heat",
+                    "atLeast": 3
+                  }
+                }
+              }
+            }
+          },
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "any",
+              "filter": {
+                "damaged": true
+              }
+            },
+            "do": [
+              {
+                "damage": 2
+              }
+            ]
+          }
+        ],
+        "text": "Your units at +3 Heat have Fierce.\nExhaust: Deal 2 damage to a damaged unit."
+      }
+    }
+  ],
+  "decks": {
+    "five-alarm": {
+      "name": "Five Alarm",
+      "hero": "HW1-H01",
+      "cards": {
+        "HW1-P01": 3,
+        "HW1-P02": 3,
+        "HW1-P03": 3,
+        "HW1-P04": 3,
+        "HW1-P05": 3,
+        "HW1-P06": 3,
+        "HW1-P07": 3,
+        "HW1-P08": 2,
+        "HW1-P09": 3,
+        "HW1-P10": 2,
+        "HW1-P11": 2,
+        "HW1-P12": 3,
+        "HW1-P13": 1,
+        "HW1-P14": 1,
+        "HW1-P15": 1,
+        "SB1-G01": 3,
+        "SB1-G02": 3,
+        "SB1-G03": 3,
+        "SB1-G04": 3,
+        "SB1-G05": 2
+      }
+    }
+  }
+}

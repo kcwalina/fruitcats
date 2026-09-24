@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heat Wave · Fruitcats</title>
+<meta name="description" content="The heat is on. Fiery chili-pepper cats that fight harder every time they get hurt are coming to Fruitcats.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#15100E">
+<link rel="icon" type="image/png" sizes="32x32" href="../../icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../icons/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fruitcats.viamochi.com/announcements/heat-wave/">
+<meta property="og:title" content="Heat Wave · coming soon to Fruitcats">
+<meta property="og:description" content="Fiery chili-pepper cats that fight harder every time they get hurt. Meet the Five Alarm deck and three collector cards.">
+<meta property="og:image" content="https://fruitcats.viamochi.com/announcements/heat-wave/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>html,body{margin:0} img{max-width:100%} [hidden]{display:none!important} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600&display=swap">
+<style>
+  /* One committed look: the set's own volcanic world, in both viewer themes. */
+  :root {
+    color-scheme: dark;
+    --ground: #15100E;
+    --basalt: #211815;
+    --basalt-2: #2C201C;
+    --line: #3D2C26;
+    --ash: #F3E6DC;
+    --smoke: #B7A195;
+    --ember: #FF7A2E;
+    --chili: #E0321F;
+    --gold: #FFC65C;
+    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+    --label: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--ground); }
+  body {
+    background:
+      radial-gradient(1200px 520px at 78% -120px, rgba(224, 50, 31, 0.28), transparent 70%),
+      radial-gradient(900px 420px at 0% 0%, rgba(255, 122, 46, 0.12), transparent 70%),
+      var(--ground);
+    color: var(--ash);
+    font: 400 16px/1.55 var(--body);
+    padding-inline: 20px;
+    padding-block: 0 64px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  a { color: var(--ember); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 6px; }
+
+  .label {
+    font: 600 13px/1.2 var(--label);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ember);
+  }
+  h1, h2, h3 { font-family: var(--display); font-weight: 900; text-wrap: balance; margin: 0; }
+  h2 { font-size: clamp(30px, 5vw, 44px); line-height: 1; letter-spacing: 0.01em; text-transform: uppercase; }
+  h3 { font-size: 24px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.02em; }
+  p { margin: 0; max-width: 64ch; }
+  .muted { color: var(--smoke); }
+
+  /* Hero */
+  header.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: center;
+    padding-block: 56px 40px;
+  }
+  .hero h1 {
+    font-size: clamp(64px, 13vw, 148px);
+    line-height: 0.84;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, var(--gold) 0%, var(--ember) 45%, var(--chili) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    margin-block: 14px 20px;
+  }
+  .hero .lede { font-size: 19px; color: var(--ash); }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+  .fact {
+    font: 600 14px/1 var(--label); letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--basalt); color: var(--ash);
+  }
+  .fact b { color: var(--gold); font-weight: 600; }
+  .hero-cards { position: relative; width: 100%; aspect-ratio: 10 / 8.4; }
+  .hero-cards button { position: absolute; width: 50%; }
+  .hero-cards button:nth-child(1) { left: 1%; top: 44px; transform: rotate(-5deg); }
+  .hero-cards button:nth-child(2) { right: 1%; top: 0; transform: rotate(4deg); z-index: 1; }
+
+  /* Card buttons (tap to enlarge) */
+  .card { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; width: 100%; }
+  .card img {
+    display: block; width: 100%; height: auto; aspect-ratio: 750 / 1050; border-radius: 5.5%;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .card:hover img { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6), 0 0 28px rgba(255, 122, 46, 0.35); }
+
+  section { padding-block: 56px 0; }
+  .sec-head { display: grid; gap: 10px; margin-bottom: 26px; }
+
+  /* Heat callout */
+  .heat {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 22px; align-items: center;
+    padding: 22px 24px; border-radius: 18px;
+    background: linear-gradient(100deg, rgba(224, 50, 31, 0.22), rgba(255, 122, 46, 0.06) 60%, transparent), var(--basalt);
+    border: 1px solid var(--line);
+  }
+  .flame {
+    width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 60%, var(--gold), var(--ember) 45%, var(--chili) 80%);
+    font: 900 26px/1 var(--display); color: var(--ground);
+  }
+  .heat q { quotes: none; font-size: 20px; font-weight: 500; }
+  .heat p + p { margin-top: 6px; }
+
+  /* Hero Cat */
+  .hero-cat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
+  .notes { display: grid; gap: 14px; padding-top: 4px; }
+  .notes p { color: var(--smoke); }
+  .notes strong { color: var(--ash); font-weight: 600; }
+
+  /* Deck grid */
+  .group + .group { margin-top: 36px; }
+  .group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px 22px; }
+  figure { margin: 0; display: grid; gap: 9px; }
+  figcaption { display: flex; justify-content: space-between; gap: 8px; font: 500 15px/1.25 var(--label); letter-spacing: 0.02em; }
+  figcaption .qty { color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .deck-foot { margin-top: 26px; color: var(--smoke); font: 500 15px/1.5 var(--label); letter-spacing: 0.03em; }
+  .deck-foot b { color: var(--ash); font-weight: 600; }
+
+  /* Price ladder */
+  .ladder { display: grid; grid-template-columns: 0.8fr 0.9fr 2fr; grid-template-rows: auto auto auto auto; column-gap: 28px; }
+  .ladder .step { grid-row: span 4; grid-template-rows: subgrid; row-gap: 12px; }
+  .ladder .step > :first-child { align-self: end; }
+  .step { display: grid; gap: 14px; }
+  .price { font: 900 clamp(40px, 6vw, 60px)/0.9 var(--display); color: var(--ash); font-variant-numeric: tabular-nums; }
+  .step.top .price { font-size: clamp(56px, 9vw, 92px); background: linear-gradient(180deg, var(--gold), var(--ember) 55%, var(--chili)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .step p { color: var(--smoke); font-size: 15px; }
+  .step p b { color: var(--ash); font-weight: 600; }
+  .step .who { font: 600 14px/1.3 var(--label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); }
+  .step.top .card img { box-shadow: 0 26px 60px rgba(0, 0, 0, 0.65), 0 0 60px rgba(255, 122, 46, 0.35); }
+  .step .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tag { display: inline-block; margin-right: 8px; vertical-align: 1px; font: 600 12px/1 var(--label); letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 9px; border-radius: 6px; background: var(--chili); color: #fff; justify-self: start; }
+  .tag.tag-foil { background: linear-gradient(100deg, #9FE3FF, #E6C9FF 50%, #FFE3A8); color: #221A30 !important; }
+  .tag.tag-gold { background: linear-gradient(180deg, #FFE58A, #D69A1C); color: #3A2600 !important; }
+
+  /* Compare */
+  .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; }
+  .compare .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .compare h3 { margin-bottom: 14px; }
+
+  /* Open items */
+  .open { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .open div { padding: 18px 20px; border-radius: 14px; background: var(--basalt); border: 1px solid var(--line); }
+  .open h3 { font-size: 19px; margin-bottom: 6px; }
+  .open p { color: var(--smoke); font-size: 15px; }
+
+  footer { margin-top: 56px; color: var(--smoke); font: 500 14px/1.5 var(--label); letter-spacing: 0.04em; }
+
+  /* Lightbox */
+  dialog { border: 0; padding: 0; background: transparent; max-width: min(92vw, 560px); width: 100%; }
+  dialog::backdrop { background: rgba(10, 6, 5, 0.86); backdrop-filter: blur(4px); }
+  dialog img { width: 100%; height: auto; border-radius: 5.5%; display: block; }
+  dialog form { display: flex; justify-content: center; margin-top: 12px; }
+  dialog button { font: 600 15px/1 var(--label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash); background: var(--basalt-2); border: 1px solid var(--line); border-radius: 999px; padding: 11px 20px; cursor: pointer; }
+
+  @media (max-width: 860px) {
+    header.hero { grid-template-columns: 1fr; padding-block: 36px 16px; }
+    .hero-cards { max-width: 460px; }
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .hero-cat { grid-template-columns: 1fr 1fr; }
+    .hero-cat .notes { grid-column: 1 / -1; }
+    .ladder { grid-template-columns: 1fr; grid-template-rows: none; row-gap: 40px; }
+    .ladder .step { grid-row: auto; grid-template-rows: none; }
+    .ladder .step:not(.top) .card { max-width: 300px; }
+    .compare { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    body { padding-inline: 16px; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
+    .heat { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .card img { transition: none; } .card:hover img { transform: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <div class="label">Fruitcats · Coming soon</div>
+      <h1>Heat<br>Wave</h1>
+      <p class="lede">The heat is on. A new family of fiery chili-pepper cats is coming to Fruitcats, and they fight harder every time they get hurt.</p>
+      <div class="facts">
+        <span class="fact">New family <b>Pepper</b></span>
+        <span class="fact">New keyword <b>Heat</b></span>
+        <span class="fact">Five Alarm deck <b>$9.99</b></span>
+        <span class="fact">Collector cards <b>from $1.49</b></span>
+      </div>
+    </div>
+    <div class="hero-cards" aria-label="Blaze and Reaper, the two Pepper Hero Cats">
+      <button class="card" data-full="../../cards/hw1/HW1-H01-bigcat.webp"><img src="../../cards/hw1/HW1-H01-bigcat.webp" alt="Blaze, Wildfire (Big Cat)"></button>
+      <button class="card" data-full="../../cards/hw1/prismatic/HW1-X03-bigcat.webp"><img src="../../cards/hw1/prismatic/HW1-X03-bigcat.webp" alt="Reaper, Final Heat (Big Cat)"></button>
+    </div>
+  </header>
+
+  <div class="heat">
+    <div class="flame" aria-hidden="true">+3</div>
+    <div>
+      <div class="label">Meet Heat</div>
+      <p><q><b>Heat:</b> whenever this unit is dealt damage and survives, it gets +1 Power, up to +3.</q></p>
+      <p class="muted">Most cats try not to get hurt. Pepper cats go looking for it. Every hit they shrug off makes them stronger, and they'll even singe their own side to turn up the heat.</p>
+    </div>
+  </div>
+
+  <section id="hero">
+    <div class="sec-head">
+      <div class="label">The leader of the pack</div>
+      <h2>Blaze, the Chili Bombay</h2>
+    </div>
+    <div class="hero-cat">
+      <button class="card" data-full="../../cards/hw1/HW1-H01-kitten.webp"><img src="../../cards/hw1/HW1-H01-kitten.webp" alt="Blaze, Ember Kit (Kitten)"></button>
+      <button class="card" data-full="../../cards/hw1/HW1-H01-bigcat.webp"><img src="../../cards/hw1/HW1-H01-bigcat.webp" alt="Blaze, Wildfire (Big Cat)"></button>
+      <div class="notes">
+        <p><strong>Ember Kit.</strong> Young Blaze singes one of your own cats to fire it up. On a Heat cat, that spark stays for good.</p>
+        <p><strong>Growing up.</strong> Once five Cats and Critters have fallen in battle, on either side, Blaze becomes Wildfire.</p>
+        <p><strong>Wildfire.</strong> 3 Power, and a choice every round: scorch an enemy, or ignite one of your own for +2 Power.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="deck">
+    <div class="sec-head">
+      <div class="label">The deck · $9.99</div>
+      <h2>Five Alarm</h2>
+      <p class="muted">Fifty cards of pure heat, ready to play. Every card is named for a real pepper, and the hotter the pepper, the bigger the card: from a mild Pepperoncini all the way up to Dragon's Breath. Tap any card to see it up close.</p>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><h3>The Cats</h3><span class="label">Rare · one of each</span></div>
+      <div class="grid" id="g-cats"></div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h3>The Crew</h3><span class="label">Critters</span></div>
+      <div class="grid" id="g-critters"></div>
+    </div>
+    <div class="group">
+      <div class="group-head"><h3>Tricks &amp; Gear</h3><span class="label">Tricks and a Toy</span></div>
+      <div class="grid" id="g-tricks"></div>
+    </div>
+    <p class="deck-foot">Rounded out with <b>14 Garden favourites</b>: Pocket Hamster, Garden Snail, Mail Duck, Catnip and Nap Time. <b>50 cards in all.</b></p>
+  </section>
+
+  <section id="singles">
+    <div class="sec-head">
+      <div class="label">Sold separately</div>
+      <h2>Collector cards</h2>
+      <p class="muted">Three standout cards, each in a special print that shimmers in the game: holographic Foil, polished Gold, and the rarest of all, the Signature print.</p>
+    </div>
+    <div class="ladder">
+      <div class="step">
+        <button class="card" data-full="../../cards/hw1/foil/HW1-X01.webp"><img src="../../cards/hw1/foil/HW1-X01.webp" alt="Jack, the Pumpkin Knight"></button>
+        <div class="price">$1.49</div>
+        <div class="who"><span class="tag tag-foil">Foil print</span> Rare Cat · fits any deck</div>
+        <p><b>Jack, the Pumpkin Knight.</b> Knock him down and his lantern keeps the watch. A Garden card, so he fights for every deck.</p>
+      </div>
+      <div class="step">
+        <button class="card" data-full="../../cards/hw1/gold/HW1-X02.webp"><img src="../../cards/hw1/gold/HW1-X02.webp" alt="Nova, the Starfruit Voyager"></button>
+        <div class="price">$4.99</div>
+        <div class="who"><span class="tag tag-gold">Gold print</span> Legendary Cat · Tropical</div>
+        <p><b>Nova, the Starfruit Voyager.</b> Fuels a Tropical deck early, then rockets past every Guardian and hits twice as hard.</p>
+      </div>
+      <div class="step top">
+        <div class="pair">
+          <button class="card" data-full="../../cards/hw1/prismatic/HW1-X03-kitten.webp"><img src="../../cards/hw1/prismatic/HW1-X03-kitten.webp" alt="Reaper, Smolder Kit (Kitten)"></button>
+          <button class="card" data-full="../../cards/hw1/prismatic/HW1-X03-bigcat.webp"><img src="../../cards/hw1/prismatic/HW1-X03-bigcat.webp" alt="Reaper, Final Heat (Big Cat)"></button>
+        </div>
+        <div class="price">$49.99</div>
+        <div class="who"><span class="tag">Signature print</span> Legendary Hero Cat · Pepper</div>
+        <p><b>Reaper, the Carolina Sphynx.</b> Named for the hottest pepper on Earth, Reaper leads Five Alarm her own way. She finishes off anything already hurt, and once your cats are fully heated, every hit they land takes two Lives.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="soon">
+    <div class="sec-head">
+      <div class="label">Coming soon</div>
+      <h2>Tell us what you think</h2>
+      <p class="muted">Heat Wave is in playtesting right now, and what you tell us shapes the final cards. Until it lands, Fruitcats is free to play in your browser at <a href="https://fruitcats.viamochi.com">fruitcats.viamochi.com</a>.</p>
+    </div>
+    <div class="open">
+      <div><h3>Which card do you want?</h3><p>If you could own one card on this page, which would it be, and why?</p></div>
+      <div><h3>Would you play Five Alarm?</h3><p>Does it sound like your kind of deck? What would you pair it with?</p></div>
+      <div><h3>Anything feel off?</h3><p>A card that looks wrong, seems too strong or too weak, or is hard to understand.</p></div>
+    </div>
+  </section>
+
+  <footer>Fruitcats · Heat Wave · Coming soon · Art and card details may change before release.</footer>
+</div>
+
+<dialog id="zoom" aria-label="Card, full size">
+  <img id="zoom-img" alt="">
+  <form method="dialog"><button id="zoom-close" type="submit">Close</button></form>
+</dialog>
+
+<script>
+  const deck = {
+    'g-cats': [
+      ['HW1-P13', 'Jolokia, Ghost Pepper Ninja', '×1'],
+      ['HW1-P14', 'Ancho, Brawl Boss', '×1'],
+      ['HW1-P15', 'Naga, the Molten Tiger', '×1'],
+    ],
+    'g-critters': [
+      ['HW1-P01', 'Pepperoncini Bat', '×3'],
+      ['HW1-P02', 'Chili Chihuahua', '×3'],
+      ['HW1-P03', 'Jalapeño Honey Badger', '×3'],
+      ['HW1-P04', 'Serrano Wolf', '×3'],
+      ['HW1-P05', 'Chipotle Raccoon', '×3'],
+      ['HW1-P06', 'Habanero Bull', '×3'],
+      ['HW1-P07', 'Scotch Bonnet Rhino', '×3'],
+      ['HW1-P08', "Dragon's Breath Komodo", '×2'],
+    ],
+    'g-tricks': [
+      ['HW1-P09', 'Hot Sauce', '×3'],
+      ['HW1-P10', 'Showdown', '×2'],
+      ['HW1-P11', 'Ring of Fire', '×2'],
+      ['HW1-P12', 'Spiked Collar', '×3'],
+    ],
+  };
+  for (const [grid, cards] of Object.entries(deck)) {
+    document.getElementById(grid).innerHTML = cards.map(([id, name, qty]) =>
+      `<figure><button class="card" data-full="../../cards/hw1/${id}.webp"><img src="../../cards/hw1/${id}.webp"alt="${name}"></button>` +
+      `<figcaption><span>${name}</span><span class="qty">${qty}</span></figcaption></figure>`).join('');
+  }
+  const zoom = document.getElementById('zoom'), zoomImg = document.getElementById('zoom-img');
+  document.addEventListener('click', (e) => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    zoomImg.src = card.dataset.full;
+    zoomImg.alt = card.querySelector('img').alt;
+    zoom.showModal();
+  });
+  zoom.addEventListener('click', (e) => { if (e.target === zoom) zoom.close(); });
+</script>
+
+</body>
+</html>

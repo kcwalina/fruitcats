@@ -411,6 +411,13 @@ def main() -> int:
 
     data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
     cards = {c["id"]: c for c in data["cards"]}
+    # A set can add families (with their colours) and family mechanics, and names itself in the footer.
+    global FOOTER, KEYWORDS
+    for family, info in data.get("families", {}).items():
+        FAMILIES[family] = tuple(info["colors"])
+    if data.get("mechanics"):
+        KEYWORDS = KEYWORDS[:-3] + "|" + "|".join(data["mechanics"]) + r")\b"
+    FOOTER = f'Fruitcats · {data["name"]} · © 2026 Krzysztof Cwalina'
     art_dir = ROOT / "art" / args.set
     out_dir = ROOT / "art" / "cards" / args.set
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -475,6 +482,8 @@ def main() -> int:
     for deck in data["decks"].values():
         entries = []
         for cid, qty in deck["cards"].items():
+            if cid not in cards:                   # a card from another set (the Starter Box's Garden)
+                continue
             if cards[cid]["family"] == "Garden":
                 garden.add(cid)
             else:

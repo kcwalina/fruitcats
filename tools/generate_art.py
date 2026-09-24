@@ -97,7 +97,9 @@ def main() -> int:
     args = parser.parse_args()
 
     cards = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))["cards"]
-    prompts = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))
+    # A set may bring its own art direction (art/prompts.<set>.json); the Starter Box uses art/prompts.json.
+    set_prompts = ROOT / "art" / f"prompts.{args.set}.json"
+    prompts = json.loads((set_prompts if set_prompts.exists() else ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))
     if args.ui:
         return draw_ui(prompts["ui"], args)
     out_dir = ROOT / "art" / args.set
@@ -121,7 +123,7 @@ def main() -> int:
         # Hero Cats are drawn as plush mascots (their own style); the rest of the set is painted.
         hero = card["type"] == "Hero Cat"
         style = prompts["heroStyle"] if hero else prompts["style"]
-        background = (prompts["heroFamilies"] if hero else prompts["families"])[card["family"]]
+        background = prompts.get("backgrounds", {}).get(key) or (prompts["heroFamilies"] if hero else prompts["families"])[card["family"]]
         prompt = f'{style}\n\nSubject: {subject}\n\n{background}'
 
         try:

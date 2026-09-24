@@ -8,7 +8,7 @@ The Starter Box contains three ready-to-play 50-card decks built to teach the ga
 - **Orchard Guard** — led by *Pippin, the Apple Ragdoll* (Orchard). Patient and sturdy: wall up with Guardians, heal, punish attackers, win the long game.
 - **Mango Tango** — led by *Mochi, the Mango Bengal* (Tropical), the mightiest Hero Cat. Laid-back, then enormous: gather extra Treats early, then drop giants nobody else can afford.
 
-All three decks share the same 14 neutral **Garden** cards, so new players learn one common core.
+All three decks share the same neutral **Garden** core (14 cards; Orchard Guard trades its Garden Snails for more Orchard muscle), so new players learn one common core.
 
 **Totals:** 3 Hero Cats · 9 Cats · 36 family cards · 5 Garden cards = **53 unique cards**, 150 deck cards. Two more Hero Cats are previewed at the end.
 
@@ -99,9 +99,9 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 |---|---|---|---|---|---|
 | SB1-C01 | Zest Mouse | 1 | 1/1 | Zoomies. **Zest:** gets +1 Power this round. | 3 |
 | SB1-C02 | Tangerine Chick | 1 | 1/1 | **Goodbye:** Deal 1 damage to a unit. | 3 |
-| SB1-C03 | Lime Gecko | 2 | 2/1 | Sneaky. **Zest:** gets +1 Power this round. | 3 |
+| SB1-C03 | Lime Gecko | 1 | 2/1 | Sneaky. **Zest:** gets +1 Power this round. | 3 |
 | SB1-C04 | Orange Corgi | 2 | 3/2 | **Zest:** enters ready. | 3 |
-| SB1-C05 | Grapefruit Ferret | 3 | 3/2 | Zoomies. **Zest:** gets +1 Power this round. | 3 |
+| SB1-C05 | Grapefruit Ferret | 3 | 3/2 | Zoomies. Sneaky. **Zest:** gets +1 Power this round. | 3 |
 | SB1-C06 | Citron Fox | 3 | 3/3 | **Hello:** Deal 1 damage to a unit. **Zest:** deal 2 instead. | 3 |
 | SB1-C07 | Pomelo Ram | 4 | 4/3 | Fierce. | 3 |
 | SB1-C08 | Yuzu Hawk | 5 | 4/4 | Zoomies. Sneaky. | 2 |
@@ -124,7 +124,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 **Deck total:** Cats 3 · Critters 23 · Tricks 7 · Toys 3 · Garden 14 = **50**
 
-**Cost curve (incl. Garden):** 1-cost: 17 · 2-cost: 14 · 3-cost: 12 · 4-cost: 4 · 5-cost: 3 · Lucky cards: 8
+**Cost curve (incl. Garden):** 1-cost: 20 · 2-cost: 11 · 3-cost: 12 · 4-cost: 4 · 5-cost: 3 · Lucky cards: 8
 
 **How to play it:** Every planted card is worth 1 Treat, whatever it costs — and you rarely need more than 5 Treats, so plant cards you won't want soon (often your 5-costs early on) and stop planting once you have enough. Spend the first rounds filling your Yard, then go for the Hero Cat every round. Save *Sour Spray* and *Catnip* for the Pounce window when a Guardian blocks your way. Once the opponent drops to 5 Lives, Sunny Grows Up and her Sneaky boost lets your biggest unit slip past the wall for the final hits. Remember every hit hands your opponent a card — don't dawdle.
 
@@ -149,9 +149,9 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | SB1-O03 | Cherry Robin | 2 | 2/2 | Ripen. **Hello:** If you control a Guardian, draw a card. | 3 |
 | SB1-O04 | Plum Mole | 3 | 2/3 | Ripen. | 3 |
 | SB1-O05 | Apricot Owl | 3 | 2/3 | **Hello:** Exhaust an enemy unit. | 3 |
-| SB1-O06 | Apple Badger | 4 | 4/4 | Guardian. | 3 |
-| SB1-O07 | Quince Tortoise | 4 | 2/5 | Guardian. Tough 1. | 2 |
-| SB1-O08 | Fig Bear | 6 | 5/6 | Guardian. Fierce. | 2 |
+| SB1-O06 | Apple Badger | 4 | 4/3 | Guardian. | 3 |
+| SB1-O07 | Quince Tortoise | 4 | 2/5 | Guardian. Tough 1. | 3 |
+| SB1-O08 | Fig Bear | 6 | 5/6 | Guardian. Fierce. | 3 |
 
 ### Tricks
 
@@ -167,11 +167,11 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 |---|---|---|---|---|
 | SB1-O12 | Apple Crate | 2 | Attached unit gets +3 Health and Guardian. | 2 |
 
-### Garden cards — 14 (see below)
+### Garden cards — 12 (see below: no Garden Snail, a third Nap Time)
 
-**Deck total:** Cats 3 · Critters 22 · Tricks 9 · Toys 2 · Garden 14 = **50**
+**Deck total:** Cats 3 · Critters 24 · Tricks 9 · Toys 2 · Garden 12 = **50**
 
-**Cost curve (incl. Garden):** 1-cost: 14 · 2-cost: 14 · 3-cost: 13 · 4-cost: 6 · 6-cost: 3 · Lucky cards: 8
+**Cost curve (incl. Garden):** 1-cost: 15 · 2-cost: 11 · 3-cost: 13 · 4-cost: 7 · 6-cost: 4 · Lucky cards: 6
 
 **How to play it:** Keep planting — your best cards cost 4 to 6. Always try to have a Guardian in the Yard so attackers must trade into your sturdy units instead of hitting Pippin. Enemy units exhaust when they attack, which is exactly when *Falling Apple* can squash them. Keep 1 Treat ready for *Hiss!* whenever you can; even when you don't have it, your opponent has to respect it. Losing Lives isn't a disaster: it feeds your hand and Grows Pippin Up. Turn the corner around round 5–6 and start hitting back with Fig Bear and Honeycrisp.
 
@@ -222,15 +222,15 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 ---
 
-## Garden Cards (neutral, 14 in each deck)
+## Garden Cards (neutral, 14 in Zest Rush and Mango Tango, 12 in Orchard Guard)
 
 | ID | Name | Type | Cost | P/H | Text | Qty per deck |
 |---|---|---|---|---|---|---|
 | SB1-G01 | Pocket Hamster | Critter | 1 | 2/1 | — | 3 |
-| SB1-G02 | Garden Snail | Critter | 2 | 1/4 | Guardian. Lucky. | 3 |
+| SB1-G02 | Garden Snail | Critter | 2 | 1/4 | Guardian. Lucky. | 3 (none in Orchard Guard) |
 | SB1-G03 | Mail Duck | Critter | 3 | 2/3 | **Hello:** Draw a card. | 3 |
 | SB1-G04 | Catnip | Trick | 1 | — | Pounce. A unit you control gets +2 Power this round. | 3 |
-| SB1-G05 | Nap Time | Trick | 1 | — | Lucky. Exhaust an enemy unit. | 2 |
+| SB1-G05 | Nap Time | Trick | 1 | — | Lucky. Exhaust an enemy unit. | 2 (3 in Orchard Guard) |
 
 ---
 

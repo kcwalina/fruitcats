@@ -26,9 +26,9 @@
     },
     {"id": "SB1-C01", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Zest Mouse", "cost": 1, "power": 1, "health": 1, "text": "Zoomies. Zest: gets +1 Power this round.", "flavor": "Blink and it's already nibbled your rind."},
     {"id": "SB1-C02", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Tangerine Chick", "cost": 1, "power": 1, "health": 1, "text": "Goodbye: Deal 1 damage to a unit.", "flavor": "Small, fluffy, and extremely petty."},
-    {"id": "SB1-C03", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Lime Gecko", "cost": 2, "power": 2, "health": 1, "text": "Sneaky. Zest: gets +1 Power this round.", "flavor": "The wall was green. So was the gecko."},
+    {"id": "SB1-C03", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Lime Gecko", "cost": 1, "power": 2, "health": 1, "text": "Sneaky. Zest: gets +1 Power this round.", "flavor": "The wall was green. So was the gecko."},
     {"id": "SB1-C04", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Orange Corgi", "cost": 2, "power": 3, "health": 2, "text": "Zest: enters ready.", "flavor": "Short legs. Big plans."},
-    {"id": "SB1-C05", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Grapefruit Ferret", "cost": 3, "power": 3, "health": 2, "text": "Zoomies. Zest: gets +1 Power this round.", "flavor": "Sproing! Sproing! Sproing!"},
+    {"id": "SB1-C05", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Grapefruit Ferret", "cost": 3, "power": 3, "health": 2, "text": "Zoomies. Sneaky. Zest: gets +1 Power this round.", "flavor": "Sproing! Sproing! Sproing!"},
     {"id": "SB1-C06", "rarity": "Common", "type": "Critter", "family": "Citrus", "name": "Citron Fox", "cost": 3, "power": 3, "health": 3, "text": "Hello: Deal 1 damage to a unit. Zest: deal 2 instead.", "flavor": "Always arrives with a little zing."},
     {"id": "SB1-C07", "rarity": "Uncommon", "type": "Critter", "family": "Citrus", "name": "Pomelo Ram", "cost": 4, "power": 4, "health": 3, "text": "Fierce.", "flavor": "Headbutts first. Asks questions never."},
     {"id": "SB1-C08", "rarity": "Uncommon", "type": "Critter", "family": "Citrus", "name": "Yuzu Hawk", "cost": 5, "power": 4, "health": 4, "text": "Zoomies. Sneaky.", "flavor": "It saw your Guardian. It didn't care."},
@@ -44,7 +44,7 @@
     {"id": "SB1-O03", "rarity": "Common", "type": "Critter", "family": "Orchard", "name": "Cherry Robin", "cost": 2, "power": 2, "health": 2, "text": "Ripen. Hello: If you control a Guardian, draw a card.", "flavor": "Sings loudest when friends are near."},
     {"id": "SB1-O04", "rarity": "Common", "type": "Critter", "family": "Orchard", "name": "Plum Mole", "cost": 3, "power": 2, "health": 3, "text": "Ripen.", "flavor": "Digs a new tunnel under every tree. Just in case."},
     {"id": "SB1-O05", "rarity": "Common", "type": "Critter", "family": "Orchard", "name": "Apricot Owl", "cost": 3, "power": 2, "health": 3, "text": "Hello: Exhaust an enemy unit.", "flavor": "One stern look and everyone sits down."},
-    {"id": "SB1-O06", "rarity": "Uncommon", "type": "Critter", "family": "Orchard", "name": "Apple Badger", "cost": 4, "power": 4, "health": 4, "text": "Guardian.", "flavor": "This is its tree. You may admire it from over there."},
+    {"id": "SB1-O06", "rarity": "Uncommon", "type": "Critter", "family": "Orchard", "name": "Apple Badger", "cost": 4, "power": 4, "health": 3, "text": "Guardian.", "flavor": "This is its tree. You may admire it from over there."},
     {"id": "SB1-O07", "rarity": "Uncommon", "type": "Critter", "family": "Orchard", "name": "Quince Tortoise", "cost": 4, "power": 2, "health": 5, "text": "Guardian. Tough 1.", "flavor": "Has been guarding this spot for ninety years."},
     {"id": "SB1-O08", "rarity": "Uncommon", "type": "Critter", "family": "Orchard", "name": "Fig Bear", "cost": 6, "power": 5, "health": 6, "text": "Guardian. Fierce.", "flavor": "Big hugs. Bigger swipes."},
     {"id": "SB1-O09", "rarity": "Uncommon", "type": "Trick", "family": "Orchard", "name": "Hiss!", "cost": 1, "text": "Pounce. Cancel an attack. (The attacker stays exhausted.)", "flavor": "The universal language of \"no.\""},
@@ -126,8 +126,8 @@
         "SB1-O04": 3,
         "SB1-O05": 3,
         "SB1-O06": 3,
-        "SB1-O07": 2,
-        "SB1-O08": 2,
+        "SB1-O07": 3,
+        "SB1-O08": 3,
         "SB1-O09": 3,
         "SB1-O10": 3,
         "SB1-O11": 3,
@@ -136,10 +136,9 @@
         "SB1-O14": 1,
         "SB1-O15": 1,
         "SB1-G01": 3,
-        "SB1-G02": 3,
         "SB1-G03": 3,
         "SB1-G04": 3,
-        "SB1-G05": 2
+        "SB1-G05": 3
       }
     },
     "mango-tango": {

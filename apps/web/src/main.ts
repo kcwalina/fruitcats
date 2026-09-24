@@ -321,6 +321,13 @@ function onClick(key: string) {
   const [kind, raw] = key.split(':');
   const value = Number(raw);
 
+  // Tapping a Hero Cat's ability line opens the card with its keywords explained: a playtester
+  // couldn't find out what the opponent's ability did (the portrait's long press wasn't discovered).
+  if (kind === 'heroinfo' && game) {
+    const p = value as PlayerId;
+    openZoom((p === HUMAN ? yourCardUrl : cardUrl)(heroKey(game, p)), heroKey(game, p));
+    return;
+  }
   if (kind === 'home') {
     homeNote = '';
     if (raw === 'solo') screen = 'solo';
@@ -782,7 +789,8 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
           <span title="Compost (discard pile)">🍂 ${pl.compost.length}</span>
         </div>
       </div>
-      <div class="ability" title="${esc(side.text)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+      <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
+           data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
     </div>
     ${p === HUMAN && (canAbility || canAttack) ? `<div class="hero-actions">
       ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}

@@ -553,7 +553,7 @@ function renderHome(): string {
     <footer class="home-footer">
       <button class="footer-button" data-click="home:tutorial" title="A guided first game with tips">
         <img class="btn-ico" src="${BASE}ui/icon-tutorial.webp" alt="">Tutorial</button>
-      <a class="footer-button" href="${BASE}rules.html"><img class="btn-ico" src="${BASE}ui/icon-rules.webp" alt="">Rules</a>
+      <a class="footer-button" href="${BASE}docs.html"><img class="btn-ico" src="${BASE}ui/icon-rules.webp" alt="">Documentation</a>
     </footer>
   </div>`;
 }

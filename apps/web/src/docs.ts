@@ -1,8 +1,8 @@
-// Behaviour shared by the rulebook and card-list pages.
+// Behaviour shared by the documentation's pages (the rulebook, the card list, the guides).
 //
 //  • the contents sit open beside the text on wide screens and fold away above them on phones;
 //  • every heading has a "#" link: clicking it copies the link to that section, for sending to
-//    playtesters ("read §8 Attacking": https://fruitcats.viamochi.com/rules.html#8-attacking);
+//    anyone ("read §8 Attacking": https://fruitcats.viamochi.com/rules.html#8-attacking);
 //  • "Back to top" shows up only after you've scrolled down.
 
 const toc = document.getElementById('toc') as HTMLDetailsElement | null;

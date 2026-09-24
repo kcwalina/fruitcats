@@ -6,7 +6,18 @@ import { defineConfig, type Plugin } from 'vite';
 
 // Card art lives in the repo's art/ folder and is served as-is: /sb1/<id>.webp (illustrations)
 // and /cards/sb1/<id>.webp (finished cards).
-// Pages: the game (index.html), plus the rulebook (rules.html) and card list (cards.html) rendered from docs/.
+// Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
+// rulebook (rules.html), the card list (cards.html), and guides to the Collection and to wallpapers.
+
+/** The documentation's pages, in tab order. `tab` is the section's name in the header; the home has none. */
+const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
+  { md: 'documentation.md', html: 'docs.html' },
+  { md: 'rulebook.md', html: 'rules.html', tab: 'Rulebook' },
+  { md: 'starter-box-cards.md', html: 'cards.html', tab: 'Card list' },
+  { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
+  { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
+];
+
 export default defineConfig({
   base: './',
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
@@ -15,8 +26,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('index.html', import.meta.url)),
-        rules: fileURLToPath(new URL('rules.html', import.meta.url)),
-        cards: fileURLToPath(new URL('cards.html', import.meta.url)),
+        ...Object.fromEntries(DOC_PAGES.map((d) => [d.html.replace('.html', ''), fileURLToPath(new URL(d.html, import.meta.url))])),
       },
     },
   },
@@ -26,12 +36,28 @@ export default defineConfig({
 
 // ── Docs pages ─────────────────────────────────────────────────────────────────────────────────
 //
-// Each page is rendered from its Markdown in docs/ at build time (and on each request in dev), so the
-// docs stay the one source of truth and the published pages are plain HTML. Links between docs point
+// The documentation: each page is rendered from its Markdown in docs/ at build time (and on each request
+// in dev), so the docs stay the one source of truth and the published pages are plain HTML. Every page
+// gets the same header: "Documentation" (its home) and a tab for each section. Links between docs point
 // at their pages; a link to a doc without a page fails the build rather than falling back to GitHub.
+// Every heading is an anchor, so any section can be sent as a link (wallpapers.html#with-a-shortcut).
 
 const DOCS = fileURLToPath(new URL('../../docs/', import.meta.url));
-const PAGES: Record<string, string> = { 'rulebook.md': 'rules.html', 'starter-box-cards.md': 'cards.html' };
+const PAGES: Record<string, string> = Object.fromEntries(DOC_PAGES.map((d) => [d.md, d.html]));
+
+/** The header every docs page shares: Home, "Documentation", and the sections as tabs. */
+function docHeader(current: string): string {
+  const tabs = DOC_PAGES.filter((d) => d.tab).map((d) =>
+    `<a class="doc-tab" href="./${d.html}"${d.html === current ? ' aria-current="page"' : ''}>${d.tab}</a>`).join('');
+  return `<div class="doc-head">
+      <header class="topbar">
+        <a class="home-button" href="./" title="Play Fruitcats" aria-label="Play Fruitcats"><img src="./ui/icon-home.webp" alt="" width="30" height="30" /></a>
+        <a class="page-title" href="./docs.html"${current === 'docs.html' ? ' aria-current="page"' : ''}>Documentation</a>
+        <span class="topbar-balance" aria-hidden="true"></span>
+      </header>
+      <nav class="doc-tabs" aria-label="Sections">${tabs}</nav>
+    </div>`;
+}
 
 const slug = (text: string) =>
   text.toLowerCase().replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -93,10 +119,10 @@ function docsPages(): Plugin {
     transformIndexHtml: {
       order: 'pre',
       handler(html, ctx) {
-        const doc = Object.keys(PAGES).find((md) => ctx.filename.endsWith(PAGES[md]));
-        if (!doc) return html;
-        const { toc, body } = renderDoc(doc);
-        return html.replace('<!-- doc:toc -->', toc).replace('<!-- doc:body -->', body);
+        const page = DOC_PAGES.find((d) => ctx.filename.replace(/\\/g, '/').endsWith(`/${d.html}`));
+        if (!page) return html;
+        const { toc, body } = renderDoc(page.md);
+        return html.replace('<!-- doc:header -->', docHeader(page.html)).replace('<!-- doc:toc -->', toc).replace('<!-- doc:body -->', body);
       },
     },
   };

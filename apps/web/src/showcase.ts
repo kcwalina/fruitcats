@@ -12,7 +12,7 @@ import './showcase.css';
 import { CARDS, RARITIES } from '@fruitcats/engine';
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
-import { artUrl, backButton, cardUrl, esc, settingsButton } from './ui';
+import { BASE, artUrl, backButton, cardUrl, esc, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
@@ -197,7 +197,7 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
         const name = `fruitcats-${faceName(face).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${wallpaper.device}`;
         void saveWallpaper(wallpaper.blob, name).then((how) => {
           if (!wallpaper) return;
-          wallpaper.note = how === 'shared' ? 'Now open Photos, tap the picture, then Share → Use as Wallpaper.'
+          wallpaper.note = how === 'shared' ? 'Now set it as your wallpaper: see how below.'
             : how === 'downloaded' ? 'Saved to your downloads.' : '';
           host.render();
         });
@@ -367,9 +367,11 @@ function renderWallpaperSheet(): string {
   const picture = wallpaper.url
     ? `<img class="wall-preview ${device}" src="${wallpaper.url}" alt="Wallpaper preview">`
     : `<div class="wall-preview ${device} drawing" style="aspect-ratio:${PREVIEW_SHAPE[device]}">${wallpaper.note ? '' : 'Drawing…'}</div>`;
+  // The documentation's section on setting it, for this device (docs/wallpapers.md).
+  const section = device === 'computer' ? 'computer' : /Android/.test(navigator.userAgent) ? 'android' : 'iphone-and-ipad';
   const how = device === 'computer'
     ? 'Save the picture, then set it as your desktop background.'
-    : 'Save the picture, then in Photos choose Share → Use as Wallpaper.';
+    : 'Save the picture, then set it as your wallpaper.';
   return `
     <div class="overlay wall-overlay">
       <div class="settings wall-sheet" role="dialog" aria-label="Wallpaper">
@@ -379,6 +381,7 @@ function renderWallpaperSheet(): string {
         </div>
         ${picture}
         <p class="wall-how">${esc(wallpaper.note || how)}</p>
+        <a class="wall-guide" href="${BASE}wallpapers.html#${section}" target="_blank" rel="noopener">How do I set it as my wallpaper?</a>
         <div class="delete-buttons">
           <button data-click="col:unwall">Close</button>
           <button class="primary" data-click="col:save" ${wallpaper.blob ? '' : 'disabled'}>Save picture</button>

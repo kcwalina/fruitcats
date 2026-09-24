@@ -36,6 +36,14 @@ MODELS = {
 API_VERSION = "2025-04-01-preview"
 
 
+def set_file(code: str) -> Path:
+    """A set's data by its code ('sb1', 'hw1'): content/<year>/<month>/<set>/set.json."""
+    for path in sorted((ROOT / "content").glob("*/*/*/set.json")):
+        if json.loads(path.read_text(encoding="utf-8")).get("set", "").lower() == code.lower():
+            return path
+    sys.exit(f"No set '{code}' in content/*/*/*/set.json")
+
+
 def access_token() -> str:
     az = shutil.which("az") or shutil.which("az.cmd")
     if not az:
@@ -96,7 +104,7 @@ def main() -> int:
     parser.add_argument("--ui", action="store_true", help="draw the interface art (backgrounds, card back) into art/ui/")
     args = parser.parse_args()
 
-    data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
+    data = json.loads(set_file(args.set).read_text(encoding="utf-8"))
     cards = data["cards"] + data.get("tokens", [])    # tokens (units that cards summon) need art too
     # A set may bring its own art direction (art/prompts.<set>.json); the Starter Box uses art/prompts.json.
     set_prompts = ROOT / "art" / f"prompts.{args.set}.json"

@@ -5,5 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
+    // The engine has no cards of its own: load the content sets before any test.
+    setupFiles: ['./packages/engine/test/setup.ts'],
   },
 });

@@ -2,7 +2,11 @@
 // Plays every pair of decks against each other (both seats) and prints the matchup matrix,
 // starting-player advantage, game length and Grow Up rates.
 
-import { DECKS, apply, chooseAction, createGame, type PlayerId } from '../src/index';
+import { DECKS, apply, chooseAction, createGame, registerSet, type PlayerId } from '../src/index';
+import { loadContent } from '../../../content';
+
+// Every set, prototypes included: the simulator is where a new deck is first measured.
+loadContent(registerSet, { prototypes: true });
 
 const games = Number(process.argv[2] ?? 100);
 const skill = Number(process.argv[3] ?? 1);

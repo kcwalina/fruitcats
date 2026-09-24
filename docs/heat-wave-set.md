@@ -1,7 +1,8 @@
 # Heat Wave (HW1): the Five Alarm deck and three single cards
 
 A design draft: none of it is playtested yet. It is the first set written in the data format from
-[card-data-architecture.md](card-data-architecture.md), and all of its data is in [`cards/hw1.json`](../cards/hw1.json).
+[card-data-architecture.md](card-data-architecture.md), and all of its data is in `content/2026/09/heat-wave/set.json`. It's a **prototype** set: bots, playtests and
+simulations can play it; the public game doesn't show it.
 
 Last updated 2026-09-24.
 
@@ -204,6 +205,11 @@ This needs one change to the pipeline: `generate_art.py` reads the style from th
 string. That is part of step 6 of the architecture plan.
 
 ## Balance risks to test first
+
+**First bot numbers (2026-09-24, 100 games per pairing, `npm run sim`):** Five Alarm wins **19%** overall:
+16% against Zest Rush, 24% against Orchard Guard and 17% against Mango Tango. Blaze Grows Up in 80% of its
+games. Before tuning the cards, check how much of that is the bot. It judges one move ahead, so it may not
+yet pick fights and heat its own units the way the deck wants.
 
 1. **Pepper vs Zest Rush.** Citrus deals damage 1 point at a time, which is exactly what Heat feeds on, and
    Ring of Fire wipes Citrus's 1-Health openers. Zest Rush is already the weakest deck (44%). If Five Alarm beats

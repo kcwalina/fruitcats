@@ -144,7 +144,7 @@ Last updated 2026-09-23.
 
 ## Cards and catalog
 
-- **Rarity** (common, uncommon, rare, legendary) and a **starter** flag go in `cards/sb1.json`.
+- **Rarity** (common, uncommon, rare, legendary) and a **starter** flag go in each set's data (`content/<year>/<month>/<set>/set.json`).
   - Preview cards (Jam, Duchess) become the first sellable cards, or go into a new set, `sb2.json`.
 - **A card registry that loads several sets.** Today `CARDS` and `DECKS` come from a single file.
 - **Ownership:** `owned(id)` becomes the starter cards plus the account's entitlements. Guests own only the starter cards.

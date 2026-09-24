@@ -1,6 +1,6 @@
 """Compose finished card images: generated art + frame + exact card text and stats.
 
-    python tools/compose_cards.py            # every card in cards/sb1.json
+    python tools/compose_cards.py            # every card of the Starter Box (content/2026/09/starter-box/set.json)
     python tools/compose_cards.py --only SB1-C04
     python tools/compose_cards.py --finish gold     # only one finish (standard, foil, gold, prismatic)
 
@@ -440,7 +440,8 @@ def main() -> int:
     parser.add_argument("--finish", choices=("standard", *FINISHES, SIGNATURE), help="only this finish (default: all)")
     args = parser.parse_args()
 
-    data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
+    from generate_art import set_file
+    data = json.loads(set_file(args.set).read_text(encoding="utf-8"))
     cards = {c["id"]: c for c in data["cards"]}
     # A set can add families (with their colours) and family mechanics, and names itself in the footer.
     global FOOTER, KEYWORDS

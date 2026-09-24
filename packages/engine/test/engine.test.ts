@@ -34,7 +34,8 @@ describe('card data', () => {
   });
 
   it('gives every card a rarity, and every Hero Cat is Legendary', () => {
-    for (const card of Object.values(CARDS)) {
+    // Tokens are summoned, never collected, and the engine's own blank card is in no set: no rarity.
+    for (const card of Object.values(CARDS).filter((c) => !c.token && c.set)) {
       expect(RARITIES).toContain(card.rarity);
       if (card.type === 'Hero Cat') expect(card.rarity).toBe('Legendary');
     }
@@ -164,7 +165,7 @@ describe('Mango Tango (Tropical)', () => {
   it('Lychee Sloth can only attack while Lush (7+ Treats)', () => {
     const s = toFirstAction(['mango-tango', 'zest-rush']);
     const me = s.players[0];
-    me.yard.push({ uid: 9002, id: 'SB1-T05', damage: 0, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false });
+    me.yard.push({ uid: 9002, id: 'SB1-T05', damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
     const slothAttacks = () => legalActions(s).filter((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === 9002);
     expect(slothAttacks()).toHaveLength(0);
     while (me.pantry.length < 6) me.pantry.push({ card: me.deck.shift()!, exhausted: true });
@@ -187,7 +188,7 @@ function playFromHand(s: GameState, id: string, target?: { kind: 'unit'; uid: nu
 
 function enemyUnit(s: GameState, id: string, health = 10) {
   const uid = 8000 + s.players[1].yard.length;
-  s.players[1].yard.push({ uid, id, damage: 10 - health, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false, ripe: 0 });
+  s.players[1].yard.push({ uid, id, damage: 10 - health, exhausted: false, buffPower: 0, usedOnce: false });
   return { kind: 'unit' as const, uid };
 }
 
@@ -225,14 +226,14 @@ describe('signature mechanics', () => {
 
   it('Ripen: Plum Mole grows +1/+1 each round, up to +2/+2', () => {
     const s = toFirstAction(['orchard-guard', 'zest-rush'], 6);
-    s.players[0].yard.push({ uid: 7777, id: 'SB1-O04', damage: 0, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false, ripe: 0 });
+    s.players[0].yard.push({ uid: 7777, id: 'SB1-O04', damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
     const mole = () => s.players[0].yard.find((u) => u.uid === 7777)!;
     const ripeAtRound: number[] = [];
     // Both players only pass, so nothing can touch the Mole; other prompts (plant, discard) are the AI's.
     while (s.round < 5) {
       const r = s.round;
       apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
-      if (s.round !== r) ripeAtRound.push(mole().ripe ?? 0);
+      if (s.round !== r) ripeAtRound.push(mole().counters?.ripe ?? 0);
     }
     expect(ripeAtRound).toEqual([1, 2, 2, 2]);
     expect(unitPower(mole())).toBe(2 + 2);
@@ -250,7 +251,7 @@ describe('signature mechanics', () => {
 
 describe('events', () => {
   const mine = (s: GameState, uid: number) =>
-    s.players[0].yard.push({ uid, id: 'SB1-O04', damage: 0, exhausted: false, buffPower: 0, buffSneaky: false, buffGuardian: false, usedOnce: false, ripe: 0 });
+    s.players[0].yard.push({ uid, id: 'SB1-O04', damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
   const attack = (s: GameState, uid: number, target: { kind: 'unit'; uid: number } | { kind: 'hero'; player: 1 }) => {
     const from = s.events.length;
     apply(s, { t: 'attack', attacker: { kind: 'unit', uid }, target });

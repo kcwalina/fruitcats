@@ -35,7 +35,7 @@ Every card carries a rarity mark on its type line, next to its number. Rarity is
 | gold star | Rare | the named Cats (9) |
 | crown | Legendary | the Hero Cats (5) |
 
-A card's rarity is set in `cards/sb1.json`. How a particular copy is printed is its *finish*, which belongs to the copy, not the card. Every card exists in each finish, and the finish is the card's chrome: its frame, the art's border, the edges of its name banner and type line, and its cost ring.
+A card's rarity is set in its set's data (`content/2026/09/starter-box/set.json`). How a particular copy is printed is its *finish*, which belongs to the copy, not the card. Every card exists in each finish, and the finish is the card's chrome: its frame, the art's border, the edges of its name banner and type line, and its cost ring.
 
 | Finish | Chrome | In the app |
 |---|---|---|

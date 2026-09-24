@@ -7,7 +7,7 @@
 // Every step has a one-line caption. Tapping anywhere skips to the end. Settings > Animations turns
 // it all off (the game then jumps straight to the result, as it used to).
 
-import { cardName, type GameEvent, type PlayerId, type Target } from '@fruitcats/engine';
+import { cardName, type GameEvent, type PlayerId, type Target, MECHANICS } from '@fruitcats/engine';
 import { play as playSound } from './sound';
 import { esc } from './ui';
 
@@ -421,12 +421,16 @@ async function beat(e: GameEvent) {
       await wait(250);
       return;
     }
-    case 'ripen': {
+    case 'counter': {
+      // A mechanic's counter grew (Ripen's ripeness, Heat): the mechanic says what a point is worth.
       const t = unitEl(e.uid);
-      say(`${b(unitName(e.uid))} ripens: +1 Power, +1 Health.`);
-      float(t, '🍎 +1/+1', 'buff');
-      bump(t, '.pow', 1, 'buffed');
-      bump(t, '.hp', 1);
+      const counter = Object.values(MECHANICS).find((m) => m.counter?.name === e.name)?.counter;
+      const power = counter?.power ?? 0, health = counter?.health ?? 0;
+      const line = counter?.log?.replace(/\{name\}/g, unitName(e.uid)).replace(/\{n\}/g, String(e.value));
+      say(line ? line.replace(unitName(e.uid), b(unitName(e.uid))) : `${b(unitName(e.uid))}: ${e.name} +${e.value}.`);
+      float(t, [power && `+${power}`, health && `+${health}`].filter(Boolean).join('/') || `+1 ${e.name}`, 'buff');
+      if (power) bump(t, '.pow', power, 'buffed');
+      if (health) bump(t, '.hp', health);
       await wait(450);
       return;
     }

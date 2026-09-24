@@ -2,12 +2,10 @@
   "set": "HW1",
   "name": "Heat Wave",
   "version": "0.1.0",
-  "vocabulary": 1,
-  "status": "draft",
+  "status": "prototype",
   "requires": [
     "SB1"
   ],
-  "note": "Design draft in the proposed data format (docs/card-data-architecture.md). Nothing loads this file yet.",
   "families": {
     "Pepper": {
       "colors": [
@@ -27,7 +25,8 @@
       "reminder": "Whenever this unit is dealt damage and survives, it gets +1 Power, up to +3.",
       "counter": {
         "name": "heat",
-        "power": 1
+        "power": 1,
+        "log": "{name} heats up (+{n} Power)."
       },
       "abilities": [
         {
@@ -43,7 +42,8 @@
             }
           ]
         }
-      ]
+      ],
+      "icon": "🔥"
     }
   },
   "tokens": [
@@ -331,14 +331,12 @@
       "abilities": [
         {
           "when": "play",
-          "targets": [
-            {
-              "unit": "own"
-            },
-            {
-              "unit": "enemy"
-            }
-          ],
+          "target": {
+            "unit": "own"
+          },
+          "target2": {
+            "unit": "enemy"
+          },
           "do": [
             {
               "fight": true

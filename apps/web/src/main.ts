@@ -1,3 +1,4 @@
+import './content';     // first: the card sets, before anything reads the catalog
 import './style.css';
 import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
@@ -13,7 +14,7 @@ import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, DECK_RULES, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isLush, isSneaky, keywords,
+  CARDS, DECKS, DECK_RULES, MECHANICS, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isLush, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
   type Action, type GameState, type PlayerId, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -854,13 +855,25 @@ function attackMark(key: string): string {
   return targetKey(w.attacker) === key ? 'fx-attacker' : targetKey(w.target) === key ? 'fx-targeted' : '';
 }
 
+/** A unit's mechanic chips: each keyword that keeps a counter, with its icon and how far it has grown (🍎+1). */
+function counterChips(u: Unit, keywordList: string[]): string[] {
+  return keywordList.flatMap((name) => {
+    const counter = MECHANICS[name]?.counter;
+    if (!counter) return [];
+    const n = u.counters?.[counter.name] ?? 0;
+    const icon = MECHANICS[name].icon ?? '';
+    return [n ? `${icon}+${n}` : `${icon} ${name}`.trim()];
+  });
+}
+
 function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: Set<number>): string {
-  const k = keywords(u.id);
-  const power = unitPower(u);
-  const health = unitHealth(u) - u.damage;
+  const state = game ?? undefined;
+  const k = unitKeywords(u, state);
+  const power = unitPower(u, state);
+  const health = unitHealth(u, state) - u.damage;
   const chips = [
-    isGuardian(u) && 'Guardian', isSneaky(u) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
-    k.ripen && (u.ripe ? `🍎+${u.ripe}` : '🍎 Ripen'),
+    isGuardian(u, state) && 'Guardian', isSneaky(u, state) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
+    ...counterChips(u, k.all),
     u.toy && `🧸 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;

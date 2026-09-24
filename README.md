@@ -26,7 +26,9 @@ npm run dev        # http://localhost:5173 — play against the AI
 
 ## Card data and art
 
-- `cards/sb1.json` — the Starter Box card data (the single source of truth for card text and stats)
+- `content/<year>/<month>/<set>/set.json` — each card set's data (the single source of truth for card text, stats and
+  abilities), with `plugin.ts` for a set that needs code; the engine has no cards of its own. See
+  [docs/card-data-architecture.md](docs/card-data-architecture.md)
 - `art/prompts.json` — art direction: shared style plus one subject per illustration
 - `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into `art/sb1/`
 - `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into `art/cards/sb1/`

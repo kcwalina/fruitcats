@@ -4,8 +4,8 @@
 // hand is replaced by blank cards, and every player's deck and Lives are reshuffled together, so the
 // lookahead can't peek at draws, Lucky cards or the opponent's Pounces.
 
-import { CARDS, behaviour, isUnitCard, keywords } from './cards';
-import { apply, isGuardian, legalActions, other, playOptions, unitHealth, unitPower } from './engine';
+import { BLANK_CARD, CARDS, PLUGINS, behaviour, isUnitCard, keywords, usesCondition } from './cards';
+import { apply, isGuardian, legalActions, other, playOptions, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, CardInst, GameState, PlayerId } from './types';
 
 export interface AiOptions {
@@ -14,7 +14,7 @@ export interface AiOptions {
   random?: () => number;
 }
 
-const BLANK = 'SB1-C04'; // a vanilla card: no Pounce, no Lucky
+const BLANK = BLANK_CARD; // a vanilla card: no Pounce, no Lucky
 // `exhausted` discounts a unit's power while it can't attack or block this round — it is what makes
 // "exhaust an enemy unit" effects worth anything to the AI.
 // `readyTreat` values Treats still unspent this round — what makes "ready a Treat" effects (Mochi) worth
@@ -31,12 +31,13 @@ export function evaluate(s: GameState, p: PlayerId): number {
     let v = pl.lives.length * W.life + pl.hand.length * W.hand + Math.min(pl.pantry.length, 8) * W.treat;
     if (s.prompt?.kind === 'action' || s.prompt?.kind === 'pounce') v += pl.pantry.filter((t) => !t.exhausted).length * W.readyTreat;
     for (const u of pl.yard) {
-      const k = keywords(u.id);
+      // What lasts: printed keywords, Toys and auras (a buff for this round is valued through Power only).
+      const k = unitKeywords(u, s, false);
       // "This round" Power buffs are worth little once the unit can't attack any more this round.
       const tempPower = u.buffPower * (u.exhausted ? 0.9 : 0.4);
-      v += (unitPower(u) - tempPower) * W.power + (unitHealth(u) - u.damage) * W.health;
-      if (u.exhausted && s.prompt?.kind !== 'plant') v -= unitPower(u) * W.exhausted;
-      if (isGuardian(u)) v += W.guardian;
+      v += (unitPower(u, s) - tempPower) * W.power + (unitHealth(u, s) - u.damage) * W.health;
+      if (u.exhausted && s.prompt?.kind !== 'plant') v -= unitPower(u, s) * W.exhausted;
+      if (isGuardian(u, s)) v += W.guardian;
       if (k.fierce) v += W.fierce;
       if (k.sneaky) v += W.sneaky;
     }
@@ -137,28 +138,23 @@ function best(s: GameState, p: PlayerId, actions: Action[], rnd: () => number): 
   return top;
 }
 
-const hasZestText = (id: string) => /\bZest:/.test(CARDS[id]?.text ?? '');
-
 /**
- * Citrus's Zest pays off only if another card was played earlier in the round, which a one-step
- * lookahead can't see. So if the best move is a Zest card played as the first card of the round,
- * play a worthwhile cheaper card first when there are enough Treats left for the Zest card after it.
+ * Let the sets' plugins improve on the bot's favourite move: a hook sees the decision and the bot's own
+ * judge, and knows what its set's cards need (the Starter Box plays a cheap card before a Zest card).
  */
-function zestFirst(s: GameState, p: PlayerId, chosen: Action, candidates: Action[], passScore: number, rnd: () => number): Action | null {
-  if (chosen.t !== 'play' || (s.players[p].playedThisRound ?? 0) > 0) return null;
-  const me = s.players[p];
-  const zestCard = me.hand.find((c) => c.uid === chosen.uid);
-  if (!zestCard || !hasZestText(zestCard.id)) return null;
-  const ready = me.pantry.filter((t) => !t.exhausted).length;
-  const budget = ready - (CARDS[zestCard.id].cost ?? 0);
-  const openers = candidates.filter((a) => {
-    if (a.t !== 'play' || a.uid === chosen.uid) return false;
-    const card = me.hand.find((c) => c.uid === a.uid);
-    return !!card && !hasZestText(card.id) && (CARDS[card.id].cost ?? 0) <= budget;
-  });
-  if (!openers.length) return null;
-  const opener = best(s, p, openers, rnd);
-  return opener.score > passScore + 0.3 ? opener.action : null;
+function refine(s: GameState, p: PlayerId, chosen: Action, candidates: Action[], passScore: number, rnd: () => number): Action | null {
+  for (const plugin of PLUGINS) {
+    const hook = plugin.ai?.refineAction;
+    if (!hook) continue;
+    const better = hook({
+      s, p, chosen, candidates, passScore,
+      best: (actions) => best(s, p, actions, rnd),
+      usesCondition,
+      cardCost: (id) => CARDS[id]?.cost ?? 0,
+    });
+    if (better) return better;
+  }
+  return null;
 }
 
 /**
@@ -229,7 +225,7 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const passScore = simulate(determinize(s, p, rnd), p, pass);
   if (candidates.length) {
     const top = best(s, p, candidates, rnd);
-    if (top.score > passScore + 0.3) return zestFirst(s, p, top.action, candidates, passScore, rnd) ?? top.action;
+    if (top.score > passScore + 0.3) return refine(s, p, top.action, candidates, passScore, rnd) ?? top.action;
   }
   // Taking the Yarn locks us into passing for the rest of the round, so only do it as the very last
   // move: the opponent has already passed, and passing now would end the round and hand them the

@@ -1,17 +1,18 @@
 export * from './types';
 export {
-  CARDS, DECKS, BEHAVIOURS, behaviour, keywords, parseKeywords, isUnitCard, deckCardIds, resolveDeck,
+  CARDS, DECKS, FAMILIES, MECHANICS, SETS, PLUGINS, BEHAVIOURS, BLANK_CARD, behaviour, keywords, keywordsFrom, parseKeywords,
+  isUnitCard, isNeutralFamily, deckCardIds, resolveDeck, registerSet, clearCatalog, abilitiesOf, usesCondition,
 } from './cards';
 export {
   DECK_RULES, NEUTRAL_FAMILY, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem,
 } from './decks';
-export type { DeckList, Keywords, Behaviour } from './cards';
+export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef } from './cards';
 export {
-  createGame, apply, legalActions, playOptions, targetsFor, findUnit, unitPower, unitHealth,
-  isGuardian, isSneaky, heroSide, readyTreats, other, cardName, random, IllegalAction, hasZest, isLush,
-  RULES_VERSION, LIVES, DECK_SIZE, YARD_LIMIT, HAND_LIMIT, RIPEN_MAX, LUSH_TREATS,
+  createGame, apply, legalActions, playOptions, playChoices, targetsFor, findUnit, unitPower, unitHealth, unitKeywords,
+  isGuardian, isSneaky, heroSide, readyTreats, other, cardName, random, IllegalAction, hasZest, isLush, evaluateCondition,
+  RULES_VERSION, LIVES, DECK_SIZE, YARD_LIMIT, HAND_LIMIT, RIPEN_MAX, LUSH_TREATS, TRIGGER_CHAIN_LIMIT,
 } from './engine';
-export type { GameOptions } from './engine';
+export type { GameOptions, PlayChoice } from './engine';
 export { viewFor, HIDDEN } from './view';
 export type { PlayerView } from './view';
 export { chooseAction, randomAction, evaluate, determinize, scoreActions } from './ai';

@@ -7,8 +7,8 @@
 //
 // Units are named by where they stand: Y1…Y6 in your Yard, T1…T6 in theirs; cards in hand are H1…Hn.
 
-import { CARDS, behaviour, keywords } from './cards';
-import { HAND_LIMIT, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitPower } from './engine';
+import { CARDS, MECHANICS, behaviour, keywords } from './cards';
+import { HAND_LIMIT, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 import { viewFor, type PlayerView } from './view';
 
@@ -77,16 +77,22 @@ function targetName(s: GameState, seat: PlayerId, t: Target | undefined): string
   return unitName(s, seat, t.uid);
 }
 
-function unitLine(u: Unit, label: string): string {
-  const k = keywords(u.id);
+/** A counter as a player knows it: by its mechanic's name (Ripen +1, Heat +2). */
+function counterTags(u: Unit): string[] {
+  return Object.entries(u.counters ?? {}).filter(([, n]) => n).map(([name, n]) =>
+    `${Object.entries(MECHANICS).find(([, m]) => m.counter?.name === name)?.[0] ?? name} +${n}`);
+}
+
+function unitLine(u: Unit, label: string, s?: GameState): string {
+  const k = unitKeywords(u, s);
   const tags = [
-    isGuardian(u) && 'Guardian', isSneaky(u) && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Zoomies', k.tough && `Tough ${k.tough}`,
-    u.ripe ? `ripened +${u.ripe}` : '', u.buffPower ? `+${u.buffPower} Power this round` : '',
+    isGuardian(u, s) && 'Guardian', isSneaky(u, s) && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Zoomies', k.tough && `Tough ${k.tough}`,
+    ...counterTags(u), u.buffPower ? `+${u.buffPower} Power this round` : '',
     u.toy && `with ${cardName(u.toy.id)}`, u.exhausted ? 'exhausted' : 'ready',
   ].filter(Boolean);
-  const hp = unitHealth(u) - u.damage;
+  const hp = unitHealth(u, s) - u.damage;
   const text = CARDS[u.id].text ? ` — ${CARDS[u.id].text}` : '';
-  return `  ${label} ${cardName(u.id)} ${unitPower(u)}/${hp}${u.damage ? ` (of ${unitHealth(u)})` : ''} [${tags.join(', ')}]${text}`;
+  return `  ${label} ${cardName(u.id)} ${unitPower(u, s)}/${hp}${u.damage ? ` (of ${unitHealth(u, s)})` : ''} [${tags.join(', ')}]${text}`;
 }
 
 function cardLine(id: string, label: string): string {
@@ -127,7 +133,7 @@ export function describe(s: GameState, seat: PlayerId, recent = 8): string {
     lines.push('', `${who} — ${pl.deckName}`);
     lines.push(`  Hero: ${heroLine(v, p)}`);
     lines.push(`  Lives ${pl.lives.length} · Treats ${pl.pantry.length} (${readyTreats(v, p)} ready) · Hand ${pl.hand.length} · Deck ${pl.deck.length} · Compost ${pl.compost.length}${(pl.playedThisRound ?? 0) ? ` · played ${pl.playedThisRound} card(s) this round` : ''}`);
-    if (pl.yard.length) { lines.push('  Yard:'); pl.yard.forEach((u, i) => lines.push(unitLine(u, `${p === seat ? 'Y' : 'T'}${i + 1}`))); }
+    if (pl.yard.length) { lines.push('  Yard:'); pl.yard.forEach((u, i) => lines.push(unitLine(u, `${p === seat ? 'Y' : 'T'}${i + 1}`, v))); }
     else lines.push('  Yard: empty');
   };
   side(other(seat), 'OPPONENT');
@@ -149,17 +155,17 @@ const stats = (u: Unit) => `${unitPower(u)}/${unitHealth(u) - u.damage}`;
 
 /** What an attack would do if nothing interferes (no Pounce): damage each way, and who is defeated. */
 function attackPreview(s: GameState, seat: PlayerId, a: Extract<Action, { t: 'attack' }>): string {
-  const fierce = a.attacker.kind === 'hero' ? /\bFierce\b/.test(heroSide(s, seat).text) : !!findUnit(s, a.attacker.uid) && keywords(findUnit(s, a.attacker.uid)!.unit.id).fierce;
-  const power = a.attacker.kind === 'hero' ? heroSide(s, seat).power ?? 0 : unitPower(findUnit(s, a.attacker.uid)!.unit);
+  const fierce = a.attacker.kind === 'hero' ? !!heroSide(s, seat).keywords?.includes('Fierce') : !!findUnit(s, a.attacker.uid) && unitKeywords(findUnit(s, a.attacker.uid)!.unit, s).fierce;
+  const power = a.attacker.kind === 'hero' ? heroSide(s, seat).power ?? 0 : unitPower(findUnit(s, a.attacker.uid)!.unit, s);
   if (a.target.kind === 'hero') return `they lose ${fierce ? 2 : 1} Life${fierce ? 's (Fierce)' : ''}; your attacker takes no damage`;
   const target = findUnit(s, a.target.uid)!.unit;
-  const dealt = Math.max(0, power - keywords(target.id).tough);
-  const left = unitHealth(target) - target.damage - dealt;
+  const dealt = Math.max(0, power - unitKeywords(target, s).tough);
+  const left = unitHealth(target, s) - target.damage - dealt;
   const theirs = left <= 0 ? `their ${cardName(target.id)} is defeated` : `their ${cardName(target.id)} survives with ${left} Health`;
   if (a.attacker.kind === 'hero') return `${theirs}; your Big Cat takes no damage`;
   const mine = findUnit(s, a.attacker.uid)!.unit;
-  const back = Math.max(0, unitPower(target) - keywords(mine.id).tough);
-  const myLeft = unitHealth(mine) - mine.damage - back;
+  const back = Math.max(0, unitPower(target, s) - unitKeywords(mine, s).tough);
+  const myLeft = unitHealth(mine, s) - mine.damage - back;
   return `${theirs}; your ${cardName(mine.id)} ${myLeft <= 0 ? 'is defeated' : `survives with ${myLeft} Health`}`;
 }
 
@@ -196,8 +202,8 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
   const card = (uid: number) => me.hand.find((c) => c.uid === uid);
   const on = (t?: Target) => (t ? ` → ${targetName(s, seat, t)}` : '');
   switch (a.t) {
-    case 'play': { const c = card(a.uid)!; return `Play ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}`; }
-    case 'pounce': { const c = card(a.uid)!; return `POUNCE with ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}`; }
+    case 'play': { const c = card(a.uid)!; return `Play ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}`; }
+    case 'pounce': { const c = card(a.uid)!; return `POUNCE with ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}`; }
     case 'attack': return `Attack with ${a.attacker.kind === 'hero' ? 'your Big Cat' : targetName(s, seat, a.attacker)}${on(a.target)}`;
     case 'ability': {
       const ability = me.hero.grown ? behaviour(me.hero.id).bigCat : behaviour(me.hero.id).kitten;

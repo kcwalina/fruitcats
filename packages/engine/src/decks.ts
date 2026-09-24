@@ -1,7 +1,7 @@
 // Deckbuilding rules (rulebook §11.1): which decks are legal, and why a card can't be added to one.
 // Messages are written for players, since the deck builder shows them as they are.
 
-import { CARDS, type DeckList } from './cards';
+import { CARDS, isNeutralFamily, type DeckList } from './cards';
 import { DECK_SIZE, cardName } from './engine';
 
 export const DECK_RULES = {
@@ -13,7 +13,10 @@ export const DECK_RULES = {
   maxCats: 6,
 } as const;
 
-/** Garden cards go in any deck. */
+/**
+ * Kept for older callers: the Starter Box's neutral family. Deck rules ask the catalog instead
+ * (isNeutralFamily), where a set marks its neutral families.
+ */
 export const NEUTRAL_FAMILY = 'Garden';
 
 /** How many copies of this card a deck may hold, by the rules (ownership aside). */
@@ -35,7 +38,7 @@ export function otherFamilies(deck: DeckList): string[] {
   const families = new Set<string>();
   for (const [id, qty] of Object.entries(deck.cards)) {
     const family = CARDS[id]?.family;
-    if (qty > 0 && family && family !== heroFamily && family !== NEUTRAL_FAMILY) families.add(family);
+    if (qty > 0 && family && family !== heroFamily && !isNeutralFamily(family)) families.add(family);
   }
   return [...families];
 }
@@ -86,7 +89,7 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   if (!card || !hero) return 'That card is not available.';
   const name = cardName(id);
   if (card.type === 'Hero Cat') return `${name} is a Hero Cat: Hero Cats lead a deck, they don't go in it.`;
-  if (card.family !== hero.family && card.family !== NEUTRAL_FAMILY) {
+  if (card.family !== hero.family && !isNeutralFamily(card.family)) {
     const other = otherFamilies(deck).find((f) => f !== card.family);
     if (other) return `Your deck already uses ${other}. Besides ${cardName(deck.hero)}'s ${hero.family}, a deck can have one other family.`;
   }

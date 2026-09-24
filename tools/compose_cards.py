@@ -105,30 +105,34 @@ def layout(text: str, width: int, f: dict) -> list[list[tuple[str, str]]]:
 
 
 ICONS = ROOT / "art" / "ui"
-# Where each badge's number sits and how much room it has, as fractions of the icon, measured by
-# tools/make_stat_icons.py (the centre of the largest circle that fits inside the icon's flat area).
-BADGES = {"icon-paw": (0.496, 0.672, 0.51), "icon-heart": (0.496, 0.539, 0.52)}
-BADGE_INK = "#50231c"      # the icons' own outline colour, so the number is outlined in the same pen
+HEART_COLOR = "#D9486C"
+CHIP_H, CHIP_ICON, CHIP_FONT, CHIP_PAD, CHIP_GAP = 62, 34, 40, 14, 8
+CHIP_TOP = 930                     # the chips sit in the card's bottom strip, clear of the text box and frame
 
 
-def badge(img: Image.Image, d: ImageDraw.ImageDraw, name: str, cx: int, bottom: int, size: int, value: int) -> None:
-    """A stat badge: the drawn icon standing on `bottom`, with its number on the icon's flat area.
+def stat_chip(img: Image.Image, kind: str, value: int, colors: tuple, right: bool) -> None:
+    """A stat as a small chip in the family's tint: an icon (paw = Power, heart = Health) and the number.
 
-    Lined up by the drawing inside the icon, not by the icon's canvas: the paw is taller than the
-    heart, so a shared centre used to push the paw over the card's frame.
+    Quiet on purpose, so it never competes with the art: the chip matches the type line above the rules
+    text. Power sits at the text box's left edge, Health at its right edge. The icons are Phosphor's
+    (art/ui/stat-paw.svg, stat-heart.svg), kept as white masks and tinted here.
     """
-    icon = Image.open(ICONS / f"{name}.webp").convert("RGBA")
-    icon = icon.resize((size, round(size * icon.height / icon.width)), Image.LANCZOS)
-    ink = icon.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
-    left, top = cx - (ink[0] + ink[2]) // 2, bottom - ink[3]
-    img.paste(icon, (left, top), icon)
-
-    fx, fy, room = BADGES[name]
-    # Two digits have to fit across the flat area; one digit is about half as wide.
-    width = size * room * 0.92
-    height = min(width / max(len(str(value)), 1.6) * 1.55, size * room * 0.92)
-    centered_ink(d, (left + size * fx, top + icon.height * fy), str(value),
-                 font("seguibl.ttf", round(height)), "white", stroke_width=3, stroke_fill=BADGE_INK)
+    main, dark, tint = colors
+    f = font("seguibl.ttf", CHIP_FONT)
+    num = str(value)
+    width = round(CHIP_PAD + CHIP_ICON + CHIP_GAP + ImageDraw.Draw(img).textlength(num, font=f) + CHIP_PAD + 2)
+    x0 = TEXT_BOX[2] - width if right else TEXT_BOX[0]
+    k = 4                                                   # drawn 4x and scaled down, for smooth edges
+    chip = Image.new("RGBA", (width * k, CHIP_H * k), (0, 0, 0, 0))
+    ImageDraw.Draw(chip).rounded_rectangle((0, 0, width * k - 1, CHIP_H * k - 1), radius=CHIP_H * k // 2,
+                                           fill=tint, outline=main, width=2 * k)
+    img.alpha_composite(chip.resize((width, CHIP_H), Image.LANCZOS), (x0, CHIP_TOP))
+    mask = Image.open(ICONS / f"stat-{kind}.png").getchannel("A").resize((CHIP_ICON, CHIP_ICON), Image.LANCZOS)
+    icon = Image.new("RGBA", (CHIP_ICON, CHIP_ICON), HEART_COLOR if kind == "heart" else dark)
+    icon.putalpha(mask)
+    img.alpha_composite(icon, (x0 + CHIP_PAD, CHIP_TOP + (CHIP_H - CHIP_ICON) // 2))
+    ImageDraw.Draw(img).text((x0 + CHIP_PAD + CHIP_ICON + CHIP_GAP, CHIP_TOP + CHIP_H / 2 + 1), num,
+                             font=f, fill=dark, anchor="lm")
 
 
 def star(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str) -> None:
@@ -395,9 +399,9 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
 
     # Stats
     if power is not None:
-        badge(img, d, "icon-paw", 96, 1022, 138, power)      # 1022: clear of the card's frame at 1027
+        stat_chip(img, "paw", power, (main, dark, tint), right=False)
     if health is not None:
-        badge(img, d, "icon-heart", 654, 1022, 138, health)
+        stat_chip(img, "heart", health, (main, dark, tint), right=True)
     centered(d, (W / 2, 1000), FOOTER, font("segoeui.ttf", 17), MUTED)
     return img
 

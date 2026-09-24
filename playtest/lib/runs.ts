@@ -27,6 +27,28 @@ export interface RunSummary {
   problems: Problem[];
   /** Kind-specific numbers (matchups, card outliers, LLM findings); the dashboard reads these too. */
   details: Record<string, unknown>;
+  /** The dashboard request that started this run (`--request <id>`), if one did. */
+  request?: string;
+}
+
+/** How far a run has got, written to progress.json while it runs; PC2024's paw lists it and the dashboard
+ * shows it as a progress bar. */
+export interface RunProgress { id: string; kind: RunKind; startedAt: string; phase: string; done: number; total: number; updatedAt: string; request?: string }
+
+const requestArg = (): string | undefined => {
+  const i = process.argv.indexOf('--request');
+  const v = i >= 0 ? process.argv[i + 1] : undefined;
+  return v && /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : undefined;
+};
+
+const lastWrite = new Map<string, number>();
+/** Records progress, at most every 5 seconds per run (always when a phase completes). */
+export function reportProgress(run: { id: string; startedAt: Date; dir: string }, kind: RunKind, phase: string, done: number, total: number): void {
+  const now = Date.now();
+  if (done < total && now - (lastWrite.get(run.id) ?? 0) < 5000) return;
+  lastWrite.set(run.id, now);
+  const p: RunProgress = { id: run.id, kind, startedAt: run.startedAt.toISOString(), phase, done, total, updatedAt: new Date(now).toISOString(), request: requestArg() };
+  try { writeFileSync(join(run.dir, 'progress.json'), JSON.stringify(p)); } catch { /* progress is a courtesy */ }
 }
 
 export const cardsHash = (): string => seedFrom(JSON.stringify([CARDS, DECKS])).toString(16).padStart(8, '0');
@@ -70,6 +92,7 @@ export function finishRun(
     result: verdictOf(problems),
     problems,
     details,
+    request: requestArg(),
   };
   writeFileSync(join(run.dir, 'summary.json'), JSON.stringify(summary, null, 2));
   writeFileSync(join(run.dir, 'report.md'), markdown);

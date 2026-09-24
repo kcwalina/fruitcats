@@ -11,7 +11,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { arg, flag, numArg } from '../lib/args';
 import { DECKS } from '../lib/engine';
-import { finishRun, newRun, pct, reportsRoot, type Problem, type RunSummary } from '../lib/runs';
+import { finishRun, newRun, pct, reportProgress, reportsRoot, type Problem, type RunSummary } from '../lib/runs';
 import { runBalance } from '../balance/gauntlet';
 import { runLlmPlaytest } from '../llm/command';
 import { runDeckHunt } from '../llm/hunt';
@@ -41,6 +41,7 @@ export async function nightlyCommand(): Promise<number> {
   const md: string[] = ['# Nightly playtest', ''];
 
   log('Bot gauntlet…');
+  reportProgress(run, 'nightly', 'bot gauntlet', 0, 3);
   const balance = await runBalance({ quick: false, scale: numArg('scale') ?? cfg.balanceScale, quiet: true });
   parts.balance = balance.id;
   problems.push(...balance.problems);
@@ -65,6 +66,7 @@ export async function nightlyCommand(): Promise<number> {
       problems.push({ level: 'warn', text: `The LLM provider ${provider.name} was not reachable, so no LLM playtests ran: ${(e as Error).message}` });
     }
     if (reachable) {
+      reportProgress(run, 'nightly', 'deck hunt', 1, 3);
       log(`Deck hunt with ${provider.name} ${provider.model}…`);
       try {
         const hunt = await runDeckHunt(provider, cfg.deckIdeas, 1);
@@ -76,6 +78,7 @@ export async function nightlyCommand(): Promise<number> {
       }
       const left = hours - (Date.now() - started) / 3600_000;
       if (left > 0.1) {
+        reportProgress(run, 'nightly', 'LLM games', 2, 3);
         log(`LLM games for ${left.toFixed(1)} hours…`);
         const llm = await runLlmPlaytest({
           provider, personas: cfg.personas.map((k) => PERSONAS[k]).filter(Boolean), games: 100_000,

@@ -316,7 +316,12 @@ sealed partial class PlaytesterServer : UdsPaw
         foreach (DirectoryInfo dir in new DirectoryInfo(_config.ReportsDir).GetDirectories().OrderByDescending(d => d.Name).Take(200))
         {
             string file = Path.Combine(dir.FullName, "summary.json");
-            if (!File.Exists(file)) continue;
+            if (!File.Exists(file))
+            {
+                // Still going (or its runner died before writing a summary): its progress.
+                if (Progress(dir.FullName) is JsonObject p) runs.Add(p);
+                continue;
+            }
             try
             {
                 JsonNode? s = JsonNode.Parse(File.ReadAllText(file));
@@ -332,6 +337,27 @@ sealed partial class PlaytesterServer : UdsPaw
         return Task.FromResult(new JsonObject { ["runs"] = runs });
     }
 
+    /// <summary>A run without a summary, from its progress.json: "running" while this paw has a runner going and
+    /// the file moved in the last 15 minutes, otherwise "abandoned".</summary>
+    JsonObject? Progress(string dir)
+    {
+        string file = Path.Combine(dir, "progress.json");
+        if (!File.Exists(file)) return null;
+        try
+        {
+            JsonObject p = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+            bool live;
+            lock (_gate) live = _run is not null;
+            live &= File.GetLastWriteTimeUtc(file) > DateTime.UtcNow.AddMinutes(-15);
+            return new JsonObject
+            {
+                ["id"] = p["id"]?.DeepClone(), ["kind"] = p["kind"]?.DeepClone(), ["startedAt"] = p["startedAt"]?.DeepClone(),
+                ["result"] = live ? "running" : "abandoned", ["games"] = 0, ["problems"] = 0, ["progress"] = p,
+            };
+        }
+        catch (Exception) { return null; }
+    }
+
     [PawRoute("POST", "/runs/get")]
     [Description("One run's summary (JSON) and report (Markdown)")]
     public Task<JsonObject> GetRunAsync(string id)
@@ -343,6 +369,7 @@ sealed partial class PlaytesterServer : UdsPaw
         return Task.FromResult(new JsonObject
         {
             ["summary"] = File.Exists(summary) ? JsonNode.Parse(File.ReadAllText(summary)) : null,
+            ["progress"] = File.Exists(summary) ? null : Progress(dir),
             ["report"] = File.Exists(report) ? File.ReadAllText(report) : null,
         });
     }

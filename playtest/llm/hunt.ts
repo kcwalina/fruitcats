@@ -7,7 +7,7 @@
 
 import { arg, numArg } from '../lib/args';
 import { CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, cardName, deckProblems, type DeckList } from '../lib/engine';
-import { finishRun, newRun, pct, type Problem, type RunSummary } from '../lib/runs';
+import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { runBalance } from '../balance/gauntlet';
 import { playableHeroes } from '../balance/decks';
 import { addUsage, getProvider, noUsage, type ChatMessage, type Provider } from './providers';
@@ -81,7 +81,9 @@ export async function huntDecks(provider: Provider, ideas: number): Promise<{ id
 
 export async function runDeckHunt(provider: Provider, ideas: number, scale: number): Promise<RunSummary> {
   const run = newRun('deck-hunt');
+  reportProgress(run, 'deck-hunt', 'designing decks', 0, 2);
   const hunt = await huntDecks(provider, ideas);
+  reportProgress(run, 'deck-hunt', 'bot games', 1, 2);
   const balance = hunt.ideas.length ? await runBalance({ quick: true, extraDecks: hunt.ideas.map((i) => i.deck), scale, quiet: true }) : null;
   const rates = new Map(((balance?.details.extraDecks ?? []) as { name: string; vsStarters: number }[]).map((d) => [d.name, d.vsStarters]));
   const problems: Problem[] = [];

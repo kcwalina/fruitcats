@@ -8,7 +8,7 @@ import config from '../balance.config.json';
 import { CARDS, DECKS, cardName, type DeckList } from '../lib/engine';
 import { runJobs } from '../lib/pool';
 import { mulberry, seedFrom } from '../lib/rng';
-import { finishRun, newRun, pct, type Problem, type RunSummary } from '../lib/runs';
+import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { families, mutateDeck, playableHeroes, randomDeck } from './decks';
 import type { Contestant, GameRecord, MatchJob } from './match';
 import { cardImpact, gameShape, matchups } from './stats';
@@ -91,9 +91,11 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
   const sections = plan(cfg, o);
   const jobs = sections.flatMap((s) => s.jobs);
   let lastShown = 0;
+  reportProgress(run, kind, 'bot games', 0, jobs.reduce((n, j) => n + j.to - j.from, 0));
   const byJob = await runJobs(jobs, {
     threads: o.threads,
     progress: (done, total) => {
+      reportProgress(run, kind, 'bot games', done, total);
       if (o.quiet || Date.now() - lastShown < 2000) return;
       lastShown = Date.now();
       process.stderr.write(`\r  ${done}/${total} games`);

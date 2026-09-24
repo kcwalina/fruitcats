@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { arg, flag, numArg } from '../lib/args';
 import { CARDS, DECKS, RULES_PRIMER, apply, choicesText, chooseAction, createGame, describe, type DeckList } from '../lib/engine';
 import { mulberry, seedFrom } from '../lib/rng';
-import { finishRun, newRun, pct, type Problem, type RunSummary } from '../lib/runs';
+import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { loadDeck } from '../play/command';
 import { PERSONAS, ANSWER_FORMAT, ANSWER_REMINDER, type Persona } from './personas';
 import { knownCards, playLlmGame, type LlmGame } from './player';
@@ -38,6 +38,9 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
   const results: (LlmGame & { persona: string })[] = [];
   const errors: string[] = [];
   let next = 0;
+  // With a time limit instead of a game count (the nightly run), the total is how many games fit.
+  const total = () => (Number.isFinite(deadline) && o.games > 1000 ? results.length + errors.length + (o.parallel ?? 1) : o.games);
+  reportProgress(run, 'llm-playtest', 'LLM games', 0, Math.min(o.games, 1000));
 
   const worker = async () => {
     while (next < o.games && Date.now() < deadline && budget.remaining() > 0) {
@@ -49,6 +52,7 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
         const g = await playLlmGame(o.provider, persona, deck, vs, seed, budget);
         usage = addUsage(usage, g.usage);
         results.push({ ...g, persona: persona.key });
+        reportProgress(run, 'llm-playtest', 'LLM games', results.length + errors.length, total());
         writeFileSync(join(run.dir, `game-${String(i + 1).padStart(3, '0')}.md`), g.transcript);
         if (!o.quiet) console.log(`  game ${i + 1}: ${persona.name}, ${deck.name} vs ${vs.name}: ${g.won === null ? 'draw' : g.won ? 'LLM won' : 'bot won'} in ${g.rounds} rounds, ${g.llmMoves} moves at ${g.secondsPerMove.toFixed(1)} s, ${g.fallbacks} fallbacks`);
       } catch (e) {

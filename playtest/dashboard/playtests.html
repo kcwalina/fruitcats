@@ -21,6 +21,7 @@
   --orchard: #cc3d3d;
   --tropical: #3f8f2f;
   --band: rgba(15, 110, 99, 0.10);
+  --on-accent: #ffffff;
   --display: "Fredoka", "Nunito", system-ui, sans-serif;
   --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -30,14 +31,14 @@
     color-scheme: dark;
     --ground: #121614; --surface: #1a201d; --sunk: #232a26; --ink: #e5ece7; --muted: #9aa8a0; --line: #2f3833;
     --accent: #5cc2b3; --accent-soft: #1d3a35; --pass: #6cc38d; --pass-soft: #1c3526; --warn: #e6ad4f; --warn-soft: #3b2d14;
-    --block: #ef7d70; --block-soft: #3d201c; --citrus: #f5b23a; --orchard: #ec6f6f; --tropical: #7bc86a; --band: rgba(92, 194, 179, 0.12);
+    --block: #ef7d70; --block-soft: #3d201c; --citrus: #f5b23a; --orchard: #ec6f6f; --tropical: #7bc86a; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --ground: #121614; --surface: #1a201d; --sunk: #232a26; --ink: #e5ece7; --muted: #9aa8a0; --line: #2f3833;
   --accent: #5cc2b3; --accent-soft: #1d3a35; --pass: #6cc38d; --pass-soft: #1c3526; --warn: #e6ad4f; --warn-soft: #3b2d14;
-  --block: #ef7d70; --block-soft: #3d201c; --citrus: #f5b23a; --orchard: #ec6f6f; --tropical: #7bc86a; --band: rgba(92, 194, 179, 0.12);
+  --block: #ef7d70; --block-soft: #3d201c; --citrus: #f5b23a; --orchard: #ec6f6f; --tropical: #7bc86a; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
 }
 * { box-sizing: border-box; }
 body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 20px 48px; }
@@ -53,6 +54,10 @@ header p { margin: 4px 0 0; color: var(--muted); }
 .pill.pass { background: var(--pass-soft); color: var(--pass); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
 .pill.block { background: var(--block-soft); color: var(--block); }
+.pill.running { background: var(--accent-soft); color: var(--accent); }
+.pill.abandoned, .pill.queued, .pill.busy { background: var(--sunk); color: var(--muted); }
+.pill.started { background: var(--accent-soft); color: var(--accent); }
+.pill.failed { background: var(--block-soft); color: var(--block); }
 .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
 .status { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr); gap: 20px; }
@@ -77,6 +82,20 @@ header p { margin: 4px 0 0; color: var(--muted); }
 .run:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .run[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.running { background: var(--accent); } .dot.abandoned { background: var(--muted); }
+.progress { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; margin-top: 6px; }
+.progress span { display: block; height: 100%; background: var(--accent); }
+.start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.runform { display: grid; gap: 12px; margin-top: 12px; }
+.field { display: grid; gap: 4px; }
+.field label { font-weight: 700; font-size: 13px; }
+.field input, .field select { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; }
+.field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; }
+.row .field { flex: 1 1 130px; }
+button.go { justify-self: start; font: 800 14px var(--body); padding: 9px 18px; border-radius: 10px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+button.go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button.link { font: inherit; font-weight: 700; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .dot.pass { background: var(--pass); } .dot.warn { background: var(--warn); } .dot.block { background: var(--block); }
 .run .kind { font-weight: 800; }
 .run .meta { color: var(--muted); font-size: 12px; }
@@ -99,7 +118,7 @@ header p { margin: 4px 0 0; color: var(--muted); }
 .empty { color: var(--muted); padding: 24px 4px; }
 .note { color: var(--muted); font-size: 13px; }
 @media (max-width: 860px) {
-  .status, .main { grid-template-columns: minmax(0, 1fr); }
+  .status, .main, .start { grid-template-columns: minmax(0, 1fr); }
   .runs { max-height: none; }
   .deck { grid-template-columns: 112px 1fr 44px; font-size: 14px; }
 }
@@ -128,6 +147,31 @@ header p { margin: 4px 0 0; color: var(--muted); }
     </div>
   </section>
 
+  <section class="panel start">
+    <div>
+      <div class="eyebrow">Start a run on PC2024</div>
+      <form id="runform" class="runform">
+        <div class="field">
+          <label for="kind">Run</label>
+          <select id="kind">
+            <option value="llm-playtest">LLM playtest: gpt-oss plays the bot and reports</option>
+            <option value="balance">Bot gauntlet: starters, random and changed decks</option>
+            <option value="deck-hunt">Deck hunt: the LLM designs decks to break the game</option>
+            <option value="nightly">Nightly run, now</option>
+          </select>
+        </div>
+        <div id="opts"></div>
+        <button class="go" type="submit">Queue the run</button>
+        <div id="formnote" class="note" role="status"></div>
+      </form>
+    </div>
+    <div>
+      <div class="eyebrow">Requests</div>
+      <ul id="requests" class="issues"><li class="note">Loading…</li></ul>
+      <div class="legend">A queued run starts within about 10 minutes, while the relay on the laptop is running. PC2024 plays one run at a time; a request waits while another run is going.</div>
+    </div>
+  </section>
+
   <section class="panel chart">
     <div class="eyebrow">Win rate over time</div>
     <div id="trend"><div class="empty">Loading…</div></div>
@@ -150,6 +194,8 @@ const DECKS = [
 ];
 const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', nightly: 'Nightly run', weekly: 'Weekly run' };
 let runs = [];
+let requests = [];
+let db = null;
 let selected = null;
 try { selected = location.hash.slice(1) || localStorage.getItem('fc-playtest-run'); } catch { /* storage may be blocked */ }
 
@@ -261,10 +307,76 @@ function renderRuns() {
   $('runs').innerHTML = [...days.entries()].map(([day, list]) => `<div class="day"><h3>${esc(day)}</h3>${list.map((r) => `
     <button class="run" data-id="${esc(r.id)}" aria-current="${r.id === selected}">
       <span class="dot ${esc(r.result)}"></span>
-      <span><span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span><br><span class="meta">${r.games ? `${r.games.toLocaleString()} games · ` : ''}${dur(r.durationSec)}${r.problems?.length ? ` · ${r.problems.length} flagged` : ''}</span></span>
+      <span><span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span><br><span class="meta">${r.progress ? progressText(r) : `${r.games ? `${r.games.toLocaleString()} games · ` : ''}${dur(r.durationSec)}${r.problems?.length ? ` · ${r.problems.length} flagged` : ''}`}</span>${r.result === 'running' ? progressBar(r) : ''}</span>
       <span class="time">${esc(timeOf(r.startedAt))}</span>
     </button>`).join('')}</div>`).join('');
 }
+
+const progressText = (r) => {
+  const p = r.progress;
+  return p.total ? `${p.phase}: ${p.done} of ${p.total}` : p.phase;
+};
+const progressBar = (r) => `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${r.progress.total}" aria-valuenow="${r.progress.done}"><span style="width:${r.progress.total ? Math.min(100, (100 * r.progress.done) / r.progress.total).toFixed(1) : 0}%"></span></div>`;
+
+// ── Starting runs: the form writes a request; the relay on the laptop sends it to PC2024 ───────────────
+const STARTERS = [['zest-rush', 'Zest Rush'], ['orchard-guard', 'Orchard Guard'], ['mango-tango', 'Mango Tango']];
+const num = (id, label, value, min, max, step = 1) => `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" value="${value}" min="${min}" max="${max}" step="${step}" required></div>`;
+const select = (id, label, options) => `<div class="field"><label for="${id}">${label}</label><select id="${id}">${options.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></div>`;
+function renderOptions() {
+  const kind = $('kind').value;
+  $('opts').innerHTML = {
+    'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'All three, in turn'], ['exploit', 'Exploit hunter'], ['aggro', 'Aggressive player'], ['newcomer', 'New player']])}</div>
+      <div class="row">${select('deck', 'LLM plays', [['', 'Every matchup, in turn'], ...STARTERS])}${select('vs', 'Against', STARTERS.slice().reverse())}</div>`,
+    balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}</div>`,
+    'deck-hunt': `<div class="row">${num('ideas', 'Deck ideas', 6, 1, 12)}</div>`,
+    nightly: `<div class="row">${num('hours', 'Hours of LLM games', 2, 0.5, 8, 0.5)}</div>`,
+  }[kind];
+  const deck = $('deck');
+  if (deck) { const sync = () => { $('vs').closest('.field').hidden = !deck.value; }; deck.addEventListener('change', sync); sync(); }
+}
+function buildRequest() {
+  const kind = $('kind').value;
+  const n = (id) => Number($(id).value);
+  if (kind === 'llm-playtest') {
+    const deck = $('deck').value, vs = $('vs').value, persona = $('persona').value;
+    const name = (k) => STARTERS.find(([key]) => key === k)?.[1];
+    return {
+      args: `--provider pc2024 --parallel 2 --games ${n('games')} --persona ${persona}${deck ? ` --deck ${deck} --vs ${vs}` : ''}`,
+      label: `${n('games')} LLM games${deck ? `, ${name(deck)} vs ${name(vs)}` : ''}${persona === 'all' ? '' : `, ${$('persona').selectedOptions[0].text.toLowerCase()}`}`,
+    };
+  }
+  if (kind === 'balance') return { args: `--scale ${n('scale')} --quiet`, label: `Bot gauntlet at size ${n('scale')}` };
+  if (kind === 'deck-hunt') return { args: `--provider pc2024 --ideas ${n('ideas')}`, label: `Deck hunt, ${n('ideas')} ideas` };
+  return { args: `--provider pc2024 --hours ${n('hours')}`, label: `Nightly run with ${n('hours')} h of LLM games` };
+}
+$('kind').addEventListener('change', renderOptions);
+renderOptions();
+$('runform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!db) return;
+  const { args, label } = buildRequest();
+  const id = `req-${Date.now()}`;
+  $('formnote').textContent = 'Queuing…';
+  try {
+    await db.collection('requests').doc(id).set({ id, command: $('kind').value, args, label, status: 'queued', createdAt: new Date().toISOString() });
+    $('formnote').textContent = `Queued: ${label}.`;
+  } catch (err) {
+    $('formnote').textContent = err?.code === 'invalid_argument' ? "Only the dashboard's owner can start runs." : 'The request could not be saved. Try again in a moment.';
+  }
+});
+function renderRequests() {
+  if (!requests.length) { $('requests').innerHTML = '<li class="note">No requests yet.</li>'; return; }
+  $('requests').innerHTML = requests.map((q) => {
+    const run = runs.find((r) => r.request === q.id);
+    return `<li><span class="pill ${esc(q.status)}">${esc(q.status)}</span><span>${esc(q.label)} <span class="times">${esc(timeOf(q.createdAt))}</span>${q.note ? `<br><span class="note">${esc(q.note)}</span>` : ''}${run ? `<br><button class="link" data-run="${esc(run.id)}">See the run</button>` : ''}${q.status === 'queued' ? ` <button class="link" data-cancel="${esc(q.id)}">Cancel</button>` : ''}</span></li>`;
+  }).join('');
+}
+$('requests').addEventListener('click', async (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.run) { selected = b.dataset.run; renderRuns(); renderDetail(); $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (b.dataset.cancel && db) { try { await db.doc(`requests/${b.dataset.cancel}`).delete(); } catch { /* the list shows it is still there */ } }
+});
 
 function renderDetail() {
   const r = runs.find((x) => x.id === selected) ?? runs[0];
@@ -272,7 +384,7 @@ function renderDetail() {
   selected = r.id;
   const d = r.details ?? {};
   const facts = [
-    ['When', `${dayOf(r.startedAt)} ${timeOf(r.startedAt)}`], ['Took', dur(r.durationSec)], ['Games', (r.games ?? 0).toLocaleString()],
+    ['When', `${dayOf(r.startedAt)} ${timeOf(r.startedAt)}`], [r.progress ? 'Running for' : 'Took', dur(r.durationSec)], r.progress ? null : ['Games', (r.games ?? 0).toLocaleString()],
     ['Machine', r.host], ['Cards', r.cardsHash],
     d.model ? ['Model', `${d.provider} ${d.model}`] : null,
     typeof d.costUsd === 'number' ? ['Cost', `$${d.costUsd.toFixed(2)}`] : null,
@@ -282,7 +394,8 @@ function renderDetail() {
       <h2>${esc(KIND[r.kind] ?? r.kind)}</h2><span class="pill ${esc(r.result)}">${esc(r.result)}</span>
     </div>
     <div class="facts">${facts.map(([k, v]) => `<span>${esc(k)} <b>${esc(v)}</b></span>`).join('')}</div>
-    <div class="report">${markdown(r.report ?? '')}</div>
+    ${r.progress ? `<div><div class="note">${esc(progressText(r))} · updated ${esc(timeOf(r.progress.updatedAt))}${r.result === 'abandoned' ? ' · the runner stopped before finishing' : ''}</div>${progressBar(r)}</div>` : ''}
+    <div class="report">${r.report ? markdown(r.report) : r.progress ? '<p class="note">The report appears here when the run finishes.</p>' : ''}</div>
     <div class="note mono">${esc(r.id)}</div>`;
   for (const b of document.querySelectorAll('.run')) b.setAttribute('aria-current', String(b.dataset.id === selected));
 }
@@ -296,7 +409,7 @@ function renderAll() {
     pill.textContent = `Latest: ${latest.result}`;
     $('subtitle').textContent = `${runs.length} runs · last one ${dayOf(latest.startedAt)} at ${timeOf(latest.startedAt)}.`;
   }
-  renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail();
+  renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests();
 }
 
 let resizeTimer;
@@ -312,8 +425,11 @@ $('runs').addEventListener('click', (e) => {
 });
 
 (async () => {
-  const db = await window.claude?.use?.('db');
+  db = await window.claude?.use?.('db');
   if (!db) {
+    $('runform').querySelector('button').disabled = true;
+    $('formnote').textContent = "Starting runs isn't available in this view.";
+    $('requests').innerHTML = '<li class="note">—</li>';
     for (const id of ['decks', 'runs']) $(id).innerHTML = '<div class="empty">Run data isn\'t available in this view.</div>';
     $('issues').innerHTML = '<li class="note">—</li>';
     $('trend').innerHTML = '';
@@ -322,6 +438,10 @@ $('runs').addEventListener('click', (e) => {
   db.collection('runs').orderBy('startedAt', 'desc').limit(300).onSnapshot(
     (snap) => { runs = snap.docs.map((doc) => doc.data()); renderAll(); },
     () => { $('runs').innerHTML = '<div class="empty">The run data stopped updating. Reload the page to try again.</div>'; },
+  );
+  db.collection('requests').orderBy('createdAt', 'desc').limit(12).onSnapshot(
+    (snap) => { requests = snap.docs.map((doc) => doc.data()); renderRequests(); },
+    () => { $('requests').innerHTML = '<li class="note">Requests stopped updating. Reload the page to try again.</li>'; },
   );
 })();
 </script>

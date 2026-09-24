@@ -49,6 +49,6 @@ publishes next to the game (`/playtest/runner.mjs`, so it always tests the live 
 
 [Fruitcats Playtests](https://claude.ai/artifact/JhFnXFgWz3UA3PQDGUytvG) (private; source in
 `dashboard/playtests.html`) shows every uploaded run: the latest starter win rates against the target band,
-issues flagged more than once, the win rates over time, and each run's report. Only a Claude session writes
-to it: run `npm run reports -- pending --pc2024 http://192.168.1.74:5280`, upload the files it lists as
-`set` writes into the `runs` collection (document id = run id), then `npm run reports -- mark`.
+issues flagged more than once, the win rates over time, runs in progress, and each run's report. Its "Start a
+run" form queues custom runs. The page can't reach PC2024 and only its owner's Claude session writes to it, so
+a scheduled Claude Code task on the laptop relays both ways every 10 minutes, following `dashboard/RELAY.md`.

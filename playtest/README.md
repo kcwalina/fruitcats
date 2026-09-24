@@ -34,8 +34,9 @@ more often when they are played, and generated decks that beat the starters.
 ## The weekly run on PC2024
 
 `paw/` is `mochi-playtester`, a catsitter paw deployed to PC2024 like any kitten (`/deploy-kittens` from
-the mochi repo; it builds against mochi's paw SDK at `C:\git\mochi`, or `MOCHI_REPO`). Its package carries
-Node (x64) in `node\node.exe`. Every Sunday from midnight it downloads the runner that `npm run deploy`
+the mochi repo, or `paw/package.ps1`; it builds against mochi's paw SDK at `C:\git\mochi`, or `MOCHI_REPO`).
+It runs the Node installed on PC2024 (PATH, then `Program Files\nodejs`); `GET /health` says which, or that none
+was found (then `package.ps1 -BundleNode` ships one). Every Sunday from midnight it downloads the runner that `npm run deploy`
 publishes next to the game (`/playtest/runner.mjs`, so it always tests the live cards) and runs
 `weekly` for up to 6 hours. Settings are in `~/.mochi/playtester.json` on PC2024; runs stay in
 `%LOCALAPPDATA%\mochi.playtester\runs` and are served through catsitter:

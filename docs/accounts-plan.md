@@ -52,8 +52,9 @@ Last updated 2026-09-24.
 - **Deploy identity** `deploy-viamochi` (app id `5ed3e9dc-72f3-4b75-a9ec-797fbe0d0126`), certificate in
   `~/.azure-viamochi-deploy`, created with [scripts/setup/deploy-identity.ps1](../scripts/setup/deploy-identity.ps1).
   Its only rights: Website Contributor on `viamochi-id` and `fruitcats-api`.
-- A **$300 emergency-stop** budget alert (150% of the budget) goes to its own action group, `ag-emergency-stop`. It
-  texts and emails today; the automatic server shutdown will be attached to it.
+- A **$300 emergency-stop** budget alert (150% of the budget) goes to its own action group, `ag-emergency-stop`,
+  which texts and emails **and runs the Logic App `la-emergency-stop`, which stops both apps** (its identity may only
+  stop those two). Tested: both stopped, then were started again. See [emergency-stop.md](emergency-stop.md).
 - The temporary setup sign-ins were deleted. Only the three restricted identities remain.
 - **Resources** (compute and data in **West US 2**: West US 3 had no Basic capacity on 2026-09-24):
   - `rg-viamochi-apps`: plan `asp-viamochi` (B1 Linux), apps `viamochi-id` (.NET 10) and `fruitcats-api` (Node 22),

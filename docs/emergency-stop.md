@@ -5,6 +5,14 @@ Pick the smallest step that stops the cost. Every step can be undone.
 
 Subscription: **ViaMochi Production**, `32564bc0-941d-4aa9-9b15-5b3a85c57693`. Budget: `viamochi-monthly`.
 
+## 0. What already happens automatically
+
+At **$300 in a month** (150% of the $200 budget) the alert group `ag-emergency-stop` texts and emails you **and**
+runs the Logic App `la-emergency-stop` (in `rg-viamochi-shared`), which **stops both apps** (`viamochi-id` and
+`fruitcats-api`). That halts everything billed per use: sign-in emails, storage traffic, API traffic. Sign-in, sync
+and account screens stop working; solo play still works. The server plan itself is a flat ~$12 a month and can't run
+away. To bring the apps back once you know the cause: **App Services → each app → Start**. (Tested 2026-09-24.)
+
 ## 1. Find what's costing money (2 minutes)
 
 1. [portal.azure.com](https://portal.azure.com) → **Subscriptions** → **ViaMochi Production** → **Cost analysis**.

@@ -128,7 +128,7 @@ Last updated 2026-09-23.
 - **A card bought just before a sale** is covered by each store's refund window, and the web honours it the same way.
 - **Starting points** (to be set before launch):
   - single cards: common $0.49, uncommon $0.99, rare $1.49, Legendary Cat $4.99
-  - a set's top Hero Cat, sold on its own: **$49.99**, as a premium **Signature** print (see below)
+  - a set's top Hero Cat, sold on its own: **$19.99**, as a premium **Signature** print (higher later, not for the first set) (see below)
   - decks: **$9.99**, Hero Cat included
   - A whole deck bought card by card costs about 3× the deck price (Five Alarm: about $30), so the deck is
     clearly the good deal, and singles are for finishing a collection.

@@ -130,7 +130,7 @@ theme. The most expensive one leads the new deck.
 |---|---|---|---|---|---|
 | 1 | Jack, the Pumpkin Knight | Rare, Foil print | **$1.49** | Halloween knight | anyone: it's Garden, so it fits every deck |
 | 2 | Nova, the Starfruit Voyager | Legendary, Gold print | **$4.99** | space explorer | Mango Tango players |
-| 3 | Reaper, the Carolina Sphynx | Legendary Hero Cat, Signature print | **$49.99** | the hottest pepper on Earth | Five Alarm players: a second leader |
+| 3 | Reaper, the Carolina Sphynx | Legendary Hero Cat, Signature print | **$19.99** | the hottest pepper on Earth | Five Alarm players: a second leader |
 
 ### 1. Jack, the Pumpkin Knight (HW1-X01, Rare, Garden Cat)
 
@@ -182,11 +182,12 @@ stare. Her hood is the wrinkled, scorpion-tailed Carolina Reaper pepper, and she
 - **Every paid single comes in a premium print that climbs with the price:** Jack in Foil, Nova in Gold,
   Reaper in the Signature print. A card someone paid for should look like something to display, never like a
   deck card. The art is drawn to the same standard: a heroic pose, the cat's face visible, dramatic light.
-- The prices follow the Store plan: Rare $1.49, Legendary Cat $4.99, and a Signature Hero Cat at $49.99.
+- The prices follow the Store plan: Rare $1.49, Legendary Cat $4.99, and a Signature Hero Cat at $19.99. (It was $49.99; for the first paid set, the jump from $4.99 was
+  too big. Signature cards may cost more later, once players know them.)
 - **Reaper is sold only as a Signature print:** a finish no other card has (molten: a black frame with glowing
   cracks and an ember shimmer in the app), the Signature mark, and First Edition for launch buyers. It's
   exclusive because of how it looks and what it costs, not because of a countdown or a limited stock. It must
-  measure no stronger than Blaze in playtests, so the $49.99 buys something special, not a better win rate.
+  measure no stronger than Blaze in playtests, so the $19.99 buys something special, not a better win rate.
 - **The Five Alarm deck: $9.99**, with Blaze included. Everyone already owns its 14 Garden cards. Its 36 new
   cards bought one by one would cost about $30 (15 Commons, 18 Uncommons and 3 Rares), before counting Blaze.
 

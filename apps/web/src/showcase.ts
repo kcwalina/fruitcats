@@ -158,8 +158,29 @@ function scrollToCard(index: number, smooth = true) {
   if (!v || !track) return;
   const slide = track.children[Math.max(0, Math.min(index, v.list.length - 1))] as HTMLElement | undefined;
   if (!slide) return;
-  track.scrollTo({ left: slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'instant' });
+  glide(track, slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, smooth);
 }
+
+/**
+ * Moves the strip to `left`, easing over a moment unless `smooth` is false. Animated here rather than
+ * with the browser's smooth scrolling, which Safari didn't carry through on the strip; snapping is off
+ * meanwhile, so it can't pull the strip elsewhere halfway.
+ */
+function glide(track: HTMLElement, left: number, smooth: boolean) {
+  const from = track.scrollLeft, id = ++gliding;
+  if (!smooth || Math.abs(left - from) < 1) { track.scrollLeft = left; track.classList.remove('dragging'); return; }
+  track.classList.add('dragging');
+  const start = performance.now(), ms = 320;
+  const frame = (now: number) => {
+    if (id !== gliding) return;   // another glide or drag took over
+    const t = Math.min(1, (now - start) / ms);
+    track.scrollLeft = from + (left - from) * (1 - (1 - t) ** 3);
+    if (t < 1) requestAnimationFrame(frame);
+    else track.classList.remove('dragging');
+  };
+  requestAnimationFrame(frame);
+}
+let gliding = 0;
 
 function step(delta: number) {
   const v = viewer();
@@ -454,9 +475,10 @@ export function showcaseMounted(): void {
 }
 
 /**
- * Swiping with a finger (or dragging with a mouse) is done here rather than left to the browser: iPad
- * Safari would not scroll the strip when the finger was on one of its turned (3D) cards. The strip
- * follows the finger with snapping off, then glides to the card it was flicked towards.
+ * Swiping is done here, not by the browser. The strip isn't scrollable to the browser at all (see
+ * showcase.css): on iPad, Safari's own scrolling of it failed in the Showcase, and when Safari claims a
+ * finger it cancels the pointer events too. So the strip follows the finger itself, then glides to the
+ * nearest card, or the next one on a quick flick. A trackpad's sideways swipe turns a card at a time.
  */
 function followDrags(track: HTMLElement) {
   const slides = [...track.children] as HTMLElement[];
@@ -466,24 +488,28 @@ function followDrags(track: HTMLElement) {
   let drag: { id: number; x0: number; left0: number; from: number; x: number; t: number; vx: number; moved: boolean } | null = null;
   let dragged = false;
   track.addEventListener('pointerdown', (e) => {
+    swipeLog(e, track);
     if (e.button !== 0) return;
     drag = { id: e.pointerId, x0: e.clientX, left0: track.scrollLeft, from: nearest(), x: e.clientX, t: e.timeStamp, vx: 0, moved: false };
     dragged = false;
   });
   track.addEventListener('pointermove', (e) => {
+    swipeLog(e, track);
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x0;
     if (!drag.moved) {
       if (Math.abs(dx) < 8) return;
       drag.moved = true;
+      gliding++;   // stop any glide under way
       track.classList.add('dragging');
-      track.setPointerCapture(e.pointerId);
+      try { track.setPointerCapture(e.pointerId); } catch { /* the pointer is already gone */ }
     }
     if (e.timeStamp > drag.t) drag.vx = 0.6 * drag.vx + 0.4 * ((e.clientX - drag.x) / (e.timeStamp - drag.t));
     drag.x = e.clientX; drag.t = e.timeStamp;
     track.scrollLeft = drag.left0 - dx;
   });
   const end = (e: PointerEvent) => {
+    swipeLog(e, track);
     if (!drag || e.pointerId !== drag.id) return;
     const d = drag;
     drag = null;
@@ -495,13 +521,50 @@ function followDrags(track: HTMLElement) {
     let to = nearest();
     if (to === d.from && Math.abs(d.vx) > 0.3) to += d.vx < 0 ? 1 : -1;
     scrollToCard(to);
-    // Snapping comes back once the glide has landed (turning it on mid-glide would jump).
-    window.setTimeout(() => track.classList.remove('dragging'), 600);
   };
   track.addEventListener('pointerup', end);
   track.addEventListener('pointercancel', end);
   // A drag that ends on a card isn't a tap on it.
   track.addEventListener('click', (e) => { if (dragged) { dragged = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  let wheeled = 0, resting = 0;
+  track.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    if (e.timeStamp < resting) return;
+    wheeled += e.deltaX;
+    if (Math.abs(wheeled) < 30) return;
+    scrollToCard(nearest() + Math.sign(wheeled));
+    wheeled = 0;
+    resting = e.timeStamp + 450;
+  }, { passive: false });
+}
+
+/**
+ * With ?debug in the address: a readout of what the strip hears from the finger, for checking swiping
+ * on a device we can't test here.
+ */
+const SWIPE_DEBUG = /[?&]debug(&|=|$)/.test(location.search);
+const swipeCounts: Record<string, number> = {};
+function swipeLog(e: PointerEvent, track: HTMLElement) {
+  if (!SWIPE_DEBUG) return;
+  swipeCounts[e.type] = (swipeCounts[e.type] ?? 0) + 1;
+  let panel = document.getElementById('swipe-debug');
+  if (!panel) {
+    panel = document.createElement('pre');
+    panel.id = 'swipe-debug';
+    panel.style.cssText = 'position:fixed;left:8px;top:60px;z-index:999;margin:0;padding:8px;max-width:60vw;font:11px/1.35 monospace;'
+      + 'color:#0f0;background:rgba(0,0,0,.8);border-radius:6px;pointer-events:none;white-space:pre-wrap';
+    document.body.appendChild(panel);
+  }
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  panel.textContent = [
+    `build ${document.querySelector<HTMLScriptElement>('script[src*="main-"]')?.src.split('/').pop() ?? '?'}`,
+    `last ${e.type} (${e.pointerType}) x=${Math.round(e.clientX)}`,
+    Object.entries(swipeCounts).map(([k, n]) => `${k.replace('pointer', '')} ${n}`).join(' · '),
+    `scrollLeft ${Math.round(track.scrollLeft)} of ${track.scrollWidth - track.clientWidth}`,
+    `touch-action ${getComputedStyle(track).touchAction} · overflow-x ${getComputedStyle(track).overflowX}`,
+    `under finger: ${under ? `${under.tagName.toLowerCase()}.${[...under.classList].join('.')}` : 'nothing'}`,
+  ].join('\n');
 }
 
 function fadeAmbient(container: Element, face: string) {

@@ -51,8 +51,9 @@
      back with negative margins so the layout doesn't grow. */
   padding: 50px calc(50% - var(--card-w) / 2) 80px; margin: -28px 0 -50px;
 }
-/* Sideways swipes are handled in showcase.ts (followDrags); the browser keeps only vertical panning. */
-.viewer-track { touch-action: pan-y; cursor: grab; }
+/* Swipes are handled in showcase.ts (followDrags), so the browser neither scrolls the strip nor claims a
+   finger on it: its overflow is hidden (scrolling it from code still works) and touch-action none. */
+.viewer-track { overflow-x: hidden; touch-action: none; cursor: grab; }
 .viewer-track.dragging { scroll-snap-type: none; cursor: grabbing; }
 .viewer-track::-webkit-scrollbar { display: none; }
 .viewer-slide { flex: none; width: var(--card-w); scroll-snap-align: center; scroll-snap-stop: always; perspective: 1400px; }

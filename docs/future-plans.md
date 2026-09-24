@@ -77,7 +77,7 @@ Needs the server from #2 plus accounts.
 
 ## 4. Store for decks
 
-Needs accounts.
+Needs accounts. **The full store plan (decisions and steps) is in [store-plan.md](store-plan.md).**
 
 - **Done:** `createGame` accepts a `DeckList` as well as a starter key, and the deck builder
   ([apps/web/src/deckbuilder.ts](../apps/web/src/deckbuilder.ts)) checks decks against rulebook §11.1 with

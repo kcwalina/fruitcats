@@ -11,7 +11,7 @@
 // (judge()), which is how players are compared.
 
 import {
-  CARDS, RULES_PRIMER, STRATEGY_PRIMER, apply, cardName, chooseAction, choicesText, createGame, describe, determinize,
+  CARDS, STRATEGY_PRIMER, rulesPrimer, apply, cardName, chooseAction, choicesText, createGame, describe, determinize,
   listChoices, parseChoice, scoreActions,
   type Action, type Choices, type DeckList, type GameState, type PlayerId,
 } from '../lib/engine';
@@ -77,7 +77,7 @@ function systemPrompt(persona: Persona, spec: PlayerSpec): string {
   const tools = spec.tools.length
     ? `\n\nTOOLS\nBefore choosing you may look things up, up to ${spec.maxToolCalls} times a move:${spec.tools.includes('preview') ? '\n- preview(choice): exactly what happens after a choice, from the real rules (assuming your opponent doesn\'t Pounce; cards you would draw are random). Preview the moves you are unsure about, especially attacks and taking the Yarn.' : ''}${spec.tools.includes('card') ? '\n- card(name): a card\'s full text.' : ''}${spec.tools.includes('log') ? '\n- log(count): the last events of the game.' : ''}${spec.tools.includes('note') ? '\n- note(text): keep a short note (a plan, what the opponent holds back); your notes are shown to you on every later move.' : ''}\nThen call choose(choice, reason) with the number of your choice. For a pick-several choice (mulligan, planting), reply in text instead.`
     : '';
-  return `${RULES_PRIMER}${spec.tips ? `\n\n${STRATEGY_PRIMER}` : ''}\n\nYOU\n${persona.style}${tools}\n\n${spec.plan ? PLAN_FORMAT : ANSWER_FORMAT}`;
+  return `${rulesPrimer()}${spec.tips ? `\n\n${STRATEGY_PRIMER}` : ''}\n\nYOU\n${persona.style}${tools}\n\n${spec.plan ? PLAN_FORMAT : ANSWER_FORMAT}`;
 }
 
 const TOOL_SPECS: Record<ToolName | 'choose', ToolSpec> = {
@@ -242,7 +242,7 @@ export async function playLlmGame(
   if (budget.remaining() > 0) {
     const log = s.log.map((e) => `R${e.round} ${e.text}`).join('\n');
     const reply = await provider.chat([
-      { role: 'system', content: `${RULES_PRIMER}\n\nYOU\n${persona.style}` },
+      { role: 'system', content: `${rulesPrimer()}\n\nYOU\n${persona.style}` },
       {
         role: 'user',
         content: `The game is over: ${won === null ? 'a draw' : won ? 'you won' : 'you lost'} after ${s.round} rounds. You played ${deck.name} (you are "LLM" in the log) against ${vs.name}.\n\nGAME LOG\n${log}\n\n` +

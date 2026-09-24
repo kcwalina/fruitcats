@@ -17,5 +17,5 @@ export { viewFor, HIDDEN } from './view';
 export type { PlayerView } from './view';
 export { chooseAction, randomAction, evaluate, determinize, scoreActions } from './ai';
 export type { AiOptions } from './ai';
-export { RULES_PRIMER, STRATEGY_PRIMER, describe, listChoices, choicesText, parseChoice } from './text';
+export { rulesPrimer, STRATEGY_PRIMER, describe, listChoices, choicesText, parseChoice } from './text';
 export type { Choice, ChoiceOptions, Choices } from './text';

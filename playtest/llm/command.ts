@@ -1,5 +1,5 @@
 // llm-playtest [--provider pc2024] [--model M] [--persona exploit|aggro|newcomer|all] [--games N]
-//              [--deck KEY|file.json] [--vs KEY|file.json] [--parallel 4] [--hours H] [--budget TOKENS]
+//              [--deck KEY|file.json] [--vs KEY[,KEY…]|file.json] [--parallel 4] [--hours H] [--budget TOKENS]
 //              [--player plain|informed|memory|agent] [--effort low|medium|high] [--seeds TAG]
 // llm-compare --players plain,informed,memory,agent [--games N] [--persona aggro] [--seeds TAG] [--parallel 8]
 // llm-playtest --bench [--provider pc2024] [--models a,b,c]
@@ -12,7 +12,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arg, flag, numArg } from '../lib/args';
-import { CARDS, DECKS, RULES_PRIMER, apply, choicesText, chooseAction, createGame, describe, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, apply, rulesPrimer, choicesText, chooseAction, createGame, describe, type DeckList } from '../lib/engine';
 import { mulberry, seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { loadDeck } from '../play/command';
@@ -136,7 +136,7 @@ async function bench(providerName: string, models: string[] | undefined): Promis
   while (!(s.prompt?.kind === 'action' && s.round >= 3 && s.prompt.player === 0)) apply(s, chooseAction(s, { random: mulberry(s.actions) }));
   const persona = PERSONAS.exploit;
   const messages = [
-    { role: 'system' as const, content: `${RULES_PRIMER}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}` },
+    { role: 'system' as const, content: `${rulesPrimer()}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}` },
     { role: 'user' as const, content: `${describe(s, 0)}\n\n${choicesText(s)}\n\n${ANSWER_REMINDER}` },
   ];
   console.log('| Model | s/move | tokens in / out | est. minutes per game (50 moves) | answered |');
@@ -169,7 +169,7 @@ const CALLS_PER_GAME = 35;
 async function throughput(providerName: string, model: string | undefined, levels: number[], seconds: number): Promise<number> {
   const p = getProvider(providerName, model);
   const persona = PERSONAS.exploit;
-  const system = `${RULES_PRIMER}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}`;
+  const system = `${rulesPrimer()}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}`;
   const positions: string[] = [];
   for (let seed = 1; positions.length < 16; seed++) {
     const s = createGame({ decks: ['zest-rush', 'orchard-guard', 'mango-tango'].slice(seed % 2, seed % 2 + 2) as [string, string], seed });
@@ -261,7 +261,7 @@ export async function llmPlaytestCommand(): Promise<number> {
     seedTag: arg('seeds'),
     personas,
     games: numArg('games') ?? 3,
-    pairs: deck || vs ? [[loadDeck(deck ?? 'zest-rush'), loadDeck(vs ?? 'orchard-guard')]] : undefined,
+    pairs: deck || vs ? (vs ?? 'orchard-guard').split(',').map((v): [DeckList, DeckList] => [loadDeck(deck ?? 'zest-rush'), loadDeck(v)]) : undefined,
     parallel: numArg('parallel'),
     hours: numArg('hours'),
     maxTokens: numArg('budget'),

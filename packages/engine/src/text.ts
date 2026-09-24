@@ -7,13 +7,13 @@
 //
 // Units are named by where they stand: Y1…Y6 in your Yard, T1…T6 in theirs; cards in hand are H1…Hn.
 
-import { CARDS, MECHANICS, behaviour, keywords } from './cards';
+import { behaviour, CARDS, keywords, MECHANICS } from './cards';
 import { HAND_LIMIT, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 import { viewFor, type PlayerView } from './view';
 
-/** The rules a text player needs, in about a thousand tokens. Constant, so providers can cache it. */
-export const RULES_PRIMER = `FRUITCATS: RULES IN BRIEF
+/** The core rules, before the keyword list: the same whatever sets are loaded. */
+const CORE_RULES = `FRUITCATS: RULES IN BRIEF
 Two players, 50-card decks, each led by a Hero Cat. Win by taking the opponent's ninth and last Life.
 - Lives: each player starts with 9 face-down Life cards. When you lose a Life, that card goes into your hand. If it is Lucky you may play it for free right away.
 - Treats pay for cards. Each Treat is a card you planted face-down; a card costing N exhausts N ready Treats. Treats ready again each round. Plant at most one card per round (at the start of the round); planting is permanent, so plant what you need least.
@@ -26,9 +26,23 @@ Two players, 50-card decks, each led by a Hero Cat. Win by taking the opponent's
   Unit vs Hero Cat: a hit. The defender loses 1 Life (2 if the attacker is Fierce) and the attacker takes no damage.
 - Pounce: when your opponent plays a card or declares an attack, you may answer with ONE Pounce card (paying its cost). It resolves first. No Pouncing on a Pounce. Ready Treats you keep are a threat the opponent must respect.
 - Hero Cat: starts as a Kitten, which cannot attack. Its "Exhaust:" ability can be used once a round (exhausting the Hero Cat). When its Grow Up condition becomes true it flips to its Big Cat side for good: stronger ability, and it can attack (it takes no damage attacking).
-- If you must draw from an empty deck, you lose a Life instead.
-KEYWORDS
-Zoomies: enters ready. Guardian: enemies must attack Guardians first. Sneaky: ignores Guardians. Fierce: a hit on a Hero Cat takes 2 Lives. Tough X: takes X less damage from each hit. Lucky: playable for free when it turns up as a lost Life. Pounce: playable in the opponent's Pounce window (also as a normal action). Hello: happens when the unit arrives. Goodbye: happens when it is defeated. Ripen (Orchard): +1/+1 at the start of each round, up to +2/+2. Zest (Citrus): a bonus if you already played another card this round. Sprout N (Tropical): put the top N cards of your deck into your Treats. Lush (Tropical): a bonus while you have 7 or more Treats.`;
+- If you must draw from an empty deck, you lose a Life instead.`;
+
+/** Keywords of the core rules; the mechanics each set brings (Zest, Ripen, Heat, …) are listed after them. */
+const CORE_KEYWORDS = `Zoomies: enters ready. Guardian: enemies must attack Guardians first. Sneaky: ignores Guardians. Fierce: a hit on a Hero Cat takes 2 Lives. Tough X: takes X less damage from each hit. Lucky: playable for free when it turns up as a lost Life. Pounce: playable in the opponent's Pounce window (also as a normal action). Hello: happens when the unit arrives. Goodbye: happens when it is defeated.`;
+
+/**
+ * The rules a text player needs, in about a thousand tokens: the core rules, then every mechanic the loaded
+ * sets define, with the reminder text each set gives it. So an LLM player learns a new set's mechanic (Heat)
+ * the moment the set is loaded. The same text for every request of a run, so providers can cache it.
+ */
+export function rulesPrimer(): string {
+  const mechanics = Object.entries(MECHANICS)
+    .sort(([, a], [, b]) => (a.family ?? '').localeCompare(b.family ?? ''))
+    .map(([name, m]) => `${name}${m.family ? ` (${m.family})` : ''}: ${m.reminder}`)
+    .join(' ');
+  return `${CORE_RULES}\nKEYWORDS\n${CORE_KEYWORDS}${mechanics ? `\nFAMILY MECHANICS\n${mechanics}` : ''}`;
+}
 
 /**
  * Basic strategy, for text players that don't find it on their own: an LLM that knew only the rules gave its

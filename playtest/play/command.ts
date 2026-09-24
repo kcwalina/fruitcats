@@ -1,4 +1,4 @@
-// play new [--deck zest-rush|file.json] [--vs orchard-guard|file.json] [--seed N] [--file game.json]
+// play new [--deck zest-rush|five-alarm|file.json] [--vs orchard-guard|file.json] [--seed N] [--file game.json]
 // play show | play do <your answer> | play log | play rules   [--file game.json]
 //
 // A game against the bot, one decision per command, for a player that reads: a Claude Code session doing a
@@ -11,7 +11,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arg } from '../lib/args';
 import {
-  DECKS, RULES_PRIMER, apply, choicesText, chooseAction, createGame, deckProblems, describe, parseChoice, resolveDeck,
+  DECKS, apply, prototypeDecks, rulesPrimer, choicesText, chooseAction, createGame, deckProblems, describe, parseChoice, resolveDeck,
   type DeckList, type GameState, type PlayerId,
 } from '../lib/engine';
 import { mulberry } from '../lib/rng';
@@ -23,6 +23,9 @@ const gameFile = () => resolve(arg('file') ?? defaultFile());
 
 export function loadDeck(spec: string): DeckList {
   if (DECKS[spec]) return resolveDeck(spec);
+  // A prototype set's deck (Heat Wave's five-alarm): playable, though not a starter.
+  const prototype = prototypeDecks()[spec];
+  if (prototype) return prototype;
   const deck = JSON.parse(readFileSync(spec, 'utf8')) as DeckList;
   const problems = deckProblems(deck);
   if (problems.length) throw new Error(`${spec}: ${problems.join(' ')}`);
@@ -50,7 +53,7 @@ function show(g: SavedGame): string {
 export async function playCommand(): Promise<number> {
   const sub = process.argv[3];
   const file = gameFile();
-  if (sub === 'rules') { console.log(RULES_PRIMER); return 0; }
+  if (sub === 'rules') { console.log(rulesPrimer()); return 0; }
   if (sub === 'new') {
     const seed = Number(arg('seed') ?? Math.floor(Math.random() * 1e9));
     const mine = loadDeck(arg('deck') ?? 'zest-rush');

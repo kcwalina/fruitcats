@@ -59,7 +59,7 @@
   transform: rotateY(calc(var(--d, 0) * -22deg)) scale(calc(1 - var(--ad, 0) * 0.16));
   opacity: calc(1 - var(--ad, 0) * 0.45);
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  touch-action: pan-x; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
 }
 .collection-screen button.viewer-card:hover:not(:disabled), .viewer-overlay button.viewer-card:hover:not(:disabled) {
   transform: rotateY(calc(var(--d, 0) * -22deg)) scale(calc(1 - var(--ad, 0) * 0.16));

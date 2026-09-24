@@ -437,11 +437,13 @@ function fadeAmbient(container: Element, face: string) {
   shown.classList.remove('show');
 }
 
-// Finishes' sheens follow the pointer.
+// Finishes' sheens follow a mouse or pen. Not a finger: on a touch screen a finger on a card is swiping
+// the viewer, and redrawing the sheen under it made iPad Safari drop the swipe.
 document.addEventListener('pointermove', (event) => {
+  if (event.pointerType === 'touch') return;
   const holo = (event.target as HTMLElement).closest?.<HTMLElement>('.holo');
   if (!holo) return;
   const r = holo.getBoundingClientRect();
   holo.style.setProperty('--mx', `${((event.clientX - r.left) / r.width) * 100}%`);
   holo.style.setProperty('--my', `${((event.clientY - r.top) / r.height) * 100}%`);
-});
+}, { passive: true });

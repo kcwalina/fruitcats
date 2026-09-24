@@ -1,11 +1,13 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { cpSync, createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 
-// Card art lives in the repo's art/ folder and is served as-is: /sb1/<id>.webp (illustrations)
-// and /cards/sb1/<id>.webp (finished cards).
+// Interface art lives in the repo's art/ folder and is served as-is. Each card set's art lives in its own
+// folder, content/<year>/<month>/<set>/, and is published at stable addresses (contentAssets below):
+// /<set>/<id>.webp (illustrations), /cards/<set>/<id>.webp (finished cards, finishes in subfolders) and
+// /announcements/<set-folder>/ (its announcement page).
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
 // rulebook (rules.html), the card list (cards.html), what's on a card (anatomy.html), and guides to the
 // Collection and to wallpapers.
@@ -23,7 +25,7 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
 export default defineConfig({
   base: './',
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
-  plugins: [docsPages()],
+  plugins: [docsPages(), contentAssets()],
   build: {
     rollupOptions: {
       input: {
@@ -126,6 +128,67 @@ function docsPages(): Plugin {
         const { toc, body } = renderDoc(page.md);
         return html.replace('<!-- doc:header -->', docHeader(page.html)).replace('<!-- doc:toc -->', toc).replace('<!-- doc:body -->', body);
       },
+    },
+  };
+}
+
+// ── Card sets' art ─────────────────────────────────────────────────────────────────────────────────
+//
+// Every set folder in content/ publishes its art at the addresses the game, wallpapers and announcement
+// pages use: served straight from the folder in dev, and copied into the build. A set's folder is the one
+// place its art lives; nothing is duplicated in the repo.
+
+const CONTENT = fileURLToPath(new URL('../../content/', import.meta.url));
+
+/** Each set's folders and the address each is published at. */
+function contentMounts(): { url: string; dir: string }[] {
+  const mounts: { url: string; dir: string }[] = [];
+  const dirs = (d: string) => (existsSync(d) ? readdirSync(d).filter((n) => statSync(join(d, n)).isDirectory()) : []);
+  for (const year of dirs(CONTENT))
+    for (const month of dirs(join(CONTENT, year)))
+      for (const folder of dirs(join(CONTENT, year, month))) {
+        const root = join(CONTENT, year, month, folder);
+        const setFile = join(root, 'set.json');
+        if (!existsSync(setFile)) continue;
+        const code = String(JSON.parse(readFileSync(setFile, 'utf8')).set).toLowerCase();
+        mounts.push(
+          { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
+          { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
+          { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
+        );
+      }
+  return mounts.filter((m) => existsSync(m.dir));
+}
+
+const TYPES: Record<string, string> = {
+  '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.html': 'text/html', '.css': 'text/css',
+  '.json': 'application/json', '.md': 'text/markdown', '.svg': 'image/svg+xml',
+};
+
+function contentAssets(): Plugin {
+  let outDir = '';
+  return {
+    name: 'fruitcats-content-assets',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const path = decodeURIComponent((req.url ?? '').split('?')[0]);
+        for (const m of contentMounts()) {
+          if (!path.startsWith(m.url) && path !== m.url.slice(0, -1)) continue;
+          let file = join(m.dir, path.slice(m.url.length));
+          if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
+          if (!existsSync(file)) break;
+          res.setHeader('Content-Type', TYPES[extname(file)] ?? 'application/octet-stream');
+          createReadStream(file).pipe(res);
+          return;
+        }
+        next();
+      });
+    },
+    writeBundle() {
+      for (const m of contentMounts()) cpSync(m.dir, join(outDir, m.url), { recursive: true });
     },
   };
 }

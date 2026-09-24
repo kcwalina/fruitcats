@@ -5,8 +5,8 @@
     python tools/compose_cards.py --finish gold     # only one finish (standard, foil, gold, prismatic)
 
 Reads art from art/<set>/<key>.webp (see tools/generate_art.py) and writes 750x1050 WebP images
-(2.5" x 3.5" at 300 dpi) to art/cards/<set>/, plus a README.md gallery grouped by deck. Every card is
-also printed in each finish, to art/cards/<set>/<finish>/: the same card with its chrome (the frame, the
+(2.5" x 3.5" at 300 dpi) to the set's art/cards/, plus a README.md gallery grouped by deck. Every card is
+also printed in each finish, to art/cards/<finish>/: the same card with its chrome (the frame, the
 art's border, the edges of the name banner and type line, the cost ring) in holographic silver (foil),
 polished gold (gold) or a rainbow (prismatic).
 Card text comes from the card data, never from the image model, so a balance patch only
@@ -441,7 +441,8 @@ def main() -> int:
     args = parser.parse_args()
 
     from generate_art import set_file
-    data = json.loads(set_file(args.set).read_text(encoding="utf-8"))
+    set_path = set_file(args.set)
+    data = json.loads(set_path.read_text(encoding="utf-8"))
     cards = {c["id"]: c for c in data["cards"]}
     # A set can add families (with their colours) and family mechanics, and names itself in the footer.
     global FOOTER, KEYWORDS
@@ -450,8 +451,8 @@ def main() -> int:
     if data.get("mechanics"):
         KEYWORDS = KEYWORDS[:-3] + "|" + "|".join(data["mechanics"]) + r")\b"
     FOOTER = f'Fruitcats · {data["name"]} · © 2026 Krzysztof Cwalina'
-    art_dir = ROOT / "art" / args.set
-    out_dir = ROOT / "art" / "cards" / args.set
+    art_dir = set_path.parent / "art" / "illustrations"
+    out_dir = set_path.parent / "art" / "cards"
     out_dir.mkdir(parents=True, exist_ok=True)
     finishes = [args.finish] if args.finish else ["standard", *FINISHES]
     for f in finishes:

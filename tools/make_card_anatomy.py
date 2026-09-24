@@ -58,7 +58,7 @@ def pin(d: ImageDraw.ImageDraw, n: int, at: tuple, target: tuple, k: int) -> Non
 
 
 def main() -> None:
-    card = Image.open(ROOT / "art" / "cards" / "sb1" / CARD[0] / f"{KEY}.webp").convert("RGBA")
+    card = Image.open(ROOT / "content" / "2026" / "09" / "starter-box" / "art" / "cards" / CARD[0] / f"{KEY}.webp").convert("RGBA")
     k = 2                                 # drawn at 2x, then scaled down, for smooth lines
     sx0, sy0, sx1, sy1 = STRIP
     strip_w, strip_h = round((sx1 - sx0) * ZOOM), round((sy1 - sy0) * ZOOM)

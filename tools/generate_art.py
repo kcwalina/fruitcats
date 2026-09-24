@@ -3,7 +3,8 @@
     python tools/generate_art.py                      # draw every card that has no art yet
     python tools/generate_art.py --only SB1-C04       # one card (hero ids draw both sides)
     python tools/generate_art.py --force              # redraw even if the file exists
-    python tools/generate_art.py --reference art/sb1/SB1-C04.webp   # anchor the style to an existing image
+    python tools/generate_art.py --set hw1                # another set, by its code
+    python tools/generate_art.py --reference content/2026/09/starter-box/art/illustrations/SB1-C04.webp   # match a style
 
 Art is text-free; card text is added by tools/compose_cards.py so it is always exact.
 Auth is the signed-in Azure CLI (`az login`), the same as mochi's image tools -- no keys.
@@ -104,14 +105,15 @@ def main() -> int:
     parser.add_argument("--ui", action="store_true", help="draw the interface art (backgrounds, card back) into art/ui/")
     args = parser.parse_args()
 
-    data = json.loads(set_file(args.set).read_text(encoding="utf-8"))
+    set_path = set_file(args.set)
+    data = json.loads(set_path.read_text(encoding="utf-8"))
     cards = data["cards"] + data.get("tokens", [])    # tokens (units that cards summon) need art too
-    # A set may bring its own art direction (art/prompts.<set>.json); the Starter Box uses art/prompts.json.
-    set_prompts = ROOT / "art" / f"prompts.{args.set}.json"
-    prompts = json.loads((set_prompts if set_prompts.exists() else ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))
+    # Each set brings its own art direction (content/…/<set>/art/prompts.json); art/prompts.json holds the
+    # interface art (--ui).
+    prompts = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8")) if args.ui else         json.loads((set_path.parent / "art" / "prompts.json").read_text(encoding="utf-8"))
     if args.ui:
         return draw_ui(prompts["ui"], args)
-    out_dir = ROOT / "art" / args.set
+    out_dir = set_path.parent / "art" / "illustrations"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     endpoint, deployment = MODELS[args.model]
@@ -127,7 +129,7 @@ def main() -> int:
     def draw(key: str, card: dict) -> bool:
         subject = prompts["subjects"].get(key)
         if not subject:
-            print(f"  {key}: no prompt in art/prompts.json, skipped", flush=True)
+            print(f"  {key}: no prompt in the set's art/prompts.json, skipped", flush=True)
             return False
         # Hero Cats are drawn as plush mascots (their own style); the rest of the set is painted.
         hero = card["type"] == "Hero Cat"

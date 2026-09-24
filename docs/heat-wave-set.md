@@ -194,7 +194,7 @@ stare. Her hood is the wrinkled, scorpion-tailed Carolina Reaper pepper, and she
 
 ## Art direction for this set
 
-The set keeps the house style (the shared style line in `art/prompts.json`: bold outlines, cel shading,
+The set keeps the house style (the shared style line in the Starter Box's `art/prompts.json`: bold outlines, cel shading,
 plush fruit-hooded cats) and adds a per-set tone, which goes in the set's `art.json`:
 
 > Cool, not cute: confident smirks, narrowed eyes, dynamic action poses, low camera angles. A darker palette

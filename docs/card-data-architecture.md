@@ -36,8 +36,22 @@ Still to do is listed at the end.
 - **Released and prototype sets.** A set's `status` is `released` or `prototype`. The public game loads
   released sets only; playtests, simulations and tests load prototypes too. So a designed but unreleased
   deck (Heat Wave today) can be playtested by bots and agents without appearing in the game.
-- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/09/heat-wave/`. Card art still
-  lives in `art/` for now; moving it into each set's folder is still to do.
+- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/09/heat-wave/`. Everything a
+  set owns lives in its folder:
+
+  ```
+  content/2026/09/heat-wave/
+    set.json                   cards, tokens, families, mechanics, decks
+    plugin.ts                  optional
+    art/prompts.json           art direction
+    art/illustrations/<id>.webp        text-free art (Hero Cats: <id>-kitten / <id>-bigcat)
+    art/cards/<id>.webp, art/cards/<finish>/<id>.webp   composed by tools/compose_cards.py
+    announcement/              its announcement page (index.html, share.jpg)
+  ```
+
+  The site publishes each folder at stable addresses (`apps/web/vite.config.ts`, contentAssets):
+  `/<set>/<id>.webp`, `/cards/<set>/…` and `/announcements/<set-folder>/`. Pawtraits stay in `art/avatars/`
+  for now: the accounts work and its avatar server use those paths.
 
 | Set | Folder | Status | Plugin |
 |---|---|---|---|
@@ -153,9 +167,7 @@ A designer app, `apps/studio`, for contributors who don't change the code. Its w
 
 ## Still to do
 
-1. **Art into the set folders:** `art/<set>/` illustrations, `art/cards/<set>/` composed cards, prompts,
-   Pawtraits and announcements move to `content/<year>/<month>/<set>/art/…`. That needs the site's asset
-   paths, the art tools and the deploy to follow.
+1. **Pawtraits into the set folders**, once the accounts work lands (it serves them from `art/avatars/`).
 2. **Asset packs for a running site:** publish a set's folder (data and art) without redeploying the game;
    the site reads a pack index at start-up and registers what it finds.
 3. **`check-set` and the rules-text templater** (above).

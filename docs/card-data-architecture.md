@@ -140,7 +140,9 @@ with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
 - **Card basics:** types and rarities are valid, units have stats, and every family is defined.
 - **Abilities:** every trigger, condition, target and action is one the engine or the set's plugin knows,
   and every summoned token exists.
-- **Rules text:** every keyword appears in the card's rules text.
+- **Rules text:** every keyword appears in the card's rules text, and every number its abilities use
+  (damage, heals, draws…) is the one its text says, so data and text can't drift apart. A card with no
+  text gets a suggested one, written in the house style from its abilities (`content/rules-text.ts`).
 - **Decks:** every deck follows the deckbuilding rules.
 - **Art:** every card has an illustration and a composed card.
 - **Budget report:** stats and keywords against each card's cost.
@@ -195,8 +197,9 @@ A designer app, `apps/studio`, for contributors who don't change the code. Its w
 2. **Hosting packs apart from the game,** so a new set can be published without deploying the game:
    for example an Azure Storage container behind the site. The game already takes packs from
    `/packs/index.json`, so only the address and a publish command would change.
-3. **The rules-text templater,** so a card's text is written from its abilities. `check-set` checks
-   keywords only, for now.
+3. **Full rules text from data:** `content/rules-text.ts` suggests text for new cards and checks numbers,
+   but written text is still the one players see. Generating every card's text (and checking the words,
+   not only the numbers) would need the templater to cover each card's own phrasing.
 4. **The LLM playtesters' rules primer** lists the Starter Box mechanics by hand; the balance-testing
    work is generating it from the loaded sets.
 5. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the

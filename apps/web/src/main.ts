@@ -416,7 +416,13 @@ function onClick(key: string) {
     switch (raw) {
       case 'pass': return act({ t: 'pass' });
       case 'yarn':
-        if (confirming !== 'yarn') { confirming = 'yarn'; render(); return; }
+        // "You can only pass for the rest of this round" is only a cost when there is something
+        // else you could do. With nothing but Pass left, the warning just gets in the way.
+        if (confirming !== 'yarn' && legal.some((a) => a.t !== 'takeYarn' && a.t !== 'pass')) {
+          confirming = 'yarn';
+          render();
+          return;
+        }
         confirming = null;
         return act({ t: 'takeYarn' });
       case 'decline': return act({ t: 'decline' });

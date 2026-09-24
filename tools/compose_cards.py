@@ -210,8 +210,30 @@ CHROME = {
     "foil":      (SILVER, "#4a5362"),
     "gold":      (["#fff4c2", "#e8b73a", "#8a5a0c", "#f7d774", "#b07d17", "#fff0b0", "#c89224", "#fff4c2"], "#5a3a04"),
     "prismatic": (RAINBOW, "#3a2a5a"),
+    "signature": (["#2a1a15", "#120b09"], "#120b09"),
 }
+# Signature: a set's top card is printed only this way (docs/heat-wave-set.md). Charred black stone with
+# glowing lava cracks running through it. Cards opt in with "signature": true; it's never a default print.
+SIGNATURE = "signature"
 _textures: dict = {}
+
+
+def signature_texture(xs, ys):
+    """Charred black stone split by glowing lava cracks: the edges of a Voronoi pattern, hottest (yellow)
+    in the middle of each crack and cooling through orange to deep red at its edges. Fixed seed, so every
+    Signature card is cracked the same way."""
+    import numpy as np
+    rng = np.random.default_rng(7)
+    pts = rng.uniform(0, 1, (170, 2)) * (W, H)
+    d = np.sqrt((xs[..., None] - pts[:, 0]) ** 2 + (ys[..., None] - pts[:, 1]) ** 2)
+    d.sort(axis=-1)
+    edge = d[..., 1] - d[..., 0]                        # 0 on a crack, growing into each stone
+    core = np.exp(-(edge / 3.2) ** 2)[..., None]
+    glow = np.exp(-(edge / 16) ** 2)[..., None]
+    stone = np.array([30, 20, 17], float) + 14 * np.sin(xs / 37 + np.sin(ys / 53) * 2)[..., None] / 2
+    rgb = stone * (1 - glow) + np.array([190, 42, 10], float) * glow
+    rgb = rgb * (1 - core) + np.array([255, 196, 92], float) * core
+    return rgb
 
 
 def chrome_texture(finish: str) -> Image.Image:
@@ -229,7 +251,9 @@ def chrome_texture(finish: str) -> Image.Image:
 
         diagonal = (xs * 0.8 + ys * 0.6) / (W * 0.8 + H * 0.6)
         brushed = (1 + 0.04 * np.sin(ys * 1.9 + np.sin(xs / 23) * 3))[..., None]
-        if finish == "gold":
+        if finish == SIGNATURE:
+            rgb = signature_texture(xs, ys)
+        elif finish == "gold":
             rgb = ramp(CHROME["gold"][0], diagonal * 2) * brushed
         else:
             silver = ramp(SILVER, diagonal * 2.5) * brushed
@@ -247,7 +271,7 @@ def chrome_texture(finish: str) -> Image.Image:
 
 
 # A finish's code in the collector line, like the codes on real cards: F(oil), G(old), P(rismatic).
-FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white")}
+FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white"), SIGNATURE: ("S", "white")}
 
 
 def finish_tag(img: Image.Image, right: int, cy: int, finish: str) -> int:
@@ -334,7 +358,7 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
     if card["type"] == "Hero Cat":
         star(d, 81, 79, 38, main)
     else:
-        centered(d, (81, 76), str(card["cost"]), font("seguibl.ttf", 60), dark)
+        centered(d, (81, 76), str(card.get("cost", 0)), font("seguibl.ttf", 60), dark)
 
     # Lucky badge
     if re.search(r"\bLucky\b", text):
@@ -342,6 +366,8 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
 
     # Type line
     kind = card["type"].upper()
+    if card.get("token"):
+        kind = f"TOKEN {kind}"
     if side:
         kind = f'HERO CAT · {"KITTEN" if side == "kitten" else "BIG CAT"}'
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
@@ -353,7 +379,8 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
     if finish != "standard":
         right = finish_tag(img, right, 622, finish) - 8
     d.text((right, 622), key, font=key_font, fill=MUTED, anchor="rm")
-    rarity_mark(img, round(right - key_font.getlength(key) - 20), 622, 12, card["rarity"])
+    if card.get("rarity"):                 # tokens aren't collected, so they have no rarity
+        rarity_mark(img, round(right - key_font.getlength(key) - 20), 622, 12, card["rarity"])
     cd.rounded_rectangle((42, 596, W - 42, 648), radius=14, outline=255, width=4)
 
     # The finish's chrome, edged in its ink where it meets the card.
@@ -410,7 +437,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--set", default="sb1")
     parser.add_argument("--only", nargs="*")
-    parser.add_argument("--finish", choices=("standard", *FINISHES), help="only this finish (default: all)")
+    parser.add_argument("--finish", choices=("standard", *FINISHES, SIGNATURE), help="only this finish (default: all)")
     args = parser.parse_args()
 
     data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
@@ -431,7 +458,7 @@ def main() -> int:
             (out_dir / f).mkdir(exist_ok=True)
 
     written, pending = [], []
-    for card in data["cards"]:
+    for card in data["cards"] + [dict(t, token=True) for t in data.get("tokens", [])]:
         if args.only and card["id"] not in args.only:
             continue
         for side in (("kitten", "bigcat") if card["type"] == "Hero Cat" else (None,)):
@@ -439,7 +466,13 @@ def main() -> int:
             art = art_dir / f"{key}.webp"
             if not art.exists():
                 pending.append(key)
-            for f in finishes:
+            # Tokens are printed plain; a Signature card also gets its Signature print.
+            prints = ["standard"] if card.get("token") else list(finishes)
+            if card.get("signature") and not args.finish:
+                prints.append(SIGNATURE)
+            for f in prints:
+                if f != "standard":
+                    (out_dir / f).mkdir(exist_ok=True)
                 compose(card, side, art, f).save(out_dir / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp"),
                                                  quality=90, method=6)
             written.append(key)

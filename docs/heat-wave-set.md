@@ -224,5 +224,7 @@ Following [card-data-architecture.md](card-data-architecture.md), the only engin
 - the **`unitsInComposts`** and **`unitHasCounter`** conditions (the two Grow Ups)
 
 Everything else is data: the Pepper family, the Heat mechanic, 19 cards, one token and one deck. Art: 22
-illustrations (four Hero Cat faces, 15 Pepper cards, Jack, Nova and the Jack-o'-Lantern token), plus the
-finishes that `compose_cards.py` already makes.
+illustrations (four Hero Cat faces, 15 Pepper cards, Jack, Nova and the Jack-o'-Lantern token), all drawn,
+plus every finish. Reaper also has the Signature print (`compose_cards.py` makes it for cards with
+`"signature": true`: charred black stone with glowing lava cracks, code **S**). The app's shimmer for Signature
+copies (finish.css, collection.ts) comes with the Store work.

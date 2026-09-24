@@ -96,7 +96,8 @@ def main() -> int:
     parser.add_argument("--ui", action="store_true", help="draw the interface art (backgrounds, card back) into art/ui/")
     args = parser.parse_args()
 
-    cards = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))["cards"]
+    data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
+    cards = data["cards"] + data.get("tokens", [])    # tokens (units that cards summon) need art too
     # A set may bring its own art direction (art/prompts.<set>.json); the Starter Box uses art/prompts.json.
     set_prompts = ROOT / "art" / f"prompts.{args.set}.json"
     prompts = json.loads((set_prompts if set_prompts.exists() else ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))

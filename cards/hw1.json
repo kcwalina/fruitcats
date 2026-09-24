@@ -56,7 +56,9 @@
       "health": 2,
       "keywords": [
         "Guardian"
-      ]
+      ],
+      "text": "Guardian.",
+      "flavor": "The lantern stays lit. So does the grudge."
     }
   ],
   "cards": [
@@ -605,7 +607,8 @@
           }
         ],
         "text": "Your units at +3 Heat have Fierce.\nExhaust: Deal 2 damage to a damaged unit."
-      }
+      },
+      "signature": true
     }
   ],
   "decks": {

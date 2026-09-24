@@ -21,8 +21,8 @@
     "play": "tsx playtest/runner.ts play",
     "llm-playtest": "tsx playtest/runner.ts llm-playtest",
     "deck-hunt": "tsx playtest/runner.ts deck-hunt",
-    "weekly": "tsx playtest/runner.ts weekly",
-    "reports": "tsx playtest/runner.ts reports"
+    "reports": "tsx playtest/runner.ts reports",
+    "nightly": "tsx playtest/runner.ts nightly"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

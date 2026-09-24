@@ -143,4 +143,4 @@ export function getProvider(name: string, model?: string): Provider {
 
 export const addUsage = (a: Usage, b: Usage): Usage => ({ input: a.input + b.input, cachedInput: a.cachedInput + b.cachedInput, output: a.output + b.output });
 export const noUsage = (): Usage => ({ input: 0, cachedInput: 0, output: 0 });
-export const weeklyConfig = () => config.weekly;
+export const nightlyConfig = () => config.nightly;

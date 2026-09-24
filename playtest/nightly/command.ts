@@ -1,11 +1,11 @@
-// weekly [--provider pc2024] [--hours 6] [--scale 3] [--no-llm]
+// nightly [--provider pc2024] [--hours 6] [--scale 3] [--no-llm]
 //
-// The unattended run PC2024's playtester starts once a week, overnight:
+// The unattended run PC2024's playtester starts every night:
 //   1. the full bot gauntlet (starters, random and mutated decks, card impact, bot check)
 //   2. an LLM deck hunt: decks designed to break the game, played by the bots
 //   3. LLM playtest games against the bot until the time is up
-//   4. what changed since last week
-// Each part writes its own report; the weekly report links them and says what needs a look.
+//   4. what changed since the last run
+// Each part writes its own report; the nightly report links them and says what needs a look.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,7 +16,7 @@ import { runBalance } from '../balance/gauntlet';
 import { runLlmPlaytest } from '../llm/command';
 import { runDeckHunt } from '../llm/hunt';
 import { PERSONAS } from '../llm/personas';
-import { getProvider, weeklyConfig } from '../llm/providers';
+import { getProvider, nightlyConfig } from '../llm/providers';
 
 /** The most recent earlier run of a kind, to compare against. */
 function previous(kind: string, before: string): RunSummary | null {
@@ -30,15 +30,15 @@ function previous(kind: string, before: string): RunSummary | null {
   return null;
 }
 
-export async function weeklyCommand(): Promise<number> {
-  const cfg = weeklyConfig();
-  const run = newRun('weekly');
+export async function nightlyCommand(): Promise<number> {
+  const cfg = nightlyConfig();
+  const run = newRun('nightly');
   const started = Date.now();
   const hours = numArg('hours') ?? cfg.hours;
   const log = (text: string) => console.log(`[${new Date().toISOString().slice(11, 19)}] ${text}`);
   const problems: Problem[] = [];
   const parts: Record<string, string> = {};
-  const md: string[] = ['# Weekly playtest', ''];
+  const md: string[] = ['# Nightly playtest', ''];
 
   log('Bot gauntlet…');
   const balance = await runBalance({ quick: false, scale: numArg('scale') ?? cfg.balanceScale, quiet: true });
@@ -52,9 +52,9 @@ export async function weeklyCommand(): Promise<number> {
   if (last) {
     const before = (last.details.starters as { overall: Record<string, number> }).overall;
     const moved = Object.keys(overall).filter((k) => before[k] !== undefined && Math.abs(overall[k] - before[k]) >= 0.04);
-    md.push('## Since last week', '', last.cardsHash === balance.cardsHash ? 'The cards have not changed.' : 'The cards changed since last week.', '');
+    md.push('## Since the last run', '', last.cardsHash === balance.cardsHash ? 'The cards have not changed.' : 'The cards changed since the last run.', '');
     md.push(...(moved.length ? moved.map((k) => `- ${DECKS[k]?.name ?? k}: ${pct(before[k])} → ${pct(overall[k])}`) : ['- No starter deck moved by 4 points or more.']), '');
-    for (const k of moved) problems.push({ level: 'warn', text: `${DECKS[k]?.name ?? k} moved from ${pct(before[k])} to ${pct(overall[k])} since last week.` });
+    for (const k of moved) problems.push({ level: 'warn', text: `${DECKS[k]?.name ?? k} moved from ${pct(before[k])} to ${pct(overall[k])} since the last run.` });
   }
 
   if (!flag('no-llm')) {
@@ -91,7 +91,7 @@ export async function weeklyCommand(): Promise<number> {
   }
 
   md.splice(2, 0, '## Needs a look', '', ...(problems.length ? problems.map((p) => `- **${p.level}**: ${p.text}`) : ['Nothing: every check passed.']), '');
-  const summary = finishRun(run, 'weekly', 0, problems, { parts, starters: overall }, md.join('\n'));
+  const summary = finishRun(run, 'nightly', 0, problems, { parts, starters: overall }, md.join('\n'));
   log(`Done: ${summary.result.toUpperCase()}. Report: ${summary.id}`);
   return 0;
 }

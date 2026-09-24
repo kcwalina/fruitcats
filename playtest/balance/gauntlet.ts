@@ -1,7 +1,7 @@
 // The balance run: which decks play whom, how many games, and what counts as a problem.
 //
 //   quick (the deploy gate)  the starter decks against each other
-//   full  (weekly)           + random decks for every Hero Cat and partner family, starters with cards
+//   full  (nightly)          + random decks for every Hero Cat and partner family, starters with cards
 //                            swapped, per-card impact, and a check that the bot is strong enough to trust
 
 import config from '../balance.config.json';

@@ -22,13 +22,12 @@ sealed class PlaytesterConfig
     public string ReportsDir { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "mochi.playtester", "runs");
 
-    /// <summary>The weekly run: which day, the local hour it may start, and how long it may take.</summary>
-    public DayOfWeek Day { get; set; } = DayOfWeek.Sunday;
+    /// <summary>The nightly run: the local hour it may start and how long it may take.</summary>
     public int StartHour { get; set; } = 0;
     public double Hours { get; set; } = 6.5;
 
-    /// <summary>Arguments for the weekly command (the runner reads provider and model defaults from its own config).</summary>
-    public string WeeklyArgs { get; set; } = "--provider pc2024 --hours 6";
+    /// <summary>Arguments for the nightly command (the runner reads provider and model defaults from its own config).</summary>
+    public string NightlyArgs { get; set; } = "--provider pc2024 --hours 6";
 
     /// <summary>How many run folders to keep; older ones are deleted after each run.</summary>
     public int KeepRuns { get; set; } = 200;

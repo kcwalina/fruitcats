@@ -148,7 +148,7 @@ const DECKS = [
   { key: 'orchard-guard', name: 'Orchard Guard', color: 'var(--orchard)' },
   { key: 'mango-tango', name: 'Mango Tango', color: 'var(--tropical)' },
 ];
-const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', weekly: 'Weekly run' };
+const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', nightly: 'Nightly run', weekly: 'Weekly run' };
 let runs = [];
 let selected = null;
 try { selected = location.hash.slice(1) || localStorage.getItem('fc-playtest-run'); } catch { /* storage may be blocked */ }
@@ -160,7 +160,7 @@ const when = (iso) => new Date(iso);
 const timeOf = (iso) => when(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const dayOf = (iso) => when(iso).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 const dur = (s) => (s >= 3600 ? `${(s / 3600).toFixed(1)} h` : s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`);
-const starters = (r) => r.details?.starters?.overall ?? (r.kind === 'weekly' ? r.details?.starters : null);
+const starters = (r) => r.details?.starters?.overall ?? (r.kind === 'nightly' || r.kind === 'weekly' ? r.details?.starters : null);
 
 // A small Markdown reader for the reports the playtest scripts write: headings, lists, tables, quotes, bold.
 function inline(text) {

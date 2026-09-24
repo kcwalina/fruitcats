@@ -9,8 +9,8 @@ using Mochi.Paws;
 namespace mochi.playtester;
 
 /// <summary>
-/// Runs Fruitcats playtests on PC2024 while nobody is using it: once a week (Sunday night by default) it
-/// downloads the current playtest runner from the live site and starts <c>node runner.mjs weekly</c>, which
+/// Runs Fruitcats playtests on PC2024 while nobody is using it: every night (from midnight by default) it
+/// downloads the current playtest runner from the live site and starts <c>node runner.mjs nightly</c>, which
 /// plays the bot gauntlet on the CPU and LLM games through the local model node on the GPU. Reports stay on
 /// this machine and are served by <c>/runs</c>; the laptop's sync task copies them to the dashboard.
 ///
@@ -65,18 +65,17 @@ sealed partial class PlaytesterServer : UdsPaw
         {
             Trace($"Using Node at {_node}");
         }
-        Trace($"Playtester ready: weekly on {_config.Day} from {_config.StartHour}:00 for {_config.Hours} h; reports in {_config.ReportsDir}");
+        Trace($"Playtester ready: every night from {_config.StartHour}:00 for {_config.Hours} h; reports in {_config.ReportsDir}");
         return Task.CompletedTask;
     }
 
-    /// <summary>The week's run is due: it is the day, past the start hour, inside the window, and this week's
-    /// run hasn't happened yet.</summary>
-    bool WeeklyDue(DateTime now)
+    /// <summary>Tonight's run is due: past the start hour, inside the window, and it hasn't happened yet.</summary>
+    bool NightlyDue(DateTime now)
     {
-        if (now.DayOfWeek != _config.Day || now.Hour < _config.StartHour) return false;
+        if (now.Hour < _config.StartHour) return false;
         DateTime windowStart = now.Date.AddHours(_config.StartHour);
         if (now > windowStart.AddHours(Math.Max(1, _config.Hours - 0.5))) return false;
-        string? last = _lastRun?["command"]?.GetValue<string>() == "weekly" ? _lastRun?["startedAt"]?.GetValue<string>() : null;
+        string? last = _lastRun?["command"]?.GetValue<string>() is "nightly" or "weekly" ? _lastRun?["startedAt"]?.GetValue<string>() : null;
         return last is null || DateTime.Parse(last).ToLocalTime() < windowStart;
     }
 
@@ -89,8 +88,8 @@ sealed partial class PlaytesterServer : UdsPaw
                 await Task.Delay(TimeSpan.FromMinutes(1), ct);
                 bool idle;
                 lock (_gate) idle = _run is null;
-                if (idle && WeeklyDue(DateTime.Now))
-                    await StartRunAsync("weekly", _config.WeeklyArgs, ct);
+                if (idle && NightlyDue(DateTime.Now))
+                    await StartRunAsync("nightly", _config.NightlyArgs, ct);
             }
         }
         catch (OperationCanceledException)
@@ -274,12 +273,12 @@ sealed partial class PlaytesterServer : UdsPaw
     }
 
     [PawRoute("GET", "/health")]
-    [Description("Whether a playtest is running, the last run, and when the next weekly run is due")]
+    [Description("Whether a playtest is running, the last run, and when the next nightly run is due")]
     public Task<JsonObject> HealthAsync()
     {
         DateTime now = DateTime.Now;
         DateTime next = now.Date.AddHours(_config.StartHour);
-        while (next.DayOfWeek != _config.Day || next < now) next = next.AddDays(1);
+        if (next < now) next = next.AddDays(1);
         JsonObject result;
         lock (_gate)
         {
@@ -287,7 +286,7 @@ sealed partial class PlaytesterServer : UdsPaw
             {
                 ["running"] = _run is not null ? new JsonObject { ["command"] = _runCommand, ["startedAt"] = _runStarted.ToString("o") } : null,
                 ["lastRun"] = _lastRun?.DeepClone(),
-                ["nextWeekly"] = next.ToString("o"),
+                ["nextNightly"] = next.ToString("o"),
                 ["node"] = _node,
                 ["runnerUrl"] = _config.RunnerUrl,
                 ["error"] = _lastError.Length == 0 ? null : _lastError,
@@ -297,15 +296,15 @@ sealed partial class PlaytesterServer : UdsPaw
     }
 
     [PawRoute("POST", "/run")]
-    [Description("Start a playtest now: command 'weekly' (default), 'balance' or 'llm-playtest', with optional runner arguments")]
+    [Description("Start a playtest now: command 'nightly' (default), 'balance' or 'llm-playtest', with optional runner arguments")]
     public async Task<JsonObject> RunAsync(string? command = null, string? args = null)
     {
-        command ??= "weekly";
-        if (command is not ("weekly" or "balance" or "llm-playtest" or "deck-hunt"))
+        command ??= "nightly";
+        if (command is not ("nightly" or "balance" or "llm-playtest" or "deck-hunt"))
             return new JsonObject { ["started"] = false, ["error"] = $"unknown command {command}" };
         if (args is not null && !SafeArgs().IsMatch(args))
             return new JsonObject { ["started"] = false, ["error"] = "arguments may only contain letters, digits, spaces, dots, commas and dashes" };
-        string? error = await StartRunAsync(command, args ?? (command == "weekly" ? _config.WeeklyArgs : ""), CancellationToken.None);
+        string? error = await StartRunAsync(command, args ?? (command == "nightly" ? _config.NightlyArgs : ""), CancellationToken.None);
         return new JsonObject { ["started"] = error is null, ["error"] = error };
     }
 

@@ -7,14 +7,16 @@ import { runMain } from './lib/pool';
 import { llmPlaytestCommand } from './llm/command';
 import { deckHuntCommand } from './llm/hunt';
 import { playCommand } from './play/command';
-import { weeklyCommand } from './weekly/command';
+import { nightlyCommand } from './nightly/command';
 
 const COMMANDS: Record<string, () => Promise<number>> = {
   balance: balanceCommand,
   play: playCommand,
   'llm-playtest': llmPlaytestCommand,
   'deck-hunt': deckHuntCommand,
-  weekly: weeklyCommand,
+  nightly: nightlyCommand,
+  // The name of the first paw build (2026-09-24), kept until every PC2024 paw asks for 'nightly'.
+  weekly: nightlyCommand,
   reports: reportsCommand,
 };
 

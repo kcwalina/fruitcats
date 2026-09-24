@@ -81,6 +81,8 @@ let screen: Screen = 'home';
 let homeNote = '';
 /** A starter deck's key, or `custom:<id>` for one of your own (see mydecks.ts). */
 let myDeck = loadChosenDeck();
+/** The deck in the middle of Solo's carousel. It's the one you play, unless it isn't finished yet. */
+let deckInView = myDeck;
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
@@ -333,13 +335,10 @@ function onClick(key: string) {
   if (kind === 'solo') {
     // Always a normal game: the guided one is the Tutorial, which Home puts first until you've played.
     if (raw === 'play') { startGame(); return; }
-    if (raw in DIFFICULTY) difficulty = raw as Difficulty;
-    else {
-      const deckKey = key.slice('solo:'.length);   // your own decks' keys have a colon: custom:<id>
-      const deck = deckForKey(deckKey);
-      if (deck && isReady(deck)) { myDeck = deckKey; saveChosenDeck(deckKey); }
-    }
-    render();
+    if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); return; }
+    // A deck: tapping one slides it to the middle, which chooses it (see deckCarouselMounted).
+    const card = [...app.querySelectorAll<HTMLElement>('.deck-choice')].find((el) => el.dataset.click === key);
+    if (card) centerDeck(card, 'smooth');
     return;
   }
   if (kind === 'deck') {
@@ -570,8 +569,9 @@ function renderDeckPicker(): string {
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
-  // Every deck is the same card in one carousel: the starters, then your own. One of yours still short
-  // of 50 cards shows, but can't be picked yet.
+  if (!deckForKey(deckInView)) deckInView = myDeck;
+  // Every deck is the same card in one carousel: the starters, then your own. The one in the middle is
+  // your deck; one of yours still short of 50 cards can sit there, but you can't play it yet.
   const decks = [
     ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb[key] ?? '' })),
     ...listDecks().map((d) => {
@@ -588,7 +588,7 @@ function renderDeckPicker(): string {
         <div class="deck-track" data-keep-scroll="decks">
           <div class="deck-choices">
             ${decks.map(({ key, deck, ready, blurb }) => `
-              <button class="deck-choice ${key.startsWith('custom:') ? 'mine' : ''} ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}" ${ready ? '' : 'disabled'}>
+              <button class="${deckChoiceClass(key, ready)}" data-click="solo:${key}" data-ready="${ready}">
                 <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
                 <span class="deck-name">${esc(deck.name)}</span>
                 <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
@@ -596,36 +596,73 @@ function renderDeckPicker(): string {
               </button>`).join('')}
           </div>
         </div>
-        <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous decks">‹</button>
-        <button class="deck-arrow next" data-deck-scroll="1" aria-label="More decks">›</button>
+        <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous deck">‹</button>
+        <button class="deck-arrow next" data-deck-scroll="1" aria-label="Next deck">›</button>
       </div>
     </section>`;
 }
 
+const deckChoiceClass = (key: string, ready: boolean) => ['deck-choice', key.startsWith('custom:') && 'mine',
+  key === deckInView && 'in-view', key === deckInView && ready && 'chosen', !ready && 'unready'].filter(Boolean).join(' ');
+
+/** Slides a deck in Solo's carousel to the middle. */
+function centerDeck(card: HTMLElement, behavior: ScrollBehavior) {
+  const track = card.closest<HTMLElement>('.deck-track')!;
+  const t = track.getBoundingClientRect(), c = card.getBoundingClientRect();
+  track.scrollTo({ left: track.scrollLeft + c.left + c.width / 2 - (t.left + t.width / 2), behavior });
+}
+
 /**
- * The deck carousel, after each render: the chosen deck is slid into view if it's hidden (on arriving,
- * or after tapping one peeking at the edge), and the arrows show only where there are more decks.
+ * The deck carousel, after each render. The deck in the middle is your deck: as you swipe, whichever
+ * comes to the middle is chosen (in place, without redrawing the screen under your finger), and Play
+ * says so. The arrows show only where there are more decks.
  */
 function deckCarouselMounted(first: boolean) {
   const track = app.querySelector<HTMLElement>('.deck-track');
-  const chosen = track?.querySelector<HTMLElement>('.deck-choice.chosen');
   if (!track) return;
-  if (chosen) {
-    const t = track.getBoundingClientRect(), c = chosen.getBoundingClientRect();
-    if (c.left < t.left || c.right > t.right)
-      track.scrollTo({ left: track.scrollLeft + c.left - t.left - (t.width - c.width) / 2, behavior: first ? 'instant' : 'smooth' });
-  }
+  const cards = [...track.querySelectorAll<HTMLElement>('.deck-choice')];
+  const inView = cards.find((el) => el.classList.contains('in-view'));
+  if (first && inView) centerDeck(inView, 'instant');
   const carousel = track.parentElement!;
+  const keyOf = (el: HTMLElement) => el.dataset.click!.slice('solo:'.length);   // your own: custom:<id>
+  let frame = 0;
   const update = () => {
+    frame = 0;
     carousel.classList.toggle('at-start', track.scrollLeft <= 4);
     carousel.classList.toggle('at-end', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+    const t = track.getBoundingClientRect();
+    const off = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return Math.abs(r.left + r.width / 2 - t.left - t.width / 2); };
+    const nearest = cards.reduce((best, el) => (off(el) < off(best) ? el : best));
+    if (keyOf(nearest) === deckInView) return;
+    deckInView = keyOf(nearest);
+    if (nearest.dataset.ready === 'true') { myDeck = deckInView; saveChosenDeck(myDeck); }
+    for (const el of cards) el.className = deckChoiceClass(keyOf(el), el.dataset.ready === 'true');
+    const footer = app.querySelector('.setup-footer');
+    if (footer) footer.outerHTML = renderSoloFooter();
   };
   update();
-  track.addEventListener('scroll', update, { passive: true });
+  track.addEventListener('scroll', () => { frame ||= requestAnimationFrame(update); }, { passive: true });
+}
+
+/** Play, or Resume and New game. A new game waits until the deck in the middle is finished. */
+function renderSoloFooter(): string {
+  const saved = savedGameLabel();
+  const deck = deckForKey(deckInView);
+  const blocked = !deck || !isReady(deck);
+  const note = blocked ? 'Finish this deck in the Deck builder to play it' : '';
+  return `
+    <div class="setup-footer">
+      ${saved ? `
+      <div class="resume-buttons">
+        <button class="play-button twin" data-click="home:continue">
+          <span class="twin-name">Resume game</span><span class="twin-sub">${saved}</span></button>
+        <button class="play-button twin" data-click="solo:play" ${blocked ? 'disabled' : ''} title="${note || 'Start a new game with the deck and difficulty above; it replaces the unfinished one'}">
+          <span class="twin-name">New game</span><span class="twin-sub">${blocked ? 'Deck not finished' : `${esc(deck.name)} · ${DIFFICULTY[difficulty].label}`}</span></button>
+      </div>` : `<button class="play-button" data-click="solo:play" ${blocked ? 'disabled' : ''} title="${note}">${blocked ? 'Deck not finished' : 'Play'}</button>`}
+    </div>`;
 }
 
 function renderSolo(): string {
-  const saved = savedGameLabel();
   return `
   <div class="menu solo">
     <div class="setup-bar">
@@ -647,15 +684,7 @@ function renderSolo(): string {
         </div>
       </section>
     </div>
-    <div class="setup-footer">
-      ${saved ? `
-      <div class="resume-buttons">
-        <button class="play-button twin" data-click="home:continue">
-          <span class="twin-name">Resume game</span><span class="twin-sub">${saved}</span></button>
-        <button class="play-button twin" data-click="solo:play" title="Start a new game with the deck and difficulty above; it replaces the unfinished one">
-          <span class="twin-name">New game</span><span class="twin-sub">${esc(deckForKey(myDeck)?.name ?? '')} · ${DIFFICULTY[difficulty].label}</span></button>
-      </div>` : '<button class="play-button" data-click="solo:play">Play</button>'}
-    </div>
+    ${renderSoloFooter()}
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;
 }
@@ -1023,10 +1052,11 @@ app.addEventListener('click', (event) => {
   if (suppressClick) { suppressClick = false; return; }
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-click]');
   if (el && !(el as HTMLButtonElement).disabled) onClick(el.dataset.click!);
-  // The deck carousel's arrows (for a mouse; fingers swipe): a page of decks at a time, no redraw.
+  // The deck carousel's arrows (for a mouse; fingers swipe): the next deck to the middle.
   const arrow = (event.target as HTMLElement).closest<HTMLElement>('[data-deck-scroll]');
-  const track = arrow?.parentElement?.querySelector<HTMLElement>('.deck-track');
-  if (arrow && track) track.scrollBy({ left: Number(arrow.dataset.deckScroll) * track.clientWidth * 0.8, behavior: 'smooth' });
+  const cards = [...(arrow?.parentElement?.querySelectorAll<HTMLElement>('.deck-choice') ?? [])];
+  const next = cards[cards.findIndex((el) => el.classList.contains('in-view')) + Number(arrow?.dataset.deckScroll)];
+  if (next) centerDeck(next, 'smooth');
 });
 
 // ── Drag and drop ────────────────────────────────────────────────────────────────────────────────

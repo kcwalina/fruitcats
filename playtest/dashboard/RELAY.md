@@ -9,7 +9,7 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
 2. **Runs to the dashboard.** `npm run reports -- pending --pc2024 http://192.168.1.74:5280`. For each file
    it lists in `playtest/.state/upload/`, write it with ArtifactData `set` into collection `runs`, document id
    = the file name without `.json` (use `batch` with `file_path` entries, at most 50 per batch). Also `set`
-   collection `meta`, document `catalog`, from `playtest/.state/catalog.json` (the decks, families and
+   collection `meta`, document `dashboard`, from `playtest/.state/meta.json` (the decks, family colors and
    personas the page names and colors things with). Then
    `npm run reports -- mark`. Runs still going are uploaded each time with their progress and are not
    marked, so the next pass updates them.

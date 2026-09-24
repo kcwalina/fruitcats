@@ -184,11 +184,11 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 </div>
 
 <script>
-// Decks, families and personas come from the catalog the relay uploads (meta/catalog), built from the card
+// Decks, family colors and personas come from the document the relay uploads (meta/dashboard), built from the card
 // data, so a new deck appears here by itself. Until it loads, or for a deck it doesn't know, the key stands in.
-let catalog = { decks: [], personas: [] };
+let meta = { decks: [], personas: [] };
 function decks() {
-  const known = catalog.decks.map((d) => ({ key: d.key, name: d.name, color: d.color }));
+  const known = meta.decks.map((d) => ({ key: d.key, name: d.name, color: d.color }));
   const seen = new Set(known.map((d) => d.key));
   for (const r of runs) for (const key of Object.keys(starters(r) ?? {})) {
     if (!seen.has(key)) { seen.add(key); known.push({ key, name: key, color: 'var(--muted)' }); }
@@ -322,13 +322,13 @@ const progressText = (r) => {
 const progressBar = (r) => `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${r.progress.total}" aria-valuenow="${r.progress.done}"><span style="width:${r.progress.total ? Math.min(100, (100 * r.progress.done) / r.progress.total).toFixed(1) : 0}%"></span></div>`;
 
 // ── Starting runs: the form writes a request; the relay on the laptop sends it to PC2024 ───────────────
-const starterOptions = () => catalog.decks.map((d) => [d.key, d.name]);
+const starterOptions = () => meta.decks.map((d) => [d.key, d.name]);
 const num = (id, label, value, min, max, step = 1) => `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" value="${value}" min="${min}" max="${max}" step="${step}" required></div>`;
 const select = (id, label, options) => `<div class="field"><label for="${id}">${label}</label><select id="${id}">${options.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></div>`;
 function renderOptions() {
   const kind = $('kind').value;
   $('opts').innerHTML = {
-    'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'Each in turn'], ...catalog.personas.map((p) => [p.key, p.name])])}</div>
+    'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'Each in turn'], ...meta.personas.map((p) => [p.key, p.name])])}</div>
       <div class="row">${select('deck', 'LLM plays', [['', 'Every matchup, in turn'], ...starterOptions()])}${select('vs', 'Against', starterOptions().slice().reverse())}</div>`,
     balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}</div>`,
     'deck-hunt': `<div class="row">${num('ideas', 'Deck ideas', 6, 1, 12)}</div>`,
@@ -342,7 +342,7 @@ function buildRequest() {
   const n = (id) => Number($(id).value);
   if (kind === 'llm-playtest') {
     const deck = $('deck').value, vs = $('vs').value, persona = $('persona').value;
-    const name = (k) => catalog.decks.find((d) => d.key === k)?.name ?? k;
+    const name = (k) => meta.decks.find((d) => d.key === k)?.name ?? k;
     return {
       args: `--provider pc2024 --parallel 2 --games ${n('games')} --persona ${persona}${deck ? ` --deck ${deck} --vs ${vs}` : ''}`,
       label: `${n('games')} LLM games${deck ? `, ${name(deck)} vs ${name(vs)}` : ''}${persona === 'all' ? '' : `, ${$('persona').selectedOptions[0].text.toLowerCase()}`}`,
@@ -442,9 +442,9 @@ $('runs').addEventListener('click', (e) => {
     (snap) => { runs = snap.docs.map((doc) => doc.data()); renderAll(); },
     () => { $('runs').innerHTML = '<div class="empty">The run data stopped updating. Reload the page to try again.</div>'; },
   );
-  db.doc('meta/catalog').onSnapshot((snap) => {
+  db.doc('meta/dashboard').onSnapshot((snap) => {
     if (!snap.exists) return;
-    catalog = snap.data();
+    meta = snap.data();
     const kind = $('kind').value;
     renderOptions();
     $('kind').value = kind;

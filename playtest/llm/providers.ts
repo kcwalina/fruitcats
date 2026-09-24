@@ -80,7 +80,7 @@ function fakeProvider(): Provider {
   };
 }
 
-export function getProvider(name: string, model?: string): Provider {
+export function getProvider(name: string, model?: string, extra: Record<string, unknown> = {}): Provider {
   if (name === 'fake') return fakeProvider();
   const cfg = (config.providers as Record<string, ProviderConfig>)[name];
   if (!cfg) throw new Error(`No provider "${name}" in playtest.config.json (have: ${providerNames().join(', ')}).`);
@@ -116,7 +116,7 @@ export function getProvider(name: string, model?: string): Provider {
     model: chosen,
     async chat(messages, maxTokens = 1200) {
       const started = Date.now();
-      const r = await post({ model: chosen, messages, max_tokens: maxTokens, temperature: 0.7, ...cfg.extraBody });
+      const r = await post({ model: chosen, messages, max_tokens: maxTokens, temperature: 0.7, ...cfg.extraBody, ...extra });
       if (!r.ok) throw new Error(`${name} ${chosen}: HTTP ${r.status} ${(await r.text()).slice(0, 300)}`);
       const data = await r.json() as {
         choices: { message: { content: string | null; reasoning_content?: string } }[];

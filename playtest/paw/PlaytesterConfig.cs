@@ -33,8 +33,8 @@ sealed class PlaytesterConfig
     public bool InferenceServer { get; set; } = true;
     public string LlamaServerExe { get; set; } = @"C:\ai\llamacpp\llama-server.exe";
     /// <summary>llama.cpp's build of gpt-oss-20b (Ollama's copy is labelled for Ollama only); downloaded once.</summary>
-    public string ModelPath { get; set; } = @"C:\ai\playtest\gpt-oss-20b-mxfp4.gguf";
-    public string ModelUrl { get; set; } = "https://huggingface.co/ggml-org/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-mxfp4.gguf";
+    public string ModelPath { get; set; } = @"C:\ai\playtest\gpt-oss-20b-MXFP4.gguf";
+    public string ModelUrl { get; set; } = "https://huggingface.co/ggml-org/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-MXFP4.gguf";
     /// <summary>The Ollama model to unload before starting, so the GPU doesn't hold it twice.</summary>
     public string OllamaModel { get; set; } = "gpt-oss:20b";
     public int ServerPort { get; set; } = 8091;

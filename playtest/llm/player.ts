@@ -6,8 +6,8 @@
 // the bot decides for the LLM, and the game counts a fallback.
 
 import {
-  RULES_PRIMER, apply, chooseAction, createGame, describe, listChoices, choicesText, parseChoice, cardName,
-  type DeckList, type GameState, type PlayerId,
+  RULES_PRIMER, STRATEGY_PRIMER, apply, chooseAction, createGame, describe, listChoices, choicesText, parseChoice, cardName, scoreActions,
+  type Action, type DeckList, type GameState, type PlayerId,
 } from '../lib/engine';
 import { mulberry } from '../lib/rng';
 import { ANSWER_FORMAT, ANSWER_REMINDER, type Persona } from './personas';
@@ -19,6 +19,34 @@ export interface GameReport {
   suspectCards: string[];
   confusing: string[];
   fun: number | null;
+}
+
+/** What the LLM is shown: `detail` adds stats and predicted results to each choice, `tips` adds basic strategy. */
+export interface LlmVariant { detail?: boolean; tips?: boolean }
+
+/**
+ * How the LLM's choices compare with the bot's own judgment of the same position: the bot scores every option
+ * one step ahead (the same way it picks its moves). `agreed` counts choices the bot would have made too,
+ * `regret` adds up how much value the choice gave up against the bot's best, and the named mistakes count
+ * habits seen in transcripts.
+ */
+export interface Judgement { moves: number; agreed: number; regret: number; yarnWithMovesLeft: number; passWithMovesLeft: number }
+const noJudgement = (): Judgement => ({ moves: 0, agreed: 0, regret: 0, yarnWithMovesLeft: 0, passWithMovesLeft: 0 });
+
+function judge(s: GameState, chosen: Action, j: Judgement, seed: number): void {
+  const scored = scoreActions(s, mulberry(seed ^ s.actions ^ 0x5bd1));
+  if (scored.length < 2) return;
+  const key = JSON.stringify(chosen);
+  const mine = scored.find((x) => JSON.stringify(x.action) === key)?.score ?? -Infinity;
+  const best = Math.max(...scored.map((x) => x.score));
+  j.moves++;
+  if (mine >= best - 0.01) j.agreed++;
+  if (Number.isFinite(mine)) j.regret += Math.min(20, best - mine);
+  // A real move was on the table (worth clearly more than doing nothing) and the LLM stopped instead.
+  const stop = scored.find((x) => x.action.t === 'pass')?.score ?? -Infinity;
+  const moveLeft = scored.some((x) => (x.action.t === 'play' || x.action.t === 'attack' || x.action.t === 'ability') && x.score > stop + 0.5);
+  if (moveLeft && chosen.t === 'takeYarn') j.yarnWithMovesLeft++;
+  if (moveLeft && chosen.t === 'pass') j.passWithMovesLeft++;
 }
 
 export interface LlmGame {
@@ -33,9 +61,11 @@ export interface LlmGame {
   usage: Usage;
   report: GameReport | null;
   transcript: string;
+  judgement: Judgement;
 }
 
-const systemPrompt = (persona: Persona) => `${RULES_PRIMER}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}`;
+const systemPrompt = (persona: Persona, v: LlmVariant) =>
+  `${RULES_PRIMER}${v.tips ? `\n\n${STRATEGY_PRIMER}` : ''}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}`;
 
 /** Pulls a JSON object out of a reply that may wrap it in prose or a code fence. */
 function jsonIn(text: string): Record<string, unknown> | null {
@@ -46,12 +76,13 @@ function jsonIn(text: string): Record<string, unknown> | null {
 
 export async function playLlmGame(
   provider: Provider, persona: Persona, deck: DeckList, vs: DeckList, seed: number,
-  budget: { remaining: () => number },
+  budget: { remaining: () => number }, variant: LlmVariant = {},
 ): Promise<LlmGame> {
   const seat: PlayerId = (seed % 2) as PlayerId;
   const decks: [DeckList, DeckList] = seat === 0 ? [deck, vs] : [vs, deck];
   const s: GameState = createGame({ decks, seed, names: seat === 0 ? ['LLM', 'Bot'] : ['Bot', 'LLM'] });
-  const system = systemPrompt(persona);
+  const system = systemPrompt(persona, variant);
+  const judgement = noJudgement();
   let usage = noUsage();
   let llmMoves = 0, fallbacks = 0, ms = 0;
   const lines: string[] = [`# ${persona.name}: ${deck.name} vs ${vs.name} (bot), seed ${seed}`, ''];
@@ -59,13 +90,13 @@ export async function playLlmGame(
   while (s.winner === null) {
     const p = s.prompt!.player;
     if (p !== seat) { apply(s, chooseAction(s, { random: mulberry(seed ^ s.actions) })); continue; }
-    const choices = listChoices(s);
+    const choices = listChoices(s, { detail: variant.detail });
     if (!choices.multi && choices.options.length === 1) { apply(s, choices.options[0].action); continue; }
     if (budget.remaining() <= 0) { apply(s, chooseAction(s, { random: mulberry(seed ^ s.actions) })); fallbacks++; continue; }
 
     const messages: ChatMessage[] = [
       { role: 'system', content: system },
-      { role: 'user', content: `${describe(s, seat)}\n\n${choicesText(s)}\n\n${ANSWER_REMINDER}` },
+      { role: 'user', content: `${describe(s, seat)}\n\n${choicesText(s, { detail: variant.detail })}\n\n${ANSWER_REMINDER}` },
     ];
     let action = null;
     for (let attempt = 0; attempt < 2 && !action; attempt++) {
@@ -90,6 +121,7 @@ export async function playLlmGame(
     }
     llmMoves++;
     if (!action) { fallbacks++; action = chooseAction(s, { random: mulberry(seed ^ s.actions) }); lines.push(`**R${s.round}** (no legal answer; the bot chose)`, ''); }
+    else if (!choices.multi) judge(s, action, judgement, seed);
     apply(s, action);
   }
 
@@ -121,7 +153,7 @@ export async function playLlmGame(
   }
   return {
     deck: deck.name, vs: vs.name, seed, won, rounds: s.round, llmMoves, fallbacks,
-    secondsPerMove: llmMoves ? ms / 1000 / llmMoves : 0, usage, report, transcript: lines.join('\n'),
+    secondsPerMove: llmMoves ? ms / 1000 / llmMoves : 0, usage, report, transcript: lines.join('\n'), judgement,
   };
 }
 

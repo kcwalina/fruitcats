@@ -161,6 +161,16 @@ function zestFirst(s: GameState, p: PlayerId, chosen: Action, candidates: Action
   return opener.score > passScore + 0.3 ? opener.action : null;
 }
 
+/**
+ * The bot's one-step score for every legal action of a one-of decision (higher is better), from one
+ * determinized world so the scores compare. Used to judge other players' choices, such as an LLM's.
+ */
+export function scoreActions(s: GameState, rnd: () => number = Math.random): { action: Action; score: number }[] {
+  const p = s.prompt!.player;
+  const world = determinize(s, p, rnd);
+  return legalActions(s).map((action) => ({ action, score: simulate(world, p, action) }));
+}
+
 export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const prompt = s.prompt;
   if (!prompt) throw new Error('no decision pending');

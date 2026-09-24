@@ -1,5 +1,6 @@
 // llm-playtest [--provider pc2024] [--model M] [--persona exploit|aggro|newcomer|all] [--games N]
 //              [--deck KEY|file.json] [--vs KEY|file.json] [--parallel 4] [--hours H] [--budget TOKENS]
+//              [--detail] [--tips] [--effort low|medium|high] [--seeds TAG]
 // llm-playtest --bench [--provider pc2024] [--models a,b,c]
 // llm-playtest --bench --concurrency 1,2,4,8 [--seconds 60] [--provider pc2024] [--model M]   (games per day)
 //
@@ -15,7 +16,7 @@ import { mulberry, seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { loadDeck } from '../play/command';
 import { PERSONAS, ANSWER_FORMAT, ANSWER_REMINDER, type Persona } from './personas';
-import { knownCards, playLlmGame, type LlmGame } from './player';
+import { knownCards, playLlmGame, type LlmGame, type LlmVariant } from './player';
 import { addUsage, getProvider, noUsage, type Provider, type Usage } from './providers';
 
 export interface LlmRunOptions {
@@ -27,6 +28,9 @@ export interface LlmRunOptions {
   hours?: number;
   maxTokens?: number;
   quiet?: boolean;
+  variant?: LlmVariant;
+  /** The same tag gives the same deals, so variants can be compared game for game. */
+  seedTag?: string;
 }
 
 export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
@@ -48,9 +52,9 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
       const i = next++;
       const persona = o.personas[i % o.personas.length];
       const [deck, vs] = pairs[Math.floor(i / o.personas.length) % pairs.length];
-      const seed = seedFrom(`${run.id}:${i}`);
+      const seed = seedFrom(`${o.seedTag ?? run.id}:${i}`);
       try {
-        const g = await playLlmGame(o.provider, persona, deck, vs, seed, budget);
+        const g = await playLlmGame(o.provider, persona, deck, vs, seed, budget, o.variant);
         usage = addUsage(usage, g.usage);
         results.push({ ...g, persona: persona.key });
         reportProgress(run, 'llm-playtest', 'LLM games', results.length + errors.length, total());
@@ -73,6 +77,16 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
   const moves = results.reduce((n, g) => n + g.llmMoves, 0);
   const fallbacks = results.reduce((n, g) => n + g.fallbacks, 0);
   const winRate = results.length ? results.filter((g) => g.won).length / results.length : 0;
+  // Against the bot's own judgment of each position (see judge() in player.ts).
+  const j = results.reduce((a, g) => ({
+    moves: a.moves + g.judgement.moves, agreed: a.agreed + g.judgement.agreed, regret: a.regret + g.judgement.regret,
+    yarnWithMovesLeft: a.yarnWithMovesLeft + g.judgement.yarnWithMovesLeft, passWithMovesLeft: a.passWithMovesLeft + g.judgement.passWithMovesLeft,
+  }), { moves: 0, agreed: 0, regret: 0, yarnWithMovesLeft: 0, passWithMovesLeft: 0 });
+  const judgement = {
+    judgedMoves: j.moves, agreeWithBot: j.moves ? j.agreed / j.moves : 0, regretPerMove: j.moves ? j.regret / j.moves : 0,
+    yarnWithMovesLeftPerGame: results.length ? j.yarnWithMovesLeft / results.length : 0,
+    passWithMovesLeftPerGame: results.length ? j.passWithMovesLeft / results.length : 0,
+  };
   const cost = o.provider.cost(usage);
   const problems: Problem[] = [];
   for (const s of suspectList.filter((s) => s.games >= Math.max(2, results.length * 0.2))) {
@@ -83,6 +97,8 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
 
   const md: string[] = [
     `# LLM playtest: ${o.provider.name} ${o.provider.model}`, '',
+    `Shown: ${o.variant?.detail ? 'detailed choices' : 'plain choices'}${o.variant?.tips ? ', basic strategy' : ''}.`, '',
+    `Against the bot's judgment: agrees with its choice on ${pct(judgement.agreeWithBot)} of ${judgement.judgedMoves} moves, gives up ${judgement.regretPerMove.toFixed(2)} points a move; per game it takes the Yarn ${judgement.yarnWithMovesLeftPerGame.toFixed(1)} times and passes ${judgement.passWithMovesLeftPerGame.toFixed(1)} times with a useful move left.`, '',
     `${results.length} games, LLM won ${pct(winRate)}. ${moves} LLM moves, ${fallbacks} fell back to the bot. ` +
     `Tokens: ${usage.input.toLocaleString()} in (${usage.cachedInput.toLocaleString()} cached), ${usage.output.toLocaleString()} out${cost !== null ? `, $${cost.toFixed(2)}` : ''}.`, '',
     '## Problems', '', ...(problems.length ? problems.map((p) => `- **${p.level}**: ${p.text}`) : ['None.']), '',
@@ -98,7 +114,7 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
 
   return finishRun(run, 'llm-playtest', results.length, problems, {
     provider: o.provider.name, model: o.provider.model, personas: o.personas.map((p) => p.key),
-    llmWinRate: winRate, moves, fallbacks, usage, costUsd: cost,
+    llmWinRate: winRate, moves, fallbacks, usage, costUsd: cost, variant: o.variant ?? {}, judgement,
     secondsPerMove: moves ? results.reduce((t, g) => t + g.secondsPerMove * g.llmMoves, 0) / moves : 0,
     suspectCards: suspectList, confusing: confusing.slice(0, 20), unfair: unfair.slice(0, 20),
     games: results.map((g) => ({ persona: g.persona, deck: g.deck, vs: g.vs, won: g.won, rounds: g.rounds, moves: g.llmMoves, fallbacks: g.fallbacks, summary: g.report?.summary ?? '' })),
@@ -190,7 +206,9 @@ export async function llmPlaytestCommand(): Promise<number> {
   });
   const deck = arg('deck'), vs = arg('vs');
   const summary = await runLlmPlaytest({
-    provider: getProvider(providerName, arg('model')),
+    provider: getProvider(providerName, arg('model'), arg('effort') ? { reasoning: { effort: arg('effort') }, chat_template_kwargs: { reasoning_effort: arg('effort') } } : {}),
+    variant: { detail: flag('detail'), tips: flag('tips') },
+    seedTag: arg('seeds'),
     personas,
     games: numArg('games') ?? 3,
     pairs: deck || vs ? [[loadDeck(deck ?? 'zest-rush'), loadDeck(vs ?? 'orchard-guard')]] : undefined,

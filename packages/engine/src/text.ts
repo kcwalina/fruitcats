@@ -8,7 +8,7 @@
 // Units are named by where they stand: Y1…Y6 in your Yard, T1…T6 in theirs; cards in hand are H1…Hn.
 
 import { CARDS, behaviour, keywords } from './cards';
-import { HAND_LIMIT, cardName, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitPower } from './engine';
+import { HAND_LIMIT, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitPower } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 import { viewFor, type PlayerView } from './view';
 
@@ -29,6 +29,23 @@ Two players, 50-card decks, each led by a Hero Cat. Win by taking the opponent's
 - If you must draw from an empty deck, you lose a Life instead.
 KEYWORDS
 Zoomies: enters ready. Guardian: enemies must attack Guardians first. Sneaky: ignores Guardians. Fierce: a hit on a Hero Cat takes 2 Lives. Tough X: takes X less damage from each hit. Lucky: playable for free when it turns up as a lost Life. Pounce: playable in the opponent's Pounce window (also as a normal action). Hello: happens when the unit arrives. Goodbye: happens when it is defeated. Ripen (Orchard): +1/+1 at the start of each round, up to +2/+2. Zest (Citrus): a bonus if you already played another card this round. Sprout N (Tropical): put the top N cards of your deck into your Treats. Lush (Tropical): a bonus while you have 7 or more Treats.`;
+
+/**
+ * Basic strategy, for text players that don't find it on their own: an LLM that knew only the rules gave its
+ * turns away (taking the Yarn as its first action), planted its best cheap cards and expected units to attack
+ * the round they arrived. It lost 47 of 50 games against the bot in seats where the bot wins half.
+ */
+export const STRATEGY_PRIMER = `BASIC STRATEGY
+- Spend your Treats every round. A Treat you don't use this round is wasted, unless you keep it ready on purpose for a Pounce.
+- Plant the card you're least likely to want soon: something too expensive to afford for a while, or a spare copy. Don't plant a cheap unit you could play next round.
+- Units arrive exhausted (Zoomies excepted), so play them early: a unit played now can attack next round.
+- Take the Yarn Ball only as your LAST action of a round, when there is nothing useful left to do. Taking it means you may only pass for the rest of the round.
+- Before attacking, read the predicted result next to each attack: trade when you come out ahead (their unit dies, or yours survives), and hit the Hero Cat when there's no good trade. Each hit costs them a Life, but the Life card goes to their hand.
+- Guardians must be attacked first unless your attacker is Sneaky. A Guardian with high Health can absorb a whole turn: remove it with damage Tricks, or go around it with Sneaky units.
+- Pass only when you have nothing worth doing. If your opponent then acts, you get to act again.`;
+
+/** How much a choice's label tells: `detail` adds stats, what a play does, and each attack's predicted result. */
+export interface ChoiceOptions { detail?: boolean }
 
 export interface Choice {
   /** 1-based number the player answers with. */
@@ -128,7 +145,53 @@ export function describe(s: GameState, seat: PlayerId, recent = 8): string {
   return lines.join('\n');
 }
 
-function label(s: GameState, seat: PlayerId, a: Action): string {
+const stats = (u: Unit) => `${unitPower(u)}/${unitHealth(u) - u.damage}`;
+
+/** What an attack would do if nothing interferes (no Pounce): damage each way, and who is defeated. */
+function attackPreview(s: GameState, seat: PlayerId, a: Extract<Action, { t: 'attack' }>): string {
+  const fierce = a.attacker.kind === 'hero' ? /\bFierce\b/.test(heroSide(s, seat).text) : !!findUnit(s, a.attacker.uid) && keywords(findUnit(s, a.attacker.uid)!.unit.id).fierce;
+  const power = a.attacker.kind === 'hero' ? heroSide(s, seat).power ?? 0 : unitPower(findUnit(s, a.attacker.uid)!.unit);
+  if (a.target.kind === 'hero') return `they lose ${fierce ? 2 : 1} Life${fierce ? 's (Fierce)' : ''}; your attacker takes no damage`;
+  const target = findUnit(s, a.target.uid)!.unit;
+  const dealt = Math.max(0, power - keywords(target.id).tough);
+  const left = unitHealth(target) - target.damage - dealt;
+  const theirs = left <= 0 ? `their ${cardName(target.id)} is defeated` : `their ${cardName(target.id)} survives with ${left} Health`;
+  if (a.attacker.kind === 'hero') return `${theirs}; your Big Cat takes no damage`;
+  const mine = findUnit(s, a.attacker.uid)!.unit;
+  const back = Math.max(0, unitPower(target) - keywords(mine.id).tough);
+  const myLeft = unitHealth(mine) - mine.damage - back;
+  return `${theirs}; your ${cardName(mine.id)} ${myLeft <= 0 ? 'is defeated' : `survives with ${myLeft} Health`}`;
+}
+
+function detailed(s: GameState, seat: PlayerId, a: Action, base: string): string {
+  const me = s.players[seat];
+  const card = (uid: number) => me.hand.find((c) => c.uid === uid);
+  const ready = readyTreats(s, seat);
+  switch (a.t) {
+    case 'play': case 'pounce': {
+      const c = CARDS[card(a.uid)!.id];
+      const unit = c.type === 'Critter' || c.type === 'Cat';
+      const arrives = unit ? (keywords(c.id).zoomies ? 'arrives ready (Zoomies): can attack this round' : 'arrives exhausted: can attack next round') : '';
+      const target = a.target?.kind === 'unit' && findUnit(s, a.target.uid) ? ` (${stats(findUnit(s, a.target.uid)!.unit)})` : '';
+      return `${base}${target} — ${[unit ? `${c.power}/${c.health}` : c.type, c.text?.replace(/\.$/, ''), arrives].filter(Boolean).join('. ')}. Leaves ${ready - (c.cost ?? 0)} ready Treat(s).`;
+    }
+    case 'attack': return `${base} — ${attackPreview(s, seat, a)}`;
+    case 'takeYarn': {
+      const other = legalActions(s).filter((x) => x.t === 'play' || x.t === 'attack' || x.t === 'ability').length;
+      return other ? `${base}. WARNING: you still have ${ready} ready Treat(s) and ${other} other possible move(s) this round` : base;
+    }
+    case 'pass': return ready ? `${base} (${ready} ready Treat(s) unspent; you may act again if your opponent acts)` : `${base} (you may act again if your opponent acts)`;
+    case 'plant': { const c = CARDS[card(a.uid)!.id]; return `${base} (it costs ${c.cost ?? 0}; once planted it's a Treat for good)`; }
+    default: return base;
+  }
+}
+
+function label(s: GameState, seat: PlayerId, a: Action, o: ChoiceOptions = {}): string {
+  const text = plainLabel(s, seat, a);
+  return o.detail ? detailed(s, seat, a, text) : text;
+}
+
+function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
   const me = s.players[seat];
   const card = (uid: number) => me.hand.find((c) => c.uid === uid);
   const on = (t?: Target) => (t ? ` → ${targetName(s, seat, t)}` : '');
@@ -153,7 +216,7 @@ function label(s: GameState, seat: PlayerId, a: Action): string {
   }
 }
 
-export function listChoices(s: GameState): Choices {
+export function listChoices(s: GameState, o: ChoiceOptions = {}): Choices {
   const prompt = s.prompt;
   if (!prompt) return { question: 'The game is over.', options: [] };
   const seat = prompt.player;
@@ -173,13 +236,13 @@ export function listChoices(s: GameState): Choices {
     lucky: 'The Life you just lost is Lucky: play it for free?',
     choose: `Choose a target for ${cardName(prompt.kind === 'choose' ? prompt.sourceId : '')}.`,
   }[prompt.kind];
-  const options = legalActions(s).map((action, i) => ({ n: i + 1, label: label(s, seat, action), action }));
+  const options = legalActions(s).map((action, i) => ({ n: i + 1, label: label(s, seat, action, o), action }));
   return { question, options };
 }
 
 /** The choices as the text a player reads under the table. */
-export function choicesText(s: GameState): string {
-  const c = listChoices(s);
+export function choicesText(s: GameState, o: ChoiceOptions = {}): string {
+  const c = listChoices(s, o);
   if (c.multi) return c.question;
   return [c.question, ...c.options.map((o) => `  ${o.n}. ${o.label}`), 'Answer with the number of your choice.'].join('\n');
 }

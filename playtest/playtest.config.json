@@ -68,6 +68,7 @@
       "newcomer"
     ],
     "deckIdeas": 6,
+    "customShare": 0.35,
     "maxTokens": 60000000,
     "player": "informed"
   }

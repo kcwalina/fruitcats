@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { CARDS, DECKS, RULES_VERSION } from './engine';
 import { seedFrom } from './rng';
 
-export type RunKind = 'balance-check' | 'balance' | 'llm-playtest' | 'deck-hunt' | 'nightly' | 'llm-compare';
+export type RunKind = 'balance-check' | 'balance' | 'llm-playtest' | 'deck-hunt' | 'deck-build' | 'nightly' | 'llm-compare';
 export type Verdict = 'pass' | 'warn' | 'block';
 
 export interface Problem { level: 'warn' | 'block'; text: string }
@@ -29,6 +29,8 @@ export interface RunSummary {
   details: Record<string, unknown>;
   /** The dashboard request that started this run (`--request <id>`), if one did. */
   request?: string;
+  /** The name it was started with, from the dashboard's form or `reports start --name`; the relay adds it. */
+  name?: string;
 }
 
 /** How far a run has got, written to progress.json while it runs; PC2024's paw lists it and the dashboard

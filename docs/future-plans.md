@@ -1,11 +1,13 @@
 # Future plans
 
 Features that aren't built yet, and what they need. Only work still to do is listed here; once something ships,
-it comes out of this file. The Store has its own document, [store-plan.md](store-plan.md).
+it comes out of this file. Accounts and the Store have their own documents, [accounts-plan.md](accounts-plan.md) and
+[store-plan.md](store-plan.md).
 
 1. PvP: two people playing each other, not the AI
 2. Ladder boards
-3. The Store: see [store-plan.md](store-plan.md)
+3. Accounts: see [accounts-plan.md](accounts-plan.md)
+4. The Store: see [store-plan.md](store-plan.md)
 
 The engine ([packages/engine/src/engine.ts](../packages/engine/src/engine.ts)) is a deterministic state
 machine: the whole game is plain JSON, all randomness comes from a seed stored in the state, and
@@ -40,14 +42,14 @@ Still to change, for both versions:
   "my seat" concept and should render from the redacted view, not the full state.
 
 Online play also needs the server: Node running the same engine, and WebSockets (Azure Web PubSub or a
-small container). It needs Via Mochi accounts too, which the store plan's Phase 3 sets up.
+small container). It needs Via Mochi accounts too, from the [accounts plan](accounts-plan.md).
 
 ## 2. Ladder boards
 
 Needs online PvP and accounts.
 
 - A ladder is only trustworthy if the server decides who won. Client-reported results can be faked.
-- Player identity: Via Mochi accounts (from the store plan).
+- Player identity: Via Mochi accounts (from the [accounts plan](accounts-plan.md)).
 - A rating system (Glicko-2 or Elo) and a table for ratings and results.
 - Seed + actions work as a **replay record** on the server, which keeps the engine version. That gives
   replays and a way to audit disputed results.
@@ -57,9 +59,11 @@ Needs online PvP and accounts.
 
 1. **Same-device PvP**: the Pounce fix and "my seat" in the client, with no backend. Testable with the
    existing sim and tests.
-2. **The Store** ([store-plan.md](store-plan.md)). Its accounts and API are what online play builds on.
-3. **Online PvP** on the same API, with WebSockets.
-4. **Ladder** on top of server-decided results.
+2. **Accounts** ([accounts-plan.md](accounts-plan.md)). The accounts and API are what the Store and online play build
+   on.
+3. **The Store** ([store-plan.md](store-plan.md)).
+4. **Online PvP** on the same API, with WebSockets.
+5. **Ladder** on top of server-decided results.
 
 The hidden-information work is where to be careful: getting it wrong means shipping a game where people can
 cheat.

@@ -1,8 +1,9 @@
 # Store plan: selling cards
 
 This document covers the Store: how Fruitcats sells decks and cards on the web, iPhone, Android and Steam.
-It records the decisions made so far and the steps, in order. Other features still to build (PvP, the ladder)
-are in [future-plans.md](future-plans.md).
+It records the decisions made so far and the steps, in order. Accounts come first and have their own document,
+[accounts-plan.md](accounts-plan.md). Other features still to build (PvP, the ladder) are in
+[future-plans.md](future-plans.md).
 
 Last updated 2026-09-23.
 
@@ -13,14 +14,13 @@ Last updated 2026-09-23.
 | **What is sold** | Fixed **decks** and **single cards the player sees before buying**. No random paid packs (loot-box laws), and no free cards earned by playing. The fun of opening a pack comes from a reveal animation after buying. |
 | **Singles** | Bought through a **cart** with a minimum order of about $4.99, because payment fees would eat a $0.99 purchase. No virtual currency. |
 | **Seller** | **You, as an individual.** No LLC or company: the stores and the Merchant of Record are the legal sellers and handle tax, VAT and refunds, as for most indie developers. |
-| **Accounts** | A **Via Mochi account** (Via Mochi is the brand; Fruitcats is its first app), shared by future apps. It is separate from the invite-only mochi family accounts. |
-| **Sign-in** | Apple, Google and an emailed code, with no passwords. Microsoft Entra External ID (Azure) hosts it at `login.viamochi.com`. |
-| **Age** | Anyone can play as a guest. Accounts need age **13+**. Buying needs **18+ or a parent's approval** (on iOS, Apple's Ask to Buy). |
+| **Accounts** | The one **Via Mochi account**: an email, signed in with an emailed code inside the game. See [accounts-plan.md](accounts-plan.md). The Store needs an account, like the Collection. |
+| **Age** | Anyone can play solo without an account. Accounts need age **13+**. Buying needs **18+ or a parent's approval** (on iOS, Apple's Ask to Buy). |
 | **Web payments** | A **Merchant of Record: Paddle**, or Lemon Squeezy if Paddle won't onboard an individual. |
 | **Stores** | Web, then **iPhone and Android** (one Capacitor app), then **Steam** (Electron). The same game code everywhere, with no rewrite. |
-| **Ownership** | **A purchase anywhere is owned everywhere.** Our server holds the one list of what each Via Mochi account owns. |
+| **Ownership** | **A purchase anywhere is owned everywhere.** Our server holds the one list of what each Via Mochi account owns. A Steam, App Store or Google Play purchase goes to the account signed in on that device; buying needs an account, so no purchase is ever ownerless. |
 | **Pricing** | **The same price on every store, and sales on all stores at once.** The player's experience comes before margin. The game is free to download everywhere. |
-| **Infrastructure** | Azure only, reusing the existing mochi resources (App Service plan, Key Vault, email). |
+| **Infrastructure** | Azure only, in the **ViaMochi Production** subscription (`rg-fruitcats`), set up by the accounts plan. Nothing reuses the mochi suite's resources. |
 | **Rollout** | Everything to do with purchases stays **hidden from the public** until launch: a separate playtest build and site, a tester list, and sandbox payments. |
 | **Rollback** | The git tag `pre-store` (`a9d7d08`) marks main before any store work. `pre-payments` is moved to the latest main just before the first payment or account code. |
 
@@ -31,7 +31,7 @@ Last updated 2026-09-23.
   - **Showcase:** your chosen cards, shown big.
   - **All cards:** the whole set. Cards you don't have yet show as shadows, ready for the Store to fill in.
   - **Wallpapers:** any card as a phone, tablet or computer wallpaper.
-  - The Showcase choice is kept on the device for now. It moves to the account in Phase 3.
+  - The Showcase choice is kept on the device for now. It moves to the account in the accounts plan's phase A2.
 - **Home:** the Store tile exists, marked "Coming soon".
 
 ## How it fits together
@@ -41,35 +41,30 @@ Last updated 2026-09-23.
  (web app)      (Capacitor shell)       (Electron shell)
      │                │                      │
      └────── the same game (apps/web) ───────┘
-                      │  platform.ts: buy, sign in, save picture: per store
+                      │  platform.ts: buy, save picture: per store
+                      │  auth.ts: sign in (accounts plan)
                       ▼
-        Via Mochi account (Entra External ID)
+        viamochi-id (id.viamochi.com): the Via Mochi account
                       │
                       ▼
         apps/api (Node + TypeScript, Azure App Service)
           ├─ catalog: items, prices, sale schedule
           ├─ entitlements: what each account owns   ◄── webhooks: Paddle, Apple, Google, Steam
-          ├─ showcase and decks per account
+          ├─ showcase and decks per account (from the accounts plan)
           └─ tester list (playtest only until launch)
 ```
 
 ## Accounts
 
-- **Tenant:** a Microsoft Entra External ID tenant named "Via Mochi". It's free up to 50,000 monthly users, and Microsoft hosts the sign-in pages under our branding.
-- **Web sign-in:** MSAL.js gets an access token and sends it to the API as `Authorization: Bearer`.
-- **One user id per person:** the Entra object id, shared by all sign-in methods. It is never keyed on email, because Apple can hide the real address.
-- **Linking accounts:** each store's own sign-in (Sign in with Apple, Google, Steam) links to the same Via Mochi account the first time it's used.
-- **At sign-up:** a neutral age question (birth year), stored only as age flags. We also record which Terms and Privacy versions were accepted, and when.
-- **Required:** account deletion from inside the game (Apple requires it; so does GDPR), a data export on request, and sign out on all devices.
-- **Guests:** keep playing exactly as today. An account is only needed to buy, and later for online play.
-- **Fallback:** if the Apple provider in Entra External ID isn't generally available, the API verifies Apple and Google sign-in tokens itself and sends email codes through Azure Communication Services.
+Covered by [accounts-plan.md](accounts-plan.md): one Via Mochi account per email, signed in with an emailed code
+inside the game, on every platform. The Store only adds the tester list below.
 
 ## Backend: `apps/api`
 
-- **Hosting:** Node + TypeScript, so it can import `@fruitcats/engine` and the card data, and later run online PvP. It is a new App Service on the existing `mochi-plan-linux` plan.
+- **Hosting:** Node + TypeScript, so it can import `@fruitcats/engine` and the card data, and later run online PvP. It already exists from the accounts plan (phase A2), on the shared App Service plan in ViaMochi Production; the Store adds tables and endpoints.
 - **Storage:** Table Storage, accessed with managed identity.
-  - The shared Via Mochi profile lives in the `viamochiaccounts` storage account: display name, age flags, terms version and deletion.
-  - Fruitcats data lives in the `fruitcatsstorage` account:
+  - The Via Mochi profile (display name, age flags, terms version, deletion) lives in `viamochi-id`, not here.
+  - Fruitcats data lives in the Fruitcats storage account in `rg-fruitcats`:
     - `entitlements`: user, card or deck, quantity, source, order
     - `orders`
     - `webhookEvents`: so each event is applied only once
@@ -77,7 +72,9 @@ Last updated 2026-09-23.
     - `showcase`
     - `decks`
     - `catalog`
-- **Secrets:** payment keys and webhook secrets go in `mochi-vault`.
+- **Secrets:** payment keys and webhook secrets go in the Fruitcats Key Vault in `rg-fruitcats`.
+- **Purchase ledger:** every grant, revoke, refund and chargeback is also written to the permanent `purchases` log
+  (kept forever, tamper-proof); see the accounts plan's log retention.
 - **Endpoints:**
   - `GET /me` and `DELETE /me`
   - `GET /catalog` and `GET /collection`
@@ -85,7 +82,8 @@ Last updated 2026-09-23.
   - `/webhooks/paddle`, and later `/apple`, `/google` and `/steam`
   - admin endpoints to grant and revoke items
 - **Server rule:** the server is the only source of truth for ownership. The client never grants itself anything.
-- **Monitoring:** Application Insights on every webhook, with alerts on failures.
+- **Monitoring:** our own logs and metrics (accounts plan, Observability) on every webhook, with alerts on failures.
+  No Application Insights.
 
 ## Payments per store
 
@@ -147,7 +145,7 @@ Last updated 2026-09-23.
 - **Rarity** (common, uncommon, rare, legendary) and a **starter** flag go in each set's data (`content/<year>/<month>/<set>/set.json`).
   - Preview cards (Jam, Duchess) become the first sellable cards, or go into a new set, `sb2.json`.
 - **A card registry that loads several sets.** Today `CARDS` and `DECKS` come from a single file.
-- **Ownership:** `owned(id)` becomes the starter cards plus the account's entitlements. Guests own only the starter cards.
+- **Ownership:** `owned(id)` becomes the starter cards plus the account's entitlements. Without an account, a player has only the starter cards.
 - **Copy limit:** the Store never sells more copies of a card than a deck can use.
 - **Premium variants** (Foil, Alt-art, Golden) play exactly like the normal card, so there's no pay-to-win. Each variant is its own product (`card:<id>:<variant>`).
 - **Launch buyers** get a **First Edition** stamp on their cards. Any seasonal variants are announced in advance, with no countdown timers.
@@ -157,14 +155,15 @@ Last updated 2026-09-23.
 - **The Store screen:** a **Decks** tab and a **Cards** tab, plus a cart.
 - **A deck** shows every card in it and marks the cards you already own, with the price reduced for those.
 - **Single cards** have filters, a full-size preview before buying, and "Owned n/max".
-- **Buying without an account:** Add to cart asks you to sign in first.
+- **Without an account:** the Store tile is locked like the Collection; tapping it opens the in-game "Sign in or
+  create account" screen (accounts plan).
 - **After paying:** a card-by-card **reveal animation**, then a shortcut to "Build a deck with them".
 - **No dark patterns** (the FTC fined Epic $245M over this in 2022):
   - an explicit confirmation step
   - no one-tap buying, no timers and no "limited offer" pressure
   - a clear total including tax
   - an easy path to a refund
-- **Settings:** sign in or out, display name, Delete account, Restore purchases (iOS), and the legal pages.
+- **Settings:** the Account screen from the accounts plan, plus Restore purchases (iOS) and the legal pages.
 
 ## Hidden until launch
 
@@ -193,12 +192,12 @@ Last updated 2026-09-23.
   - allows personal wallpaper use of owned cards
 - **Privacy Policy:**
   - what we collect: login id, email, display name, age flags, purchases
-  - who processes it: Microsoft Entra and Azure, Paddle, Apple, Google, Valve
+  - who processes it: Microsoft (Azure, including sign-in), Paddle, Apple, Google, Valve
   - GDPR, UK and CCPA rights, and a children's section (no accounts under 13)
   - no ads and no tracking
 - **Refund policy:** aligned with Paddle's.
 - **Cookies:** essential storage only, so no consent banner is needed.
-- **Update the "nothing leaves this device" note** (`apps/web/src/progress.ts`) so it says clearly that it applies to guests only.
+- **The "nothing leaves this device" note** (`apps/web/src/progress.ts`) is updated in the accounts plan (phase A2).
 - **Start from templates** (Termly or iubenda), then get a **one-time flat-fee review by a games or tech lawyer** before the first dollar.
 - **Content ratings:** IARC (Google Play), Apple's questionnaire and Steam's survey. For all three, answer "in-game purchases, no random items".
 - **Personal liability** is handled through the Terms, the Merchant of Record and the stores handling payments, never touching card data, and generous refunds. An umbrella insurance policy is optional.
@@ -207,10 +206,10 @@ Last updated 2026-09-23.
 
 | # | Phase | What gets done | Needs |
 |---|---|---|---|
-| **0** | **Decide and try out** | Rough prices. Sign-in trial: an Entra External ID tenant with Apple, Google and email-code sign-in (is the Apple provider generally available?). Paddle trial: sandbox checkout and webhook, and whether Paddle accepts individuals. | your sign-ups |
+| **0** | **Decide and try out** | Rough prices. Paddle trial: sandbox checkout and webhook, and whether Paddle accepts individuals. | your sign-ups |
 | **1** | **Engine and playtest build** | `flags.ts`, the `build:playtest` build and the playtest site; rarity and starter flags; the multi-set card registry; tests | — |
 | **2** | ~~Deck builder, Home, Collection~~ | **Done** | — |
-| **3** | **Backend and accounts** | `apps/api`, Table Storage, sign-in, `/me`, age check, account deletion, tester list, Showcase and decks stored per account, legal pages live | 0 |
+| **3** | **Accounts** | Done by the accounts plan (phases A0–A2): `apps/api`, sign-in, age check, account deletion, Showcase and decks per account, legal pages. The Store adds only the tester list. | [accounts-plan.md](accounts-plan.md) |
 | **4** | **Store browsing** (playtest only) | Store tile, catalog, Decks and Cards tabs, cart, admin grant for testing | 1, 3 |
 | **5** | **Web payments** (playtest only) | Paddle live approval, `/checkout`, webhook grant and revoke, reveal animation, refunds, monitoring, sale schedule | 4, legal pages |
 | **6** | **Soft launch, then launch** | Friends and family as testers with real small purchases, refund drills, lawyer sign-off, then launch day | 5 |

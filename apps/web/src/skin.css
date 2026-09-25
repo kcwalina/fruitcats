@@ -120,6 +120,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* The line under a tile's name: "Coming soon" quietly, a game to continue in gold. */
 .mode-sub.soon-line { font-style: italic; }
 .mode-sub.continue-line { color: #9a5a00; font-weight: 800; }
+/* Signed out, with accounts on: the tile says what to do, and tapping it opens sign-in. */
+.mode-sub.signin-line { color: #b4561a; font-weight: 800; }
 .home-note { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.9); }
 .setup-bar h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
 
@@ -147,14 +149,20 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .yarn { border-color: var(--gold); background: #fffdf5; }
 
-/* Lives: little hearts */
-.lives { gap: 2px; }
-.lives i {
-  width: 15px; height: 14px; border-radius: 0; background: #d8c2a0; box-shadow: none;
+/* Lives: one big heart with the number left inside it (9 at the start). */
+.life-heart {
+  position: relative; display: grid; place-items: center; width: 40px; height: 37px;
+  filter: drop-shadow(0 2px 2px rgba(120, 30, 60, 0.35));
+}
+.life-heart::before {
+  content: ''; position: absolute; inset: 0; background: linear-gradient(#ff9dba, #e0457b 60%, #b92f5f);
   -webkit-mask: var(--heart) center / contain no-repeat; mask: var(--heart) center / contain no-repeat;
 }
-.lives i.on { background: linear-gradient(#ff9dba, #e0457b 60%, #b92f5f); }
-.lives b { font-family: Fredoka, Nunito, sans-serif; color: #b92f5f; font-size: 16px; }
+.life-heart.low::before { background: linear-gradient(#ff8a8a, #d9342b 60%, #a3221b); }
+.life-heart b {
+  position: relative; margin-top: -2px; font: 700 18px Fredoka, Nunito, sans-serif; color: #fff;
+  text-shadow: 0 1px 1px rgba(120, 20, 50, 0.6);
+}
 
 /* Hero portrait: gold frame */
 .hero { border: 3px solid var(--gold); box-shadow: 0 0 0 2px #fff6dc, 0 5px 12px rgba(50, 25, 5, 0.35); }

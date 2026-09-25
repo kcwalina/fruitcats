@@ -1,5 +1,8 @@
-// balance [--quick] [--scale N] [--threads N] [--deck file.json ...] [--prototypes] [--quiet]
+// balance [--quick] [--scale N] [--threads N] [--deck DECK[,DECK…] ...] [--library] [--prototypes] [--quiet]
 //
+// --deck adds decks against the starters: a library key, a deck code, a DeckList file (see decks/library.ts).
+// --library adds every deck in the deck library. Neither changes the verdict on the starters: extra decks warn
+// when they beat them, never block.
 // --prototypes adds the decks of prototype sets (Heat Wave's Five Alarm, …) as extra decks against the starters.
 //
 // Exit codes: 0 pass or warnings, 2 a blocking balance problem (the deploy gate stops on it).
@@ -7,19 +10,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arg, flag } from '../lib/args';
-import { deckProblems, prototypeDecks, type DeckList } from '../lib/engine';
+import { prototypeDecks, type DeckList } from '../lib/engine';
+import { loadDecks } from '../decks/library';
 import { reportsRoot } from '../lib/runs';
 import { runBalance } from './gauntlet';
 
 export async function balanceCommand(): Promise<number> {
   const decks: DeckList[] = [];
-  process.argv.forEach((a, i) => {
-    if (a !== '--deck') return;
-    const deck = JSON.parse(readFileSync(process.argv[i + 1], 'utf8')) as DeckList;
-    const problems = deckProblems(deck);
-    if (problems.length) throw new Error(`${process.argv[i + 1]}: ${problems.join(' ')}`);
-    decks.push(deck);
-  });
+  process.argv.forEach((a, i) => { if (a === '--deck') decks.push(...loadDecks(process.argv[i + 1])); });
+  if (flag('library')) decks.push(...loadDecks('library'));
   if (flag('prototypes')) decks.push(...Object.values(prototypeDecks()));
   const summary = await runBalance({
     quick: flag('quick'),

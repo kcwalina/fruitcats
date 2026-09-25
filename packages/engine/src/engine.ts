@@ -12,7 +12,7 @@
 // plugin adds as named conditions and actions (src/cards.ts, Plugin).
 
 import {
-  CARDS, MECHANICS, PLUGINS, abilitiesOf, abilityAt, deckCardIds, findAbility, isUnitCard, keywords, keywordsFrom,
+  AURA_HEROES, AURA_SOURCES, CARDS, MECHANICS, PLUGINS, abilitiesOf, abilityAt, deckCardIds, findAbility, isUnitCard, keywords, keywordsFrom,
   resolveDeck, setConditionEvaluator, type DeckList, type Keywords, type PluginContext,
 } from './cards';
 import type {
@@ -140,11 +140,12 @@ export function findUnit(s: GameState, uid: number): { unit: Unit; owner: Player
 }
 
 interface Grant { power: number; health: number; keywords: string[] }
+const NO_GRANT: Readonly<Grant> = { power: 0, health: 0, keywords: [] };
 
 /** What a Toy gives the unit it's attached to. */
 function toyGrant(u: Unit): Grant {
+  if (!u.toy) return NO_GRANT;
   const g: Grant = { power: 0, health: 0, keywords: [] };
-  if (!u.toy) return g;
   for (const a of abilitiesOf(u.toy.id)) {
     if (a.static?.to !== 'attached' || !a.static.grant) continue;
     g.power += a.static.grant.power ?? 0;
@@ -159,8 +160,20 @@ function baseKeywordList(u: Unit): string[] {
   return [...keywords(u.id).all, ...toyGrant(u).keywords, ...(u.buffKeywords ?? [])];
 }
 
+/** Whether any card in play grants auras (most games: none, and then nobody needs to look for them). */
+function aurasInPlay(s: GameState): boolean {
+  if (!AURA_SOURCES.size) return false;
+  for (const pl of s.players) {
+    const hero = AURA_HEROES.get(pl.hero.id);
+    if (hero && (pl.hero.grown ? hero.bigCat : hero.kitten)) return true;
+    for (const x of pl.yard) if (AURA_SOURCES.has(x.id)) return true;
+  }
+  return false;
+}
+
 /** The lasting effects in play that reach this unit: its own "while…" grants and other cards' auras. */
 function auraGrant(s: GameState, u: Unit): Grant {
+  if (!aurasInPlay(s)) return NO_GRANT;
   const g: Grant = { power: 0, health: 0, keywords: [] };
   const found = findUnit(s, u.uid);
   if (!found) return g;
@@ -193,6 +206,7 @@ function auraGrant(s: GameState, u: Unit): Grant {
 /** Power from a unit's counters (Ripen's ripeness, Heat), as each mechanic prices a point of it. */
 function counterBonus(u: Unit): { power: number; health: number } {
   const bonus = { power: 0, health: 0 };
+  if (!u.counters) return bonus;
   for (const [name, n] of Object.entries(u.counters ?? {})) {
     for (const m of Object.values(MECHANICS)) {
       if (m.counter?.name !== name) continue;
@@ -222,6 +236,8 @@ export function unitHealth(u: Unit, s?: GameState): number {
  * `thisRound: false` leaves out this round's buffs (the bot values a unit by what lasts).
  */
 export function unitKeywords(u: Unit, s?: GameState, thisRound = true): Keywords {
+  // Most units: printed keywords only (no Toy, no buff this round, no aura in play), already cached.
+  if (!u.toy && !(thisRound && u.buffKeywords?.length) && !(s && aurasInPlay(s))) return keywords(u.id);
   const lasting = [...keywords(u.id).all, ...toyGrant(u).keywords];
   const list = [...lasting, ...(thisRound ? u.buffKeywords ?? [] : []), ...(s ? auraGrant(s, u).keywords : [])];
   return keywordsFrom([...new Set(list)]);

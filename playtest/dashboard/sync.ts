@@ -1,5 +1,5 @@
 // reports pending [--pc2024 http://192.168.1.74:5280] | reports mark
-// reports start <nightly|balance|llm-playtest|deck-hunt|llm-compare> [--args "…"] [--request <id>] [--pc2024 …]
+// reports start <nightly|balance|llm-playtest|deck-hunt|deck-build|llm-compare> [--args "…"] [--request <id>] [--name "…"] [--pc2024 …]
 //
 // Gets finished runs ready for the dashboard page (a claude.ai Artifact whose database only its owner
 // writes). Scripts can't write there, a Claude session can: `pending` gathers the runs the dashboard hasn't
@@ -27,7 +27,25 @@ interface Run { summary: RunSummary; report: string; live?: boolean }
 const FINISHED = join(STATE, 'finished.json');
 /** The dashboard's meta/dashboard document: decks, family colors and personas, from this checkout's card data. */
 const META = join(STATE, 'meta.json');
-const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt', 'llm-compare'];
+/** Request ids the relay should delete from the dashboard: older than REQUEST_KEEP_DAYS and not waiting to run. */
+const EXPIRED = join(STATE, 'expired-requests.json');
+const REQUEST_KEEP_DAYS = 14;
+const REPORT_KEEP_NOTE = `${REQUEST_KEEP_DAYS} days`;
+
+interface RequestDoc { id: string; name?: string; run?: string; status: string; createdAt: string }
+
+/** The request documents in a folder of ArtifactData query results (one JSON file each). */
+function readRequests(dir: string | undefined): RequestDoc[] {
+  if (!dir || !existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => f.endsWith('.json')).flatMap((f) => {
+    try {
+      const raw = JSON.parse(readFileSync(join(dir, f), 'utf8')) as Record<string, unknown>;
+      const doc = (raw.data ?? raw) as RequestDoc;
+      return doc.id ? [doc] : [];
+    } catch { return []; }
+  });
+}
+const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt', 'deck-build', 'llm-compare'];
 
 function uploaded(): Set<string> {
   try { return new Set(JSON.parse(readFileSync(UPLOADED, 'utf8')) as string[]); } catch { return new Set(); }
@@ -44,7 +62,7 @@ function localRuns(): Run[] {
 }
 
 /** PC2024's playtester, through catsitter: POST /api/processes/mochi-playtester/forward {method, path, body}. */
-const forwarder = (catsitter: string) => async (method: string, path: string, body?: unknown) => {
+export const forwarder = (catsitter: string) => async (method: string, path: string, body?: unknown) => {
   const r = await fetch(`${catsitter}/api/processes/mochi-playtester/forward`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ method, path, body }), signal: AbortSignal.timeout(30_000),
@@ -52,6 +70,18 @@ const forwarder = (catsitter: string) => async (method: string, path: string, bo
   if (!r.ok) throw new Error(`catsitter ${path}: HTTP ${r.status}`);
   return r.json() as Promise<Record<string, unknown>>;
 };
+
+/** The finished runs of these kinds on PC2024, with their summaries (deck hunts and deck builds, for the deck library). */
+export async function pc2024Summaries(catsitter: string, kinds: string[]): Promise<RunSummary[]> {
+  const forward = forwarder(catsitter.replace(/\/$/, ''));
+  const list = (await forward('GET', '/runs')).runs as { id: string; kind: string; result: string }[];
+  const out: RunSummary[] = [];
+  for (const r of list.filter((x) => kinds.includes(x.kind) && x.result !== 'running' && x.result !== 'abandoned')) {
+    const got = await forward('POST', '/runs/get', { id: r.id });
+    if (got.summary) out.push(got.summary as RunSummary);
+  }
+  return out;
+}
 
 async function pc2024Runs(catsitter: string, skip: Set<string>): Promise<Run[]> {
   const forward = forwarder(catsitter);
@@ -113,7 +143,8 @@ export async function reportsCommand(): Promise<number> {
         .find((x) => x.live && Date.parse(x.summary.startedAt) >= since);
       if (!live) continue;
       mkdirSync(OUT, { recursive: true });
-      writeFileSync(join(OUT, `${live.summary.id}.json`), JSON.stringify(live.summary));
+      const name = arg('name');
+      writeFileSync(join(OUT, `${live.summary.id}.json`), JSON.stringify({ ...live.summary, ...(name ? { name } : {}) }));
       writeFileSync(META, JSON.stringify(dashboardMeta()));
       console.log(`Upload now: ${join(OUT, `${live.summary.id}.json`)} (collection runs, id ${live.summary.id}); meta in ${META}`);
       return 0;
@@ -121,7 +152,7 @@ export async function reportsCommand(): Promise<number> {
     console.log('Started, but PC2024 has not listed the run yet; the next sync uploads it.');
     return 0;
   }
-  if (sub !== 'pending') { console.error('Usage: reports pending [--pc2024 http://192.168.1.74:5280] | reports mark'); return 1; }
+  if (sub !== 'pending') { console.error('Usage: reports pending [--pc2024 http://192.168.1.74:5280] [--requests <dir>] | reports mark'); return 1; }
 
   const done = uploaded();
   const runs = localRuns().filter((r) => !done.has(r.summary.id));
@@ -134,11 +165,21 @@ export async function reportsCommand(): Promise<number> {
   mkdirSync(OUT, { recursive: true });
   writeFileSync(META, JSON.stringify(dashboardMeta()));
   writeFileSync(FINISHED, JSON.stringify(runs.filter((r) => !r.live).map((r) => r.summary.id)));
+  // The dashboard's requests, saved by the relay (ArtifactData query with out_dir): a run takes the name it
+  // was started with, so it keeps it after its request is cleaned up; requests finished 14 days ago go.
+  const requests = readRequests(arg('requests'));
+  for (const r of runs) {
+    const q = requests.find((x) => x.id === r.summary.request || x.run === r.summary.id);
+    if (q?.name) r.summary.name = q.name;
+  }
+  const expired = requests.filter((q) => q.status !== 'queued' && Date.parse(q.createdAt) < Date.now() - REQUEST_KEEP_DAYS * 86400e3).map((q) => q.id);
+  writeFileSync(EXPIRED, JSON.stringify(expired));
   for (const r of runs) {
     const report = r.report.length > REPORT_LIMIT ? `${r.report.slice(0, REPORT_LIMIT)}\n\n… (cut; the full report is in the run folder)\n` : r.report;
     writeFileSync(join(OUT, `${r.summary.id}.json`), JSON.stringify({ ...r.summary, report }));
   }
   console.log(`${runs.length} run(s) to upload, one file each, in ${OUT}; the page's deck list in ${META}`);
+  if (expired.length) console.log(`${expired.length} request(s) older than ${REPORT_KEEP_NOTE} to delete, listed in ${EXPIRED}: ${expired.join(', ')}`);
   for (const r of runs) console.log(`  ${r.summary.id}  ${r.summary.result}  ${r.live ? `${(r.summary as { progress?: { done: number; total: number } }).progress?.done}/${(r.summary as { progress?: { done: number; total: number } }).progress?.total}` : `${r.summary.problems.length} problem(s)`}`);
   return 0;
 }

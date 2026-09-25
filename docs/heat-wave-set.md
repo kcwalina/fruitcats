@@ -26,7 +26,7 @@ a game for ages 8 and up:
 |---|---|---|---|
 | **Pepper** | Fiery, fearless, hot-headed | Brawlers that get stronger when they're hurt; trading blows | **Heat** |
 
-> **Heat** *(Pepper)*: Whenever this unit is dealt damage and survives, it gets +1 Power, up to +3.
+> **Heat** *(Pepper)*: Whenever this unit is dealt damage and survives, it gets +1 Power and +1 Health, up to +3.
 
 - The bonus stays until the unit leaves the Yard, like Ripen. It shows on the unit as a flame with its number.
 - Damage that Tough reduces to 0 doesn't count. Healing doesn't remove Heat, so Pepper plus Orchard, with heals
@@ -44,7 +44,7 @@ stem, and embers drift off it.
 
 | Side | Power | Text |
 |---|---|---|
-| **Kitten**: *Blaze, Ember Kit* | — | **Exhaust:** Deal 1 damage to a unit you control. It gets +1 Power this round.<br>**Grow Up:** 5 or more Cats and Critters are in the Composts. |
+| **Kitten**: *Blaze, Ember Kit* | — | **Exhaust:** Deal 1 damage to a unit you control. It gets +1 Power this round.<br>**Grow Up:** 4 or more Cats and Critters are in the Composts. |
 | **Big Cat**: *Blaze, Wildfire* | 3 | **Exhaust:** Deal 1 damage to a unit. If it's yours, it gets +2 Power this round. |
 
 *Hot-headed. Cool-hearted.*
@@ -68,13 +68,13 @@ stem, and embers drift off it.
 
 | ID | Name | Cost | P/H | Text | Qty |
 |---|---|---|---|---|---|
-| HW1-P01 | Pepperoncini Bat | 1 | 1/2 | Heat. | 3 |
-| HW1-P02 | Chili Chihuahua | 1 | 2/1 | **Hello:** You may deal 1 damage to another unit you control. | 3 |
-| HW1-P03 | Jalapeño Honey Badger | 2 | 2/3 | Heat. | 3 |
-| HW1-P04 | Serrano Wolf | 3 | 3/3 | Heat. **Hello:** Deal 1 damage to a unit. | 3 |
+| HW1-P01 | Pepperoncini Bat | 1 | 1/3 | Heat. | 3 |
+| HW1-P02 | Chili Chihuahua | 1 | 2/1 | Zoomies. **Hello:** You may deal 1 damage to another unit you control. | 3 |
+| HW1-P03 | Jalapeño Honey Badger | 2 | 2/4 | Heat. | 3 |
+| HW1-P04 | Serrano Wolf | 3 | 3/4 | Heat. **Hello:** Deal 2 damage to an enemy unit. | 3 |
 | HW1-P05 | Chipotle Raccoon | 3 | 2/4 | Guardian. Heat. | 3 |
-| HW1-P06 | Habanero Bull | 4 | 4/4 | Heat. | 3 |
-| HW1-P07 | Scotch Bonnet Rhino | 5 | 4/4 | Fierce. Heat. | 3 |
+| HW1-P06 | Habanero Bull | 4 | 4/5 | Heat. | 3 |
+| HW1-P07 | Scotch Bonnet Rhino | 5 | 4/5 | Fierce. Heat. | 3 |
 | HW1-P08 | Dragon's Breath Komodo | 6 | 5/6 | Heat. **Hello:** Deal 1 damage to each other unit. | 2 |
 
 Common: Critters that cost 3 or less. Uncommon: Critters that cost 4 or more, and every Trick and Toy. These
@@ -210,6 +210,26 @@ string. That is part of step 6 of the architecture plan.
 16% against Zest Rush, 24% against Orchard Guard and 17% against Mango Tango. Blaze Grows Up in 80% of its
 games. Before tuning the cards, check how much of that is the bot. It judges one move ahead, so it may not
 yet pick fights and heat its own units the way the deck wants.
+
+**It wasn't only the bot (2026-09-24).** An LLM playtester (gpt-oss-20b) lost all 23 of its games with Five
+Alarm, and the same player wins 31% with the starters. Two causes, found by swapping Hero Cats between decks:
+the cards cost about 20 points (Five Alarm's cards lose just as badly under Sunny or Mochi), and Blaze about 6
+(Zest Rush's cards win 39% under Blaze). Heat rarely fired: attacks mostly go at the Hero Cat, so a Pepper unit
+seldom takes a hit and lives, and the 1-Health Pepper units died to the hit instead of heating up.
+
+**First rebalance (1,000 bot games per pairing):** 19% → **47%** overall: 43% against Zest Rush, 51% against
+Orchard Guard, 48% against Mango Tango. The changes, each measured on its own first:
+
+| Change | Why |
+|---|---|
+| Heat gives +1 Power **and +1 Health** per point, up to +3 | the biggest single gain (+12 points): a heated unit survives the next hit and keeps heating |
+| +1 Health on Pepperoncini Bat (1/3), Jalapeño Honey Badger (2/4), Serrano Wolf (3/4), Habanero Bull (4/5), Scotch Bonnet Rhino (4/5) | Heat needs a unit that survives damage |
+| Serrano Wolf: Hello deals **2** damage to an **enemy** unit (was 1 to any unit) | the deck had almost no removal against the starters' early units |
+| Chili Chihuahua gains **Zoomies** | an early threat that attacks the turn it lands, like Citrus's openers |
+| Blaze Grows Up at **4** Cats and Critters in the Composts (was 5) | Blaze Grew Up late (round 4.7) and her Kitten ability is weak |
+
+`npm run check-set` now reports the Bat and the Badger 2 over the stat budget. That is on purpose: the budget
+prices Heat like a full keyword, but it only pays off once the unit has survived a hit.
 
 1. **Pepper vs Zest Rush.** Citrus deals damage 1 point at a time, which is exactly what Heat feeds on, and
    Ring of Fire wipes Citrus's 1-Health openers. Zest Rush is already the weakest deck (44%). If Five Alarm beats

@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "npm run dev -w @fruitcats/web",
     "build": "npm run build -w @fruitcats/web",
+    "build:playtest": "npm run build:playtest -w @fruitcats/web",
     "preview": "npm run preview -w @fruitcats/web",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -21,10 +22,13 @@
     "play": "tsx playtest/runner.ts play",
     "llm-playtest": "tsx playtest/runner.ts llm-playtest",
     "deck-hunt": "tsx playtest/runner.ts deck-hunt",
+    "deck-build": "tsx playtest/runner.ts deck-build",
+    "decks": "tsx playtest/runner.ts decks",
     "reports": "tsx playtest/runner.ts reports",
     "nightly": "tsx playtest/runner.ts nightly",
     "llm-compare": "tsx playtest/runner.ts llm-compare",
-    "check-set": "tsx content/check-set.ts"
+    "check-set": "tsx content/check-set.ts",
+    "publish-pack": "tsx content/publish-pack.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

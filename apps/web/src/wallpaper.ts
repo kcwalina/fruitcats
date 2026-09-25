@@ -4,7 +4,7 @@
 // No website can set the wallpaper itself: the player saves the picture (the share sheet's Save Image
 // on iPhone) and chooses it in Photos.
 
-import { CARDS, type CardDef, type Rarity } from '@fruitcats/engine';
+import { CARDS, MECHANICS, SETS, type CardDef, type Rarity } from '@fruitcats/engine';
 import type { Finish } from './collection';
 import { drawRarityMark } from './rarity';
 import { BASE, artUrl } from './ui';
@@ -21,14 +21,16 @@ const FINISH_CODES: Record<Exclude<Finish, 'standard'>, [string, string]> = {
   foil: ['F', '#2e3552'], gold: ['G', '#4a2c02'], prismatic: ['P', 'white'],
 };
 const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C';
-const FOOTER = 'Fruitcats · Starter Box · © 2026 Krzysztof Cwalina';
+/** The card's footer line, as compose_cards.py prints it: the game, the card's set, the copyright. */
+const footer = (card: CardDef) => `Fruitcats · ${SETS[card.set ?? '']?.name ?? 'Starter Box'} · © 2026 Krzysztof Cwalina`;
 const FONT = 'Nunito, "Segoe UI", sans-serif';
 
 /** The stat chips' icons (Phosphor's paw and heart, white masks) and the heart's own colour (compose_cards.py's stat_chip). */
 const STAT_ICONS = { paw: 'stat-paw', heart: 'stat-heart' } as const;
 const HEART_COLOR = '#D9486C';
 
-const KEYWORDS = /\b(Zoomies|Guardian|Sneaky|Fierce|Tough \d+|Lucky|Pounce|Ripen|Zest|Sprout \d+|Lush)\b/g;
+/** Keywords printed bold: the core ones and every loaded set's mechanics (Zest, Ripen, Heat…). */
+const keywordPattern = () => new RegExp(`\\b(Zoomies|Guardian|Sneaky|Fierce|Tough \\d+|Lucky|Pounce|${Object.keys(MECHANICS).map((m) => `${m}(?: \\d+)?`).join('|')})\\b`, 'g');
 const LABEL = /(?:^|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)/g;
 
 type Style = 'regular' | 'bold' | 'italic';
@@ -37,6 +39,8 @@ type Style = 'regular' | 'bold' | 'italic';
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    // Card packs' art comes from the pack storage: ask for it with CORS, so the canvas can still be saved.
+    img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`couldn't load ${src}`));
     img.src = src;
@@ -51,7 +55,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: nu
 /** Rules text as styled runs: labels ("Grow Up:") and keywords bold, reminders in brackets italic. */
 function runs(text: string): [string, Style][] {
   const marks: Style[] = Array.from(text, () => 'regular');
-  for (const pattern of [KEYWORDS, LABEL])
+  for (const pattern of [keywordPattern(), LABEL])
     for (const m of text.matchAll(pattern)) {
       const start = m.index! + m[0].indexOf(m[1]);
       for (let i = start; i < start + m[1].length; i++) marks[i] = 'bold';
@@ -313,7 +317,7 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   const kind = side ? `HERO CAT · ${side === 'kitten' ? 'KITTEN' : 'BIG CAT'}` : card.type.toUpperCase();
   // The type on the left, the collector number on the right: the type shrinks to fit beside it, and in
   // a narrow line the number gives way.
-  const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `SB1 · ${p.number}`;
+  const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `${card.set ?? 'SB1'} · ${p.number}`;
   ctx.font = `600 ${20 * s}px ${FONT}`;
   const markW = 36 * s;   // the rarity mark, and the gap before the number
   const tagW = p.finish === 'standard' ? 0 : 34 * s;   // the finish code's tag, and the gap after the number
@@ -438,7 +442,7 @@ function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, foote
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = MUTED;
-  ctx.fillText(FOOTER, (pawX + heartX) / 2, footerY);
+  ctx.fillText(footer(card), (pawX + heartX) / 2, footerY);
 }
 
 /**

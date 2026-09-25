@@ -106,10 +106,15 @@ Last updated 2026-09-24.
   into `dist-playtest/`. The public `npm run build` compiles them out.
 - **Alerts when something breaks** (2026-09-25), to the owner's phone and email through `ag-owner-alerts`:
   - `<app>-errors`: more than 10 server errors (HTTP 5xx) in 5 minutes, per app (`viamochi-id`, `fruitcats-api`).
-  - `<app>-unhealthy`: the app fails its App Service health check (`/healthz`) for 5 minutes.
+    It also fires when the app is down: App Service answers 503 for it while it's stopped or starting.
+  - No App Service health check: turning it on (2026-09-25) coincided with `viamochi-id` failing App Service's
+    230-second start limit again and again, so it was removed. Background jobs now wait until the site is up
+    before touching storage, so starting is quick.
   - `viamochi-id` also emails the owner a list of the errors it logged (`ErrorAlerts.cs`), at most once an hour.
   - Both deploy scripts wait for `/healthz` after deploying and restart the app if it doesn't answer within
     2 minutes (a deploy once left `viamochi-id` hung while starting).
+  - Every deploy or app-setting change restarts the app, about 2 minutes down on B1. Sessions tell each other
+    before touching `viamochi-id` or `fruitcats-api`, and batch settings into one change.
   - The game gives up on any account call after 15 seconds and says so; a slow or down service never signs anyone
     out (only Entra rejecting the refresh token does).
 - **Contact us** (Settings, and "Trouble signing in?" in the sign-in window): `POST /support` on `viamochi-id`

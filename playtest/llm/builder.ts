@@ -1,5 +1,8 @@
 // deck-build --goal <words…> [--hero SB1-H03] [--vs DECK[,DECK…]] [--candidates 3] [--rounds 2] [--games 40]
-//            [--provider pc2024] [--model M] [--save] [--key KEY]
+//            [--provider pc2024|fireworks-k3] [--model M] [--max-usd 1] [--save] [--key KEY]
+//
+// PC2024's gpt-oss is free and runs from the dashboard; fireworks-k3 (Kimi K3, about $0.20-0.40 a build) is
+// for a build worth a frontier model, run from the laptop that has the key. A paid build stops at --max-usd.
 //
 // An LLM builds a deck for a goal: "an aggressive Pepper deck", "beat Orchard Guard", "a fun deck for a
 // beginner". It designs a few candidates under the real deckbuilding rules (checked with the deck builder's
@@ -15,7 +18,7 @@ import { seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import type { MatchJob } from '../balance/match';
 import { canSaveLibrary, loadDecks, saveToLibrary } from '../decks/library';
-import { cardPoolText, deckText, designDecks, JSON_FORMAT, RULES, starterText, type DesignedDeck } from './design';
+import { cardPoolText, deckShape, deckText, designDecks, familiesIn, gameText, JSON_FORMAT, RULES, starterText, type DesignedDeck } from './design';
 import { addUsage, getProvider, noUsage, type ChatMessage, type Provider, type Usage } from './providers';
 
 export interface BuildOptions {
@@ -27,6 +30,8 @@ export interface BuildOptions {
   rounds: number;
   /** Bot games against each opponent, for each candidate. */
   games: number;
+  /** Stop asking the model once the build has cost this much (paid providers). */
+  maxUsd?: number;
   onProgress?: (phase: string, done: number, total: number) => void;
 }
 
@@ -66,12 +71,12 @@ export async function scoreDecks(decks: DesignedDeck[], opponents: DeckList[], g
 }
 
 const resultsText = (tried: Tried[]) => tried.map((t) =>
-  `- ${t.name} (round ${t.round}): ${pct(t.winRate)} overall (${Object.entries(t.vs).map(([k, v]) => `${pct(v)} vs ${k}`).join(', ')}), games last ${t.rounds.toFixed(1)} rounds on average`).join('\n');
+  `- ${t.name} (round ${t.round}): ${pct(t.winRate)} overall (${Object.entries(t.vs).map(([k, v]) => `${pct(v)} vs ${k}`).join(', ')}), games last ${t.rounds.toFixed(1)} rounds on average. Shape: ${deckShape(t.deck)}`).join('\n');
 
 export async function buildDeck(o: BuildOptions): Promise<BuildResult> {
   const heroLine = o.hero ? `The deck's Hero Cat must be ${o.hero} (${cardName(o.hero)}).` : 'Choose the Hero Cat that suits the goal best.';
   const messages: ChatMessage[] = [
-    { role: 'system', content: 'You are an expert deckbuilder for a new card game, Fruitcats. You build decks that do exactly what they are asked to do, and you read playtest numbers honestly.' },
+    { role: 'system', content: `You are an expert deckbuilder for a new card game, Fruitcats. You build decks that do exactly what they are asked to do, and you read playtest numbers honestly.\n\nHOW THE GAME PLAYS\n${gameText()}` },
     {
       role: 'user',
       content: `${cardPoolText()}\n\n${RULES}\n\nTHE STARTER DECKS (for reference)\n${starterText()}\n\n` +
@@ -85,7 +90,15 @@ export async function buildDeck(o: BuildOptions): Promise<BuildResult> {
   const rejected: string[] = [];
   let games = 0;
   const total = o.rounds + 1;
+  // A paid model stops before a call could take the build past its budget: a round costs about as much as the
+  // most expensive round so far.
+  const spent = () => o.provider.cost(usage) ?? 0;
+  let roundCost = 0;
+  let stopped = '';
+  const affordable = () => !o.maxUsd || spent() + roundCost <= o.maxUsd;
   for (let round = 1; round <= o.rounds; round++) {
+    if (round > 1 && !affordable()) { stopped = `Stopped after round ${round - 1}: another round could pass the $${o.maxUsd!.toFixed(2)} budget.`; break; }
+    const before = spent();
     o.onProgress?.(`designing, round ${round}`, round - 1, total);
     if (round > 1) {
       messages.push({
@@ -94,8 +107,9 @@ export async function buildDeck(o: BuildOptions): Promise<BuildResult> {
           `Remember the goal: ${o.goal}\nBuild ${o.candidates} improved decks: keep what works, fix what the numbers say doesn't. Give each a new name. ${JSON_FORMAT}`,
       });
     }
-    const got = await designDecks(o.provider, messages);
+    const got = await designDecks(o.provider, messages, { families: o.hero ? [] : familiesIn(o.goal) });
     usage = addUsage(usage, got.usage);
+    roundCost = Math.max(roundCost, spent() - before);
     rejected.push(...got.rejected);
     const fresh = got.decks.filter((d) => (!o.hero || d.deck.hero === o.hero) && !tried.some((t) => t.name === d.name));
     if (!fresh.length) continue;
@@ -103,7 +117,11 @@ export async function buildDeck(o: BuildOptions): Promise<BuildResult> {
     games += fresh.length * o.opponents.length * o.games;
     fresh.forEach((d, i) => tried.push({ ...d, round, ...scores[i] }));
   }
-  if (!tried.length) return { tried, pick: null, why: 'No legal deck was built.', rejected, usage, games };
+  if (!tried.length) return { tried, pick: null, why: `No legal deck was built.${stopped ? ` ${stopped}` : ''}`, rejected, usage, games };
+  if (o.maxUsd && spent() >= o.maxUsd) {
+    const best = [...tried].sort((a, b) => b.winRate - a.winRate)[0];
+    return { tried, pick: best, why: `The $${o.maxUsd.toFixed(2)} budget was spent, so this is the deck with the best bot results. ${stopped}`.trim(), rejected, usage, games };
+  }
 
   // The pick is the LLM's: the strongest deck isn't always the one that fits the goal.
   o.onProgress?.('choosing', o.rounds, total);
@@ -124,7 +142,7 @@ export async function buildDeck(o: BuildOptions): Promise<BuildResult> {
     pick = [...tried].sort((a, b) => b.winRate - a.winRate)[0];
     why = 'The model gave no clear pick, so this is the deck with the best bot results.';
   }
-  return { tried, pick, why, rejected, usage, games };
+  return { tried, pick, why: stopped ? `${why} ${stopped}` : why, rejected, usage, games };
 }
 
 const cardsText = (d: DeckList) => Object.entries(d.cards).sort(([a], [b]) => a.localeCompare(b)).map(([id, q]) => `${q}× ${cardName(id)}`).join(', ');
@@ -145,10 +163,12 @@ export async function runDeckBuild(o: BuildOptions & { save?: boolean; key?: str
   const md = [
     `# Deck build: ${o.goal}`, '',
     `${o.provider.name} ${o.provider.model} built ${r.tried.length} legal deck(s) in ${o.rounds} round(s)${r.rejected.length ? ` (${r.rejected.length} broke the rules)` : ''}; ` +
-    `each played ${o.games} bot games against ${o.opponents.map((d) => d.name).join(', ')}.`, '',
+    `each played ${o.games} bot games against ${o.opponents.map((d) => d.name).join(', ')}.` +
+    `${o.provider.cost(r.usage) ? ` Model cost: $${o.provider.cost(r.usage)!.toFixed(2)}.` : ''}`, '',
     ...(r.pick ? [
       `## The pick: ${r.pick.name}, ${pct(r.pick.winRate)}`, '', r.why, '', `*${r.pick.idea}*`, '',
       `${cardName(r.pick.deck.hero)} (${CARDS[r.pick.deck.hero].family}): ${cardsText(r.pick.deck)}`, '',
+      `Shape: ${deckShape(r.pick.deck)}`, '',
       `Deck code: \`${deckCode(r.pick.deck)}\``, '',
       ...(saved ? [`Saved to the deck library as \`${saved}\`.`, ''] : []),
     ] : []),
@@ -157,6 +177,7 @@ export async function runDeckBuild(o: BuildOptions & { save?: boolean; key?: str
     '|---|---|---|---|' + o.opponents.map(() => '---|').join('') + '---|',
     ...r.tried.map((t) => `| ${t.round} | ${t.name}${t === r.pick ? ' ✓' : ''} | ${cardName(t.deck.hero)} | ${pct(t.winRate)} | ${o.opponents.map((d) => pct(t.vs[d.name] ?? 0)).join(' | ')} | ${t.rounds.toFixed(1)} |`),
     '',
+    ...r.tried.map((t) => `- **${t.name}**: ${t.idea} Shape: ${deckShape(t.deck)}.`), '',
     ...(r.rejected.length ? ['## Rejected (broke the deckbuilding rules)', '', ...r.rejected.map((x) => `- ${x}`), ''] : []),
   ];
   return finishRun(run, 'deck-build', r.games, problems, {
@@ -180,6 +201,7 @@ export async function deckBuildCommand(): Promise<number> {
     candidates: numArg('candidates') ?? 3,
     rounds: numArg('rounds') ?? 2,
     games: numArg('games') ?? 40,
+    maxUsd: numArg('max-usd') ?? 1,
     save: flag('save'),
     key: arg('key'),
   });

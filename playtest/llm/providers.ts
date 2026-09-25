@@ -2,6 +2,9 @@
 // local Ollama or LM Studio, Fireworks and Azure Foundry, so one client is enough. Providers are named in
 // playtest.config.json; keys come from environment variables and never from the file.
 
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import config from '../playtest.config.json';
 import { playableHeroes, randomDeck } from '../balance/decks';
 import { mulberry } from '../lib/rng';
@@ -15,6 +18,20 @@ export interface ProviderConfig {
   /** Sent with every request, e.g. { "reasoning_effort": "low" } for gpt-oss. */
   extraBody?: Record<string, unknown>;
   pricesPerMillion?: { input: number; cachedInput?: number; output: number };
+  /** The key's name in mochi's mworks secret store (~/.mworks/secrets.json), used when the environment has none. */
+  secretName?: string;
+}
+
+/**
+ * A provider key from mochi's mworks secret store, where the laptop already keeps them: read when a request
+ * is made, never logged or written anywhere else.
+ */
+function storedSecret(name: string): string | undefined {
+  try {
+    const file = join(homedir(), '.mworks', 'secrets.json');
+    const value = (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>)[name];
+    return typeof value === 'string' && value ? value : undefined;
+  } catch { return undefined; }
 }
 
 /** OpenAI-style chat messages, including tool calls (an assistant message that calls tools, and each result). */
@@ -113,8 +130,8 @@ export function getProvider(name: string, model?: string, extra: Record<string, 
   const headers = (): Record<string, string> => {
     const h: Record<string, string> = { 'content-type': 'application/json' };
     if (cfg.apiKeyEnv) {
-      const key = process.env[cfg.apiKeyEnv];
-      if (!key) throw new Error(`Set ${cfg.apiKeyEnv} to use the ${name} provider.`);
+      const key = process.env[cfg.apiKeyEnv] ?? (cfg.secretName ? storedSecret(cfg.secretName) : undefined);
+      if (!key) throw new Error(`Set ${cfg.apiKeyEnv} to use the ${name} provider${cfg.secretName ? ` (or save a "${cfg.secretName}" key with mworks)` : ''}.`);
       if (!cfg.apiKeyHeader || cfg.apiKeyHeader.toLowerCase() === 'authorization') h.authorization = `Bearer ${key}`;
       else h[cfg.apiKeyHeader] = key;
     }

@@ -38,9 +38,10 @@ sealed class PlaytesterConfig
     /// <summary>The Ollama model to unload before starting, so the GPU doesn't hold it twice.</summary>
     public string OllamaModel { get; set; } = "gpt-oss:20b";
     public int ServerPort { get; set; } = 8091;
-    /// <summary>Games the server plays at once, and the context each one gets (a move's prompt is ~1.5k tokens).</summary>
+    /// <summary>Games the server plays at once, and the context each one gets. A move's prompt is ~1.5k tokens but a
+    /// long game's can pass 6k (one did on 2026-09-24); 8 x 12k fits beside gpt-oss-20b in 16 GB.</summary>
     public int Slots { get; set; } = 8;
-    public int ContextPerSlot { get; set; } = 6144;
+    public int ContextPerSlot { get; set; } = 12288;
 
     /// <summary>How many run folders to keep; older ones are deleted after each run.</summary>
     public int KeepRuns { get; set; } = 200;

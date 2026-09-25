@@ -1,7 +1,7 @@
 # Friend games and Ranked: the plan
 
 How two people play each other online: first **Friend** games, then **Ranked** (a queue that pairs you with someone
-near your rating). Both are built on one shared **match** system; Friend and Ranked are only two ways into it. The
+near your rating). Both modes run on the same **match code**; Friend and Ranked are only two ways into it. The
 background (hidden information, why the server holds the game) is in [future-plans.md](future-plans.md#1-pvp);
 accounts and friends are in [accounts.md](accounts.md).
 
@@ -12,11 +12,12 @@ Last updated 2026-09-25.
 | Topic | Decision |
 |---|---|
 | **Who holds the game** | The Fruitcats API. It runs the same engine, keeps the full `GameState`, and sends each player only `viewFor(state, seat)`. Clients send actions; the server checks them with `legalActions` and applies them. Nothing a client says about the game is trusted. |
-| **One match system** | Friend games and Ranked share everything from "two players and two decks are known" onwards: the match, clock, reconnecting, conceding, emotes, the result, replays. They differ only in how the two players are found and what happens after (head-to-head record, or a rating change). |
+| **One match code for both modes** | Friend games and Ranked run on the same code once two players are paired and each has picked a deck: the match, clock, reconnecting, conceding, emotes, the result, replays. The two modes differ only in how the players are found and what happens after (head-to-head record, or a rating change). This is about not writing the code twice; it has nothing to do with what players own. |
+| **Each player plays their own deck** | Nothing a player owns is ever shared with, lent to or seen by another player: not cards, not decks, not purchases. Each player picks one of their own decks, built from cards their own account owns (the starter decks count, as everyone has them). A friend buying a card changes nothing for anyone else. |
 | **Transport** | One WebSocket per signed-in app, opened at sign-in and kept while the app is open. It carries presence, challenges, the Ranked queue and the match. Not one socket per feature. |
 | **Where Friends lives** | On the Home screen's **Friend** tile, as a full screen like Solo. It comes out of Settings → Account. The Account panel keeps one row that opens the same screen. |
 | **Challenges** | Only to friends who are online now. No challenges to offline friends in the first version (no push notifications yet). |
-| **Decks** | Same rule for Friend and Ranked: a finished 50-card deck made of cards you own. The server checks it with the Store's ownership, the check Ranked needs anyway. One rule, one check. |
+| **Deck check** | The same rule in both modes: a finished 50-card deck of cards the player's own account owns. The server checks it against that account's ownership in the Store, so a deck with cards the account doesn't own can't be played. |
 | **Clock** | Every online game has a clock, with the same code for both modes; only the numbers differ (see [The clock](#the-clock)). Without one, a player who walks away holds the other hostage. |
 | **Talking** | A few cat emotes (Meow, Purr, Hiss, Good game), no typed chat. Players are 13 and up and meet strangers in Ranked. One tap mutes the other player's emotes. |
 | **Pounce and Lucky** | Online, the defender is always asked, whether or not they hold a Pounce. The engine gets an option for it. |
@@ -41,7 +42,7 @@ The new Friends screen replaces it. The calls to viamochi-id (`listFriends`, `ne
 
 ## The player's experience
 
-### The flow, shared by both modes
+### The flow, the same in both modes
 
 ```
  Friend:  Friends screen → Play (friend) → pick deck → Waiting for Pippin… ─┐
@@ -88,12 +89,12 @@ The Home tile shows a small badge with the number of challenges waiting.
 Neither player sees the other's deck before the game. The Hero Cats are shown on the Versus splash, as they would be
 on the table.
 
-### Versus splash (shared)
+### Versus splash (both modes)
 
 Two or three seconds: both Pawtraits, names and Hero Cats, and who takes the Yarn Ball first. Ranked adds each
 player's rating.
 
-### In the game (shared)
+### In the game (both modes)
 
 The game screen as in Solo, with:
 
@@ -107,26 +108,26 @@ The game screen as in Solo, with:
 - **If someone's connection drops**: "Pippin's connection dropped. Waiting 0:47". Their clock doesn't run while they
   are gone. If they aren't back in time, they lose (see [Connection drops](#connection-drops)).
 
-### Result (shared)
+### Result (both modes)
 
 Win or lose art as in Solo, the number of rounds, and:
 
 - **Friend:** your record against them ("You 3 – 2 Pippin"), **Rematch** and **Home**. When one player taps Rematch,
-  the other sees "Pippin wants a rematch". When both tap it, a new game starts with the same decks and the other
+  the other sees "Pippin wants a rematch". When both tap it, a new game starts, each player keeping the deck they just played, and the other
   player takes the Yarn Ball first.
 - **Ranked:** the rating change ("1,240 → 1,256 (+16)"), **Play again** (back into the queue with the same deck)
   and **Home**.
 
 ## How it's built
 
-### Shared, and not
+### Code used by both modes, and not
 
-| Piece | Shared | Friend only | Ranked only |
+| Piece | Both modes | Friend only | Ranked only |
 |---|---|---|---|
 | Socket, sign-in on the socket, reconnecting | ✓ | | |
 | Presence (online, in a game, in the queue) | ✓ (Ranked uses it to show "in the queue") | shown to friends | |
 | Finding the other player | | challenge and accept | queue and matchmaker |
-| Deck check (finished, cards owned) | ✓ | | |
+| Deck check (finished, every card owned by that player's account) | ✓ | | |
 | Match: engine, views, clock, drops, concede, emotes | ✓ | | |
 | Match record: seed, decks, actions, winner | ✓ | | |
 | After the game | | head-to-head, rematch | rating, play again |
@@ -153,9 +154,9 @@ with one job:
 |---|---|
 | `socket.ts` | The WebSocket (the small `ws` package): signs in with the same Via Mochi token the API checks now, heartbeats, and hands each message to the file below that handles it. |
 | `presence.ts` | Who is connected and what they're doing. Tells each player's online friends when that changes. |
-| `match.ts` | **The shared core.** `startMatch(seats, decks, rules)`: makes the game with a fresh seed, applies actions, sends each seat its view, runs the clock, handles drops, concedes and emotes, and when the game ends calls `rules.kind`'s finish (below). |
+| `match.ts` | **The core, used by both modes.** `startMatch(seats, decks, rules)`: makes the game with a fresh seed, applies actions, sends each seat its view, runs the clock, handles drops, concedes and emotes, and when the game ends calls `rules.kind`'s finish (below). |
 | `matches.ts` | Keeps each match's record in a `matches` table: seed, engine and content version, decks, the actions so far, and the result. The game is always rebuilt as seed + actions, so an API restart loses nothing. The same record is the replay. |
-| `decks.ts` | `checkDeck(account, deck)`: 50 cards, legal, all owned (the Store's ownership code). Used by both modes. |
+| `decks.ts` | `checkDeck(account, deck)`: 50 cards, legal, every card owned by that account (the Store's ownership code). Used by both modes. |
 | `challenges.ts` | **Friend's way in.** Send, accept, decline, cancel, expire after 60 s; checks the two are friends. Ends in `startMatch`. After the game: the head-to-head record, and rematches. |
 | `queue.ts` | **Ranked's way in, later.** Pairs players whose ratings are close, allowing a wider gap the longer someone waits. Ends in `startMatch`. |
 | `ratings.ts` | **Ranked, later.** Glicko-2 from match results, and the ladder. |
@@ -252,7 +253,7 @@ Each step can be tested and shipped by itself.
 
 1. **The client stops assuming who's who.** `session.ts`, `LocalSession`, `main.ts` drawing `PlayerView`, the
    engine's `pounceAlways` option and the no-leak test. Solo plays exactly as before. No server.
-2. **The match on the server.** `socket.ts`, `match.ts`, `matches.ts`, `decks.ts`, `RemoteSession`, and the shared
+2. **The match on the server.** `socket.ts`, `match.ts`, `matches.ts`, `decks.ts`, `RemoteSession`, and the
    waiting, Versus and Result screens. Tried by starting a match between two browser tabs signed in as two dev
    accounts (`npm run api:local -- --fake-sign-in`).
 3. **Friends.** `presence.ts`, `challenges.ts`, the Friends screen, invite links, rematch and head-to-head. The Home
@@ -265,6 +266,4 @@ Each step can be tested and shipped by itself.
    it's used, needs a change in viamochi-id. Worth it now, or ship with today's codes and add links later?
 2. **Friend games without a clock.** The plan gives them a relaxed clock. Should friends be able to choose "No
    clock" when challenging?
-3. **Decks you don't own in Friend games.** The plan uses one rule (only cards you own) for both modes. A looser
-   rule for friends ("try my deck") would be fun, but means a second check.
-4. **Emotes.** Four emotes, no chat: agreed?
+3. **Emotes.** Four emotes, no chat: agreed?

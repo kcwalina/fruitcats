@@ -64,7 +64,8 @@
         "playedThisRound": {
           "atLeast": 2
         }
-      }
+      },
+      "label": true
     },
     "Ripen": {
       "family": "Orchard",
@@ -658,7 +659,8 @@
           ],
           "log": "Sanguine readies after her victory."
         }
-      ]
+      ],
+      "pronoun": "her"
     },
     {
       "id": "SB1-O01",
@@ -838,7 +840,8 @@
             {
               "cancelAttack": true
             }
-          ]
+          ],
+          "note": "The attacker stays exhausted."
         }
       ]
     },

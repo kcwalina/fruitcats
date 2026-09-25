@@ -1,11 +1,13 @@
 // deck-hunt [--provider pc2024] [--model M] [--ideas 6] [--scale 1]
+// deck-hunt --goal …   is deck-build (builder.ts), for PC2024's playtester paw
 //
 // The LLM is good at ideas and the bots are good at numbers: the LLM designs decks meant to break the game
 // (from the whole card pool, under the real deckbuilding rules), each deck is checked with the deck
 // builder's own rules, and the bots play every legal one against the starters. A deck that beats them is
 // written up with its list, the LLM's idea behind it, and its win rate.
 
-import { arg, numArg } from '../lib/args';
+import { arg, numArg, textArg } from '../lib/args';
+import { deckBuildCommand } from './builder';
 import { cardName, deckCode } from '../lib/engine';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { runBalance } from '../balance/gauntlet';
@@ -51,6 +53,9 @@ export async function runDeckHunt(provider: Provider, ideas: number, scale: numb
 }
 
 export async function deckHuntCommand(): Promise<number> {
+  // A hunt with a goal is a deck build: PC2024's playtester paw accepts `deck-hunt`, and a paw deployed before
+  // 2026-09-25 doesn't know `deck-build` yet.
+  if (textArg('goal')) return deckBuildCommand();
   const summary = await runDeckHunt(getProvider(arg('provider') ?? 'pc2024', arg('model')), numArg('ideas') ?? 6, numArg('scale') ?? 1);
   console.log(`${summary.result.toUpperCase()}: ${(summary.details.decks as unknown[]).length} deck(s) tested. Report: ${summary.id}`);
   for (const p of summary.problems) console.log(`  ${p.level}: ${p.text}`);

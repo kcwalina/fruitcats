@@ -28,7 +28,12 @@
         "name": "crumb",
         "power": 1,
         "health": 1,
-        "log": "{name} gets a Crumb ({n})."
+        "log": "{name} gets a Crumb ({n}).",
+        "noun": "Crumb",
+        "full": {
+          "name": "Full",
+          "at": 3
+        }
       },
       "abilities": [
         {
@@ -62,7 +67,8 @@
         "Leftovers"
       ],
       "text": "Leftovers.",
-      "flavor": "It brought friends."
+      "flavor": "It brought friends.",
+      "brief": true
     }
   ],
   "cards": [
@@ -247,7 +253,8 @@
         }
       ],
       "text": "Hello: Exhaust an enemy unit. Take a counter from it and put it on the Goose as a Crumb.",
-      "flavor": "Honk."
+      "flavor": "Honk.",
+      "pronoun": "the Goose"
     },
     {
       "id": "BP1-B06",
@@ -273,8 +280,9 @@
           ]
         }
       ],
-      "text": "After this defeats a unit in combat, put a Crumb on it.",
-      "flavor": "Won the fight. Kept the cake."
+      "text": "After Mulberry Moose defeats a unit in combat, put a Crumb on it.",
+      "flavor": "Won the fight. Kept the cake.",
+      "pronoun": "it"
     },
     {
       "id": "BP1-B07",
@@ -383,10 +391,11 @@
                 "max": 3
               }
             }
-          ]
+          ],
+          "note": "Yours and theirs."
         }
       ],
-      "text": "Put a Crumb on each unit, yours and theirs.",
+      "text": "Put a Crumb on each unit. (Yours and theirs.)",
       "flavor": "Everyone gets a slice. Yes, even them."
     },
     {
@@ -492,7 +501,7 @@
           }
         }
       ],
-      "text": "Hello: Put a Crumb on another unit you control. Your Full units have Sneaky.",
+      "text": "Hello: Put a Crumb on another unit you control.\nYour Full units have Sneaky.",
       "flavor": "Floppy on purpose."
     },
     {

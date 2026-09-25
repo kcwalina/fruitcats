@@ -315,7 +315,7 @@ sealed partial class PlaytesterServer : UdsPaw
     public async Task<JsonObject> RunAsync(string? command = null, string? args = null)
     {
         command ??= "nightly";
-        if (command is not ("nightly" or "balance" or "llm-playtest" or "deck-hunt" or "llm-compare"))
+        if (command is not ("nightly" or "balance" or "llm-playtest" or "deck-hunt" or "deck-build" or "llm-compare"))
             return new JsonObject { ["started"] = false, ["error"] = $"unknown command {command}" };
         if (args is not null && !SafeArgs().IsMatch(args))
             return new JsonObject { ["started"] = false, ["error"] = "arguments may only contain letters, digits, spaces, dots, commas and dashes" };

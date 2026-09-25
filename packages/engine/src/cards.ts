@@ -31,10 +31,16 @@ export interface MechanicDef {
   reminder: string;
   if?: Condition;
   /** A counter the keyword keeps on a unit, and what each point of it is worth. */
-  counter?: { name: string; power?: number; health?: number; log?: string };
+  /**
+   * `noun` makes rules text put the counter on units by name ("Put a Crumb on …") instead of "gets +1 Heat";
+   * `full` names a unit holding `at` of them ("Full").
+   */
+  counter?: { name: string; power?: number; health?: number; log?: string; noun?: string; full?: { name: string; at: number } };
   abilities?: Ability[];
   /** A small symbol the game shows with the keyword on a unit (🍎 for Ripen). */
   icon?: string;
+  /** A condition written as a label in rules text ("Zest: …") rather than as a clause ("If you're Lush, …"). */
+  label?: boolean;
 }
 
 /** A card set, as its set.json holds it. */
@@ -91,6 +97,8 @@ export interface Plugin {
   id: string;
   conditions?: Record<string, (ctx: PluginContext, value: unknown) => boolean>;
   actions?: Record<string, (ctx: PluginContext, value: unknown) => void>;
+  /** Rules text for the plugin's actions, as a clause: `on` is the target ("an enemy unit", "it"), `self` the card. */
+  texts?: Record<string, (value: unknown, on: string, self: string) => string>;
   ai?: {
     /** Offer a better move than the bot's favourite, or null to keep it. The first plugin that answers wins. */
     refineAction?(ctx: AiContext): import('./types').Action | null;

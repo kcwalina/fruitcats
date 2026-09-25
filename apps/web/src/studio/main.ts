@@ -275,18 +275,25 @@ function image(code: string, key: string, version: string): { url: string | null
 }
 
 /** Checks on a picture against its brief: size, shape and file type. */
-function checks(p: BriefPicture, w: number, h: number, format: string, kind: 'sketch' | 'final'): { ok: boolean; text: string }[] {
+/**
+ * What the Studio says about a chosen picture. A sketch may be any size or format: at most a calm note. A finished
+ * picture must be exactly the brief's size, as WebP; otherwise it can't be sent (`blocked`), and `fix` says why.
+ */
+function checks(p: BriefPicture, w: number, h: number, format: string, kind: 'sketch' | 'final'): { notes: string[]; blocked: boolean; fix: string } {
   const [bw, bh] = p.size;
-  const list: { ok: boolean; text: string }[] = [];
+  const exact = w === bw && h === bh;
   const sameShape = Math.abs(w / h - bw / bh) < 0.01;
-  if (w === bw && h === bh) list.push({ ok: true, text: `${w} × ${h} pixels, as the brief asks` });
-  else if (sameShape && kind === 'sketch') list.push({ ok: true, text: `${w} × ${h}: the right shape. The finished picture should be ${bw} × ${bh}.` });
-  else if (sameShape) list.push({ ok: false, text: `${w} × ${h}: the right shape, but the finished picture should be exactly ${bw} × ${bh}.` });
-  else list.push({ ok: false, text: `${w} × ${h} is a different shape from ${bw} × ${bh}: the card would stretch it. Please use ${bw} × ${bh}.` });
-  if (format === 'webp') list.push({ ok: true, text: 'WebP' });
-  else if (kind === 'sketch') list.push({ ok: true, text: `${format.toUpperCase()} is fine for a sketch. Please send the finished picture as WebP.` });
-  else list.push({ ok: false, text: `${format.toUpperCase()}: please send the finished picture as WebP.` });
-  return list;
+  if (kind === 'sketch') {
+    const notes = [`${w} × ${h} pixels. Any size is fine for a sketch.`];
+    if (!sameShape) notes.push(`Its shape differs from the card’s picture (${bw} × ${bh}), so it looks stretched on the card. That’s fine for a sketch.`);
+    return { notes, blocked: false, fix: '' };
+  }
+  const wrong: string[] = [];
+  if (!exact) wrong.push(`${bw} × ${bh} pixels (this one is ${w} × ${h})`);
+  if (format !== 'webp') wrong.push(`a WebP file (this one is ${format.toUpperCase()})`);
+  return wrong.length
+    ? { notes: [], blocked: true, fix: `A finished picture must be ${wrong.join(' and ')}. Please export it again and choose it here. Or send this one as a sketch.` }
+    : { notes: [`${w} × ${h} pixels, WebP: exactly right.`], blocked: false, fix: '' };
 }
 
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
@@ -325,11 +332,15 @@ function page(): string {
 function topBar(): string {
   const r = S.route;
   const set = r.page !== 'sets' ? S.sets.find((s) => s.code === r.code) : null;
-  const who = S.me ? `${esc(S.me.name)}${S.me.role === 'owner' ? ` <span class="chip owner-chip">${S.asArtist ? 'Seeing it as the artist' : 'Reviewer'}</span>` : ''}` : 'Guest';
+  const who = S.me ? esc(S.me.name) : 'Guest';
+  const view = set ? S.views.get(set.code) : undefined;
+  const switcher = set && S.me?.role === 'owner' ? `<div class="seg top-seg" role="radiogroup" aria-label="How to see this project">
+      <button class="${S.asArtist ? 'on' : ''}" data-click="asartist:1" role="radio" aria-checked="${S.asArtist}">${view?.artist ? 'Artist' : 'As the artist'}</button>
+      <button class="${S.asArtist ? '' : 'on'}" data-click="asartist:0" role="radio" aria-checked="${!S.asArtist}">Reviewer</button></div>` : '';
   return `<header class="top">
     <a class="brand" href="#/"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></a>
     ${set ? `<nav class="crumbs"><a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : ''}</nav>` : '<span></span>'}
-    <div class="me">
+    <div class="me">${switcher}
       <a class="btn ghost small" href="${BASE}docs.html" target="_blank" rel="noopener">Guide</a>
       <span class="me-name">${who}</span>
       ${S.me ? '<button class="btn ghost small" data-click="signout">Sign out</button>' : ''}</div>
@@ -384,8 +395,7 @@ function wizardPage(code: string): string {
   const view = S.views.get(code) ?? null;
   const { approved, total } = overall(brief, view);
   const started = brief.pictures.some((x) => versionsOf(view, keyOf(x)).length);
-  const banner = S.asArtist ? `<div class="as-artist">${view?.artist ? `You’re the artist of <b>${esc(brief.name)}</b>.` : `You’re seeing <b>${esc(brief.name)}</b> the way its artist sees it.`}
-      <button class="btn small" data-click="asartist:0">Switch to reviewing</button></div>` : '';
+  const banner = S.asArtist && !view?.artist ? `<div class="as-artist">You’re seeing <b>${esc(brief.name)}</b> the way its artist sees it. Switch back with <b>Reviewer</b> at the top.</div>` : '';
 
   if (!started && !welcomed(code)) {
     return `<main class="wizard">${banner}<section class="wz-card wz-welcome">
@@ -499,7 +509,7 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
   return `<main class="home">${head}${task}
     <section class="panel quiet"><h2>Artist</h2>${artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b>${a.email ? `<span>${esc(a.email)}</span>` : ''}
         <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('')}
-      <p class="muted small"><button class="link" data-click="asartist:1">See it as the artist</button></p></section>
+</section>
     ${allLink}</main>`;
 }
 
@@ -544,7 +554,7 @@ function picturePage(code: string, key: string): string {
   const stepInfo = { open: at < 0 || all[at].open, after: at > 0 ? all[at - 1].milestone.title : '' };
   const i = brief.pictures.indexOf(p);
   const prev = brief.pictures[i - 1], next = brief.pictures[i + 1];
-  return `${S.asArtist ? `<div class="as-artist wide">You’re seeing this as the artist. <button class="btn small" data-click="asartist:0">Switch to reviewing</button></div>` : ''}<main class="picture">
+  return `<main class="picture">
     <aside class="brief">
       <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main picture' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
@@ -612,14 +622,15 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
     return `<div class="local">
       ${onCard}
       <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
-      <ul class="checks">${list.map((c) => `<li class="${c.ok ? 'ok' : 'warn'}">${c.ok ? '✓' : '!'} ${esc(c.text)}</li>`).join('')}</ul>
+      <ul class="checks">${list.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>
+      ${list.fix ? `<p class="fix">${esc(list.fix)}</p>` : ''}
       ${S.guest ? '<p class="muted small">This picture is only on your computer. Sign in to send it to us.</p>' : `
         <div class="seg" role="radiogroup" aria-label="What is it?">
           <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
           <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
         <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
         ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
-          : `<button class="btn primary wide" data-click="upload:${key}">Send to Fruitcats</button>`}`}
+          : `<button class="btn primary wide" data-click="upload:${key}" ${list.blocked ? 'disabled' : ''}>Send to Fruitcats</button>`}`}
       ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another picture' : 'Don’t send it'}</button>`}
       ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
     </div>`;
@@ -798,8 +809,8 @@ async function choose(key: string, file: File) {
   const old = S.local.get(key);
   if (old) URL.revokeObjectURL(old.url);
   S.local.set(key, { url, file, width: img.naturalWidth, height: img.naturalHeight, format });
-  const p = S.route.page === 'picture' ? S.briefs.get(S.route.code)?.pictures.find((x) => keyOf(x) === key) : undefined;
-  const state = S.route.page === 'picture' ? stateOf(S.views.get(S.route.code) ?? null, key) : 'none';
+  const p = S.route.page !== 'sets' ? S.briefs.get(S.route.code)?.pictures.find((x) => keyOf(x) === key) : undefined;
+  const state = S.route.page !== 'sets' ? stateOf(S.views.get(S.route.code) ?? null, key) : 'none';
   // A sensible guess at what it is: a sketch first, then finished once the sketch is approved.
   S.uploadKind = p && (state === 'sketch-ok' || state === 'approved' || (!p.showcase && !p.main && format === 'webp' && img.naturalWidth === p.size[0])) ? 'final' : 'sketch';
   S.uploadError = '';
@@ -812,6 +823,8 @@ async function send(key: string) {
   const code = S.route.code;
   const local = S.local.get(key);
   if (!local) return;
+  const p = S.briefs.get(code)?.pictures.find((x) => keyOf(x) === key);
+  if (p && checks(p, local.width, local.height, local.format, S.uploadKind).blocked) return;
   S.uploading = { key, fraction: 0 };
   S.uploadError = '';
   render();

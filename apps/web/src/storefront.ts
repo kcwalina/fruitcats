@@ -270,7 +270,7 @@ function renderShop(): string {
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
   return `<main class="store-main">
       <div class="offers">${decks.map(renderDeckOffer).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
-      <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account and plays on every device. A deck never charges you for cards you already have.</span></p>
+      <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account and plays on every device.</span></p>
       ${renderTesterTools()}
     </main>`;
 }

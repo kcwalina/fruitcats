@@ -118,6 +118,25 @@ function checkSet(set: ContentSet, games: number): Report {
     const noPrompt = faces.filter((f) => !subjects[f]);
     if (noPrompt.length) r.notes.push(`No art prompt for ${noPrompt.join(', ')} (fine if an artist draws them).`);
   }
+  // The art brief, for the Artist Studio (docs/artist-studio-plan.md): a picture for every card face, each on a
+  // real card and in a real step, and the Studio's frames drawn.
+  const briefFile = join(art, 'brief.json');
+  if (existsSync(briefFile)) {
+    const brief = JSON.parse(readFileSync(briefFile, 'utf8')) as { milestones?: { id: unknown }[]; pictures?: { file: string; card: string | null; milestone: unknown; size?: number[] }[] };
+    const pictures = brief.pictures ?? [];
+    const steps = new Set((brief.milestones ?? []).map((m) => String(m.id)));
+    const briefed = new Set(pictures.map((p) => p.file.replace(/\.[a-z]+$/i, '')));
+    const unbriefed = faces.filter((f) => !briefed.has(f));
+    if (unbriefed.length) r.warnings.push(`The art brief has no picture for ${unbriefed.join(', ')}.`);
+    for (const p of pictures) {
+      if (!/^[A-Za-z0-9][A-Za-z0-9-]*\.webp$/.test(p.file)) r.errors.push(`Art brief: "${p.file}" isn't a file name the Studio can use (letters, digits and dashes, .webp).`);
+      if (p.card && !ids.has(p.card)) r.errors.push(`Art brief: ${p.file} is for card ${p.card}, which isn't in the set.`);
+      if (!steps.has(String(p.milestone))) r.errors.push(`Art brief: ${p.file} is in step ${String(p.milestone)}, which isn't one of its milestones.`);
+      if (!Array.isArray(p.size) || p.size.length !== 2) r.errors.push(`Art brief: ${p.file} needs a size, [width, height].`);
+    }
+    const noFrame = faces.filter((f) => briefed.has(f) && !existsSync(join(art, 'cards', 'frames', `${f}.webp`)));
+    if (noFrame.length) r.warnings.push(`No Studio frame for ${noFrame.join(', ')} (python tools/compose_cards.py --set ${code.toLowerCase()} --frames).`);
+  }
 
   // 7. Bots
   if (games > 0) for (const key of Object.keys(data.decks ?? {})) r.notes.push(botRun(key, games));

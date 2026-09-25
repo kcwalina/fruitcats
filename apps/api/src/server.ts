@@ -6,6 +6,7 @@
 //   POST /v1/sync   { decks: SyncDeck[], showcase?: SyncShowcase }  →  the merged state, the same shape
 //   GET  /v1/export                  →  everything stored for the signed-in account ("Export my data")
 //   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
+//   /v1/studio/...                   →  the Artist Studio (studio/studio.ts, docs/artist-studio-plan.md)
 //
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
@@ -13,12 +14,20 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { TableClient, TableServiceClient } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
-import { CARDS } from '@fruitcats/engine';
+import { CARDS, registerSet } from '@fruitcats/engine';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { loadContent } from '../../../content';
 import { log } from './logs';
+import { azureStore } from './studio/store';
+import { studio } from './studio/studio';
+
+// The engine has no cards of its own: without the sets, every synced deck failed validation and was dropped. Every set,
+// prototypes too, so a deck holding cards from a set that isn't released yet is kept as well.
+loadContent(registerSet, { prototypes: true });
 
 const ID_SERVICE = process.env.VIAMOCHI_ID ?? 'https://viamochi-id.azurewebsites.net';
 const TABLES = process.env.TABLE_ENDPOINT ?? 'https://fruitcatsdata.table.core.windows.net';
+const BLOBS = process.env.BLOB_ENDPOINT ?? 'https://fruitcatsdata.blob.core.windows.net';
 const ORIGINS = new Set((process.env.ALLOWED_ORIGINS ??
   'https://fruitcats.viamochi.com,https://polite-sea-0773d4b1e.3.azurestaticapps.net,https://playtest.fruitcats.viamochi.com,http://localhost:5173').split(','));
 const MAX_DECKS = 200;
@@ -43,6 +52,41 @@ async function accountOf(req: IncomingMessage): Promise<string | null> {
     return null;
   }
 }
+
+/** The signed-in account and its display name, for the Artist Studio. */
+async function userOf(req: IncomingMessage): Promise<{ id: string; name: string } | null> {
+  const auth = req.headers.authorization ?? '';
+  if (!auth.startsWith('Bearer ')) return null;
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
+    if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+    return { id: payload.sub, name: typeof payload.name === 'string' && payload.name ? payload.name.slice(0, 40) : 'Artist' };
+  } catch {
+    return null;
+  }
+}
+
+// The Artist Studio. Owners are Via Mochi account ids; agents are "Name:sha256-of-key" pairs (tools/studio.ts).
+const serveStudio = studio({
+  store: azureStore(TABLES, BLOBS, credential),
+  account: userOf,
+  // viamochi-id checks that the caller is a reviewer too (ViaMochi:Reviewers), and returns only the one account.
+  async findByEmail(req, email) {
+    const res = await fetch(`${ID_SERVICE}/accounts/by-email?email=${encodeURIComponent(email)}`, { headers: { Authorization: req.headers.authorization ?? '' } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`account lookup: ${res.status}`);
+    const a = (await res.json()) as { id: string; displayName?: string; email?: string };
+    return { id: a.id, name: a.displayName || 'Artist', email: a.email ?? email };
+  },
+  owners: (process.env.STUDIO_OWNERS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+  agents: (process.env.STUDIO_AGENTS ?? '').split(',').filter(Boolean).map((pair) => {
+    const [name, hash] = pair.split(':');
+    return { name: name.trim(), hash: (hash ?? '').trim().toLowerCase() };
+  }),
+  log: (event, fields) => log(event.includes('error') || event.includes('mismatch') ? 'ops' : 'security', event, fields),
+  studioUrl: process.env.STUDIO_URL ?? 'https://fruitcats.viamochi.com/studio.html',
+  accountInvite: process.env.STUDIO_ACCOUNT_INVITE,
+});
 
 /** A service token from viamochi-id about one account and one purpose (e.g. deleting it). */
 async function serviceCall(req: IncomingMessage, userId: string, purpose: string): Promise<boolean> {
@@ -156,6 +200,7 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   try {
     if (req.url === '/healthz') return send(res, 200, 'ok');
+    if (req.url?.startsWith('/v1/studio/')) return await serveStudio(req, res);
     if (req.url === '/v1/sync' && req.method === 'POST') {
       const user = await accountOf(req);
       if (!user) return send(res, 401, { error: 'signed_out' });

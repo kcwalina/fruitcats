@@ -41,15 +41,17 @@ else is your choice, and this guide explains what has worked well so far.
 
 ### How we work together
 
-We work in small steps, one card at a time at first:
+You work in the **Artist Studio**, a website that takes you through the set one step at a time:
 
-1. We send you the art brief for the set.
-2. You start with the cards sold on their own, one at a time: sketch, then finished. We reply to each one
-   before you start the next.
-3. Then the deck's two main pictures, then the rest of the deck in small batches.
-4. Pawtraits and the announcement picture come last.
+1. Open the Studio at <https://fruitcats.viamochi.com/studio.html>. Sign in, or create a Via Mochi account. While sign-up is by invitation, we
+   send you a sign-up code to use.
+2. We add you to your set's project. From then on it opens whenever you sign in.
+3. Follow the steps. Each one shows what to draw, and when you upload a picture you see it on the real card,
+   small in the game and as a wallpaper. We comment on each picture, and the next step opens once we agree.
 
-See [Milestones](#milestones) for the details.
+The steps start with the cards sold on their own, one at a time, then the deck's two main pictures, then the
+rest of the deck in small batches, with Pawtraits and the announcement picture last. See
+[Milestones](#milestones) for the details.
 
 ### Your ideas are welcome
 
@@ -358,8 +360,9 @@ whole set. The brief gives the order and a date for each milestone.
 The first pictures matter most. We may go back and forth a few times on them. If, after that, they aren't where
 we both want them, this is the point where we would stop, before you've put time into the rest of the set.
 
-You can send each picture or batch however suits you: an email, a zip or a shared folder. Please use the file
-names from the brief exactly, because our tools find each picture by its name. Capitals and dashes matter:
+Upload each picture in the Studio, which keeps every version. If the Studio isn't working for you, an email, a
+zip or a shared folder is fine too. Then please use the file names from the brief exactly, because our tools
+find each picture by its name. Capitals and dashes matter:
 `HW1-P07.webp`, not `hw1_p07.webp` or `Scotch Bonnet Rhino.webp`.
 
 ## Suggesting changes

@@ -3,12 +3,18 @@
     python tools/compose_cards.py            # every card of the Starter Box (content/2026/09/starter-box/set.json)
     python tools/compose_cards.py --only SB1-C04
     python tools/compose_cards.py --finish gold     # only one finish (standard, foil, gold, prismatic)
+    python tools/compose_cards.py --set bp1 --frames   # frames with a see-through picture window (Artist Studio)
 
 Reads art from art/<set>/<key>.webp (see tools/generate_art.py) and writes 750x1050 WebP images
 (2.5" x 3.5" at 300 dpi) to the set's art/cards/, plus a README.md gallery grouped by deck. Every card is
 also printed in each finish, to art/cards/<finish>/: the same card with its chrome (the frame, the
 art's border, the edges of the name banner and type line, the cost ring) in holographic silver (foil),
 polished gold (gold) or a rainbow (prismatic).
+With --frames, each card is drawn without its picture: the art window is left transparent, and the border
+and badges that sit over the picture are still drawn. The Artist Studio (apps/web/studio.html) lays an
+artist's picture behind these frames, so its previews are the real card, not a copy of it. They go to
+art/cards/frames/ (standard) and art/cards/frames/<finish>/, in the finishes the set's art/brief.json sells
+the card in.
 Card text comes from the card data, never from the image model, so a balance patch only
 needs a re-compose, not a redraw.
 """
@@ -306,7 +312,8 @@ def centered_ink(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, 
               text, font=f, fill=fill, anchor="lt", **kw)
 
 
-def compose(card: dict, side: str | None, art_path: Path, finish: str = "standard") -> Image.Image:
+def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "standard") -> Image.Image:
+    """The card image. With no art_path, the picture's window is left transparent (a frame)."""
     main, dark, tint = FAMILIES[card["family"]]
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
@@ -326,7 +333,9 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
 
     # Art
     x0, y0, x1, y1 = ART_BOX
-    if art_path.exists():
+    if art_path is None:
+        art = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))   # paste() replaces pixels: a hole
+    elif art_path.exists():
         art = Image.open(art_path).convert("RGB").resize((x1 - x0, y1 - y0), Image.LANCZOS)
     else:
         art = Image.new("RGB", (x1 - x0, y1 - y0), tint)
@@ -433,11 +442,43 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
     return img
 
 
+def frames(data: dict, set_path: Path, only: list[str] | None) -> int:
+    """Each card face without its picture, in the finishes it's sold in: standard, plus the tier the set's
+    brief gives it (foil, gold or signature). Tokens are standard only."""
+    brief_path = set_path.parent / "art" / "brief.json"
+    tiers = {}
+    if brief_path.exists():
+        for p in json.loads(brief_path.read_text(encoding="utf-8"))["pictures"]:
+            if p.get("card"):
+                tiers[p["card"]] = p.get("tier")
+    out_dir = set_path.parent / "art" / "cards" / "frames"
+    count = 0
+    for card in data["cards"] + [dict(t, token=True) for t in data.get("tokens", [])]:
+        if only and card["id"] not in only:
+            continue
+        prints = ["standard"]
+        tier = tiers.get(card["id"])
+        if tier in (*FINISHES, SIGNATURE):
+            prints.append(tier)
+        if card.get("signature") and SIGNATURE not in prints:
+            prints.append(SIGNATURE)
+        for side in (("kitten", "bigcat") if card["type"] == "Hero Cat" else (None,)):
+            key = card["id"] + (f"-{side}" if side else "")
+            for f in prints:
+                path = out_dir / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                compose(card, side, None, f).save(path, quality=90, method=6)
+                count += 1
+    print(f"drew {count} frame(s) into {out_dir.relative_to(ROOT)}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--set", default="sb1")
     parser.add_argument("--only", nargs="*")
     parser.add_argument("--finish", choices=("standard", *FINISHES, SIGNATURE), help="only this finish (default: all)")
+    parser.add_argument("--frames", action="store_true", help="frames with a transparent picture window, for the Artist Studio")
     args = parser.parse_args()
 
     from generate_art import set_file
@@ -453,6 +494,8 @@ def main() -> int:
     FOOTER = f'Fruitcats · {data["name"]} · © 2026 Krzysztof Cwalina'
     art_dir = set_path.parent / "art" / "illustrations"
     out_dir = set_path.parent / "art" / "cards"
+    if args.frames:
+        return frames(data, set_path, args.only)
     out_dir.mkdir(parents=True, exist_ok=True)
     finishes = [args.finish] if args.finish else ["standard", *FINISHES]
     for f in finishes:

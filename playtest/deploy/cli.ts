@@ -3,6 +3,8 @@
 // The one way to put the game live (fruitcats.viamochi.com, an Azure Static Web App). Each step guards
 // against something that has actually shipped broken:
 //
+//   0. this checkout has everything on origin/main and no uncommitted changes (a session deploying from an
+//      older copy once silently replaced another session's live build); checked again just before the upload
 //   1. type-check and tests
 //   2. the balance check: a starter deck outside the limits stops the deploy (Zest Rush shipped at 14%
 //      against Orchard Guard while the simulator already knew)
@@ -39,6 +41,24 @@ function run(cmd: string, args: string[], opts: { capture?: boolean } = {}): str
   const shown = args.map((a, i) => (args[i - 1] === '--deployment-token' ? '<token>' : a));
   if (r.status !== 0) throw new Error(`${cmd} ${shown.join(' ')} failed (exit ${r.status})`);
   return r.stdout ?? '';
+}
+
+/**
+ * The build must contain everything already on origin/main, or it would take live features off the site, and must
+ * be a commit, so what's live can always be found in git.
+ */
+function checkIntegrated(): void {
+  run('git', ['fetch', '--quiet', 'origin', 'main']);
+  const dirty = run('git', ['status', '--porcelain', '--untracked-files=no'], { capture: true }).trim();
+  if (dirty) throw new Error(`Uncommitted changes:\n${dirty}\nCommit them first, so the live site is a commit.`);
+  const r = spawnSync('git', ['merge-base', '--is-ancestor', 'origin/main', 'HEAD'], { cwd: ROOT });
+  if (r.status !== 0) {
+    const missing = run('git', ['log', '--oneline', 'HEAD..origin/main'], { capture: true }).trim().split('\n');
+    throw new Error(`origin/main has ${missing.length} commit(s) this checkout doesn't, for example:\n   ${missing.slice(0, 5).join('\n   ')}\n`
+      + 'Deploying now would take them off the live site. Merge or rebase onto origin/main, then deploy again.');
+  }
+  const ahead = run('git', ['rev-list', '--count', 'origin/main..HEAD'], { capture: true }).trim();
+  console.log(`   up to date with origin/main${ahead !== '0' ? ` (and ${ahead} commit(s) ahead: push them to main after the deploy)` : ''}`);
 }
 
 /** `@fruitcats/engine` as the web app resolves it must be this checkout's packages/engine. */
@@ -100,6 +120,9 @@ async function fetchText(url: string): Promise<string> {
 }
 
 runMain(async () => {
+  step(0, 'Up to date with main');
+  checkIntegrated();
+
   step(1, 'Type-check and tests');
   run('npm', ['run', 'typecheck']);
   run('npx', ['vitest', 'run']);
@@ -127,6 +150,8 @@ runMain(async () => {
   if (flag('dry-run')) { console.log('\n--dry-run: stopping before the upload.'); return 0; }
 
   step(6, 'Upload');
+  // The checks above take minutes; main may have moved meanwhile.
+  checkIntegrated();
   const token = run('az', ['staticwebapp', 'secrets', 'list', '-n', AZURE.name, '-g', AZURE.group, '--subscription', AZURE.subscription, '--query', 'properties.apiKey', '-o', 'tsv'], { capture: true }).trim();
   if (!token) throw new Error('Could not read the deployment token (az login?).');
   run('npx', ['-y', '@azure/static-web-apps-cli@latest', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
@@ -140,6 +165,8 @@ runMain(async () => {
     if (attempt >= 6) throw new Error(`The live site serves ${live} (expected ${main}) and runner ${liveRunner.slice(0, 12)} (expected ${runner.sha256.slice(0, 12)}).`);
     await new Promise((r) => setTimeout(r, 5000));
   }
+  const unpushed = run('git', ['rev-list', '--count', 'origin/main..HEAD'], { capture: true }).trim();
+  if (unpushed !== '0') console.log(`\n⚠ ${unpushed} commit(s) are live but not on main yet. Push them now (git push origin HEAD:main), or the next deploy from main takes them off the site.`);
   console.log('\nDeployed. The iOS home-screen app keeps the old build until it is swiped away and reopened.');
   return 0;
 });

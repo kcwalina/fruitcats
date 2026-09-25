@@ -20,5 +20,22 @@ try {
 } finally { $archive.Dispose() }
 
 az webapp deploy --subscription 32564bc0-941d-4aa9-9b15-5b3a85c57693 -g rg-viamochi-apps -n fruitcats-api --src-path $zip --type zip -o none
-if ($LASTEXITCODE) { throw 'Deploy failed.' }
+$deployFailed = [bool]$LASTEXITCODE
+
+# Players are using it: make sure it's answering again, whatever the deploy said. A deploy once left the site hung
+# while starting (2026-09-25), and only a restart brought it back.
+function Test-Healthy {
+  try { return (Invoke-WebRequest 'https://api.fruitcats.viamochi.com/healthz' -TimeoutSec 10 -UseBasicParsing).StatusCode -eq 200 } catch { return $false }
+}
+function Wait-Healthy([int]$seconds) {
+  $until = (Get-Date).AddSeconds($seconds)
+  while ((Get-Date) -lt $until) { if (Test-Healthy) { return $true }; Start-Sleep -Seconds 5 }
+  return $false
+}
+if (-not (Wait-Healthy 120)) {
+  Write-Warning 'fruitcats-api is not answering 2 minutes after the deploy: restarting it.'
+  az webapp restart --subscription 32564bc0-941d-4aa9-9b15-5b3a85c57693 -g rg-viamochi-apps -n fruitcats-api -o none
+  if (-not (Wait-Healthy 120)) { throw 'fruitcats-api is DOWN after the deploy and a restart. Check it now: docs/emergency-stop.md.' }
+}
+if ($deployFailed) { throw 'The deploy reported a failure (fruitcats-api is answering, but may be running the old version).' }
 Write-Host "Deployed. Health: https://fruitcats-api.azurewebsites.net/healthz"

@@ -122,8 +122,7 @@ export function nextPicture(brief: Brief, view: SetView | null): BriefPicture | 
 }
 
 /** What to do next on one picture, in the artist's words. */
-export function nextAction(p: BriefPicture, state: State, versions: Version[]): { title: string; text: string } {
-  const sketch = sketchFirst(p);
+export function nextAction(_p: BriefPicture, state: State, versions: Version[]): { title: string; text: string } {
   if (state === 'approved') return { title: 'Approved', text: 'This image is done. Thank you!' };
   if (state === 'changes') return { title: 'Our thoughts are in', text: 'Read the comments below. Take what helps, then upload a new version. Your earlier versions are kept.' };
   if (state === 'sketch-ok') return { title: 'Sketch approved: finish it', text: 'Finish the image in your own tools, then upload it here as a WebP file.' };
@@ -136,7 +135,5 @@ export function nextAction(p: BriefPicture, state: State, versions: Version[]): 
         : 'We’re looking at your image. Our comments will appear below.',
     };
   }
-  return sketch
-    ? { title: 'Start with a sketch', text: 'Make a rough sketch in your own tools (the pose, the composition and the main colours) and upload it here. We’ll reply before you finish it.' }
-    : { title: 'Make it', text: 'Make it in your own tools, then upload a sketch if you’d like an early opinion, or the finished image.' };
+  return { title: 'Upload it', text: 'A sketch or the finished image, whichever you like. A sketch gets you early feedback; a finished image is great too.' };
 }

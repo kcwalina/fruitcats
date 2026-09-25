@@ -14,7 +14,7 @@ import { BASE, esc } from '../ui';
 import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
 import {
-  FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, sketchFirst, stateOf, steps, versionsOf,
+  FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
   type Brief, type BriefPicture, type State,
 } from './brief';
 import { DEVICES, LOCK_CLOCK, announcementPreview, cardPreview, finishesOf, gamePreview, pawtraitPreview, wallpaper } from './previews';
@@ -439,8 +439,9 @@ function wizardPage(code: string, chosen?: string): string {
         takes the card somewhere else, tell us and we’ll rewrite the card to match.</p>
       <p class="wz-tools"><b>Make your images with the tools of your choice</b>, as you always do. This site is only for
         <b>uploading</b> them: you see each one on the real card, and we reply here.</p>
-      <ol class="wz-how"><li><b>Read</b> about the card.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
-        <li><b>We talk it over</b> here, in comments.</li><li><b>Upload the finished image.</b></li></ol>
+      <ol class="wz-how"><li><b>Read</b> about the card.</li>
+        <li><b>Make the image</b> in your own tools and <b>upload</b> it here: a sketch or the finished image, whichever you like.</li>
+        <li><b>We talk it over</b> here, in comments. Upload a new version whenever you want.</li></ol>
       <p>The Studio always shows you what to do next. Every version you upload is kept safely.</p>
       <button class="btn primary big" data-click="welcome:${code}">Start with the first image</button>
     </section></main>`;
@@ -470,16 +471,14 @@ function wizardPage(code: string, chosen?: string): string {
   const versions = versionsOf(view, key);
   const n = brief.pictures.indexOf(current) + 1;
   const name = `${title(current)}${sideLabel(current) ? ` (${sideLabel(current)})` : ''}`;
-  const sketch = sketchFirst(current) && state === 'none';
   const heading = state === 'changes' ? `${name}: our comments` : state === 'sketch-ok' ? `Upload the finished ${name}`
     : state === 'approved' ? `${name} is approved` : state === 'waiting' ? `${name}: sent for review`
-      : sketch ? `Upload a sketch of ${name}` : `Upload ${name}`;
+      : `Upload ${name}`;
   const lead = state === 'changes' ? 'We left some comments. Take what helps; if you change the image in your own tools, upload the new version here. Or reply, or just move on.'
     : state === 'sketch-ok' ? 'We like your sketch. Finish the image in your own tools, then upload it here.'
       : state === 'approved' ? 'Done. If you change it later in your own tools, you can upload a new version here: it comes back to us for a look.'
         : state === 'waiting' ? 'We’re looking at it and will reply here. You can upload a new version any time.'
-          : sketch ? 'Make a rough sketch in your own tools (the composition and the main colours), then upload it here. We’ll talk it over before you finish it.'
-            : 'Make it in your own tools, then upload it here: a sketch if you’d like an early opinion, or the finished image.';
+          : 'A sketch or the finished image, whichever you like. A sketch gets you early feedback; a finished image is great too. We can comment on either, and you can always upload a new version.';
   const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
   const pic = shown(code, key);
   const facts = [current.signature === 'requested' ? 'We’d love your signature in a corner.' : '',

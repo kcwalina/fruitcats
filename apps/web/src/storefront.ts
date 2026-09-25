@@ -17,7 +17,7 @@ import {
   addLinesToCart, addToCart, planForDeck, cartCount, cartLines, catalog, clearCart, inCart, localQuote, ownedNow, placeTestOrder,
   newOrderId, refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, testCheckout, type Order,
 } from './shop';
-import { BASE, artUrl, backButton, cardUrl, esc, famClass } from './ui';
+import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, famClass, finishUrl } from './ui';
 
 export interface StoreHost {
   render(): void;
@@ -244,6 +244,14 @@ export function renderStore(): string {
   ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}`;
 }
 
+/** A card's picture as the Store sells it: the standard print, or the Signature print for a Signature card (its only print). */
+const cardUrl = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.signature ? finishUrl(key, 'signature') : standardUrl(key));
+/** "♛ Legendary", or "✦ Signature". */
+const cardGrade = (id: string) => (CARDS[id]?.signature ? '✦ Signature' : `${rarityMark(rarity(id))} ${rarity(id)}`);
+/** "♛ Legendary Hero Cat", or "Signature Hero Cat" for a Signature card. */
+const cardKind = (id: string) => `${cardGrade(id)} ${esc(CARDS[id].type)}`;
+/** The same, as plain text (for aria-label). */
+const cardKindText = (id: string) => `${CARDS[id]?.signature ? 'Signature' : rarity(id)} ${CARDS[id].type}`;
 const faceOf = (id: string) => (CARDS[id]?.type === 'Hero Cat' ? `${id}-kitten` : id);
 
 function renderMessage(title: string, text: string, action = ''): string {
@@ -314,14 +322,13 @@ function renderDeckOffer(p: DeckProduct): string {
 }
 
 function renderCardOffer(p: CardProduct, have: number): string {
-  const r = rarity(p.card);
   const full = have >= maxCopies(p.card);
-  return `<button class="offer ${full ? 'owned' : ''}" data-click="store:card:${p.id}" aria-label="${esc(cardName(p.card))}, ${r} card">
+  return `<button class="offer ${full ? 'owned' : ''}" data-click="store:card:${p.id}" aria-label="${esc(cardName(p.card))}, ${esc(cardKindText(p.card))}">
       <span class="stage">${cardSlot(p.card)}${canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
       <span class="info">
         <span class="kind">Card</span>
         <span class="name">${esc(cardName(p.card))}</span>
-        <span class="sub">${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</span>
+        <span class="sub">${cardKind(p.card)}</span>
         <span class="buy">${full ? '✓ In your collection' : priceChip(p.price, p.price)}</span>
       </span>
     </button>`;
@@ -370,15 +377,14 @@ function renderDeckPage(p: DeckProduct): string {
 function renderCardPage(p: CardProduct): string {
   const have = ownedNow()(p.card);
   const max = maxCopies(p.card);
-  const r = rarity(p.card);
   return `<main class="store-main product-page">
       <section class="product-top">
         <div class="product-stage" data-zoom="${cardUrl(faceOf(p.card))}" data-zoom-card="${faceOf(p.card)}">${cardSlot(p.card, true)}</div>
         <div class="product-info">
           <span class="kind">Card · ${esc(setName(p.set))}</span>
           <h2>${esc(cardName(p.card))}</h2>
-          <p class="facts"><span>${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</span></p>
-          <p class="blurb">This card comes in no deck: this is the way to get it.${max === 1 ? ' One copy is all a deck can hold.' : ''}</p>
+          <p class="facts"><span>${cardKind(p.card)}</span></p>
+          <p class="blurb">${CARDS[p.card].signature ? 'A Signature card: it comes only in this Signature print, and in no deck.' : 'This card comes in no deck: this is the way to get it.'}${max === 1 ? ' One copy is all a deck can hold.' : ''}</p>
           <p class="facts"><span>${have >= max ? 'In your collection' : have ? `You have ${have} of ${max}` : 'Not in your collection yet'}</span></p>
         </div>
       </section>
@@ -446,7 +452,7 @@ function renderMissingCards(v: Extract<View, { kind: 'missing' }>): string {
             <span class="info">
               <span class="kind">Card</span>
               <span class="name">${esc(cardName(p.card))}</span>
-              <span class="sub">${rarityMark(rarity(p.card))} ${rarity(p.card)}${l.qty > 1 ? ` · ${l.qty} copies` : ''}</span>
+              <span class="sub">${cardGrade(p.card)}${l.qty > 1 ? ` · ${l.qty} copies` : ''}</span>
               <span class="buy">${on ? priceChip(p.price * l.qty, p.price * l.qty) : 'Left out'}</span>
             </span>
           </button>`;
@@ -486,7 +492,7 @@ function lineInfo(product: string) {
   const p = catalog()?.products[product];
   if (!p) return { name: 'Not for sale', sub: '', face: '' };
   if (p.kind === 'deck') return { name: p.name, sub: `Deck · ${esc(cardName(p.hero))} + ${Object.values(p.cards).reduce((a, b) => a + b, 0)} cards`, face: `${p.hero}-kitten`, deck: true };
-  return { name: cardName(p.card), sub: `${rarityMark(rarity(p.card))} ${rarity(p.card)} · ${price(p.price)} each`, face: CARDS[p.card].type === 'Hero Cat' ? `${p.card}-kitten` : p.card };
+  return { name: cardName(p.card), sub: `${cardGrade(p.card)} · ${price(p.price)} each`, face: CARDS[p.card].type === 'Hero Cat' ? `${p.card}-kitten` : p.card };
 }
 
 function renderCart(): string {

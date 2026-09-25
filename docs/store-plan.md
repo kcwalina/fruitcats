@@ -204,11 +204,19 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 2. `npm run dev`, then open `http://localhost:5173/?store=1&api=http://localhost:8790` and sign in as usual.
 3. To start over, delete `.local-api/`, or use "Remove my test purchases" at the bottom of the cart.
 
-### On the live site, for testers only
+### On the live site: a preview for every playtester
 
-The live game has the Store for everyone, and the live API opens it only to `STORE_TESTERS` (the owner, for now),
-with `STORE=testers`, `STORE_TEST_CHECKOUT=on` and `STORE_SETS=HW1`. Adding a tester is adding their account id to
-`STORE_TESTERS` (tell the accounts and artist tool sessions first: a settings change restarts the API).
+Since 2026-09-25 (the owner's call, after trying the whole test flow), the live API runs `STORE=preview`,
+`STORE_TEST_CHECKOUT=off`, `STORE_SETS=HW1`: every signed-in player can open the Store and see every deck, card and
+price, but **Add to cart** says "Coming soon", and there's no cart. The owner sees the same. Test orders placed during
+the tester test are kept but count for nothing (no cards, not listed).
+
+To go back to the full test flow for someone (cart, test checkout, reveal, "Remove my test purchases"): `STORE=testers`,
+`STORE_TEST_CHECKOUT=on`, their id in `STORE_TESTERS`. Tell the artist tool session first: a settings change restarts
+the API.
+
+**Signature cards** (`"signature"` in the card's data, like Reaper) exist only as their Signature print: the Store
+shows that print, labels them "Signature" and prices them at `SIGNATURE_PRICE` ($19.99), never as a standard copy.
 
 ## Making it real: what is left
 
@@ -376,6 +384,7 @@ is saved either way and can be played once the player has every card.
   - Accounts not on `STORE_TESTERS` get `403 store_private`: their Store tile stays "Coming soon", the unreleased
     sets aren't loaded, and nothing changes for them.
   - Payments, when they come, will also be refused by the API for anyone not let in.
+- **Preview** (live now): `STORE=preview` lets everyone look, and nobody buy.
 - **Launch day:** set `STORE=open` on the API (and turn `STORE_TEST_CHECKOUT` off). No game build needed.
 - **Rollback:** set `STORE=off`. Everyone's tile goes back to "Coming soon".
 

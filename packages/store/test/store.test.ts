@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { CARDS, SETS } from '@fruitcats/engine';
 import {
+  SIGNATURE_PRICE,
   CARD_PRICES, DECK_PRICE, MINIMUM_ORDER, buildCatalog, cardProduct, cartForDeck, collectionOf, deckPrice, deckProduct,
   deckWith, formatPrice, maxCopies, missingForDeck, priceCart, starterCollection, whyNotSold, type DeckProduct,
 } from '../src/index';
@@ -17,6 +18,14 @@ const fiveAlarm = catalog.products[deckProduct('five-alarm')] as DeckProduct;
 const withCommon = { ...catalog, products: { ...catalog.products, [cardProduct('HW1-P01')]: { id: cardProduct('HW1-P01'), kind: 'card' as const, set: 'HW1', price: 49, card: 'HW1-P01' } } };
 
 describe('catalog', () => {
+  it('sells a Signature card as its Signature print, at the Signature price, never as a standard copy', () => {
+    const signatures = Object.values(catalog.products).filter((p) => p.kind === 'card' && CARDS[p.card].signature);
+    expect(signatures.length).toBeGreaterThan(0);
+    for (const p of signatures) expect(p.price).toBe(SIGNATURE_PRICE);
+    for (const p of Object.values(catalog.products)) if (p.kind === 'card' && !CARDS[p.card].signature) expect(p.price).toBeLessThan(SIGNATURE_PRICE);
+  });
+
+
   it('never sells the starter set', () => {
     expect(catalog.sets).toEqual(['HW1', 'BP1']);
     expect(Object.values(catalog.products).some((p) => p.set === 'SB1')).toBe(false);
@@ -29,7 +38,7 @@ describe('catalog', () => {
     for (const c of SETS.HW1.cards) {
       const single = catalog.products[cardProduct(c.id)];
       if (inDeck.has(c.id)) expect(single, c.id).toBeUndefined();
-      else expect(single?.price, c.id).toBe(CARD_PRICES[c.rarity ?? 'Common']);
+      else expect(single?.price, c.id).toBe(CARDS[c.id].signature ? SIGNATURE_PRICE : CARD_PRICES[c.rarity ?? 'Common']);
     }
     expect(Object.values(catalog.products).filter((p) => p.kind === 'card' && p.set === 'HW1').map((p) => p.id))
       .toEqual(['card:HW1-X01', 'card:HW1-X02', 'card:HW1-X03']);

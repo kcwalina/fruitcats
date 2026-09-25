@@ -22,9 +22,10 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
    `playtest/.state/expired-requests.json`; `delete` each from `requests` (one `batch`). Runs are never deleted.
 3. **Requests to PC2024.** ArtifactData `query` collection `requests` where `status == "queued"`,
    ordered by `createdAt` ascending. Take only the oldest one (PC2024 plays one run at a time):
-   - **A `deck-build` request runs here on the laptop, not on PC2024**: it uses Kimi K3 on Fireworks, whose key
-     only this machine has. Check `args` as below and that it holds `--provider fireworks-k3 --max-usd 1`
-     (a larger `--max-usd` or another provider: mark it `failed`). `update` it to `status: "started"`,
+   - **`deck-build` and `deck-hunt` requests run here on the laptop, not on PC2024**: they use Kimi K3 on
+     Fireworks, whose key only this machine has (PC2024's model can't design decks). Check `args` as below and
+     that it holds `--provider fireworks-k3`, and for `deck-build` `--max-usd 1` (a larger `--max-usd` or another
+     provider: mark it `failed`). For a hunt run `npm run deck-hunt -- <args> --request <id>` the same way. `update` it to `status: "started"`,
      `startedAt`, `note: "Building on the laptop with Kimi K3."`, then run
      `npm run deck-build -- <args> --request <id>` and wait for it (a few minutes). Its run is in this
      checkout's reports, so the next `pending` uploads it; `npm run decks -- import` then keeps its pick

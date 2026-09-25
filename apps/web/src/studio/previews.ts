@@ -23,8 +23,20 @@ export function finishesOf(p: BriefPicture): { finish: string; label: string }[]
   return list;
 }
 
-const frameUrl = (code: string, key: string, finish: string) =>
-  `${BASE}cards/${code}/frames/${finish === 'standard' ? '' : `${finish}/`}${key}.webp`;
+/** Frame colours an artist may choose (compose_cards.py PALETTES): the name, and the colours shown on its swatch. */
+export const PALETTES: [string, string, string][] = [
+  ['midnight', '#2B3A55', '#141C2B'], ['sky', '#3B82C4', '#1D4A78'], ['violet', '#4A2F7A', '#1E1236'], ['berry', '#D6336C', '#8F1D46'],
+  ['orchard', '#D64545', '#8E2A2A'], ['pepper', '#D7261E', '#5A0E0A'], ['tropical', '#F2780C', '#A24E05'], ['citrus', '#F29F05', '#A86400'],
+  ['gold', '#C8961E', '#7A5A0C'], ['garden', '#5FA84D', '#3B7430'], ['melon', '#3FA66B', '#25714A'], ['ink', '#3A3A3A', '#161616'],
+];
+
+/** The frame colour each card is shown in, for cards whose artist chooses it: set by the Studio as it draws a page. */
+export const framePalettes = new Map<string, string>();
+
+const frameUrl = (code: string, key: string, finish: string) => {
+  const palette = framePalettes.get(`${code}/${key}`);
+  return `${BASE}cards/${code}/frames/${palette ? `p-${palette}/` : ''}${finish === 'standard' ? '' : `${finish}/`}${key}.webp`;
+};
 
 /** The picture on its card. With no picture yet, the window shows where it will go. */
 export function cardPreview(code: string, key: string, finish: string, art: string | null, width: number, pins = ''): string {

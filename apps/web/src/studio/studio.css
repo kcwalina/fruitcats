@@ -532,3 +532,14 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .name-note { margin: -4px 0 10px; font-size: 14px; color: var(--ink-2); font-style: italic; }
 .kind-q { margin: 10px 0 6px; font-size: 15px; }
 .kind-seg.unset { outline: 2px solid #f6c79f; outline-offset: 2px; }
+
+/* The frame colour an artist chooses */
+.frame-choice { margin: 4px 0 14px; }
+.frame-choice p { margin: 0 0 8px; font-size: 14px; color: var(--ink-2); }
+.preview .frame-choice p { color: #eadbc8; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); cursor: pointer; padding: 0; }
+.swatch.on { outline: 3px solid var(--accent); outline-offset: 2px; }
+.swatch.family { background: var(--card); color: var(--ink-2); font: 800 9px Nunito, sans-serif; display: grid; place-items: center; }
+.frame-choice.unpicked { background: #fff7ec; border: 2px solid #f6c79f; border-radius: 12px; padding: 10px 14px; }
+.preview .frame-choice.unpicked p { color: var(--ink); }

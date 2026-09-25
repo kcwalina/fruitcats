@@ -53,7 +53,7 @@ export interface SetView {
   /** The signed-in account is this project's artist (a reviewer can be one too, e.g. to practise). */
   artist?: boolean;
   set: string;
-  pictures: Record<string, { state: string; stateAt?: string; stateBy?: string; versions: Version[] }>;
+  pictures: Record<string, { state: string; stateAt?: string; stateBy?: string; frame?: string; versions: Version[] }>;
   comments: Comment[];
   suggestions: Suggestion[];
   milestones: Record<string, boolean>;
@@ -110,6 +110,7 @@ export const setView = (set: string) => call<SetView>(set);
 export const comment = (set: string, key: string, body: { text: string; version?: string; pin?: { x: number; y: number }; replyTo?: string }) =>
   call<Comment>(`${set}/pictures/${key}/comments`, { json: body });
 export const markDone = (set: string, id: string, done: boolean) => call<Comment>(`${set}/comments/${id}`, { json: { done } });
+export const setFrame = (set: string, key: string, palette: string) => call<{ palette: string }>(`${set}/pictures/${key}/frame`, { json: { palette } });
 export const review = (set: string, key: string, state: string) => call(`${set}/pictures/${key}/review`, { json: { state } });
 export const openStep = (set: string, id: string, open: boolean) => call(`${set}/milestones/${id}`, { json: { open } });
 export const suggest = (set: string, body: { picture: string; field: string; value: string; why: string }) =>

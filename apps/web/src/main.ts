@@ -35,7 +35,7 @@ const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Bal
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 for (const [name, file] of [['--img-menu-bg', 'menu-bg.webp'], ['--img-playmat', 'playmat.webp'], ['--img-cardback', 'cardback.webp'],
-  ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg']])
+  ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'mode-store.webp']])
   document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}`, location.href).href}")`);
 // --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible
 // area (it ignores the toolbars), which made the page scroll; the layout uses this instead.

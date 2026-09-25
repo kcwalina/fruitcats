@@ -214,23 +214,21 @@ export function renderStore(): string {
   const title = view.kind === 'cart' ? 'Your cart' : view.kind === 'missing' ? 'Missing cards' : 'Store';
   const back = view.kind === 'browse' ? backButton()
     : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck') : backButton('store:browse', 'Store');
-  const product = (view.kind === 'deck' || view.kind === 'card') ? cat?.products[view.product] : undefined;
-  const firstDeck = Object.values(cat?.products ?? {}).find((x) => x.kind === 'deck');
-  const backdrop = product ? artOf(product) : view.kind === 'missing' ? `${view.deck.hero}-bigcat` : firstDeck ? artOf(firstDeck) : '';
+  // The page scrolls as one: the banner, then the page's content. Bars for buying stay fixed at the bottom.
   return `
-  <div class="collection-screen store-screen">
-    ${backdrop ? `<div class="ambient" aria-hidden="true"><div class="ambient-layer show" style="background-image:url(${artUrl(backdrop)})"></div></div>` : ''}
+  <div class="store-screen" data-keep-scroll="store-${view.kind}">
     <header class="store-banner ${view.kind === 'browse' ? '' : 'slim'}">
-      <span class="sb-awning" aria-hidden="true"></span>
-      <img class="sb-art" src="${BASE}ui/mode-store.webp" alt="">
-      <div class="sb-bar">
+      <div class="sb-ground" aria-hidden="true"></div>
+      <div class="sb-art" role="img" aria-label="A cat at a market stall"></div>
+      <div class="sb-top">
         ${back}
         <button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
           ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>
       </div>
-      <div class="sb-text">
+      <div class="sb-inner">
+        <div class="sb-eyebrow">Fruitcats</div>
         <h1>${title}</h1>
-        ${view.kind === 'browse' ? '<p>Decks and cards for your collection</p>' : ''}
+        ${view.kind === 'browse' ? '<p class="sb-tagline">Decks and cards for your collection.</p>' : ''}
       </div>
     </header>
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}
@@ -239,13 +237,10 @@ export function renderStore(): string {
   ${renderCheckout()}${renderReveal()}${renderResetDialog()}`;
 }
 
-/** The picture that stands for a product: a deck's Big Cat, a card's own art. */
-const artOf = (p: DeckProduct | CardProduct | { kind: string }) =>
-  p.kind === 'deck' ? `${(p as DeckProduct).hero}-bigcat` : faceOf((p as CardProduct).card);
 const faceOf = (id: string) => (CARDS[id]?.type === 'Hero Cat' ? `${id}-kitten` : id);
 
 function renderMessage(title: string, text: string, action = ''): string {
-  return `<div class="showcase-empty"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${action}</div>`;
+  return `<div class="store-message"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${action}</div>`;
 }
 
 // ── The shop: one list of everything for sale, all the same size ────────────────────────────────
@@ -257,14 +252,15 @@ function deckFacts(p: DeckProduct) {
   return { size, newCopies, now: deckPrice(p, owned), complete: newCopies === 0 };
 }
 
-/** A price as a chip: what you pay, with the full price struck through when yours is lower. */
+/** A price: what you pay, with the full price struck through when yours is lower. */
 function priceChip(full: number, now: number): string {
   return `<span class="price-chip">${now < full ? `<s>${price(full)}</s>` : ''}${price(now)}</span>`;
 }
 
 /**
- * Everything for sale as one list (the owner's call, 2026-09-25): no banner, no tabs, no filters. Decks first, then the
- * single cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck looks like a boxed deck.
+ * Everything for sale as one list (the owner's call, 2026-09-25): no banner ads, tabs or filters. Decks first, then the
+ * single cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck is its cover on real card backs,
+ * exactly a card's size.
  */
 function renderShop(): string {
   const cat = catalog()!;
@@ -272,42 +268,40 @@ function renderShop(): string {
   const decks = Object.values(cat.products).filter((p): p is DeckProduct => p.kind === 'deck');
   const cards = Object.values(cat.products).filter((p): p is CardProduct => p.kind === 'card')
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
-  return `<div class="collection-grid store-body" data-keep-scroll="store-shop">
-    <div class="shop">
+  return `<main class="store-main">
       <div class="offers">${decks.map(renderDeckOffer).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
-      <p class="store-foot">Everything here is digital: it's added to your Via Mochi account and plays on every device.
-        A deck never charges you for cards you already have.</p>
-    </div>
-    ${renderTesterTools()}
-  </div>`;
+      <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account and plays on every device. A deck never charges you for cards you already have.</span></p>
+      ${renderTesterTools()}
+    </main>`;
 }
 
-/**
- * A deck as a deck of cards: its cover (the Hero Cat, in its family's colours) on top of a stack of real card backs,
- * every card exactly a card's size, so it's never smaller than a single card beside it. `big` for its own page.
- */
-function deckBox(p: DeckProduct, big = false): string {
-  return `<span class="deck-box ${famClass(p.hero)} ${big ? 'big' : ''}" aria-hidden="true">
-      <img class="db-back b2" src="${BASE}ui/cardback.webp" alt="" draggable="false">
-      <img class="db-back b1" src="${BASE}ui/cardback.webp" alt="" draggable="false">
-      <span class="db-front">
-        <img src="${artUrl(`${p.hero}-kitten`)}" alt="" loading="lazy" draggable="false" ${FALLBACK}>
-        <span class="db-band"><b>${esc(p.name)}</b><small>${Object.values(p.cards).reduce((a, b) => a + b, 0) + 1} cards</small></span>
+/** A small cloud, for "it lives in your account". */
+const CLOUD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 11a4 4 0 0 1-2.5 8Z"/></svg>`;
+
+/** A deck: its cover (the Hero Cat in its family's colours, the deck's name on a plate) on two real card backs. */
+function deckSlot(p: DeckProduct, big = false): string {
+  return `<span class="slot ${big ? 'big' : ''} ${famClass(p.hero)}" aria-hidden="true">
+      <span class="face back b1"></span><span class="face back b2"></span>
+      <span class="face cover">
+        <span class="cover-art" style="background-image:url(${artUrl(`${p.hero}-kitten`)})"></span>
+        <span class="plate"><b>${esc(p.name)}</b><small>${esc(CARDS[p.hero]?.family ?? '')} deck</small></span>
       </span>
     </span>`;
 }
 
+/** A single card, the same footprint as a deck. */
+const cardSlot = (id: string, big = false) =>
+  `<span class="slot ${big ? 'big' : ''}"><img class="face" src="${cardUrl(faceOf(id))}" alt="" loading="lazy" draggable="false" ${FALLBACK}></span>`;
+
 function renderDeckOffer(p: DeckProduct): string {
   const { size, now, complete } = deckFacts(p);
-  return `<button class="offer deck-offer ${famClass(p.hero)} ${complete ? 'owned' : ''}" data-click="store:deck:${p.id}" aria-label="${esc(p.name)}, deck">
-      <span class="of-glow fam-glow"></span>
-      ${deckBox(p)}
-      ${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}
-      <span class="of-info">
-        <span class="of-tag">Deck</span>
-        <span class="of-name">${esc(p.name)}</span>
-        <span class="of-sub">${esc(cardName(p.hero))} + ${size} cards</span>
-        ${complete ? '<span class="owned-pill">✓ Owned</span>' : priceChip(p.price, now)}
+  return `<button class="offer ${complete ? 'owned' : ''}" data-click="store:deck:${p.id}" aria-label="${esc(p.name)}, deck">
+      <span class="stage">${deckSlot(p)}${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
+      <span class="info">
+        <span class="kind">Deck</span>
+        <span class="name">${esc(p.name)}</span>
+        <span class="sub">${esc(cardName(p.hero))} + ${size} cards</span>
+        <span class="buy">${complete ? '✓ You have every card' : priceChip(p.price, now)}</span>
       </span>
     </button>`;
 }
@@ -315,15 +309,13 @@ function renderDeckOffer(p: DeckProduct): string {
 function renderCardOffer(p: CardProduct, have: number): string {
   const r = rarity(p.card);
   const full = have >= maxCopies(p.card);
-  return `<button class="offer card-offer rv-${r.toLowerCase()} ${full ? 'owned' : ''}" data-click="store:card:${p.id}" aria-label="${esc(cardName(p.card))}, ${r} card">
-      <span class="of-glow"></span>
-      <img class="of-card" src="${cardUrl(faceOf(p.card))}" alt="" loading="lazy" draggable="false" ${FALLBACK}>
-      ${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}
-      <span class="of-info">
-        <span class="of-tag">Card</span>
-        <span class="of-name">${esc(cardName(p.card))}</span>
-        <span class="of-sub">${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</span>
-        ${full ? '<span class="owned-pill">✓ Owned</span>' : priceChip(p.price, p.price)}
+  return `<button class="offer ${full ? 'owned' : ''}" data-click="store:card:${p.id}" aria-label="${esc(cardName(p.card))}, ${r} card">
+      <span class="stage">${cardSlot(p.card)}${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
+      <span class="info">
+        <span class="kind">Card</span>
+        <span class="name">${esc(cardName(p.card))}</span>
+        <span class="sub">${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</span>
+        <span class="buy">${full ? '✓ In your collection' : priceChip(p.price, p.price)}</span>
       </span>
     </button>`;
 }
@@ -342,31 +334,29 @@ function renderDeckPage(p: DeckProduct): string {
   const { size, newCopies, now, complete } = deckFacts(p);
   const ids = [p.hero, ...Object.keys(p.cards).sort((a, b) =>
     RARITIES.indexOf(rarity(b)) - RARITIES.indexOf(rarity(a)) || (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0))];
-  return `<div class="collection-grid store-body" data-keep-scroll="store-deck">
-    <div class="product-page">
-      <section class="card-page deck-page-top ${famClass(p.hero)}">
-        <div class="cp-stage"><span class="of-glow fam-glow"></span>${deckBox(p, true)}</div>
-        <div class="cp-info">
-          <span class="kicker">Deck · ${esc(setName(p.set))}</span>
+  return `<main class="store-main product-page">
+      <section class="product-top">
+        <div class="product-stage">${deckSlot(p, true)}</div>
+        <div class="product-info">
+          <span class="kind">Deck · ${esc(setName(p.set))}</span>
           <h2>${esc(p.name)}</h2>
-          ${p.blurb ? `<p class="ft-blurb">${esc(p.blurb)}</p>` : ''}
-          <p class="ft-meta"><span>${esc(cardName(p.hero))} + ${size} cards</span>${complete ? '<span class="new-for-you">You have every card</span>'
-            : newCopies <= size ? `<span class="new-for-you">${newCopies} new for you${now < p.price ? ' · the rest are taken off the price' : ''}</span>` : ''}</p>
+          ${p.blurb ? `<p class="blurb">${esc(p.blurb)}</p>` : ''}
+          <p class="facts"><span>${esc(cardName(p.hero))} + ${size} cards</span>${complete ? '<span class="good">You have every card</span>'
+            : newCopies <= size ? `<span class="good">${newCopies} new for you${now < p.price ? ' · the rest are taken off the price' : ''}</span>` : ''}</p>
         </div>
       </section>
-      <h3 class="shelf-title">What’s inside <span>Tap and hold a card to read it</span></h3>
-      <div class="grid inside">
+      <h3 class="section-title">What’s inside <span>Tap and hold a card to read it</span></h3>
+      <div class="inside">
         ${ids.map((id) => {
           const qty = id === p.hero ? 1 : p.cards[id];
           const have = Math.min(owned(id), qty);
-          return `<div class="tile shop-tile" data-zoom="${cardUrl(faceOf(id))}" data-zoom-card="${faceOf(id)}">
-            <span class="tile-card"><img src="${cardUrl(faceOf(id))}" alt="${esc(cardName(id))}" loading="lazy" draggable="false" ${FALLBACK}>${qty > 1 ? `<span class="tile-copies">×${qty}</span>` : ''}</span>
-            <span class="tile-label">${have >= qty ? '<span class="have">✓ You have it</span>' : have ? `<span class="have">You have ${have}</span>` : '<span class="new">New</span>'}</span>
+          return `<div class="inside-card" data-zoom="${cardUrl(faceOf(id))}" data-zoom-card="${faceOf(id)}">
+            <span class="inside-face"><img src="${cardUrl(faceOf(id))}" alt="${esc(cardName(id))}" loading="lazy" draggable="false" ${FALLBACK}>${qty > 1 ? `<span class="copies">×${qty}</span>` : ''}</span>
+            <span class="inside-label">${have >= qty ? '✓ You have it' : have ? `You have ${have}` : '<b>New</b>'}</span>
           </div>`;
         }).join('')}
       </div>
-    </div>
-  </div>
+    </main>
   ${buyBar(p, p.price, now, complete)}`;
 }
 
@@ -374,21 +364,18 @@ function renderCardPage(p: CardProduct): string {
   const have = ownedNow()(p.card);
   const max = maxCopies(p.card);
   const r = rarity(p.card);
-  return `<div class="collection-grid store-body" data-keep-scroll="store-card">
-    <div class="product-page card-page rv-${r.toLowerCase()}">
-      <div class="cp-stage" data-zoom="${cardUrl(faceOf(p.card))}" data-zoom-card="${faceOf(p.card)}">
-        <span class="of-glow"></span>
-        <img class="cp-card" src="${cardUrl(faceOf(p.card))}" alt="${esc(cardName(p.card))}" draggable="false" ${FALLBACK}>
-      </div>
-      <div class="cp-info">
-        <span class="kicker">Single card · ${esc(setName(p.set))}</span>
-        <h2>${esc(cardName(p.card))}</h2>
-        <p class="rv-rarity rv-${r.toLowerCase()}">${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</p>
-        <p class="ft-blurb">This card comes in no deck: this is the way to get it.${max === 1 ? ' One copy is all a deck can hold.' : ''}</p>
-        <p class="ft-meta"><span>${have >= max ? 'In your collection' : have ? `You have ${have} of ${max}` : 'Not in your collection yet'}</span></p>
-      </div>
-    </div>
-  </div>
+  return `<main class="store-main product-page">
+      <section class="product-top">
+        <div class="product-stage" data-zoom="${cardUrl(faceOf(p.card))}" data-zoom-card="${faceOf(p.card)}">${cardSlot(p.card, true)}</div>
+        <div class="product-info">
+          <span class="kind">Card · ${esc(setName(p.set))}</span>
+          <h2>${esc(cardName(p.card))}</h2>
+          <p class="facts"><span>${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</span></p>
+          <p class="blurb">This card comes in no deck: this is the way to get it.${max === 1 ? ' One copy is all a deck can hold.' : ''}</p>
+          <p class="facts"><span>${have >= max ? 'In your collection' : have ? `You have ${have} of ${max}` : 'Not in your collection yet'}</span></p>
+        </div>
+      </section>
+    </main>
   ${buyBar(p, p.price, p.price, have >= max)}`;
 }
 
@@ -424,54 +411,51 @@ function renderMissingCards(v: Extract<View, { kind: 'missing' }>): string {
   }
   const deckLines = plan.decks.map((d) => ({ ...d, p: cat.products[d.product] as DeckProduct }));
   const singles = plan.lines.filter((l) => cat.products[l.product]?.kind === 'card');
-  return `<div class="collection-grid store-body" data-keep-scroll="store-missing">
-    <div class="product-page">
+  return `<main class="store-main product-page">
       <header class="missing-head">
-        <span class="kicker">For your deck</span>
+        <span class="kind">For your deck</span>
         <h2>${esc(deck.name)}</h2>
-        <p class="ft-blurb"><b>${plural(need, 'card')}</b> ${need === 1 ? 'isn’t' : 'aren’t'} in your collection yet. Here’s how to get ${need === 1 ? 'it' : 'them'}.</p>
+        <p class="blurb"><b>${plural(need, 'card')}</b> ${need === 1 ? 'isn’t' : 'aren’t'} in your collection yet. Here’s how to get ${need === 1 ? 'it' : 'them'}. Tap one to leave it out.</p>
       </header>
-      ${deckLines.map(({ p, covers }) => {
-        const on = !left.has(p.id);
-        const { size } = deckFacts(p);
-        return `<button class="pick-deck ${famClass(p.hero)} ${on ? 'on' : 'off'}" data-click="store:pick:${p.id}" aria-pressed="${on}">
-          <span class="of-art" style="background-image:url(${artUrl(`${p.hero}-bigcat`)})"></span><span class="of-shade"></span>
-          <span class="pick-check" aria-hidden="true">${on ? '✓' : ''}</span>
-          <span class="pd-info">
-            <span class="of-tag">Deck</span>
-            <span class="of-name">${esc(p.name)}</span>
-            <span class="of-sub">Brings <b>${covers} of the ${need}</b> cards you need · ${esc(cardName(p.hero))} + ${size} cards</span>
-            ${priceChip(p.price, deckPrice(p, owned))}
-          </span>
-        </button>`;
-      }).join('')}
-      ${singles.length ? `
-      <h3 class="shelf-title">Single cards <span>Sold on their own</span></h3>
-      <div class="grid missing-grid">
+      <div class="offers picks">
+        ${deckLines.map(({ p, covers }) => {
+          const on = !left.has(p.id);
+          return `<button class="offer pick ${on ? 'on' : 'off'}" data-click="store:pick:${p.id}" aria-pressed="${on}">
+            <span class="stage">${deckSlot(p)}<span class="pick-check" aria-hidden="true">${on ? '✓' : ''}</span></span>
+            <span class="info">
+              <span class="kind">Deck</span>
+              <span class="name">${esc(p.name)}</span>
+              <span class="sub">Brings <b>${covers} of the ${need}</b> cards you need</span>
+              <span class="buy">${on ? priceChip(p.price, deckPrice(p, owned)) : 'Left out'}</span>
+            </span>
+          </button>`;
+        }).join('')}
         ${singles.map((l) => {
           const p = cat.products[l.product] as CardProduct;
           const on = !left.has(l.product);
-          return `<button class="tile pick-tile ${on ? 'on' : 'off'}" data-click="store:pick:${l.product}" aria-pressed="${on}"
+          return `<button class="offer pick ${on ? 'on' : 'off'}" data-click="store:pick:${l.product}" aria-pressed="${on}"
               aria-label="${esc(cardName(p.card))}, ${price(p.price)}${on ? '' : ', left out'}">
-            <span class="tile-card"><img src="${cardUrl(faceOf(p.card))}" alt="" loading="lazy" draggable="false" ${FALLBACK}>
-              ${l.qty > 1 ? `<span class="tile-copies">×${l.qty}</span>` : ''}<span class="pick-check" aria-hidden="true">${on ? '✓' : ''}</span>
-              ${on ? '' : '<span class="pick-out">Left out</span>'}</span>
-            <span class="pick-price">${rarityMark(rarity(p.card))} ${l.qty > 1 ? `${l.qty} × ${price(p.price)}` : price(p.price)}</span>
+            <span class="stage">${cardSlot(p.card)}<span class="pick-check" aria-hidden="true">${on ? '✓' : ''}</span></span>
+            <span class="info">
+              <span class="kind">Card</span>
+              <span class="name">${esc(cardName(p.card))}</span>
+              <span class="sub">${rarityMark(rarity(p.card))} ${rarity(p.card)}${l.qty > 1 ? ` · ${l.qty} copies` : ''}</span>
+              <span class="buy">${on ? priceChip(p.price * l.qty, p.price * l.qty) : 'Left out'}</span>
+            </span>
           </button>`;
         }).join('')}
-      </div>` : ''}
+      </div>
       ${heroLeftOut(v)
-        ? `<p class="ct-min missing-hero">Without ${esc(cardName(deck.hero))}, its Hero Cat, this deck can’t be played.</p>` : ''}
+        ? `<p class="store-warning">Without ${esc(cardName(deck.hero))}, its Hero Cat, this deck can’t be played.</p>` : ''}
       ${plan.unavailable.length ? `
-      <h3 class="shelf-title">Can’t be bought <span>The deck plays once you have them</span></h3>
-      <div class="grid missing-grid">
-        ${plan.unavailable.map((u) => `<div class="tile pick-tile unsold" data-zoom="${cardUrl(faceOf(u.card))}" data-zoom-card="${faceOf(u.card)}">
-            <span class="tile-card"><img src="${cardUrl(faceOf(u.card))}" alt="" loading="lazy" draggable="false" ${FALLBACK}>${u.qty > 1 ? `<span class="tile-copies">×${u.qty}</span>` : ''}</span>
-            <span class="pick-price">${notSoldLabel(u)}</span>
+      <h3 class="section-title">Can’t be bought <span>The deck plays once you have them</span></h3>
+      <div class="inside">
+        ${plan.unavailable.map((u) => `<div class="inside-card unsold" data-zoom="${cardUrl(faceOf(u.card))}" data-zoom-card="${faceOf(u.card)}">
+            <span class="inside-face"><img src="${cardUrl(faceOf(u.card))}" alt="" loading="lazy" draggable="false" ${FALLBACK}>${u.qty > 1 ? `<span class="copies">×${u.qty}</span>` : ''}</span>
+            <span class="inside-label">${notSoldLabel(u)}</span>
           </div>`).join('')}
       </div>` : ''}
-    </div>
-  </div>
+    </main>
   <div class="buy-bar">
     <span class="bb-total"><small>${picked.length ? plural(picked.length, 'item') : 'Nothing picked'}</small>${price(total)}</span>
     <button class="store-btn buy big" data-click="store:addpicked" ${picked.length ? '' : 'disabled'}>Add to cart</button>
@@ -501,10 +485,10 @@ function lineInfo(product: string) {
 function renderCart(): string {
   const quote = localQuote();
   if (!quote || !cartLines().length) {
-    return `${renderMessage('Your cart is empty', 'Pick a deck, or single cards to finish one of yours.', '<button class="v-wallpaper" data-click="store:browse">Browse the Store</button>')}${renderTesterTools()}`;
+    return `${renderMessage('Your cart is empty', 'Pick a deck, or a card to finish one of yours.', '<button class="store-btn buy" data-click="store:browse">Browse the Store</button>')}<main class="store-main">${renderTesterTools()}</main>`;
   }
   const short = quote.minimumOrder - quote.total;
-  return `<div class="collection-grid store-body" data-keep-scroll="store-cart">
+  return `<main class="store-main">
     <div class="cart">
       <ul class="cart-lines">
         ${quote.lines.map((l) => {
@@ -538,16 +522,16 @@ function renderCart(): string {
       </div>
     </div>
     ${renderTesterTools()}
-  </div>`;
+  </main>`;
 }
 
 /** For testers, at the bottom of the page, out of the way of what customers will see: it's a test, and a reset. */
 function renderTesterTools(): string {
   if (!testCheckout()) return '';
-  return `<div class="tester-tools">
-    <p class="test-banner" role="note"><b>Test store</b> · no money is taken, and no card details are asked for</p>
-    <span>Tester tools</span>
-    <button class="link-btn" data-click="store:reset">Remove my test purchases</button></div>`;
+  return `<footer class="tester-tools">
+    <span class="tester-tag">Test store · no money is taken, and no card details are asked for</span>
+    <button class="tester-btn" data-click="store:reset">Remove my test purchases</button>
+  </footer>`;
 }
 
 function renderResetDialog(): string {

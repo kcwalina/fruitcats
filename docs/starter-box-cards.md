@@ -10,7 +10,7 @@ The Starter Box contains three ready-to-play 50-card decks built to teach the ga
 
 All three decks share the same neutral **Garden** core (14 cards; Orchard Guard trades its Garden Snails for more Orchard muscle), so new players learn one common core.
 
-**Totals:** 3 Hero Cats · 9 Cats · 36 family cards · 5 Garden cards = **53 unique cards**, 150 deck cards. Two more Hero Cats are previewed at the end.
+**Totals:** 3 Hero Cats · 9 Cats · 36 family cards · 5 Garden cards = **53 unique cards**, 150 deck cards.
 
 ### Classes and signature mechanics
 
@@ -231,26 +231,6 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | SB1-G03 | Mail Duck | Critter | 3 | 2/3 | **Hello:** Draw a card. | 3 |
 | SB1-G04 | Catnip | Trick | 1 | — | Pounce. A unit you control gets +2 Power this round. | 3 |
 | SB1-G05 | Nap Time | Trick | 1 | — | Lucky. Exhaust an enemy unit. | 2 (3 in Orchard Guard) |
-
----
-
-## Preview — Hero Cats of the other two families
-
-Not in the Starter Box; shown so you can see where the game is going. Their decks arrive with the first full set.
-
-### Jam, the Strawberry Tabby *(Berry)*
-
-| Side | Power | Text |
-|---|---|---|
-| **Kitten** | — | **Exhaust, pay 1:** Summon a 1/1 Seed Mouse token.<br>**Grow Up:** You control 5 or more units. |
-| **Big Cat** | 2 | Your Critters that cost 2 or less get +1 Power. |
-
-### Duchess, the Watermelon Persian *(Melon)*
-
-| Side | Power | Text |
-|---|---|---|
-| **Kitten** | — | **Exhaust:** Exhaust an enemy unit that costs 2 or less.<br>**Grow Up:** You have 10 or more cards in your Compost. |
-| **Big Cat** | 3 | **Exhaust:** Exhaust an enemy unit. |
 
 ---
 

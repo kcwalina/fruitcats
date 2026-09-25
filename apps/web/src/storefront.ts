@@ -220,13 +220,19 @@ export function renderStore(): string {
   return `
   <div class="collection-screen store-screen">
     ${backdrop ? `<div class="ambient" aria-hidden="true"><div class="ambient-layer show" style="background-image:url(${artUrl(backdrop)})"></div></div>` : ''}
-    <div class="collection-top store-top">
-      ${back}
-      <h1 class="store-head"><img class="sh-art" src="${BASE}ui/mode-store.webp" alt=""><span>${title}</span></h1>
-      <button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
-        ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>
-    </div>
-    <p class="test-banner" role="note"><b>Test store</b> · no money is taken</p>
+    <header class="store-banner ${view.kind === 'browse' ? '' : 'slim'}">
+      <span class="sb-awning" aria-hidden="true"></span>
+      <img class="sb-art" src="${BASE}ui/mode-store.webp" alt="">
+      <div class="sb-bar">
+        ${back}
+        <button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
+          ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>
+      </div>
+      <div class="sb-text">
+        <h1>${title}</h1>
+        ${view.kind === 'browse' ? '<p>Decks and cards for your collection</p>' : ''}
+      </div>
+    </header>
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}
     ${body}
   </div>
@@ -535,9 +541,12 @@ function renderCart(): string {
   </div>`;
 }
 
+/** For testers, at the bottom of the page, out of the way of what customers will see: it's a test, and a reset. */
 function renderTesterTools(): string {
   if (!testCheckout()) return '';
-  return `<div class="tester-tools"><span>Tester tools</span>
+  return `<div class="tester-tools">
+    <p class="test-banner" role="note"><b>Test store</b> · no money is taken, and no card details are asked for</p>
+    <span>Tester tools</span>
     <button class="link-btn" data-click="store:reset">Remove my test purchases</button></div>`;
 }
 

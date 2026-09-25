@@ -267,6 +267,18 @@ export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> 
 }
 
 /** Wear an avatar. */
+/** "Contact us": emailed to the team, answered by email (the account's, or `email` when signed out). */
+export async function sendSupport(message: string, email: string): Promise<void> {
+  const t = session() ? await token() : null;
+  const r = await request(`${ID_SERVICE}/support`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+    body: JSON.stringify({ message, email, app: 'Fruitcats', device: navigator.userAgent }),
+  });
+  if (r.status === 429) throw new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
+  if (!r.ok) throw new AuthError('support', (await r.json().catch(() => ({}))).message ?? 'Your message couldn’t be sent. Please try again.');
+}
+
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */
 export function needsTerms(): boolean {
   const s = session();

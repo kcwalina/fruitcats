@@ -12,6 +12,7 @@ from pathlib import Path
 TIER = {"deck": "Deck card", "token": "Token", "foil": "Foil single ($1.49)", "gold": "Gold single ($4.99)",
         "signature": "Signature ($19.99)", "legend": "Legend Pawtrait", "announcement": "Announcement"}
 STYLE = {"painted": "Painted", "sticker": "Sticker"}
+STUDIO = "https://fruitcats.viamochi.com/studio.html"
 OPEN = {"name": "the name", "flavor": "the flavour text", "animal": "which animal it is", "berry": "which berry",
         "breed": "the cat breed", "scene": "the scene", "object": "the object", "look": "the look", "characters": "the characters"}
 
@@ -44,7 +45,8 @@ def main() -> int:
     L = [f"# Art brief: {brief['name']} ({brief['set']})", "",
          f"**For:** {brief['artist']} · **From:** Krzysztof Cwalina · **Sent:** <date>", "",
          "Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, milestones and suggesting",
-         "changes. This brief lists what this set needs.", "",
+         "changes. This brief lists what this set needs. You'll work through it in the Artist Studio",
+         f"(<{STUDIO}>), which shows the same steps one at a time.", "",
          "## The set in a few lines", "", brief["about"], "", f"**Who it's for:** {brief['audience']}", "",
          f"**Style:** {brief['style']}", "", "## Families", "", "| Family | World |", "|---|---|"]
     for fam, f in brief["families"].items():

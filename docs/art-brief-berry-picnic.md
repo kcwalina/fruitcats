@@ -3,7 +3,8 @@
 **For:** Basil Leaf · **From:** Krzysztof Cwalina · **Sent:** <date>
 
 Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, milestones and suggesting
-changes. This brief lists what this set needs.
+changes. This brief lists what this set needs. You'll work through it in the Artist Studio
+(<https://fruitcats.viamochi.com/studio.html>), which shows the same steps one at a time.
 
 ## The set in a few lines
 

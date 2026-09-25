@@ -1,4 +1,4 @@
-// The Fruitcats API (docs/accounts-plan.md): keeps each Via Mochi account's custom decks and Showcase, so they're the
+// The Fruitcats API (docs/accounts.md): keeps each Via Mochi account's custom decks and Showcase, so they're the
 // same on every device. It only trusts Via Mochi tokens from viamochi-id (checked against its public keys), and each
 // account's data is keyed by the account id in those tokens. Hosted on App Service ("fruitcats-api").
 //

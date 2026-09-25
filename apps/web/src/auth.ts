@@ -1,4 +1,4 @@
-// Via Mochi sign-in (docs/accounts-plan.md). The only module that knows about Microsoft Entra: the game asks it to
+// Via Mochi sign-in (docs/accounts.md). The only module that knows about Microsoft Entra: the game asks it to
 // start with an email, check a code, and hand out a token; nothing else changes if Entra is ever replaced.
 //
 // Entra's "native authentication" API sends the one-time codes. Browsers can't call it directly, so every call goes

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Read the Via Mochi services' logs (docs/accounts-plan.md, Observability), for people and agents:
+// Read the Via Mochi services' logs (docs/accounts.md, Observability), for people and agents:
 //
 //   node tools/ops.mjs events                          last hour, every service, ops + security
 //   node tools/ops.mjs events --since 6h --level error errors in the last 6 hours

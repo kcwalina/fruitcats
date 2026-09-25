@@ -131,13 +131,15 @@ function codeStep(): string {
   const length = pending?.codeLength ?? 8;
   return `
     <h2 id="account-title">Check your email</h2>
-    <p class="account-why">We sent a ${length}-digit code to <b>${esc(pending?.sentTo ?? email)}</b>.</p>
+    <p class="account-why">We emailed your ${length}-digit code to <b>${esc(pending?.sentTo ?? email)}</b>.</p>
+    <p class="account-spam"><b>Don’t see it?</b> Check your <b>Spam</b> or <b>Junk</b> folder: the first email from us
+      often lands there. It comes from <span class="nowrap">no-reply@mail.viamochi.com</span>.</p>
     <label class="account-field">Code
       <input data-acct="code" class="account-code" inputmode="numeric" autocomplete="one-time-code" maxlength="${length}"
         enterkeyhint="done" value="${esc(code)}" ${busy ? 'disabled' : ''}>
     </label>
     <button class="primary account-go" data-click="acct:code" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : pending?.flow === 'signUp' ? 'Create account' : 'Sign in'}</button>
-    <p class="account-small">Nothing there? Check spam, or <button class="link-button" data-click="acct:resend" ${busy ? 'disabled' : ''}>send a new code</button>.
+    <p class="account-small">Still nothing after a minute? <button class="link-button" data-click="acct:resend" ${busy ? 'disabled' : ''}>Send a new code</button>.
       Wrong email? <button class="link-button" data-click="acct:back">Change it</button>.</p>`;
 }
 

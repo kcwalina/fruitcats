@@ -20,13 +20,20 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
   { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
   { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
+  // Linked from the sign-up screen; no tabs of their own.
+  { md: 'legal/terms-of-use.md', html: 'terms.html' },
+  { md: 'legal/privacy-policy.md', html: 'privacy.html' },
 ];
 
-export default defineConfig({
+// `vite build --mode playtest` (npm run build:playtest) turns on the features still hidden from the public site
+// (src/flags.ts) and builds into dist-playtest/, so it can't be uploaded to the public site by mistake.
+export default defineConfig(({ mode }) => ({
   base: './',
+  define: mode === 'playtest' ? { 'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on') } : {},
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
   plugins: [docsPages(), contentAssets()],
   build: {
+    outDir: mode === 'playtest' ? 'dist-playtest' : 'dist',
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('index.html', import.meta.url)),
@@ -36,7 +43,7 @@ export default defineConfig({
   },
   // PORT lets two checkouts (e.g. git worktrees) run dev servers side by side.
   server: { port: Number(process.env.PORT) || 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] } },
-});
+}));
 
 // ── Docs pages ─────────────────────────────────────────────────────────────────────────────────
 //
@@ -47,7 +54,8 @@ export default defineConfig({
 // Every heading is an anchor, so any section can be sent as a link (wallpapers.html#with-a-shortcut).
 
 const DOCS = fileURLToPath(new URL('../../docs/', import.meta.url));
-const PAGES: Record<string, string> = Object.fromEntries(DOC_PAGES.map((d) => [d.md, d.html]));
+// Keyed by file name, so docs/legal/ pages link to each other as "terms-of-use.md".
+const PAGES: Record<string, string> = Object.fromEntries(DOC_PAGES.map((d) => [d.md.split('/').pop()!, d.html]));
 
 /** The header every docs page shares: Home, "Documentation", and the sections as tabs. */
 function docHeader(current: string): string {

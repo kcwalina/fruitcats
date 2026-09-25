@@ -70,7 +70,8 @@ header p { margin: 4px 0 0; color: var(--muted); }
 .bar .mid { position: absolute; top: -2px; bottom: -2px; left: 50%; width: 2px; background: var(--ink); opacity: 0.35; }
 .legend { color: var(--muted); font-size: 12px; margin-top: 10px; }
 .issues { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
-.issues li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; }
+.issues li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.issues li > span:last-child { overflow-wrap: anywhere; }
 .issues .times { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; }
 .chart svg { width: 100%; height: auto; display: block; margin-top: 10px; }
 .chart text { fill: var(--muted); font: 11px var(--mono); }
@@ -326,7 +327,7 @@ function renderRuns() {
   $('runs').innerHTML = [...days.entries()].map(([day, list]) => `<div class="day"><h3>${esc(day)}</h3>${list.map((r) => `
     <button class="run" data-id="${esc(r.id)}" aria-current="${r.id === selected}">
       <span class="dot ${esc(r.result)}"></span>
-      <span>${runName(r) ? `<span class="name">${esc(runName(r))}</span><br><span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span>` : `<span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span>`}<br><span class="meta">${r.progress ? progressText(r) : `${r.games ? `${r.games.toLocaleString()} games · ` : ''}${dur(r.durationSec)}${r.problems?.length ? ` · ${r.problems.length} flagged` : ''}`}</span>${r.result === 'running' ? progressBar(r) : ''}</span>
+      <span>${runName(r) ? `<span class="name">${esc(runName(r))}</span><br><span class="meta">${esc(KIND[r.kind] ?? r.kind)}</span>` : `<span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span>`}<br><span class="meta">${r.progress ? progressText(r) : `${r.games ? `${r.games.toLocaleString()} games · ` : ''}${dur(r.durationSec)}${r.problems?.length ? ` · ${r.problems.length} flagged` : ''}`}</span>${r.result === 'running' ? progressBar(r) : ''}</span>
       <span class="time">${esc(timeOf(r.startedAt))}</span>
     </button>`).join('')}</div>`).join('');
 }

@@ -1,16 +1,28 @@
-// The player's own decks, kept in localStorage (this browser only, like the saved game). The starter
-// decks aren't stored: they're fixed, and a deck key is either a starter's key or `custom:<id>`.
+// The player's own decks, kept in localStorage. The starter decks aren't stored: they're fixed, and a deck key is
+// either a starter's key or `custom:<id>`. When signed in to a Via Mochi account, src/sync.ts keeps these the same on
+// every device: each deck carries when it last changed, and a deleted deck is remembered until the account knows.
 
 import { CARDS, DECKS, deckProblems, type DeckList } from '@fruitcats/engine';
 import { owned } from './collection';
 
 const DECKS_KEY = 'fruitcats-decks';
+const DELETED_KEY = 'fruitcats-decks-deleted';
 const CHOSEN_KEY = 'fruitcats-deck';
 const CUSTOM = 'custom:';
 
 export interface MyDeck extends DeckList {
   id: string;
+  /** When it last changed (ms since epoch), so the newest edit wins across devices. */
+  updatedAt?: number;
 }
+
+/** A deck deleted on this device and not yet known to the account. */
+export interface DeletedDeck { id: string; updatedAt: number }
+
+const listeners: (() => void)[] = [];
+/** Called after any change to the player's decks (sync listens). */
+export function onDecksChanged(fn: () => void) { listeners.push(fn); }
+const changed = () => listeners.forEach((fn) => fn());
 
 export function listDecks(): MyDeck[] {
   try {
@@ -35,11 +47,13 @@ export function getDeck(id: string): MyDeck | undefined {
 }
 
 export function saveDeck(deck: MyDeck): void {
+  deck.updatedAt = Date.now();
   const decks = listDecks();
   const i = decks.findIndex((d) => d.id === deck.id);
   if (i >= 0) decks[i] = deck;
   else decks.push(deck);
   store(decks);
+  changed();
 }
 
 /** A new, empty deck. The builder stores it on its first change. */
@@ -49,6 +63,27 @@ export function newDeck(hero: string): MyDeck {
 
 export function deleteDeck(id: string): void {
   store(listDecks().filter((d) => d.id !== id));
+  storeDeleted([...deletedDecks().filter((d) => d.id !== id), { id, updatedAt: Date.now() }]);
+  changed();
+}
+
+export function deletedDecks(): DeletedDeck[] {
+  try { const d = JSON.parse(localStorage.getItem(DELETED_KEY) ?? '[]'); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function storeDeleted(list: DeletedDeck[]) {
+  try { localStorage.setItem(DELETED_KEY, JSON.stringify(list)); } catch { /* private mode */ }
+}
+
+/** Replace this device's decks with the account's (after a sync). Deletions the account now knows are forgotten. */
+export function applySyncedDecks(decks: MyDeck[], deletedIds: string[]): void {
+  store(decks);
+  const known = new Set(deletedIds);
+  storeDeleted(deletedDecks().filter((d) => !known.has(d.id)));
+}
+
+/** Signing out: this device forgets the account's decks (they're safe in the account). */
+export function forgetDecks(): void {
+  try { localStorage.removeItem(DECKS_KEY); localStorage.removeItem(DELETED_KEY); } catch { /* private mode */ }
 }
 
 /** What's wrong with a deck, collection included; empty when it can be played. */

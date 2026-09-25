@@ -5,7 +5,7 @@
     python tools/generate_avatars.py --force         # redraw
 
 Everyday Pawtraits are plain fruit-hooded cats anyone can pick. Legend Pawtraits come with a Legendary card: owning
-the card unlocks its avatar (docs/accounts-plan.md, Avatars). Images are square, head-and-shoulders portraits made to
+the card unlocks its avatar (docs/accounts.md, Avatars). Images are square, head-and-shoulders portraits made to
 be shown in a circle, saved at 512px: everyday ones to art/avatars/<id>.webp, Legend ones to their card set's
 folder (content/<yyyy>/<mm>/<set>/avatars/<id>.webp, see LEGEND_SETS). Every run costs money, so existing files are skipped.
 """

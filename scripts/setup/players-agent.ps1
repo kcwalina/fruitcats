@@ -1,6 +1,6 @@
 # One-time setup, run by the owner: gives Claude's agent permission to configure the player tenant
 # (Via Mochi Players, Entra External ID). Uses its own CLI folder; the owner's normal `az` login is untouched.
-# See docs/accounts-plan.md.
+# See docs/accounts.md.
 $ErrorActionPreference = 'Stop'
 $tenant = 'b795dd5c-aa4f-43e2-ab15-5e0bf0cdcff4'   # viamochiplayers.onmicrosoft.com
 $env:AZURE_CONFIG_DIR = "$HOME\.azure-viamochi-bootstrap-players"

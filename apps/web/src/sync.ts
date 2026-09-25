@@ -1,5 +1,5 @@
 // Keeps a signed-in player's custom decks and Showcase in their Via Mochi account, so they're the same on every device
-// (docs/accounts-plan.md). The Fruitcats API merges what this device has with the account's copy (the newest edit of
+// (docs/accounts.md). The Fruitcats API merges what this device has with the account's copy (the newest edit of
 // each deck wins; deletions are remembered) and sends back the result, which replaces what's here.
 //
 // It syncs when you sign in (which also uploads the decks this device already had), when the game starts, when you

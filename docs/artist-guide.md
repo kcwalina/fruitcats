@@ -53,11 +53,11 @@ The steps start with the cards sold on their own, one at a time, then the deck's
 rest of the deck in small batches, with Pawtraits and the announcement picture last. See
 [Milestones](#milestones) for the details.
 
-### Your ideas are welcome
+### Your ideas come first
 
-Many names and details were placeholders we picked quickly. If a card would look better as a different
-animal, with a different name or a different scene, suggest it. The brief marks what is open to change on
-each card. See [Suggesting changes](#suggesting-changes).
+You're a collaborator. Everything in the brief is a suggestion: the story, the names, the scenes, even what a card
+does. If you want to draw something else, go for it, and we'll change the card to fit your picture. See
+[Suggesting changes](#suggesting-changes).
 
 ### One request
 

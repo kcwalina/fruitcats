@@ -470,11 +470,14 @@ function wizardPage(code: string, chosen?: string): string {
   const versions = versionsOf(view, key);
   const n = brief.pictures.indexOf(current) + 1;
   const name = `${title(current)}${sideLabel(current) ? ` (${sideLabel(current)})` : ''}`;
-  const heading = state === 'changes' ? `${name}: our comments` : state === 'sketch-ok' ? `Upload the finished ${name}`
-    : state === 'approved' ? `${name} is approved` : state === 'waiting' ? `${name}: sent for review`
-      : `Upload ${name}`;
+  // The image is for a card we designed; the heading names the card, not what to draw. Pawtraits and key art aren't cards.
+  const isCard = current.kind === 'card' || current.kind === 'token';
+  const subject = isCard ? `The image for the card “${name}”` : name;
+  const heading = state === 'changes' ? `${subject}: our comments` : state === 'sketch-ok' ? `${subject}: sketch approved`
+    : state === 'approved' ? `${subject}: approved` : state === 'waiting' ? `${subject}: sent` : subject;
+  const nameNote = isCard ? '<p class="name-note">That’s the card’s name for now: it can change to fit your image.</p>' : '';
   const lead = state === 'changes' ? 'We left some comments. Take what helps; if you change the image in your own tools, upload the new version here. Or reply, or just move on.'
-    : state === 'sketch-ok' ? 'We like your sketch. Finish the image in your own tools, then upload it here.'
+    : state === 'sketch-ok' ? 'We like your sketch. When the finished image is ready, upload it here.'
       : state === 'approved' ? 'Done. If you change it later in your own tools, you can upload a new version here: it comes back to us for a look.'
         : state === 'waiting' ? 'We’re looking at it and will reply here. You can upload a new version any time.'
           : 'A sketch or the finished image, whichever you like. A sketch gets you early feedback; a finished image is great too. We can comment on either, and you can always upload a new version.';
@@ -491,7 +494,7 @@ function wizardPage(code: string, chosen?: string): string {
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
     <section class="wz-card">
       <small>Image ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
-      <h1>${esc(heading)}</h1>
+      <h1>${esc(heading)}</h1>${nameNote}
       <p class="wz-lead">${esc(lead)}</p>
       ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<div class="ask"><p>${authorLabel(c)} ${esc(c.text)}</p>
           <p class="ask-actions"><button class="link" data-click="reply:${c.id}">Reply</button><button class="link" data-click="done:${c.id}:1">Resolve</button></p></div>`).join('')}

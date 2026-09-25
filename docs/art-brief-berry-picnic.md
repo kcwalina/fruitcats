@@ -152,7 +152,7 @@ A few pictures at a time; we reply to each batch.
 ### `BP1-B06.webp`: Mulberry Moose
 
 - **Kind:** Deck card · Painted
-- **What the card does:** After this defeats a unit in combat, put a Crumb on it.
+- **What the card does:** After Mulberry Moose defeats a unit in combat, put a Crumb on it.
 - **What to draw:** A moose who won the fight and kept the cake.
 - **Must keep:** big; it grows when it wins a fight
 - **Open to change:** the name, which animal it is, which berry, the flavour text
@@ -184,7 +184,7 @@ A few pictures at a time; we reply to each batch.
 ### `BP1-B10.webp`: Pass the Plate
 
 - **Kind:** Deck card · Painted
-- **What the card does:** Put a Crumb on each unit, yours and theirs.
+- **What the card does:** Put a Crumb on each unit. (Yours and theirs.)
 - **What to draw:** A plate of snacks passed around the blanket, even to the other team.
 - **Must keep:** everyone gets some, both sides
 - **Open to change:** the name, the flavour text, the scene

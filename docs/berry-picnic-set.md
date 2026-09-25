@@ -6,7 +6,8 @@ runs while she draws. The data is in [`content/2026/12/berry-picnic/set.json`](.
 brief is [art-brief-berry-picnic.md](art-brief-berry-picnic.md), generated from
 [`art/brief.json`](../content/2026/12/berry-picnic/art/brief.json).
 
-Last updated 2026-09-24.
+Last updated 2026-09-24. Card rules text is generated from the card data (`npm run write-text -- bp1`); change
+the data, not the text.
 
 ## What it's for
 
@@ -76,11 +77,11 @@ counter filter (`crumb` at least 3).
 | BP1-B03 | Cloudberry Lamb | Critter | 2 | 2/2 | Hello: Put a Crumb on another unit you control. | 3 |
 | BP1-B04 | Dewberry Possum | Critter | 2 | 1/2 | Guardian. Goodbye: Summon an Ant. | 3 |
 | BP1-B05 | Gooseberry Goose | Critter | 3 | 3/2 | Hello: Exhaust an enemy unit. Take a counter from it and put it on the Goose as a Crumb. | 3 |
-| BP1-B06 | Mulberry Moose | Critter | 4 | 4/4 | After this defeats a unit in combat, put a Crumb on it. | 3 |
+| BP1-B06 | Mulberry Moose | Critter | 4 | 4/4 | After Mulberry Moose defeats a unit in combat, put a Crumb on it. | 3 |
 | BP1-B07 | Bilberry Alpaca | Critter | 5 | 2/4 | Guardian. Hello: Put a Crumb on each other unit you control. | 2 |
 | BP1-B08 | Strawberry Milk Cow | Critter | 5 | 3/4 | Hello: Put 2 Crumbs on another unit you control. | 2 |
 | BP1-B09 | Ant Parade | Trick | 2 | — | Summon two Ants. | 3 |
-| BP1-B10 | Pass the Plate | Trick | 1 | — | Put a Crumb on each unit, yours and theirs. | 2 |
+| BP1-B10 | Pass the Plate | Trick | 1 | — | Put a Crumb on each unit. (Yours and theirs.) | 2 |
 | BP1-B11 | Second Helping | Trick | 1 | — | Pounce. Put a Crumb on a unit you control. It gets +1 Power this round. | 3 |
 | BP1-B12 | Friendship Bracelet | Toy | 1 | — | Attached unit gets +1 Power and Leftovers. | 3 |
 | BP1-B13 | Bleu, the Blueberry Blanket Hog | Cat | 3 | 2/3 | Hello: Put a Crumb on another unit you control. Your Full units have Sneaky. | 1 |

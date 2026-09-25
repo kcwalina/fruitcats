@@ -204,18 +204,13 @@ export function createHub(deps: HubDeps) {
     }
   }
 
-  async function statuses(c: Conn): Promise<FriendStatus[]> {
-    const out: FriendStatus[] = [];
-    for (const f of c.friends) {
+  /** Every friend's status at once: their records and last-seen are read side by side, not one friend after another. */
+  function statuses(c: Conn): Promise<FriendStatus[]> {
+    return Promise.all([...c.friends].map(async (f) => {
       const status = statusOf(f);
-      out.push({
-        id: f, status,
-        lastSeen: status === 'offline' ? await lastSeen(f) : undefined,
-        person: conns.get(f)?.person ?? (status === 'online' ? here.get(f)?.person : undefined),
-        record: await tally(c.account!, f),
-      });
-    }
-    return out;
+      const [seen, record] = await Promise.all([status === 'offline' ? lastSeen(f) : undefined, tally(c.account!, f)]);
+      return { id: f, status, lastSeen: seen, person: conns.get(f)?.person ?? (status === 'online' ? here.get(f)?.person : undefined), record };
+    }));
   }
 
   // Presence is asked for every 30 s while Play a friend is open: records and last-seen are remembered, not read each time.

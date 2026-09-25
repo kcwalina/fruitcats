@@ -722,7 +722,7 @@ const MODE_GROUPS = [
   [
     { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '' },
     { key: 'friend', name: 'Friend', sub: 'Online',
-      soon: 'Play a friend online: send them a link, they pick a deck, and you each play on your own device.' },
+      soon: 'Play with a friend online: add each other with a code, then you each play on your own device.' },
     { key: 'ranked', name: 'Ranked', sub: 'The ladder',
       soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   ],

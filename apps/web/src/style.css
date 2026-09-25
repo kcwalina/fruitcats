@@ -1036,8 +1036,13 @@ body.dragging .hand-card:hover { transform: none; }
   padding-top: max(calc(var(--vh, 1vh) * 1.5), env(safe-area-inset-top));
   padding-bottom: max(calc(var(--vh, 1vh) * 2), env(safe-area-inset-bottom));
 }
-.pf-body { justify-content: flex-start; overflow-y: auto; width: min(100%, 560px); gap: 18px; padding: 16px 0 24px; }
+.pf-body { justify-content: flex-start; overflow-y: auto; width: min(100%, 600px); gap: 18px; padding: 16px 0 24px; }
 .pf-body > * { flex: none; }   /* scroll rather than squeeze: the deck carousel keeps its height */
+/* The friends card sits a little below the title, where the eye goes first, rather than lost in the middle. */
+.pf-body:not(.pf-setup) { padding-top: clamp(16px, calc(var(--vh, 1vh) * 7), 80px); }
+.pf-body > .pf-note:empty { min-height: 0; }
+.pf-body { scrollbar-width: none; }
+.pf-body::-webkit-scrollbar { display: none; }
 .pf-setup { width: min(100%, 900px); }
 .pf-offline { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: var(--muted); }
 .pf-section { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; }
@@ -1098,6 +1103,9 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
 }
 .pf-ring span { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--panel); font-weight: 800; }
 .pf-add-sheet { gap: 14px; }
+.pf-add-sheet .pf-add-how { text-align: left; font-size: 15px; line-height: 1.55; }
+.pf-add-sheet input::placeholder { color: #c9b49a; }
+@media (min-width: 700px) { .pf-add-sheet { width: min(480px, 92vw); padding: 28px; } }
 .pf-add-sheet h2 { margin: 0; font-size: 22px; }
 .pf-add-choices { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .pf-add-choices button { min-height: 48px; padding: 8px 20px; }
@@ -1189,12 +1197,78 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
 /* An online game has more buttons beside Rules (Concede, Show my hand): they wrap rather than run off the side. */
 .side-buttons { flex-wrap: wrap; }
 .midbar .hint-line { margin-top: 2px; color: #2e7d45; font-weight: 800; }
-/* Play a friend when it isn't connected: waiting in line, paused, made room. One card, centred. */
-.pf-state { justify-content: center; align-items: center; text-align: center; gap: 10px; }
-.pf-state-art { width: 120px; height: 120px; border-radius: 22px; object-fit: cover; box-shadow: var(--shadow); }
-.pf-state h3 { margin: 6px 0 0; font: 700 24px Fredoka, Nunito, sans-serif; }
-.pf-state p { margin: 0; max-width: 380px; line-height: 1.45; font-weight: 600; }
-.pf-state small { color: var(--muted); }
+/* Play with a friend: everything sits on one cream card, like a sheet of the game's stationery, so it reads as a
+   place of its own over the orchard rather than loose rows. The empty and "not open" states use the same card. */
+.pf-card {
+  position: relative; width: 100%; display: flex; flex-direction: column; gap: 14px; padding: 18px;
+  background: linear-gradient(180deg, #fffdf8 0%, var(--panel) 100%);
+  border: 2px solid #f0dcb8; border-radius: 28px;
+  box-shadow: 0 1px 0 #fff inset, 0 18px 40px rgba(90, 55, 20, 0.22), 0 3px 8px rgba(90, 55, 20, 0.12);
+}
+.pf-card-head { display: flex; align-items: center; gap: 16px; text-align: left; padding: 2px 4px 14px; border-bottom: 2px dashed #f0dcb8; }
+.pf-head-art { flex: none; width: 76px; height: 76px; border-radius: 20px; object-fit: cover; box-shadow: 0 0 0 3px #fff, var(--shadow); transform: rotate(-3deg); }
+.pf-head-text { min-width: 0; }
+.pf-head-text h3 { margin: 0; font: 700 26px/1.1 Fredoka, Nunito, sans-serif; }
+.pf-presence { margin: 4px 0 0; display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 700; font-size: 15px; }
+.pf-live-dot, .pf-pulse { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px rgba(46, 157, 87, 0.18); }
+.pf-pulse { background: var(--glow); box-shadow: none; animation: pf-pulse 1.1s ease-in-out infinite; }
+@keyframes pf-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+.pf-card .pf-list { gap: 10px; }
+/* Each friend is one white row: face, name and status, Play, and ⋯ for Remove and Block, all inside it. */
+.pf-card .pf-row { position: relative; align-items: center; background: #fff; border: 2px solid #f3e3c6; border-radius: 20px; box-shadow: 0 2px 0 #f0dcb8; }
+.pf-card button.pf-pick { background: none; border: 0; box-shadow: none; min-height: 72px; padding-right: 6px; }
+.pf-card .pf-row:has(button.pf-pick:not([aria-disabled="true"]):hover) { border-color: #f7c98f; }
+.pf-card button.pf-more { align-self: center; width: 40px; height: 40px; margin-right: 8px; border: 0; background: none; box-shadow: none; color: #86694b; }
+.pf-card button.pf-more:hover { background: #fbf1e2; }
+.pf-card .pf-play { padding: 0 22px; line-height: 40px; font-size: 17px; box-shadow: 0 3px 0 #d25f16; }
+.pf-dot.checking { background: #e3d6c3; }
+.pf-skeleton { height: 72px; border-radius: 20px; background: linear-gradient(90deg, #f6ead6 0%, #fdf6ea 50%, #f6ead6 100%); background-size: 200% 100%; animation: pf-shimmer 1.3s linear infinite; }
+@keyframes pf-shimmer { to { background-position: -200% 0; } }
+.pf-card button.pf-add { justify-content: center; min-height: 56px; border: 2px solid #f0dcb8; background: #fff6ea; color: #9c4712; font-weight: 800; box-shadow: 0 3px 0 #ecd3a4; }
+.pf-card button.pf-add:hover { background: #ffefd9; }
+.pf-card .pf-plus { width: 30px; height: 30px; font-size: 22px; line-height: 1; background: var(--accent); color: #fff; }
+/* A big screen (an iPad): the card and everything on it a size up. */
+@media (min-width: 700px) {
+  .pf-body:not(.pf-setup) { width: min(100%, 720px); }
+  .pf-card { padding: 26px; gap: 16px; }
+  .pf-head-art { width: 100px; height: 100px; border-radius: 24px; }
+  .pf-head-text h3 { font-size: 32px; }
+  .pf-presence { font-size: 17px; }
+  .pf-card button.pf-pick { min-height: 88px; gap: 16px; padding-left: 12px; }
+  .pf-card .pf-face, .pf-card .legend-frame.pf-face, .pf-card .signature-frame.pf-face { width: 60px; height: 60px; }
+  .pf-card .pf-who b { font-size: 20px; }
+  .pf-card .pf-who small { font-size: 15px; }
+  .pf-card .pf-play { line-height: 44px; font-size: 18px; padding: 0 26px; }
+  .pf-skeleton { height: 88px; }
+  .pf-card button.pf-add { min-height: 64px; font-size: 18px; }
+  .pf-card .pf-plus { width: 34px; height: 34px; font-size: 24px; }
+  .pf-empty { padding: 40px 40px 42px; }
+  .pf-empty-art { width: 200px; height: 200px; }
+  .pf-empty h3 { font-size: 36px; }
+  .pf-empty p { font-size: 18px; max-width: 460px; }
+  .pf-empty .pf-add-first { font-size: 22px; padding: 14px 48px; }
+}
+/* No friends yet: a small invitation rather than an empty list. */
+.pf-empty { align-items: center; text-align: center; gap: 10px; padding: 28px 28px 30px; }
+.pf-empty-art { width: 168px; height: 168px; border-radius: 32px; object-fit: cover; box-shadow: 0 0 0 4px #fff, var(--shadow); transform: rotate(-2deg); margin-bottom: 8px; }
+.pf-empty h3 { margin: 0; font: 700 30px/1.15 Fredoka, Nunito, sans-serif; }
+.pf-empty p { margin: 0 0 8px; max-width: 400px; line-height: 1.5; font-weight: 600; color: #6f5a48; }
+.pf-empty .pf-add-first { min-width: 240px; padding: 12px 40px; font-size: 20px; border-radius: 999px; box-shadow: 0 4px 0 #d25f16; }
+/* Online play not open to this player right now: waiting in line, paused, made room. */
+.pf-state { align-items: center; text-align: center; gap: 10px; padding: 32px 28px; }
+.pf-state-art { width: 140px; height: 140px; border-radius: 30px; object-fit: cover; box-shadow: 0 0 0 4px #fff, var(--shadow); transform: rotate(-2deg); margin-bottom: 6px; }
+.pf-state h3 { margin: 0; font: 700 28px/1.15 Fredoka, Nunito, sans-serif; }
+.pf-state p { margin: 0; max-width: 400px; line-height: 1.5; font-weight: 600; color: #6f5a48; }
+.pf-state small { display: block; margin-top: 8px; color: var(--muted); }
+.pf-state button { min-width: 200px; min-height: 48px; border-radius: 999px; margin-top: 6px; }
+@media (max-width: 640px) {
+  .pf-card { padding: 14px; border-radius: 24px; }
+  .pf-head-art { width: 60px; height: 60px; border-radius: 16px; }
+  .pf-head-text h3 { font-size: 22px; }
+  .pf-empty-art, .pf-state-art { width: 128px; height: 128px; }
+  .pf-empty h3, .pf-state h3 { font-size: 24px; }
+  .pf-empty .pf-add-first { width: 100%; min-width: 0; }
+}
 .pf-line-dots { display: flex; gap: 8px; margin-top: 6px; }
 .pf-line-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pf-dot 1.2s infinite ease-in-out; }
 .pf-line-dots i:nth-child(2) { animation-delay: 0.2s; }

@@ -175,3 +175,37 @@ diff`, then commit and deploy as usual.
 
 **Studio Practice (SP1)** is a pretend set for trying the Studio. It isn't in `content/index.ts`, so the game, the
 bots and `check-set` never load it.
+
+## Repairing the Studio's data
+
+The agent identity (`claude-agent-viamochi`, `~/.azure-viamochi-agent`) has **Storage Table Data Contributor on the
+`studio` table only** (granted 2026-09-25), so an agent can fix a mistake itself in a minute. Everything lives in the
+`studio` table of `fruitcatsdata` (subscription ViaMochi Production, resource group `rg-fruitcats`):
+
+| Partition key | Row key | What it is |
+|---|---|---|
+| `invites` | the invite code | `set`, `expires`, and `usedBy` / `usedByName` / `usedAt` once someone accepted it |
+| `artists\|<set>` | account id | an artist on a set |
+| `memberships` | `<account id>\|<set>` | the same fact, looked up by account |
+| `terms` | account id | the Studio terms the account accepted |
+
+The owner's account id is in the `STUDIO_OWNERS` app setting of `fruitcats-api`. Run these from Git Bash (on
+PowerShell, `az` runs through `cmd.exe`, which treats the `|` in `artists|mc1` as a pipe: call
+`"C:\Program Files\Microsoft SDKs\Azure\CLI2\python.exe" -IBm azure.cli …` instead of `az` there).
+
+```bash
+export AZURE_CONFIG_DIR=~/.azure-viamochi-agent
+T=(--account-name fruitcatsdata --auth-mode login -t studio)
+# Every invite: its set, and who used it.
+az storage entity query "${T[@]}" --filter "PartitionKey eq 'invites'" --query "items[].{code:RowKey,set:set,note:note,usedByName:usedByName,expires:expires}" -o table
+# Everything tied to one account.
+ID=<account id>; az storage entity query "${T[@]}" --filter "RowKey eq '$ID' or RowKey ge '$ID|' and RowKey lt '$ID}'" --query "items[].PartitionKey" -o tsv
+# Take an account off a set.
+SET=<set>; az storage entity delete "${T[@]}" --partition-key "artists|$SET" --row-key $ID
+az storage entity delete "${T[@]}" --partition-key memberships --row-key "$ID|$SET"
+# Make a used invite usable again.
+az storage entity merge "${T[@]}" -e PartitionKey=invites RowKey=<code> usedBy= usedByName= usedAt=
+```
+
+Since 2026-09-25 (eae348e) the API no longer lets a reviewer use up an artist's invite by opening it; before that, an
+owner who opened Basil's link while signed in became an artist on her set and used the link up.

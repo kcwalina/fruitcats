@@ -304,6 +304,7 @@
 .confirm-dialog .ct-row { margin: 4px 0 12px; }
 .confirm-dialog .ct-min { margin-bottom: 10px; }
 .confirm-dialog .delete-buttons button { white-space: nowrap; }
+.soon-dialog .delete-buttons { grid-template-columns: minmax(0, 220px); justify-content: center; }
 .confirm-test { padding: 10px 12px; border-radius: 12px; background: #fff4d6; box-shadow: inset 0 0 0 1px #ecd09a; }
 
 /* ── The reveal after an order: dark, each new card turning over with a glow by rarity ── */

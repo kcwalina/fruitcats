@@ -39,6 +39,10 @@ let view: View = { kind: 'browse' };
 /** A line under the header after something happened ("Added 3 cards to your cart"). */
 let notice = '';
 let loading = false;
+/** "Add to cart" while buying isn't open yet: the Coming soon message. */
+let soon = false;
+/** Whether this account can buy: today only with test checkout; later, when payments open. */
+const canBuy = () => testCheckout();
 
 /** The confirmation step, from "Review order" until the order is placed or abandoned. */
 let checkout: null | {
@@ -92,8 +96,9 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
     case 'card': view = { kind: 'card', product: arg }; break;
     case 'browse': view = { kind: 'browse' }; break;
     case 'retry': refresh(host); break;
-    case 'cart': view = { kind: 'cart' }; break;
+    case 'cart': view = canBuy() ? { kind: 'cart' } : { kind: 'browse' }; break;
     case 'add': {
+      if (!canBuy()) { soon = true; break; }
       addToCart(arg, 1);
       const p = catalog()?.products[arg];
       notice = p ? `${p.kind === 'deck' ? p.name : cardName(p.card)} is in your cart.` : '';
@@ -109,6 +114,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
     case 'pickall': if (view.kind === 'missing') view.left = view.left.size ? new Set() : new Set(view.plan.lines.map((l) => l.product)); break;
     case 'addpicked': {
       if (view.kind !== 'missing') break;
+      if (!canBuy()) { soon = true; break; }
       const { left, plan } = view;
       const lines = plan.lines.filter((l) => !left.has(l.product));
       addLinesToCart(lines);
@@ -127,6 +133,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
     case 'done': reveal = null; view = { kind: 'browse' }; break;
     case 'build': reveal = null; host.openDeckBuilder(); return;
     case 'reset': resetAsk = true; break;
+    case 'soon': soon = false; break;
     case 'keep': resetAsk = false; break;
     case 'doreset':
       resetAsk = false;
@@ -222,8 +229,8 @@ export function renderStore(): string {
       <div class="sb-art" role="img" aria-label="A cat at a market stall"></div>
       <div class="sb-top">
         ${back}
-        <button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
-          ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>
+        ${canBuy() ? `<button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
+          ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>` : ''}
       </div>
       <div class="sb-inner">
         <div class="sb-eyebrow">Fruitcats</div>
@@ -234,7 +241,7 @@ export function renderStore(): string {
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}
     ${body}
   </div>
-  ${renderCheckout()}${renderReveal()}${renderResetDialog()}`;
+  ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}`;
 }
 
 const faceOf = (id: string) => (CARDS[id]?.type === 'Hero Cat' ? `${id}-kitten` : id);
@@ -296,7 +303,7 @@ const cardSlot = (id: string, big = false) =>
 function renderDeckOffer(p: DeckProduct): string {
   const { size, now, complete } = deckFacts(p);
   return `<button class="offer ${complete ? 'owned' : ''}" data-click="store:deck:${p.id}" aria-label="${esc(p.name)}, deck">
-      <span class="stage">${deckSlot(p)}${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
+      <span class="stage">${deckSlot(p)}${canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
       <span class="info">
         <span class="kind">Deck</span>
         <span class="name">${esc(p.name)}</span>
@@ -310,7 +317,7 @@ function renderCardOffer(p: CardProduct, have: number): string {
   const r = rarity(p.card);
   const full = have >= maxCopies(p.card);
   return `<button class="offer ${full ? 'owned' : ''}" data-click="store:card:${p.id}" aria-label="${esc(cardName(p.card))}, ${r} card">
-      <span class="stage">${cardSlot(p.card)}${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
+      <span class="stage">${cardSlot(p.card)}${canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
       <span class="info">
         <span class="kind">Card</span>
         <span class="name">${esc(cardName(p.card))}</span>
@@ -324,7 +331,7 @@ function renderCardOffer(p: CardProduct, have: number): string {
 
 function buyBar(p: DeckProduct | CardProduct, full: number, now: number, complete: boolean): string {
   const action = complete ? '<span class="owned-pill big">✓ You have it all</span>'
-    : inCart(p.id) ? '<button class="store-btn ghost big" data-click="store:cart">In your cart · View cart</button>'
+    : canBuy() && inCart(p.id) ? '<button class="store-btn ghost big" data-click="store:cart">In your cart · View cart</button>'
     : `<button class="store-btn buy big" data-click="store:add:${p.id}">Add to cart ${priceChip(full, now)}</button>`;
   return `<div class="buy-bar">${action}</div>`;
 }
@@ -532,6 +539,16 @@ function renderTesterTools(): string {
     <span class="tester-tag">Test store · no money is taken, and no card details are asked for</span>
     <button class="tester-btn" data-click="store:reset">Remove my test purchases</button>
   </footer>`;
+}
+
+/** What "Add to cart" says while buying isn't open: everything can be looked at, nothing bought yet. */
+function renderSoon(): string {
+  if (!soon) return '';
+  return `<div class="overlay"><div class="settings delete-dialog soon-dialog" role="dialog" aria-label="Coming soon">
+    <h2>Coming soon</h2>
+    <p>You can’t buy decks and cards yet. Until then, look around: everything in the Store, and every price, is here to see.</p>
+    <div class="delete-buttons"><button class="primary" data-click="store:soon">OK</button></div>
+  </div></div>`;
 }
 
 function renderResetDialog(): string {

@@ -2,7 +2,7 @@
 // and talk about them with us in comments. Mounted by server.ts under /v1/studio/.
 //
 // Who may do what:
-//   owner   (a Via Mochi account listed in STUDIO_OWNERS): everything, in every set; the only one who approves.
+//   owner   (a reviewer: a Via Mochi account listed in STUDIO_OWNERS): everything, in every set; the only one who approves.
 //   artist  (an account invited to a set): in that set, upload pictures, comment, suggest changes.
 //   agent   (an AI, with an agent key): read everything and comment. Its comments are always labelled AI.
 // The server decides the label on every comment from who signed in, so no one can post as someone else.

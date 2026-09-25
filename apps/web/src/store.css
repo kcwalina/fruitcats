@@ -281,3 +281,12 @@
 .rv-rarity.rv-legendary { background: rgba(160, 90, 255, 0.25); box-shadow: inset 0 0 0 1px rgba(210, 150, 255, 0.7); }
 .reveal-all { -webkit-mask-image: linear-gradient(#000 92%, transparent); mask-image: linear-gradient(#000 92%, transparent); padding-bottom: 24px; }
 @media (prefers-reduced-motion: reduce) { .reveal-stage::before { animation: none; opacity: 1; } }
+
+/* With a mouse, the Store's lists show a scrollbar (the Collection hides it; fingers don't need one). */
+@media (hover: hover) and (pointer: fine) {
+  .store-screen .collection-grid, .reveal-all { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.35) transparent; }
+  .store-screen .collection-grid::-webkit-scrollbar, .reveal-all::-webkit-scrollbar { display: block; width: 10px; }
+  .store-screen .collection-grid::-webkit-scrollbar-thumb, .reveal-all::-webkit-scrollbar-thumb {
+    border-radius: 999px; background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; background-clip: padding-box;
+  }
+}

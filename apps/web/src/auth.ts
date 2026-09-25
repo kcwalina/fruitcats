@@ -34,6 +34,8 @@ export interface Session {
   avatar?: string;
   /** The version of the Terms of Use this account last agreed to (null: never). */
   terms?: string | null;
+  /** Agreed on this device, not yet recorded in the account (saved in the background; see acceptTerms). */
+  termsPending?: string;
 }
 
 /** Where a sign-in stands between the email and the code. Kept only in memory. */
@@ -64,11 +66,22 @@ function saveSession(s: Session | null) {
 
 export function signOut() { saveSession(null); }
 
+/**
+ * A refresh already under way. Sync, the Store and the Terms all ask for a token when the game starts; they share one
+ * refresh instead of each starting their own (three at once made the Terms wait half a minute on a slow service).
+ */
+let refreshing: Promise<string | null> | null = null;
+
 /** A Via Mochi token for our APIs, refreshed quietly when it's about to expire. Null when signed out. */
 export async function token(): Promise<string | null> {
   const s = session();
   if (!s) return null;
   if (s.expires - Date.now() > 60_000) return s.token;
+  refreshing ??= refresh(s).finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function refresh(s: Session): Promise<string | null> {
   try {
     const entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: s.refreshToken, scope: SCOPE });
     return (await finish(entra, s.email)).token;
@@ -294,10 +307,28 @@ export async function sendSupport(message: string, email: string): Promise<void>
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */
 export function needsTerms(): boolean {
   const s = session();
-  return !!s && s.terms !== TERMS_VERSION;
+  return !!s && s.terms !== TERMS_VERSION && s.termsPending !== TERMS_VERSION;
 }
 
-/** The player agreed to the current Terms of Use and Privacy Policy: recorded in their account. */
+/**
+ * The player agreed to the current Terms of Use and Privacy Policy. The game carries on at once: the agreement is kept
+ * on this device and recorded in the account in the background, tried again at each start until it's saved
+ * (saveAgreedTerms). A slow or restarting service never holds the player at the dialog.
+ */
+export function agreeToTerms(): void {
+  const s = session();
+  if (!s) return;
+  saveSession({ ...s, termsPending: TERMS_VERSION });
+  void saveAgreedTerms();
+}
+
+/** Record an agreement made on this device in the account, if one is waiting. Quiet: it tries again next time. */
+export async function saveAgreedTerms(): Promise<void> {
+  if (session()?.termsPending !== TERMS_VERSION) return;
+  try { await acceptTerms(); } catch { /* next start */ }
+}
+
+/** Record the agreement in the account now (a new account, at sign-up; and saveAgreedTerms). */
 export async function acceptTerms(): Promise<void> {
   const t = await token();
   if (!t) throw noToken();
@@ -307,7 +338,7 @@ export async function acceptTerms(): Promise<void> {
   });
   if (!r.ok) throw new AuthError('terms', 'Couldn’t save that. Please try again.');
   const s = session();
-  if (s) saveSession({ ...s, terms: TERMS_VERSION });
+  if (s) saveSession({ ...s, terms: TERMS_VERSION, termsPending: undefined });
 }
 
 export async function chooseAvatar(id: string): Promise<void> {

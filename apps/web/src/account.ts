@@ -10,7 +10,7 @@
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, acceptTerms, accountExists, needsTerms, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  AuthError, agreeToTerms, accountExists, needsTerms, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
@@ -677,13 +677,17 @@ export async function accountClick(host: Host, action: string) {
         throw e;
       }
       // A new account ticked the Terms before its code; an existing one may not have agreed to these Terms yet.
-      if (pending?.flow === 'signUp') await acceptTerms().catch(() => { /* asked again at the next start */ });
+      if (pending?.flow === 'signUp') agreeToTerms();   // saved in the background, not waited for
       step = needsTerms() ? 'terms' : 'welcome';
       startSync(host);
     });
   } else if (action === 'terms') {
     if (!agreed) { error = 'Please tick the box to agree, or sign out.'; host.render(); return; }
-    await work(host, async () => { await acceptTerms(); step = pending ? 'welcome' : 'email'; if (!pending) open = false; });
+    // No waiting on the service: the agreement is kept here and saved in the background (auth.ts, agreeToTerms).
+    agreeToTerms();
+    step = pending ? 'welcome' : 'email';
+    if (!pending) open = false;
+    host.render();
   } else if (action === 'termsno') {
     await signOutAndForget();
     open = false; then = null; step = 'email'; host.render();

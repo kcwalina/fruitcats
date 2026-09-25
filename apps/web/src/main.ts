@@ -764,16 +764,14 @@ function savedGameLabel(): string | null {
   return saved ? `Round ${saved.round} · <span class="nowrap">${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}</span>` : null;
 }
 
-/** The Friend tile's line: a game to rejoin, challenges waiting, or just "Online". */
+/** The Friend tile's line: a game to go back to, a friend who wants to play, or just "Online". */
 function friendTileLine(): { line: string; badge: number; waiting: boolean } {
   const n = live.incoming.length;
   if (!live.open) return { line: '<span class="mode-sub">Paused for now</span>', badge: 0, waiting: false };
   if (live.waiting) return { line: `<span class="mode-sub continue-line">In line · ${live.waiting.position}</span>`, badge: 0, waiting: true };
-  if ((ol && !ol.end) || live.match) {
-    const who = ol ? ` · ${esc(them().name)}` : '';
-    return { line: `<span class="mode-sub continue-line">Rejoin${who}</span>`, badge: n, waiting: true };
-  }
-  if (n) return { line: `<span class="mode-sub continue-line">${n} challenge${n > 1 ? 's' : ''} waiting</span>`, badge: n, waiting: true };
+  // Short, plain words: the line must fit under the tile on the narrowest phone.
+  if ((ol && !ol.end) || live.match) return { line: '<span class="mode-sub continue-line">Back to the game</span>', badge: n, waiting: true };
+  if (n) return { line: '<span class="mode-sub continue-line">Join the game</span>', badge: n, waiting: true };
   return { line: '<span class="mode-sub">Online</span>', badge: 0, waiting: false };
 }
 

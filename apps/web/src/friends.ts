@@ -141,7 +141,7 @@ export function renderFriends(): string {
     : view.kind === 'waiting' ? renderWaiting(view.friend, view.since)
     : view.kind === 'accept' ? renderAccept(view.id)
     : renderList();
-  const title = view.kind === 'setup' ? `Play with ${esc(nameOf(view.friend))}` : view.kind === 'accept' ? 'A challenge' : 'Play with a friend';
+  const title = view.kind === 'setup' ? `Play with ${esc(nameOf(view.friend))}` : view.kind === 'accept' ? acceptTitle(view.id) : 'Play with a friend';
   const back = view.kind === 'list' ? backButton() : backButton('pf:back', 'Back');
   // Only a state the player has to act on (or wait out) replaces the screen. Connecting doesn't: the list shows at once.
   return `
@@ -186,11 +186,8 @@ function renderList(): string {
   const incoming = live.incoming.map((c) => `
     <li class="pf-challenge">
       ${pawtrait(c.from.avatar, 'pf-face')}
-      <span class="pf-who"><b>${esc(c.from.name)} wants to play</b><small>${esc(challengeLine(c.options, c.lives))}</small></span>
-      <span class="pf-challenge-buttons">
-        <button class="primary" data-click="pf:answer:${c.id}">Pick a deck</button>
-        <button data-click="pf:decline:${c.id}">Not now</button>
-      </span>
+      <span class="pf-who"><b>${esc(c.from.name)} wants to play</b>${challengeLine(c.options, c.lives)}</span>
+      <button class="pf-play pf-join" data-click="pf:answer:${c.id}">Join</button>
     </li>`).join('');
   const friendRow = (r: Row) => {
     const can = r.status === 'online' && live.connected;
@@ -251,17 +248,18 @@ function renderList(): string {
   return `
   <div class="setup-body pf-body">
     ${rejoin}
-    ${incoming ? `<section class="pf-section"><h3>Challenges for you</h3><ul class="pf-list">${incoming}</ul></section>` : ''}
+    ${incoming ? `<section class="pf-section"><h3>Friends who want to play</h3><ul class="pf-list">${incoming}</ul></section>` : ''}
     ${card}
     <p class="pf-note" role="status">${esc(note)}</p>
   </div>`;
 }
 
 function challengeLine(o: ChallengeOptions, lives: number): string {
-  const parts = [o.teaching ? 'Teaching game' : PACES[o.pace].label];
+  // Only what changes the game for the friend joining. The pace isn't: it was chosen, it needn't be repeated.
+  const parts = o.teaching ? ['Teaching game'] : [];
   if (o.startersOnly) parts.push('Starter decks');
   if (lives < 9) parts.push(`they start with ${lives} Lives`);
-  return parts.join(' · ');
+  return parts.length ? `<small>${esc(parts.join(' · '))}</small>` : '';
 }
 
 function livesStepper(): string {
@@ -295,7 +293,7 @@ function renderSetup(friend: string): string {
       ${livesStepper()}
     </section>
     <div class="setup-footer">
-      <button class="play-button" data-click="pf:challenge" ${deck && live.connected && !busy ? '' : 'disabled'}>Challenge ${esc(nameOf(friend))}</button>
+      <button class="play-button" data-click="pf:challenge" ${deck && live.connected && !busy ? '' : 'disabled'}>Ask ${esc(nameOf(friend))} to play</button>
       <p class="pf-note" role="status">${esc(note)}</p>
     </div>
   </div>`;
@@ -318,21 +316,24 @@ function renderWaiting(friend: string, since: number): string {
   </div>`;
 }
 
+/** Joining a friend's game: "Play with Sam", like the screen they asked from. */
+function acceptTitle(id: string): string {
+  const c = live.incoming.find((x) => x.id === id);
+  return c ? `Play with ${esc(c.from.name)}` : 'Play with a friend';
+}
+
 function renderAccept(id: string): string {
   const c = live.incoming.find((x) => x.id === id);
-  if (!c) return `<div class="setup-body pf-body"><p class="pf-note">That challenge is no longer open.</p><button data-click="pf:back">Back</button></div>`;
+  if (!c) return `<div class="setup-body pf-body"><p class="pf-note">That game isn’t open any more.</p><button data-click="pf:back">Back</button></div>`;
   const deck = host!.chosenDeck(c.options.startersOnly);
   return `
   <div class="setup-body pf-body pf-setup">
-    <div class="pf-from">${pawtrait(c.from.avatar, 'pf-face')}<span class="pf-who"><b>${esc(c.from.name)} wants to play</b><small>${esc(challengeLine(c.options, c.lives))}</small></span></div>
-    ${!host!.hasPlayed() && !c.options.teaching ? `<p class="pf-tip">New to Fruitcats? Say <b>Not now</b> and ask ${esc(c.from.name)} for a <b>Teaching game</b>: no timer, hints, and take-backs.</p>` : ''}
+    <div class="pf-from">${pawtrait(c.from.avatar, 'pf-face')}<span class="pf-who"><b>${esc(c.from.name)} wants to play</b>${challengeLine(c.options, c.lives)}</span></div>
+    ${!host!.hasPlayed() && !c.options.teaching ? `<p class="pf-tip">New to Fruitcats? Ask ${esc(c.from.name)} for a <b>Teaching game</b> instead: no timer, hints, and take-backs.</p>` : ''}
     ${host!.deckPicker(c.options.startersOnly)}
     <section class="pf-options">${livesStepper()}</section>
     <div class="setup-footer">
-      <div class="resume-buttons">
-        <button class="play-button twin" data-click="pf:decline:${c.id}"><span class="twin-name">Not now</span></button>
-        <button class="play-button twin" data-click="pf:accept:${c.id}" ${deck && !busy ? '' : 'disabled'}><span class="twin-name">Play</span></button>
-      </div>
+      <button class="play-button" data-click="pf:accept:${c.id}" ${deck && !busy ? '' : 'disabled'}>Play</button>
       <p class="pf-note" role="status">${esc(note)}</p>
     </div>
   </div>`;
@@ -408,9 +409,8 @@ export function renderChallengeBanner(onFriendsScreen: boolean, inOnlineGame: bo
   if (!c || onFriendsScreen || inOnlineGame) return '';
   return `<div class="pf-banner" role="status">
     ${pawtrait(c.from.avatar, 'pf-face')}
-    <span class="pf-who"><b>${esc(c.from.name)} wants to play</b><small>${esc(challengeLine(c.options, c.lives))}</small></span>
-    <button class="primary" data-click="pf:see:${c.id}">See</button>
-    <button class="icon-button" data-click="pf:decline:${c.id}" aria-label="Not now" title="Not now">×</button>
+    <span class="pf-who"><b>${esc(c.from.name)} wants to play</b>${challengeLine(c.options, c.lives)}</span>
+    <button class="primary" data-click="pf:see:${c.id}">Join</button>
   </div>`;
 }
 
@@ -549,7 +549,7 @@ onLive((msg) => {
         view = { kind: 'list' };
       }
       if (view.kind === 'accept' && view.id === msg.id && msg.why !== 'started') {
-        note = msg.why === 'cancelled' ? 'They withdrew the challenge.' : 'That challenge is no longer open.';
+        note = msg.why === 'cancelled' ? 'They cancelled the game.' : 'That game isn’t open any more.';
         view = { kind: 'list' };
       }
       return;
@@ -644,11 +644,6 @@ export function friendsClick(action: string, h: FriendsHost): void {
       view = view.kind === 'waiting' ? { kind: 'setup', friend: view.friend } : { kind: 'list' };
       break;
     case 'see': case 'answer': view = { kind: 'accept', id: arg }; note = ''; myLives = 9; break;
-    case 'decline':
-      send({ t: 'decline', id: arg });
-      live.incoming = live.incoming.filter((c) => c.id !== arg);
-      if (view.kind === 'accept') view = { kind: 'list' };
-      break;
     case 'accept': {
       const c = live.incoming.find((x) => x.id === arg);
       const deck = c ? h.chosenDeck(c.options.startersOnly) : null;

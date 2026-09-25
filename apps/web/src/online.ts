@@ -7,7 +7,7 @@
 
 import { CARDS, cardName, other, type Action, type GameState, type PlayerId, type PlayerView } from '@fruitcats/engine';
 import {
-  EMOTES, PACES,
+  EMOTES,
   type ClockView, type Emote, type MatchEnd, type MatchInfo, type ServerMessage,
 } from '@fruitcats/match';
 import { pawtrait } from './account';
@@ -302,7 +302,7 @@ export function renderVersus(s: PlayerView): string {
   return `<div class="overlay versus" data-click="ol:versus">
     <div class="vs-card">
       <div class="vs-sides">${side(mySeat())}<span class="vs-word">vs</span>${side(theirSeat())}</div>
-      <p>${first} the Yarn Ball first · ${r.teaching ? 'Teaching game' : esc(PACES[ol.info.options?.pace ?? 'relaxed'].label)}</p>
+      <p>${first} the Yarn Ball first${r.teaching ? ' · Teaching game' : ''}</p>
     </div>
   </div>`;
 }

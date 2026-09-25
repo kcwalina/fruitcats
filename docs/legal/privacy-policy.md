@@ -6,7 +6,7 @@
 
 **Version:** 2026-09-draft-1. **Effective:** [date of publication].
 
-This policy explains what information **[Krzysztof Cwalina]**, doing business as **Via Mochi** ("we", "us"), collects
+This policy explains what information **Via Mochi** (viamochi.com) ("we", "us"), collects
 when you play Fruitcats or use a Via Mochi account, why, who else handles it, how long we keep it, and your choices.
 It goes with our [Terms of Use](terms-of-use.md).
 
@@ -51,7 +51,7 @@ type as a deck name in our logs.
 - To keep the Service safe: preventing abuse, fraud and account takeover.
 - To fix problems and improve the game, using technical logs and totals such as "games played per day".
 - To contact you about your account (sign-in codes, important changes to these policies or the Service). We don't send
-  marketing emails unless you choose to receive them **[no marketing at launch]**.
+  marketing emails unless you choose to receive them.
 
 **Legal bases (for players in the EU and UK):** performing our contract with you (running your account and the game),
 our legitimate interests (security, fixing bugs, business records), and legal obligations (tax and accounting records).
@@ -91,7 +91,7 @@ Sellers keep their own records under their policies.
 - **Correct your information:** change your display name and Pawtrait in the game. (Your email can't be changed: it is
   your account.)
 - **Ask us anything, or exercise your rights** (access, deletion, correction, objection, portability, and for EU/UK
-  players, complaining to your data protection authority): email **[support@viamochi.com]**.
+  players, complaining to your data protection authority): send us a message with **Contact us** in the game (section 11).
 - **California residents:** you have the right to know, delete and correct, and to opt out of sale or sharing. We don't
   sell or share personal information. We won't treat you differently for using these rights.
 
@@ -99,7 +99,8 @@ Sellers keep their own records under their policies.
 
 - **Accounts are for ages 13 and up.** We ask for your birth year when you create an account and don't create one for
   anyone younger. Solo play doesn't need an account.
-- If we learn we have an account for a child under 13, we delete it. Parents can contact us at **[support@viamochi.com]**.
+- If we learn we have an account for a child under 13, we delete it. Parents can reach us with **Contact us** in the game (section 11),
+  without an account.
 - Players under 18 (or the age of majority where they live) need a parent's permission to create an account, and a
   parent's approval before buying anything from a Seller.
 
@@ -129,15 +130,22 @@ the top show which one applies.
 
 ## 11. Contact
 
-**[Krzysztof Cwalina, Via Mochi]**, **[mailing address]**, **[support@viamochi.com]**.
+**To reach us, use Contact us in the game:** open Settings and choose **Contact us** (or, in the sign-in window,
+**Trouble signing in?**). You don't need an account, and we answer by email. If you don't have the game, open
+**fruitcats.viamochi.com** in any web browser: it's free, with nothing to download, and Contact us is there too.
 
 ---
 
 ### Notes for the lawyer review (remove before publishing)
 
+- The documents name the controller only as "Via Mochi (viamochi.com)", not the owner personally, at the owner's
+  wish, with no mailing address (the contact is Contact us on viamochi.com). Confirm that meets GDPR Art. 13's
+  requirement to give the controller's identity and contact details.
 - Confirm the EU/UK transfer mechanism (Microsoft's DPA and SCCs) and whether an EU/UK representative is needed.
 - COPPA: the 13+ age gate via birth year; the under-18 parental-permission wording.
 - CCPA/CPRA thresholds likely don't apply at launch, but the wording is harmless; check state laws (e.g. Washington's My
   Health My Data Act doesn't apply: no health data).
 - Purchase records kept indefinitely in anonymised form: confirm this is acceptable under GDPR's storage limitation.
-- Marketing emails: none at launch; add consent wording if that changes.
+- Marketing emails: none at launch, but the owner wants them later. Then: opt-in (not pre-ticked) with a Settings
+  switch, an unsubscribe link, and a separate sending domain. CAN-SPAM wants a postal address in each marketing email,
+  and the owner prefers not to publish one: is a mailbox-service address or PO box enough?

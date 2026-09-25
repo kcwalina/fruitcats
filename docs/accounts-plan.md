@@ -19,8 +19,9 @@ paperwork").
 - **Move the `viamochi.com` DNS zone into ViaMochi Production** (Stage 2 in [accounts.md](accounts.md#dns-in-two-stages)):
   copy every record, switch the nameservers at the registrar, delete the old zone. After this, the Visual Studio
   subscription can't affect Fruitcats.
-- **Privacy Policy and Terms:** replace the `[support@viamochi.com]` placeholder with "Contact us" in the game, fill in
-  the other placeholders (mailing address), and have a lawyer review both.
+- **Privacy Policy and Terms:** a lawyer review of both. The placeholders are filled (2026-09-24): every contact
+  route is Contact us (on viamochi.com, no account needed); the documents name "Via Mochi (viamochi.com)", with no
+  personal name and no mailing address; no marketing emails at launch. What's left in brackets is for the lawyer.
 - **Higher email sending limit:** an Azure support request for the `mail.viamochi.com` domain, before sign-up opens
   to everyone.
 

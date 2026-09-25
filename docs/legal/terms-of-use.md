@@ -7,8 +7,8 @@
 
 **Version:** 2026-09-draft-1. **Effective:** [date of publication].
 
-These Terms of Use ("Terms") are an agreement between you and **[Krzysztof Cwalina]**, an individual doing business
-as **Via Mochi** ("Via Mochi", "we", "us"), the creator and licensor of Fruitcats. They cover the Fruitcats game on
+These Terms of Use ("Terms") are an agreement between you and **Via Mochi** (viamochi.com) ("Via Mochi", "we",
+"us"), the creator and licensor of Fruitcats. They cover the Fruitcats game on
 every platform (web, iPhone, iPad, Android, Steam), Via Mochi accounts, and the use of anything you obtain in
 Fruitcats (together, the "Service").
 
@@ -38,8 +38,8 @@ a waiver of class actions, with a way to opt out.
   anyone who can read it can sign in to your account.
 - **One person per account.** Don't share, sell or transfer your account, and don't use someone else's.
 - **Give true information** (email, birth year). A display name must not impersonate anyone or be offensive.
-- **You're responsible for what happens in your account.** Tell us at **[support@viamochi.com]** if you think someone
-  else is using it.
+- **You're responsible for what happens in your account.** Tell us with **Contact us** in the game (section 19) if you think
+  someone else is using it.
 - **You can delete your account at any time** from the Account screen in the game. Deletion takes effect after a
   30-day grace period, during which you can change your mind by signing in again. After that, your account, your
   collection and your licenses to Digital Items end and can't be restored. Some records are kept as the Privacy
@@ -186,16 +186,16 @@ negligence, or fraud.
 
 **[To be confirmed with a lawyer; typical US terms for games, with a consumer-friendly opt-out.]**
 
-- **Talk to us first.** Most problems are solved quickly by email at **[support@viamochi.com]**. Before starting any
-  formal claim, you agree to give us 60 days to try to resolve it informally, and we'll do the same.
+- **Talk to us first.** Most problems are solved quickly: send us a message with **Contact us** in the game (section 19),
+  and we'll answer by email. Before starting any formal claim, you agree to give us 60 days to try to resolve it informally, and we'll do the same.
 - **Arbitration.** If we can't resolve it, disputes will be settled by **binding individual arbitration** administered
   by **[the American Arbitration Association under its Consumer Arbitration Rules]**, except that either of us may
   bring an individual claim in small-claims court, and either of us may ask a court to stop infringement of
   intellectual property.
 - **No class actions.** Claims may only be brought individually, not as a plaintiff or class member in any class,
   collective or representative proceeding.
-- **Opt-out.** You can opt out of this section within **30 days** of first accepting these Terms by emailing
-  **[support@viamochi.com]** with your account email and a statement that you opt out of arbitration.
+- **Opt-out.** You can opt out of this section within **30 days** of first accepting these Terms by sending us a
+  message with **Contact us** in the game (section 19) that gives your account email and says you opt out of arbitration.
 - **If you live in the EU, UK or another place** where the law doesn't allow such agreements for consumers, this
   section doesn't apply to you, and you can bring claims in the courts where you live.
 
@@ -223,7 +223,8 @@ Google Play's and Steam's own terms also apply to your use of those stores.
 ## 17. Copyright complaints
 
 If you believe something in the Service infringes your copyright, send a notice under the US Digital Millennium
-Copyright Act to **[support@viamochi.com]** **[and register a DMCA agent with the US Copyright Office before launch]**.
+Copyright Act with **Contact us** in the game, or at **fruitcats.viamochi.com** if you don't have it
+(section 19).
 
 ## 18. General
 
@@ -235,7 +236,9 @@ Copyright Act to **[support@viamochi.com]** **[and register a DMCA agent with th
 
 ## 19. Contact
 
-**[Krzysztof Cwalina, Via Mochi]**, **[mailing address, e.g. a mailbox-service address]**, **[support@viamochi.com]**.
+**To reach us, use Contact us in the game:** open Settings and choose **Contact us** (or, in the sign-in window,
+**Trouble signing in?**). You don't need an account, and we answer by email. If you don't have the game, open
+**fruitcats.viamochi.com** in any web browser: it's free, with nothing to download, and Contact us is there too.
 
 ---
 
@@ -243,7 +246,10 @@ Copyright Act to **[support@viamochi.com]** **[and register a DMCA agent with th
 
 - The owner is an individual (no company), as decided in the store plan, and is **never the seller**: the app stores
   and a Merchant of Record (Paddle, or Lemon Squeezy) sell every purchase. Confirm the wording of section 5 against
-  the Merchant of Record's reseller terms, the name shown as licensor, and whether to register a DBA ("Via Mochi").
+  the Merchant of Record's reseller terms, and whether to register a DBA ("Via Mochi"). The owner doesn't want their
+  personal name in the documents: they name the licensor only as "Via Mochi (viamochi.com)". Confirm that's enough
+  to identify the contracting party, and how it fits the rules that make a trader's name public (the App Store's EU
+  trader details, the DMCA agent directory).
   If Stripe is considered: plain Stripe is a payment processor, which would make the owner the seller, so only a
   Stripe merchant-of-record product would fit.
 - Check the arbitration clause, opt-out, and small-claims carve-out for enforceability; whether to name AAA or JAMS.
@@ -256,4 +262,14 @@ Copyright Act to **[support@viamochi.com]** **[and register a DMCA agent with th
   to the consumer, with clear notice, and, if a change hurts the consumer more than a little, with a right to end the
   contract. The balance-and-art wording here may need that notice and exit added for EU/UK players.
 - Liability cap amount; the governing law and venue.
-- A support address and a physical/mailing address (also needed for the App Store's EU trader rules).
+- DMCA: section 17 points copyright notices to Contact us only. Is registering a DMCA agent with the US Copyright
+  Office needed (players can only enter display names and deck names today; photo avatars may come later)? If so,
+  can the agent be a title ("Copyright Agent, Via Mochi"), and can the listing point to Contact us, or does it need
+  an email address (for example a forwarding-only copyright@viamochi.com, since there is no mailbox)?
+- There is no support mailbox: every contact route points to **Contact us** in the game (a form, answered by
+  email, open to anyone at fruitcats.viamochi.com without an account). Confirm this is enough for the arbitration
+  opt-out, DMCA notices (the DMCA agent registration asks for an email address), and the EU/UK and app-store contact
+  rules.
+- No mailing address in the documents, at the owner's choice (the contact is Contact us on viamochi.com). Confirm
+  that's acceptable; the App Store's EU trader rules may still need one on the App Store listing, or EU storefronts
+  can be left out.

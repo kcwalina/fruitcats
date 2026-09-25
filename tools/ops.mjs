@@ -7,12 +7,16 @@
 //   node tools/ops.mjs events --user <account id> --since 7d     one player's timeline
 //   node tools/ops.mjs events --grep code_sent         events whose line contains the text
 //   node tools/ops.mjs tail                            follow new events as they arrive (Ctrl+C to stop)
+//   node tools/ops.mjs snapshot [--out file]           the Accounts tab of the playtest dashboard: health, totals and
+//                                                      14 days of sign-ins, syncs and errors, as JSON (see below)
 //
 // It signs in as Claude's agent identity (its own CLI folder, ~/.azure-viamochi-agent), which may read the logs but
 // not change them. Your own `az` login isn't used.
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { AzureCliCredential } from '@azure/identity';
 import { BlobServiceClient } from '@azure/storage-blob';
 
@@ -97,6 +101,106 @@ if (command === 'events') {
     await new Promise((r) => setTimeout(r, 10_000));
     (await read(Date.now() - 2 * 3_600_000, { onlyNew: true })).forEach(print);
   }
+} else if (command === 'snapshot') {
+  const out = opt('out', fileURLToPath(new URL('../playtest/.state/ops.json', import.meta.url)));
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, JSON.stringify(await snapshot(), null, 1));
+  console.log(`Wrote ${out}`);
 } else {
-  console.log('Usage: node tools/ops.mjs events|tail [--since 1h] [--service name] [--category ops|security] [--level error] [--user id] [--grep text]');
+  console.log('Usage: node tools/ops.mjs events|tail|snapshot [--since 1h] [--service name] [--category ops|security] [--level error] [--user id] [--grep text]');
+}
+
+// ── snapshot: the Accounts tab ───────────────────────────────────────────────────────────────────────────────────────
+//
+// The dashboard relay (playtest/dashboard/RELAY.md) runs this every 10 minutes and uploads the file as ops/accounts.
+// Finished hours of logs don't change, so each hour's events are read once and kept in playtest/.state/ops-cache.json
+// (account ids only, like the logs). Totals come from the stats files the services write every 15 minutes.
+
+async function snapshot() {
+  const DAYS = 14;
+  const now = Date.now();
+  const cacheFile = fileURLToPath(new URL('../playtest/.state/ops-cache.json', import.meta.url));
+  let cache = {};
+  try { cache = JSON.parse(readFileSync(cacheFile, 'utf8')); } catch { /* first run */ }
+  const thisHour = new Date(now).toISOString().slice(0, 13).replace(/[-T]/g, '/');
+  const from = now - DAYS * 86_400_000;
+  const keep = (e) => ({ t: e.time, s: e.service, e: e.event ?? '', l: e.level ?? '', u: e.userId ?? null,
+    ...(e.level === 'error' || e.level === 'Error'
+      ? { m: String(e.message ?? e.Error ?? '').replace(e.event ?? '', '').trim().slice(0, 200) } : {}) });
+  const events = [];
+  for (const src of SOURCES) {
+    const blobs = new BlobServiceClient(`https://${src.account}.blob.core.windows.net`, credential);
+    for (const [cat, [container, prefix]] of Object.entries(CATEGORIES)) {
+      const box = blobs.getContainerClient(container);
+      for (const hour of hours(from)) {
+        const key = `${src.service}|${cat}|${hour}`;
+        if (hour !== thisHour && cache[key]) { events.push(...cache[key]); continue; }
+        const got = [];
+        for await (const item of box.listBlobsFlat({ prefix: `${prefix}/${src.service}/${hour}` })) {
+          const body = await box.getBlobClient(item.name).downloadToBuffer();
+          for (const line of body.toString('utf8').split('\n')) {
+            if (!line.trim()) continue;
+            try { got.push(keep(JSON.parse(line))); } catch { /* a torn line */ }
+          }
+        }
+        if (hour !== thisHour) cache[key] = got;
+        events.push(...got);
+      }
+    }
+  }
+  for (const key of Object.keys(cache)) {
+    const hour = key.split('|')[2];
+    if (Date.parse(`${hour.replace(/\//g, '-').replace(/-(\d\d)$/, 'T$1')}:00:00Z`) < from - 86_400_000) delete cache[key];
+  }
+  writeFileSync(cacheFile, JSON.stringify(cache));
+
+  const stat = async (account, name) => {
+    try {
+      const blob = new BlobServiceClient(`https://${account}.blob.core.windows.net`, credential)
+        .getContainerClient('logs').getBlobClient(`stats/${name}.json`);
+      return JSON.parse((await blob.downloadToBuffer()).toString('utf8'));
+    } catch { return null; }
+  };
+  const health = async (service, url) => {
+    const started = Date.now();
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+      return { service, ok: r.ok, ms: Date.now() - started };
+    } catch { return { service, ok: false, ms: null }; }
+  };
+
+  const id = await stat('viamochiidstore', 'viamochi-id');
+  const api = await stat('fruitcatsdata', 'fruitcats-api');
+  const isError = (e) => e.l === 'error' || e.l === 'Error';
+  const days = [];
+  for (let d = DAYS - 1; d >= 0; d--) {
+    const day = new Date(now - d * 86_400_000).toISOString().slice(0, 10);
+    const on = events.filter((e) => e.t?.startsWith(day));
+    const users = (name) => new Set(on.filter((e) => e.e === name && e.u).map((e) => e.u)).size;
+    days.push({
+      day,
+      newAccounts: id?.accounts?.createdPerDay?.[day] ?? 0,
+      signins: on.filter((e) => e.e === 'signin.completed').length,
+      signinUsers: users('signin.completed'),
+      codes: on.filter((e) => e.e === 'signin.code_sent').length,
+      syncs: on.filter((e) => e.e === 'decks.synced').length,
+      syncUsers: users('decks.synced'),
+      support: on.filter((e) => e.e === 'support.message_sent').length,
+      errors: on.filter(isError).length,
+    });
+  }
+  const week = events.filter((e) => Date.parse(e.t) >= now - 7 * 86_400_000);
+  const active = new Set(week.filter((e) => (e.e === 'signin.completed' || e.e === 'decks.synced') && e.u).map((e) => e.u));
+  const recentErrors = events.filter((e) => isError(e) && Date.parse(e.t) >= now - 86_400_000)
+    .sort((a, b) => b.t.localeCompare(a.t)).slice(0, 20)
+    .map((e) => ({ time: e.t, service: e.s, event: e.e, message: e.m ?? '' }));
+  return {
+    updatedAt: new Date(now).toISOString(),
+    health: await Promise.all([health('viamochi-id', 'https://id.viamochi.com/healthz'), health('fruitcats-api', 'https://api.fruitcats.viamochi.com/healthz')]),
+    accounts: id?.accounts ?? null, invites: id?.invites ?? [], friendships: id?.friendships ?? null, statsAt: { id: id?.time ?? null, api: api?.time ?? null },
+    decks: api ? { decks: api.decks, accountsWithDecks: api.accountsWithDecks, showcases: api.showcases } : null,
+    activeLast7Days: active.size,
+    days,
+    recentErrors,
+  };
 }

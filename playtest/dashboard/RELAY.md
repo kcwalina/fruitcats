@@ -20,6 +20,10 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
    marked, so the next pass updates them.
    **Clean-up:** `pending` lists requests older than 14 days that aren't queued in
    `playtest/.state/expired-requests.json`; `delete` each from `requests` (one `batch`). Runs are never deleted.
+2b. **Accounts tab.** `node tools/ops.mjs snapshot` (it reads the Via Mochi services' logs and totals as Claude's
+   agent identity, about a minute the first time, seconds after that), then write `playtest/.state/ops.json` with
+   ArtifactData `set` into collection `ops`, document id `accounts` (`get` it first and pass `if_version`, as for
+   `meta/dashboard`). If the snapshot fails, skip this step and carry on: the tab shows how old its data is.
 3. **Requests to PC2024.** ArtifactData `query` collection `requests` where `status == "queued"`,
    ordered by `createdAt` ascending. Take only the oldest one (PC2024 plays one run at a time):
    - **A `deck-build` request runs here on the laptop, not on PC2024**: it uses Kimi K3 on Fireworks, whose key

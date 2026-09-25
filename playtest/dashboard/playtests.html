@@ -55,6 +55,9 @@ header p { margin: 4px 0 0; color: var(--muted); }
 .pill.abandoned, .pill.queued, .pill.busy { background: var(--sunk); color: var(--muted); }
 .pill.started { background: var(--accent-soft); color: var(--accent); }
 .pill.failed { background: var(--block-soft); color: var(--block); }
+.pill.cancelled, .pill.unknown { background: var(--sunk); color: var(--muted); }
+.runfilter { width: 100%; margin: 10px 0 2px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--ground); color: var(--ink); }
+.run .name { font-weight: 800; overflow-wrap: anywhere; }
 .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
 .status { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr); gap: 20px; }
@@ -161,6 +164,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
           </select>
         </div>
         <div id="opts"></div>
+        <div class="field"><label for="runname">Name (optional)</label><input id="runname" type="text" maxlength="60" placeholder="e.g. Five Alarm after the Heat buff" autocomplete="off"></div>
         <button class="go" type="submit">Queue the run</button>
         <div id="formnote" class="note" role="status"></div>
       </form>
@@ -168,7 +172,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
     <div>
       <div class="eyebrow">Requests</div>
       <ul id="requests" class="issues"><li class="note">Loading…</li></ul>
-      <div class="legend">A queued run starts at the relay's next sync, within about 10 minutes, and shows under Runs as soon as it starts. PC2024 plays one run at a time; a request waits while another run is going.</div>
+      <div class="legend">A queued run starts at the relay's next sync, within about 10 minutes, and shows under Runs as soon as it starts. PC2024 plays one run at a time; a request waits while another run is going. Finished requests leave this list after 3 days; their runs stay under Runs, with their names.</div>
     </div>
   </section>
 
@@ -180,6 +184,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
   <section class="main">
     <nav class="panel" aria-label="Runs">
       <div class="eyebrow">Runs</div>
+      <input id="runfilter" class="runfilter" type="search" placeholder="Find a run by name, kind, deck or date" aria-label="Find a run">
       <div id="runs" class="runs"><div class="empty">Loading runs…</div></div>
     </nav>
     <article id="detail" class="panel detail"><div class="empty">Pick a run to read its report.</div></article>
@@ -306,14 +311,22 @@ function renderTrend() {
   $('trend').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Starter deck win rates over time">${band}${grid}${lines}${labels}</svg><div class="legend">${key}</div>`;
 }
 
+// A run's name: the one given when it was started (the relay copies it onto the run), or its request's.
+const requestOf = (r) => requests.find((q) => q.id === r.request || q.run === r.id);
+const runName = (r) => r.name || requestOf(r)?.name || '';
+const runTitle = (r) => runName(r) || KIND[r.kind] || r.kind;
 function renderRuns() {
   if (!runs.length) { $('runs').innerHTML = '<div class="empty">No runs uploaded yet.</div>'; return; }
+  const q = $('runfilter').value.trim().toLowerCase();
+  const shown = q ? runs.filter((r) => [runName(r), KIND[r.kind] ?? r.kind, r.id, dayOf(r.startedAt), requestOf(r)?.label ?? '', r.result]
+    .join(' ').toLowerCase().includes(q)) : runs;
+  if (!shown.length) { $('runs').innerHTML = '<div class="empty">No run matches.</div>'; return; }
   const days = new Map();
-  for (const r of runs) { const d = dayOf(r.startedAt); if (!days.has(d)) days.set(d, []); days.get(d).push(r); }
+  for (const r of shown) { const d = dayOf(r.startedAt); if (!days.has(d)) days.set(d, []); days.get(d).push(r); }
   $('runs').innerHTML = [...days.entries()].map(([day, list]) => `<div class="day"><h3>${esc(day)}</h3>${list.map((r) => `
     <button class="run" data-id="${esc(r.id)}" aria-current="${r.id === selected}">
       <span class="dot ${esc(r.result)}"></span>
-      <span><span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span><br><span class="meta">${r.progress ? progressText(r) : `${r.games ? `${r.games.toLocaleString()} games · ` : ''}${dur(r.durationSec)}${r.problems?.length ? ` · ${r.problems.length} flagged` : ''}`}</span>${r.result === 'running' ? progressBar(r) : ''}</span>
+      <span>${runName(r) ? `<span class="name">${esc(runName(r))}</span><br><span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span>` : `<span class="kind">${esc(KIND[r.kind] ?? r.kind)}</span>`}<br><span class="meta">${r.progress ? progressText(r) : `${r.games ? `${r.games.toLocaleString()} games · ` : ''}${dur(r.durationSec)}${r.problems?.length ? ` · ${r.problems.length} flagged` : ''}`}</span>${r.result === 'running' ? progressBar(r) : ''}</span>
       <span class="time">${esc(timeOf(r.startedAt))}</span>
     </button>`).join('')}</div>`).join('');
 }
@@ -376,20 +389,38 @@ $('runform').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!db) return;
   const { args, label } = buildRequest();
+  const name = $('runname').value.trim().slice(0, 60);
   const id = `req-${Date.now()}`;
   $('formnote').textContent = 'Queuing…';
   try {
-    await db.collection('requests').doc(id).set({ id, command: $('kind').value, args, label, status: 'queued', createdAt: new Date().toISOString() });
-    $('formnote').textContent = `Queued: ${label}.`;
+    await db.collection('requests').doc(id).set({ id, command: $('kind').value, args, label, ...(name ? { name } : {}), status: 'queued', createdAt: new Date().toISOString() });
+    $('formnote').textContent = `Queued: ${name || label}.`;
+    $('runname').value = '';
   } catch (err) {
     $('formnote').textContent = err?.code === 'invalid_argument' ? "Only the dashboard's owner can start runs." : 'The request could not be saved. Try again in a moment.';
   }
 });
+// A request's state comes from its run once there is one: "started" alone would go stale the moment the
+// run finishes. Finished requests drop out after 3 days (the relay deletes them after 14); runs stay.
+const REQUEST_DAYS = 3;
+function requestState(q) {
+  const run = runs.find((r) => r.request === q.id || r.id === q.run);
+  if (q.status === 'queued' || q.status === 'failed') return { run, status: q.status, text: q.status };
+  if (run?.result === 'running') return { run, status: 'running', text: 'running' };
+  if (run?.result === 'abandoned') return { run, status: 'abandoned', text: 'stopped' };
+  if (run) return { run, status: run.result, text: `done · ${run.result}` };
+  const age = Date.now() - when(q.startedAt ?? q.createdAt).getTime();
+  return { run, status: age > 12 * 3600e3 ? 'unknown' : 'started', text: age > 12 * 3600e3 ? 'no run found' : 'started' };
+}
 function renderRequests() {
-  if (!requests.length) { $('requests').innerHTML = '<li class="note">No requests yet.</li>'; return; }
-  $('requests').innerHTML = requests.map((q) => {
-    const run = runs.find((r) => r.request === q.id);
-    return `<li><span class="pill ${esc(q.status)}">${esc(q.status)}</span><span>${esc(q.label)} <span class="times">${esc(timeOf(q.createdAt))}</span>${q.note ? `<br><span class="note">${esc(q.note)}</span>` : ''}${run ? `<br><button class="link" data-run="${esc(run.id)}">See the run</button>` : ''}${q.status === 'queued' ? ` <button class="link" data-cancel="${esc(q.id)}">Cancel</button>` : ''}</span></li>`;
+  const cutoff = Date.now() - REQUEST_DAYS * 86400e3;
+  const shown = requests.map((q) => ({ q, ...requestState(q) }))
+    .filter(({ q, status }) => status === 'queued' || status === 'running' || status === 'started' || when(q.createdAt).getTime() > cutoff);
+  if (!shown.length) { $('requests').innerHTML = `<li class="note">No requests in the last ${REQUEST_DAYS} days.</li>`; return; }
+  $('requests').innerHTML = shown.map(({ q, run, status, text }) => {
+    const note = run && run.result !== 'running' ? '' : q.note;
+    const progress = run?.result === 'running' && run.progress ? progressText(run) : '';
+    return `<li><span class="pill ${esc(status)}">${esc(text)}</span><span>${esc(q.name || q.label)}${q.name ? ` <span class="note">(${esc(q.label)})</span>` : ''} <span class="times">${esc(dayOf(q.createdAt) === dayOf(new Date().toISOString()) ? timeOf(q.createdAt) : `${when(q.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })} ${timeOf(q.createdAt)}`)}</span>${progress ? `<br><span class="note">${esc(progress)}</span>` : note ? `<br><span class="note">${esc(note)}</span>` : ''}${run ? `<br><button class="link" data-run="${esc(run.id)}">See the run</button>` : ''}${q.status === 'queued' ? ` <button class="link" data-cancel="${esc(q.id)}">Cancel</button>` : ''}</span></li>`;
   }).join('');
 }
 $('requests').addEventListener('click', async (e) => {
@@ -412,7 +443,7 @@ function renderDetail() {
   ].filter(Boolean);
   $('detail').innerHTML = `
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-      <h2>${esc(KIND[r.kind] ?? r.kind)}</h2><span class="pill ${esc(r.result)}">${esc(r.result)}</span>
+      <h2>${esc(runTitle(r))}${runName(r) ? ` <span class="note">${esc(KIND[r.kind] ?? r.kind)}</span>` : ''}</h2><span class="pill ${esc(r.result)}">${esc(r.result)}</span>
     </div>
     <div class="facts">${facts.map(([k, v]) => `<span>${esc(k)} <b>${esc(v)}</b></span>`).join('')}</div>
     ${r.progress ? `<div><div class="note">${esc(progressText(r))} · updated ${esc(timeOf(r.progress.updatedAt))}${r.result === 'abandoned' ? ' · the runner stopped before finishing' : ''}</div>${progressBar(r)}</div>` : ''}
@@ -436,6 +467,7 @@ function renderAll() {
 let resizeTimer;
 addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderTrend, 150); });
 
+$('runfilter').addEventListener('input', renderRuns);
 $('runs').addEventListener('click', (e) => {
   const b = e.target.closest('.run');
   if (!b) return;
@@ -468,8 +500,8 @@ $('runs').addEventListener('click', (e) => {
     $('kind').value = kind;
     renderAll();
   }, () => { /* the page keeps the deck keys it has */ });
-  db.collection('requests').orderBy('createdAt', 'desc').limit(12).onSnapshot(
-    (snap) => { requests = snap.docs.map((doc) => doc.data()); renderRequests(); },
+  db.collection('requests').orderBy('createdAt', 'desc').limit(40).onSnapshot(
+    (snap) => { requests = snap.docs.map((doc) => doc.data()); renderRequests(); renderRuns(); renderDetail(); },
     () => { $('requests').innerHTML = '<li class="note">Requests stopped updating. Reload the page to try again.</li>'; },
   );
 })();

@@ -26,7 +26,7 @@ Last updated 2026-09-25.
 
 - **Code:** the account service is the private GitHub repository
   [kcwalina/viamochi-id](https://github.com/kcwalina/viamochi-id) (proprietary, all rights reserved, like this
-  one), checked out at `C:\gitiamochi-id`; deploy with its `deploy.ps1`.
+  one), checked out at `C:/git/viamochi-id`; deploy with its `deploy.ps1`.
 
 - Two-step verification and a passkey on the owner's Microsoft account.
 - Subscription **ViaMochi Production** `32564bc0-941d-4aa9-9b15-5b3a85c57693` (pay-as-you-go), in Default Directory.

@@ -65,8 +65,10 @@ const cardValue = (id: string) => CARD_PRICES[CARDS[id]?.rarity ?? 'Common'];
 // ── The catalog ──────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Everything for sale in these sets (registered with the engine), in their order: each deck, then each card.
- * Starter sets are skipped whatever the list says, and so are tokens.
+ * Everything for sale in these sets (registered with the engine), in their order: each deck, then each single card.
+ * The Store sells decks, and on their own only the cards that come in no deck: a card that's in a deck is had by buying
+ * that deck (the owner's rule, 2026-09-24). Starter sets are skipped whatever the list says, and so are tokens and
+ * exclusive cards.
  */
 export function buildCatalog(sets: string[]): Catalog {
   const onSale = sets.filter((s) => SETS[s] && !isStarterSet(s));
@@ -79,8 +81,9 @@ export function buildCatalog(sets: string[]): Catalog {
         deck: key, name: deck.name, hero: deck.hero, cards: { ...deck.cards }, ...(blurb ? { blurb } : {}),
       };
     }
+    const inDecks = new Set(Object.values(SETS[set].decks ?? {}).flatMap((d) => [d.hero, ...Object.keys(d.cards)]));
     for (const c of SETS[set].cards) {
-      if (!CARDS[c.id] || CARDS[c.id].token || CARDS[c.id].exclusive) continue;
+      if (!CARDS[c.id] || CARDS[c.id].token || CARDS[c.id].exclusive || inDecks.has(c.id)) continue;
       products[cardProduct(c.id)] = { id: cardProduct(c.id), kind: 'card', set, price: CARD_PRICES[c.rarity ?? 'Common'], card: c.id };
     }
   }
@@ -220,41 +223,58 @@ export function priceCart(cart: CartLine[], catalog: Catalog, owned: Owned): Quo
   };
 }
 
-/**
- * Why the Store doesn't sell a card: 'exclusive' (a promo or event card, never sold: players get those another way),
- * 'starter' (everyone has it already) or 'not-yet' (its set isn't in the Store). Null when it's for sale.
- */
-export type NotSold = 'exclusive' | 'starter' | 'not-yet';
-export function whyNotSold(id: string, catalog: Catalog): NotSold | null {
-  if (catalog.products[cardProduct(id)]) return null;
-  if (CARDS[id]?.exclusive) return 'exclusive';
-  return isStarterCard(id) ? 'starter' : 'not-yet';
+/** The Store deck a card comes in, if any. */
+export function deckWith(id: string, catalog: Catalog): DeckProduct | undefined {
+  return Object.values(catalog.products).find((p): p is DeckProduct => p.kind === 'deck' && (p.hero === id || !!p.cards[id]));
 }
 
 /**
- * The cards a deck needs that you don't have, as a cart of singles. Cards the Store doesn't sell (see whyNotSold) are
- * listed apart, with the copies needed. `deals` are Store decks that bring some of those cards for less than the singles
- * would cost, cheapest saving first.
+ * Why the Store doesn't sell a card on its own: 'in-deck' (it comes with a deck: buy the deck), 'exclusive' (a promo or
+ * event card, never sold: players get those another way), 'starter' (everyone has it already) or 'not-yet' (its set
+ * isn't in the Store). Null when it's for sale.
+ */
+export type NotSold = 'in-deck' | 'exclusive' | 'starter' | 'not-yet';
+export function whyNotSold(id: string, catalog: Catalog): NotSold | null {
+  if (catalog.products[cardProduct(id)]) return null;
+  if (CARDS[id]?.exclusive) return 'exclusive';
+  if (isStarterCard(id)) return 'starter';
+  return deckWith(id, catalog) ? 'in-deck' : 'not-yet';
+}
+
+/**
+ * How to get the cards a deck needs that you don't have, as a cart: the Store decks that bring them (the one bringing
+ * the most first, and so on), then the single cards sold on their own. Anything still missing (a card that isn't
+ * sold, or more copies than its Store deck holds) is listed apart, with why.
  */
 export function cartForDeck(deck: DeckList, catalog: Catalog, owned: Owned) {
   const missing = missingForDeck(deck, owned);
-  const lines: CartLine[] = [];
+  const left: Record<string, number> = { ...missing };
+  const decks: { product: string; covers: number }[] = [];
+  const storeDecks = Object.values(catalog.products).filter((p): p is DeckProduct => p.kind === 'deck');
+  for (;;) {
+    let best: DeckProduct | null = null, bestCovers = 0;
+    for (const p of storeDecks) {
+      if (decks.some((d) => d.product === p.id)) continue;
+      const brings = missingForDeck(p, owned);
+      const covers = Object.entries(left).reduce((n, [id, qty]) => n + Math.min(qty, brings[id] ?? 0), 0);
+      if (covers > bestCovers) { best = p; bestCovers = covers; }
+    }
+    if (!best) break;
+    decks.push({ product: best.id, covers: bestCovers });
+    for (const [id, n] of Object.entries(missingForDeck(best, owned))) {
+      if (!left[id]) continue;
+      left[id] -= Math.min(left[id], n);
+      if (!left[id]) delete left[id];
+    }
+  }
+  const lines: CartLine[] = decks.map((d) => ({ product: d.product, qty: 1 }));
   const unavailable: { card: string; qty: number; why: NotSold }[] = [];
-  for (const [id, qty] of Object.entries(missing)) {
+  for (const [id, qty] of Object.entries(left)) {
     const why = whyNotSold(id, catalog);
     if (why) unavailable.push({ card: id, qty, why });
     else lines.push({ product: cardProduct(id), qty });
   }
-  const deals = Object.values(catalog.products).flatMap((p) => {
-    if (p.kind !== 'deck') return [];
-    const brings = missingForDeck(p, owned);
-    const covered = Object.entries(missing).reduce((n, [id, qty]) => n + Math.min(qty, brings[id] ?? 0), 0);
-    const singles = Object.entries(missing).reduce((sum, [id, qty]) =>
-      sum + Math.min(qty, brings[id] ?? 0) * (catalog.products[cardProduct(id)]?.price ?? 0), 0);
-    const price = deckPrice(p, owned);
-    return covered && price < singles ? [{ product: p.id, name: p.name, covered, price, singles }] : [];
-  }).sort((a, b) => (b.singles - b.price) - (a.singles - a.price));
-  return { missing, lines, unavailable, deals };
+  return { missing, lines, decks, unavailable };
 }
 
 /** "$4.99". */

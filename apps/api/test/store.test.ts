@@ -48,7 +48,7 @@ describe('test checkout', () => {
   });
 
   it('refuses an order under the minimum', async () => {
-    const cart = [{ product: cardProduct('HW1-P01'), qty: 1 }];
+    const cart = [{ product: cardProduct('HW1-X01'), qty: 1 }];
     const q = await quote(ALICE, cart);
     const [status, body] = await call(ALICE, 'POST', '/v1/store/test-checkout', { orderId: orderId(), cart, total: q.total });
     expect(status).toBe(400);

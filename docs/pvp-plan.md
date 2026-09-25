@@ -42,11 +42,13 @@ Last updated 2026-09-25.
 ### Play a friend (Home → Friend)
 
 The Friend tile starts a game, like Solo, so the screen it opens asks one thing: **who do you want to play?** Signed
-out, the tile says "Sign in to open". Signed in, its line says "Online", "2 challenges waiting" (with a badge), or
-"Rejoin · Pippin" when a game is still going.
+out, the tile says "Sign in to open". Signed in, its line says "Online", "Join the game" (with a badge) when a friend
+wants to play, or "Back to the game" when a game is still going. The words players see are "play with", "wants to
+play" and "Join", never "challenge"; the line is short enough to fit the tile on the narrowest phone.
 
-1. **Challenges for you**, at the top when there are some: "Sam wants to play", with the pace, and "they start with 7
-   Lives" if Sam gave themselves a handicap. **Pick a deck** or **Not now**.
+1. **Friends who want to play**, at the top when there are some: "Sam wants to play", with "Teaching game" or "they
+   start with 7 Lives" when those apply (not the pace: it's chosen once), and a **Join** pill. There's no Not now:
+   not joining simply lets it expire.
 2. **Your game is still going · Rejoin**, after a reload or on another device.
 3. **Who do you want to play?** Your friends, online first, then in a game, then offline. Each row: Pawtrait with a
    status dot, name, a status line ("Online", "In a game", "Last seen 3 days ago") and your record against them
@@ -55,7 +57,7 @@ out, the tile says "Sign in to open". Signed in, its line says "Online", "2 chal
 4. **+ Add a friend**, the last row of the same list. With no friends yet, it's the only row.
 
 A friend's challenge while you're anywhere else (Home, the Store, a Solo game) shows as a small banner at the top
-within 20 seconds: "Sam wants to play", **See** or ×. It doesn't pause or cover the game.
+within 20 seconds: "Sam wants to play" and **Join**. It doesn't pause or cover the game.
 
 ### When online play is full
 
@@ -97,16 +99,14 @@ Tapping a friend opens the challenge:
 - **Teaching game** (a switch): "For a friend who's new: no timer, hints, take-backs, open hands. It doesn't count."
 - **Pace**, unless it's a teaching game: **Relaxed** (2 minutes a move, the default), **Quick** (45 seconds) or **No
   timer**.
-- **Starter decks only** (a switch): both players play a starter deck, so an experienced player can't bring a tuned
-  one.
 - **Your Lives**: 9, or fewer as a handicap (down to 3).
 
-**Challenge Pippin** leads to the waiting screen: both Pawtraits, "Waiting for Pippin…", a 2-minute ring and
-**Cancel**. If Pippin says Not now: "Pippin can't play right now." If the ring runs out: "No answer from Pippin."
+**Ask Pippin to play** leads to the waiting screen: both Pawtraits, "Waiting for Pippin…", a 2-minute ring and
+**Cancel**. If the ring runs out: "No answer from Pippin."
 
-Answering a challenge shows what it is (pace, teaching, starter decks, their handicap), the deck carousel (starter
-decks only when the challenge says so), **Your Lives**, and **Not now** or **Play**. Someone who has never finished a
-game is told they can ask for a teaching game instead.
+Joining ("Play with Sam") shows whether it's a teaching game and their handicap, the deck carousel, **Your Lives**, and
+**Play**. Someone who has never finished a game is told they can ask for a teaching game instead. (The server still
+understands "starter decks only" and "decline" from older builds of the game; the game no longer offers either.)
 
 ### Versus
 

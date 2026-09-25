@@ -277,7 +277,7 @@ function livesStepper(): string {
 function renderSetup(friend: string): string {
   const pace = (p: Pace) => `<button class="${options.pace === p ? 'chosen' : ''}" data-click="pf:pace:${p}" aria-pressed="${options.pace === p}">${PACES[p].label}</button>`;
   const deck = host!.chosenDeck(options.startersOnly);
-  const toggle = (key: 'teaching' | 'startersOnly', name: string, small: string) => `
+  const toggle = (key: 'teaching', name: string, small: string) => `
     <label class="pf-option pf-toggle">
       <span class="pf-option-name">${name}<small>${small}</small></span>
       <input type="checkbox" data-pf="${key}" ${options[key] ? 'checked' : ''}>
@@ -289,7 +289,6 @@ function renderSetup(friend: string): string {
       ${toggle('teaching', 'Teaching game', `For a friend who’s new: no timer, hints, take-backs and open hands. It won’t count toward your record.`)}
       ${options.teaching ? '' : `<div class="pf-option"><span class="pf-option-name">Pace<small>${PACES[options.pace].blurb}</small></span>
         <div class="segmented">${pace('relaxed')}${pace('quick')}${pace('untimed')}</div></div>`}
-      ${toggle('startersOnly', 'Starter decks only', 'You both play a starter deck.')}
       ${livesStepper()}
     </section>
     <div class="setup-footer">
@@ -600,7 +599,7 @@ export function friendsInput(input: HTMLInputElement) {
     if (raw.length === 6) { const code = codeFromQr(raw); if (code) lookUp(code); }
     return;
   }
-  if (field === 'teaching' || field === 'startersOnly') {
+  if (field === 'teaching') {
     options = { ...options, [field]: input.checked };
     host?.render();
   }

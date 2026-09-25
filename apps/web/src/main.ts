@@ -1361,7 +1361,7 @@ app.addEventListener('input', (event) => {
   const pf = ONLINE ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-pf]:not([type="checkbox"])') : null;
   if (pf) friendsInput(pf);
 });
-// Play a friend's toggles (teaching game, starter decks only) are checkboxes: they report a change, not input.
+// Play with a friend's Teaching game switch is a checkbox: it reports a change, not input.
 app.addEventListener('change', (event) => {
   const pf = ONLINE ? (event.target as HTMLElement).closest<HTMLInputElement>('input[type="checkbox"][data-pf]') : null;
   if (pf) friendsInput(pf);

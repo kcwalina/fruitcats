@@ -147,7 +147,6 @@ async function loadSet(code: string) {
       for (const c of [...data.cards, ...(data.tokens ?? [])]) setCards.set(c.id, c as unknown as CardWords);
       S.briefs.set(code, brief);
     } catch {
-      S.error = 'This set has no brief yet.';
       return;
     }
   }
@@ -313,6 +312,12 @@ function pictureTitle(code: string, key: string): string {
   return p ? `${title(p)}${sideLabel(p) ? ` (${sideLabel(p)})` : ''}` : key;
 }
 
+/** A project that couldn't load: say so, and offer to try again, rather than spin. */
+function notLoaded(): string {
+  return `<main class="empty"><h1>This project didn’t load</h1><p>The Studio couldn’t fetch it just now. Nothing you uploaded is affected.</p>
+    <p><button class="btn primary" data-click="retry">Try again</button></p></main>`;
+}
+
 // ── The list of sets ─────────────────────────────────────────────────────────────────────────────
 
 function setsPage(): string {
@@ -334,7 +339,7 @@ function setsPage(): string {
 
 function homePage(code: string): string {
   const brief = S.briefs.get(code);
-  if (!brief) return `<main class="empty"><div class="spinner"></div></main>`;
+  if (!brief) return notLoaded();
   const view = S.views.get(code) ?? null;
   const all = steps(brief, view);
   const { approved, total } = overall(brief, view);
@@ -422,7 +427,7 @@ function ownerQueue(code: string, brief: Brief, view: SetView | null): string {
 
 function picturePage(code: string, key: string): string {
   const brief = S.briefs.get(code);
-  if (!brief) return `<main class="empty"><div class="spinner"></div></main>`;
+  if (!brief) return notLoaded();
   const p = brief.pictures.find((x) => keyOf(x) === key);
   if (!p) return `<main class="empty"><h1>No such picture</h1><p><a href="#/${code}">Back to ${esc(brief.name)}</a></p></main>`;
   const view = S.views.get(code) ?? null;
@@ -759,6 +764,7 @@ async function act(action: string) {
     case 'guest': S.guest = true; await onRoute(); return;
     case 'signin': S.guest = false; render(); return;
     case 'signout': if (DEV) setDevUser(null); else signOut(); S.me = null; S.views.clear(); S.images.clear(); render(); return;
+    case 'retry': S.error = ''; await onRoute(); return;
     case 'recheck': await enter(); await onRoute(); return;
     case 'dismiss': S.error = ''; render(); return;
     case 'seen': markSeen(args[0]); render(); return;

@@ -578,14 +578,13 @@ const MODES = MODE_GROUPS.flat();
 const ACCOUNT_TILES: Record<string, string> = {
   collection: 'Your collection lives in your Via Mochi account, so it’s on every device.',
   decks: 'Your decks live in your Via Mochi account, so they’re on every device.',
-  ...(STORE ? { store: 'Cards you buy live in your Via Mochi account, so they’re yours on every device.' } : {}),
 };
 
 /**
- * The Store is built in (the playtest build), and this account isn't known to be outside its private test. Signed
- * out, the tile asks you to sign in; the Store itself then says if it isn't open to you.
+ * The Store opens only for an account the Fruitcats API lets in (its testers, until launch). For everyone else, signed
+ * in or not, the tile stays "Coming soon" (store-plan.md, Hidden until launch).
  */
-const storeOpen = () => STORE && (!signedIn() || storeAccess() !== 'private');
+const storeOpen = () => STORE && signedIn() && storeAccess() === 'open';
 
 const storeHost: StoreHost = {
   render,

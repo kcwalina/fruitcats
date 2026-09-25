@@ -21,7 +21,7 @@ Last updated 2026-09-24.
 | **Ownership** | **A purchase anywhere is owned everywhere.** Our server holds the one list of what each Via Mochi account owns. A Steam, App Store or Google Play purchase goes to the account signed in on that device; buying needs an account, so no purchase is ever ownerless. |
 | **Pricing** | **The same price on every store, and sales on all stores at once.** The player's experience comes before margin. The game is free to download everywhere. |
 | **Infrastructure** | Azure only, in the **ViaMochi Production** subscription (`rg-fruitcats`), set up by the accounts plan. Nothing reuses the mochi suite's resources. |
-| **Rollout** | Everything to do with purchases stays **hidden from the public** until launch: a separate playtest build and site, a tester list, and sandbox payments. |
+| **Rollout** | Everything to do with purchases stays **hidden from the public** until launch. The Store's code is in the live game, but the API opens it only to a tester list (see [Hidden until launch](#hidden-until-launch)); payments are sandbox only. |
 | **Rollback** | The git tag `pre-store` (`a9d7d08`) marks main before any store work. `pre-payments` is moved to the latest main just before the first payment or account code. |
 
 ## Already done
@@ -183,7 +183,8 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
   - What an account owns is worked out from its orders every time, so there's no second tally to drift.
 - **Who sees it:** app settings on the API. `STORE` = `off` (default), `testers` or `open`; `STORE_TESTERS` = account
   ids; `STORE_TEST_CHECKOUT` = `on` lets testers place test orders; `STORE_SETS` limits the sets on sale. In the
-  game, the Store is compiled into the playtest build only (`src/flags.ts`, `STORE`).
+  game, the Store is in every build (`src/flags.ts`, `STORE`); for accounts the API doesn't let in, the tile stays
+  "Coming soon".
 - **In the game** (`apps/web/src/storefront.ts`, `shop.ts`): the Store tile, Decks and Cards tabs, a deck's page,
   the cart, a confirmation step, then the new cards revealed one by one and "Build a deck with them".
 - **A deck from a code** with cards you don't have: the deck is saved, then the game shows **Missing cards**: each
@@ -198,10 +199,11 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 2. `npm run dev`, then open `http://localhost:5173/?store=1&api=http://localhost:8790` and sign in as usual.
 3. To start over, delete `.local-api/`, or use "Remove my test purchases" at the bottom of the cart.
 
-### Turning it on for testers on the playtest site
+### On the live site, for testers only
 
-Not done yet; it needs the API deployed with the settings above (`STORE=testers`, `STORE_TESTERS=<account ids>`,
-`STORE_TEST_CHECKOUT=on`) and the playtest build deployed.
+The live game has the Store for everyone, and the live API opens it only to `STORE_TESTERS` (the owner, for now),
+with `STORE=testers`, `STORE_TEST_CHECKOUT=on` and `STORE_SETS=HW1`. Adding a tester is adding their account id to
+`STORE_TESTERS` (tell the accounts and artist tool sessions first: a settings change restarts the API).
 
 ## Cards the Store doesn't sell
 
@@ -224,15 +226,13 @@ is saved either way and can be played once the player has every card.
 
 ## Hidden until launch
 
-- **Two builds from one codebase:**
-  - **Public** (`fruitcats.viamochi.com`): purchase features compiled out, so they can't be switched on.
-  - **Playtest** (`playtest.fruitcats.viamochi.com`): features compiled in, sandbox payments only, and optionally password-protected (SWA Standard, about $9 a month).
-- **Tester list on the server:** only listed Via Mochi accounts can create a profile or check out. Anyone else sees "private playtest", and no profile is created for them.
-- **Launch day:**
-  1. Build the public site with the features on.
-  2. Set `PUBLIC_LAUNCH=true` on the API.
-  3. Deploy.
-- **Rollback:** redeploy the previous build.
+- **One build, gated on the server** (the owner's choice, 2026-09-24, replacing "two builds"): the Store's code is
+  in the live game for everyone, and the API decides who may open it.
+  - Accounts not on `STORE_TESTERS` get `403 store_private`: their Store tile stays "Coming soon", the unreleased
+    sets aren't loaded, and nothing changes for them.
+  - Payments, when they come, will also be refused by the API for anyone not let in.
+- **Launch day:** set `STORE=open` on the API (and turn `STORE_TEST_CHECKOUT` off). No game build needed.
+- **Rollback:** set `STORE=off`. Everyone's tile goes back to "Coming soon".
 
 ## Legal (no company needed)
 

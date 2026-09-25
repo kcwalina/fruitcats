@@ -33,8 +33,9 @@ export default defineConfig(({ mode }) => ({
   base: './',
   define: {
     'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on'),
-    // The Store: only in the playtest build, and there only for the API's testers (store-plan.md, Hidden until launch).
-    'import.meta.env.VITE_STORE': JSON.stringify(mode === 'playtest' ? 'on' : 'off'),
+    // The Store is in every build, but the Fruitcats API opens it only to its testers: everyone else's Store tile still
+    // says "Coming soon" (store-plan.md, Hidden until launch).
+    'import.meta.env.VITE_STORE': JSON.stringify('on'),
   },
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
   plugins: [docsPages(), contentAssets(), idPassThrough()],

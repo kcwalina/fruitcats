@@ -16,7 +16,6 @@ Each Hero Cat starts as a Kitten and Grows Up into a Big Cat. Sunny, the Lemon L
 
 <table>
 <tr><td align="center"><img src="SB1-H01-kitten.webp" width="180" alt="Sunny, Zesty Kit (Kitten)"><br><b>Sunny, Zesty Kit (Kitten)</b><br><sub>SB1-H01-kitten</sub></td><td align="center"><img src="SB1-H01-bigcat.webp" width="180" alt="Sunny, Sour Streak (Big Cat)"><br><b>Sunny, Sour Streak (Big Cat)</b><br><sub>SB1-H01-bigcat</sub></td><td align="center"><img src="SB1-H02-kitten.webp" width="180" alt="Pippin, Windfall Kit (Kitten)"><br><b>Pippin, Windfall Kit (Kitten)</b><br><sub>SB1-H02-kitten</sub></td><td align="center"><img src="SB1-H02-bigcat.webp" width="180" alt="Pippin, Orchard Keeper (Big Cat)"><br><b>Pippin, Orchard Keeper (Big Cat)</b><br><sub>SB1-H02-bigcat</sub></td></tr>
-<tr><td align="center"><img src="SB1-P01-kitten.webp" width="180" alt="Jam, Sticky Kit (Kitten)"><br><b>Jam, Sticky Kit (Kitten)</b><br><sub>SB1-P01-kitten</sub></td><td align="center"><img src="SB1-P01-bigcat.webp" width="180" alt="Jam, Queen of the Patch (Big Cat)"><br><b>Jam, Queen of the Patch (Big Cat)</b><br><sub>SB1-P01-bigcat</sub></td><td align="center"><img src="SB1-P03-kitten.webp" width="180" alt="Duchess, Pampered Kit (Kitten)"><br><b>Duchess, Pampered Kit (Kitten)</b><br><sub>SB1-P03-kitten</sub></td><td align="center"><img src="SB1-P03-bigcat.webp" width="180" alt="Duchess, Grand Duchess (Big Cat)"><br><b>Duchess, Grand Duchess (Big Cat)</b><br><sub>SB1-P03-bigcat</sub></td></tr>
 </table>
 
 ## Zest Rush deck (led by Sunny, the Lemon Lynx)

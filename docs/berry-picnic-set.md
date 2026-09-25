@@ -29,8 +29,7 @@ version: one for gameplay, one for theme and names.
 
 ## The new family: Berry
 
-The Starter Box reserves Berry (frame colours `#D6336C`, `#8F1D46`, `#FBDDE7`) and previews its Hero Cat, Jam
-(SB1-P01). This set makes Berry real.
+The Starter Box reserves Berry (frame colours `#D6336C`, `#8F1D46`, `#FBDDE7`). This set makes Berry real.
 
 | Family | Personality | Plays like | Mechanic |
 |---|---|---|---|
@@ -65,8 +64,6 @@ counter filter (`crumb` at least 3).
 
 - The Kitten is a sequencing test: attack first, then feed the unit that attacked, or feed one that just arrived.
 - The Big Cat's party round competes with attacking with Jam.
-- This replaces the Starter Box preview of Jam (SB1-P01). That preview should point to this card, or be removed,
-  when BP1 is released.
 
 ## Deck: Picnic Club
 
@@ -193,4 +190,3 @@ signed main pictures, the rest of the deck in batches, Pawtraits, and the key ar
   her existing characters, agree that with her in her contract.
 - **Names:** most names are placeholders she can change (see the brief). "Ant", "Leftovers", "Crumb" and "Full"
   are fixed by the rules text.
-- **Jam's preview** in the Starter Box needs updating once this ships.

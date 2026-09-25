@@ -94,6 +94,22 @@
       "size": "1024x1024",
       "resize": 256,
       "transparent": true
+    },
+    "cat-jam-kitten": {
+      "size": "1024x1024",
+      "prompt": "A small plush kitten mascot with a soft pink body and a few simple red stripes on its back, wearing a bright red strawberry fruit hood with tiny yellow seed dots and a green leafy top. It sits happily with both stubby paws up, cheeks sticky with a little jam smudge. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
+    },
+    "cat-jam": {
+      "size": "1024x1024",
+      "prompt": "A bigger, proud plush cat mascot with a soft pink body and simple red stripes, wearing a bright red strawberry fruit hood with yellow seed dots and a green leaf crown on top. It stands tall on its stubby legs with its chest out and one paw raised, leading the way with a bright smile. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
+    },
+    "cat-duchess-kitten": {
+      "size": "1024x1024",
+      "prompt": "A small plush kitten mascot with a fluffy pale pink body, wearing a watermelon hood: bright pink flesh with a few scattered black seeds and a thick green-and-pale-green striped rind band running all around the face opening (clearly a watermelon, never a strawberry, no leafy top). It lounges elegantly on its side with its chin up, looking pampered and slightly haughty, eyes two calm curved lines. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
+    },
+    "cat-duchess": {
+      "size": "1024x1024",
+      "prompt": "A bigger, grand plush cat mascot with a fluffy pale pink body, wearing a watermelon hood: bright pink flesh with a few scattered black seeds and a thick green-and-pale-green striped rind band running all around the face opening (clearly a watermelon, never a strawberry, no leafy top), plus a tiny gold tiara on top and a small green cape. It sits regally upright with its tail curled around its stubby paws, looking noble and serene. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
     }
   }
 }

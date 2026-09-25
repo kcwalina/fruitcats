@@ -11,7 +11,7 @@ import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deck
 import { ACCOUNTS } from './flags';
 import { startSync } from './sync';
 import {
-  accountClick, accountEnter, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
+  accountClick, accountEnter, askForTermsIfNeeded, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
@@ -580,13 +580,14 @@ function savedGameLabel(): string | null {
 
 function renderHome(): string {
   // The mightiest Hero Cat (Mochi) takes the centre spot.
-  const heroes = heroParade().map((id) => `${id}-bigcat`);
+  // Jam and Duchess are home-screen art, not cards: they fill the parade after the Hero Cats.
+  const heroes = heroParade(['cat-jam', 'cat-duchess'].map((k) => `${BASE}ui/${k}.webp`), (id) => artUrl(`${id}-bigcat`));
   const saved = savedGameLabel();
   return `
   <div class="menu home">
     ${settingsButton('corner-settings')}
     <div class="hero-parade">
-      ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${artUrl(k)})"></div>`).join('')}
+      ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${k})"></div>`).join('')}
     </div>
     <header class="title">
       <h1>Fruitcats</h1>
@@ -741,7 +742,6 @@ function renderSolo(): string {
       </section>
     </div>
     ${renderSoloFooter()}
-    <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;
 }
 
@@ -1339,4 +1339,4 @@ if (import.meta.env.DEV) {
 
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
-if (ACCOUNTS) startSync({ render });
+if (ACCOUNTS) { startSync({ render }); askForTermsIfNeeded({ render }); }

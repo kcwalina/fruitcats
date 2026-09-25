@@ -45,6 +45,8 @@ export interface CardDef {
   set?: string;
   /** How the rules text calls the card once named ("her"); its name otherwise. */
   pronoun?: string;
+  /** A token rules text calls by name only ("Summon an Ant"), not by its stats and keywords. */
+  brief?: boolean;
 }
 
 // ── Card abilities, as data ────────────────────────────────────────────────────────────────────────

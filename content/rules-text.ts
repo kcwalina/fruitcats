@@ -16,23 +16,35 @@ const count = (n: number) => WORDS[n] ?? String(n);
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 // What the text needs to know beyond the card: the sets' mechanics and tokens.
-interface MechanicInfo { counter?: { name: string }; label?: boolean }
+interface MechanicInfo { counter?: { name: string; noun?: string; full?: { name: string; at: number } }; label?: boolean }
 const MECHANICS: Record<string, MechanicInfo> = {};
 const TOKENS: Record<string, CardDef> = {};
+const PLUGIN_TEXTS: Record<string, (value: unknown, on: string, self: string) => string> = {};
 for (const c of CONTENT) {
   Object.assign(MECHANICS, c.data.mechanics as Record<string, MechanicInfo> | undefined);
   for (const t of c.data.tokens ?? []) TOKENS[t.id] = t;
+  Object.assign(PLUGIN_TEXTS, c.plugin?.texts);
 }
 /** A counter's mechanic, by the counter's name ('heat' → Heat). */
 const mechanicOfCounter = (name: string) => Object.entries(MECHANICS).find(([, m]) => m.counter?.name === name)?.[0] ?? name;
+const counterDef = (name: string) => Object.values(MECHANICS).find((m) => m.counter?.name === name)?.counter;
+/** "a Crumb", "2 Crumbs". */
+const counters = (noun: string, n: number) => (n === 1 ? `${article(noun)} ${noun}` : `${n} ${noun}s`);
+/** A unit holding counters, as words around "unit": a Full unit, a unit that has a Crumb, a unit at +3 Heat. */
+function counterWords(c: { name: string; atLeast: number }): { adj: string; tail: string } {
+  const def = counterDef(c.name);
+  if (def?.full && c.atLeast >= def.full.at) return { adj: `${def.full.name} `, tail: '' };
+  if (def?.noun) return { adj: '', tail: ` that has ${counters(def.noun, c.atLeast)}` };
+  return { adj: '', tail: ` at +${c.atLeast} ${mechanicOfCounter(c.name)}` };
+}
 
 // ── Targets ────────────────────────────────────────────────────────────────────────────────────────
 
 function filterWords(f: UnitFilter | undefined): { adj: string; tail: string } {
   if (!f) return { adj: '', tail: '' };
   const adj = f.exhausted ? 'exhausted ' : f.damaged ? 'damaged ' : '';
-  const tail = f.keyword ? ` with ${f.keyword}` : f.counter ? ` at +${f.counter.atLeast} ${mechanicOfCounter(f.counter.name)}` : '';
-  return { adj, tail };
+  if (f.counter) { const w = counterWords(f.counter); return { adj: adj + w.adj, tail: w.tail }; }
+  return { adj, tail: f.keyword ? ` with ${f.keyword}` : '' };
 }
 
 /** "a" or "an", by sound: an enemy, an exhausted unit, a unit, a 2/2 token ("an 8/8" is spelled out by its number). */
@@ -49,7 +61,7 @@ function noun(t: TargetSel | undefined, self: string): string {
     if (t.unit === 'enemy') return `${article(adj || 'enemy')} ${adj}enemy unit${tail}`;
     return `${article(adj || 'unit')} ${adj}unit${tail}`;
   }
-  if (t.each === 'own') return `each ${adj}unit you control${tail}`;
+  if (t.each === 'own') return `each ${t.other ? 'other ' : ''}${adj}unit you control${tail}`;
   if (t.each === 'enemy') return `each ${adj}enemy unit${tail}`;
   if (t.each === 'allOther') return `each other ${adj}unit${tail}`;
   return `each ${adj}unit${tail}`;
@@ -77,6 +89,9 @@ function clause(c: Condition): string {
   if ('compost' in c) return `you have ${c.compost.atLeast} or more cards in your Compost`;
   if ('unitHasCounter' in c) {
     const who = c.unitHasCounter.whose === 'enemy' ? 'an enemy unit' : c.unitHasCounter.whose === 'any' ? 'a unit' : 'a unit you control';
+    const def = counterDef(c.unitHasCounter.name);
+    if (def?.full && c.unitHasCounter.atLeast >= def.full.at) return `${who} is ${def.full.name}`;
+    if (def?.noun) return `${who} has ${counters(def.noun, c.unitHasCounter.atLeast)}`;
     return `${who} has +${c.unitHasCounter.atLeast} ${mechanicOfCounter(c.unitHasCounter.name)}`;
   }
   if ('playedThisRound' in c) return `you've played ${c.playedThisRound.atLeast - 1} other card(s) this round`;
@@ -100,11 +115,18 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     case 'heal': return `heal ${n} from ${on}`;
     case 'buff': {
       const b = v as { power?: number; keywords?: string[] };
-      const subject = subjectless ? '' : `${on} `;
-      if (!b.power && b.keywords?.length) return `${subject}gains ${b.keywords.join(' and ')} this round`;
-      return `${subject}gets ${[b.power && `+${b.power} Power`, ...(b.keywords ?? [])].filter(Boolean).join(' and ')} this round`;
+      // Every unit of a side, as the subject: "your units get" (not "each unit you control gets").
+      const each = typeof a.target === 'object' && 'each' in a.target && on !== 'it' ? auraSubject(a.target).toLowerCase() : '';
+      const subject = subjectless ? '' : `${each || on} `;
+      if (!b.power && b.keywords?.length) return `${subject}${each ? 'gain' : 'gains'} ${b.keywords.join(' and ')} this round`;
+      return `${subject}${each ? 'get' : 'gets'} ${[b.power && `+${b.power} Power`, ...(b.keywords ?? [])].filter(Boolean).join(' and ')} this round`;
     }
-    case 'counter': return `${on} gets +${(v as { add: number }).add} ${mechanicOfCounter((v as { name: string }).name)}`;
+    case 'counter': {
+      const c = v as { name: string; add: number };
+      const def = counterDef(c.name);
+      if (def?.noun) return `put ${counters(def.noun, c.add)} on ${on}`;
+      return `${on} gets +${c.add} ${mechanicOfCounter(c.name)}`;
+    }
     case 'draw': return n === 1 ? 'draw a card' : `draw ${n} cards`;
     case 'exhaust': return `exhaust ${on}`;
     case 'ready': return a.when === 'hello' && a.target === 'self' ? 'enters ready' : `ready ${on}`;
@@ -113,12 +135,13 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     case 'summon': {
       const t = TOKENS[String(v)];
       if (!t) return `summon ${String(v)}`;
+      if (t.brief) return `summon ${article(t.name)} ${t.name}`;
       const kws = t.keywords?.length ? ` with ${t.keywords.join(' and ')}` : '';
       return `summon ${article(String(t.power))} ${t.power}/${t.health} ${t.name}${kws}`;
     }
     case 'cancelAttack': return 'cancel an attack';
     case 'fight': return `${on} and ${noun(a.target2, self)} deal damage equal to their Power to each other`;
-    default: return name ?? '';
+    default: return name && PLUGIN_TEXTS[name] ? PLUGIN_TEXTS[name](v, on, self) : name ?? '';
   }
 }
 
@@ -127,7 +150,16 @@ function actClauses(acts: Act[], a: Ability, self: string, subjectless: boolean,
   const on = noun(a.target, self);
   const singular = typeof a.target === 'object' && 'unit' in a.target;
   let mentioned = named;
-  return acts.map((act) => {
+  // The same token twice reads as one: "summon two Ants".
+  const merged: Act[] = [];
+  const times: number[] = [];
+  for (const act of acts) {
+    const last = merged[merged.length - 1];
+    if (last && 'summon' in act && JSON.stringify(last) === JSON.stringify(act) && TOKENS[String(act.summon)]?.brief) times[times.length - 1]++;
+    else { merged.push(act); times.push(1); }
+  }
+  return merged.map((act, i) => {
+    if (times[i] > 1) { const t = TOKENS[String((act as { summon: string }).summon)]; return `summon ${count(times[i])} ${t.name}s`; }
     const needsTarget = !['draw', 'readyTreats', 'sprout', 'summon', 'cancelAttack'].includes(Object.keys(act)[0]);
     const target = mentioned && singular ? 'it' : on;
     const text = actClause(act, target, a, self, subjectless);
@@ -188,8 +220,9 @@ export function abilityText(a: Ability, card: CardDef): string {
     }
     body += isLabel(a.instead.if) ? ` ${a.instead.if}: ${better}.` : ` If ${clause(a.instead.if)}, ${better}.`;
   }
-  const zest = isLabel(a.if) ? `${a.if}: ` : '';
-  return `${ownLabelBonus ? '' : label}${zest}${body}${note}`;
+  // A label mechanic joins a trigger's label: "Hello, Zest: …".
+  if (isLabel(a.if)) return `${label && !ownLabelBonus ? `${label.slice(0, -2)}, ` : ''}${a.if}: ${body}${note}`;
+  return `${label}${body}${note}`;
 }
 
 /** The text of a card face: keywords, then its abilities one per line, then its Grow Up. */

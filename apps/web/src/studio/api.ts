@@ -63,7 +63,7 @@ export class ApiError extends Error {
 
 // ── Development accounts ─────────────────────────────────────────────────────────────────────────
 
-export const DEV_ACCOUNTS: [string, string][] = [['owner', 'Krzysztof (owner)'], ['basil', 'Basil (artist)'], ['newcomer', 'Newcomer (not invited)']];
+export const DEV_ACCOUNTS: [string, string][] = [['owner', 'Krzysztof (reviewer)'], ['basil', 'Basil (artist)'], ['newcomer', 'Newcomer (not invited)']];
 
 export function devUser(): string | null {
   try { return localStorage.getItem(DEV_USER); } catch { return null; }
@@ -169,7 +169,7 @@ export function explain(e: unknown): string {
     too_large: 'That file is too big (more than 30 MB).',
     bad_size: 'That picture’s size can’t be right. Please check it.',
     not_stored: 'The upload didn’t arrive intact. Please try again: nothing was lost.',
-    owner_only: 'Only the Fruitcats team can do that.',
+    owner_only: 'Only a reviewer can do that.',
   };
   return words[code] ?? 'Something went wrong. Please try again.';
 }

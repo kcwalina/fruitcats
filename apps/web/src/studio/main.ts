@@ -214,7 +214,7 @@ function stateChip(state: State): string {
 
 const authorLabel = (c: { author: string; authorName: string }) =>
   c.author === 'ai' ? `<span class="who ai" title="Written by an AI assistant">${esc(c.authorName)} <b>AI</b></span>`
-    : c.author === 'owner' ? `<span class="who owner">${esc(c.authorName)} <b>Fruitcats</b></span>`
+    : c.author === 'owner' ? `<span class="who owner">${esc(c.authorName)} <b>Reviewer</b></span>`
       : `<span class="who artist">${esc(c.authorName)} <b>Artist</b></span>`;
 
 function lastSeenKey(code: string) { return `studio-seen-${S.me?.id ?? 'guest'}-${code}`; }
@@ -297,7 +297,7 @@ function page(): string {
 function topBar(): string {
   const r = S.route;
   const set = r.page !== 'sets' ? S.sets.find((s) => s.code === r.code) : null;
-  const who = S.me ? `${esc(S.me.name)}${S.me.role === 'owner' ? ' <span class="chip owner-chip">Owner</span>' : ''}` : 'Guest';
+  const who = S.me ? `${esc(S.me.name)}${S.me.role === 'owner' ? ' <span class="chip owner-chip">Reviewer</span>' : ''}` : 'Guest';
   return `<header class="top">
     <a class="brand" href="#/"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></a>
     ${set ? `<nav class="crumbs"><a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : r.page === 'artists' ? ' <span>›</span> <span>Artists</span>' : ''}</nav>` : '<span></span>'}
@@ -642,7 +642,7 @@ function commentsPanel(code: string, p: BriefPicture, version: Version | null): 
 // ── The owner's artists page ─────────────────────────────────────────────────────────────────────
 
 function artistsPage(code: string): string {
-  if (S.me?.role !== 'owner') return '<main class="empty"><p>Only the Fruitcats team sees this page.</p></main>';
+  if (S.me?.role !== 'owner') return '<main class="empty"><p>Only reviewers see this page.</p></main>';
   const set = S.sets.find((s) => s.code === code);
   const r = S.roster;
   return `<main class="artists"><h1>Artists for ${esc(set?.name ?? code)}</h1>

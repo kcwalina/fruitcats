@@ -95,14 +95,16 @@ export async function decksNightly(): Promise<number> {
   }
 
   const file = readLibrary();
-  // 2. LLM games PC2024 played with library decks since the last night.
+  // 2. LLM games PC2024 played with library decks, from the runs not counted before (by id: a long run can
+  // finish after a later one).
   const pc = arg('pc2024');
   if (pc) {
     try {
-      const since = file.lastNightly ? Date.parse(file.lastNightly) : 0;
-      const runs = (await pc2024Summaries(pc, ['llm-playtest'])).filter((r: RunSummary) => Date.parse(r.startedAt) >= since);
+      const counted = new Set(file.llmRunsCounted ?? []);
+      const runs = (await pc2024Summaries(pc, ['llm-playtest'])).filter((r: RunSummary) => !counted.has(r.id));
       const games = runs.reduce((n, r) => n + recordLlmGames(file, (r.details.byDeck ?? []) as { deck: string; games: number; won: number }[]), 0);
-      log(`LLM games with library decks since ${file.lastNightly ?? 'the start'}: ${games} (from ${runs.length} run(s))`);
+      file.llmRunsCounted = [...counted, ...runs.map((r) => r.id)].slice(-300);
+      log(`LLM games with library decks, from ${runs.length} run(s) not counted before: ${games}`);
     } catch (e) { log(`PC2024 not reachable, no LLM results tonight: ${(e as Error).message}`); }
   }
 

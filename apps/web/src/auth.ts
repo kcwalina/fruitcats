@@ -291,17 +291,37 @@ export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> 
   return { avatar: me.avatar, owned: new Set<string>(me.avatars) };
 }
 
-/** Wear an avatar. */
-/** "Contact us": emailed to the team, answered by email (the account's, or `email` when signed out). */
-export async function sendSupport(message: string, email: string): Promise<void> {
+/**
+ * "Contact us", signed out: emails a code to `email`, which the player types to send their message (so every answer
+ * goes to an inbox that asked for it). Returns the code's length.
+ */
+export async function requestSupportCode(email: string): Promise<number> {
+  const r = await request(`${ID_SERVICE}/support/code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!r.ok) throw await supportError(r, 'We couldn’t email you a code. Please try again.');
+  return (await r.json()).codeLength ?? 8;
+}
+
+/** "Contact us": emailed to the team, answered by email (the account's, or `email`, confirmed by `code`, when signed out). */
+export async function sendSupport(message: string, email: string, code?: string): Promise<void> {
   const t = session() ? await token() : null;
   const r = await request(`${ID_SERVICE}/support`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
-    body: JSON.stringify({ message, email, app: 'Fruitcats', device: navigator.userAgent }),
+    body: JSON.stringify({ message, email, code, app: 'Fruitcats', device: navigator.userAgent }),
   });
-  if (r.status === 429) throw new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
-  if (!r.ok) throw new AuthError('support', (await r.json().catch(() => ({}))).message ?? 'Your message couldn’t be sent. Please try again.');
+  if (!r.ok) throw await supportError(r, 'Your message couldn’t be sent. Please try again.');
+}
+
+/** The service's own words when it has them (a wrong code, a sender's daily limit); the IP limit comes bare. */
+async function supportError(r: Response, fallback: string): Promise<AuthError> {
+  const json = await r.json().catch(() => ({}));
+  if (json.message) return new AuthError(json.error ?? 'support', json.message);
+  if (r.status === 429) return new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
+  return new AuthError('support', fallback);
 }
 
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */

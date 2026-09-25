@@ -3,7 +3,6 @@
 
 .store-screen { --gold-1: #ffe39a; --gold-2: #f2b940; --gold-ink: #4a2c06; }
 
-.store-title { margin: 0; justify-self: center; font: 700 20px/1 Fredoka, Nunito, sans-serif; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
 
 /* The cart, where Settings sits in the Collection: the same cream button, with a count. */
 .store-screen button.cart-button { position: relative; justify-self: end; color: #5a3413; }
@@ -260,10 +259,6 @@
   background: radial-gradient(120% 60% at 50% -10%, rgba(255, 170, 80, 0.16), transparent 60%), linear-gradient(transparent 55%, rgba(8, 4, 2, 0.75));
 }
 .store-top { grid-template-columns: 44px 1fr 44px; }
-.store-title {
-  font: 700 22px/1 Fredoka, Nunito, sans-serif; letter-spacing: 0.5px; color: #fff3d2;
-  text-shadow: 0 0 18px rgba(255, 200, 90, 0.35), 0 2px 10px rgba(0, 0, 0, 0.5);
-}
 .shop, .product-page { width: 100%; max-width: 980px; margin: 0 auto; padding-bottom: 20px; }
 .product-page { padding-bottom: 110px; }
 .kicker { font: 800 11.5px/1 Nunito, sans-serif; letter-spacing: 2.2px; text-transform: uppercase; color: var(--gold); }
@@ -293,53 +288,8 @@
 .store-btn.buy .price-chip { background: linear-gradient(#3a230c, #1d0f05); font-size: 16px; }
 @media (prefers-reduced-motion: reduce) { .store-screen button.store-btn.buy.big::after { animation: none; display: none; } }
 
-/* ── The featured deck: the Big Cat as a splash, the story over its lower part ── */
-
-.featured {
-  position: relative; overflow: hidden; border-radius: 26px; min-height: clamp(380px, calc(var(--vh, 1vh) * 62), 560px);
-  display: flex; align-items: flex-end; margin: 4px 0 18px; isolation: isolate;
-  box-shadow: inset 0 0 0 1px var(--gold-line), 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 60px -10px var(--fam, rgba(255, 150, 60, 0.4));
-}
-.ft-art {
-  position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: 50% 18%;
-  transform: scale(1.02); animation: ft-drift 18s ease-in-out infinite alternate;
-}
-@keyframes ft-drift { to { transform: scale(1.09) translateY(-1.5%); } }
-.featured::after {
-  content: ''; position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(180deg, transparent 30%, rgba(14, 7, 3, 0.55) 55%, rgba(14, 7, 3, 0.96) 88%);
-}
-.ft-info { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 22px 22px; max-width: 640px; }
-.featured h2, .card-page h2, .missing-head h2 {
-  margin: 0; font: 700 clamp(34px, 7vw, 54px)/1 Fredoka, Nunito, sans-serif; color: #fff;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), 0 6px 30px rgba(0, 0, 0, 0.6);
-}
-.ft-blurb { margin: 0; font: 600 15px/1.5 Nunito, sans-serif; color: rgba(255, 255, 255, 0.84); }
-.ft-blurb b { color: #fff; }
-.ft-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
-.ft-meta span {
-  padding: 5px 10px; border-radius: 999px; font: 700 12.5px/1 Nunito, sans-serif; color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-}
-.ft-meta .new-for-you { color: #b9f5c8; background: rgba(46, 157, 87, 0.22); box-shadow: inset 0 0 0 1px rgba(120, 220, 150, 0.35); }
-.ft-buy { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
-@media (prefers-reduced-motion: reduce) { .ft-art { animation: none; } }
-
 /* ── Filters and shelves ── */
 
-.store-filters { display: flex; gap: 8px; margin: 0 0 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
-.store-filters::-webkit-scrollbar { display: none; }
-.store-screen button.store-filter {
-  flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px;
-  font: 700 14.5px/1 Fredoka, Nunito, sans-serif; color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-}
-.store-screen button.store-filter small { font: 800 11.5px/1 Nunito, sans-serif; color: rgba(255, 255, 255, 0.5); }
-.store-screen button.store-filter:hover:not(:disabled) { transform: none; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); }
-.store-screen button.store-filter.on, .store-screen button.store-filter.on:hover:not(:disabled) {
-  color: #2b1a0e; background: linear-gradient(#fff4cf, #ffd76a); box-shadow: 0 4px 16px rgba(255, 200, 90, 0.3);
-}
-.store-screen button.store-filter.on small { color: rgba(43, 26, 14, 0.6); }
 .shelf { margin-top: 22px; }
 .shelf-title {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 14px; padding-bottom: 10px;
@@ -398,7 +348,6 @@
 
 /* ── A product's page ── */
 
-.product-hero { min-height: clamp(360px, calc(var(--vh, 1vh) * 52), 500px); }
 .inside { margin-top: 4px; }
 .store-screen .buy-bar { gap: 14px; }
 .card-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 26px; padding-top: 10px; }
@@ -442,13 +391,88 @@
 .product-page .missing-head + .pick-deck { margin-top: 0; }
 .buy-bar .bb-total { gap: 2px; }
 
-/* The splash keeps the Big Cat's face clear: its art fills the top, and the story sits below it on the dark. */
-.ft-art { bottom: 30%; background-position: 50% 30%; }
-.featured::after { background: linear-gradient(180deg, transparent 35%, rgba(14, 7, 3, 0.7) 62%, rgba(14, 7, 3, 0.98) 74%); }
-@media (min-width: 720px) {
-  .ft-art { bottom: 0; left: 35%; }
-  .featured::after { background: linear-gradient(90deg, rgba(14, 7, 3, 0.98) 30%, rgba(14, 7, 3, 0.6) 50%, transparent 75%); }
+
+/* ── Product pages: the item on a stage, its story beside it ── */
+
+.card-page h2, .missing-head h2 {
+  margin: 0; font: 700 clamp(34px, 7vw, 54px)/1 Fredoka, Nunito, sans-serif; color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), 0 6px 30px rgba(0, 0, 0, 0.6);
 }
-/* One deck on its shelf: a wide tile, not half an empty row. */
-.offers.decks:has(> :only-child) { grid-template-columns: 1fr; }
-.offers.decks > .offer:only-child { aspect-ratio: 16 / 10; }
+.ft-blurb { margin: 0; font: 600 15px/1.5 Nunito, sans-serif; color: rgba(255, 255, 255, 0.84); }
+.ft-blurb b { color: #fff; }
+.ft-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
+.ft-meta span {
+  padding: 5px 10px; border-radius: 999px; font: 700 12.5px/1 Nunito, sans-serif; color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.ft-meta .new-for-you { color: #b9f5c8; background: rgba(46, 157, 87, 0.22); box-shadow: inset 0 0 0 1px rgba(120, 220, 150, 0.35); }
+.deck-page-top { margin-bottom: 8px; }
+.shop .offers { margin-top: 6px; }
+
+/* ── A deck as a boxed deck: its family's colours, the Hero Cat in a window, card tops over the rim ── */
+
+.fam-glow { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--fam, #f29f05) 60%, transparent), transparent 64%); }
+.deck-box {
+  position: absolute; left: 50%; top: 11%; width: 52%; aspect-ratio: 0.72; transform: translateX(-50%) rotate(-4deg);
+  transition: transform 0.35s ease;
+}
+.offer:hover .deck-box { transform: translateX(-50%) rotate(0deg) translateY(-4px) scale(1.04); }
+.deck-box.big { position: relative; left: auto; top: auto; width: min(64vw, 280px); transform: rotate(-3deg); margin: 20px 0 10px; animation: cp-float 6s ease-in-out infinite alternate; }
+.db-front {
+  position: absolute; inset: 0; overflow: hidden; border-radius: 9% / 6.5%;
+  background: linear-gradient(160deg, var(--fam, #f29f05), var(--fam-dark, #a86400));
+  box-shadow: inset 0 0 0 2px rgba(255, 223, 130, 0.9), inset 0 0 0 5px rgba(0, 0, 0, 0.18);
+}
+.db-front::after {   /* the box's gloss */
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.35) 0%, transparent 28%, transparent 62%, rgba(255, 255, 255, 0.12) 75%, transparent 88%);
+}
+.db-front img {
+  position: absolute; left: 9%; right: 9%; top: 7%; width: 82%; aspect-ratio: 1; object-fit: cover; border-radius: 8%;
+  box-shadow: 0 0 0 2px rgba(255, 223, 130, 0.85), 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+.db-band {
+  position: absolute; left: 7%; right: 7%; bottom: 6%; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6% 4%; border-radius: 10px; background: rgba(20, 10, 4, 0.55); text-align: center;
+}
+.db-band b { font: 700 clamp(11px, 3.4vw, 17px)/1.05 Fredoka, Nunito, sans-serif; color: #fff; }
+.db-band small { font: 800 clamp(8px, 2.2vw, 11px)/1 Nunito, sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: #ffd76a; }
+.deck-box.big .db-band b { font-size: 22px; }
+.deck-box.big .db-band small { font-size: 12px; }
+.card-offer .of-tag { background: rgba(255, 255, 255, 0.9); }
+@media (prefers-reduced-motion: reduce) { .deck-box.big { animation: none; } }
+
+/* The Deck / Card label sits with the name, never over the picture. */
+.of-info .of-tag { position: static; margin-bottom: 1px; padding: 4px 7px; font-size: 9.5px; }
+.deck-box { top: 9%; width: 46%; }
+/* At tile size the cover shows only the Hero Cat: the deck's name and size are printed under it, on the same shade
+   as a card's tile. */
+.deck-box:not(.big) .db-band { display: none; }
+.deck-offer .of-info { background: linear-gradient(transparent, rgba(14, 7, 3, 0.95) 45%); padding-top: 34px; }
+
+/* ══ 2026-09-25: the header is a banner, and a deck is a stack of real cards the size of a card ══ */
+
+/* The header: the Store's own picture from Home, and the title in the game's lettering. */
+.store-head { justify-self: center; display: flex; align-items: center; gap: 10px; margin: 0; }
+.sh-art {
+  width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: #fff4e2;
+  box-shadow: 0 0 0 2px #ffd76a, 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+.store-head span {
+  font: 700 30px/1 Fredoka, Nunito, sans-serif; letter-spacing: 1px; color: #fff7df; white-space: nowrap;
+  text-shadow: 0 2px 0 #f29f05, 0 4px 0 #d9641d, 0 6px 0 #8e3b12, 0 10px 18px rgba(0, 0, 0, 0.5);
+}
+@media (max-width: 380px) { .store-head span { font-size: 25px; } .sh-art { width: 40px; height: 40px; } }
+
+/* The deck: the same place and size as a single card's picture, with two card backs under its cover. */
+.deck-box { top: 8%; width: 58%; aspect-ratio: 0.714; transform: translateX(-50%) rotate(-3deg); }
+.offer:hover .deck-box { transform: translateX(-50%) rotate(0deg) translateY(-4px) scale(1.04); }
+.deck-box.big { width: min(74vw, 330px); }
+@media (min-width: 641px) { .deck-box.big { width: min(100%, 380px); } }
+.db-back {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 4.6% / 3.3%;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.55);
+}
+.db-back.b1 { transform: translate(4%, 2.5%) rotate(3deg); }
+.db-back.b2 { transform: translate(8%, 5%) rotate(6deg); filter: brightness(0.8); }
+.db-front { border-radius: 4.6% / 3.3%; box-shadow: inset 0 0 0 2px rgba(255, 223, 130, 0.9), inset 0 0 0 5px rgba(0, 0, 0, 0.18), 0 12px 26px rgba(0, 0, 0, 0.6); }

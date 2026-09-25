@@ -195,6 +195,13 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 }
 
 const server = createServer(async (req, res) => {
+  // Every request's time, so slow steps show up as facts (the owner's dashboard). The path only, never the query.
+  const started = performance.now();
+  res.on('finish', () => {
+    const path = (req.url ?? '').split('?')[0];
+    if (req.method === 'OPTIONS' || path === '/healthz') return;
+    log('ops', 'http.request', { method: req.method, path: path.replace(/\/[0-9a-f]{32}(?=\/|$)/g, '/{id}'), status: res.statusCode, ms: Math.round(performance.now() - started) });
+  });
   const origin = req.headers.origin;
   // Run locally, any page on this computer or the home network may call it (the game's dev server picks its own port).
   if (origin && (ORIGINS.has(origin) || (LOCAL_DATA && /^http:\/\/(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}):\d+$/.test(origin)))) {

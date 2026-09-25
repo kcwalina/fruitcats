@@ -1,7 +1,7 @@
 {
   "set": "SB1",
   "name": "Starter Box",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "status": "released",
   "released": "2026-09",
   "starter": true,
@@ -485,7 +485,7 @@
       "type": "Trick",
       "family": "Citrus",
       "name": "Sour Spray",
-      "cost": 2,
+      "cost": 1,
       "text": "Pounce. Lucky. Deal 2 damage to a unit.",
       "flavor": "Right in the eye. Every time.",
       "keywords": [
@@ -696,7 +696,7 @@
       "name": "Pear Hedgehog",
       "cost": 2,
       "power": 2,
-      "health": 3,
+      "health": 2,
       "text": "Guardian.",
       "flavor": "Hugs not recommended.",
       "keywords": [

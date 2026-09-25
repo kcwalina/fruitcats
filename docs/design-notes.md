@@ -58,6 +58,14 @@ Mango had been keeping in check; Mochi Growing Up at 9 Treats or a single Elepha
 Jackfruit Elephant now costs 8 (was 7) and Coconut, Island Guardian is 4/5 (was 4/6). At 600 games per
 pairing: Zest 40% → 44%, Orchard 52% → 53%, Mango 58% → 53%. **Open issue:** Zest is still the weakest deck.
 
+2026-09-25, from the nightly playtest: Zest 44%, Orchard 58%, and Zest won only 37% against Orchard (the LLM
+players lost all 54 of their Zest-vs-Orchard games). Cheap Guardian walls were the reason, not Falling Apple
+(at 0 damage Orchard still won 63% of that matchup). Pear Hedgehog is now 2/2 (was 2/3) and Sour Spray
+costs 1 (was 2). At 400 games per pairing: Zest 45% → 50%, Orchard 58% → 53%, Mango 48% → 48%; Zest vs
+Orchard 35% → 45%. Tried and dropped: Jackfruit Elephant at cost 9 or without Fierce (it carries Mango Tango
+against Orchard: uncastable, Mango fell to 24% in that matchup), Mango Smoothie without its Treat, Sanguine at
+cost 4 (barely moves Zest; she wants a new ability, not a lower cost).
+
 ## What we deliberately left out
 
 - **Lanes/arenas** (SWU, TES:L, Artifact): extra depth, but hurts readability and onboarding. Revisit as a set mechanic.

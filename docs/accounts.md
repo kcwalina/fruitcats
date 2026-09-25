@@ -116,6 +116,16 @@ Last updated 2026-09-25.
     before touching `viamochi-id` or `fruitcats-api`, and batch settings into one change.
   - The game gives up on any account call after 15 seconds and says so; a slow or down service never signs anyone
     out (only Entra rejecting the refresh token does).
+- **Runaway protection** (2026-09-25). No cap across the service, because a streamer may send hundreds of real
+  players to sign up at once; instead:
+  - **Code emails:** at most 10 to one address in an hour (past it, a script is hammering that address; nothing is
+    sent). Past `Email__AlertPerHour` code emails in an hour (default 600), the owner gets an error alert, once an
+    hour; nothing is blocked. Sign-in calls are also limited to 30 per 5 minutes per IP address.
+  - **Logs:** past 100 MB in a day per service (`LOG_DAILY_MB` on fruitcats-api), only security events, warnings and
+    errors are written until midnight UTC, and the owner gets an alert.
+- **Request timing:** both services log every request's route, status and time (`http.request`, path only, ids
+  replaced by `{id}`). The Accounts tab shows today's typical and 95th-percentile times per service, a Slow column
+  (requests over 2 seconds) and the slowest requests of the last day.
 - **Contact us** (Settings, and "Trouble signing in?" in the sign-in window): `POST /support` on `viamochi-id`
   emails the message to the owner (`Support__To` app setting) with Reply-To set to the player. The message itself is
   never logged. This is the support address the Terms and Privacy Policy point to, instead of a mailbox, so it stays

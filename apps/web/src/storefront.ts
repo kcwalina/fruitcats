@@ -27,8 +27,6 @@ export interface StoreHost {
   backToBuilder(): void;
 }
 
-/** The shop's one filter: everything, decks, or single cards. */
-type Filter = 'all' | 'decks' | 'cards';
 /**
  * missing: the cards a deck (from a code, say) needs that you don't have, as a selection: all picked at first, tap one
  * to leave it out, then "Add to cart" below.
@@ -37,7 +35,6 @@ type View = { kind: 'browse' } | { kind: 'deck'; product: string } | { kind: 'ca
   | { kind: 'missing'; deck: DeckList; plan: NonNullable<ReturnType<typeof planForDeck>>; left: Set<string> };
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'] as const;
 
-let filter: Filter = 'all';
 let view: View = { kind: 'browse' };
 /** A line under the header after something happened ("Added 3 cards to your cart"). */
 let notice = '';
@@ -91,7 +88,6 @@ function refresh(host: StoreHost) {
 export function storeClick(action: string, arg: string, host: StoreHost): void {
   notice = '';
   switch (action) {
-    case 'filter': filter = arg === 'decks' || arg === 'cards' ? arg : 'all'; break;
     case 'deck': view = { kind: 'deck', product: arg }; break;
     case 'card': view = { kind: 'card', product: arg }; break;
     case 'browse': view = { kind: 'browse' }; break;
@@ -219,13 +215,14 @@ export function renderStore(): string {
   const back = view.kind === 'browse' ? backButton()
     : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck') : backButton('store:browse', 'Store');
   const product = (view.kind === 'deck' || view.kind === 'card') ? cat?.products[view.product] : undefined;
-  const backdrop = product ? artOf(product) : view.kind === 'missing' ? `${view.deck.hero}-bigcat` : featured() ? artOf(featured()!) : '';
+  const firstDeck = Object.values(cat?.products ?? {}).find((x) => x.kind === 'deck');
+  const backdrop = product ? artOf(product) : view.kind === 'missing' ? `${view.deck.hero}-bigcat` : firstDeck ? artOf(firstDeck) : '';
   return `
   <div class="collection-screen store-screen">
     ${backdrop ? `<div class="ambient" aria-hidden="true"><div class="ambient-layer show" style="background-image:url(${artUrl(backdrop)})"></div></div>` : ''}
     <div class="collection-top store-top">
       ${back}
-      <h2 class="store-title">${title}</h2>
+      <h1 class="store-head"><img class="sh-art" src="${BASE}ui/mode-store.webp" alt=""><span>${title}</span></h1>
       <button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
         ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>
     </div>
@@ -241,17 +238,11 @@ const artOf = (p: DeckProduct | CardProduct | { kind: string }) =>
   p.kind === 'deck' ? `${(p as DeckProduct).hero}-bigcat` : faceOf((p as CardProduct).card);
 const faceOf = (id: string) => (CARDS[id]?.type === 'Hero Cat' ? `${id}-kitten` : id);
 
-/** The deck at the top of the Store: the first one you don't have every card of. */
-function featured(): DeckProduct | undefined {
-  const decks = Object.values(catalog()?.products ?? {}).filter((p): p is DeckProduct => p.kind === 'deck');
-  return decks.find((d) => !deckFacts(d).complete) ?? decks[0];
-}
-
 function renderMessage(title: string, text: string, action = ''): string {
   return `<div class="showcase-empty"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${action}</div>`;
 }
 
-// ── The shop: one page, a featured deck, then everything as offers ───────────────────────────────
+// ── The shop: one list of everything for sale, all the same size ────────────────────────────────
 
 function deckFacts(p: DeckProduct) {
   const owned = ownedNow();
@@ -265,66 +256,49 @@ function priceChip(full: number, now: number): string {
   return `<span class="price-chip">${now < full ? `<s>${price(full)}</s>` : ''}${price(now)}</span>`;
 }
 
+/**
+ * Everything for sale as one list (the owner's call, 2026-09-25): no banner, no tabs, no filters. Decks first, then the
+ * single cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck looks like a boxed deck.
+ */
 function renderShop(): string {
   const cat = catalog()!;
   const owned = ownedNow();
   const decks = Object.values(cat.products).filter((p): p is DeckProduct => p.kind === 'deck');
   const cards = Object.values(cat.products).filter((p): p is CardProduct => p.kind === 'card')
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
-  const top = featured();
-  const chip = (value: Filter, label: string, n: number) =>
-    `<button class="store-filter ${filter === value ? 'on' : ''}" data-click="store:filter:${value}" aria-pressed="${filter === value}">${label}<small>${n}</small></button>`;
-  const showDecks = filter !== 'cards' && decks.length;
-  const showCards = filter !== 'decks' && cards.length;
   return `<div class="collection-grid store-body" data-keep-scroll="store-shop">
     <div class="shop">
-      ${top && filter === 'all' ? renderFeatured(top) : ''}
-      <div class="store-filters" role="group" aria-label="Show">
-        ${chip('all', 'Everything', decks.length + cards.length)}${chip('decks', 'Decks', decks.length)}${chip('cards', 'Single cards', cards.length)}
-      </div>
-      ${showDecks ? `
-      <section class="shelf">
-        <h3 class="shelf-title">Decks <span>Ready to play: a Hero Cat and 50 cards</span></h3>
-        <div class="offers decks">${decks.map(renderDeckOffer).join('')}</div>
-      </section>` : ''}
-      ${showCards ? `
-      <section class="shelf">
-        <h3 class="shelf-title">Single cards <span>Cards that come in no deck</span></h3>
-        <div class="offers cards">${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
-      </section>` : ''}
-      <p class="store-foot">Every card plays the same however you get it. A deck never charges you for cards you already have.</p>
+      <div class="offers">${decks.map(renderDeckOffer).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
+      <p class="store-foot">Everything here is digital: it's added to your Via Mochi account and plays on every device.
+        A deck never charges you for cards you already have.</p>
     </div>
     ${renderTesterTools()}
   </div>`;
 }
 
-function renderFeatured(p: DeckProduct): string {
-  const { size, newCopies, now, complete } = deckFacts(p);
-  return `
-    <section class="featured ${famClass(p.hero)}">
-      <div class="ft-art" style="background-image:url(${artUrl(`${p.hero}-bigcat`)})" aria-hidden="true"></div>
-      <div class="ft-info">
-        <span class="kicker">Featured deck · ${esc(setName(p.set))}</span>
-        <h2>${esc(p.name)}</h2>
-        ${p.blurb ? `<p class="ft-blurb">${esc(p.blurb)}</p>` : ''}
-        <p class="ft-meta"><span>${esc(cardName(p.hero))} + ${size} cards</span>${!complete && newCopies <= size ? `<span class="new-for-you">${newCopies} new for you</span>` : ''}</p>
-        <div class="ft-buy">
-          ${complete ? '<span class="owned-pill">✓ You have every card</span>'
-            : `<button class="store-btn buy big" data-click="store:deck:${p.id}">Get the deck ${priceChip(p.price, now)}</button>`}
-          <button class="store-btn ghost" data-click="store:deck:${p.id}">What’s inside</button>
-        </div>
-      </div>
-    </section>`;
+/**
+ * A deck as a deck of cards: its cover (the Hero Cat, in its family's colours) on top of a stack of real card backs,
+ * every card exactly a card's size, so it's never smaller than a single card beside it. `big` for its own page.
+ */
+function deckBox(p: DeckProduct, big = false): string {
+  return `<span class="deck-box ${famClass(p.hero)} ${big ? 'big' : ''}" aria-hidden="true">
+      <img class="db-back b2" src="${BASE}ui/cardback.webp" alt="" draggable="false">
+      <img class="db-back b1" src="${BASE}ui/cardback.webp" alt="" draggable="false">
+      <span class="db-front">
+        <img src="${artUrl(`${p.hero}-kitten`)}" alt="" loading="lazy" draggable="false" ${FALLBACK}>
+        <span class="db-band"><b>${esc(p.name)}</b><small>${Object.values(p.cards).reduce((a, b) => a + b, 0) + 1} cards</small></span>
+      </span>
+    </span>`;
 }
 
 function renderDeckOffer(p: DeckProduct): string {
   const { size, now, complete } = deckFacts(p);
   return `<button class="offer deck-offer ${famClass(p.hero)} ${complete ? 'owned' : ''}" data-click="store:deck:${p.id}" aria-label="${esc(p.name)}, deck">
-      <span class="of-art" style="background-image:url(${artUrl(`${p.hero}-bigcat`)})"></span>
-      <span class="of-shade"></span>
-      <span class="of-tag">Deck</span>
+      <span class="of-glow fam-glow"></span>
+      ${deckBox(p)}
       ${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}
       <span class="of-info">
+        <span class="of-tag">Deck</span>
         <span class="of-name">${esc(p.name)}</span>
         <span class="of-sub">${esc(cardName(p.hero))} + ${size} cards</span>
         ${complete ? '<span class="owned-pill">✓ Owned</span>' : priceChip(p.price, now)}
@@ -340,6 +314,7 @@ function renderCardOffer(p: CardProduct, have: number): string {
       <img class="of-card" src="${cardUrl(faceOf(p.card))}" alt="" loading="lazy" draggable="false" ${FALLBACK}>
       ${inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}
       <span class="of-info">
+        <span class="of-tag">Card</span>
         <span class="of-name">${esc(cardName(p.card))}</span>
         <span class="of-sub">${rarityMark(r)} ${r} ${esc(CARDS[p.card].type)}</span>
         ${full ? '<span class="owned-pill">✓ Owned</span>' : priceChip(p.price, p.price)}
@@ -363,9 +338,9 @@ function renderDeckPage(p: DeckProduct): string {
     RARITIES.indexOf(rarity(b)) - RARITIES.indexOf(rarity(a)) || (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0))];
   return `<div class="collection-grid store-body" data-keep-scroll="store-deck">
     <div class="product-page">
-      <section class="featured product-hero ${famClass(p.hero)}">
-        <div class="ft-art" style="background-image:url(${artUrl(`${p.hero}-bigcat`)})" aria-hidden="true"></div>
-        <div class="ft-info">
+      <section class="card-page deck-page-top ${famClass(p.hero)}">
+        <div class="cp-stage"><span class="of-glow fam-glow"></span>${deckBox(p, true)}</div>
+        <div class="cp-info">
           <span class="kicker">Deck · ${esc(setName(p.set))}</span>
           <h2>${esc(p.name)}</h2>
           ${p.blurb ? `<p class="ft-blurb">${esc(p.blurb)}</p>` : ''}

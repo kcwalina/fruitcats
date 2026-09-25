@@ -62,3 +62,14 @@ describe('assembleDeck', () => {
     expect(assembleDeck('x', 'Nobody', { 'SB1-G01': 3 }, mulberry(1))).toBeNull();
   });
 });
+
+describe('tokens', () => {
+  it('are never put in a deck, by the rules or by the playtest card pools', () => {
+    const tokens = Object.values(CARDS).filter((c) => c.token).map((c) => c.id);
+    expect(tokens.length).toBeGreaterThan(0);
+    for (const id of tokens) {
+      expect(deckProblems({ name: 't', hero: 'SB1-H01', cards: { [id]: 1 } }).join(' ')).toMatch(/can't be put in a deck/);
+      for (const h of playableHeroes()) expect(randomDeck(mulberry(1), h, undefined, 'r').cards[id]).toBeUndefined();
+    }
+  });
+});

@@ -309,6 +309,11 @@ Your personal-project users never move.
   and errors over 14 days, invite codes used, and the last day's errors. Each service writes its totals (counts
   only) to `logs/stats/<service>.json` every 15 minutes; `node tools/ops.mjs snapshot` combines them with the logs,
   and the dashboard relay (`playtest/dashboard/RELAY.md`, step 2b) uploads the result every 10 minutes.
+- **Who read the logs:** Azure's own read log (StorageRead) for both storage accounts goes to each account's
+  `insights-logs-storageread` container, kept 90 days (`scripts/setup/log-access-audit.ps1`, run once as Claude's
+  agent). The Accounts tab counts every read of `logs` and `security` by identity: reads, refused reads, data, the
+  addresses they came from and the last read, with any identity not named in `tools/ops.mjs` in red. It is how the
+  owner watches that nightly-reader-viamochi reads only what the nightly needs; that identity can't read this record.
 - **Alerts:** see "Alerts when something breaks" under What's set up. A scheduled Claude task ("Via Mochi health
   watch", every 20 minutes while the Claude app is open) also checks both services, restarts one that's hung, and
   reports.

@@ -312,15 +312,15 @@ export function createHub(deps: HubDeps) {
     const options = cleanOptions(msg.options);
     const lives = cleanLives(msg.lives);
     const error = (message: string) => c.send({ t: 'error', message });
-    if (!options || lives === null || typeof msg.to !== 'string') return error('That challenge didn’t make sense.');
+    if (!options || lives === null || typeof msg.to !== 'string') return error('That request to play didn’t make sense.');
     // A friend may be connected, or only "here" (the game open, not playing online): the challenge reaches them either way.
     const them = conns.get(msg.to);
-    if (!c.friends.has(msg.to) || (them && !them.friends.has(me))) return error('You can only challenge a friend.');
+    if (!c.friends.has(msg.to) || (them && !them.friends.has(me))) return error('You can only play with a friend.');
     if (statusOf(msg.to) === 'offline') return error('They aren’t online right now.');
     if (inGame(me)) return error('Finish your game first.');
     if (inGame(msg.to)) return error('They’re in a game.');
     for (const ch of challenges.values())
-      if ((ch.from === me && ch.to === msg.to) || (ch.from === msg.to && ch.to === me)) return error('There’s already a challenge between you.');
+      if ((ch.from === me && ch.to === msg.to) || (ch.from === msg.to && ch.to === me)) return error('One of you has already asked the other to play.');
     const deck = cleanDeck(msg.deck);
     const problem = deck ? await deps.checkDeck(me, deck, options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
@@ -340,14 +340,14 @@ export function createHub(deps: HubDeps) {
   async function accept(c: Conn, msg: Extract<ClientMessage, { t: 'accept' }>) {
     const ch = challenges.get(msg.id);
     const error = (message: string) => c.send({ t: 'error', message });
-    if (!ch || ch.to !== c.account) return error('That challenge is no longer open.');
+    if (!ch || ch.to !== c.account) return error('That game isn’t open any more.');
     const lives = cleanLives(msg.lives);
     const deck = cleanDeck(msg.deck);
     if (lives === null) return error('That handicap didn’t make sense.');
     const problem = deck ? await deps.checkDeck(c.account, deck, ch.options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
     const from = conns.get(ch.from);
-    if (!challenges.has(ch.id)) return error('That challenge is no longer open.');
+    if (!challenges.has(ch.id)) return error('That game isn’t open any more.');
     if (!from) { endChallenge(ch, 'offline'); return; }
     endChallenge(ch, 'started');
     startMatch([{ person: from.person, deck: ch.deck, lives: ch.lives }, { person: c.person, deck: deck!, lives }], ch.options);

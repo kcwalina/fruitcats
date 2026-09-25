@@ -356,7 +356,7 @@ button.link-button:hover { box-shadow: none; transform: none; }
   display: flex; flex-direction: column; align-items: center; gap: 4px; border-radius: 20px;
 }
 .mode-card img { width: var(--tile); height: var(--tile); border-radius: 14px; object-fit: cover; }
-.mode-text { display: flex; flex-direction: column; align-items: center; }
+.mode-text { display: flex; flex-direction: column; align-items: center; max-width: 100%; }
 .mode-name { font-family: Fredoka, Nunito, sans-serif; font-size: clamp(15px, calc(var(--vh, 1vh) * 2.4), 22px); font-weight: 700; line-height: 1.1; }
 .mode-sub { font-size: clamp(11px, calc(var(--vh, 1vh) * 1.5), 14px); font-weight: 600; }
 .home-note { min-height: 1.3em; margin: 0; max-width: 520px; font-weight: 700; font-size: 14px; }
@@ -936,7 +936,7 @@ body.dragging .hand-card:hover { transform: none; }
   .home .parade-cat.c1, .home .parade-cat.c3 { --h: calc(var(--vh, 1vh) * 10); }
   .home .parade-cat.c2 { --h: calc(var(--vh, 1vh) * 12.5); }
   .mode-name { font-size: 15px; }
-  .mode-sub { font-size: 11.5px; white-space: nowrap; }
+  .mode-sub { font-size: 11.5px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .home-note { font-size: 13px; }
   .title h1 { font-size: clamp(30px, calc(var(--vh, 1vh) * 5.5), 48px); }
   .hero-parade { height: calc(var(--vh, 1vh) * 16); }
@@ -1077,7 +1077,7 @@ button.pf-add { width: 100%; display: flex; align-items: center; gap: 12px; padd
   display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px;
   background: #fff3de; border: 2px solid #f7c98f; flex-wrap: wrap;
 }
-.pf-challenge-buttons { display: flex; gap: 8px; margin-left: auto; }
+.pf-join { margin-left: auto; padding: 0 22px; line-height: 40px; font-size: 17px; box-shadow: 0 3px 0 #d25f16; }
 .pf-from { width: min(100%, 560px); text-align: left; }
 .pf-tip { margin: 0; max-width: 560px; font-size: 14px; line-height: 1.4; background: #eef8ee; border: 2px solid #b9dfbe; border-radius: 14px; padding: 8px 12px; }
 button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color: #f7c98f; background: #fff3de; font-size: 15px; }
@@ -1167,6 +1167,8 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
   .stats:has(.hero-actions) .ability { display: none; }
   .stats .hero-actions button { white-space: nowrap; }
   .midbar .buttons button { white-space: nowrap; }
+  /* A teaching game adds What should I do? and Take back: the row wraps rather than pushing Pass off the screen. */
+  .midbar .buttons { flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
   .midbar .buttons .yarn-ico { display: none; }   /* "Take the Yarn" on one line */
 }
 .foe-hand.shown { display: flex; gap: 4px; }
@@ -1191,8 +1193,6 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
   .vs-sides { gap: 8px; }
   .vs-side { width: 120px; }
   .vs-hero { width: 84px; height: 84px; }
-  .pf-challenge-buttons { width: 100%; margin-left: 0; }
-  .pf-challenge-buttons button { flex: 1; }
 }
 /* An online game has more buttons beside Rules (Concede, Show my hand): they wrap rather than run off the side. */
 .side-buttons { flex-wrap: wrap; }

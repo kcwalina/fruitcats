@@ -201,3 +201,10 @@ a.page-title:hover { color: #fff; }
   display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 4px; border-radius: 50%;
   background: #d99a2b; color: #fff; font: 700 14px Fredoka, Nunito, sans-serif; vertical-align: 1px;
 }
+/* Pictures without step numbers (docs/collection.md): a bold word in the caption stays a word. */
+.doc .steps.shots figcaption > b:first-child { display: inline; width: auto; height: auto; margin: 0; border-radius: 0; background: none; color: inherit; font: inherit; font-weight: 700; }
+
+/* One big picture near the top of a page (docs/wallpapers.md): what the feature looks like, before the steps. */
+.doc .hero { margin: 22px auto 26px; max-width: 480px; text-align: center; }
+.doc .hero img { margin: 0 auto 8px; width: 100%; }
+.doc .hero figcaption { font-size: 14px; line-height: 1.4; opacity: 0.8; }

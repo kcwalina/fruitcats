@@ -32,6 +32,17 @@
         "@fruitcats/api"
       ],
       "port": 8787
+    },
+    {
+      "name": "api-local-fake",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "api:local",
+        "--",
+        "--fake-sign-in"
+      ],
+      "port": 8790
     }
   ]
 }

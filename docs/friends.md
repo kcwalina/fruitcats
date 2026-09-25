@@ -35,10 +35,10 @@ On a computer, **Copy the code** copies the message, ready to paste.
 
 <div class="steps">
 <figure><img src="guide/friends/play-1-list.webp" alt="Play a friend: Pippin, online, with a Play button" loading="lazy"><figcaption><b>1</b> Tap <b>Friend</b>. Friends who are online have a <b>Play</b> button: tap one.</figcaption></figure>
-<figure><img src="guide/friends/play-2-challenge.webp" alt="Play Pippin: choose a deck, Teaching game, Pace, Starter decks only, Your Lives" loading="lazy"><figcaption><b>2</b> Pick your deck and how to play (see below), then <b>Challenge</b>.</figcaption></figure>
+<figure><img src="guide/friends/play-2-challenge.webp" alt="Play with Pippin: choose a deck, Teaching game, Pace, Your Lives" loading="lazy"><figcaption><b>2</b> Pick your deck and how to play (see below), then <b>Ask Pippin to play</b>.</figcaption></figure>
 <figure><img src="guide/friends/play-3-waiting.webp" alt="Waiting for Pippin, with a countdown" loading="lazy"><figcaption><b>3</b> Wait for your friend to answer (up to 2 minutes).</figcaption></figure>
-<figure><img src="guide/friends/play-4-banner.webp" alt="Sam wants to play, with a See button, on the Home screen" loading="lazy"><figcaption><b>4</b> Your friend sees <b>"Sam wants to play"</b> wherever they are in the game, and taps <b>See</b>.</figcaption></figure>
-<figure><img src="guide/friends/play-5-answer.webp" alt="A challenge: pick a deck, then Not now or Play" loading="lazy"><figcaption><b>5</b> They pick their deck and tap <b>Play</b>.</figcaption></figure>
+<figure><img src="guide/friends/play-4-banner.webp" alt="Sam wants to play, with a Join button, on the Home screen" loading="lazy"><figcaption><b>4</b> Your friend sees <b>"Sam wants to play"</b> wherever they are in the game, and taps <b>Join</b>.</figcaption></figure>
+<figure><img src="guide/friends/play-5-answer.webp" alt="Play with Sam: pick a deck, then Play" loading="lazy"><figcaption><b>5</b> They pick their deck and tap <b>Play</b>.</figcaption></figure>
 <figure><img src="guide/friends/play-6-versus.webp" alt="You vs Sam, with both Hero Cats" loading="lazy"><figcaption><b>6</b> The game starts.</figcaption></figure>
 <figure><img src="guide/friends/play-7-game.webp" alt="An online game: Sam says Meow!, your clock shows 2:00" loading="lazy"><figcaption><b>7</b> Play as usual. The clock under your Pawtrait shows your time; <b>Hold on</b> gives you more.</figcaption></figure>
 <figure><img src="guide/friends/play-8-emotes.webp" alt="The emote menu: Meow!, Purr, Hiss!, Good game!" loading="lazy"><figcaption><b>8</b> Tap 🐾 on your Pawtrait to say something.</figcaption></figure>
@@ -52,7 +52,6 @@ On a computer, **Copy the code** copies the message, ready to paste.
 |---|---|
 | **Teaching game** | For a friend who's new: no timer, **What should I do?** hints, **Take back** a move, and either of you can **Show my hand**. It doesn't count in your score. |
 | **Pace** | **Relaxed** (2 minutes a move), **Quick** (45 seconds) or **No timer**. Out of time? Nothing happens by itself: your friend can give you more time. |
-| **Starter decks only** | You both play one of the starter decks, so an experienced player can't bring a tuned deck. |
 | **Your Lives** | Start with fewer than 9 Lives, to give your friend a head start. |
 
 ### Good to know

@@ -155,7 +155,7 @@ describe('presence and challenges', () => {
     await connect(C);
     sam.send({ t: 'challenge', to: C, deck: STARTER, options: RELAXED, lives: 9 });
     await flush();
-    expect(sam.last('error')!.message).toMatch(/only challenge a friend/);
+    expect(sam.last('error')!.message).toMatch(/only play with a friend/);
   });
 
   it('refuses a deck the player can’t play', async () => {

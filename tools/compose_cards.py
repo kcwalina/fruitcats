@@ -344,8 +344,6 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
     if finish == SIGNATURE and card.get("signature") == "rainbow":
         finish = RAINBOW_SIGNATURE     # the rainbow Signature stone, printed where the card's Signature goes
     main, dark, tint = FAMILIES[card["family"]]
-    if finish == RAINBOW_SIGNATURE:    # night-purple, the stone's own colour, so the rainbow is the only colour on the frame
-        main, dark, tint = "#4a2f7a", "#1e1236", "#efe8ff"
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
     text = face.get("text", "")

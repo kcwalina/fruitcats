@@ -86,6 +86,10 @@ describe('studio', () => {
     const invite = await call(OWNER, '/bp1/invites', { json: { note: 'Basil' } });
     expect(invite.status).toBe(201);
     expect(invite.body.url).toContain('studio.html?invite=');
+    // A reviewer or an agent opening the link uses nothing up and becomes no one's artist.
+    expect((await call(OWNER, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'bp1', reviewer: true });
+    expect((await call(AGENT, `/invites/${invite.body.code}`, { json: {} })).status).toBe(403);
+    expect((await call(OWNER, '/bp1/artists')).body.artists).toEqual([]);
     expect((await call(ARTIST, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'bp1' });
     expect((await call(STRANGER, `/invites/${invite.body.code}`, { json: {} })).status).toBe(409);
     expect((await call(ARTIST, '/me')).body.sets).toEqual(['bp1']);

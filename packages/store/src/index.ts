@@ -45,7 +45,7 @@ export const validProductId = (id: unknown): id is string => typeof id === 'stri
  * Is this a starter set, whose decks everyone has? Sets say so (`starter`). A card pack published before sets said
  * it can replace the built-in Starter Box, so when no loaded set says, the released sets are the starters, as before.
  */
-function isStarterSet(set: string): boolean {
+export function isStarterSet(set: string): boolean {
   const s = SETS[set];
   if (!s) return false;
   return Object.values(SETS).some((x) => x.starter) ? !!s.starter : s.status === 'released';

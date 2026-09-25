@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fruitcats/engine": "*",
+    "@fruitcats/match": "*",
     "@fruitcats/store": "*"
   },
   "devDependencies": {

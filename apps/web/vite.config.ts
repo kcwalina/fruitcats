@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@fruitcats/engine': fileURLToPath(new URL('../../packages/engine/src/index.ts', import.meta.url)),
       '@fruitcats/store': fileURLToPath(new URL('../../packages/store/src/index.ts', import.meta.url)),
+      '@fruitcats/match': fileURLToPath(new URL('../../packages/match/src/index.ts', import.meta.url)),
     },
   },
   plugins: [docsPages(), contentAssets(), idPassThrough()],

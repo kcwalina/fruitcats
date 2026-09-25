@@ -8,6 +8,7 @@
 //   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
 //   /v1/store…                       →  the Store, while it's only for testers (store.ts)
 //   /v1/studio/...                   →  the Artist Studio (studio/studio.ts, docs/artist-studio-plan.md)
+//   /v1/live  (WebSocket)            →  online play: presence, friend codes, challenges, matches (live/, docs/pvp-plan.md)
 //
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
@@ -16,11 +17,15 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
-import { CARDS, registerSet } from '@fruitcats/engine';
+import { CARDS, DECKS, deckProblems, registerSet, type DeckList } from '@fruitcats/engine';
+import { collectionOf, isStarterSet } from '@fruitcats/store';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { loadContent } from '../../../content';
 import { log } from './logs';
-import { eraseOrders, exportOrders, storeRequest } from './store';
+import { createHub } from './live/hub';
+import { tableStore } from './live/records';
+import { attachLive } from './live/socket';
+import { eraseOrders, exportOrders, purchasedCards, storeRequest } from './store';
 import { azureStore } from './studio/store';
 import { studio } from './studio/studio';
 import { LOCAL_DATA, table } from './tables';
@@ -41,6 +46,7 @@ const MAX_BODY = 512 * 1024;
 const jwks = createRemoteJWKSet(new URL(`${ID_SERVICE}/.well-known/jwks.json`));
 const decksTable = table('decks');
 const showcaseTable = table('showcase');
+const live = tableStore(table('matches'), table('rivals'), table('seen'));
 
 /** A deck as the game stores it, with when it last changed. A deleted deck stays as a marker, so it doesn't come back. */
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
@@ -166,12 +172,13 @@ async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown 
 /** Everything stored for an account. */
 async function exportAccount(user: string) {
   const { decks, showcase } = await sync(user, {});
-  return { decks: decks.filter((d) => !d.deleted), showcase, orders: await exportOrders(user) };
+  return { decks: decks.filter((d) => !d.deleted), showcase, orders: await exportOrders(user), online: await live.exportFor(user) };
 }
 
 /** Erase everything stored for an account. */
 async function erase(user: string) {
   await eraseOrders(user);
+  await live.erase(user);
   for (const row of await decksTable.list(user)) await decksTable.remove(user, row.rowKey);
   await showcaseTable.remove(user, 'main');
 }
@@ -203,8 +210,7 @@ const server = createServer(async (req, res) => {
     log('ops', 'http.request', { method: req.method, path: path.replace(/\/[0-9a-f]{32}(?=\/|$)/g, '/{id}'), status: res.statusCode, ms: Math.round(performance.now() - started) });
   });
   const origin = req.headers.origin;
-  // Run locally, any page on this computer or the home network may call it (the game's dev server picks its own port).
-  if (origin && (ORIGINS.has(origin) || (LOCAL_DATA && /^http:\/\/(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}):\d+$/.test(origin)))) {
+  if (origin && originAllowed(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -247,6 +253,58 @@ const server = createServer(async (req, res) => {
     send(res, 500, { error: 'server' });
   }
 });
+
+// ── Online play ──────────────────────────────────────────────────────────────────────────────────
+
+/** Pages that may call the API. Run locally, any page on this computer or the home network (the game's dev server picks its own port). */
+function originAllowed(origin: string | undefined): boolean {
+  if (!origin) return false;
+  return ORIGINS.has(origin) || (!!LOCAL_DATA && /^http:\/\/(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}):\d+$/.test(origin));
+}
+
+/** Fake sign-in (local only): everyone who has connected is everyone's friend, so two browsers can play each other. */
+const fakeAccounts = new Set<string>();
+
+const hub = createHub({
+  store: live,
+  async verify(token, name) {
+    if (FAKE_SIGN_IN && /^dev-[0-9a-f]{32}$/.test(token)) {
+      const id = token.slice('dev-'.length);
+      fakeAccounts.add(id);
+      return { id, name: name?.trim().slice(0, 40) || `Player ${id.slice(0, 4)}` };
+    }
+    try {
+      const { payload } = await jwtVerify(token, jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
+      if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+      return { id: payload.sub, name: typeof payload.name === 'string' ? payload.name : '' };
+    } catch {
+      return null;
+    }
+  },
+  // viamochi-id knows who is friends with whom; we ask it with the player's own token.
+  async friendsOf(account, token) {
+    if (FAKE_SIGN_IN && token.startsWith('dev-')) return [...fakeAccounts].filter((a) => a !== account);
+    const res = await fetch(`${ID_SERVICE}/friends`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`friends: ${res.status}`);
+    const json = (await res.json()) as { friends?: { id?: unknown }[] };
+    return (json.friends ?? []).map((f) => f.id).filter((id): id is string => typeof id === 'string');
+  },
+  // Each player plays their own deck: finished, legal, and every card owned by their own account.
+  async checkDeck(account, deck, startersOnly) {
+    if (startersOnly) {
+      const same = (a: DeckList, b: DeckList) => a.hero === b.hero
+        && Object.keys(a.cards).length === Object.keys(b.cards).length && Object.entries(a.cards).every(([id, n]) => b.cards[id] === n);
+      const starter = Object.values(DECKS).some((d) => isStarterSet(CARDS[d.hero]?.set ?? '') && same(d, deck));
+      return starter ? null : 'This game is for starter decks only.';
+    }
+    const owned = collectionOf(await purchasedCards(account));
+    const problems = deckProblems(deck, owned);
+    return problems.length ? `That deck can’t be played: ${problems[0]}` : null;
+  },
+  log: (event, fields) => log('ops', event, fields),
+});
+attachLive(server, hub, originAllowed);
+void hub.restore().catch((e) => log('ops', 'live.restore_failed', { message: (e as Error).message }, 'error'));
 
 // Listen first: App Service gives up on a container that doesn't answer soon after starting. The tables are made in
 // the background (tables.ts), so a fresh storage account needs no setup.

@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       '@fruitcats/engine': own('./packages/engine/src/index.ts'),
       '@fruitcats/store': own('./packages/store/src/index.ts'),
+      '@fruitcats/match': own('./packages/match/src/index.ts'),
     },
   },
   test: {

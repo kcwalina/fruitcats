@@ -319,7 +319,8 @@ function setsPage(): string {
   const mine = visibleSets();
   if (!mine.length) {
     return `<main class="empty"><h1>Welcome, ${esc(S.me?.name ?? '')}</h1>
-      <p>Your account isn’t part of a set yet. When we invite you, you’ll get a link: open it here, signed in as <b>${esc(S.me?.name ?? '')}</b>.</p></main>`;
+      <p>Your account isn’t part of a set yet. When we invite you, you’ll get a link: open it here, signed in as <b>${esc(S.me?.name ?? '')}</b>.</p>
+      ${S.me?.id ? `<p class="muted small">Your account id, if we ask for it: <code>${esc(S.me.id)}</code></p>` : ''}</main>`;
   }
   return `<main class="sets"><h1>Your sets</h1><div class="set-grid">${mine.map((s) => {
     const brief = S.briefs.get(s.code);
@@ -343,7 +344,16 @@ function homePage(code: string): string {
     .sort((a, b) => (versionsOf(view, keyOf(b)).at(-1)!.at > versionsOf(view, keyOf(a)).at(-1)!.at ? 1 : -1))[0];
   const heroShown = latest ? shown(code, keyOf(latest)) : null;
 
-  const nextCard = next ? (() => {
+  const waitingOnOwner = owner ? brief.pictures.filter((p) => stateOf(view, keyOf(p)) === 'waiting') : [];
+  const nextCard = owner ? (waitingOnOwner.length ? (() => {
+    const w = waitingOnOwner[0], key = keyOf(w);
+    return `<a class="next" href="#/${code}/${key}">
+      <div class="next-thumb">${cardPreview(code, key, finishesOf(w).at(-1)!.finish, shown(code, key).url, 120)}</div>
+      <div><small>Waiting on you</small><h2>${esc(title(w))}${sideLabel(w) ? ` <span class="muted">(${sideLabel(w)})</span>` : ''}</h2>
+        <p>${versionsOf(view, key).at(-1)?.kind === 'sketch' ? 'A new sketch' : 'A new picture'} to review${waitingOnOwner.length > 1 ? `, and ${waitingOnOwner.length - 1} more` : ''}.</p><span class="btn primary">Review it</span></div></a>`;
+  })() : `<div class="next waiting"><div><small>Nothing waiting on you</small><h2>${next ? `The artist is on ${esc(title(next))}` : 'All caught up'}</h2>
+      <p>New uploads show up here. You can also make an invite link on the <a href="#/${code}/artists">Artists</a> page.</p></div></div>`)
+  : next ? (() => {
     const key = keyOf(next), state = stateOf(view, key);
     const action = nextAction(next, state, versionsOf(view, key));
     return `<a class="next" href="#/${code}/${key}">
@@ -417,13 +427,16 @@ function picturePage(code: string, key: string): string {
   const state = stateOf(view, key);
   const versions = versionsOf(view, key);
   const pic = shown(code, key);
+  const all = steps(brief, view);
+  const at = all.findIndex((st) => st.pictures.includes(p));
+  const stepInfo = { open: at < 0 || all[at].open, after: at > 0 ? all[at - 1].milestone.title : '' };
   const i = brief.pictures.indexOf(p);
   const prev = brief.pictures[i - 1], next = brief.pictures[i + 1];
   return `<main class="picture">
     <aside class="brief">
       <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main picture' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
-      ${actionBox(p, state, versions)}
+      ${actionBox(p, state, versions, stepInfo.open, stepInfo.after)}
       <section><h3>What to draw</h3><p>${esc(p.draw)}</p></section>
       ${p.mustKeep?.length ? `<section><h3>Please keep</h3><ul>${p.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>
         <p class="muted small">The game’s rules or other cards depend on these.</p></section>` : ''}
@@ -443,12 +456,12 @@ function picturePage(code: string, key: string): string {
 }
 
 /** What to do now, the upload box and, for the owner, the review buttons. */
-function actionBox(p: BriefPicture, state: State, versions: Version[]): string {
+function actionBox(p: BriefPicture, state: State, versions: Version[], stepOpen: boolean, opensAfter: string): string {
   const key = keyOf(p);
-  const action = nextAction(p, state, versions);
   const local = S.local.get(key);
   const owner = S.me?.role === 'owner';
   const up = S.uploading?.key === key ? S.uploading : null;
+  const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
   let box = '';
   if (local) {
     const list = checks(p, local.width, local.height, local.format, S.uploadKind);
@@ -469,17 +482,31 @@ function actionBox(p: BriefPicture, state: State, versions: Version[]): string {
     box = `<label class="drop" data-drop="${key}">
       <input type="file" accept="image/webp,image/png,image/jpeg" data-file="${key}" hidden>
       <b>${versions.length ? 'Upload a new version' : 'Choose your picture'}</b>
-      <span>Drop it here, or click to choose. You’ll see it on the card before you send it.</span></label>`;
+      <span>Drop it here, or click to choose. You’ll see it ${where} before you send it.</span></label>`;
   }
+
+  if (owner) {
+    const last = versions.at(-1);
+    const review = !versions.length ? '<p class="muted small">Nothing uploaded yet.</p>' : `
+      <p class="small">${last?.kind === 'sketch' ? 'The newest version is a <b>sketch</b>.' : 'The newest version is <b>finished</b>.'} Write what to change as a comment first: the artist sees both.</p>
+      <div class="review-buttons">
+        ${last?.kind === 'sketch' && state !== 'sketch-ok'
+          ? `<button class="btn good" data-click="review:${key}:sketch-ok">Approve the sketch</button>`
+          : state !== 'approved' ? `<button class="btn good" data-click="review:${key}:approved">Approve</button>` : ''}
+        ${state !== 'changes' ? `<button class="btn warn" data-click="review:${key}:changes">Ask for changes</button>` : ''}
+        ${last?.kind === 'sketch' && state !== 'approved' ? `<button class="link" data-click="review:${key}:approved">Approve as finished</button>` : ''}
+        ${state !== 'waiting' && state !== 'none' ? `<button class="link" data-click="review:${key}:waiting">Undo (${esc(STATE_NAMES[state])})</button>` : ''}
+      </div>`;
+    return `<section class="action owner-review state-${state}"><small class="kicker">Your review</small>
+      <h3>${esc(STATE_NAMES[state])}</h3>${review}
+      <details class="owner-upload"><summary>Upload for the artist</summary>${box}</details></section>`;
+  }
+
+  const action = nextAction(p, state, versions);
+  const lock = !stepOpen && state === 'none' ? `<p class="lock-note">🔒 This step opens when “${esc(opensAfter)}” is approved. Starting early is fine.</p>` : '';
   return `<section class="action state-${state}">
-    <h3>${esc(action.title)}</h3><p>${esc(action.text)}</p>
-    ${state === 'approved' && !owner ? '' : box}
-    ${owner && versions.length ? `<div class="review"><small>Your review</small><div>
-      ${versions.at(-1)?.kind === 'sketch' ? `<button class="btn good small" data-click="review:${key}:sketch-ok">Sketch approved</button>` : ''}
-      <button class="btn good small" data-click="review:${key}:approved">Approve</button>
-      <button class="btn warn small" data-click="review:${key}:changes">Ask for changes</button>
-      ${state !== 'waiting' ? `<button class="btn ghost small" data-click="review:${key}:waiting">Undo</button>` : ''}</div>
-      <p class="muted small">Write what to change as a comment first: the artist sees both.</p></div>` : ''}
+    <h3>${esc(action.title)}</h3><p>${esc(action.text)}</p>${lock}
+    ${state === 'approved' ? '' : box}
   </section>`;
 }
 
@@ -522,6 +549,10 @@ function suggestionRow(code: string, s: Suggestion, owner: boolean): string {
 
 function versionStrip(key: string, versions: Version[], pic: ReturnType<typeof shown>): string {
   if (!versions.length && !pic.local) return '';
+  if (versions.length === 1 && !pic.local) {
+    const v = versions[0];
+    return `<p class="version-one">Version 1 · ${v.kind === 'sketch' ? 'Sketch' : 'Finished'} · ${when(v.at)}${v.note ? ` · “${esc(v.note)}”` : ''}</p>`;
+  }
   const items = versions.map((v, n) => {
     const on = !pic.local && pic.version?.id === v.id;
     return `<button class="ver ${on ? 'on' : ''}" data-click="version:${key}:${v.id}" title="${esc(`${v.width} × ${v.height} ${v.format.toUpperCase()}, ${kb(v.bytes)}${v.note ? `: ${v.note}` : ''}`)}">
@@ -547,23 +578,28 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
     const finishes = finishesOf(p);
     const finish = S.finish.get(key) ?? finishes.at(-1)!.finish;
     body = `${finishes.length > 1 ? `<div class="seg small">${finishes.map((f) => `<button class="${f.finish === finish ? 'on' : ''}" data-click="finish:${key}:${f.finish}">${f.label}</button>`).join('')}</div>` : ''}
-      <div class="card-stage">${cardPreview(code, key, finish, url, 420)}</div>
+      <div class="card-stage">${cardPreview(code, key, finish, url, 420, pinsFor(code, key, pic.version))}</div>
       <p class="pv-note">The card shows your whole picture, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
   } else if (tab === 'game') body = gamePreview(p, url, code, key);
   else {
-    body = url ? `<div class="walls">${DEVICES.map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`).join('')}</div>
+    body = url ? `<div class="walls">${DEVICES.map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`).join('')}</div>
       <p class="pv-note">Players can make any card they own into a wallpaper. A phone keeps only the middle of your picture, with the clock over its upper part.</p>`
-      : '<p class="pv-empty">Choose a picture to see it as a wallpaper.</p>';
+      : '<p class="pv-empty">Choose a picture on the left to see it as a wallpaper.</p>';
   }
   return `<div class="tabs" role="tablist">${tabs.map(([t, label]) => `<button role="tab" aria-selected="${t === tab}" class="${t === tab ? 'on' : ''}" data-click="tab:${t}">${label}</button>`).join('')}</div>
-    <div class="preview" data-preview="${key}">${body}</div>`;
+    <div class="preview tab-${tab} ${url ? '' : 'is-empty'}" data-preview="${key}">${body}</div>`;
+}
+
+/** The comments' pins on a version, numbered as in the comments. */
+function pinsFor(code: string, key: string, version: Version | null): string {
+  const comments = (S.views.get(code)?.comments ?? []).filter((c) => c.picture === key && c.pinX !== undefined && (!version || c.version === version.id));
+  return comments.map((c, n) => `<span class="pin ${c.author}" style="left:${c.pinX! * 100}%;top:${c.pinY! * 100}%" title="${esc(c.text)}"><i>${n + 1}</i></span>`).join('');
 }
 
 /** The picture itself, large, with the comments' pins on it. Click to pin a comment to a spot. */
 function pictureView(code: string, key: string, url: string | null, version: Version | null): string {
-  if (!url) return '<p class="pv-empty">No picture yet.</p>';
-  const comments = (S.views.get(code)?.comments ?? []).filter((c) => c.picture === key && c.pinX !== undefined && (!version || c.version === version.id));
-  const pins = comments.map((c, n) => `<span class="pin ${c.author}" style="left:${c.pinX! * 100}%;top:${c.pinY! * 100}%" title="${esc(c.text)}"><i>${n + 1}</i></span>`).join('')
+  if (!url) return '<p class="pv-empty">No picture yet. Choose one on the left.</p>';
+  const pins = pinsFor(code, key, version)
     + (S.pin ? `<span class="pin new" style="left:${S.pin.x * 100}%;top:${S.pin.y * 100}%"><i>+</i></span>` : '');
   return `<div class="bigpic ${S.pinning ? 'pinning' : ''}" data-pinboard="1"><img src="${url}" alt="">${pins}</div>
     ${S.pinning ? '<p class="pv-note"><b>Click the spot</b> your comment is about.</p>' : ''}`;
@@ -580,7 +616,7 @@ function commentsPanel(code: string, p: BriefPicture, version: Version | null): 
   const vName = (id?: string) => { const n = versions.findIndex((v) => v.id === id); return n >= 0 ? `v${n + 1}` : ''; };
   const pinNo = new Map(all.filter((c) => c.pinX !== undefined && (!version || c.version === version.id)).map((c, n) => [c.id, n + 1]));
   const one = (c: Comment, reply = false): string => `<article class="comment ${c.author} ${c.done ? 'is-done' : ''} ${reply ? 'reply' : ''}">
-      <header>${authorLabel(c)}<span class="muted small">${when(c.at)}${c.version ? ` · on ${vName(c.version)}` : ''}${pinNo.has(c.id) ? ` · pin ${pinNo.get(c.id)}` : ''}</span></header>
+      <header>${authorLabel(c)}<span class="muted small">${when(c.at)}${c.version ? ` · on ${vName(c.version)}` : ''}${pinNo.has(c.id) ? ` · <button class="link" data-click="tab:picture">pin ${pinNo.get(c.id)}</button>` : ''}</span></header>
       <p>${esc(c.text).replace(/\n/g, '<br>')}</p>
       <footer>${reply ? '' : `<button class="link" data-click="reply:${c.id}">Reply</button>`}
         ${S.guest ? '' : `<button class="link" data-click="done:${c.id}:${c.done ? 0 : 1}">${c.done ? `Done${c.doneBy ? ` (${esc(c.doneBy)})` : ''} · undo` : 'Mark done'}</button>`}
@@ -616,7 +652,7 @@ function artistsPage(code: string): string {
       ${S.newInvite ? `<div class="invite-link"><code>${esc(S.newInvite)}</code><button class="btn small" data-click="copy">Copy</button></div>` : ''}
     </section>
     <section><h3>Artists</h3>${r?.artists.length ? r.artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b><span class="muted small">joined ${when(a.joined)}</span>
-      <button class="link" data-click="remove:${code}:${a.id}">Remove</button></div>`).join('') : '<p class="muted">No one yet.</p>'}
+      <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('') : '<p class="muted">No one yet.</p>'}
       <p class="muted small">Removing an artist keeps their pictures and comments.</p></section>
     ${r?.invites.length ? `<section><h3>Invites not used yet</h3>${r.invites.map((i) => `<div class="roster-row"><span>${esc(i.note || 'Invite')}</span>
       <span class="muted small">until ${new Date(i.expires).toLocaleDateString()}</span><code class="small">${esc(i.url)}</code></div>`).join('')}</section>` : ''}
@@ -639,7 +675,13 @@ async function fillWallpapers() {
     made.then((src) => {
       if (!el.isConnected) return;
       el.querySelector('.spinner')?.remove();
-      if (!el.querySelector('img')) el.insertAdjacentHTML('afterbegin', `<img src="${src}" alt="">`);
+      if (el.querySelector('img.wall-made')) return;
+      const img = new Image();
+      img.className = 'wall-made';
+      img.alt = '';
+      img.onload = () => { el.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; el.classList.add('ready'); };
+      img.src = src;
+      el.prepend(img);
     }).catch(() => { el.innerHTML = '<p class="pv-empty">Couldn’t draw this wallpaper.</p>'; });
   }
 }

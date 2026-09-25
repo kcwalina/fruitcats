@@ -1,9 +1,12 @@
-# Artist Studio: plan
+# Artist Studio
 
 A website where the artists who draw Fruitcats cards do their work with us. It shows them what to draw next,
 takes each picture they upload, shows it on the real card straight away, and keeps track of what's done.
 
-Status: plan, 2026-09-24. Nothing built yet.
+Status, 2026-09-24: built (phases S1 to S3 below). The helper chat (S4) is still to come.
+
+The Studio is at **https://playtest.fruitcats.viamochi.com/studio.html**. It lives on the playtest site because
+that is where Via Mochi sign-in is allowed.
 
 ## Why
 
@@ -31,9 +34,8 @@ The guide stays, as the reference behind the Studio's short in-page tips.
   - their picture on the real card, in every finish the card is sold in
   - their picture small, as the game shows it on the board and as a hero portrait (these crop the sides)
   - their picture as a wallpaper on a phone, a tablet and a computer, with the lock-screen clock drawn on
-  - automatic checks: size (1536 × 1024, or 512 × 512 for a Pawtrait), format and a warning for a frame
-    drawn into the picture
-  - the picture's status: *uploaded*, *changes asked* or *approved*
+  - automatic checks: size (1536 × 1024, or 512 × 512 for a Pawtrait), shape and format
+  - the picture's status: *with us*, *changes asked*, *sketch approved* or *approved*
   - comments (see below)
   - every earlier version, so nothing they've sent is ever gone
 - **Comments.** Each picture has a comment thread, and each comment belongs to one version of the
@@ -71,8 +73,8 @@ local script, `npm run studio -- pull <set>`, which copies the approved version 
   (`<set>/<card>/<time>-<hash>.webp`), and the card shows the latest.
 - An upload counts as done only after the server has stored it and read its hash back. The preview shows
   the stored file, not the one in the browser.
-- The storage container has blob versioning and soft delete turned on, and is separate from the site's
-  code, so a bad deploy can't touch it.
+- The pictures are in a storage account that keeps deleted blobs for 14 days, separate from the site's code,
+  so a bad deploy can't touch them.
 - If uploads ever misbehave, the card previews still work on a file the artist picks from their own
   computer, without uploading it. They can keep working and email us the files.
 
@@ -94,25 +96,27 @@ checks that every card has a brief entry.
 **The site.** A new page in `apps/web` (`studio.html`, its own entry in `vite.config.ts`), styled like the
 game. It's published with the rest of the site; the page itself holds nothing private.
 
-**Sign-in.** Via Mochi accounts (`apps/web/src/auth.ts` on the accounts branch): the artist signs up as a
-player does, with an emailed code. We add their account to the Studio's list of artists for a set.
+**Sign-in.** Via Mochi accounts (`apps/web/src/auth.ts`): the artist signs up as a player does, with an
+emailed code. An invite link from the owner adds their account to a set.
 
 **Server.** New routes in the game's API (`apps/api`, the `fruitcats-api` App Service), which already checks
 Via Mochi tokens:
 
 | Route | What it does |
 |---|---|
-| `GET /v1/studio/me` | the sets this account may work on, and its role (artist or owner) |
-| `GET /v1/studio/<set>` | status, versions and comments for each picture |
-| `POST /v1/studio/<set>/<picture>` | upload a new version (size and format checked on the server) |
-| `GET /v1/studio/<set>/<picture>/<version>` | the stored image |
-| `POST /v1/studio/<set>/<picture>/comments` | add a comment or reply (author and kind: artist, owner or AI, set by the server from the sign-in) |
-| `POST /v1/studio/<set>/<picture>/review` | owner only: approve or ask for changes |
-| `GET /v1/studio/<set>/changes?since=<time>` | what's new, for the Studio home and for agents |
-| `POST /v1/studio/<set>/suggestions` | propose a new name or flavour text; owner accepts or declines |
+| `GET /v1/studio/me` | who you are: your role (owner, artist or agent) and your sets |
+| `POST /v1/studio/invites/<code>` | accept an invite link |
+| `GET /v1/studio/<set>` | each picture's state and versions, the comments and suggestions |
+| `POST /v1/studio/<set>/pictures/<picture>` | upload a new version (format and size read on the server) |
+| `GET /v1/studio/<set>/pictures/<picture>/<version>` | a stored version |
+| `POST /v1/studio/<set>/pictures/<picture>/comments` | add a comment or reply; the server labels it owner, artist or AI from the sign-in |
+| `POST /v1/studio/<set>/pictures/<picture>/review` | owner only: sketch approved, approved, or ask for changes |
+| `GET /v1/studio/<set>/changes?since=<time>` | what's new, for agents |
+| `POST /v1/studio/<set>/suggestions` | propose a new name or flavour text; the owner accepts or declines |
+| `GET`, `POST`, `DELETE /v1/studio/<set>/artists`, `/invites` | owner only: the set's artists and invite links |
 
-Storage: a blob container `studio` and tables `studioartists` and `studiopictures` in the `fruitcatsdata`
-account, reached with the API's managed identity.
+The full list is at the top of `apps/api/src/studio/studio.ts`. Storage: one table and one blob container, both
+called `studio`, in the `fruitcatsdata` account, reached with the API's managed identity.
 
 ## Phases
 
@@ -131,3 +135,43 @@ the files as the guide says today.
 - **Artist guide:** owns the guide and the briefs. The Studio needs the brief as `brief.json`; the guide
   gets a short section pointing to the Studio.
 - **Accounts:** owns sign-in and `apps/api`. S2 adds routes there after the accounts work is merged.
+
+## Running it
+
+**On this computer.** Start the Studio's API with its data in `.studio-dev/`, and the site:
+
+```bash
+npm run studio:dev -w @fruitcats/api
+```
+
+```bash
+npm run dev
+```
+
+Then open `http://localhost:5173/studio.html?dev`. With `?dev`, sign-in is a list of pretend accounts: an owner, an
+artist and someone not invited. The agent command works against it with `--dev` (its key is `dev-agent`).
+
+**Setting up the real one.** The API needs three app settings on `fruitcats-api`:
+
+| Setting | What it is |
+|---|---|
+| `STUDIO_OWNERS` | The owner's Via Mochi account id (32 hex characters). The Studio shows it to a signed-in account that isn't invited yet. |
+| `STUDIO_AGENTS` | One `Name:sha256` per agent, comma-separated. `npm run studio -- key Claude` makes a key, keeps it in `~/.fruitcats-studio/agent.key` and prints the line. |
+| `STUDIO_URL` | Where invite links point. Default: `https://playtest.fruitcats.viamochi.com/studio.html`. |
+
+The API makes its table (`studio`) and blob container (`studio`) in `fruitcatsdata` when it starts. The storage
+account keeps deleted blobs for 14 days, and the Studio never deletes or overwrites a picture.
+
+**Inviting an artist.** Sign in as the owner, open the set, choose **Artists**, and make an invite link. Send it to
+the artist. They open it, create their Via Mochi account (or sign in), and see the set. A link works once and lasts
+30 days.
+
+**Adding a set.** A set appears in the Studio when its folder has `art/brief.json`. Then draw its frames:
+`python tools/compose_cards.py --set <code> --frames`. `npm run check-set` checks the brief.
+
+**When pictures are approved.** `npm run studio -- pull <set>` copies each approved picture into the set's folder
+(Pawtraits into `art/avatars/`, key art into `announcement/`) and composes the cards. Review the result with `git
+diff`, then commit and deploy as usual.
+
+**Studio Practice (SP1)** is a pretend set for trying the Studio. It isn't in `content/index.ts`, so the game, the
+bots and `check-set` never load it.

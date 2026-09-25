@@ -15,7 +15,7 @@ import {
 import { rarity, rarityMark } from './rarity';
 import {
   addLinesToCart, addToCart, planForDeck, cartCount, cartLines, catalog, clearCart, inCart, localQuote, ownedNow, placeTestOrder,
-  refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, swapForDeck, testCheckout, type Order,
+  newOrderId, refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, swapForDeck, testCheckout, type Order,
 } from './shop';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass } from './ui';
 
@@ -163,7 +163,7 @@ export function storeEscape(host: StoreHost): boolean {
 
 /** Review order: the API prices the cart; the player sees that total and confirms it. */
 async function review(host: StoreHost) {
-  checkout = { stage: 'pricing', orderId: unanswered ?? crypto.randomUUID() };
+  checkout = { stage: 'pricing', orderId: unanswered ?? newOrderId() };
   host.render();
   const quote = await serverQuote();
   if (!checkout) return;
@@ -186,7 +186,7 @@ async function place(host: StoreHost) {
     startReveal(result.order);
   } else if (result.why === 'changed') {
     // Never place an order for a total the player didn't see: show the new one, and ask again.
-    checkout = { stage: 'confirm', quote: result.quote, changedFrom: agreed, orderId: crypto.randomUUID() };
+    checkout = { stage: 'confirm', quote: result.quote, changedFrom: agreed, orderId: newOrderId() };
   } else {
     checkout = { ...checkout, stage: 'failed', message: result.message };
   }

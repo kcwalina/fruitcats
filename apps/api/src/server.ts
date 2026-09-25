@@ -152,8 +152,8 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin;
-  // Run locally, any page on this computer may call it (the game's dev server picks its own port).
-  if (origin && (ORIGINS.has(origin) || (LOCAL_DATA && /^http:\/\/localhost:\d+$/.test(origin)))) {
+  // Run locally, any page on this computer or the home network may call it (the game's dev server picks its own port).
+  if (origin && (ORIGINS.has(origin) || (LOCAL_DATA && /^http:\/\/(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2}):\d+$/.test(origin)))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');

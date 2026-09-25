@@ -164,6 +164,14 @@ export function swapForDeck(product: string) {
   if (q) setCart(q.lines.filter((l) => l.qty > 0 || l.product === product).map((l) => ({ product: l.product, qty: l.product === product ? 1 : l.qty })));
 }
 
+/**
+ * A fresh order id: 32 random hex digits. Not crypto.randomUUID, which browsers only offer on secure pages (a dev
+ * server opened from another device on the home network is plain http).
+ */
+export function newOrderId(): string {
+  return [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 // ── Orders ───────────────────────────────────────────────────────────────────────────────────────
 
 /** The API's price for the cart: what the player agrees to before a test order. */
@@ -181,7 +189,7 @@ export type OrderResult =
  * Place a test order for exactly `total` cents (the total the player saw and agreed to). The order id is made once
  * per attempt, so a retry after a lost answer can't buy twice.
  */
-export async function placeTestOrder(total: number, orderId: string = crypto.randomUUID()): Promise<OrderResult> {
+export async function placeTestOrder(total: number, orderId: string = newOrderId()): Promise<OrderResult> {
   const r = await call('POST', '/v1/store/test-checkout', { orderId, cart: cartLines(), total });
   if (!r) return { ok: false, why: 'offline', message: 'You seem to be offline. Nothing was ordered; try again when you’re connected.' };
   if (r.status === 409 && r.data.quote) return { ok: false, why: 'changed', quote: r.data.quote as Quote };

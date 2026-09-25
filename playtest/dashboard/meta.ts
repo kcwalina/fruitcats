@@ -11,6 +11,7 @@
 import { CARDS, DECKS, cardName, deckCode } from '../lib/engine';
 import { playableHeroes } from '../balance/decks';
 import { deckFamilies, libraryDecks } from '../decks/library';
+import { averageRate } from '../decks/retention';
 import { cardsHash } from '../lib/runs';
 import { seedFrom } from '../lib/rng';
 import { PERSONAS } from '../llm/personas';
@@ -29,7 +30,7 @@ export interface DashboardMeta {
   personas: { key: string; name: string }[];
   library: {
     key: string; name: string; hero: string; heroName: string; families: string[]; color: string; source: string; about: string;
-    goal?: string; vsStarters?: number; addedAt: string; code: string;
+    goal?: string; vsStarters?: number; llm?: { games: number; won: number }; pinned?: boolean; addedAt: string; code: string;
   }[];
   heroes: { id: string; name: string; family: string }[];
 }
@@ -44,7 +45,7 @@ export function dashboardMeta(): DashboardMeta {
     personas: Object.values(PERSONAS).map((p) => ({ key: p.key, name: p.name })),
     library: Object.entries(libraryDecks()).map(([key, d]) => ({
       key, name: d.name, hero: d.hero, heroName: cardName(d.hero), families: deckFamilies(d), color: familyColor(CARDS[d.hero].family),
-      source: d.source, about: d.about, ...(d.goal ? { goal: d.goal } : {}), ...(d.vsStarters !== undefined ? { vsStarters: d.vsStarters } : {}),
+      source: d.source, about: d.about, ...(d.goal ? { goal: d.goal } : {}), ...(averageRate(d) !== undefined ? { vsStarters: averageRate(d) } : {}), ...(d.stats?.llm ? { llm: d.stats.llm } : {}), ...(d.pinned ? { pinned: true } : {}),
       addedAt: d.addedAt, code: deckCode(d),
     })),
     heroes: playableHeroes().map((id) => ({ id, name: cardName(id), family: CARDS[id].family })),

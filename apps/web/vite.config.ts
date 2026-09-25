@@ -38,6 +38,14 @@ export default defineConfig(({ mode }) => ({
     'import.meta.env.VITE_STORE': JSON.stringify('on'),
   },
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
+  // This checkout's own packages, always: from a worktree without node_modules, @fruitcats/store would otherwise come
+  // from the main checkout and bring a second engine with none of the cards.
+  resolve: {
+    alias: {
+      '@fruitcats/engine': fileURLToPath(new URL('../../packages/engine/src/index.ts', import.meta.url)),
+      '@fruitcats/store': fileURLToPath(new URL('../../packages/store/src/index.ts', import.meta.url)),
+    },
+  },
   plugins: [docsPages(), contentAssets(), idPassThrough()],
   build: {
     outDir: mode === 'playtest' ? 'dist-playtest' : 'dist',

@@ -156,14 +156,6 @@ export function addLinesToCart(lines: CartLine[]) {
   }
 }
 
-/** Swap singles in the cart for a deck that brings them: singles the deck covers leave the cart, the rest stay. */
-export function swapForDeck(product: string) {
-  if (catalog()?.products[product]?.kind !== 'deck') return;
-  if (!inCart(product)) addToCart(product, 1);
-  const q = localQuote();
-  if (q) setCart(q.lines.filter((l) => l.qty > 0 || l.product === product).map((l) => ({ product: l.product, qty: l.product === product ? 1 : l.qty })));
-}
-
 /**
  * A fresh order id: 32 random hex digits. Not crypto.randomUUID, which browsers only offer on secure pages (a dev
  * server opened from another device on the home network is plain http).

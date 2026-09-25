@@ -34,6 +34,8 @@ export interface Session {
   avatar?: string;
   /** The version of the Terms of Use this account last agreed to (null: never). */
   terms?: string | null;
+  /** Agreed on this device, not yet recorded in the account (saved in the background; see acceptTerms). */
+  termsPending?: string;
 }
 
 /** Where a sign-in stands between the email and the code. Kept only in memory. */
@@ -64,11 +66,22 @@ function saveSession(s: Session | null) {
 
 export function signOut() { saveSession(null); }
 
+/**
+ * A refresh already under way. Sync, the Store and the Terms all ask for a token when the game starts; they share one
+ * refresh instead of each starting their own (three at once made the Terms wait half a minute on a slow service).
+ */
+let refreshing: Promise<string | null> | null = null;
+
 /** A Via Mochi token for our APIs, refreshed quietly when it's about to expire. Null when signed out. */
 export async function token(): Promise<string | null> {
   const s = session();
   if (!s) return null;
   if (s.expires - Date.now() > 60_000) return s.token;
+  refreshing ??= refresh(s).finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function refresh(s: Session): Promise<string | null> {
   try {
     const entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: s.refreshToken, scope: SCOPE });
     return (await finish(entra, s.email)).token;
@@ -91,7 +104,8 @@ function noToken(): AuthError {
 /** Is there already an account for this email? Sends nothing. */
 export async function accountExists(email: string): Promise<boolean> {
   try {
-    await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
+    const started = await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
+    initiated = { email, token: started.continuation_token, at: Date.now() };
     return true;
   } catch (e) {
     if (e instanceof AuthError && e.code === 'user_not_found') return false;
@@ -99,10 +113,18 @@ export async function accountExists(email: string): Promise<boolean> {
   }
 }
 
+/**
+ * The sign-in `accountExists` just started, so emailing the code doesn't ask Entra again (each call is a round trip
+ * to Entra through our service: about half a second, more when either is busy).
+ */
+let initiated: { email: string; token: string; at: number } | null = null;
+
 /** Existing account: email the code. */
 export async function startSignIn(email: string): Promise<Pending> {
-  const started = await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
-  return challenge('signIn', email, 'oauth2/v2.0/challenge', started.continuation_token);
+  const fresh = initiated?.email === email && Date.now() - initiated.at < 5 * 60_000 ? initiated.token : null;
+  initiated = null;
+  const token = fresh ?? (await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' })).continuation_token;
+  return challenge('signIn', email, 'oauth2/v2.0/challenge', token);
 }
 
 // ── Invite codes (playtest) ─────────────────────────────────────────────────────────────────────
@@ -278,26 +300,64 @@ export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> 
   return { avatar: me.avatar, owned: new Set<string>(me.avatars) };
 }
 
-/** Wear an avatar. */
-/** "Contact us": emailed to the team, answered by email (the account's, or `email` when signed out). */
-export async function sendSupport(message: string, email: string): Promise<void> {
+/**
+ * "Contact us", signed out: emails a code to `email`, which the player types to send their message (so every answer
+ * goes to an inbox that asked for it). Returns the code's length.
+ */
+export async function requestSupportCode(email: string): Promise<number> {
+  const r = await request(`${ID_SERVICE}/support/code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!r.ok) throw await supportError(r, 'We couldn’t email you a code. Please try again.');
+  return (await r.json()).codeLength ?? 8;
+}
+
+/** "Contact us": emailed to the team, answered by email (the account's, or `email`, confirmed by `code`, when signed out). */
+export async function sendSupport(message: string, email: string, code?: string): Promise<void> {
   const t = session() ? await token() : null;
   const r = await request(`${ID_SERVICE}/support`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
-    body: JSON.stringify({ message, email, app: 'Fruitcats', device: navigator.userAgent }),
+    body: JSON.stringify({ message, email, code, app: 'Fruitcats', device: navigator.userAgent }),
   });
-  if (r.status === 429) throw new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
-  if (!r.ok) throw new AuthError('support', (await r.json().catch(() => ({}))).message ?? 'Your message couldn’t be sent. Please try again.');
+  if (!r.ok) throw await supportError(r, 'Your message couldn’t be sent. Please try again.');
+}
+
+/** The service's own words when it has them (a wrong code, a sender's daily limit); the IP limit comes bare. */
+async function supportError(r: Response, fallback: string): Promise<AuthError> {
+  const json = await r.json().catch(() => ({}));
+  if (json.message) return new AuthError(json.error ?? 'support', json.message);
+  if (r.status === 429) return new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
+  return new AuthError('support', fallback);
 }
 
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */
 export function needsTerms(): boolean {
   const s = session();
-  return !!s && s.terms !== TERMS_VERSION;
+  return !!s && s.terms !== TERMS_VERSION && s.termsPending !== TERMS_VERSION;
 }
 
-/** The player agreed to the current Terms of Use and Privacy Policy: recorded in their account. */
+/**
+ * The player agreed to the current Terms of Use and Privacy Policy. The game carries on at once: the agreement is kept
+ * on this device and recorded in the account in the background, tried again at each start until it's saved
+ * (saveAgreedTerms). A slow or restarting service never holds the player at the dialog.
+ */
+export function agreeToTerms(): void {
+  const s = session();
+  if (!s) return;
+  saveSession({ ...s, termsPending: TERMS_VERSION });
+  void saveAgreedTerms();
+}
+
+/** Record an agreement made on this device in the account, if one is waiting. Quiet: it tries again next time. */
+export async function saveAgreedTerms(): Promise<void> {
+  if (session()?.termsPending !== TERMS_VERSION) return;
+  try { await acceptTerms(); } catch { /* next start */ }
+}
+
+/** Record the agreement in the account now (a new account, at sign-up; and saveAgreedTerms). */
 export async function acceptTerms(): Promise<void> {
   const t = await token();
   if (!t) throw noToken();
@@ -307,7 +367,7 @@ export async function acceptTerms(): Promise<void> {
   });
   if (!r.ok) throw new AuthError('terms', 'Couldn’t save that. Please try again.');
   const s = session();
-  if (s) saveSession({ ...s, terms: TERMS_VERSION });
+  if (s) saveSession({ ...s, terms: TERMS_VERSION, termsPending: undefined });
 }
 
 export async function chooseAvatar(id: string): Promise<void> {

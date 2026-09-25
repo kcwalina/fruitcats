@@ -117,9 +117,20 @@ Last updated 2026-09-25.
   - The game gives up on any account call after 15 seconds and says so; a slow or down service never signs anyone
     out (only Entra rejecting the refresh token does).
 - **Contact us** (Settings, and "Trouble signing in?" in the sign-in window): `POST /support` on `viamochi-id`
-  emails the message to the owner (`Support__To` app setting) with Reply-To set to the player; 5 messages an hour
-  per IP address. The message itself is never logged. This is the support address the Terms and Privacy Policy
-  point to, instead of a mailbox.
+  emails the message to the owner (`Support__To` app setting) with Reply-To set to the player. The message itself is
+  never logged. This is the support address the Terms and Privacy Policy point to, instead of a mailbox, so it stays
+  open without an account (locked-out players, parents, copyright notices, privacy requests).
+  - **Signed in:** the message goes straight away, answered at the account's email.
+  - **Signed out:** the player types their email and message, then confirms the email with an 8-digit code
+    (`POST /support/code`), sent from `no-reply@mail.viamochi.com` in the same kind of email as the sign-in code. The
+    message goes only with the right code. A code lasts 15 minutes, works once and stops after 5 wrong tries.
+    viamochi-id makes and checks these codes itself (in memory; a restart just means asking for a new one), not Entra.
+  - **Limits are per sender,** so nothing a spammer does can block anyone else's message (the owner's choice,
+    2026-09-24): 5 messages and 5 code emails an hour per IP address; 3 code emails an hour per email address; 3
+    messages a day per email address (`Support__PerSenderDaily`), counted per UTC day in the `support` table under
+    a hash of the address. The form says so in plain words when a sender reaches a limit.
+  - **No cap across the service.** Past 50 messages in a day (`Support__AlertAt`) viamochi-id logs an error, which
+    emails the owner once (ErrorAlerts), and every message still goes out.
 - **Agreeing to the Terms:** a new account ticks "I agree to the Terms of Use and have read the Privacy Policy"
   before its code. The account keeps the version it agreed to and when (`PUT /me/terms`; `account.terms_accepted` in
   the security log). Anyone signed in whose account hasn't agreed to the current `TERMS_VERSION` (`apps/web/src/auth.ts`)
@@ -220,7 +231,7 @@ Entra now; our own engine later if it pays off. Players must not notice a switch
 | `rg-viamochi-apps` | **One App Service plan** (B1 Linux) running three apps, each with its own managed identity: `viamochi-id`, `fruitcats-api` and `mochi-ops`. |
 | `rg-viamochi-id` | `viamochi-id`'s storage, Key Vault, email service (`mail.viamochi.com`), logs and metrics. |
 | `rg-fruitcats` | A new Static Web App for the game, storage for decks, Showcase and progress (later the store tables), the geo-redundant purchase ledger, and a Key Vault. |
-| `rg-viamochi-shared` | Later: the `viamochi.com` DNS zone (see [DNS](#dns-in-two-stages)). |
+| `rg-viamochi-shared` | Nothing in use. The `viamochi.com` DNS zone stays in the Visual Studio subscription (see [The domain and its DNS](#the-domain-and-its-dns)). |
 
 - **Why a new subscription:** the Visual Studio subscription is a dev/test benefit that doesn't allow production use
   and stops when its credit runs out. Paid players can't depend on it.
@@ -257,19 +268,32 @@ Your personal-project users never move.
 
 - **Codes come from `no-reply@mail.viamochi.com`**, display name "Via Mochi", through `viamochi-id`'s own email service
   (Entra's custom email extension). The mochi suite keeps sending from `viamochi.com` through its own service.
-- **DNS records:** `TXT mail` (verification and SPF) and two DKIM CNAMEs under `mail`. The root `_dmarc` covers it.
+- **DNS records:** `TXT mail` (verification and SPF), two DKIM CNAMEs under `mail`, and its own `_dmarc.mail`
+  (`p=quarantine`, strict alignment, added 2026-09-25: spam checkers such as mail-tester.com don't fall back to the
+  root `_dmarc`).
 - **Before launch:** new domains start with low sending limits; ask for a quota increase and send real test mail for a
   couple of weeks. Code emails are plain text with the code in the subject.
 - **Replies:** `no-reply@` receives nothing. Players reach the team with **Contact us** in the game (see What's
   set up); there is no support mailbox.
 
-### DNS in two stages
+### The domain and its DNS
 
-- **Stage 1 (current):** the `viamochi.com` zone stays in the Visual Studio subscription with a delete lock. Records for
-  `fruitcats`, `id`, `ops` and `mail` point at the new resources.
-- **Stage 2 (to do, see the plan):** recreate the zone in ViaMochi Production with every record,
-  switch the nameservers at the registrar, delete the old zone. Resources can't move between directories, so it's a
-  copy, not a move. After this, deleting the Visual Studio subscription can't affect Fruitcats.
+- **Both stay in the Visual Studio subscription** (resource group `mochi-shared`): the `viamochi.com` DNS zone, with
+  the delete lock `protect-viamochi-dns`, and the domain itself. Only the owner's own `az` login can change them;
+  Claude gives the owner the exact command and checks the result with `nslookup ... 8.8.8.8`.
+- **The domain was bought in Azure** (an App Service Domain; the registrar of record is Wild West Domains). It renews
+  every 1 March; **auto-renew is on** (turned on 2026-09-25). There's no registrar website for changing nameservers,
+  and Azure can't move the domain into another directory.
+- **Why the zone didn't move:** the planned "Stage 2" (copy the zone into ViaMochi Production, switch nameservers) was
+  tried on 2026-09-25 and stopped. The domain itself would still be in the Visual Studio subscription, so moving
+  only the records wouldn't remove the dependency. The only way out is moving the domain to an outside registrar,
+  which needs an account there.
+- **What keeps it safe instead:** auto-renew, the delete lock, and the Visual Studio subscription staying active
+  (never deleted, never switched off at its spending limit).
+- **Records** (32, besides SOA and NS): the Mochi suite's apex `A` and `www`, `ai`, `agents`, `notebook`, `desktop`,
+  `documents`, `library`, `albums`, `cloud`, `friends`, `photos`, `recipes` with their `asuid.*`/`awverify` TXT;
+  Fruitcats' `fruitcats`, `playtest.fruitcats`, `api.fruitcats` and `id` with `asuid.api.fruitcats` and `asuid.id`;
+  mail's root and `mail` TXT, `_dmarc`, `_dmarc.mail` and four DKIM CNAMEs.
 
 ## Observability
 
@@ -323,7 +347,8 @@ PvP.
 Pay-as-you-go Azure has no hard spending cap, so big bills are designed out:
 
 1. **Fixed-price resources only**, autoscale off.
-2. **Limits in our code:** sign-in calls per IP address (30 per 5 minutes), Contact us messages (5 an hour), invite
+2. **Limits in our code:** sign-in calls per IP address (30 per 5 minutes), Contact us messages and code emails
+   (per IP address and per email address; see What's set up), invite
    codes that each create a set number of accounts.
 3. **Azure Policy** allows only the resource types and small sizes we use, so a hijacked identity can't start
    expensive machines. Only the owner can change it.

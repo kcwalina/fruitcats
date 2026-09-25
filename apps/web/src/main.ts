@@ -12,6 +12,7 @@ import { ACCOUNTS, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
 import { startSync } from './sync';
+import { saveAgreedTerms } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
@@ -1367,6 +1368,6 @@ if (import.meta.env.DEV) {
 
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
-if (ACCOUNTS) { startSync({ render }); askForTermsIfNeeded({ render }); }
+if (ACCOUNTS) { startSync({ render }); askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.
 if (STORE && signedIn()) void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });

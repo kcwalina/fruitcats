@@ -58,35 +58,6 @@
 .price { font: 700 19px/1 Fredoka, Nunito, sans-serif; color: #fff; white-space: nowrap; }
 .price s { margin-right: 4px; font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.5); }
 
-/* ── Decks: one wide panel each, the Big Cat's art beside its story ── */
-
-.store-decks { display: grid; gap: 16px; width: 100%; max-width: 820px; margin: 4px auto 0; }
-.store-deck {
-  display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); overflow: hidden; border-radius: 22px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-}
-.store-screen button.sd-art { position: relative; display: block; width: 100%; height: 100%; min-height: 220px; padding: 0; border-radius: 0; background: #1c0f07; box-shadow: none; overflow: hidden; }
-.store-screen button.sd-art:hover:not(:disabled) { transform: none; box-shadow: none; }
-.sd-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-.sd-art:hover img { transform: scale(1.04); }
-.sd-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 60%, rgba(18, 10, 6, 0.55)); }
-.sd-text { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 20px 20px 16px; min-width: 0; }
-.sd-set { font: 800 11px/1 Nunito, sans-serif; letter-spacing: 1.6px; text-transform: uppercase; color: #ffd76a; }
-.sd-text h3, .dp-head h2 { margin: 0; font: 700 28px/1.05 Fredoka, Nunito, sans-serif; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45); }
-.sd-blurb { margin: 0; font: 600 14.5px/1.45 Nunito, sans-serif; color: rgba(255, 255, 255, 0.82); }
-.sd-meta { margin: 0; font: 700 13px/1.4 Nunito, sans-serif; color: rgba(255, 255, 255, 0.62); }
-.sd-meta b { color: #8ee6a4; }
-.sd-buy { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 4px; }
-@media (max-width: 640px) {
-  .store-deck { grid-template-columns: 1fr; }
-  .store-screen button.sd-art { min-height: 0; aspect-ratio: 16 / 10; }
-  .sd-art::after { background: linear-gradient(180deg, transparent 55%, rgba(18, 10, 6, 0.6)); }
-  .sd-text { padding: 16px 16px 12px; }
-  .sd-text h3 { font-size: 25px; }
-}
-
 /* A deck's page: what's in it, and which cards are new for you. */
 .deck-page { width: 100%; max-width: 900px; margin: 0 auto; padding-bottom: 110px; }
 .dp-head { display: flex; flex-direction: column; gap: 8px; max-width: 620px; padding: 4px 0 18px; }
@@ -111,13 +82,6 @@
 /* ── The cart ── */
 
 .cart { width: 100%; max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
-.deal {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 215, 106, 0.2), rgba(255, 215, 106, 0.07)); box-shadow: inset 0 0 0 1px rgba(255, 215, 106, 0.4);
-}
-.deal p { flex: 1; margin: 0; font: 600 14px/1.4 Nunito, sans-serif; color: #fff4d6; }
-.deal b { color: #ffd76a; }
-.deal-was { color: rgba(255, 244, 214, 0.65); }
 .cart-note { margin: 0; font: 600 13px/1.4 Nunito, sans-serif; color: rgba(255, 255, 255, 0.65); }
 .cart-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .cart-line {
@@ -236,8 +200,6 @@
 }
 .pick-tile.off .tile-card img { filter: grayscale(0.9) brightness(0.45); }
 .missing-hero { margin-top: 16px; }
-.deck-page .deal { margin-bottom: 18px; }
-.missing-unavailable { margin-top: 16px; text-align: center; }
 .bb-total { display: flex; flex-direction: column; align-items: flex-end; font: 700 24px/1 Fredoka, Nunito, sans-serif; color: #fff; }
 .bb-total small { font: 700 12px/1.3 Nunito, sans-serif; color: rgba(255, 255, 255, 0.65); }
 .missing-sub { margin: 26px 0 6px; font: 700 18px/1.2 Fredoka, Nunito, sans-serif; color: #fff; }
@@ -252,9 +214,6 @@
 /* "Pick none" sits at the end of the count line. */
 :is(.store-screen) button.link-btn.inline { display: inline; padding: 0 0 0 6px; font-size: 13px; }
 
-/* The better deal: text above a full-width button, so it never squeezes into a narrow column. */
-.deck-page .deal { flex-direction: column; align-items: stretch; }
-.deck-page .deal .store-btn { align-self: stretch; }
 
 /* Confirming: a long list fades at the bottom, so it reads as scrollable; the button stays on one line. */
 .confirm-lines.long { -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); padding-bottom: 18px; }
@@ -281,3 +240,215 @@
 .rv-rarity.rv-legendary { background: rgba(160, 90, 255, 0.25); box-shadow: inset 0 0 0 1px rgba(210, 150, 255, 0.7); }
 .reveal-all { -webkit-mask-image: linear-gradient(#000 92%, transparent); mask-image: linear-gradient(#000 92%, transparent); padding-bottom: 24px; }
 @media (prefers-reduced-motion: reduce) { .reveal-stage::before { animation: none; opacity: 1; } }
+
+/* With a mouse, the Store's lists show a scrollbar (the Collection hides it; fingers don't need one). */
+@media (hover: hover) and (pointer: fine) {
+  .store-screen .collection-grid, .reveal-all { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.35) transparent; }
+  .store-screen .collection-grid::-webkit-scrollbar, .reveal-all::-webkit-scrollbar { display: block; width: 10px; }
+  .store-screen .collection-grid::-webkit-scrollbar-thumb, .reveal-all::-webkit-scrollbar-thumb {
+    border-radius: 999px; background: rgba(255, 255, 255, 0.3); border: 2px solid transparent; background-clip: padding-box;
+  }
+}
+
+/* ══ The shop (2026-09-24 redesign): one page like a game store. A featured deck as a big splash, filters, then every
+   offer as art: decks as tall splash tiles, single cards floating on a glow in their rarity's colour. Gold hairlines
+   and gold price chips; the rest stays dark so the art carries it. ══ */
+
+.store-screen { --gold: #ffd76a; --gold-line: rgba(255, 215, 106, 0.38); --panel-dark: rgba(20, 11, 6, 0.72); }
+.store-screen::before {   /* a warm light from the top, over the art glow */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(255, 170, 80, 0.16), transparent 60%), linear-gradient(transparent 55%, rgba(8, 4, 2, 0.75));
+}
+.store-top { grid-template-columns: 44px 1fr 44px; }
+.store-title {
+  font: 700 22px/1 Fredoka, Nunito, sans-serif; letter-spacing: 0.5px; color: #fff3d2;
+  text-shadow: 0 0 18px rgba(255, 200, 90, 0.35), 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.shop, .product-page { width: 100%; max-width: 980px; margin: 0 auto; padding-bottom: 20px; }
+.product-page { padding-bottom: 110px; }
+.kicker { font: 800 11.5px/1 Nunito, sans-serif; letter-spacing: 2.2px; text-transform: uppercase; color: var(--gold); }
+
+/* Prices: a dark chip with gold letters and a gold edge, the same everywhere. */
+.price-chip {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  font: 700 15px/1 Fredoka, Nunito, sans-serif; color: #ffe7a3; letter-spacing: 0.3px;
+  background: linear-gradient(#2c1a0b, #150b04); box-shadow: inset 0 0 0 1px var(--gold-line), 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+.price-chip s { font-size: 12px; font-weight: 600; color: rgba(255, 231, 163, 0.5); }
+.owned-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  font: 700 13.5px/1 Fredoka, Nunito, sans-serif; color: #b9f5c8; background: rgba(46, 157, 87, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(120, 220, 150, 0.45);
+}
+.owned-pill.big { padding: 12px 20px; font-size: 16px; }
+
+/* The big gold button, with a slow shine across it. */
+.store-screen button.store-btn.big { height: 54px; padding: 0 10px 0 24px; gap: 12px; font-size: 18px; border-radius: 999px; position: relative; overflow: hidden; }
+.store-screen button.store-btn.ghost.big { padding: 0 24px; }
+.store-screen button.store-btn.buy.big::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent); animation: shine 4.5s ease-in-out 1s infinite;
+}
+@keyframes shine { 0%, 70% { left: -40%; } 100% { left: 130%; } }
+.store-btn.buy .price-chip { background: linear-gradient(#3a230c, #1d0f05); font-size: 16px; }
+@media (prefers-reduced-motion: reduce) { .store-screen button.store-btn.buy.big::after { animation: none; display: none; } }
+
+/* ── The featured deck: the Big Cat as a splash, the story over its lower part ── */
+
+.featured {
+  position: relative; overflow: hidden; border-radius: 26px; min-height: clamp(380px, calc(var(--vh, 1vh) * 62), 560px);
+  display: flex; align-items: flex-end; margin: 4px 0 18px; isolation: isolate;
+  box-shadow: inset 0 0 0 1px var(--gold-line), 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 60px -10px var(--fam, rgba(255, 150, 60, 0.4));
+}
+.ft-art {
+  position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: 50% 18%;
+  transform: scale(1.02); animation: ft-drift 18s ease-in-out infinite alternate;
+}
+@keyframes ft-drift { to { transform: scale(1.09) translateY(-1.5%); } }
+.featured::after {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, transparent 30%, rgba(14, 7, 3, 0.55) 55%, rgba(14, 7, 3, 0.96) 88%);
+}
+.ft-info { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 22px 22px; max-width: 640px; }
+.featured h2, .card-page h2, .missing-head h2 {
+  margin: 0; font: 700 clamp(34px, 7vw, 54px)/1 Fredoka, Nunito, sans-serif; color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), 0 6px 30px rgba(0, 0, 0, 0.6);
+}
+.ft-blurb { margin: 0; font: 600 15px/1.5 Nunito, sans-serif; color: rgba(255, 255, 255, 0.84); }
+.ft-blurb b { color: #fff; }
+.ft-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
+.ft-meta span {
+  padding: 5px 10px; border-radius: 999px; font: 700 12.5px/1 Nunito, sans-serif; color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.ft-meta .new-for-you { color: #b9f5c8; background: rgba(46, 157, 87, 0.22); box-shadow: inset 0 0 0 1px rgba(120, 220, 150, 0.35); }
+.ft-buy { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .ft-art { animation: none; } }
+
+/* ── Filters and shelves ── */
+
+.store-filters { display: flex; gap: 8px; margin: 0 0 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.store-filters::-webkit-scrollbar { display: none; }
+.store-screen button.store-filter {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px;
+  font: 700 14.5px/1 Fredoka, Nunito, sans-serif; color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.store-screen button.store-filter small { font: 800 11.5px/1 Nunito, sans-serif; color: rgba(255, 255, 255, 0.5); }
+.store-screen button.store-filter:hover:not(:disabled) { transform: none; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3); }
+.store-screen button.store-filter.on, .store-screen button.store-filter.on:hover:not(:disabled) {
+  color: #2b1a0e; background: linear-gradient(#fff4cf, #ffd76a); box-shadow: 0 4px 16px rgba(255, 200, 90, 0.3);
+}
+.store-screen button.store-filter.on small { color: rgba(43, 26, 14, 0.6); }
+.shelf { margin-top: 22px; }
+.shelf-title {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 14px; padding-bottom: 10px;
+  font: 700 22px/1.1 Fredoka, Nunito, sans-serif; color: #fff;
+  border-bottom: 1px solid; border-image: linear-gradient(90deg, var(--gold-line), transparent 80%) 1;
+}
+.shelf-title span { font: 600 13px/1.3 Nunito, sans-serif; color: rgba(255, 255, 255, 0.55); }
+
+/* ── Offers: every product as a tile of art ── */
+
+.offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+@media (max-width: 640px) { .offers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+.store-screen button.offer {
+  position: relative; display: block; aspect-ratio: 3 / 4; padding: 0; overflow: hidden; border-radius: 20px; text-align: left;
+  background: #1a0e07; box-shadow: inset 0 0 0 1px var(--gold-line), 0 14px 34px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.store-screen button.offer:hover:not(:disabled) {
+  transform: translateY(-4px); box-shadow: inset 0 0 0 1px rgba(255, 215, 106, 0.8), 0 22px 44px rgba(0, 0, 0, 0.6), 0 0 34px -6px rgba(255, 200, 90, 0.45);
+}
+.of-art { position: absolute; inset: 0; background-size: cover; background-position: 50% 20%; transition: transform 0.6s ease; }
+.offer:hover .of-art { transform: scale(1.06); }
+.of-shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 38%, rgba(14, 7, 3, 0.7) 62%, rgba(14, 7, 3, 0.97) 92%); }
+.of-tag {
+  position: absolute; top: 12px; left: 12px; padding: 5px 9px; border-radius: 8px;
+  font: 800 10.5px/1 Nunito, sans-serif; letter-spacing: 1.6px; text-transform: uppercase; color: #2b1a0e; background: var(--gold);
+}
+.pd-info .of-tag { position: static; align-self: flex-start; }
+.of-flag {
+  position: absolute; top: 12px; right: 12px; padding: 5px 9px; border-radius: 8px;
+  font: 800 10.5px/1 Nunito, sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: #fff; background: rgba(46, 157, 87, 0.9);
+}
+.of-info { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 14px; }
+.of-name { font: 700 19px/1.1 Fredoka, Nunito, sans-serif; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+.of-sub { font: 700 12px/1.3 Nunito, sans-serif; color: rgba(255, 255, 255, 0.66); }
+.of-sub .rarity-mark { font-size: 12px; vertical-align: -0.15em; }
+.of-info .price-chip, .of-info .owned-pill { margin-top: 4px; }
+.offer.owned .of-art, .offer.owned .of-card { filter: saturate(0.7) brightness(0.8); }
+
+/* A single card on its own glow, in its rarity's colour. */
+.card-offer { --glow: rgba(242, 184, 128, 0.35); }
+.rv-uncommon { --glow: rgba(200, 220, 255, 0.4); }
+.rv-rare { --glow: rgba(255, 200, 70, 0.5); }
+.rv-legendary { --glow: rgba(190, 110, 255, 0.55); }
+.of-glow { position: absolute; inset: -10% -10% 20%; background: radial-gradient(circle at 50% 42%, var(--glow), transparent 62%); }
+.rv-legendary .of-glow {
+  background: radial-gradient(circle at 50% 42%, var(--glow), transparent 62%),
+    conic-gradient(from 0deg at 50% 42%, transparent, rgba(255, 120, 200, 0.18), transparent, rgba(120, 200, 255, 0.18), transparent);
+}
+.of-card {
+  position: absolute; left: 50%; top: 8%; width: 58%; transform: translateX(-50%) rotate(-3deg); border-radius: 4.6% / 3.3%;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.6); transition: transform 0.35s ease;
+}
+.offer:hover .of-card { transform: translateX(-50%) rotate(0deg) translateY(-4px) scale(1.04); }
+.card-offer .of-info { background: linear-gradient(transparent, rgba(14, 7, 3, 0.95) 45%); padding-top: 34px; }
+
+/* ── A product's page ── */
+
+.product-hero { min-height: clamp(360px, calc(var(--vh, 1vh) * 52), 500px); }
+.inside { margin-top: 4px; }
+.store-screen .buy-bar { gap: 14px; }
+.card-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 26px; padding-top: 10px; }
+.cp-stage { position: relative; display: grid; place-items: center; padding: 20px 0; cursor: zoom-in; }
+.cp-stage .of-glow { inset: -10%; }
+.cp-card {
+  position: relative; width: min(100%, 380px); border-radius: 4.6% / 3.3%; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.65);
+  animation: cp-float 6s ease-in-out infinite alternate;
+}
+@keyframes cp-float { from { transform: translateY(0) rotate(-1.5deg); } to { transform: translateY(-10px) rotate(1deg); } }
+.cp-info { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.cp-info .rv-rarity { margin: 0; }
+@media (max-width: 640px) {
+  .card-page { grid-template-columns: 1fr; gap: 6px; }
+  .cp-card { width: min(74vw, 330px); }
+  .ft-info { padding: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .cp-card { animation: none; } }
+
+/* ── Missing cards: the decks that bring them as wide offers, singles as a grid ── */
+
+.missing-head { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 16px; }
+.store-screen button.pick-deck {
+  position: relative; display: block; width: 100%; min-height: 190px; margin-bottom: 14px; padding: 0; overflow: hidden; border-radius: 22px; text-align: left;
+  background: #1a0e07; box-shadow: inset 0 0 0 2px var(--gold), 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.store-screen button.pick-deck:hover:not(:disabled) { transform: none; box-shadow: inset 0 0 0 2px #ffe7a3, 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px -4px rgba(255, 200, 90, 0.5); }
+.store-screen button.pick-deck.off { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 16px 40px rgba(0, 0, 0, 0.5); }
+.pick-deck .of-art { background-position: 70% 25%; }
+.pick-deck .of-shade { background: linear-gradient(90deg, rgba(14, 7, 3, 0.96) 30%, rgba(14, 7, 3, 0.4) 70%, transparent); }
+.pick-deck.off .of-art { filter: grayscale(0.9) brightness(0.45); }
+.pick-deck .pick-check { top: 14px; left: auto; right: 14px; }
+.pd-info { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px; max-width: 70%; }
+.pd-info .of-name { font-size: 26px; }
+.pd-info .of-sub { font-size: 13px; }
+.pd-info .of-sub b { color: #b9f5c8; }
+.store-screen .buy-bar .store-btn.big { flex: 0 1 auto; }
+
+/* Section titles on a product page get room above them, after a grid's price lines. */
+.product-page .shelf-title { margin-top: 28px; }
+.product-page .missing-head + .pick-deck { margin-top: 0; }
+.buy-bar .bb-total { gap: 2px; }
+
+/* The splash keeps the Big Cat's face clear: its art fills the top, and the story sits below it on the dark. */
+.ft-art { bottom: 30%; background-position: 50% 30%; }
+.featured::after { background: linear-gradient(180deg, transparent 35%, rgba(14, 7, 3, 0.7) 62%, rgba(14, 7, 3, 0.98) 74%); }
+@media (min-width: 720px) {
+  .ft-art { bottom: 0; left: 35%; }
+  .featured::after { background: linear-gradient(90deg, rgba(14, 7, 3, 0.98) 30%, rgba(14, 7, 3, 0.6) 50%, transparent 75%); }
+}
+/* One deck on its shelf: a wide tile, not half an empty row. */
+.offers.decks:has(> :only-child) { grid-template-columns: 1fr; }
+.offers.decks > .offer:only-child { aspect-ratio: 16 / 10; }

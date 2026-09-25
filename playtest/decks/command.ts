@@ -2,6 +2,8 @@
 // decks add (--code FC1.… | --file deck.json) [--name …] [--about …] [--key KEY]
 // decks remove KEY
 // decks import [--pc2024 http://192.168.1.74:5280] [--min 0.55] [--dry-run]
+// decks nightly [--pc2024 URL] [--publish] [--commit]   (nightly.ts: one K3 deck, results, retention)
+// decks prune [--dry-run] | decks pin KEY | decks unpin KEY
 //
 // The deck library (library.ts): the custom decks playtests can name by key. `add` takes a deck code (the
 // game's deck builder copies one; so do the reports) or a DeckList file. `import` collects the decks that
@@ -15,7 +17,9 @@ import { arg, flag, numArg, textArg } from '../lib/args';
 import { CARDS, cardName, deckCode, parseDeckCode, type DeckList } from '../lib/engine';
 import { pct, reportsRoot, type RunSummary } from '../lib/runs';
 import { pc2024Summaries } from '../dashboard/sync';
-import { brokenLibraryDecks, deckFamilies, findInLibrary, libraryDecks, removeFromLibrary, saveToLibrary, type LibraryDeck } from './library';
+import { brokenLibraryDecks, deckFamilies, findInLibrary, libraryDecks, readLibrary, removeFromLibrary, saveToLibrary, writeLibrary, type LibraryDeck } from './library';
+import { decksNightly, decksPrune } from './nightly';
+import { averageRate } from './retention';
 
 const cardsText = (d: DeckList) => Object.entries(d.cards).sort(([a], [b]) => a.localeCompare(b)).map(([id, q]) => `${q}× ${cardName(id)}`).join(', ');
 
@@ -64,7 +68,8 @@ export async function decksCommand(): Promise<number> {
     const decks = Object.entries(libraryDecks());
     if (!decks.length) console.log('The deck library is empty. Add decks with: decks add --code FC1.…, or decks import');
     for (const [k, d] of decks) {
-      console.log(`${k.padEnd(28)} ${d.name} · ${cardName(d.hero)} (${deckFamilies(d).join(' + ')}) · ${d.source}${d.vsStarters !== undefined ? ` · ${pct(d.vsStarters)} vs starters` : ''}`);
+      const rate = averageRate(d);
+      console.log(`${k.padEnd(28)} ${d.name} · ${cardName(d.hero)} (${deckFamilies(d).join(' + ')}) · ${d.source}${rate !== undefined ? ` · ${pct(rate)} vs starters` : ''}${d.stats?.llm ? ` · LLM won ${d.stats.llm.won}/${d.stats.llm.games}` : ''}${d.pinned ? ' · pinned' : ''}`);
     }
     for (const b of brokenLibraryDecks()) console.log(`${b.key.padEnd(28)} LEFT OUT: ${b.problem}`);
     return 0;
@@ -83,6 +88,16 @@ export async function decksCommand(): Promise<number> {
     if (!deck) { console.error('decks add --code FC1.… | --file deck.json [--name …] [--about …] [--key KEY]'); return 1; }
     const saved = saveToLibrary({ ...deck, name: textArg('name') ?? deck.name, source: 'imported', about: textArg('about') ?? 'A deck brought in by hand.' }, arg('key'));
     console.log(`Saved as ${saved}. Commit playtest/decks/library.json and deploy to send it to PC2024.`);
+    return 0;
+  }
+  if (sub === 'nightly') return decksNightly();
+  if (sub === 'prune') return decksPrune();
+  if (sub === 'pin' || sub === 'unpin') {
+    const file = readLibrary();
+    if (!file.decks[key]) { console.error(`No library deck ${key}.`); return 1; }
+    if (sub === 'pin') file.decks[key].pinned = true; else delete file.decks[key].pinned;
+    writeLibrary(file);
+    console.log(`${key} ${sub === 'pin' ? 'is pinned: retention never removes it' : 'is no longer pinned'}.`);
     return 0;
   }
   if (sub === 'remove') {

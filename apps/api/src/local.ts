@@ -4,7 +4,7 @@
 // the token against viamochi-id's public keys, like the real one.
 //
 // The Store is open to any signed-in account here, with test checkout on. Point the game's dev server at it:
-//   npm run dev, then open  http://localhost:5173/?store=1&api=http://localhost:8790
+//   npm run dev, then open  http://localhost:5173/?store=1&buy=1&api=http://localhost:8790
 // Settings already in your environment win, e.g. STORE_TESTERS=<your account id> to try the tester list.
 //
 // `npm run api:local -- --fake-paddle` pays through a pretend Paddle instead of test checkout: the game's whole payment

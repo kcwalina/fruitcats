@@ -21,3 +21,11 @@ export const STORE: boolean = import.meta.env.VITE_STORE === 'on'
  */
 export const ONLINE: boolean = ACCOUNTS && (import.meta.env.VITE_ONLINE === 'on'
   || (import.meta.env.DEV && new URLSearchParams(location.search).get('online') === '1'));
+
+/**
+ * Buying in the Store: the cart, checkout and payments. **Off in every build**, by the owner's rule (2026-09-25):
+ * "Add to cart" says "Coming soon" whatever the API allows, so setting up Paddle or changing an API setting can never
+ * open the Store by itself. Opening it is an explicit decision, made by changing this line and releasing a new build.
+ * Only the dev server can turn it on (`?buy=1`), to try the flow against a local API (npm run api:local).
+ */
+export const BUYING: boolean = import.meta.env.DEV && new URLSearchParams(location.search).get('buy') === '1';

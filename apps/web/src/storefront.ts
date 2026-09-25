@@ -18,6 +18,7 @@ import {
   newOrderId, refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, testCheckout, type Order,
   awaitOrder, confirmOrder, payments, startCheckout, takeArrived,
 } from './shop';
+import { BUYING } from './flags';
 import { payWithPaddle } from './paddle';
 import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, famClass, finishUrl } from './ui';
 
@@ -43,10 +44,13 @@ let notice = '';
 let loading = false;
 /** "Add to cart" while buying isn't open yet: the Coming soon message. */
 let soon = false;
-/** Whether this account can buy: with real payments (Paddle), or a tester's test checkout. */
-const canBuy = () => !!payments() || testCheckout();
+/**
+ * Whether this account can buy: with real payments (Paddle), or a tester's test checkout. Never while BUYING is off
+ * (flags.ts): then "Add to cart" always says "Coming soon", whatever the API says.
+ */
+const canBuy = () => BUYING && (!!payments() || testCheckout());
 /** Real money: Paddle takes the payment. Otherwise a tester's test order. */
-const paying = () => !!payments();
+const paying = () => BUYING && !!payments();
 
 /** The confirmation step, from "Review order" until the order is placed or abandoned. */
 let checkout: null | {
@@ -639,7 +643,7 @@ function renderCart(): string {
 
 /** For testers, at the bottom of the page, out of the way of what customers will see: it's a test, and a reset. */
 function renderTesterTools(): string {
-  if (!testCheckout()) return '';
+  if (!BUYING || !testCheckout()) return '';
   return `<footer class="tester-tools">
     <span class="tester-tag">Test store · no money is taken, and no card details are asked for</span>
     <button class="tester-btn" data-click="store:reset">Remove my test purchases</button>

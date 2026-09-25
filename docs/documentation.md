@@ -1,7 +1,17 @@
 # Documentation
 
-Everything about Fruitcats, in one place. Every heading has a **#** beside it: tap it to copy a link
-straight to that section, ready to send to a friend.
+Everything about Fruitcats, in one place. Every heading has a round **link button** 🔗 beside it: tap it to copy a
+link straight to that section, ready to send to a friend.
+
+## Playing with friends
+
+Play a friend online, each on your own device. Step by step, with pictures:
+
+- [Create an account](friends.md#create-an-account)
+- [Add a friend](friends.md#add-a-friend): scan each other's QR code
+- [Play a friend](friends.md#play-a-friend)
+
+**[Open Playing with friends →](friends.md)**
 
 ## Rulebook
 

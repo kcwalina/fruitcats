@@ -19,6 +19,7 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'rulebook.md', html: 'rules.html', tab: 'Rulebook' },
   { md: 'starter-box-cards.md', html: 'cards.html', tab: 'Card list' },
   { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
+  { md: 'friends.md', html: 'friends.html', tab: 'Friends' },
   { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
   { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
   // Linked from the sign-up screen; no tabs of their own.
@@ -93,6 +94,10 @@ function docHeader(current: string): string {
     </div>`;
 }
 
+/** A chain link: the button beside every heading that copies a link to that section. */
+const LINK_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">'
+  + '<path d="M10.5 13.5a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1.1 1.1"/><path d="M13.5 10.5a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1.1-1.1"/></g></svg>';
+
 const slug = (text: string) =>
   text.toLowerCase().replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -104,9 +109,9 @@ function renderDoc(doc: string): { toc: string; body: string } {
         const html = this.parser.parseInline(tokens);
         const id = slug(html);
         if (depth === 2 || depth === 3) toc.push(`<li${depth === 3 ? ' class="sub"' : ''}><a href="#${id}">${html}</a></li>`);
-        // The "#" is a real link you can tap on a phone; docs.ts also copies it to the clipboard.
+        // The link button is a real link you can tap on a phone; docs.ts also copies it to the clipboard.
         return `<h${depth} id="${id}">${html}`
-          + `<a class="anchor" href="#${id}" aria-label="Copy a link to this section" title="Copy a link to this section">#</a>`
+          + `<a class="anchor" href="#${id}" aria-label="Copy a link to this section" title="Copy a link to this section">${LINK_ICON}</a>`
           + `</h${depth}>\n`;
       },
       link({ href, tokens }) {

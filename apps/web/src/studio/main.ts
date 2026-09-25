@@ -434,11 +434,12 @@ function wizardPage(code: string, chosen?: string): string {
       <small>${esc(brief.name)}</small>
       <h1>Welcome${S.me?.name ? `, ${esc(S.me.name)}` : ''}!</h1>
       <p class="wz-lead">The art is the heart of Fruitcats, and ${esc(brief.name)} has <b>${total} images</b> to make, one at a time.</p>
-      <p class="wz-tools">For each image we share our ideas: a character, a scene, a name. They’re a starting point, not rules.
-        If you see it differently, follow your idea and tell us: we’ll adapt the card’s name and what it does to your image.</p>
+      <p class="wz-tools">Your images will appear on Fruitcats cards. For each card we share our draft: its name, its text and
+        what it does in the game. That’s about the card, not your image: how the image looks is up to you. If your image
+        takes the card somewhere else, tell us and we’ll rewrite the card to match.</p>
       <p class="wz-tools"><b>Make your images with the tools of your choice</b>, as you always do. This site is only for
         <b>uploading</b> them: you see each one on the real card, and we reply here.</p>
-      <ol class="wz-how"><li><b>Read</b> our ideas for the image.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
+      <ol class="wz-how"><li><b>Read</b> about the card.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
         <li><b>We talk it over</b> here, in comments.</li><li><b>Upload the finished image.</b></li></ol>
       <p>The Studio always shows you what to do next. Every version you upload is kept safely.</p>
       <button class="btn primary big" data-click="welcome:${code}">Start with the first image</button>
@@ -477,7 +478,7 @@ function wizardPage(code: string, chosen?: string): string {
     : state === 'sketch-ok' ? 'We like your sketch. Finish the image in your own tools, then upload it here.'
       : state === 'approved' ? 'Done. If you change it later in your own tools, you can upload a new version here: it comes back to us for a look.'
         : state === 'waiting' ? 'We’re looking at it and will reply here. You can upload a new version any time.'
-          : sketch ? 'Make a rough sketch in your own tools (the idea, the composition and the main colours), then upload it here. We’ll talk it over before you finish it.'
+          : sketch ? 'Make a rough sketch in your own tools (the composition and the main colours), then upload it here. We’ll talk it over before you finish it.'
             : 'Make it in your own tools, then upload it here: a sketch if you’d like an early opinion, or the finished image.';
   const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
   const pic = shown(code, key);
@@ -495,9 +496,9 @@ function wizardPage(code: string, chosen?: string): string {
         <p class="small muted">Comments are our thoughts, to take or leave. You can move on whenever you like.</p></div>` : ''}
       <div class="wz-two">
         <div class="wz-brief">
-          <h3>Our idea for this image</h3><p>${esc(current.draw)}</p>
-          ${current.mustKeep?.length ? `<h3>Things we had in mind</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
-          <p class="idea-note">All of this is a starting point. If you have a better idea, go for it: we’ll change the card to fit your image.</p>
+          <h3>About this card</h3><p>${esc(current.draw)}</p>
+          ${current.mustKeep?.length ? `<h3>More about the card</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+          <p class="idea-note">This describes the card, not your image. How you make the image is up to you, and if it takes the card somewhere else, we’ll change the card.</p>
           <p class="muted small">${esc(facts)}</p>
           ${openFields(code, current)}
         </div>
@@ -663,9 +664,9 @@ function picturePage(code: string, key: string): string {
       <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main image' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
       ${actionBox(p, state, versions, stepInfo.open, stepInfo.after)}
-      <section><h3>Our idea for this image</h3><p>${esc(p.draw)}</p>
-        ${p.mustKeep?.length ? `<h3>Things we had in mind</h3><ul>${p.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
-        <p class="muted small">A starting point: the artist may go another way, and we adapt the card.</p></section>
+      <section><h3>About this card</h3><p>${esc(p.draw)}</p>
+        ${p.mustKeep?.length ? `<h3>More about the card</h3><ul>${p.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+        <p class="muted small">The card’s draft, not art direction: the artist makes the image their way, and we adapt the card.</p></section>
       ${cardText(p)}
       ${openFields(code, p)}
       <section class="facts"><h3>File</h3><p><b>${p.size[0]} × ${p.size[1]}</b> pixels, WebP${p.kind === 'pawtrait' ? ', shown as a circle' : ''}.
@@ -765,14 +766,14 @@ function openFields(code: string, p: BriefPicture): string {
   const mine = (S.views.get(code)?.suggestions ?? []).filter((s) => s.picture === key);
   const owner = reviewing();
   const form = S.suggesting ? `<div class="suggest-form">
-      <label class="field">What would you change?<select data-in="sfield">${SUGGEST_FIELDS.map((f) => `<option value="${f}" ${S.suggesting!.field === f ? 'selected' : ''}>${esc(FIELD_NAMES[f] ?? f)}</option>`).join('')}</select></label>
-      <label class="field">Your idea<input data-in="svalue" value="${esc(S.suggesting.value)}" placeholder="e.g. a gingerbread knight instead of a baker"></label>
+      <label class="field">What about the card?<select data-in="sfield">${SUGGEST_FIELDS.map((f) => `<option value="${f}" ${S.suggesting!.field === f ? 'selected' : ''}>${esc(FIELD_NAMES[f] ?? f)}</option>`).join('')}</select></label>
+      <label class="field">Your change<input data-in="svalue" value="${esc(S.suggesting.value)}" placeholder="e.g. call it Ginger Snap, the Cookie Knight"></label>
       <label class="field">Anything else we should know <small>optional</small><input data-in="swhy" value="${esc(S.suggesting.why)}"></label>
-      <div class="row"><button class="btn primary small" data-click="suggestsend:${key}">Send your idea</button><button class="link" data-click="suggestcancel">Cancel</button></div></div>` : '';
-  return `<section class="open-fields"><h3>Your ideas</h3>
-    <p class="muted small">A different character, name, scene or anything else: tell us, and we’ll adapt the card to your image.</p>
+      <div class="row"><button class="btn primary small" data-click="suggestsend:${key}">Send</button><button class="link" data-click="suggestcancel">Cancel</button></div></div>` : '';
+  return `<section class="open-fields"><h3>Change the card</h3>
+    <p class="muted small">If your image suggests a different name, character or anything else about the card, tell us and we’ll rewrite the card.</p>
     ${mine.map((s) => suggestionRow(code, s, owner)).join('')}
-    ${form || (S.guest ? '' : `<button class="btn ghost small" data-click="suggest:name">Share an idea</button>`)}
+    ${form || (S.guest ? '' : `<button class="btn ghost small" data-click="suggest:name">Suggest a change to the card</button>`)}
   </section>`;
 }
 

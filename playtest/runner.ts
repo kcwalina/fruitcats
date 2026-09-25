@@ -9,6 +9,7 @@ import { deckBuildCommand } from './llm/builder';
 import { decksCommand } from './decks/command';
 import { deckHuntCommand } from './llm/hunt';
 import { playCommand } from './play/command';
+import { refreshLibrary } from './decks/library';
 import { nightlyCommand } from './nightly/command';
 
 const COMMANDS: Record<string, () => Promise<number>> = {
@@ -32,5 +33,7 @@ runMain(async () => {
     console.error(`Usage: runner <${Object.keys(COMMANDS).join('|')}> [options]`);
     return 1;
   }
+  // Away from a checkout (PC2024), the deck library's latest published copy: decks built since the last deploy.
+  await refreshLibrary();
   return command();
 });

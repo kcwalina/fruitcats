@@ -11,7 +11,7 @@ import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deck
 import { ACCOUNTS } from './flags';
 import { startSync } from './sync';
 import {
-  accountClick, accountEnter, askForTermsIfNeeded, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
+  accountClick, accountEnter, askForTermsIfNeeded, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
@@ -390,6 +390,7 @@ function onClick(key: string) {
   }
   if (ACCOUNTS && kind === 'acct') {
     if (raw === 'open') showSettings = false;
+    if (raw === 'contact') showSettings = true;
     void accountClick({ render }, key.slice('acct:'.length));
     return;
   }
@@ -1073,12 +1074,12 @@ function renderSettings(): string {
     `<button class="${chosen ? 'chosen' : ''}" data-click="set:${setting}:${value}" aria-pressed="${chosen}">${label}</button>`;
   if (ACCOUNTS && accountPanelOpen()) {
     return `<div class="overlay"><div class="settings account-panel" role="dialog" aria-label="Account">${renderAccountPanel()}
-      <button class="primary settings-done" data-click="ui:settings">Done</button></div></div>`;
+      <button class="${contactPanelOpen() ? '' : 'primary '}settings-done" data-click="ui:settings">Done</button></div></div>`;
   }
   return `<div class="overlay">
     <div class="settings" role="dialog" aria-label="Settings">
       <h2>Settings</h2>
-      ${ACCOUNTS ? renderAccountRow() : ''}
+      ${ACCOUNTS ? renderAccountRow() + renderContactRow() : ''}
       <div class="setting">
         <span class="setting-name">Sound</span>
         <div class="segmented">${choice('sound', 'on', 'On', soundEnabled())}${choice('sound', 'off', 'Off', !soundEnabled())}</div>
@@ -1132,7 +1133,7 @@ app.addEventListener('keydown', (event) => {
   const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
   if (input && event.key === 'Enter') input.blur();
   const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
-  if (field && event.key === 'Enter') { event.preventDefault(); accountEnter(field, { render }); }
+  if (field && event.key === 'Enter' && field.tagName !== 'TEXTAREA') { event.preventDefault(); accountEnter(field, { render }); }
 });
 
 app.addEventListener('click', (event) => {

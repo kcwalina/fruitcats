@@ -10,7 +10,7 @@
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, acceptTerms, accountExists, needsTerms, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  AuthError, acceptTerms, accountExists, needsTerms, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
@@ -103,7 +103,8 @@ function emailStep(): string {
         value="${esc(email)}" placeholder="you@example.com" ${busy ? 'disabled' : ''}>
     </label>
     <button class="primary account-go" data-click="acct:email" ${busy ? 'disabled' : ''}>${busy ? 'One moment…' : 'Continue'}</button>
-    <p class="account-small">No password. We email you a code each time you sign in on a new device.</p>`;
+    <p class="account-small">No password. We email you a code each time you sign in on a new device.
+      Trouble signing in? <button class="link-button" data-click="acct:contact">Contact us</button></p>`;
 }
 
 function inviteStep(): string {
@@ -147,7 +148,8 @@ function codeStep(): string {
     <h2 id="account-title">Check your email</h2>
     <p class="account-why">We emailed your ${length}-digit code to <b>${esc(pending?.sentTo ?? email)}</b>.</p>
     <p class="account-spam"><b>Don’t see it?</b> Check your <b>Spam</b> or <b>Junk</b> folder: the first email from us
-      often lands there. It comes from <span class="nowrap">no-reply@mail.viamochi.com</span>.</p>
+      often lands there. It comes from <span class="nowrap">no-reply@mail.viamochi.com</span>. Marking it
+      <b>Not spam</b> helps the next one reach your inbox.</p>
     <label class="account-field">Code
       <input data-acct="code" class="account-code" inputmode="numeric" autocomplete="one-time-code" maxlength="${length}"
         enterkeyhint="done" value="${esc(code)}" ${busy ? 'disabled' : ''}>
@@ -159,7 +161,7 @@ function codeStep(): string {
 
 function termsStep(): string {
   return `
-    <img class="account-cat" src="${BASE}sb1/SB1-P01-kitten.webp" alt="">
+    <img class="account-cat" src="${BASE}ui/cat-jam-kitten.webp" alt="">
     <h2 id="account-title">Before you continue</h2>
     <p class="account-why">Please read the Terms of Use and the Privacy Policy for your Via Mochi account.
       They say what you can do with the game and your cards, and how we look after your data.</p>
@@ -192,6 +194,52 @@ let confirmingSignOut = false;
 let confirmingDelete = false;
 let panelNote = '';
 let panelBusy = false;
+
+// ── Contact us ──────────────────────────────────────────────────────────────────────────────────
+//
+// A message to the team, answered by email. Signed-in players are answered at their account's email; anyone else
+// types one. It's a view in the Settings panel, like Account, and the sign-in window links to it.
+
+let contactOpen = false;
+let contactEmail = '';
+let contactMessage = '';
+let contactNote = '';
+let contactSent = false;
+let contactBusy = false;
+
+/** The Settings row that opens "Contact us". */
+export function renderContactRow(): string {
+  return `<button class="account-row" data-click="acct:contact" aria-label="Contact us">
+      <span class="account-who"><b>Contact us</b><small>Questions, problems or ideas: we read every message</small></span>
+      <span class="account-chevron" aria-hidden="true">›</span>
+    </button>`;
+}
+
+function renderContact(): string {
+  const s = session();
+  const head = `<div class="account-panel-head">
+      <button class="icon-button account-back" data-click="acct:panelback" aria-label="Back to Settings" title="Back to Settings">‹</button>
+      <h2>Contact us</h2>
+      <span class="account-back-balance" aria-hidden="true"></span>
+    </div>`;
+  if (contactSent) return `${head}
+    <p class="account-why"><b>Thanks, your message is on its way.</b> We’ll answer by email at
+      <b>${esc(s?.email ?? contactEmail)}</b>, usually within a couple of days. The answer may land in Spam or Junk.</p>
+    <button data-click="acct:contactagain">Send another message</button>`;
+  return `${head}
+    <p class="account-why">Stuck, found a bug, or have an idea? Tell us here and we’ll answer by email.</p>
+    ${s ? `<p class="account-section-note">We’ll answer at <b>${esc(s.email)}</b>.</p>`
+      : `<label class="account-field">Your email <small>So we can answer you</small>
+        <input data-acct="contactemail" type="email" inputmode="email" autocomplete="email" value="${esc(contactEmail)}"
+          placeholder="you@example.com" ${contactBusy ? 'disabled' : ''}>
+      </label>`}
+    <label class="account-field">Your message
+      <textarea data-acct="contactmessage" class="contact-message" rows="6" maxlength="4000"
+        placeholder="What happened, and on which device?" ${contactBusy ? 'disabled' : ''}>${esc(contactMessage)}</textarea>
+    </label>
+    <button class="primary account-go" data-click="acct:contactsend" ${contactBusy ? 'disabled' : ''}>${contactBusy ? 'Sending…' : 'Send'}</button>
+    <p class="account-error" role="alert">${esc(contactNote)}</p>`;
+}
 
 // ── Friends ─────────────────────────────────────────────────────────────────────────────────────
 //
@@ -262,8 +310,11 @@ function renderFriends(): string {
     <p class="account-section-note" role="status">${esc(friendNote)}</p>`;
 }
 export const accountPanelOpen = () => panel;
+/** "Contact us" is showing: its Send is the main button, so the panel's Done steps back. */
+export const contactPanelOpen = () => panel && contactOpen;
 export function closeAccountPanel() {
   panel = false; confirmingSignOut = false; confirmingDelete = false; picking = false; panelNote = ''; friendsOpen = false;
+  contactOpen = false; contactNote = '';
 }
 
 const initial = (name: string) => esc(name.trim().charAt(0).toUpperCase() || '?');
@@ -410,6 +461,7 @@ export function renderAccountRow(): string {
 
 /** The Account panel, shown in place of the other settings. */
 export function renderAccountPanel(): string {
+  if (contactOpen) return renderContact();
   if (picking) return renderPicker();
   if (friendsOpen) return renderFriends();
   const s = session();
@@ -475,6 +527,8 @@ export function accountInput(input: HTMLInputElement) {
   else if (field === 'agree') agreed = input.checked;
   else if (field === 'friendcode') theirCode = input.value;
   else if (field === 'invite') invite = input.value;
+  else if (field === 'contactemail') contactEmail = input.value;
+  else if (field === 'contactmessage') contactMessage = input.value;
   else if (field === 'code') {
     code = input.value.replace(/\D/g, '');
     // A pasted or autofilled code signs in straight away.
@@ -499,6 +553,20 @@ export async function accountClick(host: Host, action: string) {
   hostRef = host;
   if (action === 'open') { openAccount(host); return; }
   if (action === 'close') { closeAccount(host); return; }
+  if (action === 'contact') {
+    // Also reached from the sign-in window ("Trouble signing in?"), which closes for it.
+    open = false; panel = true; contactOpen = true; contactNote = ''; host.render(); return;
+  }
+  if (action === 'contactagain') { contactSent = false; contactMessage = ''; host.render(); return; }
+  if (action === 'contactsend') {
+    if (contactBusy) return;
+    if (!contactMessage.trim()) { contactNote = 'Please write your message.'; host.render(); return; }
+    if (!session() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { contactNote = 'Please enter your email address, so we can answer you.'; host.render(); return; }
+    contactBusy = true; contactNote = ''; host.render();
+    try { await sendSupport(contactMessage.trim(), contactEmail.trim()); contactSent = true; contactMessage = ''; }
+    catch (e) { contactNote = e instanceof AuthError ? e.message : 'Your message couldn’t be sent. Please try again.'; }
+    contactBusy = false; host.render(); return;
+  }
   if (action === 'panel') { panel = true; confirmingSignOut = false; picking = false; host.render(); return; }
   if (action === 'picker') { void openPicker(host); return; }
   if (action === 'pickerback') { picking = false; host.render(); return; }

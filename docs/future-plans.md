@@ -4,7 +4,7 @@ Features that aren't built yet, and what they need. Only work still to do is lis
 it comes out of this file. Accounts and the Store have their own documents, [accounts-plan.md](accounts-plan.md) and
 [store-plan.md](store-plan.md).
 
-1. PvP: two people playing each other, not the AI
+1. PvP: two people playing each other, not the AI. Friend games and Ranked: see [pvp-plan.md](pvp-plan.md)
 2. Ladder boards
 3. Accounts: see [accounts-plan.md](accounts-plan.md)
 4. The Store: see [store-plan.md](store-plan.md)
@@ -16,7 +16,8 @@ and replays. What's missing is a backend: the site is a static Azure Static Web 
 
 ## 1. PvP
 
-Two people playing each other. Two versions:
+Two people playing each other. The plan for playing online (Friend games first, then Ranked, on one shared match
+system) is [pvp-plan.md](pvp-plan.md). Two versions:
 
 - **Same device (pass-and-play).** No server. Needs a "pass the device" screen that hides the hand before
   the other player looks. Pounce is awkward: it happens during the opponent's turn, so the device changes

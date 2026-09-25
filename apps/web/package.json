@@ -11,7 +11,9 @@
   "dependencies": {
     "@fruitcats/engine": "*",
     "@fruitcats/match": "*",
-    "@fruitcats/store": "*"
+    "@fruitcats/store": "*",
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^1.5.2"
   },
   "devDependencies": {
     "marked": "^18.0.14"

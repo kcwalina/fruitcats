@@ -137,6 +137,8 @@ export interface FriendStatus {
   status: Presence;
   /** When they were last online (ISO), for "Last seen 3 days ago". */
   lastSeen?: string;
+  /** Their name and Pawtrait while they're online (the game also has them from viamochi-id's friends list). */
+  person?: Person;
   record?: Tally;
 }
 

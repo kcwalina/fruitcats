@@ -11,10 +11,11 @@
 
 import {
   AuthError, agreeToTerms, accountExists, needsTerms, refreshAccount, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
-  listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
+  resend, restoredOnSignIn, session,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
+import { ONLINE } from './flags';
 import { BASE, esc } from './ui';
 
 type Step = 'email' | 'invite' | 'details' | 'code' | 'terms' | 'welcome';
@@ -74,7 +75,7 @@ const BENEFITS = [
   ['Your collection, everywhere', 'Cards and decks are kept in your account, on phone, tablet, computer and Steam.'],
   ['Safe if you lose your device', 'New phone? Sign in and everything is there. Nothing lives only on one device.'],
   ['Buy once, keep it', 'Cards from the Store stay in your account wherever you play signed in, whichever store you bought them in.'],
-  ['Friends and online play', 'Add friends and play them online, when those arrive.'],
+  ['Play your friends', ONLINE ? 'Add friends and play them online, each on your own device.' : 'Add friends and play them online, when that arrives.'],
 ];
 
 function benefits(): string {
@@ -264,79 +265,11 @@ function renderContact(): string {
     <p class="account-error" role="alert">${esc(contactNote)}</p>`}`;
 }
 
-// ── Friends ─────────────────────────────────────────────────────────────────────────────────────
-//
-// No search by name or email: you give a friend your code, or type theirs, and you're friends. Everything else is a
-// quiet menu per friend (unfriend, block), each with a confirmation.
-
-let friendsOpen = false;
-let friends: Friend[] = [];
-let friendsLoaded = false;
-let myCode: { code: string; expires: string } | null = null;
-let theirCode = '';
-let friendNote = '';
-let friendBusy = false;
-let managing: string | null = null;      // the friend whose menu is open
-let confirming: 'remove' | 'block' | null = null;
-
-async function openFriends(host: Host) {
-  friendsOpen = true; friendNote = ''; managing = null; confirming = null;
-  host.render();
-  try { friends = await listFriends(); friendsLoaded = true; } catch (e) { friendNote = e instanceof AuthError ? e.message : 'Couldn’t load your friends.'; }
-  if (friendsOpen) host.render();
-}
-
-function renderFriends(): string {
-  const row = (f: Friend) => {
-    const name = esc(f.displayName || 'A friend');
-    const menu = managing !== f.id ? '' : confirming ? `
-        <div class="account-confirm">
-          <p>${confirming === 'block'
-            ? `<b>Block ${name}?</b> They’re removed from your friends and can’t use your friend codes.`
-            : `<b>Remove ${name} from your friends?</b> You can add each other again with a new code.`}</p>
-          <div class="account-confirm-buttons">
-            <button data-click="acct:friendcancel">Cancel</button>
-            <button class="danger" data-click="acct:friend${confirming}:${f.id}" ${friendBusy ? 'disabled' : ''}>${confirming === 'block' ? 'Block' : 'Remove'}</button>
-          </div>
-        </div>` : `
-        <div class="friend-menu">
-          <button class="link-button" data-click="acct:friendask:remove">Remove friend</button>
-          <button class="link-button danger-link" data-click="acct:friendask:block">Block</button>
-        </div>`;
-    return `<li class="friend">
-        <button class="friend-row" data-click="acct:friendmenu:${f.id}" aria-expanded="${managing === f.id}">
-          ${pawtrait(f.avatar, 'friend-face')}<span class="friend-name">${name}</span><span class="account-chevron" aria-hidden="true">⋯</span>
-        </button>${menu}
-      </li>`;
-  };
-  const list = !friendsLoaded ? '<p class="account-section-note">Loading…</p>'
-    : friends.length ? `<ul class="friend-list">${friends.map(row).join('')}</ul>`
-    : '<p class="account-section-note">No friends yet. Give someone your code, or type theirs below.</p>';
-  const expires = myCode ? new Date(myCode.expires).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
-  return `<div class="account-panel-head">
-      <button class="icon-button account-back" data-click="acct:friendsback" aria-label="Back to Account" title="Back to Account">‹</button>
-      <h2>Friends</h2>
-      <span class="account-back-balance" aria-hidden="true"></span>
-    </div>
-    ${list}
-    <div class="friend-add">
-      <h3>Add a friend</h3>
-      ${myCode ? `<p class="friend-code" aria-label="Your friend code">${esc(myCode.code)}</p>
-        <p class="account-section-note">Give this code to your friend: it works once, until ${esc(expires)}.
-          <button class="link-button" data-click="acct:friendcopy">Copy</button></p>`
-        : `<button data-click="acct:friendcode" ${friendBusy ? 'disabled' : ''}>Show my friend code</button>`}
-      <label class="account-field">Or type your friend’s code
-        <input data-acct="friendcode" autocomplete="off" autocapitalize="characters" maxlength="8" placeholder="K7M-4Q2" enterkeyhint="done" value="${esc(theirCode)}">
-      </label>
-      <button data-click="acct:friendadd" ${friendBusy ? 'disabled' : ''}>Add friend</button>
-    </div>
-    <p class="account-section-note" role="status">${esc(friendNote)}</p>`;
-}
 export const accountPanelOpen = () => panel;
 /** "Contact us" is showing: its Send is the main button, so the panel's Done steps back. */
 export const contactPanelOpen = () => panel && contactOpen;
 export function closeAccountPanel() {
-  panel = false; confirmingSignOut = false; confirmingDelete = false; picking = false; panelNote = ''; friendsOpen = false;
+  panel = false; confirmingSignOut = false; confirmingDelete = false; picking = false; panelNote = '';
   contactOpen = false; contactNote = ''; contactCodeLength = 0; contactCode = '';
 }
 
@@ -486,7 +419,6 @@ export function renderAccountRow(): string {
 export function renderAccountPanel(): string {
   if (contactOpen) return renderContact();
   if (picking) return renderPicker();
-  if (friendsOpen) return renderFriends();
   const s = session();
   const head = `<div class="account-panel-head">
       <button class="icon-button account-back" data-click="acct:panelback" aria-label="Back to Settings" title="Back to Settings">‹</button>
@@ -526,10 +458,6 @@ export function renderAccountPanel(): string {
         <span class="account-who"><b>${esc(name)}</b><small>${esc(s.email)}</small></span>
       </div>
       <p class="account-section-note">Signed in on this device${since ? ` since ${esc(since)}` : ''}. Your collection and decks are kept in your Via Mochi account.</p>
-      <button class="account-row" data-click="acct:friends">
-        <span class="account-who"><b>Friends</b><small>Add friends with a code; see them here</small></span>
-        <span class="account-chevron" aria-hidden="true">›</span>
-      </button>
       ${signOut}
       <div class="account-more">
         <button class="link-button" data-click="acct:export" ${panelBusy ? 'disabled' : ''}>Export my data</button>
@@ -548,7 +476,6 @@ export function accountInput(input: HTMLInputElement) {
   else if (field === 'name') displayName = input.value;
   else if (field === 'year') birthYear = input.value.replace(/\D/g, '');
   else if (field === 'agree') agreed = input.checked;
-  else if (field === 'friendcode') theirCode = input.value;
   else if (field === 'invite') invite = input.value;
   else if (field === 'contactemail') contactEmail = input.value;
   else if (field === 'contactmessage') contactMessage = input.value;
@@ -571,7 +498,6 @@ export function accountEnter(input: HTMLInputElement, host: Host) {
   else if (field === 'name') document.querySelector<HTMLInputElement>('[data-acct="year"]')?.focus();
   else if (field === 'year') input.blur();
   else if (field === 'code') void accountClick(host, 'code');
-  else if (field === 'friendcode') void accountClick(host, 'friendadd');
   else if (field === 'invite') void accountClick(host, 'invite');
   else if (field === 'contactcode') void accountClick(host, 'contactverify');
 }
@@ -626,38 +552,6 @@ export async function accountClick(host: Host, action: string) {
   if (action === 'panelback') { closeAccountPanel(); host.render(); return; }
   if (action === 'signoutask') { confirmingSignOut = true; host.render(); return; }
   if (action === 'signoutcancel') { confirmingSignOut = false; host.render(); return; }
-  if (action === 'friends') { void openFriends(host); return; }
-  if (action === 'friendsback') { friendsOpen = false; host.render(); return; }
-  if (action.startsWith('friendmenu:')) { const id = action.slice(11); managing = managing === id ? null : id; confirming = null; host.render(); return; }
-  if (action.startsWith('friendask:')) { confirming = action.slice(10) as 'remove' | 'block'; host.render(); return; }
-  if (action === 'friendcancel') { confirming = null; host.render(); return; }
-  if (action.startsWith('friendremove:') || action.startsWith('friendblock:')) {
-    const block = action.startsWith('friendblock:');
-    const id = action.slice(action.indexOf(':') + 1);
-    friendBusy = true; host.render();
-    try { await removeFriend(id, block); friends = friends.filter((f) => f.id !== id); friendNote = block ? 'Blocked.' : 'Removed.'; }
-    catch (e) { friendNote = e instanceof AuthError ? e.message : 'Couldn’t do that.'; }
-    friendBusy = false; managing = null; confirming = null; host.render(); return;
-  }
-  if (action === 'friendcode') {
-    friendBusy = true; host.render();
-    try { myCode = await newFriendCode(); friendNote = ''; } catch (e) { friendNote = e instanceof AuthError ? e.message : 'Couldn’t make a code.'; }
-    friendBusy = false; host.render(); return;
-  }
-  if (action === 'friendcopy') {
-    try { await navigator.clipboard.writeText(myCode?.code ?? ''); friendNote = 'Copied.'; } catch { friendNote = 'Couldn’t copy: read the code out instead.'; }
-    host.render(); return;
-  }
-  if (action === 'friendadd') {
-    if (theirCode.replace(/[^A-Za-z0-9]/g, '').length !== 6) { friendNote = 'A friend code has 6 letters and numbers, like K7M-4Q2.'; host.render(); return; }
-    friendBusy = true; host.render();
-    try {
-      const f = await redeemFriendCode(theirCode);
-      friends = [...friends.filter((x) => x.id !== f.id), f].sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''));
-      theirCode = ''; friendNote = `You and ${f.displayName || 'your friend'} are now friends!`;
-    } catch (e) { friendNote = e instanceof AuthError ? e.message : 'That code didn’t work.'; }
-    friendBusy = false; host.render(); return;
-  }
   if (action === 'deleteask') { confirmingDelete = true; confirmingSignOut = false; host.render(); return; }
   if (action === 'deletecancel') { confirmingDelete = false; host.render(); return; }
   if (action === 'export') {

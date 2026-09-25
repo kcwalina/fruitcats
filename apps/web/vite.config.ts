@@ -36,6 +36,8 @@ export default defineConfig(({ mode }) => ({
     // The Store is in every build, but the Fruitcats API opens it only to its testers: everyone else's Store tile still
     // says "Coming soon" (store-plan.md, Hidden until launch).
     'import.meta.env.VITE_STORE': JSON.stringify('on'),
+    // Online play with friends: the playtest site only, until it has been tried out (docs/pvp-plan.md).
+    'import.meta.env.VITE_ONLINE': JSON.stringify(mode === 'playtest' ? 'on' : 'off'),
   },
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
   // This checkout's own packages, always: from a worktree without node_modules, @fruitcats/store would otherwise come

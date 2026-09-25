@@ -217,7 +217,8 @@ export class Match {
     const me = this.account(seat);
     // An action for an older state (a double tap, a message that crossed another) is dropped, never applied twice.
     if (seq !== this.state.actions) return this.host.send(me, this.matchMessage(seat));
-    if (this.state.prompt?.player !== seat || this.phase === 'paused') return this.host.send(me, { t: 'error', message: 'It isn’t your turn to decide.' });
+    // While the other player's connection is down only the clock stops: you may still make your own move.
+    if (this.state.prompt?.player !== seat) return this.host.send(me, { t: 'error', message: 'It isn’t your turn to decide.' });
     this.stopClock();
     const before = this.state;
     try {
@@ -367,6 +368,7 @@ export class Match {
     this.pause();
     const grace = this.record.rules.dropGraceMs;
     this.host.send(this.account(other(seat)), { t: 'away', match: this.id, seat, left: grace });
+    this.sendClock();
     this.awayTimers[seat] = setTimeout(() => {
       // Ranked: gone too long is a loss. A Friend game waits: the one still there may take the win or call it off.
       if (this.record.rules.kind === 'ranked') void this.finish({ winner: other(seat), how: 'left' });

@@ -88,7 +88,7 @@ export function createHub(deps: HubDeps) {
     const friends = c?.friends ?? new Set<string>();
     for (const f of friends) {
       const fc = conns.get(f);
-      if (fc?.friends.has(account)) fc.send({ t: 'presence', friend: { id: account, status: statusOf(account), lastSeen: c ? undefined : new Date().toISOString() } });
+      if (fc?.friends.has(account)) fc.send({ t: 'presence', friend: { id: account, status: statusOf(account), lastSeen: c ? undefined : new Date().toISOString(), person: c?.person } });
     }
   }
 
@@ -99,6 +99,7 @@ export function createHub(deps: HubDeps) {
       out.push({
         id: f, status,
         lastSeen: status === 'offline' ? await deps.store.lastSeen(f) : undefined,
+        person: conns.get(f)?.person,
         record: await deps.store.tally(c.account!, f),
       });
     }
@@ -229,7 +230,7 @@ export function createHub(deps: HubDeps) {
     conns.set(who.id, c);
     if (older && older !== c) { older.send({ t: 'error', message: 'replaced' }); older.close(); }
     const m = matches.get(matchOf.get(who.id) ?? '');
-    c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m ? m.id : null });
+    c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m && !m.end ? m.id : null });
     if (m) m.connected(m.seatOf(who.id)!);
     announce(who.id);
   }

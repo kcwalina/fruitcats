@@ -13,3 +13,10 @@ export const ACCOUNTS: boolean = import.meta.env.VITE_ACCOUNTS === 'on'
  */
 export const STORE: boolean = import.meta.env.VITE_STORE === 'on'
   || (import.meta.env.DEV && new URLSearchParams(location.search).get('store') === '1');
+
+/**
+ * Online play with friends (docs/pvp-plan.md): the Friend tile, Play a friend, online games. On in the playtest build
+ * (vite.config.ts) while it's tried out; in dev, `?online=1` turns it on. Off, the Friend tile says "Coming soon".
+ */
+export const ONLINE: boolean = ACCOUNTS && (import.meta.env.VITE_ONLINE === 'on'
+  || (import.meta.env.DEV && new URLSearchParams(location.search).get('online') === '1'));

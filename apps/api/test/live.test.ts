@@ -329,9 +329,17 @@ describe('the clock in a Friend game', () => {
     pippin.drop();
     await flush();
     expect(sam.last('away')).toMatchObject({ seat: 1 });
+    expect(sam.last('clock')!.clock.phase).toBe('paused');
     vi.advanceTimersByTime(PACES.quick.clock.moveMs! * 3);
     await flush();
     expect(sam.last('end')).toBeUndefined();
+    // The one still there can still make their own move (the mulligan comes first for seat 0).
+    if (sam.view!.prompt) {
+      const seq = sam.view!.actions;
+      sam.send({ t: 'act', match: sam.match!, seq, action: { t: 'mulligan', uids: [] } });
+      await flush();
+      expect(sam.view!.actions).toBe(seq + 1);
+    }
     const back = await connect(B);
     expect(back.last('welcome')!.match).toBe(sam.match);
     back.send({ t: 'rejoin', match: sam.match! });

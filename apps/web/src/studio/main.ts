@@ -3,8 +3,8 @@
 // and as wallpapers. Artists upload each version; nothing is ever overwritten. Comments from the Fruitcats team,
 // from AI agents and from the artist sit beside each picture, each labelled with who wrote it.
 //
-// Pages (in the address's #): the set's home (#/bp1), a picture (#/bp1/BP1-X01), the set's artists (#/bp1/artists,
-// owner only), and the list of sets (#/). One render() draws the page from `S`; clicks and typing are handled by
+// Pages (in the address's #): a project's home (#/bp1; for a reviewer it also assigns the artist), a picture
+// (#/bp1/BP1-X01), and the list of projects (#/). One render() draws the page from `S`; clicks and typing are handled by
 // data-click and data-in attributes, as in the game.
 
 import '../content';
@@ -14,7 +14,7 @@ import { BASE, esc } from '../ui';
 import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
 import {
-  FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
+  FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, sketchFirst, stateOf, steps, versionsOf,
   type Brief, type BriefPicture, type State,
 } from './brief';
 import { DEVICES, LOCK_CLOCK, announcementPreview, cardPreview, finishesOf, gamePreview, pawtraitPreview, wallpaper } from './previews';
@@ -24,7 +24,7 @@ import './studio.css';
 interface SetEntry { set: string; code: string; name: string; status: string; folder: string }
 interface LocalPicture { url: string; file: File; width: number; height: number; format: string }
 type Tab = 'card' | 'picture' | 'game' | 'wallpaper';
-type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'picture'; code: string; key: string } | { page: 'artists'; code: string };
+type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'all'; code: string } | { page: 'picture'; code: string; key: string };
 
 const S = {
   route: { page: 'sets' } as Route,
@@ -62,7 +62,16 @@ const S = {
   newInvite: '',
   busy: false,
   error: '',
+  assignEmail: '',
+  /** The picture just sent, for the wizard's “sent” line. */
+  justSent: '',
+  assignError: '',
+  /** A reviewer looking at a project the way its artist sees it (to try the Studio, or to check what they see). */
+  asArtist: false,
 };
+
+/** Reviewing: signed in as a reviewer, and not looking through the artist's eyes. */
+const reviewing = () => S.me?.role === 'owner' && !S.asArtist;
 
 const root = document.getElementById('studio')!;
 
@@ -73,7 +82,8 @@ const signedIn = () => (DEV ? devUser() !== null : session() !== null);
 function parseRoute(): Route {
   const [code, key] = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   if (!code) return { page: 'sets' };
-  if (key === 'artists') return { page: 'artists', code };
+  if (key === 'artists') return { page: 'home', code };
+  if (key === 'all') return { page: 'all', code };
   if (key) return { page: 'picture', code, key };
   return { page: 'home', code };
 }
@@ -116,12 +126,13 @@ async function enter() {
 
 async function onRoute() {
   S.route = parseRoute();
+  S.justSent = '';
   S.pinning = false; S.pin = null; S.replyTo = null; S.suggesting = null; S.uploadError = ''; S.newInvite = '';
   const mine = visibleSets();
   if (S.route.page === 'sets' && mine.length === 1 && (S.me || S.guest)) { go(`#/${mine[0].code}`); return; }
   if (S.route.page !== 'sets') {
     await loadSet(S.route.code);
-    if (S.route.page === 'artists' && S.me?.role === 'owner') {
+    if (S.me?.role === 'owner') {
       try { S.roster = await api.artists(S.route.code); } catch (e) { S.error = api.explain(e); }
     }
   }
@@ -287,7 +298,8 @@ function page(): string {
       + (S.error ? `<p class="si-guest si-error">${esc(S.error)}</p>` : '');
   }
   const r = S.route;
-  const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? homePage(r.code) : r.page === 'picture' ? picturePage(r.code, r.key) : artistsPage(r.code);
+  const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
+    : r.page === 'all' ? homePage(r.code) : picturePage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
     ${S.guest ? `<div class="banner">You’re looking around without signing in. Pictures you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
     ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
@@ -296,11 +308,11 @@ function page(): string {
 function topBar(): string {
   const r = S.route;
   const set = r.page !== 'sets' ? S.sets.find((s) => s.code === r.code) : null;
-  const who = S.me ? `${esc(S.me.name)}${S.me.role === 'owner' ? ' <span class="chip owner-chip">Reviewer</span>' : ''}` : 'Guest';
+  const who = S.me ? `${esc(S.me.name)}${S.me.role === 'owner' ? ` <span class="chip owner-chip">${S.asArtist ? 'Seeing it as the artist' : 'Reviewer'}</span>` : ''}` : 'Guest';
   return `<header class="top">
     <a class="brand" href="#/"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></a>
-    ${set ? `<nav class="crumbs"><a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : r.page === 'artists' ? ' <span>›</span> <span>Artists</span>' : ''}</nav>` : '<span></span>'}
-    <div class="me">${set && S.me?.role === 'owner' ? `<a class="btn ghost small" href="#/${set.code}/artists">Artists</a>` : ''}
+    ${set ? `<nav class="crumbs"><a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : ''}</nav>` : '<span></span>'}
+    <div class="me">
       <a class="btn ghost small" href="${BASE}docs.html" target="_blank" rel="noopener">Guide</a>
       <span class="me-name">${who}</span>
       ${S.me ? '<button class="btn ghost small" data-click="signout">Sign out</button>' : ''}</div>
@@ -324,12 +336,12 @@ function setsPage(): string {
   const mine = visibleSets();
   if (!mine.length) {
     return `<main class="empty"><h1>Welcome, ${esc(S.me?.name ?? '')}</h1>
-      <p>You’re signed in as <b>${esc(S.me?.name ?? '')}</b>. Your reviewer can see that you’re here, and will add you to your project.
-        Once they have, it opens here whenever you sign in.</p>
+      <p>You’re signed in as <b>${esc(S.me?.name ?? '')}</b>, but no project is assigned to this account yet.
+        Once your reviewer assigns one, it opens here whenever you sign in.</p>
       <p><button class="btn" data-click="recheck">Check again</button></p>
       ${S.me?.id ? `<p class="muted small">Your account id, if we ask for it: <code>${esc(S.me.id)}</code></p>` : ''}</main>`;
   }
-  return `<main class="sets"><h1>Your sets</h1><div class="set-grid">${mine.map((s) => {
+  return `<main class="sets"><h1>Projects</h1><div class="set-grid">${mine.map((s) => {
     const brief = S.briefs.get(s.code);
     return `<a class="set-tile" href="#/${s.code}"><b>${esc(s.name)}</b><span>${esc(s.set)}${brief ? ` · ${brief.pictures.length} pictures` : ''}</span></a>`;
   }).join('')}</div></main>`;
@@ -344,13 +356,14 @@ function homePage(code: string): string {
   const all = steps(brief, view);
   const { approved, total } = overall(brief, view);
   const next = nextPicture(brief, view);
-  const owner = S.me?.role === 'owner';
+  const owner = reviewing();
   const news = unread(code);
   // The header shows the artist's newest card picture, once there is one.
   const latest = brief.pictures.filter((p) => p.kind === 'card' && versionsOf(view, keyOf(p)).length)
     .sort((a, b) => (versionsOf(view, keyOf(b)).at(-1)!.at > versionsOf(view, keyOf(a)).at(-1)!.at ? 1 : -1))[0];
   const heroShown = latest ? shown(code, keyOf(latest)) : null;
 
+  if (owner) return reviewerHome(code, brief, view);
   const waitingOnOwner = owner ? brief.pictures.filter((p) => stateOf(view, keyOf(p)) === 'waiting') : [];
   const nextCard = owner ? (waitingOnOwner.length ? (() => {
     const w = waitingOnOwner[0], key = keyOf(w);
@@ -372,14 +385,9 @@ function homePage(code: string): string {
     : `<div class="next waiting"><div><small>Your next step</small><h2>We’re reviewing your pictures</h2><p>You’ll see our comments on each picture. The next step opens when this one is approved.</p></div></div>`;
 
   return `<main class="home">
-    <section class="home-head" style="${heroShown?.url ? `--hero:url(${heroShown.url})` : ''}">
-      <div>
-        <small>${esc(brief.set)} · ${S.sets.find((s) => s.code === code)?.status === 'released' ? 'Released' : 'In the works'}</small>
-        <h1>${esc(brief.name)}</h1>
-        ${brief.about ? `<p>${esc(brief.about)}</p>` : ''}
-      </div>
-      <div class="ring" style="--p:${total ? approved / total : 0}"><b>${approved}</b><span>of ${total}<br>approved</span></div>
-    </section>
+    ${S.asArtist ? `<div class="as-artist">You’re seeing <b>${esc(brief.name)}</b> the way its artist sees it. Pictures you send here are stored like an artist’s.
+      <button class="btn small" data-click="asartist:0">Back to reviewing</button></div>` : ''}
+    ${homeHead(code, brief, heroShown?.url ?? null, approved, total)}
     ${nextCard}
     ${news.length ? `<section class="news"><h3>New since you last looked</h3>${news.slice(-6).reverse().map((c) =>
       `<a class="news-item" href="#/${code}/${c.picture}">${authorLabel(c)} on <b>${esc(pictureTitle(code, c.picture))}</b>: ${esc(c.text.slice(0, 140))}${c.text.length > 140 ? '…' : ''}</a>`).join('')}
@@ -390,7 +398,6 @@ function homePage(code: string): string {
       return `<article class="step ${st.done ? 'done' : st.open ? 'open' : 'locked'}">
         <header><span class="step-n">${st.done ? '✓' : i + 1}</span><div><h3>${esc(st.milestone.title)}</h3>${st.milestone.note ? `<p>${esc(st.milestone.note)}</p>` : ''}
           ${lockedBy ? `<p class="lock">Opens when “${esc(lockedBy)}” is approved.</p>` : ''}</div>
-          ${owner && !st.done && (!st.open || view?.milestones[String(st.milestone.id)]) ? `<button class="btn ghost small" data-click="openstep:${st.milestone.id}:${view?.milestones[String(st.milestone.id)] ? 0 : 1}">${view?.milestones[String(st.milestone.id)] ? 'Close early access' : 'Open now'}</button>` : ''}
           <div class="bar"><i style="width:${Math.round(st.progress * 100)}%"></i></div></header>
         <div class="thumbs">${st.pictures.map((p) => thumb(code, p, st.open || owner)).join('')}</div>
       </article>`;
@@ -398,6 +405,138 @@ function homePage(code: string): string {
     ${brief.families || brief.style ? `<section class="about-set"><h3>About the set</h3>
       ${brief.style ? `<p><b>Style.</b> ${esc(brief.style)}</p>` : ''}${brief.audience ? `<p><b>For.</b> ${esc(brief.audience)}</p>` : ''}
       ${Object.entries(brief.families ?? {}).map(([name, f]) => `<p><b>${esc(name)} family.</b> ${esc(f.world)}${f.note ? ` (${esc(f.note)})` : ''}</p>`).join('')}</section>` : ''}
+  </main>`;
+}
+
+// ── The artist's wizard: one thing to do at a time ──────────────────────────────────────────────
+
+const welcomeKey = (code: string) => `studio-welcomed-${S.me?.id ?? 'guest'}-${code}`;
+function welcomed(code: string): boolean { try { return localStorage.getItem(welcomeKey(code)) === '1'; } catch { return true; } }
+
+/** What an artist sees when they open their project: a welcome the first time, then always the one picture to do now. */
+function wizardPage(code: string): string {
+  const brief = S.briefs.get(code);
+  if (!brief) return notLoaded();
+  const view = S.views.get(code) ?? null;
+  const { approved, total } = overall(brief, view);
+  const started = brief.pictures.some((x) => versionsOf(view, keyOf(x)).length);
+  const banner = S.asArtist ? `<div class="as-artist">You’re seeing <b>${esc(brief.name)}</b> the way its artist sees it.
+      <button class="btn small" data-click="asartist:0">Back to reviewing</button></div>` : '';
+
+  if (!started && !welcomed(code)) {
+    return `<main class="wizard">${banner}<section class="wz-card wz-welcome">
+      <small>${esc(brief.name)}</small>
+      <h1>Welcome${S.me?.name ? `, ${esc(S.me.name)}` : ''}!</h1>
+      <p class="wz-lead">You’ll draw <b>${total} pictures</b> for ${esc(brief.name)}, one at a time. For each picture:</p>
+      <ol class="wz-how"><li><b>Read</b> what to draw.</li><li><b>Send a sketch.</b> You’ll see it on the real card before you send it.</li>
+        <li><b>We reply</b> here, with comments on your sketch.</li><li><b>Send the finished picture.</b></li></ol>
+      <p>The Studio always shows you what to do next. Your pictures are kept safely, every version.</p>
+      <button class="btn primary big" data-click="welcome:${code}">Start with the first picture</button>
+    </section></main>`;
+  }
+
+  const current = nextPicture(brief, view);
+  const progress = `<div class="wz-progress"><div class="bar"><i style="width:${total ? Math.round((approved / total) * 100) : 0}%"></i></div>
+    <span>${approved} of ${total} pictures done</span><a href="#/${code}/all">All pictures</a></div>`;
+  const sent = S.justSent ? `<div class="wz-sent">✓ ${esc(S.justSent)} is sent. We’ll reply on it here.</div>` : '';
+
+  if (!current) {
+    const withUs = brief.pictures.filter((x) => stateOf(view, keyOf(x)) === 'waiting');
+    const done = approved === total && total > 0;
+    return `<main class="wizard">${banner}${progress}${sent}<section class="wz-card">
+      ${done ? `<h1>Every picture is done</h1><p class="wz-lead">Thank you for your work on ${esc(brief.name)}!</p>`
+        : `<h1>That’s everything for now</h1>
+          <p class="wz-lead">We’re looking at what you sent. Our replies appear here, and the next picture opens as soon as we approve these:</p>
+          <ul class="wz-list">${withUs.map((x) => `<li><a href="#/${code}/${keyOf(x)}">${esc(title(x))}${sideLabel(x) ? ` (${sideLabel(x)})` : ''}</a></li>`).join('')}</ul>`}
+    </section></main>`;
+  }
+
+  const key = keyOf(current);
+  const state = stateOf(view, key);
+  const versions = versionsOf(view, key);
+  const n = brief.pictures.indexOf(current) + 1;
+  const name = `${title(current)}${sideLabel(current) ? ` (${sideLabel(current)})` : ''}`;
+  const sketch = sketchFirst(current) && state === 'none';
+  const heading = state === 'changes' ? `Update ${name}` : state === 'sketch-ok' ? `Paint ${name}` : sketch ? `Sketch ${name}` : `Draw ${name}`;
+  const lead = state === 'changes' ? 'We asked for a few changes. Read them below, then send a new version.'
+    : state === 'sketch-ok' ? 'We like your sketch. Now paint the finished picture and send it here.'
+      : sketch ? 'Start with a rough sketch: the pose, the composition and the main colours. We’ll reply before you paint it.'
+        : 'Send a sketch if you’d like an early opinion, or the finished picture.';
+  const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
+  const pic = shown(code, key);
+  const facts = [`${current.size[0]} × ${current.size[1]} pixels`, current.kind === 'pawtrait' ? 'shown as a circle' : '',
+    current.signature === 'requested' ? 'please sign it in a corner' : '', current.showcase ? 'showcase art: face visible, heroic pose, dramatic light, lots of detail' : '']
+    .filter(Boolean).join(' · ');
+  return `<main class="wizard">${banner}${progress}${sent}
+    <section class="wz-card">
+      <small>Picture ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
+      <h1>${esc(heading)}</h1>
+      <p class="wz-lead">${esc(lead)}</p>
+      ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<p>${authorLabel(c)} ${esc(c.text)}</p>`).join('')}</div>` : ''}
+      <div class="wz-two">
+        <div class="wz-brief">
+          <h3>What to draw</h3><p>${esc(current.draw)}</p>
+          ${current.mustKeep?.length ? `<h3>Please keep</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+          <p class="muted small">${esc(facts)}</p>
+          <a class="small" href="#/${code}/${key}">More about this picture, and suggesting a new name</a>
+        </div>
+        <div class="wz-upload">${uploadBox(current, versions)}</div>
+      </div>
+    </section>
+    ${pic.url ? `<section class="wz-card"><h2>How it looks</h2>${previewTabs(code, current, pic)}</section>` : ''}
+  </main>`;
+}
+
+function homeHead(code: string, brief: Brief, hero: string | null, approved: number, total: number, extra = ''): string {
+  return `<section class="home-head" style="${hero ? `--hero:url(${hero})` : ''}">
+      <div>
+        <small>${esc(brief.set)} · ${S.sets.find((s) => s.code === code)?.status === 'released' ? 'Released' : 'In the works'}</small>
+        <h1>${esc(brief.name)}</h1>
+        ${brief.about ? `<p>${esc(brief.about)}</p>` : ''}${extra}
+      </div>
+      <div class="ring" style="--p:${total ? approved / total : 0}"><b>${approved}</b><span>of ${total}<br>approved</span></div>
+    </section>`;
+}
+
+/** The project as its reviewer sees it: who draws it, what's waiting for review, and every picture. */
+function reviewerHome(code: string, brief: Brief, view: SetView | null): string {
+  const { approved, total } = overall(brief, view);
+  const r = S.roster;
+  const artists = r?.artists ?? [];
+  const studio = `${location.origin}${location.pathname}`;
+  const assign = `<div class="assign"><input data-in="assignemail" type="email" placeholder="The artist’s email, as in their game account" value="${esc(S.assignEmail)}">
+      <button class="btn primary" data-click="assign:${code}" ${S.busy ? 'disabled' : ''}>${S.busy ? 'Checking…' : 'Assign'}</button></div>
+    ${S.assignError ? `<p class="error">${esc(S.assignError)}</p>` : ''}`;
+  const artistPanel = artists.length
+    ? `<section class="panel"><h2>Artist</h2>${artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b>${a.email ? `<span>${esc(a.email)}</span>` : ''}
+        <span class="muted small">since ${when(a.joined)}</span><span class="grow"></span>
+        <button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('')}
+        <p class="muted small">They open <b>${esc(studio)}</b>, sign in with that account, and see this project.</p>
+        <details class="more" ${S.assignError ? 'open' : ''}><summary>Add another artist</summary>${assign}</details></section>`
+    : `<section class="panel attention"><h2>No artist yet</h2>
+        <p>Type the email of the game account that should draw ${esc(brief.name)}. We check that the account exists before assigning it.</p>
+        ${assign}</section>`;
+  const toReview = brief.pictures.filter((p) => stateOf(view, keyOf(p)) === 'waiting');
+  const suggestions = (view?.suggestions ?? []).filter((x) => x.state === 'open');
+  const news = unread(code);
+  return `<main class="home">
+    ${homeHead(code, brief, null, approved, total,
+      `<p class="head-actions"><button class="btn small light" data-click="asartist:1">See it as the artist</button></p>`)}
+    ${artistPanel}
+    <section class="panel"><h2>To review</h2>
+      ${toReview.length || suggestions.length ? `${toReview.map((p) => `<a class="news-item" href="#/${code}/${keyOf(p)}"><b>${esc(title(p))}${sideLabel(p) ? ` (${sideLabel(p)})` : ''}</b>:
+          ${versionsOf(view, keyOf(p)).at(-1)?.kind === 'sketch' ? 'a new sketch' : 'a new picture'}</a>`).join('')}
+        ${suggestions.map((x) => `<a class="news-item" href="#/${code}/${x.picture}">A suggestion on <b>${esc(pictureTitle(code, x.picture))}</b>: ${esc(FIELD_NAMES[x.field] ?? x.field)} → “${esc(x.value)}”</a>`).join('')}`
+        : `<p class="muted">Nothing yet. When ${artists.length ? esc(artists[0].name) : 'the artist'} sends a picture, it appears here.</p>`}
+      ${news.length ? `<h3 class="sub">New comments</h3>${news.slice(-6).reverse().map((c) =>
+        `<a class="news-item" href="#/${code}/${c.picture}">${authorLabel(c)} on <b>${esc(pictureTitle(code, c.picture))}</b>: ${esc(c.text.slice(0, 140))}</a>`).join('')}
+        <button class="link" data-click="seen:${code}">Mark as read</button>` : ''}
+    </section>
+    <section class="panel"><h2>The pictures</h2>
+      <p class="muted">All ${total} pictures of this project, in the order the artist draws them. Each step opens for the artist when the one before it is approved.</p>
+      ${steps(brief, view).map((st, i) => `<div class="rstep"><h3>${i + 1}. ${esc(st.milestone.title)}</h3>
+        <div class="thumbs">${st.pictures.map((p) => thumb(code, p, true)).join('')}</div></div>`).join('')}
+    </section>
   </main>`;
 }
 
@@ -439,7 +578,7 @@ function picturePage(code: string, key: string): string {
   const stepInfo = { open: at < 0 || all[at].open, after: at > 0 ? all[at - 1].milestone.title : '' };
   const i = brief.pictures.indexOf(p);
   const prev = brief.pictures[i - 1], next = brief.pictures[i + 1];
-  return `<main class="picture">
+  return `${S.asArtist ? `<div class="as-artist wide">You’re seeing this the way the artist sees it. <button class="btn small" data-click="asartist:0">Back to reviewing</button></div>` : ''}<main class="picture">
     <aside class="brief">
       <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main picture' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
@@ -465,32 +604,8 @@ function picturePage(code: string, key: string): string {
 /** What to do now, the upload box and, for the owner, the review buttons. */
 function actionBox(p: BriefPicture, state: State, versions: Version[], stepOpen: boolean, opensAfter: string): string {
   const key = keyOf(p);
-  const local = S.local.get(key);
-  const owner = S.me?.role === 'owner';
-  const up = S.uploading?.key === key ? S.uploading : null;
-  const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
-  let box = '';
-  if (local) {
-    const list = checks(p, local.width, local.height, local.format, S.uploadKind);
-    box = `<div class="local">
-      <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
-      <ul class="checks">${list.map((c) => `<li class="${c.ok ? 'ok' : 'warn'}">${c.ok ? '✓' : '!'} ${esc(c.text)}</li>`).join('')}</ul>
-      ${S.guest ? '<p class="muted small">This picture is only on your computer. Sign in to send it to us.</p>' : `
-        <div class="seg" role="radiogroup" aria-label="What is it?">
-          <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
-          <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
-        <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
-        ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
-          : `<button class="btn primary wide" data-click="upload:${key}">Send to Fruitcats</button>`}`}
-      ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another picture' : 'Don’t send it'}</button>`}
-      ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
-    </div>`;
-  } else {
-    box = `<label class="drop" data-drop="${key}">
-      <input type="file" accept="image/webp,image/png,image/jpeg" data-file="${key}" hidden>
-      <b>${versions.length ? 'Upload a new version' : 'Choose your picture'}</b>
-      <span>Drop it here, or click to choose. You’ll see it ${where} before you send it.</span></label>`;
-  }
+  const owner = reviewing();
+  const box = uploadBox(p, versions);
 
   if (owner) {
     const last = versions.at(-1);
@@ -517,6 +632,39 @@ function actionBox(p: BriefPicture, state: State, versions: Version[], stepOpen:
   </section>`;
 }
 
+/** Choose a picture (drop or click), then check it, see it and send it. */
+function uploadBox(p: BriefPicture, versions: Version[]): string {
+  const key = keyOf(p);
+  const local = S.local.get(key);
+  const up = S.uploading?.key === key ? S.uploading : null;
+  const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
+  if (local) {
+    const list = checks(p, local.width, local.height, local.format, S.uploadKind);
+    const code = S.route.page === 'sets' ? '' : S.route.code;
+    const onCard = p.kind === 'card' || p.kind === 'token'
+      ? `<div class="local-card">${cardPreview(code, key, finishesOf(p).at(-1)!.finish, local.url, 250)}</div>` : '';
+    return `<div class="local">
+      ${onCard}
+      <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
+      <ul class="checks">${list.map((c) => `<li class="${c.ok ? 'ok' : 'warn'}">${c.ok ? '✓' : '!'} ${esc(c.text)}</li>`).join('')}</ul>
+      ${S.guest ? '<p class="muted small">This picture is only on your computer. Sign in to send it to us.</p>' : `
+        <div class="seg" role="radiogroup" aria-label="What is it?">
+          <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
+          <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
+        <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
+        ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
+          : `<button class="btn primary wide" data-click="upload:${key}">Send to Fruitcats</button>`}`}
+      ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another picture' : 'Don’t send it'}</button>`}
+      ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
+    </div>`;
+  } else {
+    return `<label class="drop" data-drop="${key}">
+      <input type="file" accept="image/webp,image/png,image/jpeg" data-file="${key}" hidden>
+      <b>${versions.length ? 'Upload a new version' : 'Choose your picture'}</b>
+      <span>Drop it here, or click to choose. You’ll see it ${where} before you send it.</span></label>`;
+  }
+}
+
 /** The card's words, so the picture can fit them. */
 function cardText(p: BriefPicture): string {
   const card = cardData(p);
@@ -532,7 +680,7 @@ function openFields(code: string, p: BriefPicture): string {
   const key = keyOf(p);
   const mine = (S.views.get(code)?.suggestions ?? []).filter((s) => s.picture === key);
   if (!p.open?.length && !mine.length) return '';
-  const owner = S.me?.role === 'owner';
+  const owner = reviewing();
   const form = S.suggesting ? `<div class="suggest-form">
       <label class="field">What to change<select data-in="sfield">${(p.open ?? []).map((f) => `<option value="${f}" ${S.suggesting!.field === f ? 'selected' : ''}>${esc(FIELD_NAMES[f] ?? f)}</option>`).join('')}</select></label>
       <label class="field">Your suggestion<input data-in="svalue" value="${esc(S.suggesting.value)}" placeholder="e.g. Ginger Snap, the Cookie Cat"></label>
@@ -636,7 +784,7 @@ function commentsPanel(code: string, p: BriefPicture, version: Version | null): 
     ${doneRoots.length ? `<button class="link" data-click="showdone">${S.showDone ? 'Hide' : 'Show'} ${doneRoots.length} done</button>${S.showDone ? doneRoots.map((c) => one(c)).join('') : ''}` : ''}
     ${S.guest ? '' : `<div class="composer">
       ${replyingTo ? `<p class="small">Replying to ${esc(replyingTo.authorName)} <button class="link" data-click="reply:">Cancel</button></p>` : ''}
-      <textarea data-in="comment" rows="3" placeholder="${S.me?.role === 'owner' ? 'What should change, or what you like…' : 'A question, or what you changed…'}">${esc(S.draft.get(key) ?? '')}</textarea>
+      <textarea data-in="comment" rows="3" placeholder="${reviewing() ? 'What should change, or what you like…' : 'A question, or what you changed…'}">${esc(S.draft.get(key) ?? '')}</textarea>
       <div class="row">
         ${version ? `<button class="btn ghost small ${S.pinning || S.pin ? 'on' : ''}" data-click="pin">${S.pin ? '📍 Pinned: move it' : '📍 Point at a spot'}</button>` : ''}
         ${S.pin ? '<button class="link" data-click="unpin">Remove pin</button>' : ''}
@@ -644,26 +792,6 @@ function commentsPanel(code: string, p: BriefPicture, version: Version | null): 
         <button class="btn primary small" data-click="comment:${key}">Post</button></div>
     </div>`}
   </section>`;
-}
-
-// ── The owner's artists page ─────────────────────────────────────────────────────────────────────
-
-function artistsPage(code: string): string {
-  if (S.me?.role !== 'owner') return '<main class="empty"><p>Only reviewers see this page.</p></main>';
-  const set = S.sets.find((s) => s.code === code);
-  const r = S.roster;
-  const studio = `${location.origin}${location.pathname}`;
-  return `<main class="artists"><h1>Artists for ${esc(set?.name ?? code)}</h1>
-    <section><h3>Waiting for access</h3>
-      <p>An artist opens <b>${esc(studio)}</b> and signs in with their game account. They appear here, and you add them to this set.</p>
-      ${r?.waiting.length ? r.waiting.map((w) => `<div class="roster-row"><b>${esc(w.name)}</b>${w.email ? `<span>${esc(w.email)}</span>` : ''}<span class="muted small">signed in ${when(w.at)}</span>
-        <span class="grow"></span><button class="btn primary small" data-click="add:${code}:${w.id}">Add to ${esc(set?.name ?? code)}</button></div>`).join('')
-        : '<p class="muted">No one is waiting.</p>'}
-    </section>
-    <section><h3>Artists</h3>${r?.artists.length ? r.artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b><span class="muted small">joined ${when(a.joined)}</span>
-      <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('') : '<p class="muted">No one yet.</p>'}
-      <p class="muted small">Removing an artist keeps their pictures and comments.</p></section>
-  </main>`;
 }
 
 // ── Wallpapers are drawn after the page, as they take a moment ───────────────────────────────────
@@ -714,7 +842,7 @@ async function choose(key: string, file: File) {
 }
 
 async function send(key: string) {
-  if (S.route.page !== 'picture' || S.uploading) return;
+  if (S.route.page === 'sets' || S.uploading) return;
   const code = S.route.code;
   const local = S.local.get(key);
   if (!local) return;
@@ -733,6 +861,7 @@ async function send(key: string) {
     S.chosen.delete(key);
     S.uploadNote = '';
     S.uploading = null;
+    S.justSent = pictureTitle(code, key);
     await refresh(code);
     flash('Sent. It’s safely stored, and we’ll have a look.');
   } catch (e) {
@@ -764,6 +893,8 @@ async function act(action: string) {
     case 'guest': S.guest = true; await onRoute(); return;
     case 'signin': S.guest = false; render(); return;
     case 'signout': if (DEV) setDevUser(null); else signOut(); S.me = null; S.views.clear(); S.images.clear(); render(); return;
+    case 'welcome': try { localStorage.setItem(welcomeKey(args[0]), '1'); } catch { /* shown again next time */ } render(); window.scrollTo(0, 0); return;
+    case 'asartist': S.asArtist = args[0] === '1'; render(); window.scrollTo(0, 0); return;
     case 'retry': S.error = ''; await onRoute(); return;
     case 'recheck': await enter(); await onRoute(); return;
     case 'dismiss': S.error = ''; render(); return;
@@ -804,7 +935,21 @@ async function act(action: string) {
     case 'decide': await work(() => api.decide(args[0], args[1], args[2])); await refresh(args[0]); render(); return;
     case 'invite': await work(async () => { S.newInvite = (await api.invite(args[0], S.inviteNote.trim())).url; S.inviteNote = ''; S.roster = await api.artists(args[0]); }); return;
     case 'copy': try { await navigator.clipboard.writeText(S.newInvite); flash('Copied.'); } catch { flash('Couldn’t copy: select the link instead.'); } return;
-    case 'add': await work(async () => { await api.addArtist(args[0], args[1]); S.roster = await api.artists(args[0]); }); return;
+    case 'assign': {
+      const email = S.assignEmail.trim();
+      if (!email) { S.assignError = 'Type the artist’s email first.'; render(); return; }
+      S.assignError = '';
+      if (S.busy) return;
+      S.busy = true; render();
+      try {
+        const a = await api.addArtist(args[0], email);
+        S.roster = await api.artists(args[0]);
+        S.assignEmail = '';
+        flash(`${a.name} (${a.email}) can now open ${S.briefs.get(args[0])?.name ?? 'this project'}.`);
+      } catch (e) { S.assignError = api.explain(e); }
+      S.busy = false; render();
+      return;
+    }
     case 'remove':
       if (!confirm('Remove this artist from the set? Their pictures and comments stay.')) return;
       await work(async () => { await api.removeArtist(args[0], args[1]); S.roster = await api.artists(args[0]); });
@@ -850,6 +995,7 @@ root.addEventListener('input', (e) => {
   if (f === 'comment' && S.route.page === 'picture') S.draft.set(S.route.key, el.value);
   else if (f === 'note') S.uploadNote = el.value;
   else if (f === 'invitenote') S.inviteNote = el.value;
+  else if (f === 'assignemail') { S.assignEmail = el.value; S.assignError = ''; }
   else if (S.suggesting && f === 'svalue') S.suggesting.value = el.value;
   else if (S.suggesting && f === 'swhy') S.suggesting.why = el.value;
 });
@@ -866,6 +1012,7 @@ root.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || !el.dataset?.in) return;
   if (!S.me && !S.guest) { signInEnter(el, () => void afterSignIn(), render); return; }
   if (el.dataset.in === 'comment' && (e.ctrlKey || e.metaKey) && S.route.page === 'picture') { e.preventDefault(); void act(`comment:${S.route.key}`); }
+  if (el.dataset.in === 'assignemail' && S.route.page !== 'sets') { e.preventDefault(); void act(`assign:${S.route.code}`); }
 });
 
 // Dropping a file on the upload box.

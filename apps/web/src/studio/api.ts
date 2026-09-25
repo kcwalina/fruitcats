@@ -113,11 +113,10 @@ export const suggest = (set: string, body: { picture: string; field: string; val
   call<Suggestion>(`${set}/suggestions`, { json: body });
 export const decide = (set: string, id: string, state: string, reply = '') => call<Suggestion>(`${set}/suggestions/${id}`, { json: { state, reply } });
 export const artists = (set: string) => call<{
-  artists: { id: string; name: string; joined: string }[];
+  artists: { id: string; name: string; email?: string; joined: string }[];
   invites: { code: string; url: string; note: string; expires: string }[];
-  waiting: { id: string; name: string; email?: string; at: string }[];
 }>(`${set}/artists`);
-export const addArtist = (set: string, id: string) => call(`${set}/artists`, { json: { id } });
+export const addArtist = (set: string, email: string) => call<{ id: string; name: string; email: string }>(`${set}/artists`, { json: { email } });
 export const invite = (set: string, note: string) => call<{ code: string; url: string; expires: string }>(`${set}/invites`, { json: { note } });
 export const removeArtist = (set: string, id: string) => call(`${set}/artists/${id}`, { method: 'DELETE' });
 
@@ -175,6 +174,8 @@ export function explain(e: unknown): string {
     bad_size: 'That picture’s size can’t be right. Please check it.',
     not_stored: 'The upload didn’t arrive intact. Please try again: nothing was lost.',
     owner_only: 'Only a reviewer can do that.',
+    no_account: 'No game account uses that email. Check the spelling, or ask them to create an account in the game first.',
+    bad_email: 'That doesn’t look like an email address.',
   };
   return words[code] ?? 'Something went wrong. Please try again.';
 }

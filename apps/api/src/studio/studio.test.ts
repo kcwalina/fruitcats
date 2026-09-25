@@ -23,6 +23,7 @@ beforeAll(async () => {
     owners: ['owner'],
     agents: [{ name: 'Claude', hash: sha256(Buffer.from('secret-key')) }],
     studioUrl: 'http://studio.test/studio.html',
+    findByEmail: async (_req, email) => (email === 'wanda@example.com' ? { id: 'wanda', name: 'Wanda', email } : null),
   });
   server = createServer((req, res) => void serve(req, res));
   await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -138,15 +139,15 @@ describe('studio', () => {
     expect((await call(OWNER, `/bp1/suggestions/${s.body.id}`, { json: { state: 'accepted', reply: 'Yes!' } })).body.state).toBe('accepted');
   });
 
-  it('lets the reviewer add someone who signed in, without a link', async () => {
+  it('lets the reviewer give a set to a game account by its email', async () => {
     const WANDA = 'Dev wanda:Wanda';
     expect((await call(WANDA, '/me')).body.sets).toEqual([]);
-    const roster = await call(OWNER, '/bp1/artists');
-    expect(roster.body.waiting).toMatchObject([{ id: 'wanda', name: 'Wanda' }]);
-    expect((await call(ARTIST, '/bp1/artists', { json: { id: 'wanda' } })).status).toBe(403);
-    expect((await call(OWNER, '/bp1/artists', { json: { id: 'wanda' } })).status).toBe(200);
+    expect((await call(ARTIST, '/bp1/artists', { json: { email: 'wanda@example.com' } })).status).toBe(403);
+    expect((await call(OWNER, '/bp1/artists', { json: { email: 'nobody@example.com' } })).body).toEqual({ error: 'no_account' });
+    expect((await call(OWNER, '/bp1/artists', { json: { email: 'not an email' } })).status).toBe(422);
+    expect((await call(OWNER, '/bp1/artists', { json: { email: 'wanda@example.com' } })).body).toMatchObject({ id: 'wanda', name: 'Wanda' });
     expect((await call(WANDA, '/me')).body.sets).toEqual(['bp1']);
-    expect((await call(OWNER, '/bp1/artists')).body.waiting.map((w: { id: string }) => w.id)).not.toContain('wanda');
+    expect((await call(OWNER, '/bp1/artists')).body.artists).toContainEqual(expect.objectContaining({ id: 'wanda', email: 'wanda@example.com' }));
   });
 
   it('removes an artist without losing their pictures', async () => {

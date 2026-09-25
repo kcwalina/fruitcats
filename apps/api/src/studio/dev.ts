@@ -21,7 +21,11 @@ const serve = studio({
     const m = /^Dev ([a-z0-9-]{1,32}):(.{1,40})$/.exec(auth);
     return m ? { id: m[1], name: m[2] } : null;
   },
-  emailOf: async (req) => /^Dev ([a-z0-9-]+):/.exec(req.headers.authorization ?? '')?.[1] + '@example.com',
+  // Pretend accounts have the email <id>@example.com.
+  findByEmail: async (_req, email) => {
+    const m = /^([a-z0-9-]{1,32})@example\.com$/.exec(email.toLowerCase());
+    return m ? { id: m[1], name: m[1][0].toUpperCase() + m[1].slice(1), email: email.toLowerCase() } : null;
+  },
   owners: ['owner'],
   agents: [{ name: 'Claude', hash: sha256(Buffer.from('dev-agent')) }],
   log: (event, fields) => console.log(event, JSON.stringify(fields)),

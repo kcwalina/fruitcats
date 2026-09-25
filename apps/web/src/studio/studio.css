@@ -424,3 +424,46 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .invite-box { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
 .invite-box summary { cursor: pointer; font-weight: 800; color: var(--ink-2); }
 .invite-box p { margin-top: 10px; }
+
+/* The reviewer's project page */
+.panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; }
+.panel h2 { font-size: 21px; margin-bottom: 10px; }
+.panel.attention { border: 2px solid #f6c79f; }
+.panel .roster-row span:not(.grow):not(.muted) { color: var(--ink-2); }
+.panel .sub { margin-top: 14px; }
+.rstep { margin-top: 18px; }
+.rstep h3 { text-transform: none; letter-spacing: 0; font: 600 17px Fredoka, sans-serif; color: var(--ink); display: flex; gap: 12px; align-items: baseline; }
+.rstep .thumbs { margin-top: 6px; }
+.more { margin-top: 10px; }
+.more summary { cursor: pointer; font-weight: 700; color: var(--ink-2); }
+.head-actions { margin-top: 14px !important; }
+.btn.light { background: rgba(255, 255, 255, 0.14); color: white; border-color: rgba(255, 255, 255, 0.3); }
+.btn.light:hover { background: rgba(255, 255, 255, 0.24); }
+.as-artist { background: #efeaff; color: #3d2a86; border-radius: 12px; padding: 10px 16px; display: flex; gap: 14px; align-items: center; justify-content: space-between; font-size: 14px; }
+.as-artist.wide { border-radius: 0; margin: 0; }
+.assign { display: flex; gap: 10px; margin-top: 8px; }
+.assign input { flex: 1; max-width: 460px; }
+
+/* The artist's wizard */
+.wizard { max-width: 1040px; margin: 0 auto; padding: 28px 24px 80px; display: flex; flex-direction: column; gap: 18px; animation: fade 0.2s ease-out; }
+.wz-card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 30px 34px; }
+.wz-card > small { text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; color: var(--accent-2); font-size: 12px; }
+.wz-card h1 { font-size: 34px; margin: 6px 0 8px; }
+.wz-card h2 { font-size: 22px; }
+.wz-lead { font-size: 18px; color: var(--ink-2); max-width: 720px; }
+.wz-welcome { text-align: left; padding: 44px 48px; }
+.wz-how { font-size: 17px; line-height: 1.9; padding-left: 22px; margin: 6px 0 18px; }
+.btn.big { padding: 14px 26px; font-size: 17px; border-radius: 12px; }
+.wz-progress { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center; font-weight: 700; color: var(--ink-2); font-size: 14px; }
+.wz-progress .bar { height: 10px; margin: 0; }
+.wz-sent { background: #e6f6ec; color: var(--good); font-weight: 800; border-radius: 12px; padding: 12px 18px; }
+.wz-asks { background: #fff4ec; border-left: 4px solid var(--owner); border-radius: 10px; padding: 12px 16px; margin: 6px 0 14px; }
+.wz-asks p { margin: 4px 0; }
+.wz-two { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 18px; align-items: start; }
+.wz-brief h3 { margin-top: 4px; }
+.wz-brief ul { padding-left: 20px; margin: 0 0 10px; }
+.wz-upload .drop { padding: 44px 20px; margin: 0; }
+.wz-upload .drop b { font-size: 19px; }
+.wz-list { font-size: 17px; line-height: 1.8; }
+@media (max-width: 900px) { .wz-two { grid-template-columns: 1fr; } }
+.local-card { display: flex; justify-content: center; margin: 0 0 14px; }

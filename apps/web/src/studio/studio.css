@@ -543,3 +543,5 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .swatch.family { background: var(--card); color: var(--ink-2); font: 800 9px Nunito, sans-serif; display: grid; place-items: center; }
 .frame-choice.unpicked { background: #fff7ec; border: 2px solid #f6c79f; border-radius: 12px; padding: 10px 14px; }
 .preview .frame-choice.unpicked p { color: var(--ink); }
+.wz-layout > main.home, .wz-layout > main.picture { margin: 0; max-width: none; }
+.wz-layout > main.picture { grid-template-columns: 340px minmax(0, 1fr); }

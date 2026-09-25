@@ -371,10 +371,10 @@ function page(): string {
   }
   if (S.me?.role === 'artist' && S.me.terms !== STUDIO_TERMS_VERSION) return topBar() + termsPage();
   const r = S.route;
-  const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
-    : r.page === 'all' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
+  const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? withReviewerSide(r.code, null, homePage(r.code)) : wizardPage(r.code))
+    : r.page === 'all' ? (reviewing() ? withReviewerSide(r.code, null, homePage(r.code)) : wizardPage(r.code))
       : r.page === 'comments' ? commentsWalk(r.code)
-        : reviewing() ? picturePage(r.code, r.key) : wizardPage(r.code, r.key);
+        : reviewing() ? withReviewerSide(r.code, r.key, picturePage(r.code, r.key)) : wizardPage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
     ${S.guest ? `<div class="banner">You’re looking around without signing in. Images you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
     ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
@@ -594,6 +594,29 @@ function commentsWalk(code: string): string {
           <span class="grow"></span><a class="small" href="#/${code}/${c.picture}">Open this image</a></div>
       </div>
     </section></main></div>`;
+}
+
+/** The reviewer's list: every image of the project, by step, whether the artist has started it or not. */
+function reviewerSide(code: string, brief: Brief, view: SetView | null, currentKey: string | null): string {
+  const item = (x: BriefPicture) => {
+    const k = keyOf(x), url = shown(code, k).url, state = stateOf(view, k);
+    return `<a class="wz-item ${currentKey === k ? 'on' : ''}" href="#/${code}/${k}">
+      <span class="wz-thumb ${x.kind === 'pawtrait' ? 'round' : ''}" style="${url ? `background-image:url(${url})` : ''}"></span>
+      <span><b>${esc(title(x))}${sideLabel(x) ? ` <i>${sideLabel(x)}</i>` : ''}</b><small class="st-${state}">${STATE_NAMES[state]}${openComments(code).some((c) => c.picture === k) ? ' · 💬' : ''}</small></span></a>`;
+  };
+  const open = openComments(code).length;
+  return `<aside class="wz-side">
+    <a class="btn ${currentKey ? 'primary' : 'ghost'} wide" href="#/${code}">Project overview</a>
+    ${open ? `<a class="btn wide" href="#/${code}/comments">💬 Comments to read (${open})</a>` : ''}
+    <h4>${brief.pictures.length} image${brief.pictures.length === 1 ? '' : 's'} in this project</h4>
+    ${steps(brief, view).map((st) => `<div class="wz-group"><small>${esc(st.milestone.title)}</small>${st.pictures.map(item).join('')}</div>`).join('')}
+  </aside>`;
+}
+
+function withReviewerSide(code: string, key: string | null, body: string): string {
+  const brief = S.briefs.get(code);
+  if (!brief) return body;
+  return `<div class="wz-layout">${reviewerSide(code, brief, S.views.get(code) ?? null, key)}${body}</div>`;
 }
 
 /** The wizard's list: the next task, then every picture the artist has worked on, by step. */

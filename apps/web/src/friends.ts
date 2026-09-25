@@ -229,7 +229,7 @@ function renderList(): string {
     <div class="pf-card pf-empty">
       <img class="pf-empty-art" src="${FRIEND_ART()}" alt="">
       <h3>Play with your friends</h3>
-      <p>Add a friend with a code. Then, whenever you’re both online, challenge them to a game.</p>
+      <p>Add a friend with a code. Then, whenever you’re both online, play together.</p>
       <button class="play-button pf-add-first" data-click="pf:add">Add a friend</button>
     </div>` : `
     <div class="pf-card">

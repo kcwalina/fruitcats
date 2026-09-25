@@ -37,7 +37,7 @@ It goes with our [Terms of Use](terms-of-use.md).
 | **Your game data:** custom decks, the Showcase, progress, settings | To keep your collection the same on every device. |
 | **Which Terms version you accepted, and when** | To keep a record of your agreement. |
 | **Friends and blocks** | So you can play and share with the people you choose. |
-| **Online play:** whether you're online now and when you were last online, your wins and losses against each friend, and a record of each finished online game (the cards played and the moves, with account ids only, no names) | To show your friends when you're around and your record against them, to run online games fairly, and to look into bugs and cheating. |
+| **Online play:** whether you're online now and when you were last online, your wins and losses against each friend, and a record of each finished online game (the cards played and the moves, with account ids only, no names) | To show your friends when you're around and your record against them, to run online games fairly, and to look into bug reports and cheating. |
 | **Your cards and the licenses you hold, and purchase records** (when the Store opens): what you got, when, the price, currency and which Seller | To give you what you bought on every device, handle refunds, and keep business records. |
 | **Security records:** sign-ins, the IP address used, account changes | To protect your account from takeover and abuse. |
 | **Technical logs and game events:** errors, and events like "a game finished", linked to your account id | To fix bugs and keep the game running well. |
@@ -76,7 +76,7 @@ keep to this policy).
 |---|---|
 | Your account (email, display name, birth year, Pawtrait, game data) | Until you delete your account (plus a 30-day grace period, in case you change your mind). |
 | Your record against each friend, and when you were last online | Until you delete your account. |
-| Records of finished online games (account ids and moves, no names) | **[Retention period to decide: e.g. 1 year]**. |
+| Records of finished online games (account ids and moves, no names), for looking into bug reports | 30 days. |
 | Security records (sign-ins, IP addresses, account changes) | 1 year. |
 | Technical logs and game events | 30 days (7 days for detailed debugging logs). |
 | Totals with no personal data (e.g. games per day) | Kept. |
@@ -150,7 +150,7 @@ the top show which one applies.
   Health My Data Act doesn't apply: no health data).
 - Purchase records kept indefinitely in anonymised form: confirm this is acceptable under GDPR's storage limitation.
 - Records of finished online games keep the two account ids (not names), which stay pseudonymous after an account is
-  deleted, as the logs do. Confirm that's acceptable, and a retention period.
+  deleted, as the logs do, and are kept 30 days. Confirm that's acceptable.
 - Marketing emails: none at launch, but the owner wants them later. Then: opt-in (not pre-ticked) with a Settings
   switch, an unsubscribe link, and a separate sending domain. CAN-SPAM wants a postal address in each marketing email,
   and the owner prefers not to publish one: is a mailbox-service address or PO box enough?

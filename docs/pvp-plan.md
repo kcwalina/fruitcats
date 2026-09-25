@@ -288,10 +288,10 @@ In the API's memory:
 - **"I'm here"**: 50 seconds after the last one. **A place in the waiting line**: 30 seconds after it was last asked
   for. **A place kept for a player let in**: 1 minute (a challenged friend's: until the challenge ends).
 
-In the tables: a game going is in `matches/live` until it ends, then moves to its month (`done-YYYY-MM`) as a replay,
-with account ids and cards only. **Replays are kept for good for now: a retention period (and a job that deletes
-older months) is to decide**; the privacy policy has a placeholder for it. The record between two friends (`rivals`) and last
-seen (`seen`) are kept while the account exists; Delete account erases them.
+In the tables: a game going is in `matches/live` until it ends, then moves to the day it ended (`done-YYYY-MM-DD`) as
+a replay, with account ids and cards only, for looking into a bug report. **Replays are deleted after 30 days** (once
+a day, `pruneReplays`). The record between two friends (`rivals`) and last seen (`seen`) are kept while the account
+exists; Delete account erases them.
 
 ## Trying it
 
@@ -328,6 +328,6 @@ friend codes and a restart.
 - **Notifications** for a challenge while the app is closed (web push, later the app stores'). Until then a challenge
   only reaches a friend who has the game open.
 - **Before the public build turns it on**: Web Sockets on for `fruitcats-api` (and one instance); the lawyer's review
-  of the Terms' online play section (7) and the privacy policy's online play lines; a replay retention period; a
+  of the Terms' online play section (7) and the privacy policy's online play lines; a
   playtest with real phones (the camera scanning a QR code on another phone's screen). When the Terms are published,
   `TERMS_VERSION` (apps/web/src/auth.ts) moves to the published version, so everyone agrees to them again.

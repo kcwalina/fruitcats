@@ -483,6 +483,20 @@ describe('what a move sends', () => {
   });
 });
 
+describe('replays', () => {
+  it('keeps a finished game for 30 days, then deletes it', async () => {
+    const [sam] = await startGame();
+    sam.send({ t: 'end', match: sam.match!, how: 'concede' });
+    await flush();
+    vi.advanceTimersByTime(2000);
+    await flush();
+    const now = Date.now();
+    expect(await store.pruneReplays(new Date(now + 29 * 86_400_000))).toBe(0);
+    expect(await store.pruneReplays(new Date(now + 32 * 86_400_000))).toBe(1);
+    expect(await store.pruneReplays(new Date(now + 33 * 86_400_000))).toBe(0);
+  });
+});
+
 describe('letting go of games', () => {
   it('forgets a finished game once both players have left it', async () => {
     const [sam, pippin] = await startGame();

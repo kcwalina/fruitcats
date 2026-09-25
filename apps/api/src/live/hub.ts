@@ -178,6 +178,13 @@ export function createHub(deps: HubDeps) {
   }
   const sweeper = setInterval(sweep, 30_000);
 
+  /** Once a day (and soon after starting): replays older than 30 days are deleted. */
+  const prune = () => void deps.store.pruneReplays(new Date())
+    .then((n) => { if (n) deps.log('live.replays_pruned', { removed: n }); })
+    .catch((e) => deps.log('live.prune_failed', { message: (e as Error).message }));
+  const pruneFirst = setTimeout(prune, 5 * 60_000);
+  const pruner = setInterval(prune, 24 * 60 * 60_000);
+
   // ── Presence ──────────────────────────────────────────────────────────────────────────────────
 
   const statusOf = (account: string): FriendStatus['status'] => {
@@ -489,7 +496,7 @@ export function createHub(deps: HubDeps) {
     here: hereNow,
     /** For tests and the stats: how many are connected, playing and waiting. */
     counts: () => ({ connected: conns.size, matches: matches.size, challenges: challenges.size, waiting: waiting.size, letIn: letIn.size, here: here.size }),
-    stop: () => clearInterval(sweeper),
+    stop: () => { clearInterval(sweeper); clearInterval(pruner); clearTimeout(pruneFirst); },
   };
 }
 

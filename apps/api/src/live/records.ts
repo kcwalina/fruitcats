@@ -1,7 +1,8 @@
 // What online play keeps (docs/pvp-plan.md), in the API's tables:
 //   matches  "live" / {id}         each game still going: its record (seed, decks, moves), so a restart loses nothing
-//            "done-YYYY-MM" / {id}  finished games, by month: the replays. Only account ids, no names or Pawtraits, so
-//                                    a deleted account leaves nothing that says who it was
+//            "done-YYYY-MM-DD" / {id}  finished games, by the day they ended: the replays, kept REPLAY_DAYS (30) days,
+//                                    for looking into a bug report. Only account ids, no names or Pawtraits, so a
+//                                    deleted account leaves nothing that says who it was
 //   rivals   {account} / {friend}  games that counted between two friends: wins, losses, draws
 //   seen     {account} / "seen"    when an account was last online, for "Last seen 3 days ago"
 // Nothing a player typed is kept once a game is over: a game still going has the names it shows, a finished one doesn't.
@@ -14,8 +15,10 @@ export interface LiveStore {
   saveMatch(r: MatchRecord): Promise<void>;
   /** Games that were going when the API last stopped. */
   liveMatches(): Promise<MatchRecord[]>;
-  /** The game is over: move its record from "live" to its month. */
+  /** The game is over: move its record from "live" to the day it ended. */
   finishMatch(r: MatchRecord): Promise<void>;
+  /** Delete replays older than REPLAY_DAYS. Returns how many. */
+  pruneReplays(now: Date): Promise<number>;
   tally(account: string, friend: string): Promise<Tally>;
   addResult(account: string, friend: string, result: 'win' | 'loss' | 'draw'): Promise<Tally>;
   lastSeen(account: string): Promise<string | undefined>;
@@ -41,7 +44,12 @@ function join(row: Row): string {
   return json;
 }
 
-const month = (iso: string) => `done-${iso.slice(0, 7)}`;
+/** How long a finished game's replay is kept: long enough to look into a bug report, and no longer. */
+export const REPLAY_DAYS = 30;
+/** Pruning looks this many days further back, so a few days with the API down still get cleaned up. */
+const PRUNE_BACK_DAYS = 60;
+
+const day = (d: Date) => `done-${d.toISOString().slice(0, 10)}`;
 
 export function tableStore(matches: Table, rivals: Table, seenTable: Table): LiveStore {
   type TallyRow = Row & Tally;
@@ -61,8 +69,16 @@ export function tableStore(matches: Table, rivals: Table, seenTable: Table): Liv
     async finishMatch(r) {
       // Names (the player's and their deck's) are what players typed: a replay keeps only the account ids and the cards.
       const kept: MatchRecord = { ...r, seats: r.seats.map((s) => ({ ...s, person: { id: s.person.id, name: '', avatar: '' }, deck: { ...s.deck, name: '' } })) as MatchRecord['seats'] };
-      await matches.put({ partitionKey: month(r.createdAt), rowKey: r.id, ...split(JSON.stringify(kept)) });
+      await matches.put({ partitionKey: day(new Date()), rowKey: r.id, ...split(JSON.stringify(kept)) });
       await matches.remove('live', r.id);
+    },
+    async pruneReplays(now) {
+      let removed = 0;
+      for (let back = REPLAY_DAYS + 1; back <= REPLAY_DAYS + PRUNE_BACK_DAYS; back++) {
+        const partition = day(new Date(now.getTime() - back * 86_400_000));
+        for (const row of await matches.list(partition)) { await matches.remove(partition, row.rowKey); removed++; }
+      }
+      return removed;
     },
     async tally(account, friend) {
       const row = await rivals.get<TallyRow>(account, friend);

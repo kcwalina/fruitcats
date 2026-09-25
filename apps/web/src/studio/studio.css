@@ -424,3 +424,22 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .invite-box { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
 .invite-box summary { cursor: pointer; font-weight: 800; color: var(--ink-2); }
 .invite-box p { margin-top: 10px; }
+
+/* The reviewer's project page */
+.panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; }
+.panel h2 { font-size: 21px; margin-bottom: 10px; }
+.panel.attention { border: 2px solid #f6c79f; }
+.panel .roster-row span:not(.grow):not(.muted) { color: var(--ink-2); }
+.panel .sub { margin-top: 14px; }
+.rstep { margin-top: 18px; }
+.rstep h3 { text-transform: none; letter-spacing: 0; font: 600 17px Fredoka, sans-serif; color: var(--ink); display: flex; gap: 12px; align-items: baseline; }
+.rstep .thumbs { margin-top: 6px; }
+.more { margin-top: 10px; }
+.more summary { cursor: pointer; font-weight: 700; color: var(--ink-2); }
+.head-actions { margin-top: 14px !important; }
+.btn.light { background: rgba(255, 255, 255, 0.14); color: white; border-color: rgba(255, 255, 255, 0.3); }
+.btn.light:hover { background: rgba(255, 255, 255, 0.24); }
+.as-artist { background: #efeaff; color: #3d2a86; border-radius: 12px; padding: 10px 16px; display: flex; gap: 14px; align-items: center; justify-content: space-between; font-size: 14px; }
+.as-artist.wide { border-radius: 0; margin: 0; }
+.assign { display: flex; gap: 10px; margin-top: 8px; }
+.assign input { flex: 1; max-width: 460px; }

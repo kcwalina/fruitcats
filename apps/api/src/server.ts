@@ -65,10 +65,13 @@ async function userOf(req: IncomingMessage): Promise<{ id: string; name: string 
 const serveStudio = studio({
   store: azureStore(TABLES, BLOBS, credential),
   account: userOf,
-  // Their email, from viamochi-id's /me with their own token: only for the reviewer's list of people waiting.
-  async emailOf(req) {
-    const res = await fetch(`${ID_SERVICE}/me`, { headers: { Authorization: req.headers.authorization ?? '' } });
-    return res.ok ? ((await res.json()) as { email?: string }).email ?? null : null;
+  // viamochi-id checks that the caller is a reviewer too (ViaMochi:Reviewers), and returns only the one account.
+  async findByEmail(req, email) {
+    const res = await fetch(`${ID_SERVICE}/accounts/by-email?email=${encodeURIComponent(email)}`, { headers: { Authorization: req.headers.authorization ?? '' } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`account lookup: ${res.status}`);
+    const a = (await res.json()) as { id: string; displayName?: string; email?: string };
+    return { id: a.id, name: a.displayName || 'Artist', email: a.email ?? email };
   },
   owners: (process.env.STUDIO_OWNERS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   agents: (process.env.STUDIO_AGENTS ?? '').split(',').filter(Boolean).map((pair) => {

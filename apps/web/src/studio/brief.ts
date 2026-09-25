@@ -55,7 +55,7 @@ export const FIELD_NAMES: Record<string, string> = {
 export type State = 'none' | 'waiting' | 'changes' | 'sketch-ok' | 'approved';
 
 export const STATE_NAMES: Record<State, string> = {
-  none: 'To do', waiting: 'With us', changes: 'Changes asked', 'sketch-ok': 'Sketch approved', approved: 'Approved',
+  none: 'Not started', waiting: 'Sent for review', changes: 'Changes asked', 'sketch-ok': 'Sketch approved', approved: 'Approved',
 };
 
 export function stateOf(view: SetView | null, key: string): State {

@@ -205,7 +205,8 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 
 1. `npm run api:local` runs the API on port 8790 with its data in `.local-api/` (nothing in Azure is touched).
    The Store is open to any account there, with test checkout on.
-2. `npm run dev`, then open `http://localhost:5173/?store=1&api=http://localhost:8790` and sign in as usual.
+2. `npm run dev`, then open `http://localhost:5173/?store=1&buy=1&api=http://localhost:8790` and sign in as usual
+   (`buy=1`: buying is off in every real build; see Payments: what's built).
 3. To start over, delete `.local-api/`, or use "Remove my test purchases" at the bottom of the cart.
 4. **Payments without a Paddle account:** `npm run api:local -- --fake-sign-in --fake-paddle` pays through a pretend
    Paddle instead of test checkout: pending order, payment window (a short pause), signed webhook, reveal. Add
@@ -329,6 +330,11 @@ lawyer's review, and the launch decisions.
   30 seconds, the player is told the cards are on their way, and they're revealed as soon as they arrive or the next
   time the Store opens. The Paddle client token comes from the API, so sandbox to live needs no new build.
 - **Legal:** a draft [Refund Policy](legal/refund-policy.md) (`refunds.html`), linked from the Terms' section 5.
+
+**Buying is off in the game itself** (the owner's rule, 2026-09-25): `BUYING` in `apps/web/src/flags.ts` is off in
+every build, so **Add to cart** always says "Coming soon", whatever the API allows. Setting up Paddle, or any API
+setting, can never open the Store by itself. Opening it is an explicit decision: change that line and release a new
+build. Only the dev server can turn it on, with `?buy=1` in the address, to try the flow against a local API.
 
 **Settings** (on `fruitcats-api`, never printed): `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_CLIENT_TOKEN`,
 `PADDLE_TAX_MODE` (`internal`, the default: shown prices include tax; or `external`), and `STORE_PAYMENTS` = `off`,

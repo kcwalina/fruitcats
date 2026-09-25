@@ -6,7 +6,7 @@ The Starter Box contains three ready-to-play 50-card decks built to teach the ga
 
 - **Zest Rush** — led by *Sunny, the Lemon Lynx* (Citrus). Fast and aggressive: hit early, hit often, finish before the opponent stabilises.
 - **Orchard Guard** — led by *Pippin, the Apple Ragdoll* (Orchard). Patient and sturdy: wall up with Guardians, heal, punish attackers, win the long game.
-- **Mango Tango** — led by *Mochi, the Mango Bengal* (Tropical), the mightiest Hero Cat. Laid-back, then enormous: gather extra Treats early, then drop giants nobody else can afford.
+- **Mango Tango** — led by *Tango, the Mango Bengal* (Tropical), the mightiest Hero Cat. Laid-back, then enormous: gather extra Treats early, then drop giants nobody else can afford.
 
 All three decks share the same neutral **Garden** core (14 cards; Orchard Guard trades its Garden Snails for more Orchard muscle), so new players learn one common core.
 
@@ -70,14 +70,14 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 *Flops over anywhere. Gets back up every time.*
 
-### SB1-H03 — Mochi, the Mango Bengal *(Tropical)*
+### SB1-H03 — Tango, the Mango Bengal *(Tropical)*
 
 *The mightiest of the Hero Cats: the only Big Cat with 4 Power and Fierce.*
 
 | Side | Power | Text |
 |---|---|---|
-| **Kitten** — *Mochi, Sunbeam Kit* | — | **Exhaust:** Ready one of your Treats.<br>**Grow Up:** You have 8 or more Treats. |
-| **Big Cat** — *Mochi, Jungle Monarch* | 4 | Fierce. **Exhaust:** Ready two of your Treats. |
+| **Kitten** — *Tango, Sunbeam Kit* | — | **Exhaust:** Ready one of your Treats.<br>**Grow Up:** You have 8 or more Treats. |
+| **Big Cat** — *Tango, Jungle Monarch* | 4 | Fierce. **Exhaust:** Ready two of your Treats. |
 
 *Lazes all morning. Rules all afternoon.*
 
@@ -247,6 +247,6 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 - **Falling Apple** checks that the target is exhausted when played *and* when it resolves.
 - **Apple Crate / Citrus Zester / Sun Hat:** one Toy per unit (rule 200.6).
 - **Sprouting** (Kiwi Bird, Papaya, Tropical Rain) moves cards from the top of your deck into the Pantry as exhausted Treats. It never costs a Life: with an empty deck, nothing happens.
-- **Readying Treats** (Mochi, Banana Monkey, Coconut, Mango Smoothie) turns exhausted Treats upright so you can spend them again this round. It never creates new Treats.
+- **Readying Treats** (Tango, Banana Monkey, Coconut, Mango Smoothie) turns exhausted Treats upright so you can spend them again this round. It never creates new Treats.
 - **Lychee Sloth** counts all your Treats, ready or exhausted, when checking whether it can attack.
-- **Mochi** Grows Up the moment you have 8 Treats, even mid-round from a Sprout effect.
+- **Tango** Grows Up the moment you have 8 Treats, even mid-round from a Sprout effect.

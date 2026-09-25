@@ -17,7 +17,7 @@ export interface AiOptions {
 const BLANK = BLANK_CARD; // a vanilla card: no Pounce, no Lucky
 // `exhausted` discounts a unit's power while it can't attack or block this round — it is what makes
 // "exhaust an enemy unit" effects worth anything to the AI.
-// `readyTreat` values Treats still unspent this round — what makes "ready a Treat" effects (Mochi) worth
+// `readyTreat` values Treats still unspent this round — what makes "ready a Treat" effects (Tango) worth
 // using. It is kept below the value of any card those Treats could buy, so the AI still spends them.
 const W = { life: 12, hand: 1.2, treat: 1.0, power: 1.6, health: 1.1, guardian: 1, fierce: 1.5, sneaky: 1, grown: 6, exhausted: 0.35, readyTreat: 0.4 };
 
@@ -61,7 +61,7 @@ function keepValue(card: CardInst, treats: number): number {
 /**
  * How many Treats to plant up to: enough for the priciest card left in hand or deck, one spare when that
  * card costs 6 or more (so a big turn can still leave a Pounce up), and whatever the Hero Cat's Grow Up
- * counts in Treats. Measured against the old fixed rule (plant to 5, or 8 for Mochi) in bot duels: the
+ * counts in Treats. Measured against the old fixed rule (plant to 5, or 8 for Tango) in bot duels: the
  * spare Treat is worth +8 points to Orchard Guard and nothing to the others.
  */
 function treatTarget(s: GameState, p: PlayerId): number {
@@ -69,7 +69,7 @@ function treatTarget(s: GameState, p: PlayerId): number {
   const treats = me.pantry.length;
   const maxCost = Math.max(...[...me.hand, ...me.deck].map((c) => CARDS[c.id].cost ?? 0), 0);
   let target = Math.max(5, maxCost) + (maxCost >= 6 ? 1 : 0);
-  // A Grow Up that a few more Treats would satisfy (Mochi's "8 or more Treats"), found by asking the
+  // A Grow Up that a few more Treats would satisfy (Tango's "8 or more Treats"), found by asking the
   // hero's own condition rather than naming the hero.
   const grow = behaviour(me.hero.id).growUp;
   if (grow && !me.hero.grown && !grow(s, p)) {

@@ -33,11 +33,11 @@ describe('card data', () => {
     expect(keywords('SB1-O03').guardian).toBe(false); // "If you control a Guardian" is not the keyword
   });
 
-  it('gives every card a rarity, and every Hero Cat is Legendary', () => {
+  it('gives every card a rarity, and every Hero Cat is Rare or Legendary', () => {
     // Tokens are summoned, never collected, and the engine's own blank card is in no set: no rarity.
     for (const card of Object.values(CARDS).filter((c) => !c.token && c.set)) {
       expect(RARITIES).toContain(card.rarity);
-      if (card.type === 'Hero Cat') expect(card.rarity).toBe('Legendary');
+      if (card.type === 'Hero Cat') expect(['Rare', 'Legendary']).toContain(card.rarity);
     }
   });
 });
@@ -135,7 +135,7 @@ function toFirstAction(decks: [string, string], seed = 1): GameState {
 }
 
 describe('Mango Tango (Tropical)', () => {
-  it('Mochi readies a Treat, and Grows Up at 8 Treats', () => {
+  it('Tango readies a Treat, and Grows Up at 8 Treats', () => {
     const s = toFirstAction(['mango-tango', 'zest-rush']);
     const me = s.players[0];
     expect(me.hero.id).toBe('SB1-H03');

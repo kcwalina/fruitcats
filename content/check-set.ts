@@ -55,7 +55,7 @@ function checkSet(set: ContentSet, games: number): Report {
     if (other) r.errors.push(`${c.id} is also a card in ${other.data.name}.`);
     if (!TYPES.includes(c.type)) r.errors.push(`${where(c)}: type must be one of ${TYPES.join(', ')}.`);
     if (!c.token && !RARITIES.includes(String(c.rarity))) r.errors.push(`${where(c)}: rarity must be one of ${RARITIES.join(', ')}.`);
-    if (c.type === 'Hero Cat' && c.rarity !== 'Legendary') r.errors.push(`${where(c)}: Hero Cats are Legendary.`);
+    if (c.type === 'Hero Cat' && c.rarity !== 'Legendary' && c.rarity !== 'Rare') r.errors.push(`${where(c)}: Hero Cats are Rare or Legendary.`);
     if (!c.family) r.errors.push(`${where(c)}: needs a family.`);
     else if (!knownFamily(c.family, data)) r.errors.push(`${where(c)}: family ${c.family} isn't defined by this set or one it requires.`);
     if (c.type !== 'Hero Cat' && !c.token && typeof c.cost !== 'number') r.errors.push(`${where(c)}: needs a cost.`);

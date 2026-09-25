@@ -43,7 +43,7 @@ function releasedHeroes(): string[] {
     .map((c) => c.id);
 }
 
-/** The face of the game: the mightiest Big Cat (most Power, Fierce breaking ties). Mochi, today. */
+/** The face of the game: the mightiest Big Cat (most Power, Fierce breaking ties). Tango, today. */
 export function featuredHero(): string {
   const score = (id: string) => (CARDS[id].bigCat?.power ?? 0) * 2 + (CARDS[id].bigCat?.keywords?.includes('Fierce') ? 1 : 0);
   return [...releasedHeroes()].sort((a, b) => score(b) - score(a))[0] ?? Object.keys(CARDS)[0];

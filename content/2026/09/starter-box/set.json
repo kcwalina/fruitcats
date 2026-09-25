@@ -233,13 +233,13 @@
     },
     {
       "id": "SB1-H03",
-      "rarity": "Legendary",
+      "rarity": "Rare",
       "type": "Hero Cat",
       "family": "Tropical",
-      "name": "Mochi, the Mango Bengal",
+      "name": "Tango, the Mango Bengal",
       "flavor": "Lazes all morning. Rules all afternoon.",
       "kitten": {
-        "name": "Mochi, Sunbeam Kit",
+        "name": "Tango, Sunbeam Kit",
         "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats.",
         "abilities": [
           {
@@ -260,7 +260,7 @@
         }
       },
       "bigCat": {
-        "name": "Mochi, Jungle Monarch",
+        "name": "Tango, Jungle Monarch",
         "power": 4,
         "text": "Fierce. Exhaust: Ready two of your Treats.",
         "keywords": [
@@ -1498,7 +1498,7 @@
         "SB1-G04": 3,
         "SB1-G05": 2
       },
-      "blurb": "Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat."
+      "blurb": "Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Tango, the mightiest Hero Cat."
     }
   }
 }

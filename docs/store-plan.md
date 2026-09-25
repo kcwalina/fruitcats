@@ -279,7 +279,7 @@ is saved either way and can be played once the player has every card.
 
 ## From the accounts work
 
-- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Mochi, Nova and Reaper)
+- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Tango, Nova and Reaper)
   must also unlock the Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id,
   RowKey the Pawtrait id) in the same step that grants the card, and remove it on a refund. There's no endpoint for
   this yet; `viamochi-id` needs a service-to-service one (see [accounts.md](accounts.md), Avatars).

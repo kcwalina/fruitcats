@@ -605,7 +605,7 @@ function savedGameLabel(): string | null {
 }
 
 function renderHome(): string {
-  // The mightiest Hero Cat (Mochi) takes the centre spot.
+  // The mightiest Hero Cat (Tango) takes the centre spot.
   // Jam and Duchess are home-screen art, not cards: they fill the parade after the Hero Cats.
   const heroes = heroParade(['cat-jam', 'cat-duchess'].map((k) => `${BASE}ui/${k}.webp`), (id) => artUrl(`${id}-bigcat`));
   const saved = savedGameLabel();

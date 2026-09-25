@@ -9,11 +9,6 @@ export const cardUrl = (key: string) => `${BASE}cards/sb1/${key}.webp`;
 export const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** Each fruit family is a class with its own signature mechanic. */
-export const FAMILY_INFO: Record<string, { mechanic: string; hint: string }> = {
-  Citrus: { mechanic: 'Zest', hint: 'bonuses when it isn’t your first card this round' },
-  Orchard: { mechanic: 'Ripen', hint: 'units grow +1/+1 every round' },
-  Tropical: { mechanic: 'Sprout', hint: 'extra Treats now, Lush payoffs at 7+' },
-};
 export const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
 
 /** The gear that opens Settings: in Home's corner, in the menu headers, and beside Rules in a game. */

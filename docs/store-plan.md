@@ -125,14 +125,24 @@ inside the game, on every platform. The Store only adds the tester list below.
   - Optional later: a small web-only bonus, promoted outside the apps.
 - **A card bought just before a sale** is covered by each store's refund window, and the web honours it the same way.
 - **Starting points** (to be set before launch):
-  - single cards: common $0.49, uncommon $0.99, rare $1.49, legendary $2.49
-  - decks: $4.99–$7.99
-  - A whole deck bought card by card should cost about 1.5–2× the deck price.
+  - single cards: common $0.49, uncommon $0.99, rare $1.49, Legendary Cat $4.99
+  - a set's top Hero Cat, sold on its own: **$19.99**, as a premium **Signature** print (higher later, not for the first set) (see below)
+  - decks: **$9.99**, Hero Cat included
+  - A whole deck bought card by card costs about 3× the deck price (Five Alarm: about $30), so the deck is
+    clearly the good deal, and singles are for finishing a collection.
+- **Paid singles are premium prints.** A single sold on its own comes in a finish that climbs with its price
+  (Foil, then Gold, then Signature), with showcase-quality art, so every card someone pays for is one they'd want
+  to display.
+- **Signature cards:** the top card of a set is sold only as a premium print: its own finish, a
+  "Signature" mark and the First Edition stamp for launch buyers. It's exclusive because of how it looks
+  and what it costs, never because of a countdown or a limited stock ("no dark patterns" below). It must play
+  no better than the set's other Hero Cat. It's a different plan, not an upgrade, so paying more buys
+  something special, not a better chance to win.
 - **Never pay twice:** a deck's price drops by the value of cards you already own.
 
 ## Cards and catalog
 
-- **Rarity** (common, uncommon, rare, legendary) and a **starter** flag go in `cards/sb1.json`.
+- **Rarity** (common, uncommon, rare, legendary) and a **starter** flag go in each set's data (`content/<year>/<month>/<set>/set.json`).
   - Preview cards (Jam, Duchess) become the first sellable cards, or go into a new set, `sb2.json`.
 - **A card registry that loads several sets.** Today `CARDS` and `DECKS` come from a single file.
 - **Ownership:** `owned(id)` becomes the starter cards plus the account's entitlements. Without an account, a player has only the starter cards.

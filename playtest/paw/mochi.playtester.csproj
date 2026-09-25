@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Fruitcats playtester paw. It lives in the fruitcats repo with the rest of the playtesting, and builds
+    against the paw SDK in the mochi repo: set MOCHI_REPO if that checkout isn't at C:\git\mochi.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>mochi-playtester</AssemblyName>
+    <RootNamespace>mochi.playtester</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <MochiRepo Condition="'$(MOCHI_REPO)' != ''">$(MOCHI_REPO)</MochiRepo>
+    <MochiRepo Condition="'$(MochiRepo)' == ''">C:\git\mochi</MochiRepo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MochiRepo)\mochi.agents\ai\Mochi.AgentService\Mochi.AgentService.csproj" />
+    <ProjectReference Include="$(MochiRepo)\mochi.agents\paws\Mochi.Paws.Sdk\Mochi.Paws.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

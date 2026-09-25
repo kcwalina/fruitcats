@@ -1,12 +1,12 @@
 """Compose finished card images: generated art + frame + exact card text and stats.
 
-    python tools/compose_cards.py            # every card in cards/sb1.json
+    python tools/compose_cards.py            # every card of the Starter Box (content/2026/09/starter-box/set.json)
     python tools/compose_cards.py --only SB1-C04
     python tools/compose_cards.py --finish gold     # only one finish (standard, foil, gold, prismatic)
 
 Reads art from art/<set>/<key>.webp (see tools/generate_art.py) and writes 750x1050 WebP images
-(2.5" x 3.5" at 300 dpi) to art/cards/<set>/, plus a README.md gallery grouped by deck. Every card is
-also printed in each finish, to art/cards/<set>/<finish>/: the same card with its chrome (the frame, the
+(2.5" x 3.5" at 300 dpi) to the set's art/cards/, plus a README.md gallery grouped by deck. Every card is
+also printed in each finish, to art/cards/<finish>/: the same card with its chrome (the frame, the
 art's border, the edges of the name banner and type line, the cost ring) in holographic silver (foil),
 polished gold (gold) or a rainbow (prismatic).
 Card text comes from the card data, never from the image model, so a balance patch only
@@ -105,30 +105,34 @@ def layout(text: str, width: int, f: dict) -> list[list[tuple[str, str]]]:
 
 
 ICONS = ROOT / "art" / "ui"
-# Where each badge's number sits and how much room it has, as fractions of the icon, measured by
-# tools/make_stat_icons.py (the centre of the largest circle that fits inside the icon's flat area).
-BADGES = {"icon-paw": (0.496, 0.672, 0.51), "icon-heart": (0.496, 0.539, 0.52)}
-BADGE_INK = "#50231c"      # the icons' own outline colour, so the number is outlined in the same pen
+HEART_COLOR = "#D9486C"
+CHIP_H, CHIP_ICON, CHIP_FONT, CHIP_PAD, CHIP_GAP = 62, 34, 40, 14, 8
+CHIP_TOP = 930                     # the chips sit in the card's bottom strip, clear of the text box and frame
 
 
-def badge(img: Image.Image, d: ImageDraw.ImageDraw, name: str, cx: int, bottom: int, size: int, value: int) -> None:
-    """A stat badge: the drawn icon standing on `bottom`, with its number on the icon's flat area.
+def stat_chip(img: Image.Image, kind: str, value: int, colors: tuple, right: bool) -> None:
+    """A stat as a small chip in the family's tint: an icon (paw = Power, heart = Health) and the number.
 
-    Lined up by the drawing inside the icon, not by the icon's canvas: the paw is taller than the
-    heart, so a shared centre used to push the paw over the card's frame.
+    Quiet on purpose, so it never competes with the art: the chip matches the type line above the rules
+    text. Power sits at the text box's left edge, Health at its right edge. The icons are Phosphor's
+    (art/ui/stat-paw.svg, stat-heart.svg), kept as white masks and tinted here.
     """
-    icon = Image.open(ICONS / f"{name}.webp").convert("RGBA")
-    icon = icon.resize((size, round(size * icon.height / icon.width)), Image.LANCZOS)
-    ink = icon.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
-    left, top = cx - (ink[0] + ink[2]) // 2, bottom - ink[3]
-    img.paste(icon, (left, top), icon)
-
-    fx, fy, room = BADGES[name]
-    # Two digits have to fit across the flat area; one digit is about half as wide.
-    width = size * room * 0.92
-    height = min(width / max(len(str(value)), 1.6) * 1.55, size * room * 0.92)
-    centered_ink(d, (left + size * fx, top + icon.height * fy), str(value),
-                 font("seguibl.ttf", round(height)), "white", stroke_width=3, stroke_fill=BADGE_INK)
+    main, dark, tint = colors
+    f = font("seguibl.ttf", CHIP_FONT)
+    num = str(value)
+    width = round(CHIP_PAD + CHIP_ICON + CHIP_GAP + ImageDraw.Draw(img).textlength(num, font=f) + CHIP_PAD + 2)
+    x0 = TEXT_BOX[2] - width if right else TEXT_BOX[0]
+    k = 4                                                   # drawn 4x and scaled down, for smooth edges
+    chip = Image.new("RGBA", (width * k, CHIP_H * k), (0, 0, 0, 0))
+    ImageDraw.Draw(chip).rounded_rectangle((0, 0, width * k - 1, CHIP_H * k - 1), radius=CHIP_H * k // 2,
+                                           fill=tint, outline=main, width=2 * k)
+    img.alpha_composite(chip.resize((width, CHIP_H), Image.LANCZOS), (x0, CHIP_TOP))
+    mask = Image.open(ICONS / f"stat-{kind}.png").getchannel("A").resize((CHIP_ICON, CHIP_ICON), Image.LANCZOS)
+    icon = Image.new("RGBA", (CHIP_ICON, CHIP_ICON), HEART_COLOR if kind == "heart" else dark)
+    icon.putalpha(mask)
+    img.alpha_composite(icon, (x0 + CHIP_PAD, CHIP_TOP + (CHIP_H - CHIP_ICON) // 2))
+    ImageDraw.Draw(img).text((x0 + CHIP_PAD + CHIP_ICON + CHIP_GAP, CHIP_TOP + CHIP_H / 2 + 1), num,
+                             font=f, fill=dark, anchor="lm")
 
 
 def star(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int, fill: str) -> None:
@@ -206,8 +210,30 @@ CHROME = {
     "foil":      (SILVER, "#4a5362"),
     "gold":      (["#fff4c2", "#e8b73a", "#8a5a0c", "#f7d774", "#b07d17", "#fff0b0", "#c89224", "#fff4c2"], "#5a3a04"),
     "prismatic": (RAINBOW, "#3a2a5a"),
+    "signature": (["#2a1a15", "#120b09"], "#120b09"),
 }
+# Signature: a set's top card is printed only this way (docs/heat-wave-set.md). Charred black stone with
+# glowing lava cracks running through it. Cards opt in with "signature": true; it's never a default print.
+SIGNATURE = "signature"
 _textures: dict = {}
+
+
+def signature_texture(xs, ys):
+    """Charred black stone split by glowing lava cracks: the edges of a Voronoi pattern, hottest (yellow)
+    in the middle of each crack and cooling through orange to deep red at its edges. Fixed seed, so every
+    Signature card is cracked the same way."""
+    import numpy as np
+    rng = np.random.default_rng(7)
+    pts = rng.uniform(0, 1, (170, 2)) * (W, H)
+    d = np.sqrt((xs[..., None] - pts[:, 0]) ** 2 + (ys[..., None] - pts[:, 1]) ** 2)
+    d.sort(axis=-1)
+    edge = d[..., 1] - d[..., 0]                        # 0 on a crack, growing into each stone
+    core = np.exp(-(edge / 3.2) ** 2)[..., None]
+    glow = np.exp(-(edge / 16) ** 2)[..., None]
+    stone = np.array([30, 20, 17], float) + 14 * np.sin(xs / 37 + np.sin(ys / 53) * 2)[..., None] / 2
+    rgb = stone * (1 - glow) + np.array([190, 42, 10], float) * glow
+    rgb = rgb * (1 - core) + np.array([255, 196, 92], float) * core
+    return rgb
 
 
 def chrome_texture(finish: str) -> Image.Image:
@@ -225,7 +251,9 @@ def chrome_texture(finish: str) -> Image.Image:
 
         diagonal = (xs * 0.8 + ys * 0.6) / (W * 0.8 + H * 0.6)
         brushed = (1 + 0.04 * np.sin(ys * 1.9 + np.sin(xs / 23) * 3))[..., None]
-        if finish == "gold":
+        if finish == SIGNATURE:
+            rgb = signature_texture(xs, ys)
+        elif finish == "gold":
             rgb = ramp(CHROME["gold"][0], diagonal * 2) * brushed
         else:
             silver = ramp(SILVER, diagonal * 2.5) * brushed
@@ -243,7 +271,7 @@ def chrome_texture(finish: str) -> Image.Image:
 
 
 # A finish's code in the collector line, like the codes on real cards: F(oil), G(old), P(rismatic).
-FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white")}
+FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white"), SIGNATURE: ("S", "white")}
 
 
 def finish_tag(img: Image.Image, right: int, cy: int, finish: str) -> int:
@@ -330,7 +358,7 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
     if card["type"] == "Hero Cat":
         star(d, 81, 79, 38, main)
     else:
-        centered(d, (81, 76), str(card["cost"]), font("seguibl.ttf", 60), dark)
+        centered(d, (81, 76), str(card.get("cost", 0)), font("seguibl.ttf", 60), dark)
 
     # Lucky badge
     if re.search(r"\bLucky\b", text):
@@ -338,6 +366,8 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
 
     # Type line
     kind = card["type"].upper()
+    if card.get("token"):
+        kind = f"TOKEN {kind}"
     if side:
         kind = f'HERO CAT · {"KITTEN" if side == "kitten" else "BIG CAT"}'
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
@@ -349,7 +379,8 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
     if finish != "standard":
         right = finish_tag(img, right, 622, finish) - 8
     d.text((right, 622), key, font=key_font, fill=MUTED, anchor="rm")
-    rarity_mark(img, round(right - key_font.getlength(key) - 20), 622, 12, card["rarity"])
+    if card.get("rarity"):                 # tokens aren't collected, so they have no rarity
+        rarity_mark(img, round(right - key_font.getlength(key) - 20), 622, 12, card["rarity"])
     cd.rounded_rectangle((42, 596, W - 42, 648), radius=14, outline=255, width=4)
 
     # The finish's chrome, edged in its ink where it meets the card.
@@ -395,9 +426,9 @@ def compose(card: dict, side: str | None, art_path: Path, finish: str = "standar
 
     # Stats
     if power is not None:
-        badge(img, d, "icon-paw", 96, 1022, 138, power)      # 1022: clear of the card's frame at 1027
+        stat_chip(img, "paw", power, (main, dark, tint), right=False)
     if health is not None:
-        badge(img, d, "icon-heart", 654, 1022, 138, health)
+        stat_chip(img, "heart", health, (main, dark, tint), right=True)
     centered(d, (W / 2, 1000), FOOTER, font("segoeui.ttf", 17), MUTED)
     return img
 
@@ -406,13 +437,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--set", default="sb1")
     parser.add_argument("--only", nargs="*")
-    parser.add_argument("--finish", choices=("standard", *FINISHES), help="only this finish (default: all)")
+    parser.add_argument("--finish", choices=("standard", *FINISHES, SIGNATURE), help="only this finish (default: all)")
     args = parser.parse_args()
 
-    data = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))
+    from generate_art import set_file
+    set_path = set_file(args.set)
+    data = json.loads(set_path.read_text(encoding="utf-8"))
     cards = {c["id"]: c for c in data["cards"]}
-    art_dir = ROOT / "art" / args.set
-    out_dir = ROOT / "art" / "cards" / args.set
+    # A set can add families (with their colours) and family mechanics, and names itself in the footer.
+    global FOOTER, KEYWORDS
+    for family, info in data.get("families", {}).items():
+        FAMILIES[family] = tuple(info["colors"])
+    if data.get("mechanics"):
+        KEYWORDS = KEYWORDS[:-3] + "|" + "|".join(data["mechanics"]) + r")\b"
+    FOOTER = f'Fruitcats · {data["name"]} · © 2026 Krzysztof Cwalina'
+    art_dir = set_path.parent / "art" / "illustrations"
+    out_dir = set_path.parent / "art" / "cards"
     out_dir.mkdir(parents=True, exist_ok=True)
     finishes = [args.finish] if args.finish else ["standard", *FINISHES]
     for f in finishes:
@@ -420,7 +460,7 @@ def main() -> int:
             (out_dir / f).mkdir(exist_ok=True)
 
     written, pending = [], []
-    for card in data["cards"]:
+    for card in data["cards"] + [dict(t, token=True) for t in data.get("tokens", [])]:
         if args.only and card["id"] not in args.only:
             continue
         for side in (("kitten", "bigcat") if card["type"] == "Hero Cat" else (None,)):
@@ -428,7 +468,13 @@ def main() -> int:
             art = art_dir / f"{key}.webp"
             if not art.exists():
                 pending.append(key)
-            for f in finishes:
+            # Tokens are printed plain; a Signature card also gets its Signature print.
+            prints = ["standard"] if card.get("token") else list(finishes)
+            if card.get("signature") and not args.finish:
+                prints.append(SIGNATURE)
+            for f in prints:
+                if f != "standard":
+                    (out_dir / f).mkdir(exist_ok=True)
                 compose(card, side, art, f).save(out_dir / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp"),
                                                  quality=90, method=6)
             written.append(key)
@@ -475,6 +521,8 @@ def main() -> int:
     for deck in data["decks"].values():
         entries = []
         for cid, qty in deck["cards"].items():
+            if cid not in cards:                   # a card from another set (the Starter Box's Garden)
+                continue
             if cards[cid]["family"] == "Garden":
                 garden.add(cid)
             else:

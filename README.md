@@ -7,7 +7,7 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 - [Rulebook](docs/rulebook.md) — how to play, tournament rules, comprehensive rules
 - [Starter Box card list](docs/starter-box-cards.md) — three ready-to-play 50-card decks, including Mango Tango led by Mochi
 - [Design notes](docs/design-notes.md) — research, rationale, and balance hypotheses to test
-- [Starter Box card images](art/cards/sb1/README.md) — every card, rendered
+- [Starter Box card images](content/2026/09/starter-box/art/cards/README.md) — every card, rendered
 
 ## Play it
 
@@ -26,18 +26,21 @@ npm run dev        # http://localhost:5173 — play against the AI
 
 ## Card data and art
 
-- `cards/sb1.json` — the Starter Box card data (the single source of truth for card text and stats)
-- `art/prompts.json` — art direction: shared style plus one subject per illustration
-- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into `art/sb1/`
-- `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into `art/cards/sb1/`
-- `tools/make_stat_icons.py` — turns the drawn paw and heart into the Power/Health badges: one flat fill, one
-  outline colour, matching framing, and it measures where each number fits
+- `content/<year>/<month>/<set>/set.json` — each card set's data (the single source of truth for card text, stats and
+  abilities), with `plugin.ts` for a set that needs code; the engine has no cards of its own. See
+  [docs/card-data-architecture.md](docs/card-data-architecture.md)
+- `content/…/<set>/art/prompts.json` — each set's art direction: its style plus one subject per illustration
+  (`art/prompts.json` holds the interface art)
+- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into the set's `art/illustrations/`
+- `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into the set's `art/cards/`; the build publishes each set's art at `/<set>/` and
+  `/cards/<set>/`, and its announcement at `/announcements/<set-folder>/`
+- `art/ui/stat-paw.svg`, `stat-heart.svg` — the Power and Health icons (Phosphor Icons, MIT), with PNG masks beside
+  them for the Python tools; cards, wallpapers and the game draw them as small chips in the family's tint
 - `tools/make_icons.py` — cuts the home-screen, PWA, maskable and favicon icons from `art/ui/app-icon.webp`
 
 ```bash
 python tools/generate_art.py          # only draws cards that have no art yet
 python tools/generate_art.py --ui     # interface art: backgrounds, card back, icons
-python tools/make_stat_icons.py       # after redrawing the paw or heart
 python tools/compose_cards.py         # re-run after any card data change; no redraw needed
 ```
 

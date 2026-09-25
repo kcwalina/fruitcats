@@ -44,8 +44,19 @@ Simulation notes (100 games per pairing, AI vs AI): the AI initially played Zest
 of a round 54% of the time, wasting the bonus; it now opens with a cheaper card when it can afford both
 (31%), raising Zest triggers from 1.6 to 2.5 per game. First-pass Ripen on Pear Hedgehog (a Guardian)
 pushed Orchard Guard to 73% overall, so Ripen moved off Guardians and Plum Mole went from 3/4 to 2/3.
-**Open issue:** Zest Rush still wins only ~25% overall (15% vs Orchard Guard) — its problem is structural
-(aggro into a wall of Guardians and heals) and needs its own balance pass.
+Zest Rush then won only ~26% overall and 14% vs Orchard Guard, and a playtester found the matchup
+unwinnable. Guardian-only fixes (Sneaky on Sunny's Kitten ability, Hiss! at cost 2) moved it by 2–3 points:
+Zest was also losing to Mango (37%), ending games with ~11 cards it couldn't afford, and even 9-Power Zest
+units didn't help while the Guardians stayed as tough. What moved it: Grapefruit Ferret gains Sneaky, Lime
+Gecko costs 1, Apple Badger is 4/3 instead of 4/4, and Orchard Guard plays a third Quince Tortoise, Fig Bear
+and Nap Time instead of three Garden Snails. At 500 games per pairing: Zest vs Orchard 14% → 39%; overall
+Zest 26% → 41%, Orchard 66% → 52%, Mango 58% → 57%.
+
+Mango Tango was then the strongest deck. Mango won 77% of the games in which it played Jackfruit Elephant
+and 63% of those in which Mochi Grew Up (34% when she didn't). Every Mango nerf also lifts Orchard, which
+Mango had been keeping in check; Mochi Growing Up at 9 Treats or a single Elephant overshot (Orchard 57–58%).
+Jackfruit Elephant now costs 8 (was 7) and Coconut, Island Guardian is 4/5 (was 4/6). At 600 games per
+pairing: Zest 40% → 44%, Orchard 52% → 53%, Mango 58% → 53%. **Open issue:** Zest is still the weakest deck.
 
 ## What we deliberately left out
 
@@ -69,6 +80,16 @@ pushed Orchard Guard to 73% overall, so Ripen moved off Guardians and Plum Mole 
 ## Metrics the harness should report
 
 Win rate per deck and matchup matrix · starting-Yarn-holder win rate · game length (rounds, actions) · per-card win rate when drawn / played / planted · plant rate per card (cards that are *always* planted are dead designs) · Lucky trigger frequency and swing · comeback rate (winner was behind on Lives at round 4) · Grow Up rate and timing · Pounce usage and "Treats left ready" bluff rate · decisions per action and branching factor · skill differentiation (strong bot vs. weak bot margin) · LLM-persona qualitative reports (confusing rules, unfun moments, dominant lines).
+
+Built in `playtest/` (see its README): the matchup matrix, starting-Yarn rate, game length, per-card win
+rate when played, Grow Up rate and timing, cards left in hand, the strong-vs-weak bot margin, random and
+mutated decks against the starters, LLM-persona reports and LLM-designed decks. Still to do: per-card
+drawn/planted rates, Lucky swing, comeback rate, Pounce and bluff rates, branching factor.
+
+The same work replaced the bot's fixed planting rule (plant to 5 Treats, or 8 for Mochi) with a general
+one: plant to the priciest card, plus one spare when that costs 6 or more, plus whatever the Hero Cat's
+Grow Up counts in Treats. In bot-vs-bot duels the spare Treat was worth +8 points to Orchard Guard and
+nothing to the others, so with a better bot Orchard Guard measures about 58% overall rather than 53%.
 
 ## Research sources
 

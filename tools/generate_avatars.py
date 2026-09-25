@@ -49,7 +49,7 @@ EVERYDAY_BACKGROUND = "Background: one plain flat pastel colour ({colour}) filli
 LEGEND_BACKGROUND = ("Background: a radiant sunburst of warm gold and soft cream rays spreading from behind the head, "
                      "with three or four big simple four-pointed white-gold sparkles. Bright, warm and celebratory.")
 # Every Legend is drawn from real Hero Cat art, so it matches the game's own look.
-LEGEND_REFERENCE = "art/sb1/SB1-H03-bigcat.webp"
+LEGEND_REFERENCE = "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"
 
 # id: (subject, background colour or None for a Legend Pawtrait, reference image for a known character)
 AVATARS = {
@@ -69,7 +69,7 @@ AVATARS = {
     # Legend Pawtraits: each comes with its Legendary card.
     "legend-mochi": ("Mochi, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
                      "ears, wearing a bright golden-orange mango hood with a little crown of green palm leaves and a "
-                     "small orange bow at the neck, a proud happy smile", None, "art/sb1/SB1-H03-bigcat.webp"),
+                     "small orange bow at the neck, a proud happy smile", None, "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"),
     # Nova and Reaper are drawn by the Heat Wave card work to match their cards (art/avatars/legend-nova.webp and
     # legend-reaper.webp on main); don't redraw them from these older descriptions.
     "legend-nova": ("Nova, the Starfruit Voyager: a sunny golden-tabby cat wearing a bright lemon-yellow hood shaped "

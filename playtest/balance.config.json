@@ -1,0 +1,24 @@
+{
+  "block": {
+    "starterOverall": [0.40, 0.60],
+    "starterMatchupMin": 0.30
+  },
+  "warn": {
+    "starterOverall": [0.45, 0.55],
+    "starterMatchupMin": 0.38,
+    "firstPlayer": [0.45, 0.55],
+    "cardDelta": 0.10,
+    "cardMinGames": 80,
+    "deckVsStarters": 0.62,
+    "botSanityMin": 0.65
+  },
+  "quick": { "gamesPerPair": 300 },
+  "full": {
+    "gamesPerPair": 1000,
+    "randomDecksPerCombo": 4,
+    "mutatedPerStarter": 6,
+    "swaps": 6,
+    "gamesVsStarter": 100,
+    "sanityGames": 200
+  }
+}

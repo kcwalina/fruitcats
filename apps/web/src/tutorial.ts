@@ -170,8 +170,8 @@ const TIPS: Balloon[] = [
   },
   {
     id: 'ripen', title: 'Ripen 🍎',
-    anchor: (s) => { const u = s.players.flatMap((p) => p.yard).find((x) => (x.ripe ?? 0) > 0); return u ? `[data-click="unit:${u.uid}"]` : undefined; },
-    when: (s) => myPrompt(s) && s.players.some((p) => p.yard.some((u) => (u.ripe ?? 0) > 0)),
+    anchor: (s) => { const u = s.players.flatMap((p) => p.yard).find((x) => (x.counters?.ripe ?? 0) > 0); return u ? `[data-click="unit:${u.uid}"]` : undefined; },
+    when: (s) => myPrompt(s) && s.players.some((p) => p.yard.some((u) => (u.counters?.ripe ?? 0) > 0)),
     text: 'Orchard units <b>Ripen</b>: at the start of every round they get +1 Power and +1 Health, '
       + 'up to +2/+2. Deal with them early, before they grow!',
   },
@@ -197,8 +197,8 @@ const TIPS: Balloon[] = [
   },
   {
     id: 'guardian', title: 'Guardians',
-    anchor: (s) => { const g = s.players[FOE].yard.find(isGuardian); return g ? `[data-click="unit:${g.uid}"]` : undefined; },
-    when: (s) => canAttack(s) && s.players[FOE].yard.some(isGuardian),
+    anchor: (s) => { const g = s.players[FOE].yard.find((u) => isGuardian(u, s)); return g ? `[data-click="unit:${g.uid}"]` : undefined; },
+    when: (s) => canAttack(s) && s.players[FOE].yard.some((u) => isGuardian(u, s)),
     text: 'A unit marked <b>Guardian</b> protects its team: your attackers must hit Guardians first, '
       + 'unless they are <b>Sneaky</b>.',
   },

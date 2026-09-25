@@ -8,6 +8,7 @@
 // A Hero Cat's two sides are two cards here: its Kitten and its Big Cat. So the screens deal in card
 // faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
 
+import { familiesOf, featuredHero } from './sets';
 import './showcase.css';
 import { CARDS, RARITIES, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
@@ -16,14 +17,17 @@ import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
-const DEFAULT_SHOWCASE = ['SB1-H03-kitten', 'SB1-H03-bigcat'];
+const DEFAULT_SHOWCASE = () => [`${featuredHero()}-kitten`, `${featuredHero()}-bigcat`];
 const SHOWCASE_KEY = 'fruitcats-showcase';
 /** When the Showcase last changed on this device (ms), so sync keeps the newest. */
 const SHOWCASE_AT_KEY = 'fruitcats-showcase-at';
-const FAMILIES = ['all', 'Citrus', 'Orchard', 'Tropical', 'Garden'];
+const FAMILIES = () => ['all', ...familiesOf(SET)];
 
-/** Every card in the set, in collector-number order (the order of the set list). */
-const SET = Object.keys(CARDS);
+/**
+ * Every collectable card of the loaded sets, in collector-number order (the order of the set lists).
+ * Tokens (summoned, never collected) and the engine's own stand-in card (in no set) aren't cards to collect.
+ */
+const SET = Object.keys(CARDS).filter((id) => CARDS[id].set && !CARDS[id].token);
 const isHero = (id: string) => CARDS[id]?.type === 'Hero Cat';
 /** A card's faces: a Hero Cat has two. */
 const facesOf = (id: string) => (isHero(id) ? [`${id}-kitten`, `${id}-bigcat`] : [id]);
@@ -88,7 +92,7 @@ function loadShowcase(): string[] {
     const saved = JSON.parse(localStorage.getItem(SHOWCASE_KEY) ?? 'null');
     if (Array.isArray(saved)) return saved.filter((face) => typeof face === 'string' && isFace(face) && owned(idOf(face)) > 0);
   } catch { /* unreadable or private mode: start with the default */ }
-  return [...DEFAULT_SHOWCASE];
+  return [...DEFAULT_SHOWCASE()];
 }
 
 const showcaseListeners: (() => void)[] = [];
@@ -226,7 +230,7 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
   host = h;
   switch (action) {
     case 'tab': if (arg === 'showcase' || arg === 'all') tab = arg; break;
-    case 'filter': if (FAMILIES.includes(arg)) familyFilter = arg; break;
+    case 'filter': if (FAMILIES().includes(arg)) familyFilter = arg; break;
     case 'clear': familyFilter = 'all'; rarityFilter = 'all'; break;
     case 'rarity': if (arg === 'all' || (RARITIES as readonly string[]).includes(arg)) rarityFilter = arg as Rarity | 'all'; break;
     case 'go': scrollToCard(Number(arg)); return;   // a card beside the one in the middle: bring it over
@@ -291,7 +295,7 @@ export function showcaseArrow(key: string, h: ShowcaseHost): boolean {
 // ── Screens ──────────────────────────────────────────────────────────────────────────────────────
 
 export function renderShowcase(): string {
-  const backdrop = tab === 'showcase' && showcase.length ? showcase[showcaseIndex] : 'SB1-H03-bigcat';
+  const backdrop = tab === 'showcase' && showcase.length ? showcase[showcaseIndex] : `${featuredHero()}-bigcat`;
   return `
   <div class="collection-screen">
     ${renderAmbient(backdrop)}
@@ -396,7 +400,7 @@ function renderGrid(): string {
         aria-label="${r}, ${got} of ${all.length} collected">${rarityMark(r)}<span>${r}</span><small class="${done ? 'done' : ''}">${done ? '✓' : `${got}/${all.length}`}</small></button>`;
     }),
   ].join('');
-  const familyChips = FAMILIES.map((f) => `<button class="chip fchip ${f === 'all' ? '' : famClass(SET.find((id) => CARDS[id].family === f)!)} ${familyFilter === f ? 'chosen' : ''}"
+  const familyChips = FAMILIES().map((f) => `<button class="chip fchip ${f === 'all' ? '' : famClass(SET.find((id) => CARDS[id].family === f)!)} ${familyFilter === f ? 'chosen' : ''}"
       data-click="col:filter:${f}" aria-pressed="${familyFilter === f}">${f === 'all' ? '' : '<i class="fam-dot"></i>'}${f === 'all' ? 'All' : f}</button>`).join('');
   return `
     <div class="collection-grid" data-keep-scroll="grid">

@@ -8,16 +8,8 @@ import { CARDS, type CardDef, type Rarity } from '@fruitcats/engine';
 import type { Finish } from './collection';
 import { drawRarityMark } from './rarity';
 import { BASE, artUrl } from './ui';
+import { familyColors } from './sets';
 
-/** Main, dark and tint colour of each fruit family, as compose_cards.py draws them. */
-const FAMILIES: Record<string, [string, string, string]> = {
-  Citrus: ['#F29F05', '#A86400', '#FFF1CC'],
-  Orchard: ['#D64545', '#8E2A2A', '#FBE0DA'],
-  Garden: ['#5FA84D', '#3B7430', '#E3F2DC'],
-  Berry: ['#D6336C', '#8F1D46', '#FBDDE7'],
-  Tropical: ['#F2780C', '#A24E05', '#FFE6CC'],
-  Melon: ['#3FA66B', '#25714A', '#DDF3E6'],
-};
 /** The finishes' chrome, as compose_cards.py prints it: silver with rainbow flashes, gold, a rainbow. */
 const RAINBOW = ['#ff6b6b', '#ffd36b', '#7bff9a', '#6bd5ff', '#b07bff', '#ff6bd0'];
 const HOLO = ['#8e97a3', '#eef1f5', '#d7c2ec', '#a7b0bb', '#f7f9fb', '#bfe6f2', '#7f8894', '#f3dcec', '#8e97a3'];
@@ -28,15 +20,13 @@ const CHROME_INK: Record<Finish, string> = { standard: '', foil: '#4a5362', gold
 const FINISH_CODES: Record<Exclude<Finish, 'standard'>, [string, string]> = {
   foil: ['F', '#2e3552'], gold: ['G', '#4a2c02'], prismatic: ['P', 'white'],
 };
-const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C', BADGE_INK = '#50231c';
+const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C';
 const FOOTER = 'Fruitcats · Starter Box · © 2026 Krzysztof Cwalina';
 const FONT = 'Nunito, "Segoe UI", sans-serif';
 
-/** The stat icons: where their drawing sits on the 256px canvas, and where the number goes (compose_cards.py's BADGES). */
-const BADGES = {
-  paw: { file: 'icon-paw', ink: [15, 8, 240, 248], at: [0.496, 0.672, 0.51] },
-  heart: { file: 'icon-heart', ink: [7, 25, 248, 229], at: [0.496, 0.539, 0.52] },
-} as const;
+/** The stat chips' icons (Phosphor's paw and heart, white masks) and the heart's own colour (compose_cards.py's stat_chip). */
+const STAT_ICONS = { paw: 'stat-paw', heart: 'stat-heart' } as const;
+const HEART_COLOR = '#D9486C';
 
 const KEYWORDS = /\b(Zoomies|Guardian|Sneaky|Fierce|Tough \d+|Lucky|Pounce|Ripen|Zest|Sprout \d+|Lush)\b/g;
 const LABEL = /(?:^|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)/g;
@@ -109,23 +99,38 @@ function star(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, 
 }
 
 /** A stat badge standing on `bottom`, lined up by the drawing inside the icon, its number on the icon's flat area. */
-function badge(ctx: CanvasRenderingContext2D, icon: HTMLImageElement, kind: keyof typeof BADGES, cx: number, bottom: number, size: number, value: number) {
-  const { ink, at: [fx, fy, room] } = BADGES[kind];
-  const k = size / 256;
-  const left = cx - ((ink[0] + ink[2]) / 2) * k, top = bottom - ink[3] * k;
-  ctx.drawImage(icon, left, top, size, size);
+/**
+ * A stat as a small chip in the family's tint, as compose_cards.py prints it: the icon, then the number.
+ * `edge` is the chip's left edge (Power) or right edge (Health, `right`), `bottom` its bottom.
+ */
+function statChip(p: Parts, icon: HTMLImageElement, kind: 'paw' | 'heart', edge: number, bottom: number, value: number, right: boolean) {
+  const { ctx, s } = p;
+  const [main, dark, tint] = p.colors;
+  const h = 62 * s, size = 34 * s, pad = 14 * s, gap = 8 * s;
   const digits = String(value);
-  const width = size * room * 0.92;
-  const height = Math.min((width / Math.max(digits.length, 1.6)) * 1.55, size * room * 0.92);
-  ctx.font = `900 ${Math.round(height)}px ${FONT}`;
-  ctx.textAlign = 'center';
+  ctx.font = `900 ${40 * s}px ${FONT}`;
+  const w = pad + size + gap + ctx.measureText(digits).width + pad;
+  const x = right ? edge - w : edge, y = bottom - h;
+  roundRect(ctx, x, y, x + w, y + h, h / 2);
+  ctx.fillStyle = tint;
+  ctx.fill();
+  ctx.lineWidth = 2 * s;
+  ctx.strokeStyle = main;
+  ctx.stroke();
+  // The icon is a white mask: tint it on a scratch canvas, then place it.
+  const px = Math.max(1, Math.round(size));
+  const tinted = document.createElement('canvas');
+  tinted.width = tinted.height = px;
+  const t = tinted.getContext('2d')!;
+  t.drawImage(icon, 0, 0, px, px);
+  t.globalCompositeOperation = 'source-in';
+  t.fillStyle = kind === 'heart' ? HEART_COLOR : dark;
+  t.fillRect(0, 0, px, px);
+  ctx.drawImage(tinted, x + pad, y + (h - size) / 2, size, size);
+  ctx.fillStyle = dark;
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = size * 0.035;
-  ctx.strokeStyle = BADGE_INK;
-  ctx.strokeText(digits, left + size * fx, top + size * fy);
-  ctx.fillStyle = 'white';
-  ctx.fillText(digits, left + size * fx, top + size * fy);
+  ctx.fillText(digits, x + pad + size + gap, y + h / 2 + 1 * s);
 }
 
 /** What the wallpaper is for. Each gets its own shape, and its screen's corner rounding. */
@@ -426,8 +431,9 @@ function drawRules(p: Parts, x0: number, y0: number, x1: number, y1: number, res
 function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, footerY: number, footerSize = 17) {
   const { ctx, card, side, s } = p;
   const face = side ? (side === 'kitten' ? card.kitten! : card.bigCat!) : card;
-  if (face.power !== undefined) badge(ctx, p.paw, 'paw', pawX, bottom, 138 * s, face.power);
-  if (!side && card.health !== undefined) badge(ctx, p.heart, 'heart', heartX, bottom, 138 * s, card.health);
+  // The chips keep the old badges' footprint: Power from 54 left of pawX, Health to 54 right of heartX.
+  if (face.power !== undefined) statChip(p, p.paw, 'paw', pawX - 54 * s, bottom - 30 * s, face.power, false);
+  if (!side && card.health !== undefined) statChip(p, p.heart, 'heart', heartX + 54 * s, bottom - 30 * s, card.health, true);
   ctx.font = `600 ${footerSize * s}px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -445,7 +451,7 @@ function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, foote
  */
 export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | null, finish: Finish, rarity: Rarity, number: string, device: Device): Promise<Blob> {
   const card: CardDef = CARDS[id];
-  const colors = FAMILIES[card.family] ?? FAMILIES.Garden;
+  const colors = familyColors(card.family);
   const [main, dark] = colors;
   const { W, H, corner, controls } = wallpaperSize(device);
   const key = side ? `${id}-${side}` : id;
@@ -456,7 +462,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     new Promise((resolve) => setTimeout(resolve, 1500)),
   ]);
   const [art, paw, heart] = await Promise.all([
-    loadImage(artUrl(key)), loadImage(`${BASE}ui/${BADGES.paw.file}.webp`), loadImage(`${BASE}ui/${BADGES.heart.file}.webp`)]);
+    loadImage(artUrl(key)), loadImage(`${BASE}ui/${STAT_ICONS.paw}.png`), loadImage(`${BASE}ui/${STAT_ICONS.heart}.png`)]);
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -523,7 +529,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     // stand above them and the footer runs between them.
     const statsBottom = controls ? H - controls : H - edge - 12 * s - cornerLift;
     const footerY = controls ? H - controls * 0.67 : statsBottom - 32 * s;
-    // With no badges to stand there (a Kitten, say), the rules box runs down to the footer.
+    // With no stat chips below it (a Kitten, say), the rules box runs down to the footer.
     const shown = side ? (side === 'kitten' ? card.kitten! : card.bigCat!) : card;
     const badges = shown.power !== undefined || (!side && card.health !== undefined);
     const textBottom = badges ? statsBottom - 110 * s : statsBottom - 60 * s;
@@ -532,7 +538,8 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     drawArt(p, art, pad, pad, W - pad, artBottom, inner);
     const bannerBottom = drawBanner(p, pad - 6 * s, W - pad + 6 * s, artBottom + 16 * s);
     const typeBottom = drawTypeLine(p, pad, W - pad, bannerBottom + 12 * s);
-    drawRules(p, pad, typeBottom + 12 * s, W - pad, badges ? textBottom + 40 * s : textBottom, badges ? 40 * s : 0);
+    // The stat chips stand just below the rules box, as on the printed card; they don't overlap it.
+    drawRules(p, pad, typeBottom + 12 * s, W - pad, textBottom, 0);
     const inset = Math.max(96 * s, corner * 0.55 + 40 * s);
     drawStats(p, inset, W - inset, statsBottom, footerY);
   }

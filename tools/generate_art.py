@@ -3,7 +3,8 @@
     python tools/generate_art.py                      # draw every card that has no art yet
     python tools/generate_art.py --only SB1-C04       # one card (hero ids draw both sides)
     python tools/generate_art.py --force              # redraw even if the file exists
-    python tools/generate_art.py --reference art/sb1/SB1-C04.webp   # anchor the style to an existing image
+    python tools/generate_art.py --set hw1                # another set, by its code
+    python tools/generate_art.py --reference content/2026/09/starter-box/art/illustrations/SB1-C04.webp   # match a style
 
 Art is text-free; card text is added by tools/compose_cards.py so it is always exact.
 Auth is the signed-in Azure CLI (`az login`), the same as mochi's image tools -- no keys.
@@ -34,6 +35,14 @@ MODELS = {
     "gpt-image-2": ("https://mochi-openai.openai.azure.com", "gpt-image-2"),
 }
 API_VERSION = "2025-04-01-preview"
+
+
+def set_file(code: str) -> Path:
+    """A set's data by its code ('sb1', 'hw1'): content/<year>/<month>/<set>/set.json."""
+    for path in sorted((ROOT / "content").glob("*/*/*/set.json")):
+        if json.loads(path.read_text(encoding="utf-8")).get("set", "").lower() == code.lower():
+            return path
+    sys.exit(f"No set '{code}' in content/*/*/*/set.json")
 
 
 def access_token() -> str:
@@ -96,11 +105,15 @@ def main() -> int:
     parser.add_argument("--ui", action="store_true", help="draw the interface art (backgrounds, card back) into art/ui/")
     args = parser.parse_args()
 
-    cards = json.loads((ROOT / "cards" / f"{args.set}.json").read_text(encoding="utf-8"))["cards"]
-    prompts = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8"))
+    set_path = set_file(args.set)
+    data = json.loads(set_path.read_text(encoding="utf-8"))
+    cards = data["cards"] + data.get("tokens", [])    # tokens (units that cards summon) need art too
+    # Each set brings its own art direction (content/…/<set>/art/prompts.json); art/prompts.json holds the
+    # interface art (--ui).
+    prompts = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8")) if args.ui else         json.loads((set_path.parent / "art" / "prompts.json").read_text(encoding="utf-8"))
     if args.ui:
         return draw_ui(prompts["ui"], args)
-    out_dir = ROOT / "art" / args.set
+    out_dir = set_path.parent / "art" / "illustrations"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     endpoint, deployment = MODELS[args.model]
@@ -116,12 +129,12 @@ def main() -> int:
     def draw(key: str, card: dict) -> bool:
         subject = prompts["subjects"].get(key)
         if not subject:
-            print(f"  {key}: no prompt in art/prompts.json, skipped", flush=True)
+            print(f"  {key}: no prompt in the set's art/prompts.json, skipped", flush=True)
             return False
         # Hero Cats are drawn as plush mascots (their own style); the rest of the set is painted.
         hero = card["type"] == "Hero Cat"
         style = prompts["heroStyle"] if hero else prompts["style"]
-        background = (prompts["heroFamilies"] if hero else prompts["families"])[card["family"]]
+        background = prompts.get("backgrounds", {}).get(key) or (prompts["heroFamilies"] if hero else prompts["families"])[card["family"]]
         prompt = f'{style}\n\nSubject: {subject}\n\n{background}'
 
         try:

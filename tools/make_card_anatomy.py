@@ -37,8 +37,8 @@ ON_CARD = [
     (4, (44, 622), "left", 622),          # type line: its left end
     (8, (48, 760), "left", 760),          # rules text: its box's left edge
     (9, (598, 858), "right", 858),        # flavour text: just past its end
-    (10, (40, 985), "left", 985),         # power: the paw's left edge
-    (11, (706, 985), "right", 985),       # health: the heart's right edge
+    (10, (44, 961), "left", 961),         # power: the paw chip's left end
+    (11, (706, 961), "right", 961),       # health: the heart chip's right end
     (12, (10, 450), "left", 450),         # the chrome: the frame
 ]
 # In the enlarged collector line: (number, x on the card).
@@ -58,7 +58,7 @@ def pin(d: ImageDraw.ImageDraw, n: int, at: tuple, target: tuple, k: int) -> Non
 
 
 def main() -> None:
-    card = Image.open(ROOT / "art" / "cards" / "sb1" / CARD[0] / f"{KEY}.webp").convert("RGBA")
+    card = Image.open(ROOT / "content" / "2026" / "09" / "starter-box" / "art" / "cards" / CARD[0] / f"{KEY}.webp").convert("RGBA")
     k = 2                                 # drawn at 2x, then scaled down, for smooth lines
     sx0, sy0, sx1, sy1 = STRIP
     strip_w, strip_h = round((sx1 - sx0) * ZOOM), round((sy1 - sy0) * ZOOM)

@@ -5,6 +5,7 @@
 //
 // Sounds follow the game log, so every event makes a sound whoever caused it (you or the AI):
 // `playLogSounds(game)` is called after each render and plays the entries it hasn't heard yet.
+// With animations on, fx.ts plays each sound at the moment its animation lands instead.
 // Browsers (iOS in particular) only allow audio after a user gesture, so the audio context is
 // created/resumed on the first tap or click.
 
@@ -26,6 +27,15 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 const buffers = new Map<SoundName, AudioBuffer>();
 let enabled = readSetting();
+
+/**
+ * Silent when a program drives the game (Playwright and other automation set navigator.webdriver), or
+ * with ?mute in the address, so bots and screenshot runs never play sounds out of someone's speakers.
+ * The player's own sound setting is left alone.
+ */
+const SILENT = (() => {
+  try { return navigator.webdriver === true || new URLSearchParams(location.search).has('mute'); } catch { return false; }
+})();
 
 function readSetting(): boolean {
   try { return localStorage.getItem(STORAGE_KEY) !== 'off'; } catch { return true; }
@@ -73,7 +83,7 @@ for (const type of ['pointerdown', 'keydown'] as const)
 export function play(name: SoundName, at = 0) {
   // Dev-only: record what played, for automated checks in the browser.
   if (import.meta.env.DEV) ((window as unknown as { __sounds?: string[] }).__sounds ??= []).push(name);
-  if (!enabled) return;
+  if (!enabled || SILENT) return;
   const a = audio();
   const buffer = buffers.get(name);
   if (!a || !master || !buffer) return;

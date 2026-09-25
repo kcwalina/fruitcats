@@ -1,11 +1,13 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 
-// Card art lives in the repo's art/ folder and is served as-is: /sb1/<id>.webp (illustrations)
-// and /cards/sb1/<id>.webp (finished cards).
+// Interface art lives in the repo's art/ folder and is served as-is. Each card set's art lives in its own
+// folder, content/<year>/<month>/<set>/, and is published at stable addresses (contentAssets below):
+// /<set>/<id>.webp (illustrations), /cards/<set>/<id>.webp (finished cards, finishes in subfolders) and
+// /announcements/<set-folder>/ (its announcement page).
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
 // rulebook (rules.html), the card list (cards.html), what's on a card (anatomy.html), and guides to the
 // Collection and to wallpapers.
@@ -29,7 +31,7 @@ export default defineConfig(({ mode }) => ({
   base: './',
   define: mode === 'playtest' ? { 'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on') } : {},
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
-  plugins: [docsPages()],
+  plugins: [docsPages(), contentAssets()],
   build: {
     outDir: mode === 'playtest' ? 'dist-playtest' : 'dist',
     rollupOptions: {
@@ -134,6 +136,104 @@ function docsPages(): Plugin {
         const { toc, body } = renderDoc(page.md);
         return html.replace('<!-- doc:header -->', docHeader(page.html)).replace('<!-- doc:toc -->', toc).replace('<!-- doc:body -->', body);
       },
+    },
+  };
+}
+
+// ── Card sets' art ─────────────────────────────────────────────────────────────────────────────────
+//
+// Every set folder in content/ publishes its art at the addresses the game, wallpapers and announcement
+// pages use: served straight from the folder in dev, and copied into the build. A set's folder is the one
+// place its art lives; nothing is duplicated in the repo.
+
+const CONTENT = fileURLToPath(new URL('../../content/', import.meta.url));
+
+/** Every set folder in content/: its root, its code and its data. */
+function contentSets(): { root: string; folder: string; code: string; data: Record<string, unknown> }[] {
+  const sets: { root: string; folder: string; code: string; data: Record<string, unknown> }[] = [];
+  const dirs = (d: string) => (existsSync(d) ? readdirSync(d).filter((n) => statSync(join(d, n)).isDirectory()) : []);
+  for (const year of dirs(CONTENT))
+    for (const month of dirs(join(CONTENT, year)))
+      for (const folder of dirs(join(CONTENT, year, month))) {
+        const root = join(CONTENT, year, month, folder);
+        if (!existsSync(join(root, 'set.json'))) continue;
+        const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8'));
+        sets.push({ root, folder, code: String(data.set).toLowerCase(), data });
+      }
+  // A set that builds on another (Heat Wave uses the Starter Box's Garden cards) comes after it.
+  const needs = (s: { data: Record<string, unknown> }) => (s.data.requires as string[] | undefined) ?? [];
+  return sets.sort((a, b) => (needs(a).includes(String(b.data.set)) ? 1 : needs(b).includes(String(a.data.set)) ? -1 : 0));
+}
+
+/**
+ * The card packs: an index of every set, and each set's data, so a running game can take a set it wasn't
+ * built with (apps/web/src/content.ts, loadPacks). Its art is published beside it (contentMounts).
+ */
+function packFiles(): Record<string, string> {
+  const sets = contentSets();
+  const files: Record<string, string> = {
+    'packs/index.json': JSON.stringify({
+      packs: sets.map((s) => ({
+        set: s.data.set, name: s.data.name, version: s.data.version, status: s.data.status,
+        data: `packs/${s.code}/set.json`, art: `${s.code}/`, cards: `cards/${s.code}/`,
+      })),
+    }, null, 1),
+  };
+  for (const s of sets) files[`packs/${s.code}/set.json`] = JSON.stringify(s.data);
+  return files;
+}
+
+/** Each set's folders and the address each is published at. */
+function contentMounts(): { url: string; dir: string }[] {
+  const mounts: { url: string; dir: string }[] = [];
+  for (const { root, folder, code } of contentSets())
+    mounts.push(
+      { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
+      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
+      { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
+    );
+  return mounts.filter((m) => existsSync(m.dir));
+}
+
+const TYPES: Record<string, string> = {
+  '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.html': 'text/html', '.css': 'text/css',
+  '.json': 'application/json', '.md': 'text/markdown', '.svg': 'image/svg+xml',
+};
+
+function contentAssets(): Plugin {
+  let outDir = '';
+  return {
+    name: 'fruitcats-content-assets',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const path = decodeURIComponent((req.url ?? '').split('?')[0]);
+        const pack = packFiles()[path.replace(/^\//, '')];
+        if (pack) {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(pack);
+          return;
+        }
+        for (const m of contentMounts()) {
+          if (!path.startsWith(m.url) && path !== m.url.slice(0, -1)) continue;
+          let file = join(m.dir, path.slice(m.url.length));
+          if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
+          if (!existsSync(file)) break;
+          res.setHeader('Content-Type', TYPES[extname(file)] ?? 'application/octet-stream');
+          createReadStream(file).pipe(res);
+          return;
+        }
+        next();
+      });
+    },
+    writeBundle() {
+      for (const m of contentMounts()) cpSync(m.dir, join(outDir, m.url), { recursive: true });
+      for (const [file, text] of Object.entries(packFiles())) {
+        mkdirSync(dirname(join(outDir, file)), { recursive: true });
+        writeFileSync(join(outDir, file), text);
+      }
     },
   };
 }

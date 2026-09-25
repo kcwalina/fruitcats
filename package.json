@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "playtest"
   ],
   "scripts": {
     "dev": "npm run dev -w @fruitcats/web",
@@ -14,13 +15,24 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sim": "tsx packages/engine/scripts/simulate.ts",
-    "demo:record": "tsx tools/demo/record.mjs"
+    "demo:record": "tsx tools/demo/record.mjs",
+    "balance": "tsx playtest/runner.ts balance",
+    "balance:check": "tsx playtest/runner.ts balance --quick",
+    "deploy": "tsx playtest/deploy/cli.ts",
+    "play": "tsx playtest/runner.ts play",
+    "llm-playtest": "tsx playtest/runner.ts llm-playtest",
+    "deck-hunt": "tsx playtest/runner.ts deck-hunt",
+    "reports": "tsx playtest/runner.ts reports",
+    "nightly": "tsx playtest/runner.ts nightly",
+    "llm-compare": "tsx playtest/runner.ts llm-compare",
+    "check-set": "tsx content/check-set.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "esbuild": "^0.28.2"
   }
 }

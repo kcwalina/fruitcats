@@ -2,8 +2,10 @@ import './style.css';
 import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
+import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
-import { BASE, FAMILY_INFO, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { badgeMechanics, deckBlurb, familyInfo, heroParade, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
 import { ACCOUNTS } from './flags';
@@ -18,7 +20,7 @@ import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, DECK_RULES, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isLush, isSneaky, keywords,
+  CARDS, DECKS, DECK_RULES, MECHANICS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
   type Action, type GameState, type PlayerId, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -29,9 +31,9 @@ import {
 const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Ball">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
-for (const [name, file] of [['--img-menu-bg', 'menu-bg'], ['--img-playmat', 'playmat'], ['--img-cardback', 'cardback'],
-  ['--img-paw', 'icon-paw'], ['--img-heart', 'icon-heart']])
-  document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}.webp`, location.href).href}")`);
+for (const [name, file] of [['--img-menu-bg', 'menu-bg.webp'], ['--img-playmat', 'playmat.webp'], ['--img-cardback', 'cardback.webp'],
+  ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg']])
+  document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}`, location.href).href}")`);
 // --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible
 // area (it ignores the toolbars), which made the page scroll; the layout uses this instead.
 function updateViewportHeight() {
@@ -87,6 +89,8 @@ let screen: Screen = 'home';
 let homeNote = '';
 /** A starter deck's key, or `custom:<id>` for one of your own (see mydecks.ts). */
 let myDeck = loadChosenDeck();
+/** The deck in the middle of Solo's carousel. It's the one you play, unless it isn't finished yet. */
+let deckInView = myDeck;
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
@@ -103,7 +107,7 @@ let confirming: 'yarn' | null = null;
 let showRules = false;
 let showSettings = false;
 let flash = '';
-/** Settings > Opponent speed: Fast shortens the AI's thinking pause. Remembered in this browser. */
+/** Settings > Speed: Fast shortens the AI's thinking pause and the animations. Remembered in this browser. */
 const SPEED_KEY = 'fruitcats-speed';
 type Speed = 'normal' | 'fast';
 const SPEED_SCALE: Record<Speed, number> = { normal: 1, fast: 0.4 };
@@ -183,9 +187,28 @@ function foeRecap(s: GameState): string[] {
     .map((e) => humanize(e.text));
 }
 
-function act(action: Action) {
-  if (!game) return;
+/**
+ * Play back what the last `apply` did, starting at event `from` (see fx.ts), before the new state is
+ * drawn. False if the game was left in the meantime, so the caller shouldn't draw it.
+ */
+async function showEvents(from: number): Promise<boolean> {
+  const g = game;
+  if (!g || screen !== 'game' || !animationsEnabled()) return true;
+  const events = g.events.slice(from);
+  if (!hasBeats(events)) return true;
+  await playEvents(events, {
+    human: HUMAN,
+    cardImage: (p, id) => (p === HUMAN ? yourCardUrl : cardUrl)(id),
+    speed: speed === 'fast' ? 0.6 : 1,
+  });
+  resetLogSounds(g); // their sounds played with the animation
+  return game === g;
+}
+
+async function act(action: Action) {
+  if (!game || isAnimating()) return;
   const me = game.players[HUMAN];
+  const from = (game.events ??= []).length;
   const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
   const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
   try {
@@ -202,6 +225,7 @@ function act(action: Action) {
   selection = null;
   confirming = null;
   picks = new Set();
+  if (!(await showEvents(from))) return;
   render();
   scheduleAi();
 }
@@ -211,9 +235,11 @@ function scheduleAi() {
   if (!game || game.winner !== null || game.prompt?.player !== AI) return;
   if (tutorialBlocksAi()) return; // resumed when the balloon is closed
   const delay = aiDelayScale * (game.prompt.kind === 'pounce' || game.prompt.kind === 'plant' ? 450 : 850);
-  aiTimer = window.setTimeout(() => {
-    if (!game || game.prompt?.player !== AI) return;
+  aiTimer = window.setTimeout(async () => {
+    if (!game || game.prompt?.player !== AI || isAnimating()) return;
+    const from = (game.events ??= []).length;
     apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill, random: aiRandom }));
+    if (!(await showEvents(from))) return;
     render();
     scheduleAi();
   }, delay);
@@ -223,7 +249,7 @@ function startGame(tutorial = false) {
   // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
   // with you going first, so its balloons can talk about specific cards.
   // Against your own deck, it leads a starter with a different Hero Cat.
-  const mine = deckForKey(myDeck) ?? DECKS['zest-rush'];
+  const mine = deckForKey(myDeck) ?? Object.values(DECKS)[0];
   const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
   const theirDeck = tutorial ? 'orchard-guard'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
@@ -268,11 +294,9 @@ function startGame(tutorial = false) {
  * because a playtester kept forgetting what Zest did and iOS has no hover to put a tooltip on.
  * `test` finds the keyword in the card's rules text.
  */
-const GLOSSARY: { name: string; test: RegExp; text: string }[] = [
-  { name: 'Zest', test: /\bZest\b/, text: 'A bonus if this is not the first card you have played this round. (Citrus)' },
-  { name: 'Ripen', test: /\bRipens?\b/, text: 'At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2. (Orchard)' },
-  { name: 'Sprout', test: /\bSprout\b/, text: 'Put that many cards from the top of your deck into your Treats. (Tropical)' },
-  { name: 'Lush', test: /\bLush\b/, text: 'This bonus is on while you have 7 or more Treats. (Tropical)' },
+/** Set mechanics (Zest, Ripen, Heat…) explain themselves from their set's data; the core keywords are here. */
+const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
+const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero Cat.' },
   { name: 'Sneaky', test: /\bSneaky\b/, text: 'Can attack straight past enemy Guardians.' },
   { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero Cat, that player loses 2 Lives instead of 1.' },
@@ -304,7 +328,7 @@ function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   const k = keywords(id);
   if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Pounce cards can be played while your opponent is acting — ${name} isn't one.`;
   if (promptKind !== 'action') return `You can't play cards right now.`;
-  if (id === 'SB1-O09') return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
+  if (abilitiesOf(id).some((a) => a.pounceOnly === 'attack')) return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
   if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Treats — you have ${ready} ready. Spent Treats come back at the start of next round.`;
   const yard = s.players[HUMAN].yard;
   if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
@@ -325,6 +349,13 @@ function onClick(key: string) {
   const [kind, raw] = key.split(':');
   const value = Number(raw);
 
+  // Tapping a Hero Cat's ability line opens the card with its keywords explained: a playtester
+  // couldn't find out what the opponent's ability did (the portrait's long press wasn't discovered).
+  if (kind === 'heroinfo' && game) {
+    const p = value as PlayerId;
+    openZoom((p === HUMAN ? yourCardUrl : cardUrl)(heroKey(game, p)), heroKey(game, p));
+    return;
+  }
   if (kind === 'home') {
     homeNote = '';
     // With accounts on, your cards live in your account: signed out, these tiles open "Sign in or create account",
@@ -343,13 +374,10 @@ function onClick(key: string) {
   if (kind === 'solo') {
     // Always a normal game: the guided one is the Tutorial, which Home puts first until you've played.
     if (raw === 'play') { startGame(); return; }
-    if (raw in DIFFICULTY) difficulty = raw as Difficulty;
-    else {
-      const deckKey = key.slice('solo:'.length);   // your own decks' keys have a colon: custom:<id>
-      const deck = deckForKey(deckKey);
-      if (deck && isReady(deck)) { myDeck = deckKey; saveChosenDeck(deckKey); }
-    }
-    render();
+    if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); return; }
+    // A deck: tapping one slides it to the middle, which chooses it (see deckCarouselMounted).
+    const card = [...app.querySelectorAll<HTMLElement>('.deck-choice')].find((el) => el.dataset.click === key);
+    if (card) centerDeck(card, 'smooth');
     return;
   }
   if (kind === 'deck') {
@@ -368,6 +396,7 @@ function onClick(key: string) {
   if (kind === 'set') {
     const choice = key.split(':')[2];
     if (raw === 'sound' && (choice === 'on') !== soundEnabled()) toggleSound();
+    if (raw === 'anim') setAnimations(choice === 'on');
     if (raw === 'speed' && (choice === 'normal' || choice === 'fast')) {
       speed = choice;
       aiDelayScale = SPEED_SCALE[speed];
@@ -402,7 +431,13 @@ function onClick(key: string) {
     switch (raw) {
       case 'pass': return act({ t: 'pass' });
       case 'yarn':
-        if (confirming !== 'yarn') { confirming = 'yarn'; render(); return; }
+        // "You can only pass for the rest of this round" is only a cost when there is something
+        // else you could do. With nothing but Pass left, the warning just gets in the way.
+        if (confirming !== 'yarn' && legal.some((a) => a.t !== 'takeYarn' && a.t !== 'pass')) {
+          confirming = 'yarn';
+          render();
+          return;
+        }
         confirming = null;
         return act({ t: 'takeYarn' });
       case 'decline': return act({ t: 'decline' });
@@ -474,6 +509,7 @@ function resumeSavedGame(): boolean {
   const save = loadGame();
   if (!save) return false;
   game = save.game;
+  game.events ??= []; // saved before events existed
   tutorialGame = false;
   if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
   unitArrivals.clear();
@@ -543,8 +579,8 @@ function savedGameLabel(): string | null {
 }
 
 function renderHome(): string {
-  // Mochi, the mightiest Hero Cat, takes the centre spot.
-  const heroes = ['SB1-P01-bigcat', 'SB1-H02-bigcat', 'SB1-H03-bigcat', 'SB1-H01-bigcat', 'SB1-P03-bigcat'];
+  // The mightiest Hero Cat (Mochi) takes the centre spot.
+  const heroes = heroParade().map((id) => `${id}-bigcat`);
   const saved = savedGameLabel();
   return `
   <div class="menu home">
@@ -586,18 +622,14 @@ function renderHome(): string {
 }
 
 function renderDeckPicker(): string {
-  const deckBlurb: Record<string, string> = {
-    'zest-rush': 'Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover.',
-    'orchard-guard': 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.',
-    'mango-tango': 'Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Mochi, the mightiest Hero Cat.',
-  };
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
-  // Every deck is the same card in one carousel: the starters, then your own. One of yours still short
-  // of 50 cards shows, but can't be picked yet.
+  if (!deckForKey(deckInView)) deckInView = myDeck;
+  // Every deck is the same card in one carousel: the starters, then your own. The one in the middle is
+  // your deck; one of yours still short of 50 cards can sit there, but you can't play it yet.
   const decks = [
-    ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb[key] ?? '' })),
+    ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb(key) })),
     ...listDecks().map((d) => {
       const ready = isReady(d);
       return { key: customKey(d.id), deck: d, ready,
@@ -612,44 +644,81 @@ function renderDeckPicker(): string {
         <div class="deck-track" data-keep-scroll="decks">
           <div class="deck-choices">
             ${decks.map(({ key, deck, ready, blurb }) => `
-              <button class="deck-choice ${key.startsWith('custom:') ? 'mine' : ''} ${key === myDeck ? 'chosen' : ''}" data-click="solo:${key}" ${ready ? '' : 'disabled'}>
+              <button class="${deckChoiceClass(key, ready)}" data-click="solo:${key}" data-ready="${ready}">
                 <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
                 <span class="deck-name">${esc(deck.name)}</span>
-                <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(FAMILY_INFO[CARDS[deck.hero].family]?.mechanic ?? '')}</span>
+                <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(familyInfo(CARDS[deck.hero].family)?.mechanic ?? '')}</span>
                 <span class="deck-blurb">${blurb}</span>
               </button>`).join('')}
           </div>
         </div>
-        <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous decks">‹</button>
-        <button class="deck-arrow next" data-deck-scroll="1" aria-label="More decks">›</button>
+        <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous deck">‹</button>
+        <button class="deck-arrow next" data-deck-scroll="1" aria-label="Next deck">›</button>
       </div>
     </section>`;
 }
 
+const deckChoiceClass = (key: string, ready: boolean) => ['deck-choice', key.startsWith('custom:') && 'mine',
+  key === deckInView && 'in-view', key === deckInView && ready && 'chosen', !ready && 'unready'].filter(Boolean).join(' ');
+
+/** Slides a deck in Solo's carousel to the middle. */
+function centerDeck(card: HTMLElement, behavior: ScrollBehavior) {
+  const track = card.closest<HTMLElement>('.deck-track')!;
+  const t = track.getBoundingClientRect(), c = card.getBoundingClientRect();
+  track.scrollTo({ left: track.scrollLeft + c.left + c.width / 2 - (t.left + t.width / 2), behavior });
+}
+
 /**
- * The deck carousel, after each render: the chosen deck is slid into view if it's hidden (on arriving,
- * or after tapping one peeking at the edge), and the arrows show only where there are more decks.
+ * The deck carousel, after each render. The deck in the middle is your deck: as you swipe, whichever
+ * comes to the middle is chosen (in place, without redrawing the screen under your finger), and Play
+ * says so. The arrows show only where there are more decks.
  */
 function deckCarouselMounted(first: boolean) {
   const track = app.querySelector<HTMLElement>('.deck-track');
-  const chosen = track?.querySelector<HTMLElement>('.deck-choice.chosen');
   if (!track) return;
-  if (chosen) {
-    const t = track.getBoundingClientRect(), c = chosen.getBoundingClientRect();
-    if (c.left < t.left || c.right > t.right)
-      track.scrollTo({ left: track.scrollLeft + c.left - t.left - (t.width - c.width) / 2, behavior: first ? 'instant' : 'smooth' });
-  }
+  const cards = [...track.querySelectorAll<HTMLElement>('.deck-choice')];
+  const inView = cards.find((el) => el.classList.contains('in-view'));
+  if (first && inView) centerDeck(inView, 'instant');
   const carousel = track.parentElement!;
+  const keyOf = (el: HTMLElement) => el.dataset.click!.slice('solo:'.length);   // your own: custom:<id>
+  let frame = 0;
   const update = () => {
+    frame = 0;
     carousel.classList.toggle('at-start', track.scrollLeft <= 4);
     carousel.classList.toggle('at-end', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+    const t = track.getBoundingClientRect();
+    const off = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return Math.abs(r.left + r.width / 2 - t.left - t.width / 2); };
+    const nearest = cards.reduce((best, el) => (off(el) < off(best) ? el : best));
+    if (keyOf(nearest) === deckInView) return;
+    deckInView = keyOf(nearest);
+    if (nearest.dataset.ready === 'true') { myDeck = deckInView; saveChosenDeck(myDeck); }
+    for (const el of cards) el.className = deckChoiceClass(keyOf(el), el.dataset.ready === 'true');
+    const footer = app.querySelector('.setup-footer');
+    if (footer) footer.outerHTML = renderSoloFooter();
   };
   update();
-  track.addEventListener('scroll', update, { passive: true });
+  track.addEventListener('scroll', () => { frame ||= requestAnimationFrame(update); }, { passive: true });
+}
+
+/** Play, or Resume and New game. A new game waits until the deck in the middle is finished. */
+function renderSoloFooter(): string {
+  const saved = savedGameLabel();
+  const deck = deckForKey(deckInView);
+  const blocked = !deck || !isReady(deck);
+  const note = blocked ? 'Finish this deck in the Deck builder to play it' : '';
+  return `
+    <div class="setup-footer">
+      ${saved ? `
+      <div class="resume-buttons">
+        <button class="play-button twin" data-click="home:continue">
+          <span class="twin-name">Resume game</span><span class="twin-sub">${saved}</span></button>
+        <button class="play-button twin" data-click="solo:play" ${blocked ? 'disabled' : ''} title="${note || 'Start a new game with the deck and difficulty above; it replaces the unfinished one'}">
+          <span class="twin-name">New game</span><span class="twin-sub">${blocked ? 'Deck not finished' : `${esc(deck.name)} · ${DIFFICULTY[difficulty].label}`}</span></button>
+      </div>` : `<button class="play-button" data-click="solo:play" ${blocked ? 'disabled' : ''} title="${note}">${blocked ? 'Deck not finished' : 'Play'}</button>`}
+    </div>`;
 }
 
 function renderSolo(): string {
-  const saved = savedGameLabel();
   return `
   <div class="menu solo">
     <div class="setup-bar">
@@ -671,15 +740,7 @@ function renderSolo(): string {
         </div>
       </section>
     </div>
-    <div class="setup-footer">
-      ${saved ? `
-      <div class="resume-buttons">
-        <button class="play-button twin" data-click="home:continue">
-          <span class="twin-name">Resume game</span><span class="twin-sub">${saved}</span></button>
-        <button class="play-button twin" data-click="solo:play" title="Start a new game with the deck and difficulty above; it replaces the unfinished one">
-          <span class="twin-name">New game</span><span class="twin-sub">${esc(deckForKey(myDeck)?.name ?? '')} · ${DIFFICULTY[difficulty].label}</span></button>
-      </div>` : '<button class="play-button" data-click="solo:play">Play</button>'}
-    </div>
+    ${renderSoloFooter()}
     <p class="coming">Coming soon: ${Object.values(CARDS).filter((c) => c.preview).map((c) => esc(c.name)).join(' · ')}</p>
   </div>`;
 }
@@ -740,7 +801,8 @@ function renderPantry(s: GameState, p: PlayerId): string {
   const ready = readyTreats(s, p);
   return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
     <div class="pantry-label" title="Treats pay for your cards: a card costs the number in its top-left corner. Spent Treats ready again next round.">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
-    ${isLush(s, p) && CARDS[pl.hero.id].family === 'Tropical' ? '<div class="lush-badge" title="Lush: 7 or more Treats — Lush bonuses are on">🌴 Lush</div>' : ''}
+    ${badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
+      .map(([name, m]) => `<div class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</div>`).join('')}
     <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens}</div>
     ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
   </div>`;
@@ -759,7 +821,7 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   return `
   <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
     <div class="hero-slot">
-    <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
+    <div class="hero ${famClass(pl.hero.id)} ${attackMark(key)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
          data-click="${key}" data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
@@ -776,7 +838,8 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
           <span title="Compost (discard pile)">🍂 ${pl.compost.length}</span>
         </div>
       </div>
-      <div class="ability" title="${esc(side.text)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+      <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
+           data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
     </div>
     ${p === HUMAN && (canAbility || canAttack) ? `<div class="hero-actions">
       ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
@@ -803,13 +866,32 @@ function restingLabel(u: Unit): { tag: string; why: string } {
     : { tag: 'zzz', why: 'Already acted this round. It wakes up at the start of the next round.' };
 }
 
+/** While an attack waits on a Pounce, the attacker stays raised and its target marked (see fx.ts). */
+function attackMark(key: string): string {
+  const w = game?.window;
+  if (w?.kind !== 'attack' || w.cancelled) return '';
+  return targetKey(w.attacker) === key ? 'fx-attacker' : targetKey(w.target) === key ? 'fx-targeted' : '';
+}
+
+/** A unit's mechanic chips: each keyword that keeps a counter, with its icon and how far it has grown (🍎+1). */
+function counterChips(u: Unit, keywordList: string[]): string[] {
+  return keywordList.flatMap((name) => {
+    const counter = MECHANICS[name]?.counter;
+    if (!counter) return [];
+    const n = u.counters?.[counter.name] ?? 0;
+    const icon = MECHANICS[name].icon ?? '';
+    return [n ? `${icon}+${n}` : `${icon} ${name}`.trim()];
+  });
+}
+
 function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: Set<number>): string {
-  const k = keywords(u.id);
-  const power = unitPower(u);
-  const health = unitHealth(u) - u.damage;
+  const state = game ?? undefined;
+  const k = unitKeywords(u, state);
+  const power = unitPower(u, state);
+  const health = unitHealth(u, state) - u.damage;
   const chips = [
-    isGuardian(u) && 'Guardian', isSneaky(u) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
-    k.ripen && (u.ripe ? `🍎+${u.ripe}` : '🍎 Ripen'),
+    isGuardian(u, state) && 'Guardian', isSneaky(u, state) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
+    ...counterChips(u, k.all),
     u.toy && `🧸 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;
@@ -817,7 +899,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   const resting = restingLabel(u);
   const selected = selection?.options.some((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === u.uid);
   const cls = [
-    'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected',
+    'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected', attackMark(key),
     owner === AI && !foeUnitsBefore.has(u.uid) && 'fresh',
     owner === AI && !renderedFoeUnits.has(u.uid) && 'arriving',
     owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
@@ -1002,7 +1084,11 @@ function renderSettings(): string {
         <div class="segmented">${choice('sound', 'on', 'On', soundEnabled())}${choice('sound', 'off', 'Off', !soundEnabled())}</div>
       </div>
       <div class="setting">
-        <span class="setting-name">Opponent speed<small>How long the computer pauses before each move</small></span>
+        <span class="setting-name">Animations<small>Show attacks, damage and played cards as they happen</small></span>
+        <div class="segmented">${choice('anim', 'on', 'On', animationsEnabled())}${choice('anim', 'off', 'Off', !animationsEnabled())}</div>
+      </div>
+      <div class="setting">
+        <span class="setting-name">Speed<small>How long the computer pauses, and how fast animations play</small></span>
         <div class="segmented">${choice('speed', 'normal', 'Normal', speed === 'normal')}${choice('speed', 'fast', 'Fast', speed === 'fast')}</div>
       </div>
       <button class="primary settings-done" data-click="ui:settings">Done</button>
@@ -1022,10 +1108,7 @@ function renderRules(): string {
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each fruit family has a signature mechanic.
-        <b>Citrus — Zest:</b> a bonus if you’ve already played another card this round.
-        <b>Orchard — Ripen:</b> at the start of each round the unit gets +1/+1 (up to +2/+2).
-        <b>Tropical — Sprout N:</b> put the top N cards of your deck into your Pantry as Treats;
-        <b>Lush:</b> you have 7 or more Treats.</p>
+        ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(m.family!)} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
@@ -1056,10 +1139,11 @@ app.addEventListener('click', (event) => {
   if (suppressClick) { suppressClick = false; return; }
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-click]');
   if (el && !(el as HTMLButtonElement).disabled) onClick(el.dataset.click!);
-  // The deck carousel's arrows (for a mouse; fingers swipe): a page of decks at a time, no redraw.
+  // The deck carousel's arrows (for a mouse; fingers swipe): the next deck to the middle.
   const arrow = (event.target as HTMLElement).closest<HTMLElement>('[data-deck-scroll]');
-  const track = arrow?.parentElement?.querySelector<HTMLElement>('.deck-track');
-  if (arrow && track) track.scrollBy({ left: Number(arrow.dataset.deckScroll) * track.clientWidth * 0.8, behavior: 'smooth' });
+  const cards = [...(arrow?.parentElement?.querySelectorAll<HTMLElement>('.deck-choice') ?? [])];
+  const next = cards[cards.findIndex((el) => el.classList.contains('in-view')) + Number(arrow?.dataset.deckScroll)];
+  if (next) centerDeck(next, 'smooth');
 });
 
 // ── Drag and drop ────────────────────────────────────────────────────────────────────────────────
@@ -1159,7 +1243,7 @@ let zoomHeld = false;
 function openZoom(url: string, cardKey?: string, state?: string) {
   closeZoom();
   const text = cardKey ? zoomText(cardKey) : '';
-  const used = GLOSSARY.filter((k) => k.test.test(text));
+  const used = glossary().filter((k) => k.test.test(text));
   const cost = cardKey && !/-(kitten|bigcat)$/.test(cardKey) ? CARDS[cardKey]?.cost : undefined;
   // Treats are the game's only currency, and a playtester got through a whole game without noticing.
   const price = cost === undefined ? '' : (() => {
@@ -1248,6 +1332,7 @@ if (import.meta.env.DEV) {
       get game() { return game; }, chooseAction, legalActions, apply, render, CARDS,
       set fast(on: boolean) { aiDelayScale = on ? 0 : 1; },
       set aiDelay(scale: number) { aiDelayScale = scale; },
+      get animating() { return isAnimating(); },
     },
   });
 }

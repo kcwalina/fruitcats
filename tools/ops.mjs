@@ -215,6 +215,5 @@ async function snapshot() {
 function timing(list) {
   const ms = list.map((e) => e.ms).filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
   const at = (q) => (ms.length ? ms[Math.min(ms.length - 1, Math.floor(q * ms.length))] : null);
-  return { n: ms.length, p50: at(0.5), p95: at(0.95), slow: ms.filter((x) => x > SLOW_MS).length };
+  return { n: ms.length, p50: at(0.5), p95: at(0.95), slow: ms.filter((x) => x > 2000).length };
 }
-const SLOW_MS = 2000;

@@ -514,3 +514,11 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .walk textarea { margin: 8px 0; }
 @media (max-width: 900px) { .walk { grid-template-columns: 1fr; } }
 .wz-next { white-space: normal; text-align: center; line-height: 1.3; }
+
+/* The Studio's terms, and invite links */
+.terms-text { background: var(--paper); border-radius: 12px; padding: 6px 22px 12px; margin: 10px 0 18px; max-height: 46vh; overflow: auto; }
+.terms-text h3 { margin-top: 14px; }
+.terms-text ul { padding-left: 20px; }
+.big-check { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+.big-check input { width: 20px; height: 20px; }
+.invite-new { margin: 10px 0 4px; }

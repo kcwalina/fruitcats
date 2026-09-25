@@ -1,7 +1,7 @@
 // Signing in to the Studio with a Via Mochi account: the same account players have, by email and a code, no
 // password (src/auth.ts). A new artist creates their account here. In development (?dev), pick a pretend account.
 
-import { AuthError, TERMS_VERSION, accountExists, invitesRequired, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
+import { AuthError, accountExists, invitesRequired, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
 import { esc, BASE } from '../ui';
 import { DEV, DEV_ACCOUNTS, setDevUser } from './api';
 
@@ -11,7 +11,6 @@ let step: Step = 'email';
 let email = '';
 let displayName = '';
 let birthYear = '';
-let agreed = false;
 let code = '';
 let pending: Pending | null = null;
 let busy = false;
@@ -46,11 +45,8 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
     body = `<p class="si-small">New to Via Mochi: <b>${esc(email)}</b>. <button class="link" data-click="si:back">Use a different email</button></p>
       <label class="field">Your name <small>What we’ll see on your comments and pictures</small>
         <input data-in="name" maxlength="40" autocomplete="name" value="${esc(displayName)}" ${busy ? 'disabled' : ''}></label>
-      <label class="field">Birth year <small>Accounts are for ages ${MIN_AGE} and up</small>
+      <label class="field">Birth year <small>Asked for every Via Mochi account</small>
         <input data-in="year" inputmode="numeric" maxlength="4" placeholder="e.g. 1990" value="${esc(birthYear)}" ${busy ? 'disabled' : ''}></label>
-      <label class="check"><input type="checkbox" data-in="agree" ${agreed ? 'checked' : ''} ${busy ? 'disabled' : ''}>
-        <span>I agree to the <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a> and have read the
-        <a href="${BASE}privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span></label>
       <button class="btn primary wide" data-click="si:details" ${busy ? 'disabled' : ''}>${busy ? 'Sending your code…' : 'Email me a code'}</button>`;
   } else {
     const length = pending?.codeLength ?? 8;
@@ -82,7 +78,6 @@ export function signInInput(el: HTMLInputElement, done: () => void, render: () =
   if (f === 'email') email = el.value.trim();
   else if (f === 'name') displayName = el.value;
   else if (f === 'year') birthYear = el.value.replace(/\D/g, '');
-  else if (f === 'agree') agreed = el.checked;
   else if (f === 'invite') invite = el.value;
   else if (f === 'code') {
     code = el.value.replace(/\D/g, '');
@@ -127,11 +122,9 @@ export async function signInClick(action: string, done: () => void, render: () =
     if (!displayName.trim()) error = 'Please enter your name.';
     else if (!(year >= 1900 && year <= now)) error = 'Please enter your birth year, like 1990.';
     else if (now - year < MIN_AGE) error = `Sorry, Via Mochi accounts are for ages ${MIN_AGE} and up.`;
-    else if (!agreed) error = 'Please agree to the Terms of Use.';
     if (error) { render(); return; }
     await work(async () => {
       pending = await startSignUp(email, displayName.trim(), year);
-      try { localStorage.setItem('viamochi-terms', TERMS_VERSION); } catch { /* recorded server-side later */ }
       code = ''; step = 'code';
     });
   } else if (action === 'code') {

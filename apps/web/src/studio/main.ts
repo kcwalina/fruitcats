@@ -19,6 +19,7 @@ import {
 } from './brief';
 import { DEVICES, LOCK_CLOCK, announcementPreview, cardPreview, finishesOf, gamePreview, pawtraitPreview, wallpaper } from './previews';
 import { renderSignIn, signInClick, signInEnter, signInInput } from './signin';
+import { STUDIO_TERMS, STUDIO_TERMS_VERSION } from './terms';
 import './studio.css';
 
 interface SetEntry { set: string; code: string; name: string; status: string; folder: string }
@@ -66,6 +67,8 @@ const S = {
   unreachable: false,
   /** Which comment the walkthrough shows. */
   commentAt: 0,
+  /** The terms screen: the "18 or older" box. */
+  adult: false,
   assignEmail: '',
   /** The picture just sent, for the wizard's “sent” line. */
   justSent: '',
@@ -326,6 +329,7 @@ function page(): string {
   if (!S.me && !S.guest) {
     return renderSignIn(!!S.invite, S.error) + (S.invite ? '' : `<p class="si-guest"><button class="link" data-click="guest">Look around without signing in</button></p>`);
   }
+  if (S.me && S.me.role !== 'agent' && S.me.terms !== STUDIO_TERMS_VERSION) return topBar() + termsPage();
   const r = S.route;
   const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
     : r.page === 'all' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
@@ -383,6 +387,20 @@ function setsPage(): string {
 }
 
 // ── A set's home ─────────────────────────────────────────────────────────────────────────────────
+
+/** The Studio's own terms, accepted once per account (not the game's Terms of Use). */
+function termsPage(): string {
+  return `<main class="wizard"><section class="wz-card terms">
+    <small>Before you start</small>
+    <h1>The Studio’s terms</h1>
+    <p class="wz-lead">A short page on how the Studio treats your pictures and your account. These are the Studio’s own
+      terms, separate from the game’s.</p>
+    <div class="terms-text">${STUDIO_TERMS}</div>
+    <label class="check big-check"><input type="checkbox" data-in="adult" ${S.adult ? 'checked' : ''}><span>I’m 18 or older, and I accept these terms.</span></label>
+    ${S.error ? `<p class="error">${esc(S.error)}</p>` : ''}
+    <button class="btn primary big" data-click="acceptterms" ${S.adult && !S.busy ? '' : 'disabled'}>Continue</button>
+  </section></main>`;
+}
 
 /** A project's home for a reviewer. (An artist's home is the wizard.) */
 function homePage(code: string): string {
@@ -572,13 +590,24 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
     ${S.assignError ? `<p class="error">${esc(S.assignError)}</p>` : ''}`;
   const head = homeHead(code, brief, null, approved, total);
 
+  const invites = S.roster?.invites ?? [];
+  const inviteBox = `<div class="invite-new">
+      <button class="btn primary" data-click="invite:${code}" ${S.busy ? 'disabled' : ''}>Make an invite link</button>
+      ${S.newInvite ? `<div class="invite-link"><code>${esc(S.newInvite)}</code><button class="btn small" data-click="copy">Copy</button></div>
+        <p class="muted small">Send this link to the artist. It works once, for whoever opens it first, and lasts 30 days.</p>` : ''}
+      ${invites.length && !S.newInvite ? `<p class="muted small">${invites.length} invite link${invites.length === 1 ? '' : 's'} not used yet.</p>` : ''}
+    </div>`;
+
   // A new project: the one thing to do is choose its artist.
   if (!artists.length) {
     return `<main class="home">${head}
-      <section class="panel attention"><h2>Assign an artist</h2>
-        <p>This is the only thing to do for now. Type the email of the game account of the artist who will make the pictures for ${esc(brief.name)}.
-          We check that the account exists. They then open <b>${esc(`${location.origin}${location.pathname}`)}</b>, sign in, and start.</p>
-        ${assign}</section></main>`;
+      <section class="panel attention"><h2>Invite an artist</h2>
+        <p>This is the only thing to do for now. Make an invite link and send it to the artist. When they open it, they
+          sign in, or create an account in a minute, and this project opens for them. If they already have a Fruitcats
+          account, they simply sign in with it.</p>
+        ${inviteBox}
+        <details class="more" ${S.assignError ? 'open' : ''}><summary>Or assign someone who already has an account, by email</summary>${assign}</details>
+      </section></main>`;
   }
 
   const who = artists.map((a) => esc(a.name)).join(' and ');
@@ -599,7 +628,7 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
   return `<main class="home">${head}${task}
     <section class="panel quiet"><h2>Artist</h2>${artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b>${a.email ? `<span>${esc(a.email)}</span>` : ''}
         <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('')}
-</section>
+      <details class="more"><summary>Invite another artist</summary>${inviteBox}<p class="muted small">Or by email:</p>${assign}</details></section>
     </main>`;
 }
 
@@ -947,6 +976,11 @@ async function act(action: string) {
       if (S.route.page !== 'sets') S.reviewMode.set(S.route.code, S.asArtist ? 'artist' : 'review');
       render(); window.scrollTo(0, 0); return;
     }
+    case 'acceptterms':
+      if (!S.adult) return;
+      await work(async () => { const r = await api.acceptTerms(STUDIO_TERMS_VERSION); if (S.me) S.me.terms = r.terms; });
+      await onRoute();
+      return;
     case 'retry': S.error = ''; await onRoute(); return;
     case 'recheck': await enter(); await onRoute(); return;
     case 'dismiss': S.error = ''; render(); return;
@@ -1064,6 +1098,7 @@ root.addEventListener('input', (e) => {
   else if (f === 'note') S.uploadNote = el.value;
   else if (f === 'invitenote') S.inviteNote = el.value;
   else if (f === 'assignemail') { S.assignEmail = el.value; S.assignError = ''; }
+  else if (f === 'adult') { S.adult = el.checked; render(); }
   else if (S.suggesting && f === 'svalue') S.suggesting.value = el.value;
   else if (S.suggesting && f === 'swhy') S.suggesting.why = el.value;
 });

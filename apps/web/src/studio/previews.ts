@@ -14,12 +14,15 @@ import type { BriefPicture } from './brief';
 /** The card's picture window, as fractions of the 750 × 1050 card (compose_cards.py ART_BOX). */
 const ART = { left: 42 / 750, top: 138 / 1050, width: 666 / 750, height: 444 / 1050 };
 
-/** The frames this picture's card is sold in: the standard print, and its paid finish. */
+/**
+ * The prints this image's card appears in: the standard print, and its paid finish. A card designed as a Signature
+ * card appears only in its Signature print, so that's all the Studio shows.
+ */
 export function finishesOf(p: BriefPicture): { finish: string; label: string }[] {
+  if (p.tier === 'signature') return [{ finish: 'signature', label: 'Signature' }];
   const list = [{ finish: 'standard', label: 'Standard' }];
   if (p.tier === 'foil') list.push({ finish: 'foil', label: 'Foil' });
   if (p.tier === 'gold') list.push({ finish: 'gold', label: 'Gold' });
-  if (p.tier === 'signature') list.push({ finish: 'signature', label: 'Signature' });
   return list;
 }
 
@@ -76,7 +79,7 @@ export function gamePreview(p: BriefPicture, art: string | null, code: string, k
     : `<div class="pv-unit fam-${family}" style="height:${height}px;width:${height * 0.76}px"><div class="pv-tile-art" style="${bg}"></div>
         <div class="pv-uname">${esc(name)}</div>
         ${power !== undefined ? `<div class="pv-pow">${power}</div>` : ''}${health !== undefined ? `<div class="pv-hp">${health}</div>` : ''}</div>`;
-  const hand = (w: number) => `<div class="pv-hand">${cardPreview(code, key, 'standard', art, w)}</div>`;
+  const hand = (w: number) => `<div class="pv-hand">${cardPreview(code, key, p.tier === 'signature' ? 'signature' : 'standard', art, w)}</div>`;
   const shapeName = shape === 'hero' ? 'the Hero Cat’s tile' : 'a unit on the board';
   return `<div class="pv-game">
     <figure><div class="pv-stage">${hand(92)}</div><figcaption>In a player’s hand, on a phone</figcaption></figure>
@@ -112,7 +115,7 @@ const wallpapers = new Map<string, Promise<string>>();
 /** A wallpaper made by the game's own wallpaper maker, as an image address. Made once per picture and device. */
 export function wallpaper(p: BriefPicture, art: string, artId: string, device: Device): Promise<string> | null {
   if (!p.card || !CARDS[p.card]) return null;
-  const finish: Finish = p.tier === 'foil' ? 'foil' : p.tier === 'gold' ? 'gold' : 'standard';
+  const finish: Finish = p.tier === 'foil' ? 'foil' : p.tier === 'gold' ? 'gold' : p.tier === 'signature' ? 'signature' : 'standard';
   const id = `${artId}|${device}|${finish}`;
   let url = wallpapers.get(id);
   if (!url) {

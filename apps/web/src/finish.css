@@ -85,3 +85,7 @@ img.fin-frame.fin-prismatic {
   animation: prism-spin 5s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) { img.fin-frame.fin-prismatic { animation: none; } }
+
+/* Signature: the black stone with glowing cracks, a slow ember glow (a Signature card has no other print). */
+.finish-signature { box-shadow: 0 0 16px rgba(255, 120, 40, 0.5); }
+.finish-signature::before { opacity: 0.35; }

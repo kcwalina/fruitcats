@@ -1179,3 +1179,8 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
 .pf-line-dots i:nth-child(2) { animation-delay: 0.2s; }
 .pf-line-dots i:nth-child(3) { animation-delay: 0.4s; }
 @keyframes pf-dot { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+/* Phones: the pace buttons go under their name, rather than squeezing it into a narrow column. */
+@media (max-width: 640px) {
+  .pf-option:has(.segmented) { flex-direction: column; align-items: stretch; }
+  .pf-option .segmented button { flex: 1; }
+}

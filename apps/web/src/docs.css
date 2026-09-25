@@ -122,11 +122,14 @@ a.page-title:hover { color: #fff; }
 }
 .doc h3 { font-size: 21px; margin: 28px 0 8px; }
 /* Every heading carries a "#" you can tap to copy a link straight to that section. */
+/* A round button with a chain-link icon, always showing (phones have no hover): tap it to copy the section's link. */
 .doc .anchor {
-  color: var(--gold); text-decoration: none; font-weight: 700; margin-left: 8px; opacity: 0.5;
-  font-size: 0.7em; vertical-align: 0.1em;
+  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-left: 10px;
+  vertical-align: middle; border-radius: 50%; text-decoration: none; color: #9a6a1c;
+  background: #fff4dc; border: 2px solid #ecd3a4; box-shadow: 0 1px 3px rgba(90, 55, 20, 0.15);
 }
-.doc .anchor:hover, .doc .anchor:focus { opacity: 1; }
+.doc .anchor:hover, .doc .anchor:focus-visible { color: #fff; background: #d99a2b; border-color: #d99a2b; }
+.doc .anchor svg { display: block; }
 .doc h1 .anchor { display: none; }
 .copied {
   margin-left: 8px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; vertical-align: 0.15em;
@@ -186,3 +189,15 @@ a.page-title:hover { color: #fff; }
 }
 .doc .fold[open] > summary { border-bottom: 1px dashed var(--gold); }
 .doc .fold > *:not(summary) { padding: 0 18px; }
+
+/* Step-by-step screenshots (docs/friends.md): phone screens side by side, each with a numbered caption. More pictures,
+   less reading. Two across on a phone, as many as fit on a wide screen. */
+.doc .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px; margin: 18px 0 22px; }
+@media (max-width: 480px) { .doc .steps { grid-template-columns: 1fr 1fr; gap: 12px; } }
+.doc .steps figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.doc .steps img { margin: 0; width: 100%; border-radius: 18px; border: 3px solid #fff; box-shadow: 0 3px 12px rgba(90, 55, 20, 0.25); }
+.doc .steps figcaption { font-size: 14px; line-height: 1.4; }
+.doc .steps figcaption > b:first-child {
+  display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 4px; border-radius: 50%;
+  background: #d99a2b; color: #fff; font: 700 14px Fredoka, Nunito, sans-serif; vertical-align: 1px;
+}

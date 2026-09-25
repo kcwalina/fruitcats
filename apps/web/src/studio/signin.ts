@@ -24,7 +24,7 @@ let inviteThenSignIn = false;
 
 const MIN_AGE = 13;
 
-export function renderSignIn(inviting: boolean): string {
+export function renderSignIn(inviting: boolean, notice = ''): string {
   const intro = inviting
     ? '<p class="si-lead">You’ve been invited to draw for Fruitcats. Sign in, or create your account, to open your set.</p>'
     : '<p class="si-lead">Where artists draw for Fruitcats: what each picture needs, and your pictures on their cards.</p>';
@@ -72,7 +72,7 @@ export function renderSignIn(inviting: boolean): string {
       <h1>${inviting ? 'Welcome!' : 'Sign in'}</h1>
       ${intro}
       ${body}
-      <p class="si-error" role="alert">${esc(error)}</p>
+      <p class="si-error" role="alert">${esc(error || notice)}</p>
     </div>
   </main>`;
 }

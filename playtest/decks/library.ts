@@ -53,7 +53,7 @@ export function brokenLibraryDecks(): { key: string; name: string; problem: stri
 
 /** A key from a deck's name: lowercase words joined by dashes, made unique in the library. */
 export function libraryKey(name: string): string {
-  const base = name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'deck';
+  const base = name.toLowerCase().normalize('NFKD').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'deck';
   const taken = new Set([...Object.keys(allDecks()), ...Object.keys(DECKS), ...Object.keys(prototypeDecks())]);
   let key = base;
   for (let i = 2; taken.has(key); i++) key = `${base}-${i}`;

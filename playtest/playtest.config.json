@@ -34,6 +34,7 @@
     "fireworks": {
       "baseUrl": "https://api.fireworks.ai/inference/v1",
       "apiKeyEnv": "FIREWORKS_API_KEY",
+      "secretName": "fireworks",
       "model": "accounts/fireworks/models/gpt-oss-120b",
       "extraBody": {
         "reasoning_effort": "low"
@@ -42,6 +43,18 @@
         "input": 0.15,
         "cachedInput": 0.015,
         "output": 0.6
+      }
+    },
+    "fireworks-k3": {
+      "about": "Kimi K3 on Fireworks, for the rare deck build that needs a frontier model. Never used by the nightly or the dashboard. Key: FIREWORKS_API_KEY or mworks' fireworks secret.",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "apiKeyEnv": "FIREWORKS_API_KEY",
+      "secretName": "fireworks",
+      "model": "accounts/fireworks/models/kimi-k3",
+      "pricesPerMillion": {
+        "input": 0.95,
+        "cachedInput": 0.19,
+        "output": 4.0
       }
     },
     "azure": {

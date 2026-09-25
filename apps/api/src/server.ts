@@ -14,11 +14,16 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { TableClient, TableServiceClient } from '@azure/data-tables';
 import { DefaultAzureCredential } from '@azure/identity';
-import { CARDS } from '@fruitcats/engine';
+import { CARDS, registerSet } from '@fruitcats/engine';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { loadContent } from '../../../content';
 import { log } from './logs';
 import { azureStore } from './studio/store';
 import { studio } from './studio/studio';
+
+// The engine has no cards of its own: without the sets, every synced deck failed validation and was dropped. Every set,
+// prototypes too, so a deck holding cards from a set that isn't released yet is kept as well.
+loadContent(registerSet, { prototypes: true });
 
 const ID_SERVICE = process.env.VIAMOCHI_ID ?? 'https://viamochi-id.azurewebsites.net';
 const TABLES = process.env.TABLE_ENDPOINT ?? 'https://fruitcatsdata.table.core.windows.net';

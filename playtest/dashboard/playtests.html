@@ -171,7 +171,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
             <option value="llm-playtest">LLM playtest: gpt-oss plays the bot and reports</option>
             <option value="balance">Bot gauntlet: starters, random and changed decks</option>
             <option value="deck-hunt">Deck hunt: the LLM designs decks to break the game</option>
-            <option value="deck-build">Build a deck: the LLM builds one for a goal</option>
+            <option value="deck-build">Build a deck: Kimi K3 builds one for a goal (up to $1)</option>
             <option value="nightly">Nightly run, now</option>
           </select>
         </div>
@@ -411,7 +411,7 @@ function renderOptions() {
     'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'Each in turn'], ...meta.personas.map((p) => [p.key, p.name])])}</div>
       <div class="row">${groupSelect('deck', 'LLM plays', groups(['', [['', 'Every matchup, in turn']]], ['Starter decks', starterOptions()], ['Custom decks', customOptions()]))}${groupSelect('vs', 'Against', groups(['', [['starters', 'Every starter deck']]], ['Starter decks', starterOptions().slice().reverse()], ['Custom decks', customOptions()]))}</div>`,
     balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}${groupSelect('extra', 'Also against the starters', groups(['', [['', 'No other decks'], ['library', 'Every library deck']]], ['Custom decks', customOptions()]))}</div>`,
-    'deck-build': `<div class="field"><label for="goal">What the deck is for</label><textarea id="goal" rows="2" maxlength="200" required placeholder="e.g. an aggressive Pepper deck, or a fun deck for a beginner"></textarea><span class="hint">Letters, numbers and plain punctuation.</span></div>
+    'deck-build': `<div class="field"><label for="goal">What the deck is for</label><textarea id="goal" rows="2" maxlength="200" required placeholder="e.g. an aggressive Pepper deck, or a fun deck for a beginner"></textarea><span class="hint">Letters, numbers and plain punctuation. Built on the laptop with Kimi K3 on Fireworks (about $0.10–0.40, never more than $1); the good ones go in the deck library.</span></div>
       <div class="row">${select('hero', 'Hero Cat', [['', 'The LLM chooses'], ...(meta.heroes ?? []).map((h) => [h.id, `${h.name} (${h.family})`])])}${groupSelect('bvs', 'Tested against', groups(['', [['starters', 'Every starter deck']]], ['Starter decks', starterOptions()], ['Custom decks', customOptions()]))}</div>
       <div class="row">${num('candidates', 'Decks a round', 3, 1, 6)}${num('rounds', 'Rounds', 2, 1, 4)}</div>`,
     'deck-hunt': `<div class="row">${num('ideas', 'Deck ideas', 6, 1, 12)}</div>`,
@@ -441,7 +441,7 @@ function buildRequest() {
   if (kind === 'deck-build') {
     const goal = safeText($('goal').value), hero = $('hero').value, vs = $('bvs').value;
     return {
-      args: `--provider pc2024 --candidates ${n('candidates')} --rounds ${n('rounds')} --vs ${vs}${hero ? ` --hero ${hero}` : ''} --goal ${goal}`,
+      args: `--provider fireworks-k3 --max-usd 1 --candidates ${n('candidates')} --rounds ${n('rounds')} --vs ${vs}${hero ? ` --hero ${hero}` : ''} --goal ${goal}`,
       label: `Build a deck: ${goal}${vs === 'starters' ? '' : `, against ${deckName(vs)}`}`,
       invalid: goal.length < 3 ? 'Say what the deck is for.' : '',
     };

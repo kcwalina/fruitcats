@@ -522,3 +522,6 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .big-check { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
 .big-check input { width: 20px; height: 20px; }
 .invite-new { margin: 10px 0 4px; }
+.invite-ready { display: flex; gap: 12px; align-items: center; background: var(--paper); border: 2px solid #f6c79f; border-radius: 12px; padding: 12px 14px; margin: 10px 0 6px; }
+.invite-ready code { flex: 1; font-size: 14px; word-break: break-all; user-select: all; }
+.invite-new { display: flex; gap: 12px; align-items: center; }

@@ -153,7 +153,14 @@ async function onRoute() {
     await loadSet(S.route.code);
     chooseMode(S.route.code);
     if (S.me?.role === 'owner') {
-      try { S.roster = await api.artists(S.route.code); } catch (e) { S.error = api.explain(e); }
+      try {
+        const code = S.route.code;
+        S.roster = await api.artists(code);
+        if (!S.roster.artists.length) {
+          if (!S.roster.invites.length) { await api.invite(code, ''); S.roster = await api.artists(code); }
+          S.newInvite = S.roster.invites[0]?.url ?? '';
+        }
+      } catch (e) { S.error = api.explain(e); }
     }
   }
   render();
@@ -329,7 +336,7 @@ function page(): string {
   if (!S.me && !S.guest) {
     return renderSignIn(!!S.invite, S.error) + (S.invite ? '' : `<p class="si-guest"><button class="link" data-click="guest">Look around without signing in</button></p>`);
   }
-  if (S.me && S.me.role !== 'agent' && S.me.terms !== STUDIO_TERMS_VERSION) return topBar() + termsPage();
+  if (S.me?.role === 'artist' && S.me.terms !== STUDIO_TERMS_VERSION) return topBar() + termsPage();
   const r = S.route;
   const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
     : r.page === 'all' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
@@ -591,19 +598,19 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
   const head = homeHead(code, brief, null, approved, total);
 
   const invites = S.roster?.invites ?? [];
-  const inviteBox = `<div class="invite-new">
-      <button class="btn primary" data-click="invite:${code}" ${S.busy ? 'disabled' : ''}>Make an invite link</button>
-      ${S.newInvite ? `<div class="invite-link"><code>${esc(S.newInvite)}</code><button class="btn small" data-click="copy">Copy</button></div>
-        <p class="muted small">Send this link to the artist. It works once, for whoever opens it first, and lasts 30 days.</p>` : ''}
-      ${invites.length && !S.newInvite ? `<p class="muted small">${invites.length} invite link${invites.length === 1 ? '' : 's'} not used yet.</p>` : ''}
-    </div>`;
+  const inviteBox = S.newInvite
+    ? `<div class="invite-ready"><code>${esc(S.newInvite)}</code><button class="btn primary" data-click="copy">Copy the link</button></div>
+      <p class="muted small">Send it to the artist by email or message. It works once, for whoever opens it first, and lasts 30 days.
+        <button class="link" data-click="invite:${code}">Make a new link</button></p>`
+    : `<div class="invite-new"><button class="btn primary" data-click="invite:${code}" ${S.busy ? 'disabled' : ''}>Make an invite link</button>
+      ${invites.length ? `<span class="muted small">${invites.length} link${invites.length === 1 ? '' : 's'} not used yet.</span>` : ''}</div>`;
 
   // A new project: the one thing to do is choose its artist.
   if (!artists.length) {
     return `<main class="home">${head}
       <section class="panel attention"><h2>Invite an artist</h2>
-        <p>This is the only thing to do for now. Make an invite link and send it to the artist. When they open it, they
-          sign in, or create an account in a minute, and this project opens for them. If they already have a Fruitcats
+        <p>This is the only thing to do for now: copy this link and send it to the artist. When they open it, they sign
+          in, or create an account in a minute, and this project opens for them. If they already have a Fruitcats
           account, they simply sign in with it.</p>
         ${inviteBox}
         <details class="more" ${S.assignError ? 'open' : ''}><summary>Or assign someone who already has an account, by email</summary>${assign}</details>
@@ -1030,7 +1037,7 @@ async function act(action: string) {
     }
     case 'decide': await work(() => api.decide(args[0], args[1], args[2])); await refresh(args[0]); render(); return;
     case 'invite': await work(async () => { S.newInvite = (await api.invite(args[0], S.inviteNote.trim())).url; S.inviteNote = ''; S.roster = await api.artists(args[0]); }); return;
-    case 'copy': try { await navigator.clipboard.writeText(S.newInvite); flash('Copied.'); } catch { flash('Couldn’t copy: select the link instead.'); } return;
+    case 'copy': try { await navigator.clipboard.writeText(S.newInvite); flash('Link copied. Paste it into an email or a message to the artist.'); } catch { flash('Couldn’t copy: select the link and copy it.'); } return;
     case 'assign': {
       const email = S.assignEmail.trim();
       if (!email) { S.assignError = 'Type the artist’s email first.'; render(); return; }

@@ -166,10 +166,11 @@ export async function useInvite(code: string): Promise<void> {
 }
 
 /** New account: its details go in first, then the code confirms the email. */
-export async function startSignUp(email: string, displayName: string, birthYear: number): Promise<Pending> {
+export async function startSignUp(email: string, displayName: string, birthYear?: number): Promise<Pending> {
+  // The birth year is optional (the Artist Studio doesn't ask it; the game asks at its Terms step when missing).
   const started = await entraPost('signup/v1.0/start', {
     username: email, challenge_type: 'oob redirect', invite_code: inviteCode,
-    attributes: JSON.stringify({ displayName, [BIRTH_YEAR]: String(birthYear) }),
+    attributes: JSON.stringify({ displayName, ...(birthYear ? { [BIRTH_YEAR]: String(birthYear) } : {}) }),
   });
   return challenge('signUp', email, 'signup/v1.0/challenge', started.continuation_token);
 }

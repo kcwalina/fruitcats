@@ -104,7 +104,8 @@ function noToken(): AuthError {
 /** Is there already an account for this email? Sends nothing. */
 export async function accountExists(email: string): Promise<boolean> {
   try {
-    await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
+    const started = await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
+    initiated = { email, token: started.continuation_token, at: Date.now() };
     return true;
   } catch (e) {
     if (e instanceof AuthError && e.code === 'user_not_found') return false;
@@ -112,10 +113,18 @@ export async function accountExists(email: string): Promise<boolean> {
   }
 }
 
+/**
+ * The sign-in `accountExists` just started, so emailing the code doesn't ask Entra again (each call is a round trip
+ * to Entra through our service: about half a second, more when either is busy).
+ */
+let initiated: { email: string; token: string; at: number } | null = null;
+
 /** Existing account: email the code. */
 export async function startSignIn(email: string): Promise<Pending> {
-  const started = await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' });
-  return challenge('signIn', email, 'oauth2/v2.0/challenge', started.continuation_token);
+  const fresh = initiated?.email === email && Date.now() - initiated.at < 5 * 60_000 ? initiated.token : null;
+  initiated = null;
+  const token = fresh ?? (await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' })).continuation_token;
+  return challenge('signIn', email, 'oauth2/v2.0/challenge', token);
 }
 
 // ── Invite codes (playtest) ─────────────────────────────────────────────────────────────────────

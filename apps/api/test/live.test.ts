@@ -640,6 +640,22 @@ describe('friend codes', () => {
     expect(pippin.last('looked')!.person).toBeNull();
   });
 
+  it('still knows a code sent by text after its phone has left, until it runs out', async () => {
+    const sam = await connect(A);
+    sam.send({ t: 'code', code: 'K7M4Q2' });
+    await flush();
+    sam.drop();
+    await flush();
+    const pippin = await connect(B);
+    pippin.send({ t: 'lookup', code: 'K7M-4Q2' });
+    await flush();
+    expect(pippin.last('looked')!.person).toMatchObject({ name: 'Sam' });
+    vi.advanceTimersByTime(16 * 60_000);
+    pippin.send({ t: 'lookup', code: 'K7M-4Q2' });
+    await flush();
+    expect(pippin.last('looked')!.person).toBeNull();
+  });
+
   it('won’t let codes be guessed by trying them all', async () => {
     const pippin = await connect(B);
     for (let i = 0; i < 15; i++) pippin.send({ t: 'lookup', code: `AAAA${String(i).padStart(2, '0')}` });

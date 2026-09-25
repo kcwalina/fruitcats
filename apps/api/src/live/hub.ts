@@ -167,6 +167,7 @@ export function createHub(deps: HubDeps) {
     const now = Date.now();
     for (const [a, h] of here) if (now - h.at > HERE_MS) { here.delete(a); void deps.store.seen(a, new Date(h.at).toISOString()).catch(() => {}); }
     for (const [a, w] of waiting) if (now - w.asked > WAITING_KEPT_MS) waiting.delete(a);
+    for (const [code, v] of codes) if (v.expires < now) codes.delete(code);
     for (const [a, until] of letIn) if (until < now) letIn.delete(a);
     for (const c of conns.values()) {
       if (now - c.active < IDLE_CONNECTION_MS || inGame(c.account!)) continue;
@@ -458,7 +459,7 @@ export function createHub(deps: HubDeps) {
     void deps.store.seen(me, new Date().toISOString()).catch(() => {});
     seenCache.delete(me);
     for (const ch of [...challenges.values()]) if (ch.from === me || ch.to === me) endChallenge(ch, 'offline');
-    for (const [code, v] of codes) if (v.account === me) codes.delete(code);
+    // A code shown stays known for its 15 minutes: it may have been sent by text, to a friend who types it later.
     const m = matches.get(matchOf.get(me) ?? '');
     if (m) m.dropped(m.seatOf(me)!);
     announce(me);

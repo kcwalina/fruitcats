@@ -325,7 +325,8 @@ function renderAdd(): string {
   if (add.kind === 'menu') {
     body = `
       <h2 id="pf-add-title">Add a friend</h2>
-      <p class="account-section-note">Together? One of you shows a code, the other scans it.</p>
+      <p class="account-section-note"><b>Together?</b> One of you shows a code, the other scans it.<br>
+        <b>Apart?</b> Show your code and send it by text; your friend types it in.</p>
       <div class="pf-add-choices">
         <button class="primary" data-click="pf:show">Show my code</button>
         ${canScan() ? '<button class="primary" data-click="pf:scan">Scan a code</button>' : ''}
@@ -339,7 +340,12 @@ function renderAdd(): string {
       <h2 id="pf-add-title">Your friend code</h2>
       <div class="pf-qr">${qrSvg(add.code)}</div>
       <p class="friend-code" aria-label="Your friend code">${esc(add.code.slice(0, 3))}-${esc(add.code.slice(3))}</p>
-      <p class="account-section-note">Your friend scans this in Fruitcats (Play a friend → Add a friend → Scan a code), or types it. It works once.</p>
+      <p class="account-section-note">Together: your friend scans the QR code. Apart: send them the code, and they type it
+        in (Friend → Add a friend). It works once, for 15 minutes.</p>
+      <div class="pf-add-choices">
+        ${canShare() ? '<button class="primary" data-click="pf:sharecode">Send the code</button>' : ''}
+        <button ${canShare() ? '' : 'class="primary"'} data-click="pf:copycode">Copy the code</button>
+      </div>
       <p class="pf-note" role="status">${esc(note)}</p>`;
   } else if (add.kind === 'scan') {
     body = `
@@ -434,9 +440,30 @@ async function showCode() {
   host?.render();
 }
 
+/** The phone's own share sheet (Messages, WhatsApp, …): phones have it; most computers don't. */
+const canShare = () => typeof navigator.share === 'function';
+
+/** What's sent: the code and where to type it. No link: the code is the whole invitation. */
+const shareText = (code: string) =>
+  `Add me as a friend in Fruitcats! My friend code is ${code.slice(0, 3)}-${code.slice(3)}. `
+  + 'In the game: Friend → Add a friend → type the code. It works for 15 minutes. (Fruitcats: fruitcats.viamochi.com)';
+
+async function shareCode(how: 'share' | 'copy') {
+  if (add.kind !== 'show') return;
+  const text = shareText(add.code);
+  try {
+    if (how === 'share') { await navigator.share({ text }); note = ''; }
+    else { await navigator.clipboard.writeText(text); note = 'Copied: paste it into a message to your friend.'; }
+  } catch (e) {
+    // Closing the share sheet isn't an error; a clipboard that won't copy is.
+    if ((e as Error).name !== 'AbortError') note = `Couldn’t ${how === 'share' ? 'share' : 'copy'} it: read the code out instead.`;
+  }
+  host?.render();
+}
+
+/** The code sheet closed. The code itself stays valid (it may have been sent by text), so the API keeps it too. */
 function stopShowing() {
   window.clearTimeout(codeTimer);
-  if (add.kind === 'show') send({ t: 'code', code: null });
   void wakeLock?.release().catch(() => {});
   wakeLock = null;
 }
@@ -615,6 +642,8 @@ export function friendsClick(action: string, h: FriendsHost): void {
     case 'rejoin': if (live.match) send({ t: 'rejoin', match: live.match }); return;
     case 'add': add = { kind: 'menu' }; note = ''; typed = ''; adding = true; break;
     case 'show': void showCode(); return;
+    case 'sharecode': void shareCode('share'); return;
+    case 'copycode': void shareCode('copy'); return;
     case 'scan': add = { kind: 'scan' }; note = ''; break;
     case 'addyes': if (add.kind === 'confirm') void addFriend(add.code); return;
     case 'addcancel': add = { kind: 'menu' }; note = ''; break;

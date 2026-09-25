@@ -9,7 +9,9 @@
 //   POST /v1/store/test-reset         forget your test orders, and the cards they brought
 //
 // Who may see it, from app settings:
-//   STORE          off (the default) | testers | open
+//   STORE          off (the default) | testers | preview | open
+//                  preview: every signed-in account may look around (catalog and prices), but nobody can buy: no
+//                  checkout of any kind, and test orders count for nothing
 //   STORE_TESTERS  account ids, comma-separated, who may see it while STORE=testers. "*" (any account) only works in
 //                  a local API (LOCAL_DATA), never on Azure.
 //   STORE_TEST_CHECKOUT   on: testers may check out without paying. Must be off once real payments exist.
@@ -48,13 +50,19 @@ const toOrder = (r: OrderRow): Order => ({
   lines: JSON.parse(r.lines), grants: JSON.parse(r.grants),
 });
 
+/**
+ * Test orders count as owned cards only while testers can place them. In `preview` (or with test checkout off) they
+ * are ignored, so a test purchase never shows up in a real collection.
+ */
+const TEST_ORDERS_COUNT = TEST_CHECKOUT && MODE !== 'preview';
+
 /** May this account see the Store? */
 export function storeOpenFor(user: string): boolean {
-  if (MODE === 'open') return true;
+  if (MODE === 'open' || MODE === 'preview') return true;
   if (MODE !== 'testers') return false;
   return TESTERS.has(user) || (!!LOCAL_DATA && TESTERS.has('*'));
 }
-const isTester = (user: string) => MODE !== 'off' && (TESTERS.has(user) || (!!LOCAL_DATA && TESTERS.has('*')));
+const isTester = (user: string) => MODE !== 'off' && MODE !== 'preview' && (TESTERS.has(user) || (!!LOCAL_DATA && TESTERS.has('*')));
 
 /** The catalog: built once, from the sets the API knows. */
 let catalogCache: ReturnType<typeof buildCatalog> | null = null;
@@ -71,7 +79,7 @@ async function accountOrders(user: string): Promise<Order[]> {
 function grantsOf(list: Order[]): Record<string, number> {
   const grants: Record<string, number> = {};
   for (const o of list) {
-    if (!COUNTS.has(o.status)) continue;
+    if (!COUNTS.has(o.status) || (o.status === 'test' && !TEST_ORDERS_COUNT)) continue;
     for (const [id, n] of Object.entries(o.grants)) grants[id] = (grants[id] ?? 0) + n;
   }
   return grants;
@@ -108,7 +116,8 @@ export async function storeRequest(user: string, method: string, path: string, b
 
   if (path === '/v1/store' && method === 'GET') {
     const list = await accountOrders(user);
-    return [200, { catalog: catalog(), owned: grantsOf(list), orders: list, testCheckout: TEST_CHECKOUT && isTester(user) }];
+    const shown = list.filter((o) => o.status !== 'test' || TEST_ORDERS_COUNT);
+    return [200, { catalog: catalog(), owned: grantsOf(list), orders: shown, testCheckout: TEST_CHECKOUT && isTester(user) }];
   }
 
   if (path === '/v1/store/quote' && method === 'POST') {

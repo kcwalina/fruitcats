@@ -189,7 +189,10 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 - **In the game** (`apps/web/src/storefront.ts`, `shop.ts`): one list of everything for sale, all tiles the same
   size, each labelled Deck or Card (the owner's call, 2026-09-25: no banner, tabs or filters; announcements of new
   releases, if any, will be their own experience). A deck looks like a boxed deck of cards; a card is shown as itself.
-  Each opens its own page with Add to cart. The look is the owner's pick of three designs (option A, "parchment",
+  A tile's price is its **Add to cart** button (one tap adds it; then it reads "In cart" and opens the cart), and
+  tapping the picture or name opens the item's page, where **Add to cart** sits right under the name, on the first
+  screen of a phone (the owner's call, 2026-09-25: a price that only opened the page, and a button at the bottom of
+  the screen, were confusing and easy to miss). The look is the owner's pick of three designs (option A, "parchment",
   2026-09-25): warm paper throughout, like Home, with the Home landscape and the Store picture washed into the banner,
   so the cards are the only strong colour. Then the cart, a confirmation step, the new cards revealed one by one and "Build a deck with them".
 - **A deck from a code** with cards you don't have: the deck is saved, then the game shows **Missing cards**: each

@@ -250,8 +250,6 @@ const cardUrl = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.s
 const cardGrade = (id: string) => (CARDS[id]?.signature ? '✦ Signature' : `${rarityMark(rarity(id))} ${rarity(id)}`);
 /** "♛ Legendary Hero Cat", or "Signature Hero Cat" for a Signature card. */
 const cardKind = (id: string) => `${cardGrade(id)} ${esc(CARDS[id].type)}`;
-/** The same, as plain text (for aria-label). */
-const cardKindText = (id: string) => `${CARDS[id]?.signature ? 'Signature' : rarity(id)} ${CARDS[id].type}`;
 const faceOf = (id: string) => (CARDS[id]?.type === 'Hero Cat' ? `${id}-kitten` : id);
 
 function renderMessage(title: string, text: string, action = ''): string {
@@ -308,39 +306,56 @@ function deckSlot(p: DeckProduct, big = false): string {
 const cardSlot = (id: string, big = false) =>
   `<span class="slot ${big ? 'big' : ''}"><img class="face" src="${cardUrl(faceOf(id))}" alt="" loading="lazy" draggable="false" ${FALLBACK}></span>`;
 
+/** A small cart, on every button that adds to the cart. */
+const CART_ICON = `<svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h3l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21.5 8H7"/></svg>`;
+
+/**
+ * A tile's button: what the price does. It adds to the cart in one tap (the cart is never a purchase: the total is
+ * confirmed at checkout); once it's in, it opens the cart. Owned in full: a plain label, nothing to press.
+ */
+function tileAction(p: DeckProduct | CardProduct, name: string, full: number, now: number, done: string | null): string {
+  if (done) return `<span class="buy done">${done}</span>`;
+  if (canBuy() && inCart(p.id)) return `<button class="buy in-cart" data-click="store:cart" aria-label="${esc(name)} is in your cart. View cart">✓ In cart</button>`;
+  return `<button class="buy" data-click="store:add:${p.id}" aria-label="Add ${esc(name)} to cart, ${price(now)}">${CART_ICON}<span class="add-word">Add</span>${priceChip(full, now)}</button>`;
+}
+
+/** A tile: the picture and name open the item's page; the button under them adds it to the cart. */
+function offerTile(p: DeckProduct | CardProduct, owned: boolean, slot: string, details: string, action: string): string {
+  return `<div class="offer ${owned ? 'owned' : ''}">
+      <button class="offer-open" data-click="store:${p.kind}:${p.id}">
+        <span class="stage">${slot}${canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
+        <span class="info">${details}</span>
+      </button>
+      <div class="offer-buy">${action}</div>
+    </div>`;
+}
+
 function renderDeckOffer(p: DeckProduct): string {
   const { size, now, complete } = deckFacts(p);
-  return `<button class="offer ${complete ? 'owned' : ''}" data-click="store:deck:${p.id}" aria-label="${esc(p.name)}, deck">
-      <span class="stage">${deckSlot(p)}${canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
-      <span class="info">
+  return offerTile(p, complete, deckSlot(p), `
         <span class="kind">Deck</span>
         <span class="name">${esc(p.name)}</span>
-        <span class="sub">${esc(cardName(p.hero))} + ${size} cards</span>
-        <span class="buy">${complete ? '✓ You have every card' : priceChip(p.price, now)}</span>
-      </span>
-    </button>`;
+        <span class="sub">${esc(cardName(p.hero))} + ${size} cards</span>`,
+    tileAction(p, p.name, p.price, now, complete ? '✓ You have every card' : null));
 }
 
 function renderCardOffer(p: CardProduct, have: number): string {
   const full = have >= maxCopies(p.card);
-  return `<button class="offer ${full ? 'owned' : ''}" data-click="store:card:${p.id}" aria-label="${esc(cardName(p.card))}, ${esc(cardKindText(p.card))}">
-      <span class="stage">${cardSlot(p.card)}${canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : ''}</span>
-      <span class="info">
+  return offerTile(p, full, cardSlot(p.card), `
         <span class="kind">Card</span>
         <span class="name">${esc(cardName(p.card))}</span>
-        <span class="sub">${cardKind(p.card)}</span>
-        <span class="buy">${full ? '✓ In your collection' : priceChip(p.price, p.price)}</span>
-      </span>
-    </button>`;
+        <span class="sub">${cardKind(p.card)}</span>`,
+    tileAction(p, cardName(p.card), p.price, p.price, full ? '✓ In your collection' : null));
 }
 
 // ── A product's page ─────────────────────────────────────────────────────────────────────────────
 
-function buyBar(p: DeckProduct | CardProduct, full: number, now: number, complete: boolean): string {
+/** Add to cart, where the eye already is: right under the item's name (and again after a deck's cards). */
+function buyButton(p: DeckProduct | CardProduct, full: number, now: number, complete: boolean, where = ''): string {
   const action = complete ? '<span class="owned-pill big">✓ You have it all</span>'
-    : canBuy() && inCart(p.id) ? '<button class="store-btn ghost big" data-click="store:cart">In your cart · View cart</button>'
-    : `<button class="store-btn buy big" data-click="store:add:${p.id}">Add to cart ${priceChip(full, now)}</button>`;
-  return `<div class="buy-bar">${action}</div>`;
+    : canBuy() && inCart(p.id) ? '<button class="store-btn ghost big" data-click="store:cart">✓ In your cart · View cart</button>'
+    : `<button class="store-btn buy big" data-click="store:add:${p.id}">${CART_ICON}Add to cart ${priceChip(full, now)}</button>`;
+  return `<div class="product-buy ${where}">${action}</div>`;
 }
 
 function renderDeckPage(p: DeckProduct): string {
@@ -354,6 +369,7 @@ function renderDeckPage(p: DeckProduct): string {
         <div class="product-info">
           <span class="kind">Deck · ${esc(setName(p.set))}</span>
           <h2>${esc(p.name)}</h2>
+          ${buyButton(p, p.price, now, complete)}
           ${p.blurb ? `<p class="blurb">${esc(p.blurb)}</p>` : ''}
           <p class="facts"><span>${esc(cardName(p.hero))} + ${size} cards</span>${complete ? '<span class="good">You have every card</span>'
             : newCopies <= size ? `<span class="good">${newCopies} new for you${now < p.price ? ' · the rest are taken off the price' : ''}</span>` : ''}</p>
@@ -370,8 +386,8 @@ function renderDeckPage(p: DeckProduct): string {
           </div>`;
         }).join('')}
       </div>
-    </main>
-  ${buyBar(p, p.price, now, complete)}`;
+      ${ids.length > 6 ? buyButton(p, p.price, now, complete, 'again') : ''}
+    </main>`;
 }
 
 function renderCardPage(p: CardProduct): string {
@@ -384,12 +400,12 @@ function renderCardPage(p: CardProduct): string {
           <span class="kind">Card · ${esc(setName(p.set))}</span>
           <h2>${esc(cardName(p.card))}</h2>
           <p class="facts"><span>${cardKind(p.card)}</span></p>
+          ${buyButton(p, p.price, p.price, have >= max)}
           <p class="blurb">${CARDS[p.card].signature ? 'A Signature card: it comes only in this Signature print, and in no deck.' : 'This card comes in no deck: this is the way to get it.'}${max === 1 ? ' One copy is all a deck can hold.' : ''}</p>
           <p class="facts"><span>${have >= max ? 'In your collection' : have ? `You have ${have} of ${max}` : 'Not in your collection yet'}</span></p>
         </div>
       </section>
-    </main>
-  ${buyBar(p, p.price, p.price, have >= max)}`;
+    </main>`;
 }
 
 /** A card the Store doesn't sell on its own, under its picture. (Later, for exclusives: "Find it on the market".) */

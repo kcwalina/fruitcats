@@ -63,18 +63,23 @@ sale. Please mark what must change, suggest wording, and answer the questions be
 7. Cards can change after purchase (balance, art, rules), and the game may be shut down with 90 days' notice. Does
    this work for EU/UK players under the Digital Content Directive (Art. 19)? Should I promise an offline mode?
 8. EU/UK 14-day withdrawal right: is the wording right, given Paddle's checkout consent?
-9. Copyright notices go to Contact us. Do I need to register a DMCA agent with the US Copyright Office? Players can only
+9. Online play runs on a fixed number of servers, with no automatic scaling: when they're full, players wait in line,
+   and players who have bought something are let in first. Section 7 says buying doesn't buy online play or any
+   waiting time, and that we may pause online play. Is that enough that a buyer who can't get into an online game (or
+   waits a long time) has no claim against me, in the US and under EU/UK consumer law? Does letting buyers in first
+   create an implied promise?
+10. Copyright notices go to Contact us. Do I need to register a DMCA agent with the US Copyright Office? Players can only
    enter display names and deck names today. If I do, can the agent be a title, and does the listing need an email
    address?
 
 **Privacy and minors**
 
-10. Minors: do the 13+ account age gate (by birth year) and parental approval for purchases meet COPPA, US state laws
+11. Minors: do the 13+ account age gate (by birth year) and parental approval for purchases meet COPPA, US state laws
     and the app stores' rules?
-11. EU/UK data transfer to the US: are Microsoft's safeguards (DPA, Standard Contractual Clauses) enough? Do I need an
+12. EU/UK data transfer to the US: are Microsoft's safeguards (DPA, Standard Contractual Clauses) enough? Do I need an
     EU or UK representative?
-12. Is keeping anonymised purchase records indefinitely acceptable under GDPR storage limitation?
-13. For future marketing emails: US law (CAN-SPAM) wants a postal address in each one. Is a mailbox-service address or
+13. Is keeping anonymised purchase records indefinitely acceptable under GDPR storage limitation?
+14. For future marketing emails: US law (CAN-SPAM) wants a postal address in each one. Is a mailbox-service address or
     PO box enough?
 
 ## What I'd like back

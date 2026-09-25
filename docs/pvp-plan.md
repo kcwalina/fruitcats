@@ -17,10 +17,11 @@ Last updated 2026-09-25.
 | **Who holds the game** | The Fruitcats API. It runs the same engine, keeps the full `GameState`, and sends each player only `viewFor(state, seat)`: never the other player's hand, the deck order or the seed. A move is checked against the rules on the server before it's applied. Nothing a client says about the game is trusted. |
 | **One match code for both modes** | Friend games and Ranked run on the same code once two players are paired and each has picked a deck: the match, clock, reconnecting, conceding, emotes, the result, replays. What differs is in one `MatchRules` object; the match never asks which mode it's in. This is about not writing the code twice; it has nothing to do with what players own. |
 | **Each player plays their own deck** | Nothing a player owns is ever shared with, lent to or seen by another player: not cards, not decks, not purchases. Each player picks one of their own decks, built from cards their own account owns (the starter decks count, as everyone has them). The server checks every card against that account's ownership in the Store. |
-| **Transport** | One WebSocket per signed-in app (`/v1/live`), kept while the app is open. It carries presence, friend codes, challenges and the match. |
+| **Transport** | A game holds a connection (one WebSocket, `/v1/live`) only while it's playing online: on Play a friend, waiting for an answer, in a game. The rest of the time, a signed-in game says "I'm here" with a small request every 20 seconds (`/v1/live/here`): that's how friends see it online, and how a challenge reaches it. |
+| **A fixed ceiling on cost** | No autoscaling. Online play has room for a fixed number of connected players (`LIVE_MAX_PLAYERS`, 300 by default). When it's full, players wait in line (`/v1/live/enter`), and **players who have bought cards go first**. The bill can't grow by itself: the worst case is a waiting line. `LIVE=off` switches online play off. The Terms of Use (section 7) say buying doesn't buy online play or a waiting time. |
 | **Where friends live** | Inside the Friend game mode, not in a place of their own. The Home screen keeps its six tiles: the **Friend** tile opens **Play a friend**, where you pick who to play from your friends, or add one. Settings → Account → Friends is gone. |
 | **Adding a friend** | A code, never a link. Together: one phone shows its code as a QR code, the other scans it inside the game, sees whose code it is and taps **Add**. Or type the code. Codes are viamochi-id's: 6 characters, 15 minutes, one use. |
-| **Challenges** | Only to friends who are online now. A challenge nobody answers is withdrawn after 60 seconds. |
+| **Challenges** | Only to friends who are online now (connected, or said "I'm here" in the last 50 seconds). A challenge keeps a place for the friend, so answering never puts them in the waiting line. Nobody answering: withdrawn after 2 minutes. |
 | **Friendly, not cutthroat** | In a Friend game, running out of time never makes a move for you: the other player decides (give more time, nudge, or, after a while, take the win or call it off). Ranked is the strict one. |
 | **Teaching games** | One switch when challenging, for a friend who is new: no timer, hints, take-backs, open hands, slower replays, a kinder end, and it doesn't count. |
 | **Handicap** | Each player may choose to start with fewer Lives (9 down to 3), for themselves only. Both players see it. |
@@ -52,8 +53,21 @@ out, the tile says "Sign in to open". Signed in, its line says "Online", "2 chal
    Block are in the ⋯ menu beside the row, each with a confirmation.
 4. **+ Add a friend**, the last row of the same list. With no friends yet, it's the only row.
 
-A friend's challenge while you're anywhere else (Home, the Store, a Solo game) shows as a small banner at the top:
-"Sam wants to play", **See** or ×. It doesn't pause or cover the game.
+A friend's challenge while you're anywhere else (Home, the Store, a Solo game) shows as a small banner at the top
+within 20 seconds: "Sam wants to play", **See** or ×. It doesn't pause or cover the game.
+
+### When online play is full
+
+Opening Play a friend first asks to be let in. When online play is full, the screen says "You're number 3 in line",
+"Lots of cats are playing online right now. You'll be let in as soon as there's room: keep this screen open", and
+"Players who have bought cards go first" (with ", and that includes you" for a buyer). The Friend tile says "In line ·
+3". The game asks again every 10 seconds; leaving the screen gives up the place. Coming back to a game already going
+never waits.
+
+A connection that isn't in a game and does nothing for 10 minutes is closed to make room: "Paused to make room", with
+**Play online again**. Opening online play in a second tab or on another device moves it there: the first one says
+"Playing on another device", with **Play here instead**. When online play is switched off: "Online games are paused.
+They'll be back soon. Solo is always open."
 
 ### Adding a friend
 
@@ -86,7 +100,7 @@ Tapping a friend opens the challenge:
   one.
 - **Your Lives**: 9, or fewer as a handicap (down to 3).
 
-**Challenge Pippin** leads to the waiting screen: both Pawtraits, "Waiting for Pippin…", a 60-second ring and
+**Challenge Pippin** leads to the waiting screen: both Pawtraits, "Waiting for Pippin…", a 2-minute ring and
 **Cancel**. If Pippin says Not now: "Pippin can't play right now." If the ring runs out: "No answer from Pippin."
 
 Answering a challenge shows what it is (pace, teaching, starter decks, their handicap), the deck carousel (starter
@@ -186,8 +200,8 @@ rules (`MatchRules`, `ClockRules`, `PACES`, `friendRules`, `rankedRules`), the e
 
 | File | Job |
 |---|---|
-| `socket.ts` | The WebSocket at `/v1/live` (the `ws` package). The token comes in the first message, never in the address, so it isn't logged. Pings every 25 s; a socket that stops answering is closed. |
-| `hub.ts` | One connection per account (the newest wins). Presence, friend codes (whose code is this, and "they added you"), challenges, and starting, restoring and forgetting matches. Knows nothing about sockets, so its tests use plain functions. |
+| `socket.ts` | The WebSocket at `/v1/live` (the `ws` package). The token comes in the first message, never in the address, so it isn't logged. Messages are compressed (about five times smaller), keeping no compression memory between them. Pings every 25 s; a socket that stops answering is closed. |
+| `hub.ts` | Letting players in and the waiting line (`enter`), "I'm here" (`here`), one connection per account (the newest wins), presence, friend codes (whose code is this, and "they added you"), challenges, and starting, restoring and forgetting matches. Closes connections idle for 10 minutes outside a game. Knows nothing about sockets, so its tests use plain functions. |
 | `match.ts` | **The core, used by both modes.** One class, `Match`: rebuilds the game from its record, checks and applies moves, sends each player their view (with only the new events), runs the clock, handles drops, concedes, emotes, hints, take-backs, open hands and rematch requests. |
 | `records.ts` | The `matches` table (games going, and finished ones by month: the replays), `rivals` (the record between two friends) and `seen` (last seen). Export my data includes a player's records and last seen; Delete account erases them. Finished replays keep only account ids and cards, no names. |
 
@@ -215,7 +229,7 @@ double tap, a message that crossed another) is never applied twice; the player i
 
 | File | Job |
 |---|---|
-| `live.ts` | The connection: kept while signed in, reconnects with backoff (at once when the app comes back into view), and keeps what the server last said (presence, challenges, the match you're in). |
+| `live.ts` | "I'm here" every 20 seconds while the game is open and signed in; the connection only while playing online (asking to be let in first, and waiting in line when it's full); reconnecting with backoff; what the server last said (presence, challenges, the match you're in). |
 | `friends.ts` | Play a friend: the list, the challenge, waiting, answering, the Add a friend sheet, the challenge banner. |
 | `qr.ts` | A friend code as a QR code (qrcode-generator, MIT), and scanning one (the browser's reader, or jsQR, Apache-2.0). |
 | `online.ts` | An online game's own parts of the game screen: the clock, Hold on, out-of-time and dropped-connection choices, emotes, teaching helps, Versus and the result. |
@@ -230,33 +244,36 @@ double tap, a message that crossed another) is never applied twice; the player i
 - `packages/engine/test/view.test.ts` already checks that a player's view never depends on hidden information;
   `online.test.ts` checks the two options.
 
-## How much one server can take
+## What online play costs, and its ceiling
 
-Measured with 500 games at once through the real hub and match code (a development machine; App Service's B1 is
-likely somewhat slower):
+The aim: players who never buy anything should cost next to nothing, and the bill should never grow by itself.
 
-| | Measured | What it means |
-|---|---|---|
-| Memory per game | ~25 KB at the start, ~105 KB after 120 moves | 1,000 games ≈ 100 MB |
-| CPU per move (check, apply, both views, send) | 0.67 ms | With a move every ~5 s per game, one core at half load plays roughly 1,000–2,000 games at once. Node uses one core, so more cores don't help one process. |
-| Sent per move, both players | ~14 KB | Each view resends the whole story log. 1,000 games ≈ 3 MB/s out, which costs real money in egress. |
-| Table writes | at most one per game per second, all in the `live` partition | One partition takes about 2,000 writes a second: roughly 10,000 games. |
+- **Solo costs nothing**: it runs on the player's device. No account needed.
+- **A game that's open but not playing online** says "I'm here" every 20 seconds: a tiny request, with the token's
+  check remembered (no signature check each time). No connection is held.
+- **An online game** costs about **1/100 of a cent**. Measured with 500 games at once through the real hub and match
+  code (a development machine; App Service's B1 is likely somewhat slower):
 
-What runs out first, in order:
+| | Measured |
+|---|---|
+| Memory per game | ~25 KB at the start, ~105 KB after 120 moves (1,000 games ≈ 100 MB) |
+| CPU per move (check, apply, both views, send) | ~0.65 ms: one core at half load plays roughly 1,000–2,000 games at once |
+| Sent per move, both players | ~7 KB of messages (only the new story lines and events), about five times less on the wire once compressed (~1.5 KB) |
+| Table writes | at most one per game per second |
 
-1. **Connections, today.** `fruitcats-api` shares one **B1** plan with viamochi-id and mochi-ops. App Service documents
-   a limit of **350 WebSockets per instance on Basic** (no fixed limit on Standard and Premium), and every signed-in
-   game that's open holds one, playing or not. Before the public build turns online play on: `fruitcats-api` on its
-   own Premium v3 plan, Web Sockets on, one instance.
-2. **Bandwidth.** Send only the new lines of the story with each view, as the events already are. About ten times
-   less; a small change in `Match.viewOf` and the game's `showViews`.
-3. **One Node process.** Around a thousand or two games at once. Before that point, split the work: the socket to
-   **Azure Web PubSub** (it holds the connections and scales by units of 1,000), and several API instances, each
-   owning some matches. Which instance owns a match is written in a table (a lease), and messages for it go to that
-   instance. `socket.ts` is the only file that knows about the transport, and a match can always be rebuilt from its
-   record, so a match can move to another instance.
-4. **The `live` partition.** Around 10,000 games: spread games still going over several partitions (by the first
-   character of the match id).
+- **The ceiling.** `LIVE_MAX_PLAYERS` (300 by default) is how many players may be connected at once: the server never
+  takes more, so its cost is the plan's flat price. When it's full, players wait in line, buyers first. On the
+  current **B1** plan (shared with viamochi-id and mochi-ops), App Service allows 350 WebSockets per instance, which
+  is why the default is 300. Since only players actually playing online are connected, 300 is a lot of players.
+- **Raising it** is a decision, never automatic: `fruitcats-api` on its own plan (Premium v3 has no fixed WebSocket
+  limit) and a higher `LIVE_MAX_PLAYERS`, to about 2,000 per instance. Past that: the connections to Azure Web
+  PubSub and several instances, each owning some matches (a lease in a table says which; any match can be rebuilt
+  from its record on another instance). `socket.ts` is the only file that knows about the transport.
+- **Stopping it**: `LIVE=off` (docs/emergency-stop.md). The subscription's budget alert already stops the apps at
+  $300 in a month.
+
+What grows with non-paying players outside online play: accounts (Entra is free up to 50,000 active users a month,
+then about 1.6¢ each) and card art bandwidth.
 
 ## How long things are kept
 
@@ -265,12 +282,15 @@ In the API's memory:
 - **A game going**: until it ends. Nobody moving for **24 hours**, whoever is still connected, calls it off; both
   players gone for **30 minutes** calls it off.
 - **A finished game**: until both players leave its result, or **10 minutes** after it ended.
-- **A challenge**: 60 seconds. **A friend code on a screen**: until the code is used, replaced, or its phone disconnects.
-- **A connection**: until its socket closes, or stops answering pings (25 s).
+- **A challenge**: 2 minutes. **A friend code on a screen**: until the code is used, replaced, or its phone disconnects.
+- **A connection**: until its socket closes, stops answering pings (25 s), or, outside a game, does nothing for 10
+  minutes.
+- **"I'm here"**: 50 seconds after the last one. **A place in the waiting line**: 30 seconds after it was last asked
+  for. **A place kept for a player let in**: 1 minute (a challenged friend's: until the challenge ends).
 
 In the tables: a game going is in `matches/live` until it ends, then moves to its month (`done-YYYY-MM`) as a replay,
 with account ids and cards only. **Replays are kept for good for now: a retention period (and a job that deletes
-older months) is to decide**, and to put in the privacy policy. The record between two friends (`rivals`) and last
+older months) is to decide**; the privacy policy has a placeholder for it. The record between two friends (`rivals`) and last
 seen (`seen`) are kept while the account exists; Delete account erases them.
 
 ## Trying it
@@ -307,6 +327,7 @@ friend codes and a restart.
 - **Offer the tutorial to a first-timer** who's been challenged. Today they're told they can ask for a teaching game.
 - **Notifications** for a challenge while the app is closed (web push, later the app stores'). Until then a challenge
   only reaches a friend who has the game open.
-- **Before the public build turns it on**: Web Sockets on for `fruitcats-api` (and one instance), the privacy policy
-  to mention the record between friends, last seen and the replays, and a playtest with real phones (the camera
-  scanning a QR code on another phone's screen).
+- **Before the public build turns it on**: Web Sockets on for `fruitcats-api` (and one instance); the lawyer's review
+  of the Terms' online play section (7) and the privacy policy's online play lines; a replay retention period; a
+  playtest with real phones (the camera scanning a QR code on another phone's screen). When the Terms are published,
+  `TERMS_VERSION` (apps/web/src/auth.ts) moves to the published version, so everyone agrees to them again.

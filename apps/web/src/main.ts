@@ -1370,4 +1370,16 @@ render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
 if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.
-if (STORE && signedIn()) void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });
+// Refreshed again whenever the game comes back to the front or back online (at most once a minute), so cards the
+// account no longer has (a refund; later, a trade) don't linger on this device.
+if (STORE && signedIn()) {
+  let last = 0;
+  const refresh = () => {
+    if (Date.now() - last < 60_000) return;
+    last = Date.now();
+    void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });
+  };
+  refresh();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+  window.addEventListener('online', refresh);
+}

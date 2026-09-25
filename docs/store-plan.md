@@ -262,8 +262,24 @@ source of truth for money, and ours can always be rebuilt from it.
 - **A running total per account.** With real payments, the same write that marks an order paid also updates one
   "owned" row in that account's partition (an atomic batch within one partition), so reading what a player owns is
   a single row. The orders stay the record the total can always be rebuilt from.
-- **Not read to play.** Starting a game uses the copy on the device; the game refreshes it from the server when it
-  opens and after a purchase, not per match. Player-vs-player, later, checks the two decks once when a match starts.
+- **Not read to play.** Starting a game uses the copy on the device, not the server. Player-vs-player, later, checks
+  the two decks once when a match starts.
+
+**How fresh the device's copy is.** Cards can leave an account (a refund now; a trade or a sale later), so the copy
+on a device must not keep them for long.
+
+- **Refreshed** when the game opens, when it comes back to the front, when the device is back online (at most once
+  a minute; built 2026-09-25), when the Store opens, and right after a purchase.
+- **The device that gives a card away updates at once:** it made the trade, and the server's answer carries the new
+  total.
+- **A stale copy can't be used for anything that matters.** Every trade, sale, listing or player-vs-player match is
+  checked against the server's total at that moment, so a card already given away can't be given twice or played
+  online. At most, another device of the same player that stayed offline shows it in solo games until it next
+  connects.
+- **For trading, add:** a version number on each account's total, returned with every API answer, so any call
+  notices a change and refreshes; a limit on how long an offline copy is trusted (a few days) before bought cards are
+  shown as "needs to connect"; and, with player-vs-player's live connection, a push that tells a player's other
+  devices to refresh at once.
 
 ### 1. Take the payment (Paddle)
 

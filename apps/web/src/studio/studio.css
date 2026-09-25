@@ -467,3 +467,5 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .wz-list { font-size: 17px; line-height: 1.8; }
 @media (max-width: 900px) { .wz-two { grid-template-columns: 1fr; } }
 .local-card { display: flex; justify-content: center; margin: 0 0 14px; }
+.all-link { margin: 0; font-weight: 700; }
+.panel.quiet h2 { font-size: 17px; color: var(--ink-2); }

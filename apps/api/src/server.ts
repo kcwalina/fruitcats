@@ -71,7 +71,8 @@ const serveStudio = studio({
     return { name: name.trim(), hash: (hash ?? '').trim().toLowerCase() };
   }),
   log: (event, fields) => log(event.includes('error') || event.includes('mismatch') ? 'ops' : 'security', event, fields),
-  studioUrl: process.env.STUDIO_URL ?? 'https://playtest.fruitcats.viamochi.com/studio.html',
+  studioUrl: process.env.STUDIO_URL ?? 'https://fruitcats.viamochi.com/studio.html',
+  accountInvite: process.env.STUDIO_ACCOUNT_INVITE,
 });
 
 /** A service token from viamochi-id about one account and one purpose (e.g. deleting it). */

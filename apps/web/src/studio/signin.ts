@@ -1,11 +1,11 @@
 // Signing in to the Studio with a Via Mochi account: the same account players have, by email and a code, no
 // password (src/auth.ts). A new artist creates their account here. In development (?dev), pick a pretend account.
 
-import { AuthError, TERMS_VERSION, accountExists, resend, startSignIn, startSignUp, submitCode, type Pending } from '../auth';
+import { AuthError, TERMS_VERSION, accountExists, invitesRequired, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
 import { esc, BASE } from '../ui';
 import { DEV, DEV_ACCOUNTS, setDevUser } from './api';
 
-type Step = 'email' | 'details' | 'code';
+type Step = 'email' | 'invite' | 'details' | 'code';
 
 let step: Step = 'email';
 let email = '';
@@ -16,6 +16,11 @@ let code = '';
 let pending: Pending | null = null;
 let busy = false;
 let error = '';
+/** Via Mochi's own invite code (new accounts need one while sign-up is by invitation), from the Studio's invite link. */
+const linkCode = new URLSearchParams(location.search).get('account') ?? '';
+let invite = linkCode;
+/** The email has a sign-in but never finished its account: after the invite code, sign in. */
+let inviteThenSignIn = false;
 
 const MIN_AGE = 13;
 
@@ -32,6 +37,11 @@ export function renderSignIn(inviting: boolean): string {
         <input data-in="email" type="email" autocomplete="email" value="${esc(email)}" placeholder="you@example.com" ${busy ? 'disabled' : ''}></label>
       <button class="btn primary wide" data-click="si:email" ${busy ? 'disabled' : ''}>${busy ? 'One moment…' : 'Continue'}</button>
       <p class="si-small">No password: we email you a code. It’s the same Via Mochi account the game uses.</p>`;
+  } else if (step === 'invite') {
+    body = `<p class="si-small">New to Via Mochi: <b>${esc(email)}</b>. <button class="link" data-click="si:back">Use a different email</button></p>
+      <label class="field">Invite code <small>It came with your invitation to the Studio</small>
+        <input data-in="invite" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" value="${esc(invite)}" ${busy ? 'disabled' : ''}></label>
+      <button class="btn primary wide" data-click="si:invite" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Continue'}</button>`;
   } else if (step === 'details') {
     body = `<p class="si-small">New to Via Mochi: <b>${esc(email)}</b>. <button class="link" data-click="si:back">Use a different email</button></p>
       <label class="field">Your name <small>What we’ll see on your comments and pictures</small>
@@ -69,6 +79,7 @@ export function signInInput(el: HTMLInputElement, done: () => void, render: () =
   else if (f === 'name') displayName = el.value;
   else if (f === 'year') birthYear = el.value.replace(/\D/g, '');
   else if (f === 'agree') agreed = el.checked;
+  else if (f === 'invite') invite = el.value;
   else if (f === 'code') {
     code = el.value.replace(/\D/g, '');
     if (pending && code.length === pending.codeLength && !busy) void signInClick('code', done, render);
@@ -92,7 +103,20 @@ export async function signInClick(action: string, done: () => void, render: () =
   if (action === 'email') {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { error = 'Please enter your email address.'; render(); return; }
     await work(async () => {
-      if (await accountExists(email)) { pending = await startSignIn(email); code = ''; step = 'code'; } else step = 'details';
+      inviteThenSignIn = false;
+      if (await accountExists(email)) { pending = await startSignIn(email); code = ''; step = 'code'; return; }
+      if (!(await invitesRequired())) { step = 'details'; return; }
+      // The Studio's invite link carries the code: use it without asking.
+      if (invite.trim()) {
+        try { await useInvite(invite); step = 'details'; return; } catch { invite = ''; }
+      }
+      step = 'invite';
+    });
+  } else if (action === 'invite') {
+    if (!invite.trim()) { error = 'Please type your invite code.'; render(); return; }
+    await work(async () => {
+      await useInvite(invite);
+      if (inviteThenSignIn) { pending = await startSignIn(email); code = ''; step = 'code'; } else step = 'details';
     });
   } else if (action === 'details') {
     const year = Number(birthYear), now = new Date().getFullYear();
@@ -109,7 +133,18 @@ export async function signInClick(action: string, done: () => void, render: () =
   } else if (action === 'code') {
     if (!pending) return;
     if (code.length !== pending.codeLength) { error = `The code has ${pending.codeLength} digits.`; render(); return; }
-    await work(async () => { await submitCode(pending!, code); step = 'email'; pending = null; code = ''; done(); });
+    await work(async () => {
+      try { await submitCode(pending!, code); }
+      catch (e) {
+        // Signed in to an email that never finished making its account: it needs an invite like any new one.
+        if (e instanceof AuthError && e.code === 'invite_required' && pending?.flow === 'signIn') {
+          inviteThenSignIn = true; pending = null; step = 'invite';
+          throw new AuthError('invite_required', 'This email doesn’t have an account yet. Type your invite code to make one.');
+        }
+        throw e;
+      }
+      step = 'email'; pending = null; code = ''; done();
+    });
   } else if (action === 'resend' && pending) {
     await work(async () => { pending = await resend(pending!); code = ''; error = 'We sent a new code.'; });
   }
@@ -118,5 +153,6 @@ export async function signInClick(action: string, done: () => void, render: () =
 export function signInEnter(el: HTMLInputElement, done: () => void, render: () => void) {
   const f = el.dataset.in;
   if (f === 'email') void signInClick('email', done, render);
+  else if (f === 'invite') void signInClick('invite', done, render);
   else if (f === 'code') void signInClick('code', done, render);
 }

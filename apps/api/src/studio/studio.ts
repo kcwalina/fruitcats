@@ -49,6 +49,8 @@ export interface StudioOptions {
   log?(event: string, fields: Record<string, unknown>): void;
   /** Where invite links point: the Studio page. */
   studioUrl: string;
+  /** Via Mochi's invite code for new accounts, added to the Studio's invite links so an artist types no code. */
+  accountInvite?: string;
 }
 
 const MAX_PICTURE = 30 * 1024 * 1024;
@@ -321,7 +323,8 @@ export function studio(opt: StudioOptions) {
     throw new HttpError(404, 'not_found');
   }
 
-  const inviteUrl = (code: string) => `${opt.studioUrl}?invite=${encodeURIComponent(code)}`;
+  const inviteUrl = (code: string) =>
+    `${opt.studioUrl}?invite=${encodeURIComponent(code)}${opt.accountInvite ? `&account=${encodeURIComponent(opt.accountInvite)}` : ''}`;
 
   /** Handle a request under /v1/studio/. */
   return async function serve(req: IncomingMessage, res: ServerResponse): Promise<void> {

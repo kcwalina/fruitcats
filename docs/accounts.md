@@ -116,6 +116,11 @@ Last updated 2026-09-25.
     before touching `viamochi-id` or `fruitcats-api`, and batch settings into one change.
   - The game gives up on any account call after 15 seconds and says so; a slow or down service never signs anyone
     out (only Entra rejecting the refresh token does).
+- **One account, terms per app** (2026-09-25). Creating an account needs only an email and a name (the birth year
+  is optional in the Entra sign-up flow). Each app asks for its own terms, and any age check, the first time the
+  account opens it. The account service keeps the birth year (`BirthYear` on the user): for accounts made in the
+  game it's copied once from the sign-up record in the directory; an account made elsewhere (the Artist Studio) gives
+  it at the game's Terms step, which also checks 13+.
 - **Runaway protection** (2026-09-25). No cap across the service, because a streamer may send hundreds of real
   players to sign up at once; instead:
   - **Code emails:** at most 10 to one address in an hour (past it, a script is hammering that address; nothing is

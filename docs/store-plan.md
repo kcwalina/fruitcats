@@ -17,7 +17,7 @@ the test Store that's live now and one that takes real money.
 | **Seller** | **You, as an individual.** No LLC or company: the stores and the Merchant of Record are the legal sellers and handle tax, VAT and refunds, as for most indie developers. |
 | **Accounts** | The one **Via Mochi account**: an email, signed in with an emailed code inside the game. See [accounts.md](accounts.md). The Store needs an account, like the Collection. |
 | **Age** | Anyone can play solo without an account. Accounts need age **13+**. Buying needs **18+ or a parent's approval** (on iOS, Apple's Ask to Buy). |
-| **Web payments** | A **Merchant of Record: Paddle**, or Lemon Squeezy if Paddle won't onboard an individual. |
+| **Web payments** | **Paddle**, a Merchant of Record (decided 2026-09-25). It is the legal seller, so it collects sales tax and VAT and handles refunds and chargebacks; players can still pay with PayPal, cards, Apple Pay or Google Pay inside its checkout. Plain PayPal or Stripe would make the owner the seller, responsible for tax in every country. |
 | **Stores** | Web, then **iPhone and Android** (one Capacitor app), then **Steam** (Electron). The same game code everywhere, with no rewrite. |
 | **Ownership** | **A purchase anywhere is owned everywhere.** Our server holds the one list of what each Via Mochi account owns. A Steam, App Store or Google Play purchase goes to the account signed in on that device; buying needs an account, so no purchase is ever ownerless. |
 | **Pricing** | **The same price on every store, and sales on all stores at once.** The player's experience comes before margin. The game is free to download everywhere. |
@@ -216,6 +216,54 @@ Written 2026-09-25. The Store that's live now is complete up to the payment: tes
 and a **test order** gives them the cards with no money taken. Five pieces of work turn that into a real Store on
 the web. They're listed roughly in order. Pieces 1 and 3 can start at once, because Paddle's approval and the
 lawyer's review both take time we don't control.
+
+### Requirements for the payment work (the owner's, 2026-09-25)
+
+**No purchase is ever lost or granted twice.** A bug or crash may delay a player's cards; it must never lose a
+payment, because untangling one by hand costs more in support than cards earn. Paddle's record of payments is the
+source of truth for money, and ours can always be rebuilt from it.
+
+1. **Before paying,** the server saves a **pending order** with our order id and passes that id to Paddle with the
+   transaction, so every Paddle payment names an order of ours.
+2. **Paddle's signed webhook** marks the order paid. We answer 2xx only *after* that write is saved; if we crash
+   before it, Paddle sends the webhook again.
+3. **Marking the order paid is the grant.** What an account owns is always worked out from its paid orders, so there
+   is no second "now add the cards" step that could half-happen. It is one write, which happens entirely or not at
+   all.
+4. **Each Paddle transaction can mark one order paid, once.** A repeated webhook, a double tap or a retry changes
+   nothing.
+5. **Not only webhooks:** when the player returns from the overlay, the server asks Paddle about that transaction
+   directly; and a regular check compares every Paddle transaction with our orders and applies anything missing.
+6. **Refunds and chargebacks** go the same way, keyed to the same order.
+7. **Anything the check can't fix raises an alert.** Support finds an order by email or by the number on Paddle's
+   receipt.
+8. **Crash drills in the sandbox,** kept as tests: a crash before the write, after the write, and before answering
+   Paddle must each end with the right cards and no double charge.
+
+**What Paddle gets, and why ownership can't be faked.**
+
+- **Paddle gets no cards.** It gets a line item and price ("Five Alarm deck, $9.99", or "3 single cards") and our
+  order id and account id as custom data. It sells the right to have those items in the player's Via Mochi account,
+  and gives back its own transaction id (`txn_…`).
+- **Owning a card is a row in our database:** account A has 2 copies of `HW1-R03`, from order O. `HW1-R03` is the
+  card's fixed id from its set's data; copies are counts, not objects with their own ids (a player market might need
+  serial numbers later).
+- **No collisions:** order ids are 128-bit random, and the server refuses an existing id for a different account or
+  cart. A test fails if two cards anywhere share an id.
+- **No forgery:** the game never tells the server what it owns. Only a Paddle webhook whose signature checks out (the
+  secret in Key Vault, and the transaction confirmed with Paddle's API) or an admin action (written to the permanent
+  log) grants anything. The device's copy is for playing offline only: editing it can at most change one browser's
+  solo games; anything shared (synced decks, later player-vs-player) is checked by the server.
+
+**Reading ownership is cheap.** The ledger is never searched as a whole:
+
+- **Stored per account.** Orders live in a table whose partition is the account id, so reading one player's orders
+  reads only their rows (a few dozen for a keen buyer), whatever the total size. This is how it's built today.
+- **A running total per account.** With real payments, the same write that marks an order paid also updates one
+  "owned" row in that account's partition (an atomic batch within one partition), so reading what a player owns is
+  a single row. The orders stay the record the total can always be rebuilt from.
+- **Not read to play.** Starting a game uses the copy on the device; the game refreshes it from the server when it
+  opens and after a purchase, not per match. Player-vs-player, later, checks the two decks once when a match starts.
 
 ### 1. Take the payment (Paddle)
 

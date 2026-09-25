@@ -346,7 +346,8 @@ figcaption { font-size: 13px; color: #cdbba5; font-weight: 700; }
 .pv-banner b { position: relative; font-family: Fredoka, sans-serif; font-size: 34px; font-weight: 600; color: white; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6); }
 
 /* Wallpapers */
-.walls { display: flex; justify-content: center; align-items: flex-end; gap: 26px; flex-wrap: nowrap; }
+.walls { display: flex; justify-content: center; align-items: center; gap: 32px; flex-wrap: wrap; }
+.walls-more { display: flex; flex-direction: column; align-items: center; gap: 22px; }
 .wall-img { position: relative; background: #120c09; overflow: hidden; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); display: grid; place-items: center; }
 .wall-img::before { content: ''; position: absolute; inset: -20px; background: var(--art) center / cover; filter: blur(18px) brightness(0.7); animation: breathe 1.6s ease-in-out infinite alternate; }
 .wall-img.ready::before { display: none; }
@@ -355,9 +356,9 @@ figcaption { font-size: 13px; color: #cdbba5; font-weight: 700; }
 .wall-img img.wall-made { opacity: 0; transition: opacity 0.25s; }
 .wall-img.ready img.wall-made { opacity: 1; }
 .wall-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.wall-phone .wall-img { width: 180px; aspect-ratio: 1290 / 2796; border-radius: 26px; border: 6px solid #0b0b0b; }
-.wall-tablet .wall-img { width: 250px; aspect-ratio: 2048 / 2732; border-radius: 14px; border: 8px solid #0b0b0b; }
-.wall-computer .wall-img { width: 440px; aspect-ratio: 16 / 9; border-radius: 6px; border: 8px solid #1a1a1a; border-bottom-width: 14px; }
+.wall-phone .wall-img { width: 250px; aspect-ratio: 1290 / 2796; border-radius: 26px; border: 6px solid #0b0b0b; }
+.wall-tablet .wall-img { width: 150px; aspect-ratio: 2048 / 2732; border-radius: 14px; border: 8px solid #0b0b0b; }
+.wall-computer .wall-img { width: 280px; aspect-ratio: 16 / 9; border-radius: 6px; border: 8px solid #1a1a1a; border-bottom-width: 14px; }
 .pv-lock { position: absolute; top: 9%; left: 0; right: 0; text-align: center; color: white; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); z-index: 1; pointer-events: none; }
 .pv-lock small { display: block; font-size: 10px; font-weight: 700; }
 .pv-lock b { display: block; font: 600 42px/1 -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif; letter-spacing: -1px; }
@@ -545,3 +546,5 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .preview .frame-choice.unpicked p { color: var(--ink); }
 .wz-layout > main.home, .wz-layout > main.picture { margin: 0; max-width: none; }
 .wz-layout > main.picture { grid-template-columns: 340px minmax(0, 1fr); }
+.wall-phone figcaption::after { content: ' · the main one'; color: #ffc48f; }
+.wall-phone .pv-lock b { font-size: 56px; }

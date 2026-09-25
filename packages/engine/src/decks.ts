@@ -72,6 +72,7 @@ export function deckProblems(deck: DeckList, owned?: (id: string) => number): st
     if (!card) { problems.push(`Unknown card ${id}.`); continue; }
     const name = cardName(id);
     if (card.type === 'Hero Cat') problems.push(`${name} is a Hero Cat: Hero Cats lead a deck, they don't go in it.`);
+    else if (card.token) problems.push(`${name} comes into play from another card: it can't be put in a deck.`);
     else if (qty > copyLimit(id)) {
       problems.push(card.type === 'Cat' ? `${name} is a Cat, and Cats are one of a kind.` : `At most ${DECK_RULES.copies} copies of ${name}.`);
     } else if (owned && qty > owned(id)) problems.push(`You have only ${copies(owned(id))} of ${name}.`);
@@ -89,6 +90,7 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   if (!card || !hero) return 'That card is not available.';
   const name = cardName(id);
   if (card.type === 'Hero Cat') return `${name} is a Hero Cat: Hero Cats lead a deck, they don't go in it.`;
+  if (card.token) return `${name} comes into play from another card: it can't be put in a deck.`;
   if (card.family !== hero.family && !isNeutralFamily(card.family)) {
     const other = otherFamilies(deck).find((f) => f !== card.family);
     if (other) return `Your deck already uses ${other}. Besides ${cardName(deck.hero)}'s ${hero.family}, a deck can have one other family.`;

@@ -15,7 +15,7 @@ export function playableHeroes(): string[] {
 /** Families that have cards to build with, besides Garden. */
 export function families(): string[] {
   const set = new Set<string>();
-  for (const c of Object.values(CARDS)) if (c.type !== 'Hero Cat' && !c.preview && c.family !== NEUTRAL_FAMILY) set.add(c.family);
+  for (const c of Object.values(CARDS)) if (c.type !== 'Hero Cat' && !c.preview && !c.token && c.family !== NEUTRAL_FAMILY) set.add(c.family);
   return [...set].sort();
 }
 
@@ -23,7 +23,7 @@ export function families(): string[] {
 export function cardPool(hero: string, partner?: string): string[] {
   const allowed = new Set([CARDS[hero].family, NEUTRAL_FAMILY, ...(partner ? [partner] : [])]);
   return Object.values(CARDS)
-    .filter((c) => c.type !== 'Hero Cat' && !c.preview && allowed.has(c.family))
+    .filter((c) => c.type !== 'Hero Cat' && !c.preview && !c.token && allowed.has(c.family))
     .map((c) => c.id);
 }
 
@@ -74,10 +74,10 @@ const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]
 
 /** A card or Hero Cat by id or name, forgiving about case, accents, punctuation and a title after a comma. */
 export function findCard(text: string, heroes = false): string | undefined {
-  if (CARDS[text] && (CARDS[text].type === 'Hero Cat') === heroes && !CARDS[text].preview) return text;
+  if (CARDS[text] && (CARDS[text].type === 'Hero Cat') === heroes && !CARDS[text].preview && !CARDS[text].token) return text;
   const want = norm(text);
   if (!want) return undefined;
-  const candidates = Object.values(CARDS).filter((c) => (c.type === 'Hero Cat') === heroes && !c.preview && (!heroes || BEHAVIOURS[c.id]?.growUp));
+  const candidates = Object.values(CARDS).filter((c) => (c.type === 'Hero Cat') === heroes && !c.preview && !c.token && (!heroes || BEHAVIOURS[c.id]?.growUp));
   return (candidates.find((c) => norm(c.name) === want) ?? candidates.find((c) => norm(c.name.split(',')[0]) === want)
     ?? candidates.find((c) => norm(c.id) === want))?.id;
 }

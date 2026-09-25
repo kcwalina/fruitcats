@@ -13,7 +13,7 @@ export function cardPoolText(): string {
     return `${id} ${h.name} (Hero Cat, ${h.family}). Kitten: ${h.kitten?.text.replace(/\n/g, ' ')} Big Cat (Power ${h.bigCat?.power ?? 0}): ${h.bigCat?.text.replace(/\n/g, ' ')}`;
   });
   const cards = Object.values(CARDS)
-    .filter((c) => c.type !== 'Hero Cat' && !c.preview)
+    .filter((c) => c.type !== 'Hero Cat' && !c.preview && !c.token)
     .map((c) => `${c.id} ${c.name} [${c.family}] ${c.type}, cost ${c.cost ?? 0}${c.power !== undefined ? `, ${c.power}/${c.health}` : ''}${c.text ? `: ${c.text}` : ''}`);
   return `HERO CATS\n${heroes.join('\n')}\n\nCARDS\n${cards.join('\n')}`;
 }

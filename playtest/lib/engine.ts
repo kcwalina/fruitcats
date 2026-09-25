@@ -10,3 +10,14 @@ import { registerSet } from '../../packages/engine/src/index';
 import { loadContent } from '../../content';
 export { prototypeDecks } from '../../content';
 loadContent(registerSet, { prototypes: true, prototypeDecks: false });
+
+// What-if balance experiments: PLAYTEST_CARD_MODS='{"SB1-T08":{"cost":9}}' changes cards for this process and
+// every worker it starts (they share the environment), so `npm run balance` can measure a proposed card change
+// before anyone edits a set. Never set on PC2024 or in a deploy.
+import { CARDS as ALL_CARDS } from '../../packages/engine/src/index';
+if (process.env.PLAYTEST_CARD_MODS) {
+  for (const [id, change] of Object.entries(JSON.parse(process.env.PLAYTEST_CARD_MODS) as Record<string, object>)) {
+    if (!ALL_CARDS[id]) throw new Error(`PLAYTEST_CARD_MODS: no card ${id}`);
+    Object.assign(ALL_CARDS[id], change);
+  }
+}

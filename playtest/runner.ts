@@ -5,6 +5,8 @@ import { balanceCommand } from './balance/command';
 import { reportsCommand } from './dashboard/sync';
 import { runMain } from './lib/pool';
 import { llmCompareCommand, llmPlaytestCommand } from './llm/command';
+import { deckBuildCommand } from './llm/builder';
+import { decksCommand } from './decks/command';
 import { deckHuntCommand } from './llm/hunt';
 import { playCommand } from './play/command';
 import { nightlyCommand } from './nightly/command';
@@ -15,6 +17,8 @@ const COMMANDS: Record<string, () => Promise<number>> = {
   'llm-playtest': llmPlaytestCommand,
   'llm-compare': llmCompareCommand,
   'deck-hunt': deckHuntCommand,
+  'deck-build': deckBuildCommand,
+  decks: decksCommand,
   nightly: nightlyCommand,
   // The name of the first paw build (2026-09-24), kept until every PC2024 paw asks for 'nightly'.
   weekly: nightlyCommand,

@@ -21,6 +21,8 @@
     "play": "tsx playtest/runner.ts play",
     "llm-playtest": "tsx playtest/runner.ts llm-playtest",
     "deck-hunt": "tsx playtest/runner.ts deck-hunt",
+    "deck-build": "tsx playtest/runner.ts deck-build",
+    "decks": "tsx playtest/runner.ts decks",
     "reports": "tsx playtest/runner.ts reports",
     "nightly": "tsx playtest/runner.ts nightly",
     "llm-compare": "tsx playtest/runner.ts llm-compare",

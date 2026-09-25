@@ -1,4 +1,4 @@
-// play new [--deck zest-rush|five-alarm|file.json] [--vs orchard-guard|file.json] [--seed N] [--file game.json]
+// play new [--deck zest-rush|five-alarm|LIBRARY-KEY|FC1.code|file.json] [--vs orchard-guard|…] [--seed N] [--file game.json]
 // play show | play do <your answer> | play log | play rules   [--file game.json]
 //
 // A game against the bot, one decision per command, for a player that reads: a Claude Code session doing a
@@ -10,9 +10,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arg } from '../lib/args';
+import { loadDeck } from '../decks/library';
 import {
-  DECKS, apply, prototypeDecks, rulesPrimer, choicesText, chooseAction, createGame, deckProblems, describe, parseChoice, resolveDeck,
-  type DeckList, type GameState, type PlayerId,
+  apply, rulesPrimer, choicesText, chooseAction, createGame, describe, parseChoice,
+  type GameState, type PlayerId,
 } from '../lib/engine';
 import { mulberry } from '../lib/rng';
 
@@ -20,17 +21,6 @@ interface SavedGame { state: GameState; seat: PlayerId; botSeed: number }
 
 const defaultFile = () => fileURLToPath(new URL('../.state/game.json', import.meta.url));
 const gameFile = () => resolve(arg('file') ?? defaultFile());
-
-export function loadDeck(spec: string): DeckList {
-  if (DECKS[spec]) return resolveDeck(spec);
-  // A prototype set's deck (Heat Wave's five-alarm): playable, though not a starter.
-  const prototype = prototypeDecks()[spec];
-  if (prototype) return prototype;
-  const deck = JSON.parse(readFileSync(spec, 'utf8')) as DeckList;
-  const problems = deckProblems(deck);
-  if (problems.length) throw new Error(`${spec}: ${problems.join(' ')}`);
-  return deck;
-}
 
 /** Lets the bot take every decision that is its own, until it is the reader's turn or the game ends. */
 export function botUntilTurn(g: SavedGame): void {

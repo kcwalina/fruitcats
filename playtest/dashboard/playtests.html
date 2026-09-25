@@ -223,7 +223,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
   <section class="panel">
     <div class="eyebrow">Custom decks</div>
     <ul id="customs" class="customs"><li class="note">Loading…</li></ul>
-    <div class="legend">The deck library (playtest/decks/library.json) and the best decks recent deck hunts and deck builds found. Any of them can be played in a run above. Win rates are bot games against the starter decks.</div>
+    <div class="legend">The deck library (playtest/decks/library.json) and the best decks recent deck hunts and deck builds found. Any of them can be played in a run above. Win rates are the recent average of nightly bot games against the starter decks. The library keeps at most 40: decks that keep losing go, decks that win 60% or more stay.</div>
   </section>
 
   <section class="panel chart">
@@ -586,7 +586,7 @@ function renderCustoms() {
     const where = d.inLibrary ? `library: ${esc(d.key)}` : `<button class="link" data-run="${esc(d.run)}">${esc(SOURCE[d.source] ?? d.source)}</button>`;
     return `<li><span class="dot" style="background:${esc(color)}"></span><span class="name">${esc(d.name)}</span>
       <span class="rate">${typeof d.vsStarters === 'number' ? `${Math.round(d.vsStarters * 100)}%` : ''}</span>
-      <span class="sub">${esc(d.heroName)}${d.families?.length ? ` · ${esc(d.families.join(' + '))}` : ''} · ${d.inLibrary ? `${esc(SOURCE[d.source] ?? d.source)} · ` : ''}${where}</span>
+      <span class="sub">${esc(d.heroName)}${d.families?.length ? ` · ${esc(d.families.join(' + '))}` : ''} · ${d.inLibrary ? `${esc(SOURCE[d.source] ?? d.source)} · ` : ''}${where}${d.llm ? ` · LLM player won ${d.llm.won} of ${d.llm.games}` : ''}${d.pinned ? ' · pinned' : ''}</span>
       ${d.goal || d.about ? `<span class="about">${esc(d.goal ? `For: ${d.goal}. ` : '')}${esc(d.about)}</span>` : ''}</li>`;
   }).join('');
 }

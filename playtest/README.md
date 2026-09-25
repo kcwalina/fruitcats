@@ -46,6 +46,24 @@ deck worth keeping use Kimi K3: `npm run deck-build -- --provider fireworks-k3 -
 the laptop (the key is there). It stops at `--max-usd` (default $1). The nightly and the dashboard never use
 a paid model.
 
+**One new deck a night, and a library that stays playable.** `npm run decks -- nightly` (the relay runs it on
+the laptop each evening) has Kimi K3 build one deck (about $0.10, never over $0.50), for a goal that rotates
+around the Hero Cat the library has fewest decks for; measures every library deck against the starters in bot
+games with that night's cards; and applies the retention policy (`decks/retention.ts`, numbers in
+`playtest.config.json` under `library`):
+
+- a new deck has 14 days' grace;
+- after that, a deck averaging under 35% against the starters goes, however much room there is;
+- a deck averaging 60% or more is a keeper and stays indefinitely;
+- the library holds at most 40 decks; above that the lowest score goes first: the deck's recent average win
+  rate, less 2 points a month of age. Keepers go only when keepers alone fill it; pinned decks
+  (`decks pin KEY`; a deck added by hand is pinned) never go.
+
+LLM playtest results are recorded with each deck (`decks list`) but don't decide: the LLM player wins about
+one game in five with any deck. `decks prune --dry-run` shows what the policy would do now. The library is
+published next to the card packs, and PC2024's runner takes that copy when it starts, so tonight's deck is
+played tonight (the nightly always includes the newest library deck).
+
 Decks get into the library three ways: `npm run decks -- add --code FC1.… --name …` for a deck someone made;
 `npm run decks -- import [--pc2024 http://192.168.1.74:5280]` for deck-hunt decks that beat the starters 55% of
 the time and the picks of deck builds, from this checkout's reports and PC2024's; and

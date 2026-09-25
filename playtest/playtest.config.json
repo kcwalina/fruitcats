@@ -70,6 +70,17 @@
       }
     }
   },
+  "library": {
+    "about": "Custom deck retention (playtest/decks/retention.ts) and the nightly K3 deck build (decks nightly).",
+    "cap": 40,
+    "graceDays": 14,
+    "dropBelow": 0.35,
+    "keepAbove": 0.6,
+    "agePenaltyPerMonth": 0.02,
+    "gamesPerStarter": 40,
+    "nightlyBuildProvider": "fireworks-k3",
+    "nightlyBuildMaxUsd": 0.5
+  },
   "nightly": {
     "provider": "pc2024",
     "balanceScale": 3,

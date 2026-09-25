@@ -1,4 +1,5 @@
 {
+  "lastNightly": "2026-09-25",
   "decks": {
     "heat-assault": {
       "name": "Heat Assault",
@@ -31,7 +32,19 @@
       "goal": "an aggressive Pepper deck that wins before round 8",
       "vsStarters": 0.5416666666666666,
       "from": "deck-build-20260925-005651 (gpt-oss:20b)",
-      "addedAt": "2026-09-25T01:09:44.109Z"
+      "addedAt": "2026-09-25T01:09:44.109Z",
+      "stats": {
+        "bot": [
+          {
+            "date": "2026-09-25",
+            "rate": 0.43333333333333335
+          }
+        ],
+        "llm": {
+          "games": 6,
+          "won": 0
+        }
+      }
     },
     "heat-stroke": {
       "name": "Heat Stroke",
@@ -65,7 +78,15 @@
       "goal": "an aggressive Pepper deck",
       "vsStarters": 0.55,
       "from": "deck-build-20260925-015105 (accounts/fireworks/models/kimi-k3)",
-      "addedAt": "2026-09-25T02:26:02.650Z"
+      "addedAt": "2026-09-25T02:26:02.650Z",
+      "stats": {
+        "bot": [
+          {
+            "date": "2026-09-25",
+            "rate": 0.6
+          }
+        ]
+      }
     },
     "slow-burn": {
       "name": "Slow Burn",
@@ -97,7 +118,19 @@
       "about": "Same winning Heat engine, tighter: cut the synergy-less Pocket Hamsters for Garden Snail and Jack the Pumpkin Knight so we never fall behind early, and Blaze pings our Heat units out of range of Falling Apple. Showdown plus grown Bulls and Rhinos clear the walls, then Fierce Heat units and Jolokia finish.",
       "goal": "a deck that beats Orchard Guard",
       "from": "deck-build-20260925-015934 (accounts/fireworks/models/kimi-k3)",
-      "addedAt": "2026-09-25T02:26:02.653Z"
+      "addedAt": "2026-09-25T02:26:02.653Z",
+      "stats": {
+        "bot": [
+          {
+            "date": "2026-09-25",
+            "rate": 0.5166666666666667
+          }
+        ],
+        "llm": {
+          "games": 9,
+          "won": 1
+        }
+      }
     },
     "jams-ant-army": {
       "name": "Jam's Ant Army",
@@ -130,7 +163,19 @@
       "goal": "a fun, simple deck for a new player",
       "vsStarters": 0.6333333333333333,
       "from": "deck-build-20260925-020730 (accounts/fireworks/models/kimi-k3)",
-      "addedAt": "2026-09-25T02:26:02.656Z"
+      "addedAt": "2026-09-25T02:26:02.656Z",
+      "stats": {
+        "bot": [
+          {
+            "date": "2026-09-25",
+            "rate": 0.65
+          }
+        ],
+        "llm": {
+          "games": 9,
+          "won": 2
+        }
+      }
     },
     "fruit-fortress": {
       "name": "Fruit Fortress",
@@ -165,7 +210,55 @@
       "goal": "a Tropical deck with an Orchard partner that controls the board",
       "vsStarters": 0.85,
       "from": "deck-build-20260925-021747 (accounts/fireworks/models/kimi-k3)",
-      "addedAt": "2026-09-25T02:26:02.658Z"
+      "addedAt": "2026-09-25T02:26:02.658Z",
+      "stats": {
+        "bot": [
+          {
+            "date": "2026-09-25",
+            "rate": 0.8416666666666667
+          }
+        ]
+      }
+    },
+    "hot-citrus": {
+      "name": "Hot Citrus",
+      "hero": "SB1-H01",
+      "cards": {
+        "BP1-X02": 1,
+        "HW1-P01": 3,
+        "HW1-P02": 3,
+        "HW1-P03": 3,
+        "HW1-P04": 3,
+        "HW1-P09": 3,
+        "HW1-P10": 2,
+        "HW1-P12": 3,
+        "HW1-P13": 1,
+        "HW1-P14": 1,
+        "SB1-C01": 3,
+        "SB1-C03": 3,
+        "SB1-C04": 3,
+        "SB1-C05": 3,
+        "SB1-C06": 3,
+        "SB1-C07": 2,
+        "SB1-C09": 3,
+        "SB1-C15": 1,
+        "SB1-G01": 3,
+        "SB1-G04": 3
+      },
+      "source": "built",
+      "goal": "an aggressive Citrus deck led by Sunny that wins fast",
+      "about": "Citrus speed backed by Pepper Heat: Chihuahua, Hot Sauce and Spiked Collar ping your own Heat units so they grow while they attack, and Wolf/Fox/Sour Spray/Showdown burn blockers away. Chip damage flips Sunny early, then Sneaky attackers finish through Guardians.",
+      "vsStarters": 0.425,
+      "from": "deck-build-20260925-035927 (accounts/fireworks/models/kimi-k3)",
+      "addedAt": "2026-09-25T04:05:59.602Z",
+      "stats": {
+        "bot": [
+          {
+            "date": "2026-09-25",
+            "rate": 0.43333333333333335
+          }
+        ]
+      }
     }
   }
 }

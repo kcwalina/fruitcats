@@ -1,8 +1,11 @@
 // The deck library: custom decks a playtest can name by a short key (`--deck pepper-swarm`), kept in
 // library.json next to this file. Decks come from deck hunts that beat the starters, from the LLM deck
-// builder, and from players' deck codes pasted in. The file is bundled into runner.mjs, so PC2024 knows every
-// deck that was in the library at the last deploy; a newer one travels as its deck code, which every command
-// that takes a deck accepts too.
+// builder (one a night, `decks nightly`), and from players' deck codes pasted in. The file is bundled into
+// runner.mjs, and `decks nightly` also publishes it to the pack storage, where PC2024's runner takes the
+// latest copy when it starts (refreshLibrary), so a deck built tonight is played tonight without a deploy.
+// A deck not in the library at all travels as its deck code, which every command that takes a deck accepts.
+//
+// The library is kept to a size a nightly can actually play (retention.ts).
 //
 // Every deck is checked with the deck builder's own rules when it's read: a deck that a card change made
 // illegal is left out (and `decks list` says why), rather than playing a deck no player could build.
@@ -26,16 +29,60 @@ export interface LibraryDeck extends DeckList {
   /** The run it came from, or the model that built it. */
   from?: string;
   addedAt: string;
+  /** How it has done since: what the retention policy decides on. */
+  stats?: DeckStats;
+  /** Kept whatever its results (a deck someone brought in by hand is pinned). */
+  pinned?: boolean;
+}
+
+export interface DeckStats {
+  /** Bot win rate against the starters, measured each night with that night's cards; the latest 10. */
+  bot: { date: string; rate: number }[];
+  /** LLM playtest games with it (what the LLM player managed, which says as much about the player). */
+  llm?: { games: number; won: number };
+}
+
+export interface LibraryFile {
+  decks: Record<string, LibraryDeck>;
+  /** The day `decks nightly` last ran (yyyy-mm-dd), so it runs once a day. */
+  lastNightly?: string;
 }
 
 const FILE = () => fileURLToPath(new URL('./library.json', import.meta.url));
+/** The published copy PC2024's runner reads (refreshLibrary), next to the card packs. */
+export const LIBRARY_URL = 'https://fruitcatspacks.blob.core.windows.net/packs/playtest/decks.json';
+let remote: LibraryFile | null = null;
 
-/** Every deck in the library, legal or not, by key: the file on disk in a checkout, the bundled copy in runner.mjs. */
-function allDecks(): Record<string, LibraryDeck> {
+/** The whole library file: the file on disk in a checkout, else the published copy if fetched, else the bundled one. */
+export function readLibrary(): LibraryFile {
   try {
-    if (existsSync(FILE())) return (JSON.parse(readFileSync(FILE(), 'utf8')) as { decks: Record<string, LibraryDeck> }).decks;
-  } catch { /* the bundled copy below */ }
-  return (library as unknown as { decks: Record<string, LibraryDeck> }).decks;
+    if (existsSync(FILE())) return JSON.parse(readFileSync(FILE(), 'utf8')) as LibraryFile;
+  } catch { /* the copies below */ }
+  return remote ?? (library as unknown as LibraryFile);
+}
+
+export function writeLibrary(file: LibraryFile): void {
+  if (!canSaveLibrary()) throw new Error('The deck library can only be changed in a checkout (playtest/decks/library.json).');
+  writeFileSync(FILE(), `${JSON.stringify({ ...(file.lastNightly ? { lastNightly: file.lastNightly } : {}), decks: file.decks }, null, 2)}\n`);
+}
+
+/**
+ * Away from a checkout (the runner on PC2024), take the library's published copy when it's newer than the
+ * bundled one: decks built since the last deploy. Quietly keeps the bundled copy when it can't be fetched.
+ */
+export async function refreshLibrary(): Promise<void> {
+  if (canSaveLibrary()) return;
+  try {
+    const r = await fetch(LIBRARY_URL, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return;
+    const got = await r.json() as LibraryFile;
+    if (got?.decks && typeof got.decks === 'object') remote = got;
+  } catch { /* offline: the bundled library */ }
+}
+
+/** Every deck in the library, legal or not, by key. */
+function allDecks(): Record<string, LibraryDeck> {
+  return readLibrary().decks;
 }
 
 /** The library's decks that the rules allow today, by key. */
@@ -76,19 +123,19 @@ export function saveToLibrary(entry: Omit<LibraryDeck, 'addedAt'> & { addedAt?: 
   if (problems.length) throw new Error(`${entry.name} breaks the deckbuilding rules: ${problems.join(' ')}`);
   const existing = findInLibrary(entry);
   if (existing && !key) return existing;
-  const decks = allDecks();
+  const file = readLibrary();
   const k = key ?? libraryKey(entry.name);
   const cards = Object.fromEntries(Object.entries(entry.cards).filter(([, q]) => q > 0).sort(([a], [b]) => a.localeCompare(b)));
-  decks[k] = { ...entry, cards, addedAt: entry.addedAt ?? new Date().toISOString() };
-  writeFileSync(FILE(), `${JSON.stringify({ decks }, null, 2)}\n`);
+  file.decks[k] = { ...entry, cards, addedAt: entry.addedAt ?? new Date().toISOString(), ...(entry.source === 'imported' ? { pinned: true } : {}) };
+  writeLibrary(file);
   return k;
 }
 
 export function removeFromLibrary(key: string): boolean {
-  const decks = allDecks();
-  if (!decks[key]) return false;
-  delete decks[key];
-  writeFileSync(FILE(), `${JSON.stringify({ decks }, null, 2)}\n`);
+  const file = readLibrary();
+  if (!file.decks[key]) return false;
+  delete file.decks[key];
+  writeLibrary(file);
   return true;
 }
 

@@ -38,19 +38,21 @@ function previous(kind: string, before: string): RunSummary | null {
 }
 
 /**
- * Tonight's custom decks for LLM players: the deck hunt's two best, two library decks (a different pair each
- * night), a random deck for a random Hero Cat and a starter with 8 cards swapped. Each is a deck a player could build.
+ * Tonight's custom decks for LLM players: the deck hunt's two best, the library's newest deck (built on the
+ * laptop the evening before) and one more library deck (a different one each night), a random deck for a random
+ * Hero Cat and a starter with 8 cards swapped. Each is a deck a player could build.
  */
-function customDecks(runId: string, hunted: DeckList[], library: DeckList[]): DeckList[] {
+function customDecks(runId: string, hunted: DeckList[], library: (DeckList & { addedAt?: string })[]): DeckList[] {
   const rng = mulberry(seedFrom(runId));
-  const fromLibrary = [...library].sort(() => rng() - 0.5).slice(0, 2);
+  const newest = [...library].sort((a, b) => (b.addedAt ?? '').localeCompare(a.addedAt ?? ''))[0];
+  const fromLibrary = newest ? [newest, ...library.filter((d) => d !== newest).sort(() => rng() - 0.5).slice(0, 1)] : [];
   const base = pick(rng, Object.values(DECKS));
   return [
     ...hunted,
     ...fromLibrary,
     randomDeck(rng, pick(rng, playableHeroes()), undefined, 'random deck'),
     mutateDeck(rng, base, 8, `${base.name} with 8 cards swapped`),
-  ].map((d) => ({ ...d, name: d.name.replace(/^hunt: /, 'Hunted: ') }));
+  ].map((d) => ({ name: d.name.replace(/^hunt: /, 'Hunted: '), hero: d.hero, cards: d.cards }));
 }
 
 export async function nightlyCommand(): Promise<number> {
@@ -65,7 +67,7 @@ export async function nightlyCommand(): Promise<number> {
 
   log('Bot gauntlet…');
   reportProgress(run, 'nightly', 'bot gauntlet', 0, 4);
-  const library = Object.values(libraryDecks()).map((d): DeckList => ({ name: d.name, hero: d.hero, cards: d.cards }));
+  const library = Object.values(libraryDecks()).map((d) => ({ name: d.name, hero: d.hero, cards: d.cards, addedAt: d.addedAt }));
   const balance = await runBalance({ quick: false, scale: numArg('scale') ?? cfg.balanceScale, quiet: true, extraDecks: library });
   parts.balance = balance.id;
   problems.push(...balance.problems);

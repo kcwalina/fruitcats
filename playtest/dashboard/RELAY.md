@@ -27,8 +27,7 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
      has a `name` (the run row then carries it from the start; skip `--name` if it holds a double quote). `command` must be one of `nightly`,
      `balance`, `llm-playtest`, `deck-hunt`, `deck-build`, `llm-compare` and `args` may hold only letters, digits, spaces, dots, commas and
      dashes; if either is not, mark the request `failed` with a note saying so and don't run anything. (A custom deck
-     arrives in `args` as a deck code, `FC1.…`, and a deck build's goal as plain words: both fit. The page sends a
-     deck build as `deck-hunt` with `--goal`, which the runner treats as `deck-build`, until PC2024's paw knows `deck-build`.)
+     arrives in `args` as a deck code, `FC1.…`, and a deck build's goal as plain words: both fit.)
    - Printed `"started":true` (exit 0): `update` the request with `status: "started"`, `startedAt` (now,
      ISO), `note: "Started on PC2024."` If it also printed `Upload now: <file>`, `set` that file into `runs`
      (id = file name without `.json`) and `meta/dashboard` from `playtest/.state/meta.json` right away, in

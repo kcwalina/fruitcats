@@ -29,10 +29,14 @@ sale. Please mark what must change, suggest wording, and answer the questions be
 ## Players
 
 - **Worldwide**, including the EU and UK. Data is stored in the US (Microsoft Azure).
-- **Ages:** anyone can play solo without an account. Accounts are for 13 and older (birth year asked at sign-up).
-  Buying needs 18+ or a parent's approval.
+- **Ages:** anyone can play solo without an account. Accounts are for 13 and older (birth year asked at sign-up
+  and kept on the account). Under 18: a parent's permission to create an account, and a parent's approval to buy.
 - **Data collected:** email, display name, birth year, game data, security and technical logs. No ads, no trackers,
   no payment details, nothing sold or shared.
+- **How long data is kept:** the account and its game data until the player deletes it (plus a 30-day grace
+  period); security records (sign-ins, IP addresses) 1 year; technical logs 30 days (detailed debugging logs 7 days).
+  On deletion, remaining logs and purchase records keep only a random account id, so they become anonymous; anonymous
+  purchase records are kept for accounting. The Terms version each player agreed to is recorded on the account.
 - **Contact:** there is no support email address or mailing address. Everyone reaches us through a "Contact us" form
   in the game, open without an account; we answer by email.
 - **No marketing emails at launch.** I'd like to send them later, with opt-in.

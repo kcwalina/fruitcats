@@ -217,10 +217,13 @@ CHROME = {
     "gold":      (["#fff4c2", "#e8b73a", "#8a5a0c", "#f7d774", "#b07d17", "#fff0b0", "#c89224", "#fff4c2"], "#5a3a04"),
     "prismatic": (RAINBOW, "#3a2a5a"),
     "signature": (["#2a1a15", "#120b09"], "#120b09"),
+    "signature-rainbow": (["#1a1420", "#0b0810"], "#0b0810"),
 }
 # Signature: a set's top card is printed only this way (docs/heat-wave-set.md). Charred black stone with
 # glowing lava cracks running through it. Cards opt in with "signature": true; it's never a default print.
+# "signature": "rainbow" is the same stone with cracks glowing in every colour: Mochi's, the game's own card.
 SIGNATURE = "signature"
+RAINBOW_SIGNATURE = "signature-rainbow"
 _textures: dict = {}
 
 
@@ -242,6 +245,27 @@ def signature_texture(xs, ys):
     return rgb
 
 
+def rainbow_signature_texture(xs, ys):
+    """The Signature stone, darker, with every crack glowing through the rainbow: the colour turns around the card's
+    centre, each crack white-hot in its middle."""
+    import numpy as np
+    rng = np.random.default_rng(7)
+    pts = rng.uniform(0, 1, (170, 2)) * (W, H)
+    d = np.sqrt((xs[..., None] - pts[:, 0]) ** 2 + (ys[..., None] - pts[:, 1]) ** 2)
+    d.sort(axis=-1)
+    edge = d[..., 1] - d[..., 0]
+    core = np.exp(-(edge / 3.0) ** 2)[..., None]
+    glow = np.exp(-(edge / 18) ** 2)[..., None]
+    stone = np.array([22, 17, 28], float) + 12 * np.sin(xs / 37 + np.sin(ys / 53) * 2)[..., None] / 2
+    stops = np.array([Image.new("RGB", (1, 1), c).getpixel((0, 0)) for c in RAINBOW], float)
+    t = (np.arctan2(ys - H / 2, xs - W / 2) / (2 * np.pi) + 0.1 + (xs + ys) / (W + H) * 0.35) % 1.0
+    pos = np.linspace(0, 1, len(stops))
+    hue = np.stack([np.interp(t, pos, stops[:, c]) for c in range(3)], -1)
+    rgb = stone * (1 - glow) + hue * glow
+    rgb = rgb * (1 - core) + (hue * 0.35 + 255 * 0.65) * core
+    return rgb
+
+
 def chrome_texture(finish: str) -> Image.Image:
     """The chrome's material, card-sized. Foil is brushed silver with rainbow flashes running across it at
     another angle; gold is polished bands of gold; prismatic is the rainbow turning around the card's
@@ -259,6 +283,8 @@ def chrome_texture(finish: str) -> Image.Image:
         brushed = (1 + 0.04 * np.sin(ys * 1.9 + np.sin(xs / 23) * 3))[..., None]
         if finish == SIGNATURE:
             rgb = signature_texture(xs, ys)
+        elif finish == RAINBOW_SIGNATURE:
+            rgb = rainbow_signature_texture(xs, ys)
         elif finish == "gold":
             rgb = ramp(CHROME["gold"][0], diagonal * 2) * brushed
         else:
@@ -277,7 +303,8 @@ def chrome_texture(finish: str) -> Image.Image:
 
 
 # A finish's code in the collector line, like the codes on real cards: F(oil), G(old), P(rismatic).
-FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white"), SIGNATURE: ("S", "white")}
+FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white"), SIGNATURE: ("S", "white"),
+                RAINBOW_SIGNATURE: ("S", "white")}
 
 
 def finish_tag(img: Image.Image, right: int, cy: int, finish: str) -> int:
@@ -314,7 +341,11 @@ def centered_ink(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, 
 
 def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "standard") -> Image.Image:
     """The card image. With no art_path, the picture's window is left transparent (a frame)."""
+    if finish == SIGNATURE and card.get("signature") == "rainbow":
+        finish = RAINBOW_SIGNATURE     # the rainbow Signature stone, printed where the card's Signature goes
     main, dark, tint = FAMILIES[card["family"]]
+    if finish == RAINBOW_SIGNATURE:    # night-purple, the stone's own colour, so the rainbow is the only colour on the frame
+        main, dark, tint = "#4a2f7a", "#1e1236", "#efe8ff"
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
     text = face.get("text", "")

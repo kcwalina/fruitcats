@@ -5,11 +5,6 @@ What's left for the Via Mochi account system. Everything already built, and how 
 
 Last updated 2026-09-25.
 
-## Next
-
-1. **Daily ceilings** that stop runaway costs: a cap on code emails sent per day, and on log size per service per
-   day (past it, only security events and errors are written).
-
 ## Waiting for the owner
 
 These have their own guided session ("Guide owner through launch paperwork"). The DNS steps are done (2026-09-25):

@@ -22,8 +22,22 @@ export type Category = 'ops' | 'security';
 export function log(category: Category, event: string, fields: Record<string, unknown> = {}, level = 'info') {
   const line = JSON.stringify({ time: new Date().toISOString(), service: SERVICE, level, event, ...fields });
   (level === 'error' ? console.error : console.log)(line);
-  if (blobs) queue.push({ category, line });
+  if (!blobs) return;
+  // Runaway protection: past the day's ceiling, only security events, warnings and errors are kept, until midnight UTC.
+  const day = new Date().toISOString().slice(0, 10);
+  if (today.day !== day) today = { day, bytes: 0, over: false };
+  if (today.bytes > DAILY_CEILING && category !== 'security' && level !== 'warning' && level !== 'error') return;
+  today.bytes += line.length;
+  queue.push({ category, line });
+  if (today.bytes > DAILY_CEILING && !today.over) {
+    today.over = true;
+    queue.push({ category: 'ops', line: JSON.stringify({ time: new Date().toISOString(), service: SERVICE, level: 'error', event: 'logs.ceiling_reached',
+      message: `More than ${DAILY_CEILING / 1048576} MB of logs today: only security events, warnings and errors until midnight UTC.` }) });
+  }
 }
+
+const DAILY_CEILING = Number(process.env.LOG_DAILY_MB ?? 100) * 1048576;
+let today = { day: '', bytes: 0, over: false };
 
 async function flush() {
   if (!queue.length || !blobs) return;

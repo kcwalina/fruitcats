@@ -150,6 +150,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 .daily .minibar { height: 8px; border-radius: 4px; background: var(--accent); }
 .daily td.zero { color: var(--muted); }
 .daily td.bad { color: var(--block); font-weight: 800; }
+.slow { color: var(--block); font-weight: 800; }
 .invite { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; }
 .invite .track { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
 .invite .track span { display: block; height: 100%; background: var(--accent); }
@@ -251,7 +252,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
       <div class="panel">
         <div class="eyebrow">Last 14 days (UTC)</div>
         <div class="table"><table class="daily" id="acct-days"></table></div>
-        <div class="legend">Sign-ins are completed sign-ins, with the number of people in brackets. Syncs are deck and Showcase saves from the game. New accounts come from the account service's own records.</div>
+        <div class="legend">Sign-ins are completed sign-ins, with the number of people in brackets. Syncs are deck and Showcase saves from the game. Slow counts requests to either service that took over 2 seconds. New accounts come from the account service's own records.</div>
       </div>
       <div class="panel">
         <div class="eyebrow">Invite codes</div>
@@ -259,6 +260,8 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
         <div class="legend">While sign-up is for playtesters, each new account uses up one invite. A new code is an App Service setting on viamochi-id (docs/accounts.md).</div>
         <div class="eyebrow" style="margin-top:20px">Errors, last 24 hours</div>
         <ul id="acct-errors" class="issues"></ul>
+        <div class="eyebrow" style="margin-top:20px">Slowest requests, last 24 hours</div>
+        <ul id="acct-slowest" class="issues"></ul>
       </div>
     </section>
   </div>
@@ -606,12 +609,18 @@ function renderAll() {
 // ── Accounts tab: the Via Mochi services (ops/accounts, written by the relay from `node tools/ops.mjs snapshot`) ──
 let ops = null;
 const fmtNum = (n) => (n == null ? '—' : Number(n).toLocaleString());
+/** Today's request times for one service: typical (median), 95% under, and how many took over 2 seconds. */
+function speedToday(service) {
+  const t = ops.days?.[ops.days.length - 1]?.requests?.[service];
+  if (!t?.n) return '<div class="note">No requests timed yet today.</div>';
+  return `<div class="note">Today: typical <b>${t.p50} ms</b> · 95% under <b>${t.p95} ms</b> · <span class="${t.slow ? 'slow' : ''}">${t.slow} over 2 s</span> (${t.n} requests)</div>`;
+}
 function renderAccounts() {
   if (!ops) return;
   const ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
   const names = { 'viamochi-id': ['Account service', 'id.viamochi.com: sign-in, friends, Pawtraits'], 'fruitcats-api': ['Deck sync', 'api.fruitcats.viamochi.com: decks and Showcase'] };
   $('acct-health').innerHTML = ops.health.map((h) => `<div class="panel svc">
-      <div><b>${esc(names[h.service]?.[0] ?? h.service)}</b><div class="note">${esc(names[h.service]?.[1] ?? '')}</div></div>
+      <div><b>${esc(names[h.service]?.[0] ?? h.service)}</b><div class="note">${esc(names[h.service]?.[1] ?? '')}</div>${speedToday(h.service)}</div>
       <span class="pill ${h.ok ? 'pass' : 'block'}">${h.ok ? `Up · ${h.ms} ms` : 'Down'}</span>
     </div>`).join('') + `<div class="panel svc"><div><b>Checked</b><div class="note">${esc(dayOf(ops.updatedAt))} at ${esc(timeOf(ops.updatedAt))}</div></div><span class="pill ${Date.now() - Date.parse(ops.updatedAt) > 30 * 60000 ? 'warn' : 'pass'}">${esc(ago(ops.updatedAt))}</span></div>`;
   const week = ops.days.slice(-7);
@@ -630,12 +639,14 @@ function renderAccounts() {
   $('acct-kpis').innerHTML = kpis.map(([label, n, sub]) => `<div class="kpi"><small>${esc(label)}</small><span class="num">${fmtNum(n)}</span><small>${esc(sub)}</small></div>`).join('');
   const max = Math.max(1, ...ops.days.map((d) => d.signins + d.syncs));
   const cell = (n, bad = false) => `<td class="${n ? (bad ? 'bad' : '') : 'zero'}">${n}</td>`;
-  $('acct-days').innerHTML = `<thead><tr><th>Day</th><th>New</th><th>Sign-ins</th><th>Syncs</th><th>Contact</th><th>Errors</th><th class="barcell">Activity</th></tr></thead><tbody>${
-    [...ops.days].reverse().map((d) => `<tr><td>${esc(new Date(d.day + 'T12:00:00Z').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</td>${cell(d.newAccounts)}<td class="${d.signins ? '' : 'zero'}">${d.signins}${d.signins ? ` <span class="note">(${d.signinUsers})</span>` : ''}</td>${cell(d.syncs)}${cell(d.support)}${cell(d.errors, true)}<td class="barcell"><div class="minibar" style="width:${((d.signins + d.syncs) / max) * 100}%"></div></td></tr>`).join('')}</tbody>`;
+  $('acct-days').innerHTML = `<thead><tr><th>Day</th><th>New</th><th>Sign-ins</th><th>Syncs</th><th>Contact</th><th title="Requests that took over 2 seconds">Slow</th><th>Errors</th><th class="barcell">Activity</th></tr></thead><tbody>${
+    [...ops.days].reverse().map((d) => `<tr><td>${esc(new Date(d.day + 'T12:00:00Z').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</td>${cell(d.newAccounts)}<td class="${d.signins ? '' : 'zero'}">${d.signins}${d.signins ? ` <span class="note">(${d.signinUsers})</span>` : ''}</td>${cell(d.syncs)}${cell(d.support)}${cell(Object.values(d.requests ?? {}).reduce((t, r) => t + (r?.slow ?? 0), 0), true)}${cell(d.errors, true)}<td class="barcell"><div class="minibar" style="width:${((d.signins + d.syncs) / max) * 100}%"></div></td></tr>`).join('')}</tbody>`;
   $('acct-invites').innerHTML = ops.invites?.length ? ops.invites.map((i) => `<div class="invite"><span class="mono">${esc(i.code)}</span><span class="track"><span style="width:${Math.min(100, (i.used / i.size) * 100)}%"></span></span><span class="num">${i.used} / ${i.size}</span></div>`).join('')
     : `<p class="note">${a ? 'No invite codes: sign-up is open to everyone.' : 'Waiting for the service’s totals.'}</p>`;
   $('acct-errors').innerHTML = ops.recentErrors?.length ? ops.recentErrors.map((e) => `<li><span class="times">${esc(timeOf(e.time))}</span><span><b>${esc(e.event || 'error')}</b> <span class="note">${esc(e.service)}</span>${e.message ? `<br><span class="note">${esc(e.message)}</span>` : ''}</span></li>`).join('')
     : '<li class="note">None.</li>';
+  $('acct-slowest').innerHTML = ops.slowest?.length ? ops.slowest.map((r) => `<li><span class="times">${esc(timeOf(r.time))}</span><span><b class="${r.ms > 2000 ? 'slow' : ''}">${(r.ms / 1000).toFixed(1)} s</b> ${esc(r.request)} <span class="note">${esc(r.service)} · ${esc(r.status)}</span></span></li>`).join('')
+    : '<li class="note">No requests timed yet.</li>';
 }
 
 function showTab(tab) {

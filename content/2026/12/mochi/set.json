@@ -6,12 +6,24 @@
   "requires": [
     "SB1"
   ],
+  "families": {
+    "Paragon": {
+      "colors": [
+        "#4A2F7A",
+        "#1E1236",
+        "#EFE8FF"
+      ],
+      "neutral": true,
+      "personality": "The most important cats in Fruitcats",
+      "playsLike": "One legendary card that any deck can add"
+    }
+  },
   "cards": [
     {
       "id": "MC1-X01",
       "rarity": "Legendary",
       "type": "Cat",
-      "family": "Garden",
+      "family": "Paragon",
       "signature": "rainbow",
       "name": "Mochi, the Sweet Spirit",
       "cost": 4,

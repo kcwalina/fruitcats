@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, TRIGGER_CHAIN_LIMIT, apply, chooseAction, createGame, findUnit, heroSide, legalActions, unitKeywords, unitPower,
+  CARDS, DECKS, TRIGGER_CHAIN_LIMIT, apply, chooseAction, createGame, findUnit, heroSide, legalActions, unitHealth, unitKeywords, unitPower,
   type Action, type GameState, type PlayerId, type Unit,
 } from '../src/index';
 
@@ -48,14 +48,15 @@ describe('Heat Wave as data', () => {
     expect(Object.values(DECKS['five-alarm'].cards).reduce((a, b) => a + b, 0)).toBe(50);
   });
 
-  it('Heat: a unit dealt damage that survives gets +1 Power, up to +3', () => {
+  it('Heat: a unit dealt damage that survives gets +1 Power and +1 Health, up to +3', () => {
     const s = table();
-    const badger = put(s, 0, 'HW1-P03');            // 2/3 Heat
+    const badger = put(s, 0, 'HW1-P03');            // 2/4 Heat
     const sauce = hand(s, 0, 'HW1-P09');            // Hot Sauce: deal 1 to your unit, +3 Power this round
     play(s, sauce, badger);
     expect(badger.damage).toBe(1);
     expect(badger.counters?.heat).toBe(1);
     expect(unitPower(badger, s)).toBe(2 + 1 + 3);
+    expect(unitHealth(badger, s)).toBe(4 + 1);
     badger.counters = { heat: 3 };
     badger.damage = 0;
     const sauce2 = hand(s, 0, 'HW1-P09');
@@ -66,8 +67,8 @@ describe('Heat Wave as data', () => {
 
   it('Heat: no Heat for a unit the damage defeats', () => {
     const s = table();
-    const bat = put(s, 0, 'HW1-P01');               // 1/2 Heat
-    bat.damage = 1;
+    const bat = put(s, 0, 'HW1-P01');               // 1/3 Heat
+    bat.damage = 2;
     const sauce = hand(s, 0, 'HW1-P09');
     play(s, sauce, bat);
     expect(findUnit(s, bat.uid)).toBeNull();
@@ -76,7 +77,7 @@ describe('Heat Wave as data', () => {
 
   it('Showdown: two chosen units deal their Power to each other', () => {
     const s = table();
-    const bull = put(s, 0, 'HW1-P06');              // 4/4 Heat
+    const bull = put(s, 0, 'HW1-P06');              // 4/5 Heat
     const fox = put(s, 1, 'SB1-C06');               // 3/3
     const showdown = hand(s, 0, 'HW1-P10');
     expect(legalActions(s).some((a) => a.t === 'play' && a.uid === showdown && a.target2)).toBe(true);

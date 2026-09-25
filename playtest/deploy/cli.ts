@@ -64,20 +64,32 @@ function checkEngineResolution(): void {
   console.log(`   @fruitcats/engine → ${expected}`);
 }
 
-/** Every card with a cost appears in the built JavaScript with this checkout's numbers. */
+/**
+ * Every card with a cost appears in the build with this checkout's numbers: in the game's JavaScript (the sets
+ * built into it) or in the card packs the site publishes (/packs/<set>/set.json). Quotes and escapes are dropped
+ * before comparing, since the sets can be inlined as objects, JSON strings or JSON files.
+ */
 function checkBundle(): string {
   const assets = join(DIST, 'assets');
-  const main = readdirSync(assets).find((f) => /^main-.*\.js$/.test(f));
-  if (!main) throw new Error('No main-*.js in the build.');
-  const js = readFileSync(join(assets, main), 'utf8');
+  const scripts = readdirSync(assets).filter((f) => f.endsWith('.js'));
+  // The game's entry is the main-*.js index.html loads (other pages have main-*.js entries of their own).
+  const main = /assets\/(main-[A-Za-z0-9_-]+\.js)/.exec(readFileSync(join(DIST, 'index.html'), 'utf8'))?.[1];
+  if (!main || !scripts.includes(main)) throw new Error('index.html loads no main-*.js from the build.');
+  const packs = join(DIST, 'packs');
+  const packFiles = existsSync(packs) ? readdirSync(packs).map((d) => join(packs, d, 'set.json')).filter((f) => existsSync(f)) : [];
+  const text = [...scripts.map((f) => join(assets, f)), ...packFiles].map((f) => readFileSync(f, 'utf8')).join('\n')
+    .replace(/\\u([0-9a-f]{4})/gi, (_, h: string) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/[\\"'`\s]/g, '');
   const wrong: string[] = [];
+  let checked = 0;
   for (const c of Object.values(CARDS)) {
-    if (c.type === 'Hero Cat' || c.cost === undefined) continue;
+    if (c.type === 'Hero Cat' || c.cost === undefined || c.token) continue;
+    checked++;
     const stats = [`cost:${c.cost}`, c.power !== undefined && `power:${c.power}`, c.health !== undefined && `health:${c.health}`].filter(Boolean).join(',');
-    if (!js.includes(`name:\`${c.name}\`,${stats}`) && !js.includes(`name:"${c.name}",${stats}`)) wrong.push(`${c.name} (${stats})`);
+    if (!text.includes(`name:${c.name.replace(/[\\"'`\s]/g, '')},${stats}`)) wrong.push(`${c.name} (${stats})`);
   }
   if (wrong.length) throw new Error(`The build does not carry the current stats of ${wrong.length} card(s): ${wrong.slice(0, 5).join('; ')}`);
-  console.log(`   ${main}: all ${Object.values(CARDS).filter((c) => c.cost !== undefined).length} cards carry their current stats`);
+  console.log(`   ${scripts.length} script(s) and ${packFiles.length} card pack(s): all ${checked} cards carry their current stats`);
   return main;
 }
 

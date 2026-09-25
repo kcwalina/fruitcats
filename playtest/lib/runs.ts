@@ -29,6 +29,8 @@ export interface RunSummary {
   details: Record<string, unknown>;
   /** The dashboard request that started this run (`--request <id>`), if one did. */
   request?: string;
+  /** The name it was started with, from the dashboard's form or `reports start --name`; the relay adds it. */
+  name?: string;
 }
 
 /** How far a run has got, written to progress.json while it runs; PC2024's paw lists it and the dashboard

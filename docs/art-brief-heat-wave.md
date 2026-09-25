@@ -1,6 +1,6 @@
 # Art brief: Heat Wave (HW1)
 
-**For:** <artist's name> · **From:** Krzysztof Cwalina · **Sent:** <date> · **First single card by:** <date> · **Main pictures by:** <date> · **All pictures by:** <date>
+**For:** <artist's name> · **From:** Via Mochi · **Sent:** <date> · **First single card by:** <date> · **Main pictures by:** <date> · **All pictures by:** <date>
 
 Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, naming and delivery. This
 brief lists what Heat Wave needs.

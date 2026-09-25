@@ -215,8 +215,8 @@ negligence, or fraud.
 
 ## 15. Governing law
 
-These Terms are governed by the laws of the **State of [Washington], USA**, and applicable US federal law, without
-regard to conflict-of-law rules. Subject to section 14, the courts of **[King County, Washington]** have jurisdiction.
+These Terms are governed by the laws of the **State of [State], USA**, and applicable US federal law, without
+regard to conflict-of-law rules. Subject to section 14, the courts of **[County, State]** have jurisdiction.
 If you're a consumer in the EU or UK, you also keep the protection of the mandatory laws of the country where you live.
 
 ## 16. App stores
@@ -253,42 +253,3 @@ Copyright Act with **Contact us** in the game, or at **fruitcats.viamochi.com** 
 **To reach us, use Contact us in the game:** open Settings and choose **Contact us** (or, in the sign-in window,
 **Trouble signing in?**). You don't need an account, and we answer by email. If you don't have the game, open
 **fruitcats.viamochi.com** in any web browser: it's free, with nothing to download, and Contact us is there too.
-
----
-
-### Notes for the lawyer review (remove before publishing)
-
-- The owner is an individual (no company), as decided in the store plan, and is **never the seller**: the app stores
-  and a Merchant of Record (Paddle, or Lemon Squeezy) sell every purchase. Confirm the wording of section 5 against
-  the Merchant of Record's reseller terms, and whether to register a DBA ("Via Mochi"). The owner doesn't want their
-  personal name in the documents: they name the licensor only as "Via Mochi (viamochi.com)". Confirm that's enough
-  to identify the contracting party, and how it fits the rules that make a trader's name public (the App Store's EU
-  trader details, the DMCA agent directory).
-  If Stripe is considered: plain Stripe is a payment processor, which would make the owner the seller, so only a
-  Stripe merchant-of-record product would fit.
-- Check the arbitration clause, opt-out, and small-claims carve-out for enforceability; whether to name AAA or JAMS.
-- Check the minors language (13+ accounts, parental approval for purchases) against COPPA and state laws, and the
-  app stores' requirements.
-- EU/UK digital-content withdrawal wording and the checkout consent text; Paddle's own buyer terms.
-- Section 11 (ending the Service): whether to promise an offline mode.
-- Section 7 (online play has limited room): online play runs on a fixed number of servers, with a waiting line when
-  it's full, and buyers are let in first. The owner wants no obligation to provide online play, or any waiting time, to
-  anyone, buyers included. Check that letting buyers in first doesn't create an implied promise of access (consumer
-  law; the EU Digital Content Directive's conformity rules, since online play isn't part of the Digital Items sold),
-  and that the wording holds for the app stores.
-- Section 4 (cards can change after purchase): check it against the EU Digital Content Directive (Art. 19), which
-  allows changes to purchased digital content only if the contract provides for them with a valid reason, at no cost
-  to the consumer, with clear notice, and, if a change hurts the consumer more than a little, with a right to end the
-  contract. The balance-and-art wording here may need that notice and exit added for EU/UK players.
-- Liability cap amount; the governing law and venue.
-- DMCA: section 17 points copyright notices to Contact us only. Is registering a DMCA agent with the US Copyright
-  Office needed (players can only enter display names and deck names today; photo avatars may come later)? If so,
-  can the agent be a title ("Copyright Agent, Via Mochi"), and can the listing point to Contact us, or does it need
-  an email address (for example a forwarding-only copyright@viamochi.com, since there is no mailbox)?
-- There is no support mailbox: every contact route points to **Contact us** in the game (a form, answered by
-  email, open to anyone at fruitcats.viamochi.com without an account). Confirm this is enough for the arbitration
-  opt-out, DMCA notices (the DMCA agent registration asks for an email address), and the EU/UK and app-store contact
-  rules.
-- No mailing address in the documents, at the owner's choice (the contact is Contact us on viamochi.com). Confirm
-  that's acceptable; the App Store's EU trader rules may still need one on the App Store listing, or EU storefronts
-  can be left out.

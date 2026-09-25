@@ -14,7 +14,7 @@ the test Store that's live now and one that takes real money.
 |---|---|
 | **What is sold** | Fixed **decks**, and on their own only the **single cards that come in no deck** (the owner's rule, 2026-09-24): a card that's in a deck is had by buying the deck. No random paid packs (loot-box laws), and no free cards earned by playing. The fun of opening a pack comes from a reveal animation after buying. |
 | **Singles** | Bought through a **cart** with a minimum order of about $4.99, because payment fees would eat a $0.99 purchase. No virtual currency. |
-| **Seller** | **You, as an individual.** No LLC or company: the stores and the Merchant of Record are the legal sellers and handle tax, VAT and refunds, as for most indie developers. |
+| **Seller** | **Never us.** The stores and the Merchant of Record are the legal sellers and handle tax, VAT and refunds, as for most indie developers. |
 | **Accounts** | The one **Via Mochi account**: an email, signed in with an emailed code inside the game. See [accounts.md](accounts.md). The Store needs an account, like the Collection. |
 | **Age** | Anyone can play solo without an account. Accounts need age **13+**. Buying needs **18+ or a parent's approval** (on iOS, Apple's Ask to Buy). |
 | **Web payments** | **Paddle**, a Merchant of Record (decided 2026-09-25). It is the legal seller, so it collects sales tax and VAT and handles refunds and chargebacks; players can still pay with PayPal, cards, Apple Pay or Google Pay inside its checkout. Plain PayPal or Stripe would make the owner the seller, responsible for tax in every country. |
@@ -92,9 +92,9 @@ inside the game, on every platform. The Store only adds the tester list below.
 
 | Store | How it's paid | Account for you | Store's cut |
 |---|---|---|---|
-| **Web** | Paddle overlay checkout: card, Apple Pay, Google Pay or PayPal, in local currency with tax included | Paddle, as an individual | about 5% + 50¢ |
-| **iPhone / iPad** | Apple in-app purchase (StoreKit); "Restore purchases" is required | Apple Developer, individual, $99 a year | 15% |
-| **Android** | Google Play Billing | Google Play, individual, $25 once | 15% |
+| **Web** | Paddle overlay checkout: card, Apple Pay, Google Pay or PayPal, in local currency with tax included | Paddle | about 5% + 50¢ |
+| **iPhone / iPad** | Apple in-app purchase (StoreKit); "Restore purchases" is required | Apple Developer, $99 a year | 15% |
+| **Android** | Google Play Billing | Google Play, $25 once | 15% |
 | **Steam** | Steam Microtransactions (in-game prices are set by the game) | Steamworks, $100 per game, refunded after $1,000 in sales | 30% |
 
 - **Web checkout flow:**
@@ -294,7 +294,7 @@ on a device must not keep them for long.
 
 ### 1. Take the payment (Paddle)
 
-- **Owner's part:** sign up for Paddle as an individual (Lemon Squeezy if Paddle refuses), with the website, the
+- **Owner's part:** sign up for Paddle (Lemon Squeezy if Paddle refuses), with the website, the
   Terms and a refund policy for Paddle to review. Paddle gives a **sandbox** (fake cards) at once and, after
   approval, a live account.
 - **Server:** `POST /v1/store/checkout` prices the cart on the server (the same `priceCart` the test checkout uses,
@@ -335,8 +335,7 @@ on a device must not keep them for long.
   real dollar. The brief for the lawyer already exists.
 - **Wording in the Store:** only promises we're sure we can keep. "A deck never charges you for cards you already
   have" and "every device" are gone. The deck page's "the rest are taken off the price" needs the same check.
-- **Tax:** Paddle collects and pays sales tax and VAT. The owner reports the income as a sole proprietor (see
-  [Legal](#legal-no-company-needed)).
+- **Tax:** Paddle collects and pays sales tax and VAT (see [Legal](#legal)).
 
 ### 4. Decide what's sold and at what price
 
@@ -391,10 +390,10 @@ is saved either way and can be played once the player has every card.
 - **Launch day:** set `STORE=open` on the API (and turn `STORE_TEST_CHECKOUT` off). No game build needed.
 - **Rollback:** set `STORE=off`. Everyone's tile goes back to "Coming soon".
 
-## Legal (no company needed)
+## Legal
 
-- **Tax:** US sole proprietorship, which is automatic. Report on Schedule C, pay self-employment tax on profit, and check the details with an accountant at tax time.
-- **Seller name:** your personal name appears as the seller. An optional DBA would show "Via Mochi" instead.
+- **Tax:** check the details with an accountant.
+- **Seller name:** "Via Mochi".
 - **App Store in the EU:** the EU's trader rules need a public address and phone number. Use a mailbox-service address, or leave out EU storefronts. This does not affect the web store.
 - **Terms of Service:**
   - a licence, not ownership: no cash value, no transfer or resale
@@ -420,7 +419,7 @@ is saved either way and can be played once the player has every card.
 
 | # | Phase | What gets done | Needs |
 |---|---|---|---|
-| **0** | **Decide and try out** | Rough prices. Paddle trial: sandbox checkout and webhook, and whether Paddle accepts individuals. | your sign-ups |
+| **0** | **Decide and try out** | Rough prices. Paddle trial: sandbox checkout and webhook, and whether Paddle accepts us. | your sign-ups |
 | **1** | **Engine and playtest build** | `flags.ts`, the `build:playtest` build and the playtest site; rarity and starter flags; the multi-set card registry; tests | — |
 | **2** | ~~Deck builder, Home, Collection~~ | **Done** | — |
 | **3** | **Accounts** | Done by the accounts plan (phases A0–A2): `apps/api`, sign-in, age check, account deletion, Showcase and decks per account, legal pages. The Store adds only the tester list. How accounts work: [accounts.md](accounts.md). | — |

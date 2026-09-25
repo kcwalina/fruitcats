@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 W, H = 750, 1050
 ART_BOX = (42, 138, 708, 582)          # 666 x 444 = the 3:2 art the model draws
 TEXT_BOX = (42, 660, 708, 912)
-FOOTER = "Fruitcats · Starter Box · © 2026 Krzysztof Cwalina"
+FOOTER = "Fruitcats · Starter Box · © 2026"
 
 FAMILIES = {                            # main, dark, tint
     "Citrus":   ("#F29F05", "#A86400", "#FFF1CC"),
@@ -547,7 +547,7 @@ def main() -> int:
         FAMILIES[family] = tuple(info["colors"])
     if data.get("mechanics"):
         KEYWORDS = KEYWORDS[:-3] + "|" + "|".join(data["mechanics"]) + r")\b"
-    FOOTER = f'Fruitcats · {data["name"]} · © 2026 Krzysztof Cwalina'
+    FOOTER = f'Fruitcats · {data["name"]} · © 2026'
     art_dir = set_path.parent / "art" / "illustrations"
     out_dir = set_path.parent / "art" / "cards"
     if args.frames:

@@ -54,4 +54,4 @@ python tools/compose_cards.py         # re-run after any card data change; no re
 
 ## License
 
-Proprietary. Copyright (c) 2026 Krzysztof Cwalina. All rights reserved. See [LICENSE](LICENSE).
+Proprietary. Copyright (c) 2026 Via Mochi. All rights reserved. See [LICENSE](LICENSE).

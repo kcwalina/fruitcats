@@ -12,8 +12,8 @@ Each has its own guided session: "Guide owner through the lawyer review", and "G
 [accounts.md](accounts.md#the-domain-and-its-dns)).
 
 - **Privacy Policy and Terms:** a lawyer review of both. The placeholders are filled (2026-09-24): every contact
-  route is Contact us (on viamochi.com, no account needed); the documents name "Via Mochi (viamochi.com)", with no
-  personal name and no mailing address; no marketing emails at launch. What's left in brackets is for the lawyer.
+  route is Contact us (on viamochi.com, no account needed); the documents name "Via Mochi (viamochi.com)",
+  with no mailing address; no marketing emails at launch. What's left in brackets is for the lawyer.
 - **Higher email sending limit:** an Azure support request for the `mail.viamochi.com` domain, before sign-up opens
   to everyone.
 

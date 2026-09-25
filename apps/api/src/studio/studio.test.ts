@@ -31,7 +31,7 @@ beforeAll(async () => {
 });
 afterAll(() => { server.close(); rmSync(dir, { recursive: true, force: true }); });
 
-const OWNER = 'Dev owner:Krzysztof';
+const OWNER = 'Dev owner:Reviewer';
 const ARTIST = 'Dev basil:Basil';
 const STRANGER = 'Dev nobody:Nobody';
 const AGENT = 'Studio-Agent secret-key';
@@ -124,7 +124,7 @@ describe('studio', () => {
     const ai = await call(AGENT, '/bp1/pictures/BP1-X01/comments', { json: { text: 'The star is cut off on a phone.', version, pin: { x: 0.9, y: 0.2 } } });
     expect(ai.body).toMatchObject({ author: 'ai', authorName: 'Claude', pinX: 0.9, pinY: 0.2, version });
     const mine = await call(OWNER, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Love the colours.' } });
-    expect(mine.body).toMatchObject({ author: 'owner', authorName: 'Krzysztof' });
+    expect(mine.body).toMatchObject({ author: 'owner', authorName: 'Reviewer' });
     const reply = await call(ARTIST, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Moving it left.', replyTo: ai.body.id } });
     expect(reply.body).toMatchObject({ author: 'artist', replyTo: ai.body.id });
     expect((await call(ARTIST, `/bp1/comments/${ai.body.id}`, { json: { done: true } })).body.done).toBe(true);

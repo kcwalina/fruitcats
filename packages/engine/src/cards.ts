@@ -51,6 +51,8 @@ export interface SetData {
   /** `released` sets are for everyone; `prototype` ones only for playtests and tools. */
   status?: 'released' | 'prototype' | string;
   released?: string;
+  /** Its decks are the starter decks everyone has for free, so its cards come with them (docs/store-plan.md). */
+  starter?: boolean;
   requires?: string[];
   families?: Record<string, FamilyDef>;
   mechanics?: Record<string, MechanicDef>;

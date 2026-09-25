@@ -2,14 +2,16 @@
 // instance, flushed every ~10 seconds. "ops" is kept 30 days; "security" a year, tamper-proof. Same layout as
 // viamochi-id's, so tools/ops reads both:
 //   logs/logs/ops/fruitcats-api/2026/09/24/21-<instance>.jsonl    security/security/fruitcats-api/2026/09/24/21-<instance>.jsonl
-// Account ids appear; emails, deck names and other text players type never do.
+// Account ids appear; emails, deck names and other text players type never do. Run locally (LOCAL_DATA set), events
+// are only printed.
 
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 
 const SERVICE = 'fruitcats-api';
 const endpoint = process.env.BLOB_ENDPOINT ?? 'https://fruitcatsdata.blob.core.windows.net';
-const blobs = new BlobServiceClient(endpoint, new DefaultAzureCredential());
+const local = !!process.env.LOCAL_DATA;
+const blobs = local ? null : new BlobServiceClient(endpoint, new DefaultAzureCredential());
 const instance = (process.env.WEBSITE_INSTANCE_ID ?? 'local').slice(0, 8);
 const queue: { category: string; line: string }[] = [];
 const created = new Set<string>();
@@ -20,11 +22,11 @@ export type Category = 'ops' | 'security';
 export function log(category: Category, event: string, fields: Record<string, unknown> = {}, level = 'info') {
   const line = JSON.stringify({ time: new Date().toISOString(), service: SERVICE, level, event, ...fields });
   (level === 'error' ? console.error : console.log)(line);
-  queue.push({ category, line });
+  if (blobs) queue.push({ category, line });
 }
 
 async function flush() {
-  if (!queue.length) return;
+  if (!queue.length || !blobs) return;
   const batch = queue.splice(0);
   const hour = new Date().toISOString().slice(0, 13).replace(/[-T]/g, '/');   // 2026/09/24/21
   for (const category of new Set(batch.map((b) => b.category))) {

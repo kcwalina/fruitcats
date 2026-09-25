@@ -6,28 +6,32 @@
 //   POST /v1/sync   { decks: SyncDeck[], showcase?: SyncShowcase }  →  the merged state, the same shape
 //   GET  /v1/export                  →  everything stored for the signed-in account ("Export my data")
 //   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
+//   /v1/store…                       →  the Store, while it's only for testers (store.ts)
 //
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { TableClient, TableServiceClient } from '@azure/data-tables';
-import { DefaultAzureCredential } from '@azure/identity';
-import { CARDS } from '@fruitcats/engine';
+import { CARDS, registerSet } from '@fruitcats/engine';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { loadContent } from '../../../content';
 import { log } from './logs';
+import { eraseOrders, exportOrders, storeRequest } from './store';
+import { LOCAL_DATA, table } from './tables';
+
+// The engine has no cards of its own. Every set, prototypes too: a deck may hold cards from a set the Store sells
+// before it's released, and decks are checked against the cards.
+loadContent(registerSet, { prototypes: true });
 
 const ID_SERVICE = process.env.VIAMOCHI_ID ?? 'https://viamochi-id.azurewebsites.net';
-const TABLES = process.env.TABLE_ENDPOINT ?? 'https://fruitcatsdata.table.core.windows.net';
 const ORIGINS = new Set((process.env.ALLOWED_ORIGINS ??
   'https://fruitcats.viamochi.com,https://polite-sea-0773d4b1e.3.azurestaticapps.net,https://playtest.fruitcats.viamochi.com,http://localhost:5173').split(','));
 const MAX_DECKS = 200;
 const MAX_BODY = 512 * 1024;
 
 const jwks = createRemoteJWKSet(new URL(`${ID_SERVICE}/.well-known/jwks.json`));
-const credential = new DefaultAzureCredential();
-const decksTable = new TableClient(TABLES, 'decks', credential);
-const showcaseTable = new TableClient(TABLES, 'showcase', credential);
+const decksTable = table('decks');
+const showcaseTable = table('showcase');
 
 /** A deck as the game stores it, with when it last changed. A deleted deck stays as a marker, so it doesn't come back. */
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
@@ -83,8 +87,7 @@ function cleanShowcase(s: unknown): SyncShowcase | null {
 async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown }) {
   // What the account has.
   const stored = new Map<string, SyncDeck>();
-  for await (const row of decksTable.listEntities<{ rowKey: string; updatedAt: number; deleted?: boolean; data?: string }>(
-    { queryOptions: { filter: `PartitionKey eq '${user}'` } })) {
+  for (const row of await decksTable.list<{ partitionKey: string; rowKey: string; updatedAt: number; deleted?: boolean; data?: string }>(user)) {
     stored.set(row.rowKey, row.deleted ? { id: row.rowKey, updatedAt: row.updatedAt, deleted: true }
       : { id: row.rowKey, updatedAt: row.updatedAt, deck: JSON.parse(row.data ?? '{}') });
   }
@@ -95,21 +98,19 @@ async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown 
     if (have && have.updatedAt >= incoming.updatedAt) continue;
     if (!incoming.deleted && [...stored.values()].filter((d) => !d.deleted).length >= MAX_DECKS && !have) continue;
     stored.set(incoming.id, incoming);
-    await decksTable.upsertEntity({
+    await decksTable.put({
       partitionKey: user, rowKey: incoming.id, updatedAt: incoming.updatedAt, deleted: !!incoming.deleted,
       data: incoming.deleted ? '' : JSON.stringify(incoming.deck),
-    }, 'Replace');
+    });
   }
 
   let showcase: SyncShowcase | null = null;
-  try {
-    const row = await showcaseTable.getEntity<{ faces: string; updatedAt: number }>(user, 'main');
-    showcase = { faces: JSON.parse(row.faces), updatedAt: row.updatedAt };
-  } catch { /* none yet */ }
+  const row = await showcaseTable.get<{ partitionKey: string; rowKey: string; faces: string; updatedAt: number }>(user, 'main');
+  if (row) showcase = { faces: JSON.parse(row.faces), updatedAt: row.updatedAt };
   const sent = cleanShowcase(body.showcase);
   if (sent && (!showcase || sent.updatedAt > showcase.updatedAt)) {
     showcase = sent;
-    await showcaseTable.upsertEntity({ partitionKey: user, rowKey: 'main', faces: JSON.stringify(sent.faces), updatedAt: sent.updatedAt }, 'Replace');
+    await showcaseTable.put({ partitionKey: user, rowKey: 'main', faces: JSON.stringify(sent.faces), updatedAt: sent.updatedAt });
   }
   return { decks: [...stored.values()], showcase };
 }
@@ -117,14 +118,14 @@ async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown 
 /** Everything stored for an account. */
 async function exportAccount(user: string) {
   const { decks, showcase } = await sync(user, {});
-  return { decks: decks.filter((d) => !d.deleted), showcase };
+  return { decks: decks.filter((d) => !d.deleted), showcase, orders: await exportOrders(user) };
 }
 
 /** Erase everything stored for an account. */
 async function erase(user: string) {
-  for await (const row of decksTable.listEntities({ queryOptions: { filter: `PartitionKey eq '${user}'` } }))
-    await decksTable.deleteEntity(user, row.rowKey!);
-  await showcaseTable.deleteEntity(user, 'main').catch(() => {});
+  await eraseOrders(user);
+  for (const row of await decksTable.list(user)) await decksTable.remove(user, row.rowKey);
+  await showcaseTable.remove(user, 'main');
 }
 
 // ── HTTP ─────────────────────────────────────────────────────────────────────────────────────────
@@ -147,7 +148,8 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 
 const server = createServer(async (req, res) => {
   const origin = req.headers.origin;
-  if (origin && ORIGINS.has(origin)) {
+  // Run locally, any page on this computer may call it (the game's dev server picks its own port).
+  if (origin && (ORIGINS.has(origin) || (LOCAL_DATA && /^http:\/\/localhost:\d+$/.test(origin)))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -170,6 +172,12 @@ const server = createServer(async (req, res) => {
       log('security', 'account.exported', { userId: user });
       return send(res, 200, await exportAccount(user));
     }
+    if (req.url === '/v1/store' || req.url?.startsWith('/v1/store/')) {
+      const user = await accountOf(req);
+      if (!user) return send(res, 401, { error: 'signed_out' });
+      const [status, body] = await storeRequest(user, req.method ?? 'GET', req.url, () => readJson(req));
+      return send(res, status, body);
+    }
     const deleting = /^\/v1\/accounts\/([0-9a-f]{32})$/.exec(req.url ?? '');
     if (deleting && req.method === 'DELETE') {
       if (!await serviceCall(req, deleting[1], 'delete-account')) return send(res, 401, { error: 'not_allowed' });
@@ -185,6 +193,6 @@ const server = createServer(async (req, res) => {
 });
 
 // Listen first: App Service gives up on a container that doesn't answer soon after starting. The tables are made in
-// the background, so a fresh storage account needs no setup.
-server.listen(Number(process.env.PORT) || 8080, () => console.log('fruitcats-api listening'));
-void Promise.all(['decks', 'showcase'].map((t) => new TableServiceClient(TABLES, credential).createTable(t).catch(() => {})));
+// the background (tables.ts), so a fresh storage account needs no setup.
+const port = Number(process.env.PORT) || 8080;
+server.listen(port, () => console.log(`fruitcats-api listening on ${port}${LOCAL_DATA ? ` (local data in ${LOCAL_DATA})` : ''}`));

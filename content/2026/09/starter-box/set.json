@@ -4,6 +4,7 @@
   "version": "0.3.1",
   "status": "released",
   "released": "2026-09",
+  "starter": true,
   "families": {
     "Citrus": {
       "colors": [

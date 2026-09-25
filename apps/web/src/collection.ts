@@ -1,23 +1,27 @@
-// The cards a player has. For now everyone has the three starter decks, added together (so Garden
-// cards, which are in all three, come in plenty). A store would add its decks and cards here, and the
-// deck builder only ever asks through these functions.
+// The cards a player has: the starter decks added together (so Garden cards, which are in all three, come in
+// plenty), plus what their Via Mochi account bought in the Store (shop.ts). The deck builder only ever asks through
+// these functions.
 
-import { CARDS, DECKS } from '@fruitcats/engine';
+import { CARDS, SETS } from '@fruitcats/engine';
+import { starterCollection } from '@fruitcats/store';
+import { purchased } from './shop';
 
-const COLLECTION: Record<string, number> = {};
-for (const deck of Object.values(DECKS)) {
-  COLLECTION[deck.hero] = (COLLECTION[deck.hero] ?? 0) + 1;
-  for (const [id, qty] of Object.entries(deck.cards)) COLLECTION[id] = (COLLECTION[id] ?? 0) + qty;
+/** The starter copies, worked out again only when the loaded sets change (a card pack can arrive after start-up). */
+let starter: { sets: string; have: Record<string, number> } | null = null;
+function starterCopies(): Record<string, number> {
+  const sets = Object.values(SETS).map((s) => `${s.set}@${s.version}`).join();
+  if (starter?.sets !== sets) starter = { sets, have: starterCollection() };
+  return starter.have;
 }
 
 /** How many copies of a card the player has. */
 export function owned(id: string): number {
-  return COLLECTION[id] ?? 0;
+  return (starterCopies()[id] ?? 0) + purchased(id);
 }
 
 /** The Hero Cats the player can build a deck around. */
 export function ownedHeroes(): string[] {
-  return Object.keys(COLLECTION).filter((id) => CARDS[id]?.type === 'Hero Cat');
+  return Object.keys(CARDS).filter((id) => CARDS[id].type === 'Hero Cat' && owned(id) > 0);
 }
 
 /** The cards that can go in a deck (not Hero Cats), in card-number order. */

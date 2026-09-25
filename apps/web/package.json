@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fruitcats/engine": "*"
+    "@fruitcats/engine": "*",
+    "@fruitcats/store": "*"
   },
   "devDependencies": {
     "marked": "^18.0.14"

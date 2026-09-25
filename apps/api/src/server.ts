@@ -37,8 +37,12 @@ const showcaseTable = table('showcase');
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
 interface SyncShowcase { faces: string[]; updatedAt: number }
 
+/** Local only (npm run api:local -- --fake-sign-in): "Bearer dev-<account id>" is that account, no email code needed. */
+const FAKE_SIGN_IN = !!LOCAL_DATA && process.env.FAKE_SIGN_IN === 'on';
+
 async function accountOf(req: IncomingMessage): Promise<string | null> {
   const auth = req.headers.authorization ?? '';
+  if (FAKE_SIGN_IN && /^Bearer dev-[0-9a-f]{32}$/.test(auth)) return auth.slice('Bearer dev-'.length);
   if (!auth.startsWith('Bearer ')) return null;
   try {
     const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });

@@ -5,11 +5,11 @@
 // It syncs when you sign in (which also uploads the decks this device already had), when the game starts, when you
 // come back to it, when the connection returns, and two seconds after each change. Offline, changes simply wait.
 
+import { API } from './api';
 import { session, signOut, token } from './auth';
 import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type MyDeck } from './mydecks';
 import { applySyncedShowcase, forgetShowcase, onShowcaseChanged, savedShowcase } from './showcase';
-
-const API = 'https://api.fruitcats.viamochi.com';
+import { forgetStore } from './shop';
 
 interface Host { render(): void }
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
@@ -80,11 +80,12 @@ async function run(): Promise<boolean> {
 }
 
 /**
- * Sign out: send anything unsynced first, then this device forgets the account's decks and Showcase, so the next
- * person to sign in here doesn't see them. They stay safe in the account.
+ * Sign out: send anything unsynced first, then this device forgets the account's decks, Showcase and Store copy, so
+ * the next person to sign in here doesn't see them. They stay safe in the account.
  */
 export async function signOutAndForget() {
   await syncNow();
+  forgetStore();
   signOut();
   forgetDecks();
   forgetShowcase();

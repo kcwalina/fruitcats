@@ -41,8 +41,18 @@ export const cardProduct = (card: string) => `card:${card}`;
 export const deckProduct = (deck: string) => `deck:${deck}`;
 export const validProductId = (id: unknown): id is string => typeof id === 'string' && /^(card|deck):[A-Za-z0-9-]{1,40}$/.test(id);
 
+/**
+ * Is this a starter set, whose decks everyone has? Sets say so (`starter`). A card pack published before sets said
+ * it can replace the built-in Starter Box, so when no loaded set says, the released sets are the starters, as before.
+ */
+function isStarterSet(set: string): boolean {
+  const s = SETS[set];
+  if (!s) return false;
+  return Object.values(SETS).some((x) => x.starter) ? !!s.starter : s.status === 'released';
+}
+
 /** Cards of a starter set come free with the starter decks, so they're never sold. */
-const isStarterCard = (id: string) => !!SETS[CARDS[id]?.set ?? '']?.starter;
+const isStarterCard = (id: string) => isStarterSet(CARDS[id]?.set ?? '');
 
 /** How many copies of a card are worth having: what one deck can hold, and one of each Hero Cat. */
 export function maxCopies(id: string): number {
@@ -59,7 +69,7 @@ const cardValue = (id: string) => CARD_PRICES[CARDS[id]?.rarity ?? 'Common'];
  * Starter sets are skipped whatever the list says, and so are tokens.
  */
 export function buildCatalog(sets: string[]): Catalog {
-  const onSale = sets.filter((s) => SETS[s] && !SETS[s].starter);
+  const onSale = sets.filter((s) => SETS[s] && !isStarterSet(s));
   const products: Record<string, Product> = {};
   for (const set of onSale) {
     for (const [key, deck] of Object.entries(SETS[set].decks ?? {})) {
@@ -70,7 +80,7 @@ export function buildCatalog(sets: string[]): Catalog {
       };
     }
     for (const c of SETS[set].cards) {
-      if (!CARDS[c.id] || CARDS[c.id].token) continue;
+      if (!CARDS[c.id] || CARDS[c.id].token || CARDS[c.id].exclusive) continue;
       products[cardProduct(c.id)] = { id: cardProduct(c.id), kind: 'card', set, price: CARD_PRICES[c.rarity ?? 'Common'], card: c.id };
     }
   }
@@ -83,7 +93,7 @@ export function buildCatalog(sets: string[]): Catalog {
 export function starterCollection(): Record<string, number> {
   const have: Record<string, number> = {};
   for (const set of Object.values(SETS)) {
-    if (!set.starter) continue;
+    if (!isStarterSet(set.set)) continue;
     for (const deck of Object.values(set.decks ?? {})) {
       have[deck.hero] = (have[deck.hero] ?? 0) + 1;
       for (const [id, qty] of Object.entries(deck.cards)) have[id] = (have[id] ?? 0) + qty;
@@ -211,17 +221,29 @@ export function priceCart(cart: CartLine[], catalog: Catalog, owned: Owned): Quo
 }
 
 /**
- * The cards a deck needs that you don't have, as a cart of singles. Cards that aren't for sale (a set not in the
- * Store yet) are listed apart. `deals` are Store decks that bring some of those cards for less than the singles
+ * Why the Store doesn't sell a card: 'exclusive' (a promo or event card, never sold: players get those another way),
+ * 'starter' (everyone has it already) or 'not-yet' (its set isn't in the Store). Null when it's for sale.
+ */
+export type NotSold = 'exclusive' | 'starter' | 'not-yet';
+export function whyNotSold(id: string, catalog: Catalog): NotSold | null {
+  if (catalog.products[cardProduct(id)]) return null;
+  if (CARDS[id]?.exclusive) return 'exclusive';
+  return isStarterCard(id) ? 'starter' : 'not-yet';
+}
+
+/**
+ * The cards a deck needs that you don't have, as a cart of singles. Cards the Store doesn't sell (see whyNotSold) are
+ * listed apart, with the copies needed. `deals` are Store decks that bring some of those cards for less than the singles
  * would cost, cheapest saving first.
  */
 export function cartForDeck(deck: DeckList, catalog: Catalog, owned: Owned) {
   const missing = missingForDeck(deck, owned);
   const lines: CartLine[] = [];
-  const unavailable: string[] = [];
+  const unavailable: { card: string; qty: number; why: NotSold }[] = [];
   for (const [id, qty] of Object.entries(missing)) {
-    if (catalog.products[cardProduct(id)]) lines.push({ product: cardProduct(id), qty });
-    else unavailable.push(id);
+    const why = whyNotSold(id, catalog);
+    if (why) unavailable.push({ card: id, qty, why });
+    else lines.push({ product: cardProduct(id), qty });
   }
   const deals = Object.values(catalog.products).flatMap((p) => {
     if (p.kind !== 'deck') return [];

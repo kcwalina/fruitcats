@@ -30,7 +30,11 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
 // playtest site; any feature still hidden from the public goes in its `define` only.
 export default defineConfig(({ mode }) => ({
   base: './',
-  define: { 'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on') },
+  define: {
+    'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on'),
+    // The Store: only in the playtest build, and there only for the API's testers (store-plan.md, Hidden until launch).
+    'import.meta.env.VITE_STORE': JSON.stringify(mode === 'playtest' ? 'on' : 'off'),
+  },
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
   plugins: [docsPages(), contentAssets()],
   build: {

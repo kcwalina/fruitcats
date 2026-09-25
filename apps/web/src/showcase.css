@@ -36,7 +36,7 @@
   color: rgba(255, 255, 255, 0.78); font: 700 14px/1 Fredoka, Nunito, sans-serif; letter-spacing: 0.2px;
 }
 .collection-screen button.seg-btn:hover:not(:disabled) { transform: none; box-shadow: none; color: #fff; }
-.collection-screen button.seg-btn.on { background: #fff; color: #2b1a0e; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
+.collection-screen button.seg-btn.on, .collection-screen button.seg-btn.on:hover:not(:disabled) { background: #fff; color: #2b1a0e; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
 
 /* ── The viewer: one card at a time, swiped with the phone's own scrolling ── */
 

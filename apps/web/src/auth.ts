@@ -5,6 +5,8 @@
 // through viamochi-id's /auth pass-through. The Entra token is then swapped at viamochi-id for our own Via Mochi
 // token, which is what our APIs accept.
 
+import { API } from './api';
+
 const ID_SERVICE = 'https://id.viamochi.com';
 const CLIENT_ID = '1ed2eaf3-3330-4328-9ca3-1519f681b6a2';
 const SCOPE = `openid offline_access api://${CLIENT_ID}/play`;
@@ -176,7 +178,6 @@ export let restoredOnSignIn = false;
 
 // ── Export and delete ───────────────────────────────────────────────────────────────────────────
 
-const FRUITCATS_API = 'https://api.fruitcats.viamochi.com';
 
 /** Everything held for this account, by the account service and by Fruitcats, as one file's contents. */
 export async function exportData(): Promise<string> {
@@ -187,7 +188,7 @@ export async function exportData(): Promise<string> {
     if (!r.ok) throw new AuthError('export', 'Couldn’t gather your data. Please try again.');
     return r.json();
   };
-  const [account, fruitcats] = await Promise.all([get(`${ID_SERVICE}/me/export`), get(`${FRUITCATS_API}/v1/export`)]);
+  const [account, fruitcats] = await Promise.all([get(`${ID_SERVICE}/me/export`), get(`${API}/v1/export`)]);
   return JSON.stringify({ exported: new Date().toISOString(), viaMochiAccount: account, fruitcats }, null, 2);
 }
 

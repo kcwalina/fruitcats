@@ -171,7 +171,22 @@ describe('a deck from a code, with cards you don’t have', () => {
   it('lists cards the Store doesn’t sell apart', () => {
     const deck = { name: 'x', hero: 'SB1-H01', cards: { 'HW1-P01': 1 } };
     const catalogHw = buildCatalog(['BP1']);
-    expect(cartForDeck(deck, catalogHw, starterOnly).unavailable).toEqual(['HW1-P01']);
+    expect(cartForDeck(deck, catalogHw, starterOnly).unavailable).toEqual([{ card: 'HW1-P01', qty: 1, why: 'not-yet' }]);
+  });
+
+  it('never sells an exclusive card, and says why', () => {
+    const card = CARDS['HW1-X02'];
+    card.exclusive = 'promo';
+    try {
+      const cat = buildCatalog(['HW1']);
+      expect(cat.products[cardProduct('HW1-X02')]).toBeUndefined();
+      expect(priceCart([{ product: cardProduct('HW1-X02'), qty: 1 }], cat, starterOnly).total).toBe(0);
+      const plan = cartForDeck({ name: 'x', hero: 'HW1-H01', cards: { 'HW1-X02': 1, 'HW1-P01': 3 } }, cat, starterOnly);
+      expect(plan.unavailable).toEqual([{ card: 'HW1-X02', qty: 1, why: 'exclusive' }]);
+      expect(plan.lines.map((l) => l.product)).toEqual([cardProduct('HW1-H01'), cardProduct('HW1-P01')]);
+    } finally {
+      delete card.exclusive;
+    }
   });
 
   it('asks for nothing when you have the whole deck', () => {

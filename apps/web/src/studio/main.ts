@@ -62,6 +62,8 @@ const S = {
   newInvite: '',
   busy: false,
   error: '',
+  /** Signed in, but the Studio's server didn't answer. */
+  unreachable: false,
   assignEmail: '',
   /** The picture just sent, for the wizard's “sent” line. */
   justSent: '',
@@ -117,10 +119,12 @@ async function enter() {
     }
     S.me = await api.me();
     S.error = '';
+    S.unreachable = false;
   } catch (e) {
     S.error = api.explain(e);
-    if (e instanceof api.ApiError && e.status === 401) { S.me = null; return; }
-    S.me = S.me ?? null;
+    // Signed in, but the Studio's server didn't answer: say so, rather than showing the sign-in form again.
+    S.unreachable = !(e instanceof api.ApiError && e.status === 401);
+    S.me = null;
   }
 }
 
@@ -293,9 +297,13 @@ function render() {
 function page(): string {
   if (S.fatal) return `<main class="empty"><h1>Sorry</h1><p>${esc(S.fatal)}</p></main>`;
   if (S.booting) return `<main class="empty"><div class="spinner"></div></main>`;
+  if (!S.me && !S.guest && S.unreachable && signedIn()) {
+    return `<main class="empty"><h1>The Studio can’t reach its server</h1>
+      <p>You’re signed in, but the Studio’s server didn’t answer just now. It’s usually back within a minute or two. Nothing you sent is lost.</p>
+      <p><button class="btn primary" data-click="recheck">Try again</button> <button class="btn ghost" data-click="signout">Sign out</button></p></main>`;
+  }
   if (!S.me && !S.guest) {
-    return renderSignIn(!!S.invite) + (S.invite ? '' : `<p class="si-guest"><button class="link" data-click="guest">Look around without signing in</button></p>`)
-      + (S.error ? `<p class="si-guest si-error">${esc(S.error)}</p>` : '');
+    return renderSignIn(!!S.invite, S.error) + (S.invite ? '' : `<p class="si-guest"><button class="link" data-click="guest">Look around without signing in</button></p>`);
   }
   const r = S.route;
   const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
@@ -892,7 +900,7 @@ async function act(action: string) {
   switch (verb) {
     case 'guest': S.guest = true; await onRoute(); return;
     case 'signin': S.guest = false; render(); return;
-    case 'signout': if (DEV) setDevUser(null); else signOut(); S.me = null; S.views.clear(); S.images.clear(); render(); return;
+    case 'signout': if (DEV) setDevUser(null); else signOut(); S.me = null; S.unreachable = false; S.error = ''; S.views.clear(); S.images.clear(); render(); return;
     case 'welcome': try { localStorage.setItem(welcomeKey(args[0]), '1'); } catch { /* shown again next time */ } render(); window.scrollTo(0, 0); return;
     case 'asartist': S.asArtist = args[0] === '1'; render(); window.scrollTo(0, 0); return;
     case 'retry': S.error = ''; await onRoute(); return;
@@ -973,6 +981,7 @@ root.addEventListener('click', (e) => {
   if (!el) return;
   e.preventDefault();
   const action = el.dataset.click!;
+  if (!S.me && !S.guest && (action === 'recheck' || action === 'signout')) { void act(action); return; }
   if (!S.me && !S.guest && (action.startsWith('si:') || action.startsWith('dev:'))) {
     void signInClick(action.replace(/^si:/, ''), () => void afterSignIn(), render);
     return;

@@ -524,6 +524,21 @@ button.delete-deck {
   gap: 6px; font-size: 14px; background: none; box-shadow: none;
 }
 button.delete-deck:hover { background: rgba(179, 38, 30, 0.08); box-shadow: none; }
+/* Deck codes: Copy deck code is a quiet text button like Delete; "Deck from a code" is a dialog like Delete's. */
+button.copy-code {
+  align-self: center; margin-top: 8px; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; font-size: 14px; background: none; box-shadow: none;
+}
+button.copy-code:hover { background: rgba(61, 157, 82, 0.1); box-shadow: none; }
+.code-note { margin: 0; text-align: center; font-size: 13px; font-weight: 700; color: #2f7d40; }
+.code-plus svg { width: 32px; height: 32px; }
+.import-dialog .code-box {
+  display: block; width: 100%; box-sizing: border-box; margin: 0 0 12px; padding: 10px 12px; resize: none; border-radius: 12px;
+  border: 2px solid rgba(90, 60, 30, 0.25); font: 600 14px/1.35 ui-monospace, Consolas, monospace; word-break: break-all;
+  background: #fffdf6; color: #3b2a1a;
+}
+.import-dialog .code-box:focus { outline: none; border-color: #3d9d52; box-shadow: 0 0 0 3px rgba(61, 157, 82, 0.25); }
+.delete-dialog p.import-error { margin: -4px 0 12px; color: #b3261e; }
 .new-plus { width: 64px; height: 64px; flex: none; display: grid; place-items: center; font: 700 40px/1 Fredoka, Nunito, sans-serif; border-radius: 12px; }
 /* The rules are in the rulebook (§11.1); a link to them sits beside "Your decks". */
 .deck-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }

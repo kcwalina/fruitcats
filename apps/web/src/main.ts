@@ -1123,7 +1123,7 @@ function renderRules(): string {
 
 // The deck builder's name boxes: the deck is renamed as you type (Enter just closes the keyboard).
 app.addEventListener('input', (event) => {
-  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
+  const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname], [data-deckcode]');
   if (input) deckInput(input);
   const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
   if (field) accountInput(field);

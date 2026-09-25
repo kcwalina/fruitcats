@@ -107,6 +107,15 @@ export const SETS: Record<string, SetData> = {};
 export const PLUGINS: Plugin[] = [];
 
 /**
+ * Cards (and Hero Cat faces, as `<id>:kitten` / `<id>:bigCat`) with a lasting grant to units other than a
+ * Toy's own: auras and "while…" grants. The engine only looks for auras when one of these is in play.
+ */
+export const AURA_SOURCES = new Set<string>();
+/** Hero Cats whose Kitten or Big Cat face grants auras, by id (the same facts as AURA_SOURCES, for a fast check). */
+export const AURA_HEROES = new Map<string, { kitten: boolean; bigCat: boolean }>();
+const grantsAura = (abilities: Ability[] | undefined) => !!abilities?.some((a) => a.static?.grant && a.static.to !== 'attached');
+
+/**
  * A vanilla card the bot puts in place of cards it can't see (the opponent's hand) when it searches.
  * Part of the engine, not of any set.
  */
@@ -128,6 +137,13 @@ export function registerSet(data: SetData, plugin?: Plugin): void {
   for (const c of [...data.cards, ...(data.tokens ?? []).map((t) => ({ ...t, token: true }))]) {
     CARDS[c.id] = { ...c, set: data.set };
     keywordCache.delete(c.id);
+    for (const [key, abilities] of [[c.id, c.abilities], [`${c.id}:kitten`, c.kitten?.abilities], [`${c.id}:bigCat`, c.bigCat?.abilities]] as const) {
+      if (grantsAura(abilities)) AURA_SOURCES.add(key);
+      else AURA_SOURCES.delete(key);
+    }
+    if (grantsAura(c.kitten?.abilities) || grantsAura(c.bigCat?.abilities))
+      AURA_HEROES.set(c.id, { kitten: grantsAura(c.kitten?.abilities), bigCat: grantsAura(c.bigCat?.abilities) });
+    else AURA_HEROES.delete(c.id);
   }
   for (const [key, deck] of Object.entries(data.decks ?? {})) DECKS[key] = deck;
   if (plugin && !PLUGINS.some((x) => x.id === plugin.id)) PLUGINS.push(plugin);
@@ -137,6 +153,8 @@ export function registerSet(data: SetData, plugin?: Plugin): void {
 export function clearCatalog(): void {
   for (const r of [CARDS, DECKS, FAMILIES, MECHANICS, SETS] as Record<string, unknown>[]) for (const k of Object.keys(r)) delete r[k];
   PLUGINS.length = 0;
+  AURA_SOURCES.clear();
+  AURA_HEROES.clear();
   keywordCache.clear();
   registerCore();
 }

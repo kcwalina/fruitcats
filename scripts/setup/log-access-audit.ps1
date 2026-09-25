@@ -1,8 +1,7 @@
 #Requires -Version 7.3
 # One-time setup: turns on Azure's read log (StorageRead) for both storage accounts, so the Accounts tab of the
 # playtest dashboard can show who read the services' logs (tools/ops.mjs, "Who read the logs"). Each account writes
-# its read log into its own insights-logs-storageread container, kept for 90 days. nightly-reader-viamochi can't
-# read that container. See docs/accounts.md.
+# its read log into its own insights-logs-storageread container, kept for 90 days. See docs/accounts.md.
 # Runs as Claude's agent (its own CLI folder, ~/.azure-viamochi-agent), which already has the rights it needs; no
 # sign-in, and the owner's own `az` login isn't used.
 $ErrorActionPreference = 'Stop'

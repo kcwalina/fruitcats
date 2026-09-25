@@ -11,25 +11,17 @@
 //                                                      14 days of sign-ins, syncs and errors, as JSON (see below)
 //
 // It signs in as Claude's agent identity (its own CLI folder, ~/.azure-viamochi-agent), which may read the logs but
-// not change them. Your own `az` login isn't used. Cloud runs (the nightly) have no CLI; they set
-// VIAMOCHI_READER_TENANT_ID, VIAMOCHI_READER_CLIENT_ID and VIAMOCHI_READER_CLIENT_SECRET instead, for the read-only
-// identity nightly-reader-viamochi (scripts/setup/nightly-reader.ps1).
+// not change them. Your own `az` login isn't used.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AzureCliCredential, ClientSecretCredential } from '@azure/identity';
+import { AzureCliCredential } from '@azure/identity';
 import { BlobServiceClient } from '@azure/storage-blob';
 
-const readerSecret = process.env.VIAMOCHI_READER_CLIENT_SECRET;
-let credential;
-if (readerSecret) {
-  credential = new ClientSecretCredential(process.env.VIAMOCHI_READER_TENANT_ID, process.env.VIAMOCHI_READER_CLIENT_ID, readerSecret);
-} else {
-  process.env.AZURE_CONFIG_DIR ??= join(homedir(), '.azure-viamochi-agent');
-  credential = new AzureCliCredential();
-}
+process.env.AZURE_CONFIG_DIR ??= join(homedir(), '.azure-viamochi-agent');
+const credential = new AzureCliCredential();
 const SOURCES = [
   { service: 'viamochi-id', account: 'viamochiidstore' },
   { service: 'fruitcats-api', account: 'fruitcatsdata' },
@@ -38,7 +30,6 @@ const CATEGORIES = { ops: ['logs', 'logs/ops'], security: ['security', 'security
 // Who may read the logs, for the Accounts tab's "Who read the logs" (see logAccess below).
 const IDENTITIES = {
   'b224f78d-5fdb-49fd-9fa0-0e64fccae134': "Claude's agent",
-  // nightly-reader-viamochi: its app id is known once scripts/setup/nightly-reader.ps1 has run.
 };
 const WATCHED_CONTAINERS = ['logs', 'security'];
 
@@ -226,8 +217,8 @@ async function snapshot() {
 //
 // Both storage accounts send their read log (Azure Monitor, StorageRead) to their own insights-logs-storageread
 // container (scripts/setup/log-access-audit.ps1). Every read of the logs and security containers is counted by the
-// identity that made it, so the Accounts tab shows whether nightly-reader-viamochi reads only what the nightly needs,
-// from where, and whether anyone else reads the logs. nightly-reader-viamochi can't read this container.
+// identity that made it, so the Accounts tab shows how much Claude's agent reads, from where, and whether anyone
+// else reads the logs.
 
 /** "1.2.3.4:5678" -> "1.2.3.4", "[2001:db8::1]:5678" -> "2001:db8::1"; an IPv6 address without a port stays whole. */
 function withoutPort(address) {

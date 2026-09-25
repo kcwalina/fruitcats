@@ -89,10 +89,7 @@ Last updated 2026-09-25.
   `https://viamochi-id.azurewebsites.net`, which is only an identifier.
 - **Observability:** both services write JSON-line logs to Blob Storage (`logs` container: ops, deleted after 30
   days; `security` container: a year, with an unlocked immutability policy). `node tools/ops.mjs events|tail` reads
-  them as Claude's agent (Storage Blob Data Reader only). Cloud runs (the nightly) have no Azure CLI and use
-  **nightly-reader-viamochi** instead: Storage Blob Data Reader on only the `logs` and `security` containers of
-  `viamochiidstore` and `fruitcatsdata`, with a password that expires after a year, created by the owner with
-  `scripts/setup/nightly-reader.ps1` and kept as `VIAMOCHI_READER_*` variables in the Claude cloud environment.
+  them as Claude's agent (Storage Blob Data Reader only).
 - **Delete account and Export my data** in the Account panel. Deletion is scheduled 30 days ahead and signs the
   player out everywhere; `viamochi-id`'s AccountPurge then erases the app data (fruitcats-api, via a service token),
   the Entra sign-in and the account. It acts in the player tenant as **Via Mochi account service**
@@ -312,8 +309,8 @@ Your personal-project users never move.
 - **Who read the logs:** Azure's own read log (StorageRead) for both storage accounts goes to each account's
   `insights-logs-storageread` container, kept 90 days (`scripts/setup/log-access-audit.ps1`, run once as Claude's
   agent). The Accounts tab counts every read of `logs` and `security` by identity: reads, refused reads, data, the
-  addresses they came from and the last read, with any identity not named in `tools/ops.mjs` in red. It is how the
-  owner watches that nightly-reader-viamochi reads only what the nightly needs; that identity can't read this record.
+  addresses they came from and the last read, with any identity not named in `tools/ops.mjs` in red. No password for
+  the logs is kept in the cloud: everything that reads them runs on the owner's laptop as Claude's agent.
 - **Alerts:** see "Alerts when something breaks" under What's set up. A scheduled Claude task ("Via Mochi health
   watch", every 20 minutes while the Claude app is open) also checks both services, restarts one that's hung, and
   reports.

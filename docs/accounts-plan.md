@@ -94,8 +94,13 @@ Last updated 2026-09-24.
 - **Delete account and Export my data** in the Account panel. Deletion is scheduled 30 days ahead and signs the
   player out everywhere; `viamochi-id`'s AccountPurge then erases the app data (fruitcats-api, via a service token),
   the Entra sign-in and the account. It acts in the player tenant as **Via Mochi account service**
-  (`e8493a20-591a-4c0d-9bb2-d41ae48f11f9`, Graph User.ReadWrite.All, **admin consent by the owner**), proved by
-  viamochi-id's managed identity through a federated credential.
+  (`e8493a20-591a-4c0d-9bb2-d41ae48f11f9`, Graph User.ReadWrite.All, admin consent granted by the owner 2026-09-24)
+  with a client secret kept only in Key Vault (`directory-client-secret`). A managed identity can't be used: Entra
+  refuses one from another tenant (AADSTS700236). viamochi-id logs `account.directory_ready` at startup.
+  - **Renew the secret before 2027-09-24** (also the agent and deploy certificates, which expire around then):
+    add a new password to the app (as `claude-agent-players`), store it as a new version of `directory-client-secret`,
+    and point the `Directory__ClientSecret` app setting at the new version's URI (the setting names an exact version,
+    because App Service caches a failed lookup).
 - **Deck and Showcase sync** through `fruitcats-api` (`POST /v1/sync`, Table Storage `decks` and `showcase`).
 - **Playtest build:** `npm run build:playtest` builds `apps/web` with the flags in `src/flags.ts` on (`ACCOUNTS`),
   into `dist-playtest/`. The public `npm run build` compiles them out.

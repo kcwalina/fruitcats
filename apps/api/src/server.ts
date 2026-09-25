@@ -20,7 +20,7 @@ import { log } from './logs';
 const ID_SERVICE = process.env.VIAMOCHI_ID ?? 'https://viamochi-id.azurewebsites.net';
 const TABLES = process.env.TABLE_ENDPOINT ?? 'https://fruitcatsdata.table.core.windows.net';
 const ORIGINS = new Set((process.env.ALLOWED_ORIGINS ??
-  'https://polite-sea-0773d4b1e.3.azurestaticapps.net,https://playtest.fruitcats.viamochi.com,http://localhost:5173').split(','));
+  'https://fruitcats.viamochi.com,https://polite-sea-0773d4b1e.3.azurestaticapps.net,https://playtest.fruitcats.viamochi.com,http://localhost:5173').split(','));
 const MAX_DECKS = 200;
 const MAX_BODY = 512 * 1024;
 

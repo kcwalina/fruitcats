@@ -377,7 +377,8 @@ function page(): string {
         : reviewing() ? withReviewerSide(r.code, r.key, picturePage(r.code, r.key)) : wizardPage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
     ${S.guest ? `<div class="banner">You’re looking around without signing in. Images you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
-    ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
+    ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}
+    <p class="built">Studio version ${esc(String(import.meta.env.VITE_BUILT ?? 'dev'))}</p>`;
 }
 
 function topBar(): string {
@@ -888,7 +889,10 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
     const wall = ([d, label]: [string, string]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`;
     body = url ? `<div class="walls">${wall(DEVICES[0])}<div class="walls-more">${DEVICES.slice(1).map(wall).join('')}</div></div>
       <p class="pv-note">Players can make any card they own into a wallpaper. A phone keeps only the middle of your image, with the clock over its upper part.</p>`
-      : '<p class="pv-empty">Upload an image to see it as a wallpaper.</p>';
+      // No image yet: the same devices, phone first, empty, so the tab looks as it will.
+      : `<div class="walls">${[DEVICES[0]].map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img wall-empty"><span>Your image here</span>${LOCK_CLOCK}</div><figcaption>${label}</figcaption></figure>`).join('')}
+        <div class="walls-more">${DEVICES.slice(1).map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img wall-empty"><span>Your image here</span></div><figcaption>${label}</figcaption></figure>`).join('')}</div></div>
+        <p class="pv-note">Upload an image to see it as a wallpaper. The phone’s lock screen is the one players use most.</p>`;
   }
   return `<div class="tabs" role="tablist">${tabs.map(([t, label]) => `<button role="tab" aria-selected="${t === tab}" class="${t === tab ? 'on' : ''}" data-click="tab:${t}">${label}</button>`).join('')}</div>
     <div class="preview tab-${tab} ${url ? '' : 'is-empty'}" data-preview="${key}">${body}</div>`;

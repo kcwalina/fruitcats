@@ -548,3 +548,6 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .wz-layout > main.picture { grid-template-columns: 340px minmax(0, 1fr); }
 .wall-phone figcaption::after { content: ' · the main one'; color: #ffc48f; }
 .wall-phone .pv-lock b { font-size: 56px; }
+.built { text-align: center; font-size: 11px; color: var(--muted); margin: 24px 0 16px; }
+.wall-empty { background: repeating-linear-gradient(45deg, #2a1f18 0 10px, #33261d 10px 20px); }
+.wall-empty span { color: #bfae99; font-weight: 700; font-size: 13px; }

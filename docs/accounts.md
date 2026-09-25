@@ -406,7 +406,10 @@ Things that make them expensive:
 - **Everyday Pawtraits:** 12 plain cats, two per fruit family, free for everyone.
 - **Legend Pawtraits:** each comes with a Legendary card, as a card-plus-Pawtrait combo. There's no separate avatar
   store. Own the card and its Pawtrait is yours. The first three are:
-  - **Mochi**, the Mango Bengal (SB1-H03): open to everyone, because Mochi's card is in a starter deck
+  - **Tango**, the Mango Bengal (SB1-H03, `legend-tango`): open to everyone, because Tango's card is in a starter deck.
+    Until 2026-09-25 this card was Mochi and its Pawtrait was `legend-mochi`; `viamochi-id` moved everyone wearing it
+    to `legend-tango` (`AvatarCatalog.Renamed`). The name Mochi now belongs to MC1-X01, Mochi, the Sweet Spirit,
+    whose own Pawtrait will be `legend-mochi` once the artist delivers it.
   - **Nova**, the Starfruit Voyager (HW1-X02)
   - **Reaper**, the Carolina Sphynx (HW1-X03)
   

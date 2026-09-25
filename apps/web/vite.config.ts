@@ -34,6 +34,8 @@ export default defineConfig(({ mode }) => ({
   base: './',
   define: {
     'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on'),
+    // When this build was made, shown at the bottom of the Artist Studio: which version a device has, at a glance.
+    'import.meta.env.VITE_BUILT': JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'),
     // The Store is in every build, but the Fruitcats API opens it only to its testers: everyone else's Store tile still
     // says "Coming soon" (store-plan.md, Hidden until launch).
     'import.meta.env.VITE_STORE': JSON.stringify('on'),

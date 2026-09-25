@@ -15,6 +15,8 @@ export const CURRENCY = 'USD';
 export const CARD_PRICES: Record<Rarity, number> = { Common: 49, Uncommon: 99, Rare: 149, Legendary: 499 };
 /** A whole deck, Hero Cat included. Bought card by card it costs about three times as much. */
 export const DECK_PRICE = 999;
+/** A Signature card (a set's top card, printed only as its Signature print; store-plan.md, Pricing), in cents. */
+export const SIGNATURE_PRICE = 1999;
 /** Payment fees would eat a smaller order, so singles are bought through a cart. */
 export const MINIMUM_ORDER = 499;
 /** More lines than any real cart has: the server refuses bigger ones. */
@@ -60,7 +62,7 @@ export function maxCopies(id: string): number {
 }
 
 /** What one copy is worth, to share a deck's price out fairly. */
-const cardValue = (id: string) => CARD_PRICES[CARDS[id]?.rarity ?? 'Common'];
+const cardValue = (id: string) => (CARDS[id]?.signature ? SIGNATURE_PRICE : CARD_PRICES[CARDS[id]?.rarity ?? 'Common']);
 
 // ── The catalog ──────────────────────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,8 @@ export function buildCatalog(sets: string[]): Catalog {
     const inDecks = new Set(Object.values(SETS[set].decks ?? {}).flatMap((d) => [d.hero, ...Object.keys(d.cards)]));
     for (const c of SETS[set].cards) {
       if (!CARDS[c.id] || CARDS[c.id].token || CARDS[c.id].exclusive || inDecks.has(c.id)) continue;
-      products[cardProduct(c.id)] = { id: cardProduct(c.id), kind: 'card', set, price: CARD_PRICES[c.rarity ?? 'Common'], card: c.id };
+      // A Signature card exists only as its Signature print, so that's what is sold, at its own price.
+      products[cardProduct(c.id)] = { id: cardProduct(c.id), kind: 'card', set, price: cardValue(c.id), card: c.id };
     }
   }
   return { currency: CURRENCY, minimumOrder: MINIMUM_ORDER, sets: onSale, products };

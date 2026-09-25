@@ -120,7 +120,7 @@ export function nextAction(p: BriefPicture, state: State, versions: Version[]): 
   const sketch = sketchFirst(p);
   if (state === 'approved') return { title: 'Approved', text: 'This picture is done. Thank you!' };
   if (state === 'changes') return { title: 'Changes asked', text: 'Read the comments below, then upload a new version. Your earlier versions are kept.' };
-  if (state === 'sketch-ok') return { title: 'Sketch approved: finish it', text: 'Paint the finished picture and upload it here, as a WebP file.' };
+  if (state === 'sketch-ok') return { title: 'Sketch approved: finish it', text: 'Finish the picture in your own tools, then upload it here as a WebP file.' };
   if (state === 'waiting') {
     const last = versions[versions.length - 1];
     return {
@@ -131,6 +131,6 @@ export function nextAction(p: BriefPicture, state: State, versions: Version[]): 
     };
   }
   return sketch
-    ? { title: 'Start with a sketch', text: 'A rough sketch is enough: the pose, the composition and the main colours. Upload it here and we’ll reply before you paint it.' }
-    : { title: 'Draw it', text: 'Upload a sketch if you’d like an early opinion, or the finished picture.' };
+    ? { title: 'Start with a sketch', text: 'Make a rough sketch in your own tools (the pose, the composition and the main colours) and upload it here. We’ll reply before you finish it.' }
+    : { title: 'Make it', text: 'Make it in your own tools, then upload a sketch if you’d like an early opinion, or the finished picture.' };
 }

@@ -26,8 +26,8 @@ const MIN_AGE = 13;
 
 export function renderSignIn(inviting: boolean, notice = ''): string {
   const intro = inviting
-    ? '<p class="si-lead">You’ve been invited to draw for Fruitcats. Sign in, or create your account, to open your set.</p>'
-    : '<p class="si-lead">Where artists draw for Fruitcats: what each picture needs, and your pictures on their cards.</p>';
+    ? '<p class="si-lead">You’ve been invited to make pictures for Fruitcats. Sign in, or create your account, to open your project.</p>'
+    : '<p class="si-lead">Where artists upload their pictures for Fruitcats. Make them with the tools of your choice; here you upload them and see them on the cards.</p>';
   let body = '';
   if (DEV) {
     body = `<p class="si-small">Development: choose a pretend account.</p>
@@ -65,7 +65,7 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
     <div class="si-art" aria-hidden="true">
       <div class="si-fan">${['foil/SP1-X01', 'signature/SP1-X03-kitten', 'gold/SP1-X02'].map((f) =>
         `<div class="si-card"><div class="si-window"><span>Your picture</span></div><img src="${BASE}cards/sp1/frames/${f}.webp" alt=""></div>`).join('')}</div>
-      <p>Draw the picture. We add the frame, the name and the rules, and you see it on the card straight away.</p>
+      <p>Make the picture with your own tools and upload it here. We add the frame, the name and the rules, and you see it on the card straight away.</p>
     </div>
     <div class="si-panel">
       <div class="brand"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></div>

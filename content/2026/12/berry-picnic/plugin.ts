@@ -23,5 +23,8 @@ function stealCounter(ctx: PluginContext, value: unknown): void {
 const plugin: Plugin = {
   id: 'berry-picnic',
   actions: { stealCounter },
+  texts: {
+    stealCounter: (value, on, self) => `take a counter from ${on} and put it on ${self} as a ${(value as { as: string }).as[0].toUpperCase()}${(value as { as: string }).as.slice(1)}`,
+  },
 };
 export default plugin;

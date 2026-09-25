@@ -2,8 +2,8 @@
 // text, a JSON reply, the deck builder's own rule check, and one round of repairs with the problems sent back.
 // The deck hunt (decks meant to break the game) and the deck builder (a deck for a goal) both use it.
 
-import { CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, cardName, deckProblems, type DeckList } from '../lib/engine';
-import { fitToSize, playableHeroes } from '../balance/decks';
+import { CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, STRATEGY_PRIMER, cardName, rulesPrimer, type DeckList } from '../lib/engine';
+import { assembleDeck, findCard, playableHeroes, type Assembled } from '../balance/decks';
 import { mulberry, seedFrom } from '../lib/rng';
 import { addUsage, noUsage, type ChatMessage, type Provider, type Usage } from './providers';
 
@@ -24,64 +24,119 @@ export const RULES = `DECKBUILDING RULES: exactly ${DECK_RULES.size} cards plus 
 
 export const deckText = (d: DeckList): string => `${d.name} (${cardName(d.hero)}, ${d.hero}): ${Object.entries(d.cards).map(([id, q]) => `${q} ${id}`).join(', ')}`;
 
-export const starterText = (): string => Object.values(DECKS).map(deckText).join('\n');
+/** A deck's shape in one line: card types, the cost curve and its families. What a deckbuilder checks first. */
+export function deckShape(d: DeckList): string {
+  const types: Record<string, number> = {};
+  const curve = [0, 0, 0, 0, 0, 0];
+  const families = new Set<string>();
+  for (const [id, q] of Object.entries(d.cards)) {
+    const c = CARDS[id];
+    if (!c) continue;
+    types[c.type] = (types[c.type] ?? 0) + q;
+    curve[Math.min(Math.max(c.cost ?? 0, 1), 6) - 1] += q;
+    families.add(c.family);
+  }
+  const t = ['Critter', 'Cat', 'Trick', 'Toy'].map((k) => `${types[k] ?? 0} ${k}s`).join(', ');
+  return `${t}; by cost ${curve.map((n, i) => `${i === 5 ? '6+' : i + 1}:${n}`).join(' ')}; families ${[...families].join(' + ')}`;
+}
 
-export const JSON_FORMAT = 'Reply with only a JSON array: [{"name": "short name", "idea": "one sentence", "hero": "SB1-H..", "cards": {"SB1-..": 3, ...}}]. Use card ids exactly as listed.';
+export const starterText = (): string => Object.values(DECKS).map((d) => `${deckText(d)}\n  shape: ${deckShape(d)}`).join('\n');
+
+/**
+ * How the game plays, so decks are built for this game and not a generic one: the rules primer the LLM
+ * players get, the strategy primer, and what the starter decks' shapes have in common.
+ */
+export function gameText(): string {
+  return `${rulesPrimer()}\n\n${STRATEGY_PRIMER}\n\nDECK SHAPE: the starter decks each run about 30-32 Critters, 3 Cats, 12-15 Tricks and 2-3 Toys, ` +
+    'with 15-20 cards costing 1, 8-11 costing 2, 10-13 costing 3 and 10 or fewer costing 4 and up. Units win games: ' +
+    'a deck with too few cheap units falls behind on the board, and a deck full of expensive cards is stuck with a hand it cannot play. ' +
+    'Depart from this shape only on purpose, and say why in the idea.';
+}
+
+export const JSON_FORMAT = 'Reply with only a JSON array: [{"name": "short name", "idea": "one or two sentences: how the deck wins", ' +
+  '"hero": "Hero Cat name or id", "cards": {"card name or id": copies, ...}}]. Aim for 50 cards (the Hero Cat is not one of them); ' +
+  'a few too many or too few is fixed for you, but choose the cards yourself: that is the deck.';
 
 export interface DesignedDeck { name: string; idea: string; deck: DeckList }
 
-function parseDecks(text: string): { name?: string; idea?: string; hero?: string; cards?: Record<string, number> }[] {
+interface Raw { name?: string; idea?: string; hero?: string; cards?: Record<string, number> }
+
+function parseDecks(text: string): Raw[] {
   const start = text.indexOf('['), end = text.lastIndexOf(']');
   if (start < 0 || end <= start) return [];
   try {
     const list = JSON.parse(text.slice(start, end + 1));
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(list) ? list.filter((d) => d && typeof d === 'object') : [];
   } catch { return []; }
 }
 
+/** Below this many of its own cards (of 50), a deck is more the filler's than the LLM's, and is rejected. */
+export const MIN_CHOSEN = 30;
+
+export interface DesignOptions {
+  /** Prefix for deck names ('hunt: '). */
+  prefix?: string;
+  /** Families the goal names: a deck must use one of them (as its Hero Cat's family or its partner). */
+  families?: string[];
+}
+
+/** The families a goal names ("an aggressive Pepper deck" names Pepper). */
+export function familiesIn(goal: string): string[] {
+  const all = new Set(Object.values(CARDS).map((c) => c.family));
+  return [...all].filter((f) => new RegExp(`\b${f}\b`, 'i').test(goal));
+}
+
+function assess(r: Raw, i: number, o: DesignOptions): { raw: Raw; name: string; made: Assembled | null; problem: string } {
+  const name = `${o.prefix ?? ''}${String(r.name ?? `idea ${i + 1}`).slice(0, 40)}`;
+  if (!r.hero || !findCard(String(r.hero), true)) return { raw: r, name, made: null, problem: `"${r.hero ?? ''}" is not a Hero Cat you can use: pick one from the HERO CATS list.` };
+  const made = assembleDeck(name, String(r.hero), r.cards ?? {}, mulberry(seedFrom(name)));
+  if (!made) return { raw: r, name, made, problem: 'it could not be made into a legal deck.' };
+  if (made.chosen < MIN_CHOSEN) {
+    return { raw: r, name, made, problem: `only ${made.chosen} of its cards could be used (${made.notes.join('; ')}). Use card names or ids from the CARDS list, from the Hero Cat's family, ${NEUTRAL_FAMILY} and at most one other family.` };
+  }
+  if (o.families?.length) {
+    const used = new Set([CARDS[made.deck.hero].family, ...Object.keys(made.deck.cards).map((id) => CARDS[id].family)]);
+    if (!o.families.some((f) => used.has(f))) return { raw: r, name, made, problem: `the goal asks for ${o.families.join(' or ')}, and this deck has no ${o.families.join(' or ')} cards.` };
+  }
+  return { raw: r, name, made, problem: '' };
+}
+
 /**
- * Asks for decks with the conversation so far (the last message says what to design), checks each with the
- * deck builder's rules and sends the problems back once. `messages` keeps the whole exchange, so a caller can
- * ask for better versions afterwards. Deck names get `prefix`.
+ * Asks for decks with the conversation so far (the last message says what to design) and makes each a legal
+ * deck with assembleDeck. A deck with no usable Hero Cat, too few usable cards, or none of the families the
+ * goal names goes back to the LLM once with the reason. `messages` keeps the whole exchange, so a caller can
+ * ask for better versions afterwards.
  */
-export async function designDecks(provider: Provider, messages: ChatMessage[], prefix = ''): Promise<{ decks: DesignedDeck[]; rejected: string[]; usage: Usage }> {
+export async function designDecks(provider: Provider, messages: ChatMessage[], o: DesignOptions = {}): Promise<{ decks: DesignedDeck[]; rejected: string[]; usage: Usage }> {
   let usage = noUsage();
-  const first = await provider.chat(messages, 6000);
+  const first = await provider.chat(messages, 8000);
   usage = addUsage(usage, first.usage);
   messages.push({ role: 'assistant', content: first.text });
   let raw = parseDecks(first.text);
-  const check = (list: typeof raw) => list.map((d, i) => {
-    const deck: DeckList = { name: `${prefix}${(d.name ?? `idea ${i + 1}`).slice(0, 40)}`, hero: d.hero ?? '', cards: d.cards ?? {} };
-    return { d, deck, problems: deckProblems(deck) };
-  });
-  let checked = check(raw);
-  const broken = checked.filter((c) => c.problems.length);
+  let checked = raw.map((r, i) => assess(r, i, o));
+  const broken = checked.filter((c) => c.problem);
   if (broken.length || !raw.length) {
     messages.push({
       role: 'user',
       content: raw.length
-        ? `These decks break the rules:\n${broken.map((b) => `- ${b.d.name}: ${b.problems.join(' ')}`).join('\n')}\nReply with only the corrected JSON array of all ${raw.length} decks.`
+        ? `These decks can't be used yet:\n${broken.map((b) => `- ${b.name}: ${b.problem}`).join('\n')}\nReply with only the corrected JSON array of all ${raw.length} decks.`
         : `That was not a JSON array of decks. ${JSON_FORMAT}`,
     });
-    const second = await provider.chat(messages, 6000);
+    const second = await provider.chat(messages, 8000);
     usage = addUsage(usage, second.usage);
     messages.push({ role: 'assistant', content: second.text });
     const fixed = parseDecks(second.text);
-    if (fixed.length) { raw = fixed; checked = check(raw); }
-  }
-  // Still the wrong size after the repair (models miscount to 50): trim or top up by rule, and say so.
-  for (const c of checked.filter((x) => x.problems.length)) {
-    const fitted = fitToSize(c.deck, mulberry(seedFrom(c.deck.name)));
-    if (!fitted) continue;
-    c.deck = fitted.deck;
-    c.problems = [];
-    c.d = { ...c.d, idea: `${c.d.idea ?? ''} (${fitted.changed} card${fitted.changed === 1 ? '' : 's'} adjusted to make 50.)`.trim() };
+    if (fixed.length) { raw = fixed; checked = raw.map((r, i) => assess(r, i, o)); }
   }
   const seen = new Set<string>();
-  const good = checked.filter((c) => !c.problems.length && !seen.has(c.deck.name) && seen.add(c.deck.name));
+  const good = checked.filter((c) => !c.problem && c.made && !seen.has(c.name) && seen.add(c.name));
   return {
-    decks: good.map((c) => ({ name: c.deck.name, idea: c.d.idea ?? '', deck: c.deck })),
-    rejected: checked.filter((c) => c.problems.length).map((c) => `${c.d.name}: ${c.problems[0]}`),
+    decks: good.map((c) => ({
+      name: c.name,
+      idea: `${c.raw.idea ?? ''}${c.made!.notes.length ? ` (Adjusted: ${c.made!.notes.join('; ')}.)` : ''}`.trim(),
+      deck: c.made!.deck,
+    })),
+    rejected: checked.filter((c) => c.problem).map((c) => `${c.name}: ${c.problem}`),
     usage,
   };
 }

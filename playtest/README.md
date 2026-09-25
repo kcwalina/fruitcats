@@ -37,6 +37,15 @@ Playtests aren't limited to the starter decks. Wherever a command takes a deck, 
 
 Every deck is checked with the deck builder's own rules, so a playtest only plays decks a player could build.
 
+**Building a deck with an LLM.** `npm run deck-build -- --goal "…"` asks for a few decks, has the bots play
+each, shows the model the results and asks for better versions, then lets it pick the one that fits the goal.
+The model names the Hero Cat and the cards it wants; the builder makes that a legal 50-card deck (unknown cards
+out, one partner family, copies capped, trimmed or topped up) and the report says what it changed. A deck the
+model chose fewer than 30 of its cards for is turned down. PC2024's gpt-oss is free but poor at this; for a
+deck worth keeping use Kimi K3: `npm run deck-build -- --provider fireworks-k3 --goal "…" --save`, run from
+the laptop (the key is there). It stops at `--max-usd` (default $1). The nightly and the dashboard never use
+a paid model.
+
 Decks get into the library three ways: `npm run decks -- add --code FC1.… --name …` for a deck someone made;
 `npm run decks -- import [--pc2024 http://192.168.1.74:5280]` for deck-hunt decks that beat the starters 55% of
 the time and the picks of deck builds, from this checkout's reports and PC2024's; and
@@ -55,7 +64,8 @@ decks never block a deploy: the deploy gate is still the starter decks alone.
 
 - `pc2024` / `pc2024-lan`: Ollama on PC2024 (port 11434), gpt-oss:20b. Free. Ollama is not a catsitter GPU tenant, so the image generator must be off the card while it plays.
 - `pc2024-jarvis`: JarvisEvo through mochi-jarvis (take its GPU lease first). Answers, but plays poorly: a photo-retouching model.
-- `fireworks`: set `FIREWORKS_API_KEY`. About $0.03–0.08 a game on gpt-oss-120b or DeepSeek.
+- `fireworks`: set `FIREWORKS_API_KEY` (or keep it in mworks' secret store as `fireworks`). About $0.03–0.08 a game on gpt-oss-120b or DeepSeek.
+- `fireworks-k3`: Kimi K3 on Fireworks, same key. For deck building only (see below): about $0.10–0.40 a build.
 - `azure`: Azure Foundry; set `AZURE_FOUNDRY_ENDPOINT` and `AZURE_FOUNDRY_KEY`.
 - `fake`: answers at random. Tries the whole pipeline without a model or a bill.
 

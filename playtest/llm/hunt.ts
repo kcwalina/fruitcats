@@ -11,19 +11,19 @@ import { deckBuildCommand } from './builder';
 import { cardName, deckCode } from '../lib/engine';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { runBalance } from '../balance/gauntlet';
-import { cardPoolText, designDecks, JSON_FORMAT, RULES, starterText, type DesignedDeck } from './design';
+import { cardPoolText, deckShape, designDecks, gameText, JSON_FORMAT, RULES, starterText, type DesignedDeck } from './design';
 import { getProvider, type ChatMessage, type Provider, type Usage } from './providers';
 
 export async function huntDecks(provider: Provider, ideas: number): Promise<{ ideas: DesignedDeck[]; rejected: string[]; usage: Usage }> {
   const messages: ChatMessage[] = [
-    { role: 'system', content: 'You are a world-class competitive card game deckbuilder and a game designer\'s playtester. Your job is to find decks that break the game.' },
+    { role: 'system', content: `You are a world-class competitive card game deckbuilder and a game designer's playtester. Your job is to find decks that break the game.\n\nHOW THE GAME PLAYS\n${gameText()}` },
     {
       role: 'user',
       content: `${cardPoolText()}\n\n${RULES}\n\nTHE STARTER DECKS (what a new deck has to beat)\n${starterText()}\n\n` +
         `Design ${ideas} different decks, each built around a specific idea for beating the starter decks: a combo, an overlooked card, a family pairing, a curve. ${JSON_FORMAT}`,
     },
   ];
-  const got = await designDecks(provider, messages, 'hunt: ');
+  const got = await designDecks(provider, messages, { prefix: 'hunt: ' });
   return { ideas: got.decks, rejected: got.rejected, usage: got.usage };
 }
 
@@ -42,7 +42,7 @@ export async function runDeckHunt(provider: Provider, ideas: number, scale: numb
     `${hunt.ideas.length} legal deck(s) of ${hunt.ideas.length + hunt.rejected.length}; each played the starters in bot games.`, '',
     ...decks.flatMap((d) => [`## ${d.name}: ${pct(d.vsStarters)} against the starters`, '', d.idea, '',
       `${cardName(d.deck.hero)}: ${Object.entries(d.deck.cards).map(([id, q]) => `${q}× ${cardName(id)}`).join(', ')}`, '',
-      `Deck code: \`${deckCode(d.deck)}\``, '']),
+      `Shape: ${deckShape(d.deck)}`, '', `Deck code: \`${deckCode(d.deck)}\``, '']),
     ...(hunt.rejected.length ? ['## Rejected (broke the deckbuilding rules)', '', ...hunt.rejected.map((r) => `- ${r}`), ''] : []),
   ];
   return finishRun(run, 'deck-hunt', balance?.games ?? 0, problems, {

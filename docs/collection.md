@@ -3,6 +3,12 @@
 The Collection is where you look at your cards, even when you're not playing. Open it from the home
 screen. It has two tabs at the top: **Showcase** and **All cards**.
 
+<div class="steps shots">
+<figure><img src="guide/collection/showcase.webp" alt="The Showcase: Tango in a Prismatic print, big in the middle of the screen" loading="lazy"><figcaption>The <b>Showcase</b>: your favourite cards, one at a time.</figcaption></figure>
+<figure><img src="guide/collection/all-cards.webp" alt="All cards: 53 of 53 collected, rarity and family filters, and the cards in a grid" loading="lazy"><figcaption><b>All cards</b>: every card in the set, and how many you have.</figcaption></figure>
+<figure><img src="guide/collection/card-open.webp" alt="Tangerine Chick open full screen, with Make wallpaper and Add to Showcase" loading="lazy"><figcaption>Tap a card to see it big, add it to your Showcase, or make it your wallpaper.</figcaption></figure>
+</div>
+
 ## Showcase
 
 Your Showcase holds the cards you're proudest of. Everyone starts with Tango, as a Kitten and as a

@@ -4,6 +4,8 @@ Any card in your [Collection](collection.md) can become a wallpaper for your pho
 The whole screen becomes the card, with its border curving along your screen's rounded corners.
 Foil, Gold and Prismatic cards keep their [finish](collection.md#finishes).
 
+<figure class="hero"><img src="guide/wallpapers/lock-screens.webp" alt="Two iPhone Lock Screens: Grapefruit Ferret, and Pippin in a Gold print, each filling the whole screen with the clock over the card's art" loading="lazy"><figcaption>The card fills the whole Lock Screen, right into the corners. Here: Grapefruit Ferret, and Pippin in Gold.</figcaption></figure>
+
 No website or web game is allowed to change your wallpaper by itself, so it takes two steps: Fruitcats
 makes the picture, then you set it as your wallpaper.
 
@@ -14,6 +16,11 @@ makes the picture, then you set it as your wallpaper.
 3. Choose **Phone**, **Tablet** or **Computer**. Fruitcats picks the one you're using, sized exactly
    for your screen.
 4. Tap **Save picture**.
+
+<div class="steps">
+<figure><img src="guide/collection/showcase.webp" alt="Tango in the Showcase, with a Make wallpaper button under the card" loading="lazy"><figcaption><b>1</b> Open a card and tap <b>Make wallpaper</b>.</figcaption></figure>
+<figure><img src="guide/wallpapers/make-2-sheet.webp" alt="The Wallpaper window: Phone, Tablet or Computer, a preview of the wallpaper, and Save picture" loading="lazy"><figcaption><b>2</b> Check the preview, and tap <b>Save picture</b>.</figcaption></figure>
+</div>
 
 What happens next depends on your device.
 

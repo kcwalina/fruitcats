@@ -47,6 +47,7 @@ def main() -> int:
          "Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, milestones and suggesting",
          "changes. This brief lists what this set needs. You'll work through it in the Artist Studio",
          f"(<{STUDIO}>), which shows the same steps one at a time.", "",
+         f"**{brief.get('note', 'All of this is a starting point.')}**", "",
          "## The set in a few lines", "", brief["about"], "", f"**Who it's for:** {brief['audience']}", "",
          f"**Style:** {brief['style']}", "", "## Families", "", "| Family | World |", "|---|---|"]
     for fam, f in brief["families"].items():
@@ -68,17 +69,16 @@ def main() -> int:
             L += [f"### `{p['file']}`: {name(p)}", ""]
             tags = [TIER.get(p["tier"], p["tier"]), STYLE.get(p["style"], p["style"])]
             if p.get("showcase"):
-                tags.append("showcase art")
+                tags.append("sold on its own: a chance to show off")
             if p.get("main"):
                 tags.append("a main picture")
             L.append(f"- **Kind:** {' · '.join(tags)}")
             r = rules(p)
             if r:
                 L.append(f"- **What the card does:** {r.replace(chr(10), ' ')}")
-            L.append(f"- **What to draw:** {p['draw']}")
-            L.append(f"- **Must keep:** {'; '.join(p['mustKeep'])}" if p["mustKeep"] else "- **Must keep:** nothing specific")
-            if p["open"]:
-                L.append(f"- **Open to change:** {', '.join(OPEN.get(o, o) for o in p['open'])}")
+            L.append(f"- **Our idea for this picture:** {p['draw']}")
+            if p["mustKeep"]:
+                L.append(f"- **Things we had in mind:** {'; '.join(p['mustKeep'])}")
             if p.get("signature") == "requested":
                 L.append("- **Signature:** please sign this picture in a corner.")
             elif p.get("signature") == "welcome":
@@ -86,7 +86,7 @@ def main() -> int:
             if p.get("pawtrait"):
                 L.append(f"- **Pawtrait:** yes, `{p['pawtrait']}` (milestone 6)")
             L.append("")
-    L += ["## Open questions for the artist", "", "- None yet. Send questions and suggestions with your first sketch.", ""]
+    L += ["## Your ideas", "", "- Tell us anything you'd like to change: names, characters, scenes, or what a card does.", ""]
     out.write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {out} ({len(brief['pictures'])} pictures)")
     return 0

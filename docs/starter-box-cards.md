@@ -110,7 +110,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 
 | ID | Name | Cost | Text | Qty |
 |---|---|---|---|---|
-| SB1-C09 | Sour Spray | 2 | Pounce. Lucky. Deal 2 damage to a unit. | 3 |
+| SB1-C09 | Sour Spray | 1 | Pounce. Lucky. Deal 2 damage to a unit. | 3 |
 | SB1-C10 | Zest Burst | 3 | Deal 3 damage to a unit. **Zest:** deal 5 instead. | 2 |
 | SB1-C11 | Peel Out | 2 | Ready a unit you control. | 2 |
 
@@ -145,7 +145,7 @@ A plain Critter of cost *N* gets **Power + Health = 2N + 1**. Keywords and effec
 | ID | Name | Cost | P/H | Text | Qty |
 |---|---|---|---|---|---|
 | SB1-O01 | Peach Bunny | 1 | 1/2 | **Hello:** Heal 2 from a unit. | 3 |
-| SB1-O02 | Pear Hedgehog | 2 | 2/3 | Guardian. | 3 |
+| SB1-O02 | Pear Hedgehog | 2 | 2/2 | Guardian. | 3 |
 | SB1-O03 | Cherry Robin | 2 | 2/2 | Ripen. **Hello:** If you control a Guardian, draw a card. | 3 |
 | SB1-O04 | Plum Mole | 3 | 2/3 | Ripen. | 3 |
 | SB1-O05 | Apricot Owl | 3 | 2/3 | **Hello:** Exhaust an enemy unit. | 3 |

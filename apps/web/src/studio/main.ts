@@ -46,7 +46,8 @@ const S = {
   tab: 'card' as Tab,
   finish: new Map<string, string>(),
   // The picture page's forms.
-  uploadKind: 'sketch' as 'sketch' | 'final',
+  /** What the artist says the chosen file is. Nothing until they pick: it's always their call. */
+  uploadKind: null as null | 'sketch' | 'final',
   uploadNote: '',
   uploading: null as null | { key: string; fraction: number },
   uploadError: '',
@@ -725,7 +726,7 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
   const up = S.uploading?.key === key ? S.uploading : null;
   const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
   if (local) {
-    const list = checks(p, local.width, local.height, local.format, S.uploadKind);
+    const list = S.uploadKind ? checks(p, local.width, local.height, local.format, S.uploadKind) : { notes: [`${local.width} × ${local.height} pixels.`], blocked: false, fix: '' };
     const code = S.route.page === 'sets' ? '' : S.route.code;
     const onCard = p.kind === 'card' || p.kind === 'token'
       ? `<div class="local-card">${cardPreview(code, key, finishesOf(p).at(-1)!.finish, local.url, 250)}</div>` : '';
@@ -735,12 +736,14 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
       <ul class="checks">${list.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>
       ${list.fix ? `<p class="fix">${esc(list.fix)}</p>` : ''}
       ${S.guest ? '<p class="muted small">This image is only on your computer. Sign in to send it to us.</p>' : `
-        <div class="seg" role="radiogroup" aria-label="What is it?">
+        <p class="kind-q"><b>Is this a sketch or the finished image?</b></p>
+        <div class="seg kind-seg ${S.uploadKind ? '' : 'unset'}" role="radiogroup" aria-label="Is this a sketch or the finished image?">
           <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
-          <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
+          <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">The finished image</button></div>
         <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
         ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
-          : `<button class="btn primary wide" data-click="upload:${key}" ${list.blocked ? 'disabled' : ''}>Send to Fruitcats</button>`}`}
+          : `<button class="btn primary wide" data-click="upload:${key}" ${list.blocked || !S.uploadKind ? 'disabled' : ''}>Send to Fruitcats</button>
+            ${S.uploadKind ? '' : '<p class="small muted">Choose sketch or finished image to send it.</p>'}`}`}
       ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another image' : 'Don’t send it'}</button>`}
       ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
     </div>`;
@@ -920,10 +923,7 @@ async function choose(key: string, file: File) {
   const old = S.local.get(key);
   if (old) URL.revokeObjectURL(old.url);
   S.local.set(key, { url, file, width: img.naturalWidth, height: img.naturalHeight, format });
-  const p = S.route.page !== 'sets' ? S.briefs.get(S.route.code)?.pictures.find((x) => keyOf(x) === key) : undefined;
-  const state = S.route.page !== 'sets' ? stateOf(S.views.get(S.route.code) ?? null, key) : 'none';
-  // A sensible guess at what it is: a sketch first, then finished once the sketch is approved.
-  S.uploadKind = p && (state === 'sketch-ok' || state === 'approved' || (!p.showcase && !p.main && format === 'webp' && img.naturalWidth === p.size[0])) ? 'final' : 'sketch';
+  S.uploadKind = null;   // always the artist's answer, never a guess
   S.uploadError = '';
   if (S.tab === 'picture') S.tab = 'card';
   render();
@@ -935,12 +935,14 @@ async function send(key: string) {
   const local = S.local.get(key);
   if (!local) return;
   const p = S.briefs.get(code)?.pictures.find((x) => keyOf(x) === key);
-  if (p && checks(p, local.width, local.height, local.format, S.uploadKind).blocked) return;
+  const kind = S.uploadKind;
+  if (!kind) return;
+  if (p && checks(p, local.width, local.height, local.format, kind).blocked) return;
   S.uploading = { key, fraction: 0 };
   S.uploadError = '';
   render();
   try {
-    const v = await api.upload(code, key, local.file, S.uploadKind, S.uploadNote.trim(), (f) => {
+    const v = await api.upload(code, key, local.file, kind, S.uploadNote.trim(), (f) => {
       S.uploading = { key, fraction: f };
       const bar = root.querySelector<HTMLElement>('.progress i');
       if (bar) bar.style.width = `${Math.round(f * 100)}%`;

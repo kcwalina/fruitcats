@@ -530,3 +530,5 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .file-needs p { margin: 2px 0; font-size: 15px; color: var(--ink); }
 .file-needs p.small { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
 .name-note { margin: -4px 0 10px; font-size: 14px; color: var(--ink-2); font-style: italic; }
+.kind-q { margin: 10px 0 6px; font-size: 15px; }
+.kind-seg.unset { outline: 2px solid #f6c79f; outline-offset: 2px; }

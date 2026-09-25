@@ -497,3 +497,19 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 @media (max-width: 900px) { .wz-layout { grid-template-columns: 1fr; } .wz-side { position: static; max-height: none; } }
 .wz-tools { font-size: 16px; background: #fff7ec; border-radius: 12px; padding: 12px 16px; max-width: 720px; }
 .idea-note { font-size: 14px; color: #1f5f4a; background: #eaf6f0; border-radius: 10px; padding: 8px 12px; }
+
+/* Comments in the wizard, and the walkthrough */
+.wz-asks .ask { border-bottom: 1px solid #f6dcc8; padding: 4px 0; }
+.wz-asks .ask:last-of-type { border-bottom: 0; }
+.ask-actions { display: flex; gap: 14px; font-size: 13px; margin: 0; }
+.walk-nav { display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: var(--ink-2); }
+.walk { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: start; }
+.walk-pic .pv-card { filter: drop-shadow(0 6px 16px rgba(43, 33, 27, 0.25)); }
+.walk-pic .pv-pins { position: absolute; }
+.small-pic img { max-height: 320px; }
+.walk-text > small { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; color: var(--accent-2); font-size: 12px; }
+.walk-comment { margin: 10px 0 2px; }
+.walk-body { font-size: 18px; color: var(--ink); }
+.walk-reply { font-size: 14px; background: var(--paper); border-radius: 8px; padding: 6px 10px; }
+.walk textarea { margin: 8px 0; }
+@media (max-width: 900px) { .walk { grid-template-columns: 1fr; } }

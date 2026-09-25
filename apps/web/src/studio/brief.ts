@@ -55,7 +55,7 @@ export const FIELD_NAMES: Record<string, string> = {
 export type State = 'none' | 'waiting' | 'changes' | 'sketch-ok' | 'approved';
 
 export const STATE_NAMES: Record<State, string> = {
-  none: 'Not started', waiting: 'Sent', changes: 'Our thoughts are in', 'sketch-ok': 'Sketch approved', approved: 'Approved',
+  none: 'Not started', waiting: 'Sent', changes: 'Sent, with comments', 'sketch-ok': 'Sketch approved', approved: 'Approved',
 };
 
 export function stateOf(view: SetView | null, key: string): State {
@@ -80,15 +80,18 @@ export interface Step {
 
 const WEIGHT: Record<State, number> = { none: 0, waiting: 0.4, changes: 0.4, 'sketch-ok': 0.6, approved: 1 };
 
-/** The steps in order. A step opens when the one before it is approved, or when the owner opens it early. */
+/**
+ * The steps in order. A step opens once every picture of the step before it has been sent: our comments and
+ * approvals never hold the artist back. (A reviewer can also open a step early.)
+ */
 export function steps(brief: Brief, view: SetView | null): Step[] {
-  let previousDone = true;
+  let previousSent = true;
   return brief.milestones.map((m) => {
     const pictures = brief.pictures.filter((p) => String(p.milestone) === String(m.id));
     const states = pictures.map((p) => stateOf(view, keyOf(p)));
     const done = pictures.length > 0 && states.every((s) => s === 'approved');
-    const open = previousDone || view?.milestones[String(m.id)] === true || states.some((s) => s !== 'none');
-    previousDone = done;
+    const open = previousSent || view?.milestones[String(m.id)] === true || states.some((s) => s !== 'none');
+    previousSent = open && states.every((s) => s !== 'none');
     const progress = pictures.length ? states.reduce((sum, s) => sum + WEIGHT[s], 0) / pictures.length : 0;
     return { milestone: m, pictures, done, open, progress };
   });
@@ -102,11 +105,14 @@ export function overall(brief: Brief, view: SetView | null): { approved: number;
   };
 }
 
-/** The first picture the artist can work on now, if any. */
+/**
+ * The next thing to make: a sketch we liked, to finish, or the first picture not sent yet. A picture with our
+ * comments isn't a task: the artist reads them when they like (the comment walkthrough).
+ */
 export function nextPicture(brief: Brief, view: SetView | null): BriefPicture | null {
   for (const step of steps(brief, view)) {
     if (!step.open || step.done) continue;
-    const order: State[] = ['changes', 'sketch-ok', 'none'];
+    const order: State[] = ['sketch-ok', 'none'];
     for (const want of order) {
       const p = step.pictures.find((x) => stateOf(view, keyOf(x)) === want);
       if (p) return p;

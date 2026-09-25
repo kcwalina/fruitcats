@@ -24,7 +24,7 @@ import './studio.css';
 interface SetEntry { set: string; code: string; name: string; status: string; folder: string }
 interface LocalPicture { url: string; file: File; width: number; height: number; format: string }
 type Tab = 'card' | 'picture' | 'game' | 'wallpaper';
-type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'all'; code: string } | { page: 'picture'; code: string; key: string };
+type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'all'; code: string } | { page: 'comments'; code: string } | { page: 'picture'; code: string; key: string };
 
 const S = {
   route: { page: 'sets' } as Route,
@@ -64,6 +64,8 @@ const S = {
   error: '',
   /** Signed in, but the Studio's server didn't answer. */
   unreachable: false,
+  /** Which comment the walkthrough shows. */
+  commentAt: 0,
   assignEmail: '',
   /** The picture just sent, for the wizard's “sent” line. */
   justSent: '',
@@ -94,6 +96,7 @@ function parseRoute(): Route {
   if (!code) return { page: 'sets' };
   if (key === 'artists') return { page: 'home', code };
   if (key === 'all') return { page: 'all', code };
+  if (key === 'comments') return { page: 'comments', code };
   if (key) return { page: 'picture', code, key };
   return { page: 'home', code };
 }
@@ -139,6 +142,7 @@ async function enter() {
 async function onRoute() {
   S.route = parseRoute();
   S.justSent = '';
+  if (S.route.page === 'comments') S.commentAt = 0;
   S.pinning = false; S.pin = null; S.replyTo = null; S.suggesting = null; S.uploadError = ''; S.newInvite = '';
   const mine = visibleSets();
   if (S.route.page === 'sets' && mine.length === 1 && (S.me || S.guest)) { go(`#/${mine[0].code}`); return; }
@@ -324,7 +328,9 @@ function page(): string {
   }
   const r = S.route;
   const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
-    : r.page === 'all' ? picturesPage(r.code) : reviewing() ? picturePage(r.code, r.key) : wizardPage(r.code, r.key);
+    : r.page === 'all' ? (reviewing() ? picturesPage(r.code) : wizardPage(r.code))
+      : r.page === 'comments' ? commentsWalk(r.code)
+        : reviewing() ? picturePage(r.code, r.key) : wizardPage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
     ${S.guest ? `<div class="banner">You’re looking around without signing in. Pictures you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
     ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
@@ -439,10 +445,10 @@ function wizardPage(code: string, chosen?: string): string {
   const n = brief.pictures.indexOf(current) + 1;
   const name = `${title(current)}${sideLabel(current) ? ` (${sideLabel(current)})` : ''}`;
   const sketch = sketchFirst(current) && state === 'none';
-  const heading = state === 'changes' ? `Upload a new version of ${name}` : state === 'sketch-ok' ? `Upload the finished ${name}`
+  const heading = state === 'changes' ? `${name}: our comments` : state === 'sketch-ok' ? `Upload the finished ${name}`
     : state === 'approved' ? `${name} is approved` : state === 'waiting' ? `${name}: sent for review`
       : sketch ? `Upload a sketch of ${name}` : `Upload ${name}`;
-  const lead = state === 'changes' ? 'We left some thoughts below. Take what helps, in your own tools, then upload a new version here. Reply if you see it differently.'
+  const lead = state === 'changes' ? 'We left some comments. Take what helps; if you change the picture in your own tools, upload the new version here. Or reply, or just move on.'
     : state === 'sketch-ok' ? 'We like your sketch. Finish the picture in your own tools, then upload it here.'
       : state === 'approved' ? 'Done. If you change it later in your own tools, you can upload a new version here: it comes back to us for a look.'
         : state === 'waiting' ? 'We’re looking at it and will reply here. You can upload a new version any time.'
@@ -454,14 +460,16 @@ function wizardPage(code: string, chosen?: string): string {
     current.signature === 'requested' ? 'we’d love your signature in a corner' : '',
     current.showcase ? 'a card people buy on its own, so it’s a chance to show off' : '']
     .filter(Boolean).join(' · ');
-  const away = picked && next && keyOf(next) !== key;
+  const away = !!picked && !!next && keyOf(next) !== key;
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
     ${away ? `<div class="wz-away">You’re looking at an earlier picture. <a class="btn primary small" href="#/${code}">Back to your next task</a></div>` : ''}
     <section class="wz-card">
       <small>Picture ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
       <h1>${esc(heading)}</h1>
       <p class="wz-lead">${esc(lead)}</p>
-      ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<p>${authorLabel(c)} ${esc(c.text)}</p>`).join('')}</div>` : ''}
+      ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<div class="ask"><p>${authorLabel(c)} ${esc(c.text)}</p>
+          <p class="ask-actions"><button class="link" data-click="reply:${c.id}">Reply</button><button class="link" data-click="done:${c.id}:1">Resolve</button></p></div>`).join('')}
+        <p class="small muted">Comments are our thoughts, to take or leave. You can move on whenever you like.</p></div>` : ''}
       <div class="wz-two">
         <div class="wz-brief">
           <h3>Our idea for this picture</h3><p>${esc(current.draw)}</p>
@@ -478,6 +486,53 @@ function wizardPage(code: string, chosen?: string): string {
   </main></div>`;
 }
 
+/** Comments to read: unresolved ones by someone else, oldest first (for an artist: ours; for a reviewer: the artist's). */
+function openComments(code: string): Comment[] {
+  const mine = reviewing() ? 'owner' : 'artist';
+  return (S.views.get(code)?.comments ?? []).filter((c) => !c.done && c.author !== mine);
+}
+
+/** One comment at a time, across all pictures: the picture with the comment's pin, Reply, Resolve, Previous and Next. */
+function commentsWalk(code: string): string {
+  const brief = S.briefs.get(code);
+  if (!brief) return notLoaded();
+  const view = S.views.get(code) ?? null;
+  const list = openComments(code);
+  const next = nextPicture(brief, view);
+  const side = reviewing() ? '' : wizardSide(code, brief, view, null, next);
+  if (!list.length) {
+    return `<div class="wz-layout">${side}<main class="wizard"><section class="wz-card"><h1>No comments to read</h1>
+      <p class="wz-lead">You’ve read and resolved everything. <a href="#/${code}">Back to your next task</a></p></section></main></div>`;
+  }
+  const i = Math.min(S.commentAt, list.length - 1);
+  const c = list[i];
+  const p = brief.pictures.find((x) => keyOf(x) === c.picture);
+  const versions = versionsOf(view, c.picture);
+  const v = versions.find((x) => x.id === c.version) ?? versions.at(-1) ?? null;
+  const url = v ? image(code, c.picture, v.id).url : null;
+  const pin = c.pinX !== undefined ? `<span class="pin ${c.author}" style="left:${c.pinX * 100}%;top:${c.pinY! * 100}%"><i>•</i></span>` : '';
+  const replies = (view?.comments ?? []).filter((x) => x.replyTo === c.id);
+  const pic = p && (p.kind === 'card' || p.kind === 'token')
+    ? cardPreview(code, c.picture, finishesOf(p).at(-1)!.finish, url, 300, pin)
+    : url ? `<div class="bigpic small-pic"><img src="${url}" alt="">${pin}</div>` : '';
+  return `<div class="wz-layout">${side}<main class="wizard">
+    <div class="walk-nav"><button class="btn small" data-click="walk:-1" ${i === 0 ? 'disabled' : ''}>‹ Previous</button>
+      <span>Comment ${i + 1} of ${list.length}</span>
+      <button class="btn small" data-click="walk:1" ${i === list.length - 1 ? 'disabled' : ''}>Next ›</button></div>
+    <section class="wz-card walk">
+      <div class="walk-pic">${pic}</div>
+      <div class="walk-text">
+        <small>${p ? esc(pictureTitle(code, c.picture)) : esc(c.picture)}${v ? ` · version ${versions.indexOf(v) + 1}` : ''}</small>
+        <p class="walk-comment">${authorLabel(c)}</p><p class="walk-body">${esc(c.text).replace(/\n/g, '<br>')}</p>
+        ${replies.map((r) => `<p class="walk-reply">${authorLabel(r)} ${esc(r.text)}</p>`).join('')}
+        <textarea data-in="walkreply" rows="3" placeholder="Reply, if you like">${esc(S.draft.get(`walk:${c.id}`) ?? '')}</textarea>
+        <div class="row"><button class="btn" data-click="walkreply:${c.id}">Reply</button>
+          <button class="btn primary" data-click="walkdone:${c.id}">Resolve</button>
+          <span class="grow"></span><a class="small" href="#/${code}/${c.picture}">Open this picture</a></div>
+      </div>
+    </section></main></div>`;
+}
+
 /** The wizard's list: the next task, then every picture the artist has worked on, by step. */
 function wizardSide(code: string, brief: Brief, view: SetView | null, current: BriefPicture | null, next: BriefPicture | null): string {
   const onNext = !!next && current === next;
@@ -487,14 +542,15 @@ function wizardSide(code: string, brief: Brief, view: SetView | null, current: B
     const k = keyOf(x), url = shown(code, k).url, state = stateOf(view, k);
     return `<a class="wz-item ${current === x ? 'on' : ''}" href="#/${code}/${k}">
       <span class="wz-thumb ${x.kind === 'pawtrait' ? 'round' : ''}" style="${url ? `background-image:url(${url})` : ''}"></span>
-      <span><b>${esc(title(x))}${sideLabel(x) ? ` <i>${sideLabel(x)}</i>` : ''}</b><small class="st-${state}">${x === next && state === 'none' ? 'Next' : STATE_NAMES[state]}</small></span></a>`;
+      <span><b>${esc(title(x))}${sideLabel(x) ? ` <i>${sideLabel(x)}</i>` : ''}</b><small class="st-${state}">${x === next && state === 'none' ? 'Next' : STATE_NAMES[state]}${openComments(code).some((c) => c.picture === k) ? ' · 💬' : ''}</small></span></a>`;
   };
+  const open = openComments(code).length;
   return `<aside class="wz-side">
     <a class="btn ${onNext ? 'ghost' : 'primary'} wide" href="#/${code}">${next ? 'Your next task' : 'Where things stand'}</a>
+    ${open ? `<a class="btn ${S.route.page === 'comments' ? 'ghost' : ''} wide" href="#/${code}/comments">💬 Comments to read (${open})</a>` : ''}
     <h4>Your pictures</h4>
     ${groups.length ? groups.map((g) => `<div class="wz-group"><small>${esc(g.st.milestone.title)}</small>${g.items.map(item).join('')}</div>`).join('')
       : '<p class="muted small">Pictures you send appear here, so you can come back to them.</p>'}
-    <a class="small" href="#/${code}/all">All ${brief.pictures.length} pictures of the project</a>
   </aside>`;
 }
 
@@ -789,14 +845,14 @@ function commentsPanel(code: string, p: BriefPicture, version: Version | null): 
       <header>${authorLabel(c)}<span class="muted small">${when(c.at)}${c.version ? ` · on ${vName(c.version)}` : ''}${pinNo.has(c.id) ? ` · <button class="link" data-click="tab:picture">pin ${pinNo.get(c.id)}</button>` : ''}</span></header>
       <p>${esc(c.text).replace(/\n/g, '<br>')}</p>
       <footer>${reply ? '' : `<button class="link" data-click="reply:${c.id}">Reply</button>`}
-        ${S.guest ? '' : `<button class="link" data-click="done:${c.id}:${c.done ? 0 : 1}">${c.done ? `Done${c.doneBy ? ` (${esc(c.doneBy)})` : ''} · undo` : 'Mark done'}</button>`}
+        ${S.guest ? '' : `<button class="link" data-click="done:${c.id}:${c.done ? 0 : 1}">${c.done ? `Resolved${c.doneBy ? ` by ${esc(c.doneBy)}` : ''} · undo` : 'Resolve'}</button>`}
         ${c.pinX !== undefined && c.version && c.version !== version?.id ? `<button class="link" data-click="version:${key}:${c.version}">See ${vName(c.version)}</button>` : ''}</footer>
     </article>${replies(c.id).map((r) => one(r, true)).join('')}`;
   const openRoots = roots.filter((c) => !c.done), doneRoots = roots.filter((c) => c.done);
   const replyingTo = S.replyTo ? all.find((c) => c.id === S.replyTo) : null;
   return `<section class="comments"><h3>Comments</h3>
     ${openRoots.length ? openRoots.map((c) => one(c)).join('') : '<p class="muted">No comments yet.</p>'}
-    ${doneRoots.length ? `<button class="link" data-click="showdone">${S.showDone ? 'Hide' : 'Show'} ${doneRoots.length} done</button>${S.showDone ? doneRoots.map((c) => one(c)).join('') : ''}` : ''}
+    ${doneRoots.length ? `<button class="link" data-click="showdone">${S.showDone ? 'Hide' : 'Show'} ${doneRoots.length} resolved</button>${S.showDone ? doneRoots.map((c) => one(c)).join('') : ''}` : ''}
     ${S.guest ? '' : `<div class="composer">
       ${replyingTo ? `<p class="small">Replying to ${esc(replyingTo.authorName)} <button class="link" data-click="reply:">Cancel</button></p>` : ''}
       <textarea data-in="comment" rows="3" placeholder="${reviewing() ? 'What should change, or what you like…' : 'A question, or what you changed…'}">${esc(S.draft.get(key) ?? '')}</textarea>
@@ -942,6 +998,16 @@ async function act(action: string) {
       return;
     }
     case 'done': await work(() => api.markDone(code, args[0], args[1] === '1')); await refresh(code); render(); return;
+    case 'walk': S.commentAt = Math.max(0, S.commentAt + Number(args[0])); render(); return;
+    case 'walkdone': await work(() => api.markDone(code, args[0], true)); await refresh(code); render(); return;
+    case 'walkreply': {
+      const parent = (S.views.get(code)?.comments ?? []).find((x) => x.id === args[0]);
+      const text = (S.draft.get(`walk:${args[0]}`) ?? '').trim();
+      if (!parent || !text) return;
+      await work(() => api.comment(code, parent.picture, { text, version: parent.version, replyTo: parent.id }), () => { S.draft.delete(`walk:${args[0]}`); });
+      await refresh(code); render();
+      return;
+    }
     case 'review': await work(() => api.review(code, args[0], args[1])); await refresh(code); render(); return;
     case 'openstep': await work(() => api.openStep(code, args[0], args[1] === '1')); await refresh(code); render(); return;
     case 'suggest': S.suggesting = { field: args[0], value: '', why: '' }; render(); return;
@@ -1015,6 +1081,11 @@ root.addEventListener('input', (e) => {
   if (!f) return;
   if (!S.me && !S.guest) { signInInput(el, () => void afterSignIn(), render); return; }
   if (f === 'comment' && S.route.page === 'picture') S.draft.set(S.route.key, el.value);
+  else if (f === 'walkreply' && S.route.page === 'comments') {
+    const list = openComments(S.route.code);
+    const c = list[Math.min(S.commentAt, list.length - 1)];
+    if (c) S.draft.set(`walk:${c.id}`, el.value);
+  }
   else if (f === 'note') S.uploadNote = el.value;
   else if (f === 'invitenote') S.inviteNote = el.value;
   else if (f === 'assignemail') { S.assignEmail = el.value; S.assignError = ''; }

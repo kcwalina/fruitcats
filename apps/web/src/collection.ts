@@ -33,12 +33,14 @@ export function ownedCards(): string[] {
  * How a copy shines, rarest last. Finishes belong to copies, not cards: the Store will sell them, and
  * the copies you buy will carry their finish here. For now the three starter Hero Cats come special.
  */
-export type Finish = 'standard' | 'foil' | 'gold' | 'prismatic';
-export const FINISH_NAMES: Record<Finish, string> = { standard: 'Standard', foil: 'Foil', gold: 'Gold', prismatic: 'Prismatic' };
+export type Finish = 'standard' | 'foil' | 'gold' | 'prismatic' | 'signature';
+export const FINISH_NAMES: Record<Finish, string> = { standard: 'Standard', foil: 'Foil', gold: 'Gold', prismatic: 'Prismatic', signature: 'Signature' };
 
 const FINISHES: Record<string, Finish> = { 'SB1-H01': 'foil', 'SB1-H02': 'gold', 'SB1-H03': 'prismatic' };
 
 /** The finest finish the player has a card in. */
 export function finish(id: string): Finish {
+  // A Signature card exists only as its Signature print: its design decides, not the copy.
+  if (CARDS[id]?.signature) return 'signature';
   return owned(id) > 0 ? FINISHES[id] ?? 'standard' : 'standard';
 }

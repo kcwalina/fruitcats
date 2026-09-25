@@ -48,7 +48,8 @@
       "showcase": true,
       "signature": "requested",
       "family": "Paragon",
-      "pawtrait": "legend-mochi.webp"
+      "pawtrait": "legend-mochi.webp",
+      "frameChoice": true
     },
     {
       "file": "legend-mochi.webp",

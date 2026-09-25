@@ -9,11 +9,12 @@
   "families": {
     "Paragon": {
       "colors": [
-        "#4A2F7A",
-        "#1E1236",
-        "#EFE8FF"
+        "#8A8178",
+        "#4A433D",
+        "#F1ECE6"
       ],
       "neutral": true,
+      "frameChoice": true,
       "personality": "The most important cats in Fruitcats",
       "playsLike": "One legendary card that any deck can add"
     }

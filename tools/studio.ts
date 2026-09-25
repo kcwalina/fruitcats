@@ -50,7 +50,7 @@ async function call(path: string, init: { method?: string; json?: unknown } = {}
 const json = async <T>(path: string, init?: { method?: string; json?: unknown }) => (await call(path, init)).json() as Promise<T>;
 
 interface Version { id: string; kind: string; format: string; width: number; height: number; at: string; byName: string; note?: string }
-interface View { pictures: Record<string, { state: string; versions: Version[] }>; comments: { id: string; picture: string; author: string; authorName: string; text: string; at: string; done: boolean }[] }
+interface View { pictures: Record<string, { state: string; frame?: string; versions: Version[] }>; comments: { id: string; picture: string; author: string; authorName: string; text: string; at: string; done: boolean }[] }
 
 /** A set's folder in content/, by its code. */
 function setFolder(code: string): string {
@@ -136,6 +136,9 @@ async function main() {
     const brief = JSON.parse(readFileSync(join(folder, 'art', 'brief.json'), 'utf8')) as { pictures: { file: string; kind: string }[] };
     const view = await json<View>(set);
     let count = 0;
+    const setFile = join(folder, 'set.json');
+    const setData = JSON.parse(readFileSync(setFile, 'utf8')) as { cards: { id: string; frame?: string }[] };
+    let framesChanged = false;
     for (const p of brief.pictures) {
       const key = p.file.replace(/\.[a-z]+$/, '');
       const pic = view.pictures[key];
@@ -155,7 +158,16 @@ async function main() {
       }
       console.log(`${key}: version ${v.id} → ${relative(ROOT, out)}`);
       count++;
+      // A frame colour the artist chose goes into the card's data, so the finished card is drawn in it.
+      const card = setData.cards.find((c) => `${c.id}` === key || key.startsWith(`${c.id}-`));
+      const frame = pic.frame && pic.frame !== 'own' ? pic.frame : undefined;
+      if (card && card.frame !== frame) {
+        if (frame) card.frame = frame; else delete card.frame;
+        framesChanged = true;
+        console.log(`${card.id}: frame colour ${frame ?? 'its family’s own'}`);
+      }
     }
+    if (framesChanged) writeFileSync(setFile, `${JSON.stringify(setData, null, 2)}\n`);
     if (!count) { console.log('No approved pictures yet.'); return; }
     execFileSync('python', [join(ROOT, 'tools', 'compose_cards.py'), '--set', set], { stdio: 'inherit' });
     console.log(`\n${count} picture(s) pulled. Review with git diff, then npm run check-set -- ${set}.`);

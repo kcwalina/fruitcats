@@ -37,6 +37,10 @@ export interface BriefPicture {
   pawtrait?: string;
   family?: string;
   workingName?: string;
+  /** The artist chooses this card's frame colour (a card that isn't tied to a deck's look). */
+  frameChoice?: boolean;
+  /** With frameChoice: a colour to start in instead of the family's own (optional). */
+  framePalette?: string;
 }
 
 /** A picture's key: its file name without the extension (BP1-X03-kitten, legend-jam, key-art). */

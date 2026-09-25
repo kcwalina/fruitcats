@@ -17,7 +17,7 @@ import {
   FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
   type Brief, type BriefPicture, type State,
 } from './brief';
-import { DEVICES, LOCK_CLOCK, announcementPreview, cardPreview, finishesOf, gamePreview, pawtraitPreview, wallpaper } from './previews';
+import { DEVICES, LOCK_CLOCK, PALETTES, announcementPreview, cardPreview, finishesOf, framePalettes, gamePreview, pawtraitPreview, wallpaper } from './previews';
 import { renderSignIn, signInClick, signInEnter, signInInput } from './signin';
 import { STUDIO_TERMS, STUDIO_TERMS_VERSION } from './terms';
 import './studio.css';
@@ -66,6 +66,8 @@ const S = {
   error: '',
   /** Signed in, but the Studio's server didn't answer. */
   unreachable: false,
+  /** Frame colours picked on this computer, before the server has them (by set/key). */
+  framePick: new Map<string, string>(),
   /** Which comment the walkthrough shows. */
   commentAt: 0,
   /** The terms screen: the "18 or older" box. */
@@ -325,7 +327,38 @@ function render() {
   void fillWallpapers();
 }
 
+/** For cards whose artist chooses the frame colour: the colour to show, picked or saved or the brief's starting one. */
+function syncPalettes() {
+  framePalettes.clear();
+  for (const [code, brief] of S.briefs) {
+    const view = S.views.get(code);
+    for (const p of brief.pictures) {
+      if (!p.frameChoice) continue;
+      const key = keyOf(p), id = `${code}/${key}`;
+      const saved = view?.pictures[key]?.frame;
+      const palette = S.framePick.get(id) ?? (saved === 'own' ? '' : saved) ?? p.framePalette;
+      if (palette) framePalettes.set(id, palette);
+    }
+  }
+}
+
+/** The frame colours for a card whose artist chooses them: a row of swatches. */
+function frameChooser(code: string, p: BriefPicture): string {
+  if (!p.frameChoice) return '';
+  const key = keyOf(p), current = framePalettes.get(`${code}/${key}`);
+  // Paragon cards have no colour of their own: the artist always picks. Other marked cards may keep their family's.
+  const own = p.family !== 'Paragon';
+  const text = own
+    ? '<b>Frame colour: you may change it.</b> This card isn’t tied to a deck’s look: keep its colour, or pick the one that suits your image.'
+    : current ? '<b>Frame colour: your pick.</b> Change it any time, to whatever suits your image.'
+      : '<b>Pick the frame colour for this card.</b> It has no colour of its own: choose the one that suits your image. Until you do, it’s shown in grey.';
+  return `<div class="frame-choice ${!own && !current ? 'unpicked' : ''}"><p>${text}</p>
+    <div class="swatches">${own ? `<button class="swatch family ${current ? '' : 'on'}" title="The card’s own colour" aria-label="The card’s own colour" data-click="frame:${key}:"><span>Own</span></button>` : ''}${PALETTES.map(([name, main, dark]) => `<button class="swatch ${name === current ? 'on' : ''}" title="${name}" aria-label="${name}"
+      style="background:linear-gradient(135deg, ${main} 55%, ${dark} 55%)" data-click="frame:${key}:${name}"></button>`).join('')}</div></div>`;
+}
+
 function page(): string {
+  syncPalettes();
   if (S.fatal) return `<main class="empty"><h1>Sorry</h1><p>${esc(S.fatal)}</p></main>`;
   if (S.booting) return `<main class="empty"><div class="spinner"></div></main>`;
   if (!S.me && !S.guest && S.unreachable && signedIn()) {
@@ -511,7 +544,7 @@ function wizardPage(code: string, chosen?: string): string {
         <div class="wz-upload">${fileNeeds}${uploadBox(current, versions)}</div>
       </div>
     </section>
-    ${pic.url ? `<section class="wz-card"><h2>How it looks</h2>${versionStrip(key, versions, pic)}${previewTabs(code, current, pic)}</section>` : ''}
+    ${pic.url ? `<section class="wz-card"><h2>How it looks</h2>${frameChooser(code, current)}${versionStrip(key, versions, pic)}${previewTabs(code, current, pic)}</section>` : ''}
     ${versions.length ? commentsPanel(code, current, pic.version) : ''}
   </main></div>`;
 }
@@ -665,7 +698,7 @@ function picturePage(code: string, key: string): string {
   const stepInfo = { open: at < 0 || all[at].open, after: at > 0 ? all[at - 1].milestone.title : '' };
   const i = brief.pictures.indexOf(p);
   const prev = brief.pictures[i - 1], next = brief.pictures[i + 1];
-  return `<main class="image">
+  return `<main class="picture">
     <aside class="brief">
       <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main image' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
@@ -731,7 +764,7 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
     const onCard = p.kind === 'card' || p.kind === 'token'
       ? `<div class="local-card">${cardPreview(code, key, finishesOf(p).at(-1)!.finish, local.url, 250)}</div>` : '';
     return `<div class="local">
-      ${onCard}
+      ${onCard}${frameChooser(code, p)}
       <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
       <ul class="checks">${list.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>
       ${list.fix ? `<p class="fix">${esc(list.fix)}</p>` : ''}
@@ -824,7 +857,7 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
     const finishes = finishesOf(p);
     const finish = S.finish.get(key) ?? finishes.at(-1)!.finish;
     body = `${finishes.length > 1 ? `<div class="seg small">${finishes.map((f) => `<button class="${f.finish === finish ? 'on' : ''}" data-click="finish:${key}:${f.finish}">${f.label}</button>`).join('')}</div>` : ''}
-      <div class="card-stage">${cardPreview(code, key, finish, url, 420, pinsFor(code, key, pic.version))}</div>
+      ${frameChooser(code, p)}<div class="card-stage">${cardPreview(code, key, finish, url, 420, pinsFor(code, key, pic.version))}</div>
       <p class="pv-note">The card shows your whole image, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
   } else if (tab === 'game') body = gamePreview(p, url, code, key);
   else {
@@ -1022,6 +1055,14 @@ async function act(action: string) {
       return;
     }
     case 'done': await work(() => api.markDone(code, args[0], args[1] === '1')); await refresh(code); render(); return;
+    case 'frame': {
+      // An empty palette is the card's own colour (its family's).
+      const id = `${code}/${args[0]}`, palette = args[1] ?? '';
+      S.framePick.set(id, palette);
+      render();
+      if (S.me && !S.guest) { try { await api.setFrame(code, args[0], palette || 'own'); await refresh(code); } catch (e) { S.error = api.explain(e); render(); } }
+      return;
+    }
     case 'walk': S.commentAt = Math.max(0, S.commentAt + Number(args[0])); render(); return;
     case 'walkdone': await work(() => api.markDone(code, args[0], true)); await refresh(code); render(); return;
     case 'walkreply': {

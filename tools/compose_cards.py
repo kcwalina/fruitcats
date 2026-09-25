@@ -41,6 +41,23 @@ FAMILIES = {                            # main, dark, tint
     "Tropical": ("#F2780C", "#A24E05", "#FFE6CC"),
     "Melon":    ("#3FA66B", "#25714A", "#DDF3E6"),
 }
+# Frame colours an artist may choose for a card that isn't tied to a deck's look: "frameChoice" on its picture in the
+# set's brief, or on its family (Paragon has no colour of its own: its artist always picks).
+# A card that has chosen keeps it in its data: "frame": "<name>". The families' own colours, plus a few neutral ones.
+PALETTES = {
+    "citrus":   ("#F29F05", "#A86400", "#FFF1CC"),
+    "orchard":  ("#D64545", "#8E2A2A", "#FBE0DA"),
+    "tropical": ("#F2780C", "#A24E05", "#FFE6CC"),
+    "garden":   ("#5FA84D", "#3B7430", "#E3F2DC"),
+    "berry":    ("#D6336C", "#8F1D46", "#FBDDE7"),
+    "melon":    ("#3FA66B", "#25714A", "#DDF3E6"),
+    "pepper":   ("#D7261E", "#5A0E0A", "#FFD6C2"),
+    "violet":   ("#4A2F7A", "#1E1236", "#EFE8FF"),
+    "sky":      ("#3B82C4", "#1D4A78", "#E1EEFB"),
+    "midnight": ("#2B3A55", "#141C2B", "#E6ECF7"),
+    "gold":     ("#C8961E", "#7A5A0C", "#FFF3CF"),
+    "ink":      ("#3A3A3A", "#161616", "#EEEEEE"),
+}
 CREAM, INK, MUTED = "#FFF8EC", "#2B211B", "#7A6A5C"
 POWER_COLOR, HEALTH_COLOR = "#E4572E", "#E0457B"
 
@@ -343,7 +360,7 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
     """The card image. With no art_path, the picture's window is left transparent (a frame)."""
     if finish == SIGNATURE and card.get("signature") == "rainbow":
         finish = RAINBOW_SIGNATURE     # the rainbow Signature stone, printed where the card's Signature goes
-    main, dark, tint = FAMILIES[card["family"]]
+    main, dark, tint = PALETTES[card["frame"]] if card.get("frame") in PALETTES else FAMILIES[card["family"]]
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
     text = face.get("text", "")
@@ -475,11 +492,15 @@ def frames(data: dict, set_path: Path, only: list[str] | None) -> int:
     """Each card face without its picture, in the finishes it's sold in: standard, plus the tier the set's
     brief gives it (foil, gold or signature). Tokens are standard only."""
     brief_path = set_path.parent / "art" / "brief.json"
-    tiers = {}
+    tiers, choice = {}, set()
     if brief_path.exists():
         for p in json.loads(brief_path.read_text(encoding="utf-8"))["pictures"]:
             if p.get("card"):
                 tiers[p["card"]] = p.get("tier")
+                if p.get("frameChoice"):
+                    choice.add(p["card"])
+    families = data.get("families", {})
+    choice |= {c["id"] for c in data["cards"] if families.get(c["family"], {}).get("frameChoice")}
     out_dir = set_path.parent / "art" / "cards" / "frames"
     count = 0
     for card in data["cards"] + [dict(t, token=True) for t in data.get("tokens", [])]:
@@ -498,6 +519,12 @@ def frames(data: dict, set_path: Path, only: list[str] | None) -> int:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 compose(card, side, None, f).save(path, quality=90, method=6)
                 count += 1
+                # The artist chooses this card's frame colour: every palette, at frames/p-<name>/[finish/]<key>.
+                for name in (PALETTES if card["id"] in choice else ()):
+                    pp = out_dir / f"p-{name}" / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp")
+                    pp.parent.mkdir(parents=True, exist_ok=True)
+                    compose(dict(card, frame=name), side, None, f).save(pp, quality=90, method=6)
+                    count += 1
     print(f"drew {count} frame(s) into {out_dir.relative_to(ROOT)}")
     return 0
 

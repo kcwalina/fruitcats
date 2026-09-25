@@ -304,11 +304,10 @@ function checks(p: BriefPicture, w: number, h: number, _format: string, kind: 's
     return { notes, blocked: false, fix: '' };
   }
   const wrong: string[] = [];
-  if (!sameShape) wrong.push(`the card’s shape (${bw} × ${bh}, or larger in the same proportions), or the card would stretch it`);
-  else if (!bigEnough) wrong.push(`at least ${bw} × ${bh} pixels, or it would look blurry on large screens`);
+  if (!sameShape || !bigEnough) wrong.push(`${bw} × ${bh} pixels`);
   return wrong.length
     ? { notes: [], blocked: true, fix: `This one is ${w} × ${h}. For the card, the finished image needs to be ${wrong.join('; ')}. You can still send this one as a sketch.` }
-    : { notes: [`${w} × ${h} pixels: fits the card.`], blocked: false, fix: '' };
+    : { notes: [w === bw && h === bh ? `${w} × ${h} pixels: exactly right.` : `${w} × ${h} pixels. We asked for ${bw} × ${bh}; this works, but exactly ${bw} × ${bh} is best.`], blocked: false, fix: '' };
 }
 
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
@@ -487,7 +486,7 @@ function wizardPage(code: string, chosen?: string): string {
   const [fw, fh] = current.size;
   const fileNeeds = `<div class="file-needs"><h3>What we need from the finished image</h3>
     <p><b>Format:</b> WebP, PNG or JPEG</p>
-    <p><b>Size:</b> ${fw} × ${fh} pixels (larger is fine, in the same shape)${current.kind === 'pawtrait' ? '. It’s shown as a circle.' : ''}</p>
+    <p><b>Size:</b> ${fw} × ${fh} pixels${current.kind === 'pawtrait' ? ' (shown as a circle)' : ''}</p>
     <p class="small">Sketches can be any size and format.</p></div>`;
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
     <section class="wz-card">
@@ -672,7 +671,7 @@ function picturePage(code: string, key: string): string {
         <p class="muted small">The card’s draft, not art direction: the artist makes the image their way, and we adapt the card.</p></section>
       ${cardText(p)}
       ${openFields(code, p)}
-      <section class="facts"><h3>File</h3><p><b>${p.size[0]} × ${p.size[1]}</b> pixels (or larger, same shape), as WebP, PNG or JPEG${p.kind === 'pawtrait' ? ', shown as a circle' : ''}.
+      <section class="facts"><h3>File</h3><p><b>${p.size[0]} × ${p.size[1]}</b> pixels, as WebP, PNG or JPEG${p.kind === 'pawtrait' ? ', shown as a circle' : ''}.
         ${p.signature ? '<br>We’d love your signature in a corner.' : ''}
         ${p.showcase ? '<br>A card people buy on its own, so it’s a chance to show off.' : ''}</p></section>
       <nav class="prevnext">${prev ? `<a href="#/${code}/${keyOf(prev)}">‹ ${esc(title(prev))}</a>` : '<span></span>'}${next ? `<a href="#/${code}/${keyOf(next)}">${esc(title(next))} ›</a>` : ''}</nav>

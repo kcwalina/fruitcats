@@ -125,6 +125,7 @@ async function snapshot() {
   const thisHour = new Date(now).toISOString().slice(0, 13).replace(/[-T]/g, '/');
   const from = now - DAYS * 86_400_000;
   const keep = (e) => ({ t: e.time, s: e.service, e: e.event ?? '', l: e.level ?? '', u: e.userId ?? null,
+    ...(e.event === 'http.request' ? { ms: Number(e.ms), p: `${e.method} ${e.path}`, st: Number(e.status) } : {}),
     ...(e.level === 'error' || e.level === 'Error'
       ? { m: String(e.message ?? e.Error ?? '').replace(e.event ?? '', '').trim().slice(0, 200) } : {}) });
   const events = [];
@@ -187,6 +188,7 @@ async function snapshot() {
       syncUsers: users('decks.synced'),
       support: on.filter((e) => e.e === 'support.message_sent').length,
       errors: on.filter(isError).length,
+      requests: Object.fromEntries(SOURCES.map(({ service }) => [service, timing(on.filter((e) => e.e === 'http.request' && e.s === service))])),
     });
   }
   const week = events.filter((e) => Date.parse(e.t) >= now - 7 * 86_400_000);
@@ -194,8 +196,12 @@ async function snapshot() {
   const recentErrors = events.filter((e) => isError(e) && Date.parse(e.t) >= now - 86_400_000)
     .sort((a, b) => b.t.localeCompare(a.t)).slice(0, 20)
     .map((e) => ({ time: e.t, service: e.s, event: e.e, message: e.m ?? '' }));
+  const slowest = events.filter((e) => e.e === 'http.request' && Date.parse(e.t) >= now - 86_400_000)
+    .sort((a, b) => b.ms - a.ms).slice(0, 10)
+    .map((e) => ({ time: e.t, service: e.s, request: e.p, status: e.st, ms: e.ms }));
   return {
     updatedAt: new Date(now).toISOString(),
+    slowest,
     health: await Promise.all([health('viamochi-id', 'https://id.viamochi.com/healthz'), health('fruitcats-api', 'https://api.fruitcats.viamochi.com/healthz')]),
     accounts: id?.accounts ?? null, invites: id?.invites ?? [], friendships: id?.friendships ?? null, statsAt: { id: id?.time ?? null, api: api?.time ?? null },
     decks: api ? { decks: api.decks, accountsWithDecks: api.accountsWithDecks, showcases: api.showcases } : null,
@@ -203,4 +209,11 @@ async function snapshot() {
     days,
     recentErrors,
   };
+}
+
+/** Requests' count, median and 95th-percentile time, and how many took over 2 seconds. */
+function timing(list) {
+  const ms = list.map((e) => e.ms).filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
+  const at = (q) => (ms.length ? ms[Math.min(ms.length - 1, Math.floor(q * ms.length))] : null);
+  return { n: ms.length, p50: at(0.5), p95: at(0.95), slow: ms.filter((x) => x > 2000).length };
 }

@@ -11,17 +11,25 @@
 //                                                      14 days of sign-ins, syncs and errors, as JSON (see below)
 //
 // It signs in as Claude's agent identity (its own CLI folder, ~/.azure-viamochi-agent), which may read the logs but
-// not change them. Your own `az` login isn't used.
+// not change them. Your own `az` login isn't used. Cloud runs (the nightly) have no CLI; they set
+// VIAMOCHI_READER_TENANT_ID, VIAMOCHI_READER_CLIENT_ID and VIAMOCHI_READER_CLIENT_SECRET instead, for the read-only
+// identity nightly-reader-viamochi (scripts/setup/nightly-reader.ps1).
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AzureCliCredential } from '@azure/identity';
+import { AzureCliCredential, ClientSecretCredential } from '@azure/identity';
 import { BlobServiceClient } from '@azure/storage-blob';
 
-process.env.AZURE_CONFIG_DIR ??= join(homedir(), '.azure-viamochi-agent');
-const credential = new AzureCliCredential();
+const readerSecret = process.env.VIAMOCHI_READER_CLIENT_SECRET;
+let credential;
+if (readerSecret) {
+  credential = new ClientSecretCredential(process.env.VIAMOCHI_READER_TENANT_ID, process.env.VIAMOCHI_READER_CLIENT_ID, readerSecret);
+} else {
+  process.env.AZURE_CONFIG_DIR ??= join(homedir(), '.azure-viamochi-agent');
+  credential = new AzureCliCredential();
+}
 const SOURCES = [
   { service: 'viamochi-id', account: 'viamochiidstore' },
   { service: 'fruitcats-api', account: 'fruitcatsdata' },

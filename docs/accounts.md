@@ -89,7 +89,10 @@ Last updated 2026-09-25.
   `https://viamochi-id.azurewebsites.net`, which is only an identifier.
 - **Observability:** both services write JSON-line logs to Blob Storage (`logs` container: ops, deleted after 30
   days; `security` container: a year, with an unlocked immutability policy). `node tools/ops.mjs events|tail` reads
-  them as Claude's agent (Storage Blob Data Reader only).
+  them as Claude's agent (Storage Blob Data Reader only). Cloud runs (the nightly) have no Azure CLI and use
+  **nightly-reader-viamochi** instead: Storage Blob Data Reader on only the `logs` and `security` containers of
+  `viamochiidstore` and `fruitcatsdata`, with a password that expires after a year, created by the owner with
+  `scripts/setup/nightly-reader.ps1` and kept as `VIAMOCHI_READER_*` variables in the Claude cloud environment.
 - **Delete account and Export my data** in the Account panel. Deletion is scheduled 30 days ahead and signs the
   player out everywhere; `viamochi-id`'s AccountPurge then erases the app data (fruitcats-api, via a service token),
   the Entra sign-in and the account. It acts in the player tenant as **Via Mochi account service**

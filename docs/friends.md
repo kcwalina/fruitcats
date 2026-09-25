@@ -1,21 +1,8 @@
 # Playing with friends
 
-Play a friend on your own phones, tablets or computers. Three steps: make an account, add each other, play.
+Play a friend on your own phones, tablets or computers. Two steps: add each other, then play.
 
-## Create an account
-
-You need a free Via Mochi account to play friends. For now accounts are for playtesters: you'll need the
-**invite code** you were sent.
-
-<div class="steps">
-<figure><img src="guide/friends/account-1-email.webp" alt="The Sign in or create account window, with an email typed in" loading="lazy"><figcaption><b>1</b> On the Home screen, tap <b>Friend</b>. Type your email and tap <b>Continue</b>.</figcaption></figure>
-<figure><img src="guide/friends/account-2-invite.webp" alt="Got an invite code? with a code typed in" loading="lazy"><figcaption><b>2</b> Type the <b>invite code</b> you were sent.</figcaption></figure>
-<figure><img src="guide/friends/account-3-details.webp" alt="Create your account: display name, birth year and the Terms" loading="lazy"><figcaption><b>3</b> Choose the <b>name your friends see</b>, add your birth year, tick the box, tap <b>Email me a code</b>.</figcaption></figure>
-<figure><img src="guide/friends/account-4-code.webp" alt="Check your email: the code box" loading="lazy"><figcaption><b>4</b> Type the <b>code from the email</b>. Not there? Look in <b>Spam</b>.</figcaption></figure>
-<figure><img src="guide/friends/account-5-welcome.webp" alt="Welcome to Via Mochi, Sam!" loading="lazy"><figcaption><b>5</b> That's it: you're in. No password, ever.</figcaption></figure>
-</div>
-
-Already have an account on another device? Same steps: type your email, then the code, and you're signed in.
+You each need a free Via Mochi account to play friends: see [Create an account](account.md#create-an-account).
 
 ## Add a friend
 

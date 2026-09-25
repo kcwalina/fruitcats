@@ -9,19 +9,22 @@ import { defineConfig, type Plugin } from 'vite';
 // /<set>/<id>.webp (illustrations), /cards/<set>/<id>.webp (finished cards, finishes in subfolders) and
 // /announcements/<set-folder>/ (its announcement page).
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
-// rulebook (rules.html), the card list (cards.html), what's on a card (anatomy.html), and guides to the
-// Collection and to wallpapers. And the Artist Studio (studio.html, docs/artist-studio-plan.md), where artists
+// getting-started guides (how to play, your account, friends, the Collection, wallpapers), then the rulebook
+// (rules.html), the card list (cards.html) and what's on a card (anatomy.html). And the Artist Studio (studio.html, docs/artist-studio-plan.md), where artists
 // upload their pictures and see them on cards.
 
 /** The documentation's pages, in tab order. `tab` is the section's name in the header; the home has none. */
 const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'documentation.md', html: 'docs.html' },
-  { md: 'rulebook.md', html: 'rules.html', tab: 'Rulebook' },
-  { md: 'starter-box-cards.md', html: 'cards.html', tab: 'Card list' },
-  { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
+  // Getting started first, then the reference: the rulebook, the card list and what's on a card.
+  { md: 'how-to-play.md', html: 'how-to-play.html', tab: 'How to play' },
+  { md: 'account.md', html: 'account.html', tab: 'Account' },
   { md: 'friends.md', html: 'friends.html', tab: 'Friends' },
   { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
   { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
+  { md: 'rulebook.md', html: 'rules.html', tab: 'Rulebook' },
+  { md: 'starter-box-cards.md', html: 'cards.html', tab: 'Card list' },
+  { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
   // Linked from the sign-up screen; no tabs of their own.
   { md: 'legal/terms-of-use.md', html: 'terms.html' },
   { md: 'legal/privacy-policy.md', html: 'privacy.html' },
@@ -134,8 +137,8 @@ function renderDoc(doc: string): { toc: string; body: string } {
 }
 
 /**
- * Fold a heavy reference section away behind a summary. The rules page is a beginner's first stop and
- * it used to open with the comprehensive rules in full, which reads as "this game is enormous".
+ * Fold a heavy reference section away behind a summary: the comprehensive rules in full read as "this game is
+ * enormous", even on the rulebook.
  */
 function foldAway(html: string, needle: string): string {
   const start = html.search(new RegExp(`<h2[^>]*>[^<]*${needle}`, 'i'));

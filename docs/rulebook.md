@@ -267,7 +267,7 @@ Other common words:
 
 *Round 3. Ana plays Sunny the Lemon Lynx (Citrus). Ben plays Pippin the Apple Ragdoll (Orchard). Ana has 9 Lives, Ben has 8. Ana holds the Yarn Ball.*
 
-*Ana's Yard: Orange Corgi (3/2), Zest Mouse (1/1). Ben's Yard: Pear Hedgehog (2/3, Guardian), Peach Bunny (1/2).*
+*Ana's Yard: Orange Corgi (3/2), Zest Mouse (1/1). Ben's Yard: Pear Hedgehog (2/2, Guardian), Peach Bunny (1/2).*
 
 **Start Phase.** Both ready everything, draw 2, and plant a card. Each now has 4 Treats.
 

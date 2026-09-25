@@ -10,7 +10,7 @@
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, agreeToTerms, accountExists, needsTerms, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  AuthError, agreeToTerms, accountExists, needsTerms, refreshAccount, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
@@ -58,7 +58,11 @@ export function closeAccount(host: Host) {
 }
 
 /** A signed-in device whose account hasn't agreed to the current Terms: ask now, before anything else. */
-export function askForTermsIfNeeded(host: Host) {
+export async function askForTermsIfNeeded(host: Host) {
+  if (!needsTerms() || open) return;
+  // This device's copy says "not agreed": ask the account before asking the player, who may well have agreed already
+  // (on another device, or here before the copy was last saved).
+  await refreshAccount();
   if (!needsTerms() || open) return;
   hostRef = host;
   open = true; step = 'terms'; error = ''; busy = false; agreed = false; then = null;

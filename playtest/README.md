@@ -76,6 +76,10 @@ The nightly run plays custom decks too: the library decks join the bot gauntlet 
 decks, two library decks, a random deck and a starter with 8 cards swapped, each against every starter. Custom
 decks never block a deploy: the deploy gate is still the starter decks alone.
 
+**Trying a card change before making it.** `PLAYTEST_CARD_MODS` overrides card fields for one run, in every
+worker: `PLAYTEST_CARD_MODS='{"SB1-O02":{"health":2},"SB1-C09":{"cost":1}}' npm run balance:check` measures a
+2/2 Pear Hedgehog and a cost-1 Sour Spray without touching a set. Never set it for a deploy.
+
 ## LLM providers
 
 `playtest.config.json` names them; all speak the OpenAI chat API, and keys come from environment variables.

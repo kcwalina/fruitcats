@@ -5,7 +5,7 @@ export {
   missingPieces, TRIGGERS, BUILT_IN_ACTIONS, CONDITION_TESTS,
 } from './cards';
 export {
-  DECK_RULES, NEUTRAL_FAMILY, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem,
+  DECK_RULES, NEUTRAL_FAMILY, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem, deckCode, parseDeckCode,
 } from './decks';
 export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef } from './cards';
 export {

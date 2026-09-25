@@ -1,5 +1,5 @@
 // reports pending [--pc2024 http://192.168.1.74:5280] | reports mark
-// reports start <nightly|balance|llm-playtest|deck-hunt|llm-compare> [--args "…"] [--request <id>] [--name "…"] [--pc2024 …]
+// reports start <nightly|balance|llm-playtest|deck-hunt|deck-build|llm-compare> [--args "…"] [--request <id>] [--name "…"] [--pc2024 …]
 //
 // Gets finished runs ready for the dashboard page (a claude.ai Artifact whose database only its owner
 // writes). Scripts can't write there, a Claude session can: `pending` gathers the runs the dashboard hasn't
@@ -45,7 +45,7 @@ function readRequests(dir: string | undefined): RequestDoc[] {
     } catch { return []; }
   });
 }
-const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt', 'llm-compare'];
+const COMMANDS = ['nightly', 'balance', 'llm-playtest', 'deck-hunt', 'deck-build', 'llm-compare'];
 
 function uploaded(): Set<string> {
   try { return new Set(JSON.parse(readFileSync(UPLOADED, 'utf8')) as string[]); } catch { return new Set(); }
@@ -62,7 +62,7 @@ function localRuns(): Run[] {
 }
 
 /** PC2024's playtester, through catsitter: POST /api/processes/mochi-playtester/forward {method, path, body}. */
-const forwarder = (catsitter: string) => async (method: string, path: string, body?: unknown) => {
+export const forwarder = (catsitter: string) => async (method: string, path: string, body?: unknown) => {
   const r = await fetch(`${catsitter}/api/processes/mochi-playtester/forward`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ method, path, body }), signal: AbortSignal.timeout(30_000),
@@ -70,6 +70,18 @@ const forwarder = (catsitter: string) => async (method: string, path: string, bo
   if (!r.ok) throw new Error(`catsitter ${path}: HTTP ${r.status}`);
   return r.json() as Promise<Record<string, unknown>>;
 };
+
+/** The finished runs of these kinds on PC2024, with their summaries (deck hunts and deck builds, for the deck library). */
+export async function pc2024Summaries(catsitter: string, kinds: string[]): Promise<RunSummary[]> {
+  const forward = forwarder(catsitter.replace(/\/$/, ''));
+  const list = (await forward('GET', '/runs')).runs as { id: string; kind: string; result: string }[];
+  const out: RunSummary[] = [];
+  for (const r of list.filter((x) => kinds.includes(x.kind) && x.result !== 'running' && x.result !== 'abandoned')) {
+    const got = await forward('POST', '/runs/get', { id: r.id });
+    if (got.summary) out.push(got.summary as RunSummary);
+  }
+  return out;
+}
 
 async function pc2024Runs(catsitter: string, skip: Set<string>): Promise<Run[]> {
   const forward = forwarder(catsitter);

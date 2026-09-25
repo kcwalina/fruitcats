@@ -66,11 +66,12 @@ function fakeProvider(): Provider {
       const rnd = () => ((n = (n * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
       let text: string;
       if (/Reply with only (a |the corrected )?JSON array/.test(prompt)) {
-        const count = Number(/Design (\d+)/.exec(messages[1]?.content ?? '')?.[1] ?? 2);
-        const decks = Array.from({ length: count }, (_, i) => {
-          const hero = playableHeroes()[i % playableHeroes().length];
-          const d = randomDeck(mulberry(i + 1), hero, undefined, `fake ${i + 1}`);
-          return { name: `fake ${i + 1}`, idea: 'A random legal deck.', hero, cards: d.cards };
+        const count = Number(/(?:Design|Build) (\d+)/.exec(prompt)?.[1] ?? /(?:Design|Build) (\d+)/.exec(messages[1]?.content ?? '')?.[1] ?? 2);
+        const decks = Array.from({ length: count }, () => {
+          const k = ++n;
+          const hero = playableHeroes()[k % playableHeroes().length];
+          const d = randomDeck(mulberry(k), hero, undefined, `fake ${k}`);
+          return { name: `fake ${k}`, idea: 'A random legal deck.', hero, cards: d.cards };
         });
         text = JSON.stringify(decks);
       } else if (/Reply with only a JSON object/.test(prompt)) {

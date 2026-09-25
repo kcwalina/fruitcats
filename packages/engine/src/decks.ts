@@ -102,3 +102,28 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   if (!ignoreSize && deckSize(deck) >= DECK_RULES.size) return `Your deck already has ${DECK_RULES.size} cards.`;
   return null;
 }
+
+/**
+ * A deck as one line of text, to copy out of the deck builder, paste into a playtest or pass along where only
+ * plain words fit (PC2024's playtester takes letters, digits, spaces, dots, commas and dashes):
+ * `FC1.Zest-Rush.SB1-H01.SB1-C01x3.SB1-C02x3…`. The name's spaces become dashes; a single copy has no `x1`.
+ * There are no commas in a code, so a list of decks can be written with commas between them.
+ */
+export function deckCode(deck: DeckList): string {
+  const name = deck.name.normalize('NFKD').replace(/[^A-Za-z0-9 -]/g, '').trim().replace(/\s+/g, '-').slice(0, 40);
+  const cards = Object.entries(deck.cards).filter(([, qty]) => qty > 0).sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, qty]) => (qty === 1 ? id : `${id}x${qty}`));
+  return ['FC1', name, deck.hero, ...cards].join('.');
+}
+
+/** Reads a deck code back (see deckCode), or null when the text isn't one. The deck may still break the rules: check deckProblems. */
+export function parseDeckCode(code: string): DeckList | null {
+  const m = /^FC1\.([A-Za-z0-9-]*)\.([A-Za-z0-9-]+)((?:\.[A-Za-z0-9-]+)*)$/.exec(code.trim());
+  if (!m) return null;
+  const cards: Record<string, number> = {};
+  for (const part of m[3].split('.').filter(Boolean)) {
+    const q = /^(.+?)(?:x(\d+))?$/.exec(part)!;
+    cards[q[1]] = (cards[q[1]] ?? 0) + Number(q[2] ?? 1);
+  }
+  return { name: m[1].replace(/-/g, ' ').trim() || `${cardName(m[2])}'s deck`, hero: m[2], cards };
+}

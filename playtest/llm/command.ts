@@ -1,9 +1,12 @@
 // llm-playtest [--provider pc2024] [--model M] [--persona exploit|aggro|newcomer|all] [--games N]
-//              [--deck KEY|file.json] [--vs KEY[,KEY…]|file.json] [--parallel 4] [--hours H] [--budget TOKENS]
+//              [--deck DECK[,DECK…]] [--vs DECK[,DECK…]] [--parallel 4] [--hours H] [--budget TOKENS]
 //              [--player plain|informed|memory|agent] [--effort low|medium|high] [--seeds TAG]
 // llm-compare --players plain,informed,memory,agent [--games N] [--persona aggro] [--seeds TAG] [--parallel 8]
 // llm-playtest --bench [--provider pc2024] [--models a,b,c]
 // llm-playtest --bench --concurrency 1,2,4,8 [--seconds 60] [--provider pc2024] [--model M]   (games per day)
+//
+// A DECK is a starter's key, a prototype deck's key, a library deck's key (npm run decks -- list), a deck code,
+// a DeckList file, `starters` or `library` (every deck of either).
 //
 // LLM players against the bot. Without --deck/--vs the games cycle through every pairing of starter decks,
 // and with --persona all through every persona. Each game gets a transcript (every choice with the LLM's
@@ -12,10 +15,10 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arg, flag, numArg } from '../lib/args';
-import { CARDS, DECKS, apply, rulesPrimer, choicesText, chooseAction, createGame, describe, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, apply, deckCode, rulesPrimer, choicesText, chooseAction, createGame, describe, type DeckList } from '../lib/engine';
 import { mulberry, seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
-import { loadDeck } from '../play/command';
+import { loadDecks } from '../decks/library';
 import { PERSONAS, ANSWER_FORMAT, ANSWER_REMINDER, type Persona } from './personas';
 import { knownCards, playLlmGame, type LlmGame } from './player';
 import { playerSpec, type PlayerSpec } from './players';
@@ -33,7 +36,17 @@ export interface LlmRunOptions {
   player: PlayerSpec;
   /** The same tag gives the same deals, so variants can be compared game for game. */
   seedTag?: string;
+  /** Custom decks in these games (not starters): listed in the report with their deck codes. */
+  customDecks?: DeckList[];
 }
+
+/** The decks in these pairs that aren't starter decks. */
+const customIn = (pairs: [DeckList, DeckList][]): DeckList[] => {
+  const starters = new Set(Object.values(DECKS).map((d) => d.name));
+  const seen = new Map<string, DeckList>();
+  for (const d of pairs.flat()) if (!starters.has(d.name)) seen.set(d.name, d);
+  return [...seen.values()];
+};
 
 export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
   const run = newRun('llm-playtest');
@@ -100,8 +113,18 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
   if (moves && fallbacks / moves > 0.1) problems.push({ level: 'warn', text: `${pct(fallbacks / moves)} of the LLM's moves fell back to the bot: the model struggles with the format.` });
   if (errors.length) problems.push({ level: 'warn', text: `${errors.length} game(s) failed: ${errors[0]}` });
 
+  // How the LLM did with each deck it played: what a custom deck's playtest is for.
+  const byDeck = [...new Set(results.map((g) => g.deck))].map((deck) => {
+    const games = results.filter((g) => g.deck === deck);
+    return { deck, games: games.length, won: games.filter((g) => g.won).length };
+  });
+  const custom = o.customDecks ?? customIn(pairs);
   const md: string[] = [
     `# LLM playtest: ${o.provider.name} ${o.provider.model}`, '',
+    ...(custom.length ? ['## Custom decks', '', ...custom.map((d) => {
+      const b = byDeck.find((x) => x.deck === d.name);
+      return `- **${d.name}** (${CARDS[d.hero]?.name.split(',')[0] ?? d.hero})${b ? `: the LLM won ${b.won} of ${b.games}` : ': no games'}. \`${deckCode(d)}\``;
+    }), ''] : []),
     `Player: **${o.player.name}**, ${o.player.about}. ${callsPerMove.toFixed(1)} model calls a move${Object.keys(toolCalls).length ? ` (tools: ${Object.entries(toolCalls).map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}.`, '',
     `Against the bot's judgment: agrees with its choice on ${pct(judgement.agreeWithBot)} of ${judgement.judgedMoves} moves, gives up ${judgement.regretPerMove.toFixed(2)} points a move; per game it takes the Yarn ${judgement.yarnWithMovesLeftPerGame.toFixed(1)} times and passes ${judgement.passWithMovesLeftPerGame.toFixed(1)} times with a useful move left.`, '',
     `${results.length} games, LLM won ${pct(winRate)}. ${moves} LLM moves, ${fallbacks} fell back to the bot. ` +
@@ -121,7 +144,8 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
     provider: o.provider.name, model: o.provider.model, personas: o.personas.map((p) => p.key),
     llmWinRate: winRate, moves, fallbacks, usage, costUsd: cost, player: o.player.name, callsPerMove, toolCalls, judgement,
     secondsPerMove: moves ? results.reduce((t, g) => t + g.secondsPerMove * g.llmMoves, 0) / moves : 0,
-    suspectCards: suspectList, confusing: confusing.slice(0, 20), unfair: unfair.slice(0, 20),
+    suspectCards: suspectList, confusing: confusing.slice(0, 20), unfair: unfair.slice(0, 20), byDeck,
+    customDecks: (o.customDecks ?? customIn(pairs)).map((d) => ({ name: d.name, hero: d.hero, code: deckCode(d) })),
     games: results.map((g) => ({ persona: g.persona, deck: g.deck, vs: g.vs, won: g.won, rounds: g.rounds, moves: g.llmMoves, fallbacks: g.fallbacks, summary: g.report?.summary ?? '' })),
   }, md.join('\n'));
 }
@@ -241,6 +265,13 @@ export async function llmCompareCommand(): Promise<number> {
   return 0;
 }
 
+/** Every deck against every opponent, except itself. */
+export function deckPairs(decks: DeckList[], opponents: DeckList[]): [DeckList, DeckList][] {
+  const pairs = decks.flatMap((d) => opponents.filter((o) => o.name !== d.name).map((o): [DeckList, DeckList] => [d, o]));
+  if (!pairs.length) throw new Error('No games to play: every deck would face itself.');
+  return pairs;
+}
+
 export async function llmPlaytestCommand(): Promise<number> {
   const providerName = arg('provider') ?? 'pc2024';
   if (flag('bench') && arg('concurrency')) {
@@ -261,7 +292,7 @@ export async function llmPlaytestCommand(): Promise<number> {
     seedTag: arg('seeds'),
     personas,
     games: numArg('games') ?? 3,
-    pairs: deck || vs ? (vs ?? 'orchard-guard').split(',').map((v): [DeckList, DeckList] => [loadDeck(deck ?? 'zest-rush'), loadDeck(v)]) : undefined,
+    pairs: deck || vs ? deckPairs(loadDecks(deck ?? 'zest-rush'), loadDecks(vs ?? 'orchard-guard')) : undefined,
     parallel: numArg('parallel'),
     hours: numArg('hours'),
     maxTokens: numArg('budget'),

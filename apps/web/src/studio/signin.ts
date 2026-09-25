@@ -62,7 +62,11 @@ export function renderSignIn(inviting: boolean): string {
         <button class="link" data-click="si:back">Change the email</button>.</p>`;
   }
   return `<main class="si">
-    <div class="si-art" style="background-image:url(${BASE}hw1/HW1-X02.webp)"></div>
+    <div class="si-art" aria-hidden="true">
+      <div class="si-fan">${['foil/SP1-X01', 'signature/SP1-X03-kitten', 'gold/SP1-X02'].map((f) =>
+        `<div class="si-card"><div class="si-window"><span>Your picture</span></div><img src="${BASE}cards/sp1/frames/${f}.webp" alt=""></div>`).join('')}</div>
+      <p>Draw the picture. We add the frame, the name and the rules, and you see it on the card straight away.</p>
+    </div>
     <div class="si-panel">
       <div class="brand"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></div>
       <h1>${inviting ? 'Welcome!' : 'Sign in'}</h1>

@@ -15,7 +15,7 @@ Last updated 2026-09-25.
 | **One match code for both modes** | Friend games and Ranked run on the same code once two players are paired and each has picked a deck: the match, clock, reconnecting, conceding, emotes, the result, replays. The two modes differ only in how the players are found and what happens after (head-to-head record, or a rating change). This is about not writing the code twice; it has nothing to do with what players own. |
 | **Each player plays their own deck** | Nothing a player owns is ever shared with, lent to or seen by another player: not cards, not decks, not purchases. Each player picks one of their own decks, built from cards their own account owns (the starter decks count, as everyone has them). A friend buying a card changes nothing for anyone else. |
 | **Transport** | One WebSocket per signed-in app, opened at sign-in and kept while the app is open. It carries presence, challenges, the Ranked queue and the match. Not one socket per feature. |
-| **Where Friends lives** | On the Home screen's **Friend** tile, as a full screen like Solo. It comes out of Settings → Account. The Account panel keeps one row that opens the same screen. |
+| **Where Friends lives** | Inside the game mode, not in a place of its own. The Home screen keeps its six tiles, with no tile added: the existing **Friend** play tile (next to Solo and Ranked) opens **Play a friend**, where you pick who to play from your friends or add a new friend. Friends are something you use to start a game, not a page you visit. Settings → Account → Friends goes away. |
 | **Challenges** | Only to friends who are online now. No challenges to offline friends in the first version (no push notifications yet). |
 | **Deck check** | The same rule in both modes: a finished 50-card deck of cards the player's own account owns. The server checks it against that account's ownership in the Store, so a deck with cards the account doesn't own can't be played. |
 | **Clock** | Every online game has a clock, with the same code for both modes; only the numbers differ (see [The clock](#the-clock)). Without one, a player who walks away holds the other hostage. |
@@ -31,13 +31,13 @@ The Friends prototype (`apps/web/src/account.ts`, `renderFriends`) works (list, 
   look, says "Coming soon".
 - **A friend can't be played.** Tapping a friend opens only Remove and Block. The main thing you'd want to do with a
   friend is missing, and the only things there are destructive.
-- **Adding a friend needs both people there at once.** The code lasts 15 minutes and works once, and the Home tile
+- **Adding a friend needs both people there at once.** The code lasts 15 minutes and works once, and the Friend tile
   promises "send them a link", but there is no link.
 - **No presence.** You can't tell who is around to play.
 - **It looks like a settings page:** a list capped at 30% of the screen height, one status line shared by every
   message, small type.
 
-The new Friends screen replaces it. The calls to viamochi-id (`listFriends`, `newFriendCode`, `redeemFriendCode`,
+The Play a friend screen replaces it. The calls to viamochi-id (`listFriends`, `newFriendCode`, `redeemFriendCode`,
 `removeFriend` in `auth.ts`) stay as they are.
 
 ## The player's experience
@@ -45,46 +45,52 @@ The new Friends screen replaces it. The calls to viamochi-id (`listFriends`, `ne
 ### The flow, the same in both modes
 
 ```
- Friend:  Friends screen → Play (friend) → pick deck → Waiting for Pippin… ─┐
+ Friend:  Play a friend → pick friend → pick deck → Waiting for Pippin… ─┐
                                                                             ├→ Versus → Game → Result
- Ranked:  Ranked screen  → pick deck → Find a match → Looking for a player… ─┘
+ Ranked:  Ranked        → pick deck   → Find a match → Looking for a player… ─┘
 ```
 
 Deck picker, waiting screen, Versus splash, game and Result are the **same screens**. Friend and Ranked change a few
 words on them and the buttons at the end.
 
-### Friends screen (Home → Friend)
+### Play a friend (Home → Friend)
 
-Signed out, the tile shows "Sign in to open", like Collection. Signed in, it opens a full screen:
+The Friend tile is a way to start a game, like Solo, so the screen it opens asks one thing: **who do you want to
+play?** Picking a friend is the first step of the game; adding a friend is one of the choices in that same list, not
+a separate place. Signed out, the tile shows "Sign in to open", like Collection. Signed in:
 
 1. **Challenges for you** (only when there are some), at the top: Pippin's Pawtrait, "Pippin wants to play",
    **Pick a deck** and **Not now**.
 2. **Your game with Pippin · Round 4 · Rejoin**, when an online game is still going (after a refresh, or on another
    device).
-3. **Your friends**, sorted online first, then in a game, then offline. Each row: Pawtrait with a status dot, name,
-   one status line ("Online", "In a game", "Last seen 3 days ago") and your record against them ("You 3 – 2"). Online
-   friends have a **Play** button on the row. Remove and Block move into a quiet ⋯ menu, each with a confirmation, as
-   now.
-4. **Add a friend**, a button at the bottom that opens a sheet:
+3. **Who to play**: your friends, online first, then in a game, then offline. Each row: Pawtrait with a status dot,
+   name, one status line ("Online", "In a game", "Last seen 3 days ago") and your record against them ("You 3 – 2").
+   Tapping an online friend picks them. Remove and Block are in a quiet ⋯ menu on the row, each with a confirmation,
+   as now.
+4. **+ Add a friend**, the last entry of the same list. It opens a sheet:
    - **Invite link**, `fruitcats.viamochi.com/f/K7M4Q2`, with **Share** (the phone's share sheet) or **Copy**.
      Opening the link signs you in if needed and adds the friend.
    - The same code, large, for reading out, and a QR code for someone standing next to you.
    - **Have a code?** A box that formats as you type (`K7M-4Q2`) and adds as soon as the sixth character is in.
      Errors show under the box, not in a shared status line.
 
-With no friends yet, the screen is one picture of cats and **Invite a friend**; the list isn't shown empty.
+With no friends yet, the list holds only **+ Add a friend**, with a picture of cats and one line: "Add a friend to
+play them."
 
-The Home tile shows a small badge with the number of challenges waiting.
+Once someone is added, the sheet closes and the new friend is in the list, ready to tap: adding a friend leads
+straight into playing them.
+
+The Friend tile shows a small badge with the number of challenges waiting; the tile itself doesn't change.
 
 ### Challenging a friend
 
-1. **Play** on Pippin's row opens the deck picker: the Solo carousel, showing only decks you can play online.
+1. Tapping Pippin opens the deck picker: the Solo carousel, showing only decks you can play online.
 2. **Challenge Pippin** leads to the waiting screen: your Pawtrait and Pippin's facing each other, "Waiting for
    Pippin…", a 60-second ring and **Cancel**.
 3. Pippin gets a banner wherever they are in the app ("Pippin wants to play", **See**). In a Solo game it's a small
    banner that doesn't pause or cover anything. Pippin picks a deck and the game starts.
 4. If Pippin says **Not now**, you see "Pippin can't play right now." If the ring runs out, "No answer from
-   Pippin." Either way you go back to the Friends screen.
+   Pippin." Either way you go back to Play a friend.
 
 Neither player sees the other's deck before the game. The Hero Cats are shown on the Versus splash, as they would be
 on the table.
@@ -199,7 +205,7 @@ The main change is that the game screen stops knowing who the other player is.
 - **`main.ts`**: `HUMAN` and `AI` become `session.seat` and the other seat. The screen draws only the view, so
   Solo checks the hidden-information rules every time anyone plays, well before anyone plays online.
 - **`live.ts`**: the socket, kept open while signed in, reconnects with backoff, passes messages on.
-- **`friends.ts`**: the Friends screen and the Add a friend sheet (out of `account.ts`).
+- **`friends.ts`**: the Play a friend screen and the Add a friend sheet (out of `account.ts`).
 - **`match-screens.ts`**: waiting, Versus and Result, used by both modes.
 - **`ranked.ts`**, later: the Ranked screen and queue.
 
@@ -228,7 +234,7 @@ offered. Three timeouts in a row lose the game.
 ## Connection drops
 
 A player whose connection drops has **60 seconds** to come back (Ranked) or **3 minutes** (Friend); their clock
-stops meanwhile. They come back by reopening the app on any device, signed in: the Home tile offers **Rejoin**. After
+stops meanwhile. They come back by reopening the app on any device, signed in: the Friend (or Ranked) tile offers **Rejoin**. After
 that, Ranked counts it as a loss. Friend asks the one still there: **Keep waiting** or **Take the win**.
 
 ## Ranked, on top of this
@@ -256,8 +262,8 @@ Each step can be tested and shipped by itself.
 2. **The match on the server.** `socket.ts`, `match.ts`, `matches.ts`, `decks.ts`, `RemoteSession`, and the
    waiting, Versus and Result screens. Tried by starting a match between two browser tabs signed in as two dev
    accounts (`npm run api:local -- --fake-sign-in`).
-3. **Friends.** `presence.ts`, `challenges.ts`, the Friends screen, invite links, rematch and head-to-head. The Home
-   tile opens. Friends come out of Settings → Account.
+3. **Friends.** `presence.ts`, `challenges.ts`, Play a friend (with Add a friend in it), invite links, rematch and
+   head-to-head. The Friend tile opens. Settings → Account → Friends goes away.
 4. **Ranked.** `queue.ts`, `ratings.ts`, the Ranked screen and the ladder.
 
 ## Questions for the owner

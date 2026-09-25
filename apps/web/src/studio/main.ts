@@ -14,7 +14,7 @@ import { BASE, esc } from '../ui';
 import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
 import {
-  FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
+  FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, sketchFirst, stateOf, steps, versionsOf,
   type Brief, type BriefPicture, type State,
 } from './brief';
 import { DEVICES, LOCK_CLOCK, announcementPreview, cardPreview, finishesOf, gamePreview, pawtraitPreview, wallpaper } from './previews';
@@ -24,7 +24,7 @@ import './studio.css';
 interface SetEntry { set: string; code: string; name: string; status: string; folder: string }
 interface LocalPicture { url: string; file: File; width: number; height: number; format: string }
 type Tab = 'card' | 'picture' | 'game' | 'wallpaper';
-type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'picture'; code: string; key: string };
+type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'all'; code: string } | { page: 'picture'; code: string; key: string };
 
 const S = {
   route: { page: 'sets' } as Route,
@@ -63,6 +63,8 @@ const S = {
   busy: false,
   error: '',
   assignEmail: '',
+  /** The picture just sent, for the wizard's “sent” line. */
+  justSent: '',
   assignError: '',
   /** A reviewer looking at a project the way its artist sees it (to try the Studio, or to check what they see). */
   asArtist: false,
@@ -81,6 +83,7 @@ function parseRoute(): Route {
   const [code, key] = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   if (!code) return { page: 'sets' };
   if (key === 'artists') return { page: 'home', code };
+  if (key === 'all') return { page: 'all', code };
   if (key) return { page: 'picture', code, key };
   return { page: 'home', code };
 }
@@ -123,6 +126,7 @@ async function enter() {
 
 async function onRoute() {
   S.route = parseRoute();
+  S.justSent = '';
   S.pinning = false; S.pin = null; S.replyTo = null; S.suggesting = null; S.uploadError = ''; S.newInvite = '';
   const mine = visibleSets();
   if (S.route.page === 'sets' && mine.length === 1 && (S.me || S.guest)) { go(`#/${mine[0].code}`); return; }
@@ -294,7 +298,8 @@ function page(): string {
       + (S.error ? `<p class="si-guest si-error">${esc(S.error)}</p>` : '');
   }
   const r = S.route;
-  const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? homePage(r.code) : picturePage(r.code, r.key);
+  const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
+    : r.page === 'all' ? homePage(r.code) : picturePage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
     ${S.guest ? `<div class="banner">You’re looking around without signing in. Pictures you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
     ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
@@ -393,7 +398,6 @@ function homePage(code: string): string {
       return `<article class="step ${st.done ? 'done' : st.open ? 'open' : 'locked'}">
         <header><span class="step-n">${st.done ? '✓' : i + 1}</span><div><h3>${esc(st.milestone.title)}</h3>${st.milestone.note ? `<p>${esc(st.milestone.note)}</p>` : ''}
           ${lockedBy ? `<p class="lock">Opens when “${esc(lockedBy)}” is approved.</p>` : ''}</div>
-          ${owner && !st.done && (!st.open || view?.milestones[String(st.milestone.id)]) ? `<button class="btn ghost small" data-click="openstep:${st.milestone.id}:${view?.milestones[String(st.milestone.id)] ? 0 : 1}">${view?.milestones[String(st.milestone.id)] ? 'Close early access' : 'Open now'}</button>` : ''}
           <div class="bar"><i style="width:${Math.round(st.progress * 100)}%"></i></div></header>
         <div class="thumbs">${st.pictures.map((p) => thumb(code, p, st.open || owner)).join('')}</div>
       </article>`;
@@ -401,6 +405,85 @@ function homePage(code: string): string {
     ${brief.families || brief.style ? `<section class="about-set"><h3>About the set</h3>
       ${brief.style ? `<p><b>Style.</b> ${esc(brief.style)}</p>` : ''}${brief.audience ? `<p><b>For.</b> ${esc(brief.audience)}</p>` : ''}
       ${Object.entries(brief.families ?? {}).map(([name, f]) => `<p><b>${esc(name)} family.</b> ${esc(f.world)}${f.note ? ` (${esc(f.note)})` : ''}</p>`).join('')}</section>` : ''}
+  </main>`;
+}
+
+// ── The artist's wizard: one thing to do at a time ──────────────────────────────────────────────
+
+const welcomeKey = (code: string) => `studio-welcomed-${S.me?.id ?? 'guest'}-${code}`;
+function welcomed(code: string): boolean { try { return localStorage.getItem(welcomeKey(code)) === '1'; } catch { return true; } }
+
+/** What an artist sees when they open their project: a welcome the first time, then always the one picture to do now. */
+function wizardPage(code: string): string {
+  const brief = S.briefs.get(code);
+  if (!brief) return notLoaded();
+  const view = S.views.get(code) ?? null;
+  const { approved, total } = overall(brief, view);
+  const started = brief.pictures.some((x) => versionsOf(view, keyOf(x)).length);
+  const banner = S.asArtist ? `<div class="as-artist">You’re seeing <b>${esc(brief.name)}</b> the way its artist sees it.
+      <button class="btn small" data-click="asartist:0">Back to reviewing</button></div>` : '';
+
+  if (!started && !welcomed(code)) {
+    return `<main class="wizard">${banner}<section class="wz-card wz-welcome">
+      <small>${esc(brief.name)}</small>
+      <h1>Welcome${S.me?.name ? `, ${esc(S.me.name)}` : ''}!</h1>
+      <p class="wz-lead">You’ll draw <b>${total} pictures</b> for ${esc(brief.name)}, one at a time. For each picture:</p>
+      <ol class="wz-how"><li><b>Read</b> what to draw.</li><li><b>Send a sketch.</b> You’ll see it on the real card before you send it.</li>
+        <li><b>We reply</b> here, with comments on your sketch.</li><li><b>Send the finished picture.</b></li></ol>
+      <p>The Studio always shows you what to do next. Your pictures are kept safely, every version.</p>
+      <button class="btn primary big" data-click="welcome:${code}">Start with the first picture</button>
+    </section></main>`;
+  }
+
+  const current = nextPicture(brief, view);
+  const progress = `<div class="wz-progress"><div class="bar"><i style="width:${total ? Math.round((approved / total) * 100) : 0}%"></i></div>
+    <span>${approved} of ${total} pictures done</span><a href="#/${code}/all">All pictures</a></div>`;
+  const sent = S.justSent ? `<div class="wz-sent">✓ ${esc(S.justSent)} is sent. We’ll reply on it here.</div>` : '';
+
+  if (!current) {
+    const withUs = brief.pictures.filter((x) => stateOf(view, keyOf(x)) === 'waiting');
+    const done = approved === total && total > 0;
+    return `<main class="wizard">${banner}${progress}${sent}<section class="wz-card">
+      ${done ? `<h1>Every picture is done</h1><p class="wz-lead">Thank you for your work on ${esc(brief.name)}!</p>`
+        : `<h1>That’s everything for now</h1>
+          <p class="wz-lead">We’re looking at what you sent. Our replies appear here, and the next picture opens as soon as we approve these:</p>
+          <ul class="wz-list">${withUs.map((x) => `<li><a href="#/${code}/${keyOf(x)}">${esc(title(x))}${sideLabel(x) ? ` (${sideLabel(x)})` : ''}</a></li>`).join('')}</ul>`}
+    </section></main>`;
+  }
+
+  const key = keyOf(current);
+  const state = stateOf(view, key);
+  const versions = versionsOf(view, key);
+  const n = brief.pictures.indexOf(current) + 1;
+  const name = `${title(current)}${sideLabel(current) ? ` (${sideLabel(current)})` : ''}`;
+  const sketch = sketchFirst(current) && state === 'none';
+  const heading = state === 'changes' ? `Update ${name}` : state === 'sketch-ok' ? `Paint ${name}` : sketch ? `Sketch ${name}` : `Draw ${name}`;
+  const lead = state === 'changes' ? 'We asked for a few changes. Read them below, then send a new version.'
+    : state === 'sketch-ok' ? 'We like your sketch. Now paint the finished picture and send it here.'
+      : sketch ? 'Start with a rough sketch: the pose, the composition and the main colours. We’ll reply before you paint it.'
+        : 'Send a sketch if you’d like an early opinion, or the finished picture.';
+  const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
+  const pic = shown(code, key);
+  const facts = [`${current.size[0]} × ${current.size[1]} pixels`, current.kind === 'pawtrait' ? 'shown as a circle' : '',
+    current.signature === 'requested' ? 'please sign it in a corner' : '', current.showcase ? 'showcase art: face visible, heroic pose, dramatic light, lots of detail' : '']
+    .filter(Boolean).join(' · ');
+  return `<main class="wizard">${banner}${progress}${sent}
+    <section class="wz-card">
+      <small>Picture ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
+      <h1>${esc(heading)}</h1>
+      <p class="wz-lead">${esc(lead)}</p>
+      ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<p>${authorLabel(c)} ${esc(c.text)}</p>`).join('')}</div>` : ''}
+      <div class="wz-two">
+        <div class="wz-brief">
+          <h3>What to draw</h3><p>${esc(current.draw)}</p>
+          ${current.mustKeep?.length ? `<h3>Please keep</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+          <p class="muted small">${esc(facts)}</p>
+          <a class="small" href="#/${code}/${key}">More about this picture, and suggesting a new name</a>
+        </div>
+        <div class="wz-upload">${uploadBox(current, versions)}</div>
+      </div>
+    </section>
+    ${pic.url ? `<section class="wz-card"><h2>How it looks</h2>${previewTabs(code, current, pic)}</section>` : ''}
   </main>`;
 }
 
@@ -451,9 +534,7 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
     </section>
     <section class="panel"><h2>The pictures</h2>
       <p class="muted">All ${total} pictures of this project, in the order the artist draws them. Each step opens for the artist when the one before it is approved.</p>
-      ${steps(brief, view).map((st, i) => `<div class="rstep"><h3>${i + 1}. ${esc(st.milestone.title)}
-          ${!st.done && !st.open ? `<button class="link small" data-click="openstep:${st.milestone.id}:1">Open it now</button>` : ''}
-          ${view?.milestones[String(st.milestone.id)] && !st.done ? `<button class="link small" data-click="openstep:${st.milestone.id}:0">Close early access</button>` : ''}</h3>
+      ${steps(brief, view).map((st, i) => `<div class="rstep"><h3>${i + 1}. ${esc(st.milestone.title)}</h3>
         <div class="thumbs">${st.pictures.map((p) => thumb(code, p, true)).join('')}</div></div>`).join('')}
     </section>
   </main>`;
@@ -523,32 +604,8 @@ function picturePage(code: string, key: string): string {
 /** What to do now, the upload box and, for the owner, the review buttons. */
 function actionBox(p: BriefPicture, state: State, versions: Version[], stepOpen: boolean, opensAfter: string): string {
   const key = keyOf(p);
-  const local = S.local.get(key);
   const owner = reviewing();
-  const up = S.uploading?.key === key ? S.uploading : null;
-  const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
-  let box = '';
-  if (local) {
-    const list = checks(p, local.width, local.height, local.format, S.uploadKind);
-    box = `<div class="local">
-      <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
-      <ul class="checks">${list.map((c) => `<li class="${c.ok ? 'ok' : 'warn'}">${c.ok ? '✓' : '!'} ${esc(c.text)}</li>`).join('')}</ul>
-      ${S.guest ? '<p class="muted small">This picture is only on your computer. Sign in to send it to us.</p>' : `
-        <div class="seg" role="radiogroup" aria-label="What is it?">
-          <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
-          <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
-        <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
-        ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
-          : `<button class="btn primary wide" data-click="upload:${key}">Send to Fruitcats</button>`}`}
-      ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another picture' : 'Don’t send it'}</button>`}
-      ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
-    </div>`;
-  } else {
-    box = `<label class="drop" data-drop="${key}">
-      <input type="file" accept="image/webp,image/png,image/jpeg" data-file="${key}" hidden>
-      <b>${versions.length ? 'Upload a new version' : 'Choose your picture'}</b>
-      <span>Drop it here, or click to choose. You’ll see it ${where} before you send it.</span></label>`;
-  }
+  const box = uploadBox(p, versions);
 
   if (owner) {
     const last = versions.at(-1);
@@ -573,6 +630,39 @@ function actionBox(p: BriefPicture, state: State, versions: Version[], stepOpen:
     <h3>${esc(action.title)}</h3><p>${esc(action.text)}</p>${lock}
     ${state === 'approved' ? '' : box}
   </section>`;
+}
+
+/** Choose a picture (drop or click), then check it, see it and send it. */
+function uploadBox(p: BriefPicture, versions: Version[]): string {
+  const key = keyOf(p);
+  const local = S.local.get(key);
+  const up = S.uploading?.key === key ? S.uploading : null;
+  const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
+  if (local) {
+    const list = checks(p, local.width, local.height, local.format, S.uploadKind);
+    const code = S.route.page === 'sets' ? '' : S.route.code;
+    const onCard = p.kind === 'card' || p.kind === 'token'
+      ? `<div class="local-card">${cardPreview(code, key, finishesOf(p).at(-1)!.finish, local.url, 250)}</div>` : '';
+    return `<div class="local">
+      ${onCard}
+      <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
+      <ul class="checks">${list.map((c) => `<li class="${c.ok ? 'ok' : 'warn'}">${c.ok ? '✓' : '!'} ${esc(c.text)}</li>`).join('')}</ul>
+      ${S.guest ? '<p class="muted small">This picture is only on your computer. Sign in to send it to us.</p>' : `
+        <div class="seg" role="radiogroup" aria-label="What is it?">
+          <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
+          <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
+        <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
+        ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
+          : `<button class="btn primary wide" data-click="upload:${key}">Send to Fruitcats</button>`}`}
+      ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another picture' : 'Don’t send it'}</button>`}
+      ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
+    </div>`;
+  } else {
+    return `<label class="drop" data-drop="${key}">
+      <input type="file" accept="image/webp,image/png,image/jpeg" data-file="${key}" hidden>
+      <b>${versions.length ? 'Upload a new version' : 'Choose your picture'}</b>
+      <span>Drop it here, or click to choose. You’ll see it ${where} before you send it.</span></label>`;
+  }
 }
 
 /** The card's words, so the picture can fit them. */
@@ -752,7 +842,7 @@ async function choose(key: string, file: File) {
 }
 
 async function send(key: string) {
-  if (S.route.page !== 'picture' || S.uploading) return;
+  if (S.route.page === 'sets' || S.uploading) return;
   const code = S.route.code;
   const local = S.local.get(key);
   if (!local) return;
@@ -771,6 +861,7 @@ async function send(key: string) {
     S.chosen.delete(key);
     S.uploadNote = '';
     S.uploading = null;
+    S.justSent = pictureTitle(code, key);
     await refresh(code);
     flash('Sent. It’s safely stored, and we’ll have a look.');
   } catch (e) {
@@ -802,6 +893,7 @@ async function act(action: string) {
     case 'guest': S.guest = true; await onRoute(); return;
     case 'signin': S.guest = false; render(); return;
     case 'signout': if (DEV) setDevUser(null); else signOut(); S.me = null; S.views.clear(); S.images.clear(); render(); return;
+    case 'welcome': try { localStorage.setItem(welcomeKey(args[0]), '1'); } catch { /* shown again next time */ } render(); window.scrollTo(0, 0); return;
     case 'asartist': S.asArtist = args[0] === '1'; render(); window.scrollTo(0, 0); return;
     case 'retry': S.error = ''; await onRoute(); return;
     case 'recheck': await enter(); await onRoute(); return;

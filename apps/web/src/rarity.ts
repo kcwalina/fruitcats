@@ -5,7 +5,7 @@
 import './finish.css';
 import { CARDS, type Rarity } from '@fruitcats/engine';
 import { FINISH_NAMES, finish, type Finish } from './collection';
-import { BASE, cardUrl } from './ui';
+import { cardUrl, finishUrl } from './ui';
 
 /** Each rarity's metal: light, dark, outline (compose_cards.py's RARITY_MARKS). */
 const METAL: Record<Rarity, [string, string, string]> = {
@@ -74,7 +74,7 @@ export function drawRarityMark(ctx: CanvasRenderingContext2D, r: Rarity, cx: num
  */
 export function yourCardUrl(key: string): string {
   const f = finish(key.replace(/-(kitten|bigcat)$/, ''));
-  return f === 'standard' ? cardUrl(key) : `${BASE}cards/sb1/${f}/${key}.webp`;
+  return f === 'standard' ? cardUrl(key) : finishUrl(key, f);
 }
 
 /** Classes for the element holding a picture of your copy: its sheen and glow (finish.css). None for standard. */

@@ -25,7 +25,8 @@
     "reports": "tsx playtest/runner.ts reports",
     "nightly": "tsx playtest/runner.ts nightly",
     "llm-compare": "tsx playtest/runner.ts llm-compare",
-    "check-set": "tsx content/check-set.ts"
+    "check-set": "tsx content/check-set.ts",
+    "publish-pack": "tsx content/publish-pack.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

@@ -429,9 +429,10 @@ is saved either way and can be played once the player has every card.
 
 ## From the accounts work
 
-- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Tango, Nova and Reaper)
-  must also unlock the Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id,
-  RowKey the Pawtrait id) in the same step that grants the card, and remove it on a refund. There's no endpoint for
+- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Nova and Reaper, then
+  Mochi's `legend-mochi` once its art is in; Tango's `legend-tango` is open to everyone) must also unlock the
+  Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id, RowKey the Pawtrait id)
+  in the same step that grants the card, and remove it on a refund. There's no endpoint for
   this yet; `viamochi-id` needs a service-to-service one (see [accounts.md](accounts.md), Avatars).
 - **Purchases log:** the `purchases` log category (kept forever, tamper-proof) is designed in
   [accounts.md](accounts.md) but not created yet; the Store creates it with its first purchase code.

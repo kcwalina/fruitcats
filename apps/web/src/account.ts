@@ -329,7 +329,7 @@ async function openPicker(host: Host) {
   // Show what's known right away: the catalog if it's loaded, what you wear, and what everyone owns. What you've
   // unlocked arrives a moment later from your account.
   wearing = session()?.avatar ?? wearing;
-  if (!owned.size) owned = new Set(avatars.filter((a) => a.kind === 'everyday' || a.id === 'legend-mochi').map((a) => a.id));
+  if (!owned.size) owned = new Set(avatars.filter((a) => a.kind === 'everyday' || a.id === 'legend-tango').map((a) => a.id));
   pickerBusy = !avatars.length;
   host.render();
   try {

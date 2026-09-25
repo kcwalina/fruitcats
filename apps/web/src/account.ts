@@ -3,18 +3,21 @@
 //   1. your email;
 //   1b. if it's new and accounts are still for playtesters only: the invite code they were sent;
 //   2. if it's new: your name, birth year and the Terms (asked before the code, so there's only one code to type);
-//   3. the code from the email.
+//   3. the code from the email;
+//   4. if the account hasn't agreed to the current Terms of Use yet (made before they existed, or they've changed):
+//      agree, or sign out. There's no closing this step.
+// The version each account agreed to is kept in the account (auth.ts, TERMS_VERSION).
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, TERMS_VERSION, accountExists, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  AuthError, acceptTerms, accountExists, needsTerms, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
 import { BASE, esc } from './ui';
 
-type Step = 'email' | 'invite' | 'details' | 'code' | 'welcome';
+type Step = 'email' | 'invite' | 'details' | 'code' | 'terms' | 'welcome';
 
 interface Host { render(): void }
 
@@ -49,7 +52,18 @@ export function openAccount(host: Host, why = '', after: (() => void) | null = n
   focusFirst();
 }
 
-export function closeAccount(host: Host) { open = false; then = null; host.render(); }
+export function closeAccount(host: Host) {
+  if (step === 'terms' && needsTerms()) return;   // agree or sign out
+  open = false; then = null; host.render();
+}
+
+/** A signed-in device whose account hasn't agreed to the current Terms: ask now, before anything else. */
+export function askForTermsIfNeeded(host: Host) {
+  if (!needsTerms() || open) return;
+  hostRef = host;
+  open = true; step = 'terms'; error = ''; busy = false; agreed = false; then = null;
+  host.render();
+}
 
 /** Why an account is worth having, in the player's terms. Shown before they sign in. */
 const BENEFITS = [
@@ -68,10 +82,10 @@ function benefits(): string {
 
 export function renderAccount(): string {
   if (!open) return '';
-  const body = step === 'email' ? emailStep() : step === 'invite' ? inviteStep() : step === 'details' ? detailsStep() : step === 'code' ? codeStep() : welcomeStep();
+  const body = step === 'email' ? emailStep() : step === 'invite' ? inviteStep() : step === 'terms' ? termsStep() : step === 'details' ? detailsStep() : step === 'code' ? codeStep() : welcomeStep();
   return `<div class="overlay" data-account-overlay>
     <div class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-title">
-      <button class="icon-button account-close" data-click="acct:close" aria-label="Close" title="Close">×</button>
+      ${step === 'terms' ? '' : '<button class="icon-button account-close" data-click="acct:close" aria-label="Close" title="Close">×</button>'}
       ${body}
       <p class="account-error" role="alert">${esc(error)}</p>
     </div>
@@ -141,6 +155,25 @@ function codeStep(): string {
     <button class="primary account-go" data-click="acct:code" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : pending?.flow === 'signUp' ? 'Create account' : 'Sign in'}</button>
     <p class="account-small">Still nothing after a minute? <button class="link-button" data-click="acct:resend" ${busy ? 'disabled' : ''}>Send a new code</button>.
       Wrong email? <button class="link-button" data-click="acct:back">Change it</button>.</p>`;
+}
+
+function termsStep(): string {
+  return `
+    <img class="account-cat" src="${BASE}sb1/SB1-P01-kitten.webp" alt="">
+    <h2 id="account-title">Before you continue</h2>
+    <p class="account-why">Please read the Terms of Use and the Privacy Policy for your Via Mochi account.
+      They say what you can do with the game and your cards, and how we look after your data.</p>
+    <p class="account-terms-links">
+      <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a>
+      <a href="${BASE}privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
+    </p>
+    <label class="account-agree">
+      <input type="checkbox" data-acct="agree" ${agreed ? 'checked' : ''} ${busy ? 'disabled' : ''}>
+      <span>I agree to the Terms of Use and have read the Privacy Policy</span>
+    </label>
+    <button class="primary account-go" data-click="acct:terms" ${busy ? 'disabled' : ''}>${busy ? 'Saving…' : 'Continue'}</button>
+    <p class="account-small">Don’t agree? <button class="link-button" data-click="acct:termsno" ${busy ? 'disabled' : ''}>Sign out</button>
+      and keep playing Solo.</p>`;
 }
 
 function welcomeStep(): string {
@@ -560,7 +593,6 @@ export async function accountClick(host: Host, action: string) {
     if (error) { host.render(); return; }
     await work(host, async () => {
       pending = await startSignUp(email, displayName.trim(), year);
-      try { localStorage.setItem('viamochi-terms', TERMS_VERSION); } catch { /* recorded server-side later */ }
       code = ''; step = 'code';
     });
   } else if (action === 'code') {
@@ -576,8 +608,17 @@ export async function accountClick(host: Host, action: string) {
         }
         throw e;
       }
-      step = 'welcome'; startSync(host);
+      // A new account ticked the Terms before its code; an existing one may not have agreed to these Terms yet.
+      if (pending?.flow === 'signUp') await acceptTerms().catch(() => { /* asked again at the next start */ });
+      step = needsTerms() ? 'terms' : 'welcome';
+      startSync(host);
     });
+  } else if (action === 'terms') {
+    if (!agreed) { error = 'Please tick the box to agree, or sign out.'; host.render(); return; }
+    await work(host, async () => { await acceptTerms(); step = pending ? 'welcome' : 'email'; if (!pending) open = false; });
+  } else if (action === 'termsno') {
+    await signOutAndForget();
+    open = false; then = null; step = 'email'; host.render();
   } else if (action === 'resend') {
     if (!pending) return;
     await work(host, async () => { pending = await resend(pending!); code = ''; error = 'We sent a new code.'; });

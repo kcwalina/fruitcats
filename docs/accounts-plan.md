@@ -104,6 +104,11 @@ Last updated 2026-09-24.
 - **Deck and Showcase sync** through `fruitcats-api` (`POST /v1/sync`, Table Storage `decks` and `showcase`).
 - **Playtest build:** `npm run build:playtest` builds `apps/web` with the flags in `src/flags.ts` on (`ACCOUNTS`),
   into `dist-playtest/`. The public `npm run build` compiles them out.
+- **Agreeing to the Terms:** a new account ticks "I agree to the Terms of Use and have read the Privacy Policy"
+  before its code. The account keeps the version it agreed to and when (`PUT /me/terms`; `account.terms_accepted` in
+  the security log). Anyone signed in whose account hasn't agreed to the current `TERMS_VERSION` (`apps/web/src/auth.ts`)
+  gets a "Before you continue" step on sign-in or at start: agree, or sign out. It can't be closed. Changing the Terms
+  = bump `TERMS_VERSION`, and everyone is asked again.
 - **Invite codes (playtest only, 2026-09-24):** a new account needs an invite code; existing accounts never do.
   - The game asks for it right after a new email ("Got an invite code?"), before any code email is sent, so nobody
     waits for approval. Without a code, Solo still works.

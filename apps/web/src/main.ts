@@ -11,7 +11,7 @@ import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deck
 import { ACCOUNTS } from './flags';
 import { startSync } from './sync';
 import {
-  accountClick, accountEnter, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
+  accountClick, accountEnter, askForTermsIfNeeded, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
@@ -1339,4 +1339,4 @@ if (import.meta.env.DEV) {
 
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
-if (ACCOUNTS) startSync({ render });
+if (ACCOUNTS) { startSync({ render }); askForTermsIfNeeded({ render }); }

@@ -121,13 +121,17 @@ The brief also marks the pictures that come in more than one piece:
 
 Cards are sold in different ways. The ones people buy on their own are a chance to show off.
 
+We decide each card's kind (a deck card, a Foil, Gold or Signature card, and so on) when we design the card, and
+we may change our minds while we design it. By the time a project reaches you in the Studio, that's settled: the
+Studio shows your image in exactly the frame the card will have.
+
 | Kind of card | How it's sold | How it looks in the game | What we hope for |
 |---|---|---|---|
 | **Deck card** | Inside a deck of 50 cards. The deck costs $9.99. | A frame in the colours of the card's family | A clear, fun picture in the set's style |
 | **Token** | Not sold. Another card creates it during a game. | A frame in the colours of the card's family | Like a deck card. If a card sold on its own creates it, it's worth the same care. |
 | **Foil card** | Sold on its own for $1.49 | A shiny silver frame | A picture people want to show off (see below) |
 | **Gold card** | Sold on its own for $4.99 | A gold frame | The same, a step richer |
-| **Signature card** | Sold on its own for $19.99. Each set has only one. It is always a Hero Cat. | A black stone frame with glowing cracks | The set's centrepiece, in both of its pictures (Kitten and Big Cat) |
+| **Signature card** | Sold on its own for $19.99. A set has one at most. | A black stone frame with glowing cracks | The set's centrepiece. When it's a Hero Cat, in both of its pictures (Kitten and Big Cat). |
 
 People who buy a card on its own get something they'd like to keep and show to friends, so these are the cards
 to go all out on. We call this **showcase art**. Things that have worked well for us:
@@ -146,9 +150,9 @@ Signature card (Reaper).
 
 ### One picture per card
 
-A player can own the same card in different versions: standard, Foil, Gold, Prismatic (a rainbow frame) or
-Signature. Only the frame changes. The picture is the same, so you draw each card once. (A Hero Cat needs two
-pictures because it has two forms, Kitten and Big Cat.)
+You make one picture per card. (A Hero Cat needs two, because it has two forms: Kitten and Big Cat.) The card's
+frame is part of its design, decided before the project reaches you, so you never make a picture per frame. A few
+cards, such as the Paragon family's, let you pick the frame's colour in the Studio, to suit your picture.
 
 ## Two styles
 
@@ -414,7 +418,8 @@ No. The name, cost and rules are printed on the card around your picture. Letter
 sign or a label, is your call. Keep in mind that small text is hard to read at card size.
 
 **Do I draw the Foil, Gold, Prismatic or Signature versions?**
-No. You draw each card once. We make every version by changing the frame.
+No. You make each card's picture once. Which frame the card has is decided when we design it, and the Studio shows
+your picture in that frame.
 
 **Why does a Hero Cat look so different from the other cards?**
 Hero Cats are the decks' mascots, so they share one recognisable look: the flat plush-sticker style.

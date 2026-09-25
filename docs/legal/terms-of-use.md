@@ -100,7 +100,8 @@ a waiver of class actions, with a way to opt out.
 - **Prices** are shown by the Seller, with any taxes it applies, before you confirm. Items are offered at the same
   price on every store (small differences from currencies and store price steps aside), and sales run on all of them
   at once.
-- **Refunds and chargebacks** are handled by the Seller, under its refund policy and the law. When a Seller tells us a
+- **Refunds and chargebacks** are handled by the Seller, under its refund policy and the law. For purchases on the
+  web, our [Refund Policy](refund-policy.md) says how to ask and what it covers. When a Seller tells us a
   purchase was refunded or charged back, **the license to the Digital Items it covered ends**: they're removed from
   your account on every platform, and a deck that used them falls back to a starter deck.
 - **EU and UK buyers.** The Seller's checkout explains your right to withdraw from a digital-content purchase within 14

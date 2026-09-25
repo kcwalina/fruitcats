@@ -25,6 +25,7 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   // Linked from the sign-up screen; no tabs of their own.
   { md: 'legal/terms-of-use.md', html: 'terms.html' },
   { md: 'legal/privacy-policy.md', html: 'privacy.html' },
+  { md: 'legal/refund-policy.md', html: 'refunds.html' },
 ];
 
 // Accounts (src/flags.ts) are on in every build since 2026-09-24: while sign-up needs a playtest invite code, the

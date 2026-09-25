@@ -6,7 +6,8 @@ It records the decisions made so far and the steps, in order. Accounts come firs
 [future-plans.md](future-plans.md).
 
 Last updated 2026-09-25. **What's next:** [Making it real](#making-it-real-what-is-left) lists the work between
-the test Store that's live now and one that takes real money.
+the test Store that's live now and one that takes real money; [Payments: what's built](#payments-whats-built-2026-09-25)
+says how far it has got, and [Setting up Paddle](#setting-up-paddle-the-owners-steps) is the owner's next step.
 
 ## Decisions
 
@@ -206,6 +207,10 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
    The Store is open to any account there, with test checkout on.
 2. `npm run dev`, then open `http://localhost:5173/?store=1&api=http://localhost:8790` and sign in as usual.
 3. To start over, delete `.local-api/`, or use "Remove my test purchases" at the bottom of the cart.
+4. **Payments without a Paddle account:** `npm run api:local -- --fake-sign-in --fake-paddle` pays through a pretend
+   Paddle instead of test checkout: pending order, payment window (a short pause), signed webhook, reveal. Add
+   `&fakepay=close` to the game's address to close the window unpaid, or `&fakepay=slow` for a webhook that takes 40
+   seconds ("Payment received, your cards are on their way").
 
 ### On the live site: a preview for every playtester
 
@@ -291,6 +296,60 @@ on a device must not keep them for long.
   notices a change and refreshes; a limit on how long an offline copy is trusted (a few days) before bought cards are
   shown as "needs to connect"; and, with player-vs-player's live connection, a push that tells a player's other
   devices to refresh at once.
+
+### Payments: what's built (2026-09-25)
+
+Everything below is in the code and tested, and **switched off**: with no Paddle keys, or `STORE_PAYMENTS=off`, the
+Store behaves exactly as before. What's left is the owner's Paddle sign-up, the sandbox drills with real Paddle, the
+lawyer's review, and the launch decisions.
+
+- **Server** (`apps/api/src/store.ts`, `ledger.ts`, `paddle.ts`):
+  - `POST /v1/store/checkout` prices the cart, saves a **pending** order, creates the Paddle transaction (items
+    priced by us, with our order id and account id as custom data; nothing is set up in Paddle's catalog) and records
+    which order the transaction pays (`paymenttxns`). The same order id again returns the same transaction.
+  - `POST /v1/webhooks/paddle` checks the `Paddle-Signature` HMAC over the raw bytes, confirms a payment with Paddle's
+    API, applies it, records the event (`webhookevents`) and only then answers 200.
+  - `POST /v1/store/confirm`: the game, back from Paddle's window, has the server ask Paddle directly.
+  - **The ledger** (`ledger.ts`) is the one set of rules: pending, abandoned, paid, refunded, charged back. A payment
+    always counts (even late); one transaction pays one order once; a second payment for a paid order, a partial
+    refund, a chargeback warning or reversal changes no cards and raises an alert.
+  - **The owned total** (`~owned` row in the account's `orders` partition) is written in the same batch as the order,
+    rebuilt from the orders each time, with a version that changes only when what's owned does. Reading ownership is
+    one row.
+  - **The regular check**, hourly: re-applies the last 48 hours of Paddle payments and refunds, asks about pending
+    orders over an hour old, marks unpaid ones abandoned after a day; daily, it checks every owned total against its
+    orders and rebuilds any that differ.
+  - **Alerts:** `store.alert` events in the ops log, level error, with the ids support needs.
+  - **Account deletion** keeps orders that took money (business records, under the now-anonymous id); a later refund
+    still lands on them.
+  - **Tests:** `apps/api/test/payments.test.ts` (the drills, against a pretend Paddle) and `ledger.test.ts`.
+- **Game** (`storefront.ts`, `shop.ts`, `paddle.ts`): the confirm step says who sells (Paddle), tax, "Under 18? Ask a
+  parent first" and links the Terms and the Refund policy; **Continue to payment** opens Paddle's overlay; then
+  "Payment received" and the reveal. Closing the window goes back to the same order. If confirming takes longer than
+  30 seconds, the player is told the cards are on their way, and they're revealed as soon as they arrive or the next
+  time the Store opens. The Paddle client token comes from the API, so sandbox to live needs no new build.
+- **Legal:** a draft [Refund Policy](legal/refund-policy.md) (`refunds.html`), linked from the Terms' section 5.
+
+**Settings** (on `fruitcats-api`, never printed): `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_CLIENT_TOKEN`,
+`PADDLE_TAX_MODE` (`internal`, the default: shown prices include tax; or `external`), and `STORE_PAYMENTS` = `off`,
+`sandbox` or `live`. The keys say which Paddle they're for; `STORE_PAYMENTS` must name the same one or checkout stays
+off. Webhooks and the regular check run whenever the keys are set, even with `STORE_PAYMENTS=off` or `STORE=off`, so
+a refund always lands. Paying is for testers (`STORE=testers`) or everyone (`STORE=open`), never in `preview`.
+
+### Setting up Paddle (the owner's steps)
+
+1. **Sandbox now:** sign up at sandbox-vendors.paddle.com as an individual.
+2. **Developer tools → Authentication:** create an **API key** that can read and write transactions and read
+   adjustments; and a **client-side token**.
+3. **Developer tools → Notifications:** a new destination, URL `https://api.fruitcats.viamochi.com/v1/webhooks/paddle`,
+   events `transaction.completed`, `transaction.paid`, `transaction.canceled`, `transaction.payment_failed`,
+   `adjustment.created`, `adjustment.updated`. Its **secret key** is the webhook secret.
+4. **Checkout → Checkout settings:** default payment link `https://fruitcats.viamochi.com/`.
+5. The three values go into `fruitcats-api`'s app settings (`PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`,
+   `PADDLE_CLIENT_TOKEN`), with `STORE_PAYMENTS=sandbox` and `STORE=testers` for the owner's own account: in the
+   portal, or put in a file for Claude to set through the deploy identity without printing them. Never in chat.
+6. **Later, live:** after the sandbox drills and the lawyer's review, apply for the live account (Paddle reviews the
+   website, Terms, Refund Policy and prices), then the same three values from live, and `STORE_PAYMENTS=live`.
 
 ### 1. Take the payment (Paddle)
 

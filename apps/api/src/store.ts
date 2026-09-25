@@ -72,6 +72,12 @@ export function usePaddle(config: PaddleConfig | null, api: Paddle | null) {
   paddle = api;
 }
 
+/** Local only (npm run api:local -- --fake-paddle): "pay" a transaction in the pretend Paddle, as its window would. */
+let fakePay: ((txn: string, delayMs: number) => void) | null = null;
+export function useFakePay(pay: (txn: string, delayMs: number) => void) {
+  if (LOCAL_DATA) fakePay = pay;
+}
+
 /**
  * Something a person must look at: a payment for no order, an order paid twice, a partial refund. Logged as an error,
  * which the owner's alerts pick up, with the ids support needs and never anything a player typed.
@@ -414,7 +420,7 @@ export async function storeRequest(user: string, method: string, path: string, b
     return [200, {
       catalog: catalog(), owned: total(list.map(stateOf), TEST_ORDERS_COUNT), ownedVersion: owned?.version ?? 0, orders: shown,
       testCheckout: TEST_CHECKOUT && isTester(user),
-      ...(canPay(user) ? { payments: { provider: 'paddle', environment: payments.config!.environment, clientToken: payments.config!.clientToken } } : {}),
+      ...(canPay(user) ? { payments: { provider: 'paddle', environment: payments.config!.environment, clientToken: payments.config!.clientToken, taxIncluded: payments.config!.taxMode === 'internal' } } : {}),
     }];
   }
 
@@ -480,6 +486,13 @@ export async function storeRequest(user: string, method: string, path: string, b
       }
     }
     return [200, { order, owned: await purchasedCards(user) }];
+  }
+
+  if (path === '/v1/store/fake-pay' && method === 'POST' && fakePay) {
+    const sent = await body() as { txn?: unknown; delayMs?: unknown };
+    if (typeof sent?.txn !== 'string') return [400, { error: 'bad_txn' }];
+    fakePay(sent.txn, typeof sent.delayMs === 'number' ? Math.min(sent.delayMs, 120_000) : 0);
+    return [200, { ok: true }];
   }
 
   if (path === '/v1/store/test-checkout' && method === 'POST') {

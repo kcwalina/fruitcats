@@ -334,8 +334,14 @@
 .confirm-dialog .ct-row { margin: 4px 0 12px; }
 .confirm-dialog .ct-min { margin-bottom: 10px; }
 .confirm-dialog .delete-buttons button { white-space: nowrap; }
-.soon-dialog .delete-buttons { grid-template-columns: minmax(0, 220px); justify-content: center; }
+.soon-dialog .delete-buttons, .confirm-dialog .delete-buttons.single { grid-template-columns: minmax(0, 220px); justify-content: center; }
 .confirm-test { padding: 10px 12px; border-radius: 12px; background: #fff4d6; box-shadow: inset 0 0 0 1px #ecd09a; }
+.confirm-pay { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; font-size: 13.5px; line-height: 1.4; color: #5d4631; }
+.confirm-pay li { position: relative; padding-left: 16px; }
+.confirm-pay li::before { content: ''; position: absolute; left: 3px; top: 0.55em; width: 5px; height: 5px; border-radius: 50%; background: #d9822b; }
+.confirm-dialog > p.confirm-agree { margin: 0 0 14px; font-size: 12.5px; text-align: center; color: #7a6450; }
+.confirm-agree a { color: #8a4b14; font-weight: 700; }
+.confirm-dialog > p.confirm-test { font-size: 13px; margin-bottom: 10px; }
 
 /* ── The reveal after an order: dark, each new card turning over with a glow by rarity ── */
 

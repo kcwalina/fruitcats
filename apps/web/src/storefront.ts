@@ -3,8 +3,8 @@
 // dark gallery (showcase.css) with store.css on top.
 //
 // No dark patterns: nothing is bought in one tap, there are no timers or "limited" offers, the total is always shown
-// before confirming, and a deck never costs you for cards you already have. There are no payments yet: a tester's
-// order is a test order, and every screen says so.
+// before confirming, and a deck never costs you for cards you already have. Paying happens in Paddle's window
+// (paddle.ts), opened from the confirmation step; a tester's test order takes no money, and every screen says so.
 
 import './store.css';
 import { CARDS, SETS, cardName, type DeckList } from '@fruitcats/engine';
@@ -16,7 +16,9 @@ import { rarity, rarityMark } from './rarity';
 import {
   addLinesToCart, addToCart, planForDeck, cartCount, cartLines, catalog, clearCart, inCart, localQuote, ownedNow, placeTestOrder,
   newOrderId, refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, testCheckout, type Order,
+  awaitOrder, confirmOrder, payments, startCheckout, takeArrived,
 } from './shop';
+import { payWithPaddle } from './paddle';
 import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, famClass, finishUrl } from './ui';
 
 export interface StoreHost {
@@ -41,12 +43,18 @@ let notice = '';
 let loading = false;
 /** "Add to cart" while buying isn't open yet: the Coming soon message. */
 let soon = false;
-/** Whether this account can buy: today only with test checkout; later, when payments open. */
-const canBuy = () => testCheckout();
+/** Whether this account can buy: with real payments (Paddle), or a tester's test checkout. */
+const canBuy = () => !!payments() || testCheckout();
+/** Real money: Paddle takes the payment. Otherwise a tester's test order. */
+const paying = () => !!payments();
 
 /** The confirmation step, from "Review order" until the order is placed or abandoned. */
 let checkout: null | {
-  stage: 'pricing' | 'confirm' | 'placing' | 'failed';
+  /**
+   * pricing → confirm → placing (the API saves the order) → paying (Paddle's window is open) → finishing (Paddle took
+   * the money; the API is confirming it) → the reveal. delayed: paid, but not confirmed yet; the cards come later.
+   */
+  stage: 'pricing' | 'confirm' | 'placing' | 'paying' | 'finishing' | 'delayed' | 'failed';
   quote?: Quote;
   /** The total changed since the player looked: say so above the new one. */
   changedFrom?: number;
@@ -84,7 +92,20 @@ export function openStoreForDeck(host: StoreHost, deck: DeckList) {
 
 function refresh(host: StoreHost) {
   loading = !catalog();
-  void refreshStore().then(() => { loading = false; host.render(); });
+  void refreshStore().then(() => {
+    loading = false;
+    // An order paid for earlier whose cards were still on their way: show them now.
+    const arrived = takeArrived();
+    if (arrived.length && !reveal && !checkout) startReveal(mergeOrders(arrived));
+    host.render();
+  });
+}
+
+/** Several orders' cards, as one reveal. */
+function mergeOrders(list: Order[]): Order {
+  const grants: Record<string, number> = {};
+  for (const o of list) for (const [id, n] of Object.entries(o.grants)) grants[id] = (grants[id] ?? 0) + n;
+  return { ...list[0], grants };
 }
 
 // ── Clicks: store:<action>:<arg> ─────────────────────────────────────────────────────────────────
@@ -124,7 +145,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
     }
     case 'builder': host.backToBuilder(); return;
     case 'review': void review(host); return;
-    case 'cancel': checkout = null; break;
+    case 'cancel': if (checkout?.stage !== 'paying' && checkout?.stage !== 'finishing') checkout = null; break;
     case 'place': void place(host); return;
     case 'next':
       if (reveal) { if (reveal.index < reveal.cards.length - 1) reveal.index++; else reveal.all = true; }
@@ -146,7 +167,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
 /** Escape: close the topmost thing. True if it did something. */
 export function storeEscape(host: StoreHost): boolean {
   if (resetAsk) resetAsk = false;
-  else if (checkout && checkout.stage !== 'placing') checkout = null;
+  else if (checkout && !['placing', 'paying', 'finishing'].includes(checkout.stage)) checkout = null;
   else if (reveal) { if (!reveal.all) reveal.all = true; else reveal = null; }
   else if (view.kind !== 'browse') view = { kind: 'browse' };
   else return false;
@@ -172,6 +193,7 @@ async function place(host: StoreHost) {
   checkout = { ...checkout, stage: 'placing' };
   host.render();
   unanswered = checkout.orderId;
+  if (paying()) return pay(host, agreed, checkout.orderId);
   const result = await placeTestOrder(agreed, checkout.orderId);
   if (!(!result.ok && result.why === 'offline')) unanswered = null;
   if (result.ok) {
@@ -184,6 +206,67 @@ async function place(host: StoreHost) {
     checkout = { ...checkout, stage: 'failed', message: result.message };
   }
   host.render();
+}
+
+/**
+ * A real order: the API saves it and gives Paddle's transaction; Paddle's window takes the payment; then the API is
+ * asked until the order is paid. Closing the window goes back to the confirmation with the same order, so opening it
+ * again pays the same transaction, never a second one.
+ */
+async function pay(host: StoreHost, agreed: number, orderId: string) {
+  const fail = (message: string) => { checkout = { ...checkout!, stage: 'failed', message }; host.render(); };
+  const started = await startCheckout(agreed, orderId);
+  if (!(!started.ok && started.why === 'offline')) unanswered = null;
+  if (!started.ok) {
+    if (started.why !== 'changed') return fail(started.message);
+    checkout = { stage: 'confirm', quote: started.quote, changedFrom: agreed, orderId: newOrderId() };
+    host.render();
+    return;
+  }
+  if (started.order.paidAt) { checkout = null; startReveal(started.order); host.render(); return; }
+  if (!started.transactionId) return fail('The Store couldn’t start this order. Nothing was charged.');
+  checkout = { ...checkout!, stage: 'paying' };
+  host.render();
+  const how = await payWithPaddle(payments()!, started.transactionId);
+  if (how === 'failed') return fail('The payment window couldn’t open. Check your connection and try again. Nothing was charged.');
+  if (how === 'closed') {
+    // Closed before paying, or so it seems: ask once, in case the payment went through just before.
+    const order = await confirmOrder(orderId);
+    if (order?.paidAt) { checkout = null; startReveal(order); } else checkout = { ...checkout!, stage: 'confirm', orderId };
+    host.render();
+    return;
+  }
+  awaitOrder(orderId);
+  checkout = { ...checkout!, stage: 'finishing' };
+  host.render();
+  // Paddle took the money. The API asks Paddle too, so this is usually one or two tries.
+  for (let i = 0; i < 15; i++) {
+    const order = await confirmOrder(orderId);
+    if (order?.paidAt) {
+      takeArrived();
+      checkout = null;
+      startReveal(order);
+      host.render();
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  checkout = { ...checkout!, stage: 'delayed' };
+  host.render();
+  // Keep asking, less often, for a few minutes: the cards are shown as soon as they arrive while this message is still
+  // up. Once it's dismissed, they're shown the next time the Store opens (takeArrived).
+  for (let i = 0; i < 20; i++) {
+    await new Promise((r) => setTimeout(r, 15_000));
+    if (checkout?.stage !== 'delayed' || checkout.orderId !== orderId) return;
+    const order = await confirmOrder(orderId);
+    if (!order?.paidAt) continue;
+    if (checkout?.stage !== 'delayed' || checkout.orderId !== orderId) return;
+    takeArrived();
+    checkout = null;
+    startReveal(order);
+    host.render();
+    return;
+  }
 }
 
 function startReveal(order: Order) {
@@ -544,7 +627,7 @@ function renderCart(): string {
       </ul>
       <div class="cart-total">
         <div class="ct-row"><span>Total</span><b>${price(quote.total)}</b></div>
-        <p class="ct-small">Sales tax or VAT, where it applies, is added on the payment page.</p>
+        <p class="ct-small">${payments()?.taxIncluded ? 'Includes any sales tax or VAT.' : 'Sales tax or VAT, where it applies, is added on the payment page.'}</p>
         ${short > 0 && quote.total > 0 ? `<p class="ct-min">Add ${price(short)} more to order: the smallest order is ${price(quote.minimumOrder)}, because payment fees would eat most of a smaller one.</p>` : ''}
         <button class="store-btn buy wide" data-click="store:review" ${quote.canBuy ? '' : 'disabled'}>Review order</button>
         <button class="link-btn" data-click="store:empty">Empty the cart</button>
@@ -589,9 +672,15 @@ function renderCheckout(): string {
   const q = checkout.quote;
   let inner: string;
   if (checkout.stage === 'pricing') inner = '<h2>Checking prices…</h2>';
-  else if (checkout.stage === 'failed') {
+  else if (checkout.stage === 'paying') inner = '<h2>Paying with Paddle…</h2><p>Finish in the payment window. If you close it, nothing is charged, and you can come back to this order.</p>';
+  else if (checkout.stage === 'finishing') inner = '<h2>Payment received</h2><p>Adding the cards to your collection…</p>';
+  else if (checkout.stage === 'delayed') {
+    inner = `<h2>Payment received</h2>
+      <p>Your cards are on their way. Confirming the payment is taking longer than usual; your new cards appear here as soon as it’s done. There’s nothing more to pay.</p>
+      <div class="delete-buttons single"><button class="primary" data-click="store:cancel">OK</button></div>`;
+  } else if (checkout.stage === 'failed') {
     inner = `<h2>Nothing was ordered</h2><p>${esc(checkout.message ?? '')}</p>
-      <div class="delete-buttons"><button class="primary" data-click="store:cancel">Back to the cart</button></div>`;
+      <div class="delete-buttons single"><button class="primary" data-click="store:cancel">Back to the cart</button></div>`;
   } else {
     const lines = q!.lines.filter((l) => l.qty > 0);
     inner = `<h2>Confirm your order</h2>
@@ -601,13 +690,25 @@ function renderCheckout(): string {
         return `<li><span>${l.qty > 1 ? `${l.qty} × ` : ''}${esc(info.name)}</span><b>${price(l.amount)}</b></li>`;
       }).join('')}</ul>
       <div class="ct-row"><span>Total</span><b>${price(q!.total)}</b></div>
-      <p class="confirm-test"><b>This is a test order.</b> No money is taken. The cards are added to your Via Mochi account, and you can remove them again from the cart’s tester tools.</p>
+      ${paying() ? payNote() : '<p class="confirm-test"><b>This is a test order.</b> No money is taken. The cards are added to your Via Mochi account, and you can remove them again from the cart’s tester tools.</p>'}
       <div class="delete-buttons">
         <button data-click="store:cancel" ${checkout.stage === 'placing' ? 'disabled' : ''}>Back</button>
-        <button class="primary" data-click="store:place" ${checkout.stage === 'placing' ? 'disabled' : ''}>${checkout.stage === 'placing' ? 'Placing…' : 'Place order'}</button>
+        <button class="primary" data-click="store:place" ${checkout.stage === 'placing' ? 'disabled' : ''}>${checkout.stage === 'placing' ? (paying() ? 'Opening…' : 'Placing…') : paying() ? 'Continue to payment' : 'Place order'}</button>
       </div>`;
   }
   return `<div class="overlay"><div class="settings delete-dialog confirm-dialog" role="dialog" aria-label="Confirm your order">${inner}</div></div>`;
+}
+
+/** What the player agrees to before paying: who sells, tax, the terms, and a word for players under 18. */
+function payNote(): string {
+  const p = payments()!;
+  return `${p.environment === 'sandbox' ? '<p class="confirm-test"><b>Test payments.</b> Paddle’s sandbox: use a test card, no real money is taken.</p>' : ''}
+    <ul class="confirm-pay">
+      <li>You pay on the next screen, to <b>Paddle</b>, who sells on our behalf and emails your receipt.</li>
+      <li>${p.taxIncluded ? 'The total includes any sales tax or VAT.' : 'Any sales tax or VAT is added there.'}</li>
+      <li>Under 18? Ask a parent first.</li>
+    </ul>
+    <p class="confirm-agree">By continuing you agree to the <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms</a> and the <a href="${BASE}refunds.html" target="_blank" rel="noopener">Refund policy</a>.</p>`;
 }
 
 // ── The reveal ───────────────────────────────────────────────────────────────────────────────────

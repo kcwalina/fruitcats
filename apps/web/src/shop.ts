@@ -3,8 +3,9 @@
 // so bought cards are still yours in the deck builder without a connection. Nothing here grants a card: only an
 // order the API accepted does, and the copy here is replaced by what the API says each time it answers.
 //
-// There are no payments yet. A tester's "test order" goes through the API like a real one would, and brings the cards
-// without taking any money (store.ts in apps/api).
+// Paying: the API saves a pending order and gives back Paddle's transaction for it; Paddle's window takes the payment
+// (paddle.ts here); then the API is asked for the order until it's paid, which is when the cards are owned. A tester's
+// "test order" instead brings the cards without taking any money (store.ts in apps/api).
 
 import { SETS, registerSet } from '@fruitcats/engine';
 import {
@@ -19,7 +20,13 @@ import { STORE } from './flags';
 /** open: this account may use the Store. private: it's in a test that this account isn't part of. */
 export type Access = 'open' | 'private' | 'unknown';
 
-export interface Order { id: string; status: string; createdAt: string; total: number; currency: string; lines: PricedLine[]; grants: Record<string, number> }
+export interface Order {
+  id: string; status: string; createdAt: string; total: number; currency: string; lines: PricedLine[]; grants: Record<string, number>;
+  txn?: string; paidAt?: string; receipt?: string; revoked?: Record<string, number>;
+}
+
+/** How to pay, when the API lets this account buy: Paddle's environment and its public client token. */
+export interface Payments { provider: 'paddle'; environment: 'sandbox' | 'live'; clientToken: string; taxIncluded?: boolean }
 
 interface Saved {
   access: Access;
@@ -28,9 +35,12 @@ interface Saved {
   owned: Record<string, number>;
   orders: Order[];
   testCheckout: boolean;
+  payments: Payments | null;
+  /** Orders this device paid for whose cards haven't been shown yet (the payment was still being confirmed). */
+  awaiting: string[];
 }
 
-const EMPTY: Saved = { access: 'unknown', catalog: null, owned: {}, orders: [], testCheckout: false };
+const EMPTY: Saved = { access: 'unknown', catalog: null, owned: {}, orders: [], testCheckout: false, payments: null, awaiting: [] };
 const stateKey = (user: string) => `fruitcats-store-${user}`;
 const cartKey = (user: string) => `fruitcats-cart-${user}`;
 
@@ -75,6 +85,8 @@ export const storeAccess = (): Access => load().saved.access;
 export const catalog = (): Catalog | null => load().saved.catalog;
 export const orders = (): Order[] => load().saved.orders;
 export const testCheckout = (): boolean => load().saved.testCheckout;
+/** How to pay, if this account may buy for real. */
+export const payments = (): Payments | null => load().saved.payments ?? null;
 /** Copies of a card this account bought (collection.ts adds the starter decks). */
 export const purchased = (id: string): number => load().saved.owned[id] ?? 0;
 /** What the account owns, starter decks included, as the Store counts it. */
@@ -102,8 +114,11 @@ export async function refreshStore(): Promise<Access> {
   if (!r || !cache || cache.user !== session()?.userId) return c.saved.access;
   if (r.status === 403) cache.saved = { ...EMPTY, access: 'private' };
   else if (r.status === 200) {
-    const d = r.data as unknown as Omit<Saved, 'access'>;
-    cache.saved = { access: 'open', catalog: d.catalog, owned: d.owned ?? {}, orders: d.orders ?? [], testCheckout: !!d.testCheckout };
+    const d = r.data as unknown as Omit<Saved, 'access' | 'awaiting'>;
+    cache.saved = {
+      access: 'open', catalog: d.catalog, owned: d.owned ?? {}, orders: d.orders ?? [], testCheckout: !!d.testCheckout,
+      payments: d.payments ?? null, awaiting: cache.saved.awaiting ?? [],
+    };
     ensureSets(d.catalog?.sets ?? []);
   }
   save();
@@ -201,7 +216,74 @@ const REFUSALS: Record<string, string> = {
   nothing_to_buy: 'You already have everything in this cart. Nothing was ordered.',
   no_test_checkout: 'Test orders are switched off. Nothing was ordered.',
   store_private: 'The Store isn’t open to this account. Nothing was ordered.',
+  payments_off: 'Buying is switched off right now. Nothing was ordered.',
+  payment_unavailable: 'The payment service didn’t answer. Nothing was charged; please try again in a minute.',
+  too_many_checkouts: 'Too many orders were started in the last hour. Nothing was charged; please try again later.',
+  order_exists: 'This order was already started with a different total. Nothing was charged; please review your cart again.',
 };
+
+// ── Paying ───────────────────────────────────────────────────────────────────────────────────────
+
+export type CheckoutResult =
+  | { ok: true; order: Order; transactionId?: string }
+  | { ok: false; why: 'changed'; quote: Quote }
+  | { ok: false; why: 'offline' | 'refused'; message: string };
+
+/**
+ * Start paying for exactly `total` cents: the API prices the cart again, saves a pending order under `orderId` and
+ * answers with Paddle's transaction. The same id again gives the same transaction (never a second order), and an
+ * order already paid comes back without one.
+ */
+export async function startCheckout(total: number, orderId: string): Promise<CheckoutResult> {
+  const r = await call('POST', '/v1/store/checkout', { orderId, cart: cartLines(), total });
+  if (!r) return { ok: false, why: 'offline', message: 'You seem to be offline. Nothing was ordered; try again when you’re connected.' };
+  if (r.status === 409 && r.data.quote) return { ok: false, why: 'changed', quote: r.data.quote as Quote };
+  if (r.status !== 200) return { ok: false, why: 'refused', message: REFUSALS[String(r.data.error)] ?? 'The Store couldn’t start this order. Nothing was ordered.' };
+  const order = r.data.order as Order;
+  remember(order);
+  return { ok: true, order, ...(typeof r.data.transactionId === 'string' ? { transactionId: r.data.transactionId } : {}) };
+}
+
+/** Keep this order in the offline copy, as the API described it. */
+function remember(order: Order, owned?: Record<string, number>) {
+  if (!cache) return;
+  cache.saved.orders = [...cache.saved.orders.filter((o) => o.id !== order.id), order];
+  if (owned) cache.saved.owned = owned;
+  save();
+}
+
+/** This device is waiting for the order's payment to be confirmed: show its cards when it is, even after a restart. */
+export function awaitOrder(orderId: string) {
+  if (!cache || cache.saved.awaiting.includes(orderId)) return;
+  cache.saved.awaiting = [...cache.saved.awaiting, orderId];
+  cache.cart = [];
+  save();
+}
+
+/** Ask the API about an order (it asks Paddle). Null offline. A paid order's cards are then in the offline copy. */
+export async function confirmOrder(orderId: string): Promise<Order | null> {
+  const r = await call('POST', '/v1/store/confirm', { orderId });
+  if (r?.status !== 200) return null;
+  const order = r.data.order as Order;
+  remember(order, r.data.owned as Record<string, number>);
+  return order;
+}
+
+/** Local only: tell the pretend Paddle (npm run api:local -- --fake-paddle) to pay this transaction. */
+export async function fakePay(txn: string, delayMs: number): Promise<boolean> {
+  return (await call('POST', '/v1/store/fake-pay', { txn, delayMs }))?.status === 200;
+}
+
+/** Orders this device was waiting for that are now paid: their cards are ready to be shown. Each is given once. */
+export function takeArrived(): Order[] {
+  if (!cache) return [];
+  const arrived = cache.saved.orders.filter((o) => cache!.saved.awaiting.includes(o.id) && o.paidAt);
+  if (!arrived.length) return [];
+  const ids = new Set(arrived.map((o) => o.id));
+  cache.saved.awaiting = cache.saved.awaiting.filter((id) => !ids.has(id));
+  save();
+  return arrived;
+}
 
 /** Tester tool: forget this account's test orders and the cards they brought. */
 export async function resetTestOrders(): Promise<boolean> {

@@ -1,0 +1,711 @@
+{
+  "set": "BP1",
+  "name": "Berry Picnic",
+  "version": "0.2.0",
+  "status": "prototype",
+  "requires": [
+    "SB1"
+  ],
+  "families": {
+    "Berry": {
+      "colors": [
+        "#D6336C",
+        "#8F1D46",
+        "#FBDDE7"
+      ],
+      "personality": "Sweet, social, a little chaotic",
+      "playsLike": "Nobody leaves the picnic hungry: every defeated friend feeds another",
+      "mechanic": "Leftovers",
+      "hint": "units that feed their friends when they go, so every trade makes the Yard stronger"
+    }
+  },
+  "mechanics": {
+    "Leftovers": {
+      "family": "Berry",
+      "kind": "keyword",
+      "reminder": "When this unit is defeated, put a Crumb on a unit you control. (A Crumb is +1 Power and +1 Health. A unit holds up to 3; with 3 it is Full.)",
+      "counter": {
+        "name": "crumb",
+        "power": 1,
+        "health": 1,
+        "log": "{name} gets a Crumb ({n})."
+      },
+      "abilities": [
+        {
+          "when": "goodbye",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "icon": "🍪"
+    }
+  },
+  "tokens": [
+    {
+      "id": "BP1-K01",
+      "name": "Ant",
+      "type": "Critter",
+      "family": "Berry",
+      "power": 1,
+      "health": 1,
+      "keywords": [
+        "Leftovers"
+      ],
+      "text": "Leftovers.",
+      "flavor": "It brought friends."
+    }
+  ],
+  "cards": [
+    {
+      "id": "BP1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Berry",
+      "name": "Jam, the Strawberry Tabby",
+      "flavor": "Made the plans. Made the group chat. Forgot the forks.",
+      "kitten": {
+        "name": "Jam, Sticky Kit",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own",
+              "filter": {
+                "exhausted": true
+              }
+            },
+            "do": [
+              {
+                "counter": {
+                  "name": "crumb",
+                  "add": 1,
+                  "max": 3
+                }
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "controlUnits": {
+              "atLeast": 5
+            }
+          }
+        },
+        "text": "Exhaust: Put a Crumb on an exhausted unit you control.\nGrow Up: You control 5 or more units."
+      },
+      "bigCat": {
+        "name": "Jam, Club President",
+        "power": 2,
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "each": "own"
+            },
+            "do": [
+              {
+                "buff": {
+                  "power": 1
+                }
+              }
+            ]
+          }
+        ],
+        "text": "Exhaust: Your units get +1 Power this round."
+      }
+    },
+    {
+      "id": "BP1-B01",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Lingonberry Ladybug",
+      "cost": 1,
+      "power": 1,
+      "health": 1,
+      "keywords": [
+        "Lucky",
+        "Leftovers"
+      ],
+      "text": "Lucky. Leftovers.",
+      "flavor": "Lucky for you. Unlucky for your sandwich."
+    },
+    {
+      "id": "BP1-B02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Salmonberry Squirrel",
+      "cost": 1,
+      "power": 1,
+      "health": 1,
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Summon an Ant.",
+      "flavor": "Dropped a snack. Gained a following."
+    },
+    {
+      "id": "BP1-B03",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Cloudberry Lamb",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "own",
+            "other": true
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Put a Crumb on another unit you control.",
+      "flavor": "Shares everything. Especially the blanket."
+    },
+    {
+      "id": "BP1-B04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Dewberry Possum",
+      "cost": 2,
+      "power": 1,
+      "health": 2,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Goodbye: Summon an Ant.",
+      "flavor": "It's fine. It's just resting."
+    },
+    {
+      "id": "BP1-B05",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Gooseberry Goose",
+      "cost": 3,
+      "power": 3,
+      "health": 2,
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            },
+            {
+              "stealCounter": {
+                "as": "crumb",
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Exhaust an enemy unit. Take a counter from it and put it on the Goose as a Crumb.",
+      "flavor": "Honk."
+    },
+    {
+      "id": "BP1-B06",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Mulberry Moose",
+      "cost": 4,
+      "power": 4,
+      "health": 4,
+      "abilities": [
+        {
+          "when": "defeatsInCombat",
+          "target": "self",
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "text": "After this defeats a unit in combat, put a Crumb on it.",
+      "flavor": "Won the fight. Kept the cake."
+    },
+    {
+      "id": "BP1-B07",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Bilberry Alpaca",
+      "cost": 5,
+      "power": 2,
+      "health": 4,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "own",
+            "other": true
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Hello: Put a Crumb on each other unit you control.",
+      "flavor": "Everyone's favourite pillow."
+    },
+    {
+      "id": "BP1-B08",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Strawberry Milk Cow",
+      "cost": 5,
+      "power": 3,
+      "health": 4,
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "own",
+            "other": true
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 2,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Put 2 Crumbs on another unit you control.",
+      "flavor": "Strawberry milk for everyone. Mostly for you."
+    },
+    {
+      "id": "BP1-B09",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Berry",
+      "name": "Ant Parade",
+      "cost": 2,
+      "abilities": [
+        {
+          "when": "play",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            },
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Summon two Ants.",
+      "flavor": "Left, right, left, right, sandwich."
+    },
+    {
+      "id": "BP1-B10",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Berry",
+      "name": "Pass the Plate",
+      "cost": 1,
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "each": "all"
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Put a Crumb on each unit, yours and theirs.",
+      "flavor": "Everyone gets a slice. Yes, even them."
+    },
+    {
+      "id": "BP1-B11",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Berry",
+      "name": "Second Helping",
+      "cost": 1,
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            },
+            {
+              "buff": {
+                "power": 1
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Pounce. Put a Crumb on a unit you control. It gets +1 Power this round.",
+      "flavor": "Room for more? Always."
+    },
+    {
+      "id": "BP1-B12",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Berry",
+      "name": "Friendship Bracelet",
+      "cost": 1,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1,
+              "keywords": [
+                "Leftovers"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "text": "Attached unit gets +1 Power and Leftovers.",
+      "flavor": "Made one for everyone. Even the goose."
+    },
+    {
+      "id": "BP1-B13",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Berry",
+      "name": "Bleu, the Blueberry Blanket Hog",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "own",
+            "other": true
+          },
+          "do": [
+            {
+              "counter": {
+                "name": "crumb",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        },
+        {
+          "static": {
+            "grant": {
+              "keywords": [
+                "Sneaky"
+              ]
+            },
+            "to": {
+              "each": "own",
+              "filter": {
+                "counter": {
+                  "name": "crumb",
+                  "atLeast": 3
+                }
+              }
+            }
+          }
+        }
+      ],
+      "text": "Hello: Put a Crumb on another unit you control. Your Full units have Sneaky.",
+      "flavor": "Floppy on purpose."
+    },
+    {
+      "id": "BP1-B14",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Berry",
+      "name": "Razz, the Raspberry DJ",
+      "cost": 4,
+      "power": 3,
+      "health": 3,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1
+            },
+            "to": {
+              "each": "own",
+              "other": true
+            }
+          }
+        }
+      ],
+      "text": "Your other units get +1 Power.",
+      "flavor": "Takes requests. Ignores them."
+    },
+    {
+      "id": "BP1-B15",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Berry",
+      "name": "Bramble, the Blackberry Maine Coon",
+      "cost": 6,
+      "power": 5,
+      "health": 7,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "keywords": [
+                "Fierce"
+              ]
+            },
+            "to": {
+              "each": "own",
+              "filter": {
+                "counter": {
+                  "name": "crumb",
+                  "atLeast": 3
+                }
+              }
+            }
+          }
+        }
+      ],
+      "text": "Guardian. Your Full units have Fierce.",
+      "flavor": "Packed snacks, sunscreen and a spare cardigan."
+    },
+    {
+      "id": "BP1-X01",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Garden",
+      "name": "Ginger, the Gingerbread Baker",
+      "cost": 2,
+      "power": 2,
+      "health": 3,
+      "keywords": [
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Lucky. Goodbye: Draw a card.",
+      "flavor": "Iced every cookie with a :3."
+    },
+    {
+      "id": "BP1-X02",
+      "rarity": "Legendary",
+      "type": "Cat",
+      "family": "Citrus",
+      "name": "Satsuma, the Snowflake Skater",
+      "cost": 4,
+      "power": 4,
+      "health": 3,
+      "keywords": [
+        "Zoomies"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "if": "Zest",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "text": "Zoomies. Hello, Zest: Deal 2 damage to an enemy unit.",
+      "flavor": "Three spins, one landing, zero regrets."
+    },
+    {
+      "id": "BP1-X03",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Berry",
+      "signature": true,
+      "name": "Noelle, the Cranberry Forest Cat",
+      "flavor": "First snow. First to the party.",
+      "kitten": {
+        "name": "Noelle, Snowy Kit",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own",
+              "filter": {
+                "counter": {
+                  "name": "crumb",
+                  "atLeast": 1
+                }
+              }
+            },
+            "do": [
+              {
+                "counter": {
+                  "name": "crumb",
+                  "add": 1,
+                  "max": 3
+                }
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "unitHasCounter": {
+              "whose": "own",
+              "name": "crumb",
+              "atLeast": 3
+            }
+          }
+        },
+        "text": "Exhaust: Put a Crumb on a unit you control that has a Crumb.\nGrow Up: A unit you control is Full."
+      },
+      "bigCat": {
+        "name": "Noelle, Snow Day",
+        "power": 2,
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own",
+              "filter": {
+                "counter": {
+                  "name": "crumb",
+                  "atLeast": 3
+                }
+              }
+            },
+            "do": [
+              {
+                "ready": true
+              }
+            ]
+          }
+        ],
+        "text": "Exhaust: Ready a Full unit you control."
+      }
+    }
+  ],
+  "decks": {
+    "picnic-club": {
+      "name": "Picnic Club",
+      "hero": "BP1-H01",
+      "blurb": "Nobody leaves hungry. When a friend heads home, they pass their plate on. Led by Jam.",
+      "cards": {
+        "BP1-B01": 3,
+        "BP1-B02": 3,
+        "BP1-B03": 3,
+        "BP1-B04": 3,
+        "BP1-B05": 3,
+        "BP1-B06": 3,
+        "BP1-B07": 2,
+        "BP1-B08": 2,
+        "BP1-B09": 3,
+        "BP1-B10": 2,
+        "BP1-B11": 3,
+        "BP1-B12": 3,
+        "BP1-B13": 1,
+        "BP1-B14": 1,
+        "BP1-B15": 1,
+        "SB1-G01": 3,
+        "SB1-G02": 3,
+        "SB1-G03": 3,
+        "SB1-G04": 3,
+        "SB1-G05": 2
+      }
+    }
+  }
+}

@@ -93,6 +93,18 @@ async function refresh(s: Session): Promise<string | null> {
   }
 }
 
+/**
+ * Refresh this device's copy of the account (name, Pawtrait, Terms agreed) from the account service now, whatever the
+ * token's age. The device's copy can be old: a session saved by an older version of the game, or by the iPhone
+ * Home Screen app still running one. True when the account answered.
+ */
+export async function refreshAccount(): Promise<boolean> {
+  const s = session();
+  if (!s) return false;
+  refreshing ??= refresh(s).finally(() => { refreshing = null; });
+  return (await refreshing) !== null;
+}
+
 /** Why there's no token: signed out, or the service can't be reached right now. */
 function noToken(): AuthError {
   return session() ? new AuthError('timeout', 'Via Mochi isn’t answering right now. Please try again in a minute.')
@@ -195,12 +207,16 @@ async function finish(entra: Record<string, any>, email: string): Promise<Sessio
   if (!r.ok) throw new AuthError('exchange', 'Signed in, but Via Mochi couldn’t open your account. Please try again.');
   const ours = await r.json();
   restoredOnSignIn = !!ours.restored;
+  // An agreement made on this device and not yet saved in the account survives a refresh: dropping it here made the
+  // Terms come back at the next start although the player had agreed.
+  const pending = session()?.termsPending;
   const s: Session = {
     userId: ours.user.id, displayName: ours.user.displayName ?? '', email,
     refreshToken: entra.refresh_token, token: ours.access_token, expires: Date.now() + ours.expires_in * 1000,
     signedInAt: session()?.signedInAt ?? Date.now(),
     avatar: ours.user.avatar,
     terms: ours.user.terms ?? null,
+    ...(pending && pending !== ours.user.terms ? { termsPending: pending } : {}),
   };
   saveSession(s);
   return s;

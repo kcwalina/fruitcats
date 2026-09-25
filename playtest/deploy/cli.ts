@@ -21,6 +21,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runBalance } from '../balance/gauntlet';
@@ -33,8 +34,24 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DIST = join(ROOT, 'apps/web/dist');
 const SITE = 'https://fruitcats.viamochi.com';
 const AZURE = { name: 'fruitcats', group: 'mochi-tcg', subscription: '57c8ee32-8d62-47b9-9eec-1c0ef6d0e39f' };
+/** The site's deployment token, saved once by scripts/setup/site-deploy-token.ps1 so deploys need no `az login`. */
+const TOKEN_FILE = join(homedir(), '.fruitcats-deploy', 'swa-token');
 
 const step = (n: number, text: string) => console.log(`\n── ${n}. ${text}`);
+/**
+ * The token for the upload: from the private file when it's there (no Azure sign-in needed), otherwise read with the
+ * owner's own `az login`, as before.
+ */
+function deploymentToken(): string {
+  if (existsSync(TOKEN_FILE)) {
+    const saved = readFileSync(TOKEN_FILE, 'utf8').trim();
+    if (saved) { console.log(`   deployment token from ${TOKEN_FILE}`); return saved; }
+  }
+  const token = run('az', ['staticwebapp', 'secrets', 'list', '-n', AZURE.name, '-g', AZURE.group, '--subscription', AZURE.subscription, '--query', 'properties.apiKey', '-o', 'tsv'], { capture: true }).trim();
+  if (!token) throw new Error('Could not read the deployment token. Run scripts/setup/site-deploy-token.ps1 once (signed in with az login), so deploys stop needing that sign-in.');
+  return token;
+}
+
 function run(cmd: string, args: string[], opts: { capture?: boolean } = {}): string {
   const r = spawnSync(cmd, args, { cwd: ROOT, shell: true, encoding: 'utf8', stdio: opts.capture ? ['ignore', 'pipe', 'inherit'] : 'inherit' });
   // Never echo the deployment token: an error message ends up in logs and transcripts.
@@ -152,8 +169,7 @@ runMain(async () => {
   step(6, 'Upload');
   // The checks above take minutes; main may have moved meanwhile.
   checkIntegrated();
-  const token = run('az', ['staticwebapp', 'secrets', 'list', '-n', AZURE.name, '-g', AZURE.group, '--subscription', AZURE.subscription, '--query', 'properties.apiKey', '-o', 'tsv'], { capture: true }).trim();
-  if (!token) throw new Error('Could not read the deployment token (az login?).');
+  const token = deploymentToken();
   run('npx', ['-y', '@azure/static-web-apps-cli@latest', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
 
   step(7, 'Live check');

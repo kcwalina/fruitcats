@@ -115,7 +115,7 @@ const wallpapers = new Map<string, Promise<string>>();
 /** A wallpaper made by the game's own wallpaper maker, as an image address. Made once per picture and device. */
 export function wallpaper(p: BriefPicture, art: string, artId: string, device: Device): Promise<string> | null {
   if (!p.card || !CARDS[p.card]) return null;
-  const finish: Finish = p.tier === 'foil' ? 'foil' : p.tier === 'gold' ? 'gold' : 'standard';
+  const finish: Finish = p.tier === 'foil' ? 'foil' : p.tier === 'gold' ? 'gold' : p.tier === 'signature' ? 'signature' : 'standard';
   const id = `${artId}|${device}|${finish}`;
   let url = wallpapers.get(id);
   if (!url) {

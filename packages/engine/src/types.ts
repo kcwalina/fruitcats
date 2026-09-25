@@ -39,8 +39,11 @@ export interface CardDef {
   abilities?: Ability[];
   /** A unit that cards summon (never in a deck). */
   token?: boolean;
-  /** Printed as a Signature card (compose_cards.py). No effect on the rules. */
-  signature?: boolean;
+  /**
+   * A Signature card: designed to exist only as its Signature print, never as a standard copy (compose_cards.py).
+   * 'rainbow' is the Signature stone with rainbow cracks (Mochi). No effect on the rules.
+   */
+  signature?: boolean | 'rainbow';
   /**
    * Never sold in the Store, and how it's gotten instead: 'promo' (given out at an event, say). Players get such cards
    * by grants, and later perhaps from each other (docs/store-plan.md, Cards the Store doesn't sell). No effect on play.

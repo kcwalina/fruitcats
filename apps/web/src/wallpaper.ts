@@ -15,10 +15,12 @@ const RAINBOW = ['#ff6b6b', '#ffd36b', '#7bff9a', '#6bd5ff', '#b07bff', '#ff6bd0
 const HOLO = ['#8e97a3', '#eef1f5', '#d7c2ec', '#a7b0bb', '#f7f9fb', '#bfe6f2', '#7f8894', '#f3dcec', '#8e97a3'];
 const PRISM = ['#ff3d8b', '#ff9f1a', '#ffe23d', '#2ee88a', '#2bb8ff', '#7a5cff', '#e84dff', '#ff3d8b'];
 const GOLD = ['#fff4c2', '#e8b73a', '#8a5a0c', '#f7d774', '#b07d17', '#fff0b0', '#c89224', '#fff4c2'];
-const CHROME_INK: Record<Finish, string> = { standard: '', foil: '#4a5362', gold: '#5a3a04', prismatic: '#3a2a5a' };
+const CHROME_INK: Record<Finish, string> = { standard: '', foil: '#4a5362', gold: '#5a3a04', prismatic: '#3a2a5a', signature: '#120b09' };
+/** The Signature stone (compose_cards.py): charred black, warm where the cracks glow; Mochi's glows in every colour. */
+const STONE = ['#2a1a15', '#4a2414', '#120b09', '#3a1c10', '#1a100c', '#2a1a15'];
 /** Each finish's code in the collector line, and its letter's colour (compose_cards.py's FINISH_CODES). */
 const FINISH_CODES: Record<Exclude<Finish, 'standard'>, [string, string]> = {
-  foil: ['F', '#2e3552'], gold: ['G', '#4a2c02'], prismatic: ['P', 'white'],
+  foil: ['F', '#2e3552'], gold: ['G', '#4a2c02'], prismatic: ['P', 'white'], signature: ['S', 'white'],
 };
 const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C';
 /** The card's footer line, as compose_cards.py prints it: the game, the card's set, the copyright. */
@@ -345,13 +347,13 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   return bottom;
 }
 
-/** A finish's code in the collector line (F, G or P), on a little tag of the finish's own material. */
+/** A finish's code in the collector line (F, G, P or S), on a little tag of the finish's own material. */
 function drawFinishTag(p: Parts, right: number, cy: number) {
   const { ctx, s, finish } = p;
   if (finish === 'standard') return;
   const w = 26 * s, h = 24 * s, x0 = right - w, y0 = cy - h / 2;
   const metal = ctx.createLinearGradient(x0, y0, right, y0 + h);
-  const stops = { foil: HOLO, gold: GOLD, prismatic: PRISM }[finish];
+  const stops = finish === 'signature' ? (p.card.signature === 'rainbow' ? PRISM : STONE) : { foil: HOLO, gold: GOLD, prismatic: PRISM }[finish];
   stops.forEach((c, i) => metal.addColorStop(i / (stops.length - 1), c));
   roundRect(ctx, x0, y0, right, y0 + h, 7 * s);
   ctx.fillStyle = metal;
@@ -482,9 +484,10 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
   // The chrome: silver and gold in diagonal bands, the prismatic rainbow turning around the centre.
   let chrome: CanvasGradient | null = null;
   if (finish !== 'standard') {
-    const stops = { foil: HOLO, gold: GOLD, prismatic: PRISM }[finish];
-    const cycles = finish === 'foil' ? 3 : finish === 'gold' ? 2 : 1;
-    chrome = finish === 'prismatic' ? ctx.createConicGradient(0.6, W / 2, H / 2) : ctx.createLinearGradient(0, 0, W, H);
+    const rainbow = finish === 'prismatic' || (finish === 'signature' && card.signature === 'rainbow');
+    const stops = finish === 'signature' ? (rainbow ? PRISM : STONE) : { foil: HOLO, gold: GOLD, prismatic: PRISM }[finish];
+    const cycles = finish === 'foil' ? 3 : finish === 'gold' || finish === 'signature' ? 2 : 1;
+    chrome = rainbow ? ctx.createConicGradient(0.6, W / 2, H / 2) : ctx.createLinearGradient(0, 0, W, H);
     for (let k = 0; k < cycles; k++) {
       stops.forEach((c, i) => { if (k === 0 || i > 0) chrome!.addColorStop((k + i / (stops.length - 1)) / cycles, c); });
     }

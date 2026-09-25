@@ -275,8 +275,13 @@ Your personal-project users never move.
 
 - **Writing:** each service writes JSON-lines events to append blobs in its own storage,
   `logs/<category>/<service>/yyyy/mm/dd/hh-<instance>.jsonl`, flushed every ~10 seconds.
-- **Reading:** `tools/ops.mjs`, a CLI for people and agents (`events`, `tail`, with filters). The owner's portal is on
-  the plan.
+- **Reading:** `tools/ops.mjs`, a CLI for people and agents (`events`, `tail`, with filters).
+- **The owner's dashboard:** the **Accounts** tab of the playtest dashboard
+  ([Fruitcats Playtests](https://claude.ai/artifact/JhFnXFgWz3UA3PQDGUytvG), `playtest/dashboard/playtests.html`):
+  both services' health, accounts, new accounts, active players, sign-ins, code emails, syncs, Contact us messages
+  and errors over 14 days, invite codes used, and the last day's errors. Each service writes its totals (counts
+  only) to `logs/stats/<service>.json` every 15 minutes; `node tools/ops.mjs snapshot` combines them with the logs,
+  and the dashboard relay (`playtest/dashboard/RELAY.md`, step 2b) uploads the result every 10 minutes.
 - **Alerts:** see "Alerts when something breaks" under What's set up. A scheduled Claude task ("Via Mochi health
   watch", every 20 minutes while the Claude app is open) also checks both services, restarts one that's hung, and
   reports.

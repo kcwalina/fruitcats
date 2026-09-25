@@ -7,10 +7,7 @@ Last updated 2026-09-25.
 
 ## Next
 
-1. **Accounts in the owner's dashboard.** A tab in the existing playtest dashboard (not a new portal) with the
-   services' health, accounts and sign-ins over time, invite codes used, deck syncs, Contact us messages, and recent
-   errors. Owner only.
-2. **Daily ceilings** that stop runaway costs: a cap on code emails sent per day, and on log size per service per
+1. **Daily ceilings** that stop runaway costs: a cap on code emails sent per day, and on log size per service per
    day (past it, only security events and errors are written).
 
 ## Waiting for the owner

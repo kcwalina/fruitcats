@@ -138,6 +138,17 @@ describe('studio', () => {
     expect((await call(OWNER, `/bp1/suggestions/${s.body.id}`, { json: { state: 'accepted', reply: 'Yes!' } })).body.state).toBe('accepted');
   });
 
+  it('lets the reviewer add someone who signed in, without a link', async () => {
+    const WANDA = 'Dev wanda:Wanda';
+    expect((await call(WANDA, '/me')).body.sets).toEqual([]);
+    const roster = await call(OWNER, '/bp1/artists');
+    expect(roster.body.waiting).toMatchObject([{ id: 'wanda', name: 'Wanda' }]);
+    expect((await call(ARTIST, '/bp1/artists', { json: { id: 'wanda' } })).status).toBe(403);
+    expect((await call(OWNER, '/bp1/artists', { json: { id: 'wanda' } })).status).toBe(200);
+    expect((await call(WANDA, '/me')).body.sets).toEqual(['bp1']);
+    expect((await call(OWNER, '/bp1/artists')).body.waiting.map((w: { id: string }) => w.id)).not.toContain('wanda');
+  });
+
   it('removes an artist without losing their pictures', async () => {
     expect((await call(OWNER, '/bp1/artists/basil', { method: 'DELETE' })).status).toBe(200);
     expect((await call(ARTIST, '/bp1')).status).toBe(403);

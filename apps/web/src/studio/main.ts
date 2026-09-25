@@ -319,7 +319,9 @@ function setsPage(): string {
   const mine = visibleSets();
   if (!mine.length) {
     return `<main class="empty"><h1>Welcome, ${esc(S.me?.name ?? '')}</h1>
-      <p>Your account isn’t part of a set yet. When we invite you, you’ll get a link: open it here, signed in as <b>${esc(S.me?.name ?? '')}</b>.</p>
+      <p>You’re signed in as <b>${esc(S.me?.name ?? '')}</b>. Your reviewer can see that you’re here, and will add you to your project.
+        Once they have, it opens here whenever you sign in.</p>
+      <p><button class="btn" data-click="recheck">Check again</button></p>
       ${S.me?.id ? `<p class="muted small">Your account id, if we ask for it: <code>${esc(S.me.id)}</code></p>` : ''}</main>`;
   }
   return `<main class="sets"><h1>Your sets</h1><div class="set-grid">${mine.map((s) => {
@@ -645,17 +647,17 @@ function artistsPage(code: string): string {
   if (S.me?.role !== 'owner') return '<main class="empty"><p>Only reviewers see this page.</p></main>';
   const set = S.sets.find((s) => s.code === code);
   const r = S.roster;
+  const studio = `${location.origin}${location.pathname}`;
   return `<main class="artists"><h1>Artists for ${esc(set?.name ?? code)}</h1>
-    <section><h3>Invite an artist</h3>
-      <p>An invite link lets one person join this set. They open it, sign in or create their Via Mochi account, and see the set. Links last 30 days.</p>
-      <div class="row"><input data-in="invitenote" placeholder="Who it’s for (only you see this)" value="${esc(S.inviteNote)}"><button class="btn primary" data-click="invite:${code}">Make an invite link</button></div>
-      ${S.newInvite ? `<div class="invite-link"><code>${esc(S.newInvite)}</code><button class="btn small" data-click="copy">Copy</button></div>` : ''}
+    <section><h3>Waiting for access</h3>
+      <p>An artist opens <b>${esc(studio)}</b> and signs in with their game account. They appear here, and you add them to this set.</p>
+      ${r?.waiting.length ? r.waiting.map((w) => `<div class="roster-row"><b>${esc(w.name)}</b>${w.email ? `<span>${esc(w.email)}</span>` : ''}<span class="muted small">signed in ${when(w.at)}</span>
+        <span class="grow"></span><button class="btn primary small" data-click="add:${code}:${w.id}">Add to ${esc(set?.name ?? code)}</button></div>`).join('')
+        : '<p class="muted">No one is waiting.</p>'}
     </section>
     <section><h3>Artists</h3>${r?.artists.length ? r.artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b><span class="muted small">joined ${when(a.joined)}</span>
       <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('') : '<p class="muted">No one yet.</p>'}
       <p class="muted small">Removing an artist keeps their pictures and comments.</p></section>
-    ${r?.invites.length ? `<section><h3>Invites not used yet</h3>${r.invites.map((i) => `<div class="roster-row"><span>${esc(i.note || 'Invite')}</span>
-      <span class="muted small">until ${new Date(i.expires).toLocaleDateString()}</span><code class="small">${esc(i.url)}</code></div>`).join('')}</section>` : ''}
   </main>`;
 }
 
@@ -757,6 +759,7 @@ async function act(action: string) {
     case 'guest': S.guest = true; await onRoute(); return;
     case 'signin': S.guest = false; render(); return;
     case 'signout': if (DEV) setDevUser(null); else signOut(); S.me = null; S.views.clear(); S.images.clear(); render(); return;
+    case 'recheck': await enter(); await onRoute(); return;
     case 'dismiss': S.error = ''; render(); return;
     case 'seen': markSeen(args[0]); render(); return;
     case 'tab': S.tab = args[0] as Tab; render(); return;
@@ -795,6 +798,7 @@ async function act(action: string) {
     case 'decide': await work(() => api.decide(args[0], args[1], args[2])); await refresh(args[0]); render(); return;
     case 'invite': await work(async () => { S.newInvite = (await api.invite(args[0], S.inviteNote.trim())).url; S.inviteNote = ''; S.roster = await api.artists(args[0]); }); return;
     case 'copy': try { await navigator.clipboard.writeText(S.newInvite); flash('Copied.'); } catch { flash('Couldn’t copy: select the link instead.'); } return;
+    case 'add': await work(async () => { await api.addArtist(args[0], args[1]); S.roster = await api.artists(args[0]); }); return;
     case 'remove':
       if (!confirm('Remove this artist from the set? Their pictures and comments stay.')) return;
       await work(async () => { await api.removeArtist(args[0], args[1]); S.roster = await api.artists(args[0]); });

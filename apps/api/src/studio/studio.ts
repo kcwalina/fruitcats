@@ -19,13 +19,14 @@
 //   POST /v1/studio/{set}/milestones/{id}                owner: { open } open a step early, or close it again
 //   POST /v1/studio/{set}/suggestions                    { picture, field, value, why? }
 //   POST /v1/studio/{set}/suggestions/{id}               owner: { state: accepted | declined, reply? }
-//   GET  /v1/studio/{set}/artists                        owner: the set's artists and open invites
+//   GET  /v1/studio/{set}/artists                        owner: the set's artists, open invites, and people waiting for access
+//   POST /v1/studio/{set}/artists                        owner: { id } add someone waiting (they signed in with no project)
 //   POST /v1/studio/{set}/invites                        owner: a new invite link
 //   DELETE /v1/studio/{set}/artists/{id}                 owner: remove an artist (their pictures stay)
 //
 // Rows, all in one table (partition | row key):
 //   artists|{set} | {userId}      invites | {code}      versions|{set} | {key}|{version}      states|{set} | {key}
-//   comments|{set} | {id}         suggestions|{set} | {id}      milestones|{set} | {id}      memberships | {userId}|{set}
+//   comments|{set} | {id}         suggestions|{set} | {id}      milestones|{set} | {id}      memberships | {userId}|{set}      waiting | {userId}
 // Pictures are blobs named {set}/{key}/{version}.{ext}, where a version is its upload time and the start of its hash.
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -42,6 +43,8 @@ export interface StudioOptions {
   store: Store;
   /** The Via Mochi account a request is signed in as (server.ts checks the token), or null. */
   account(req: IncomingMessage): Promise<{ id: string; name: string } | null>;
+  /** The signed-in account's email, from the account service, so the reviewer can tell who's waiting. */
+  emailOf?(req: IncomingMessage): Promise<string | null>;
   /** Account ids that own the Studio. */
   owners: string[];
   /** Agent keys: a name and the SHA-256 of its key, e.g. { name: 'Claude', hash: '9f86…' }. */
@@ -166,7 +169,11 @@ export function studio(opt: StudioOptions) {
 
     if (parts[0] === 'me' && parts.length === 1 && method === 'GET') {
       const role = c.kind === 'agent' ? 'agent' : isOwner(c) ? 'owner' : 'artist';
-      return send(res, 200, { id: c.kind === 'account' ? c.id : null, name: c.name, role, sets: await mySets(c) });
+      const sets = await mySets(c);
+      // Someone signed in with no project yet: the reviewer sees them waiting, and adds them to a set.
+      if (c.kind === 'account' && role === 'artist' && Array.isArray(sets) && !sets.length)
+        await store.upsert('waiting', c.id, { name: c.name, email: (await opt.emailOf?.(req).catch(() => null)) ?? '', at: new Date().toISOString() });
+      return send(res, 200, { id: c.kind === 'account' ? c.id : null, name: c.name, role, sets });
     }
 
     if (parts[0] === 'invites' && parts.length === 2 && method === 'POST') {
@@ -299,7 +306,21 @@ export function studio(opt: StudioOptions) {
       const invites = (await store.list('invites'))
         .filter((i) => i.set === set && !i.usedBy && Date.parse(String(i.expires)) > Date.now())
         .map((i) => ({ ...withId(i), code: i.rk, url: inviteUrl(i.rk) }));
-      return send(res, 200, { artists, invites });
+      const members = new Set((await store.list('memberships')).map((m) => String(m.userId)));
+      const waiting = (await store.list('waiting')).filter((w) => !members.has(w.rk)).map(withId)
+        .sort((x, y) => String(y.at).localeCompare(String(x.at)));
+      return send(res, 200, { artists, invites, waiting });
+    }
+
+    if (a === 'artists' && rest.length === 1 && method === 'POST') {
+      if (!owner) throw new HttpError(403, 'owner_only');
+      const { id } = await readJson(req) as { id?: string };
+      const who = typeof id === 'string' ? await store.get('waiting', id) : null;
+      if (!who) throw new HttpError(404, 'not_waiting');
+      await store.upsert(`artists|${set}`, id!, { name: String(who.name), joined: new Date().toISOString() });
+      await store.upsert('memberships', `${id}|${set}`, { userId: id!, set });
+      log('studio.artist_added', { set, userId: id });
+      return send(res, 200, { added: id });
     }
 
     if (a === 'invites' && rest.length === 1 && method === 'POST') {

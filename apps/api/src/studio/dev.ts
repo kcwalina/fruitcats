@@ -21,6 +21,7 @@ const serve = studio({
     const m = /^Dev ([a-z0-9-]{1,32}):(.{1,40})$/.exec(auth);
     return m ? { id: m[1], name: m[2] } : null;
   },
+  emailOf: async (req) => /^Dev ([a-z0-9-]+):/.exec(req.headers.authorization ?? '')?.[1] + '@example.com',
   owners: ['owner'],
   agents: [{ name: 'Claude', hash: sha256(Buffer.from('dev-agent')) }],
   log: (event, fields) => console.log(event, JSON.stringify(fields)),

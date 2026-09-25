@@ -112,7 +112,12 @@ export const openStep = (set: string, id: string, open: boolean) => call(`${set}
 export const suggest = (set: string, body: { picture: string; field: string; value: string; why: string }) =>
   call<Suggestion>(`${set}/suggestions`, { json: body });
 export const decide = (set: string, id: string, state: string, reply = '') => call<Suggestion>(`${set}/suggestions/${id}`, { json: { state, reply } });
-export const artists = (set: string) => call<{ artists: { id: string; name: string; joined: string }[]; invites: { code: string; url: string; note: string; expires: string }[] }>(`${set}/artists`);
+export const artists = (set: string) => call<{
+  artists: { id: string; name: string; joined: string }[];
+  invites: { code: string; url: string; note: string; expires: string }[];
+  waiting: { id: string; name: string; email?: string; at: string }[];
+}>(`${set}/artists`);
+export const addArtist = (set: string, id: string) => call(`${set}/artists`, { json: { id } });
 export const invite = (set: string, note: string) => call<{ code: string; url: string; expires: string }>(`${set}/invites`, { json: { note } });
 export const removeArtist = (set: string, id: string) => call(`${set}/artists/${id}`, { method: 'DELETE' });
 

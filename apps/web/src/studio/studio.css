@@ -421,3 +421,6 @@ figcaption { font-size: 13px; color: #cdbba5; font-weight: 700; }
 .version-one { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
 .comment header .link { font-size: 12px; }
 main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out; }
+.invite-box { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
+.invite-box summary { cursor: pointer; font-weight: 800; color: var(--ink-2); }
+.invite-box p { margin-top: 10px; }

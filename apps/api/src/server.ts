@@ -65,6 +65,11 @@ async function userOf(req: IncomingMessage): Promise<{ id: string; name: string 
 const serveStudio = studio({
   store: azureStore(TABLES, BLOBS, credential),
   account: userOf,
+  // Their email, from viamochi-id's /me with their own token: only for the reviewer's list of people waiting.
+  async emailOf(req) {
+    const res = await fetch(`${ID_SERVICE}/me`, { headers: { Authorization: req.headers.authorization ?? '' } });
+    return res.ok ? ((await res.json()) as { email?: string }).email ?? null : null;
+  },
   owners: (process.env.STUDIO_OWNERS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   agents: (process.env.STUDIO_AGENTS ?? '').split(',').filter(Boolean).map((pair) => {
     const [name, hash] = pair.split(':');

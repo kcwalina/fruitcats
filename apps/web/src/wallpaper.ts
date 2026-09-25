@@ -453,7 +453,9 @@ function drawStats(p: Parts, pawX: number, heartX: number, bottom: number, foote
  * edges, the cost ring) in holographic silver, gold or a rainbow, with a sheen over the art. `rarity`
  * is the mark before the collector number (`number`, "002/055").
  */
-export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | null, finish: Finish, rarity: Rarity, number: string, device: Device): Promise<Blob> {
+/** `art` is the picture's address: the card's own art unless given (the Artist Studio passes an artist's upload). */
+export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | null, finish: Finish, rarity: Rarity, number: string, device: Device,
+  art?: string): Promise<Blob> {
   const card: CardDef = CARDS[id];
   const colors = familyColors(card.family);
   const [main, dark] = colors;
@@ -465,8 +467,8 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
       .map((f) => document.fonts?.load(f).catch(() => null))),
     new Promise((resolve) => setTimeout(resolve, 1500)),
   ]);
-  const [art, paw, heart] = await Promise.all([
-    loadImage(artUrl(key)), loadImage(`${BASE}ui/${STAT_ICONS.paw}.png`), loadImage(`${BASE}ui/${STAT_ICONS.heart}.png`)]);
+  const [picture, paw, heart] = await Promise.all([
+    loadImage(art ?? artUrl(key)), loadImage(`${BASE}ui/${STAT_ICONS.paw}.png`), loadImage(`${BASE}ui/${STAT_ICONS.heart}.png`)]);
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -520,7 +522,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     // Landscape: the art fills the left, and the rest of the card stands in a column on the right.
     const column = Math.min(W * 0.4, 700 * s);
     const artRight = W - pad - column - 24 * s;
-    drawArt(p, art, pad, pad, artRight, H - pad, inner);
+    drawArt(p, picture, pad, pad, artRight, H - pad, inner);
     const x0 = artRight + 24 * s, x1 = W - pad;
     const bannerBottom = drawBanner(p, x0, x1, pad);
     const typeBottom = drawTypeLine(p, x0, x1, bannerBottom + 12 * s);
@@ -539,7 +541,7 @@ export async function renderWallpaper(id: string, side: 'kitten' | 'bigcat' | nu
     const textBottom = badges ? statsBottom - 110 * s : statsBottom - 60 * s;
     const below = (16 + 96 + 12 + 52 + 12) * s + 300 * s + (H - textBottom);
     const artBottom = Math.min(H * 0.6, H - below);
-    drawArt(p, art, pad, pad, W - pad, artBottom, inner);
+    drawArt(p, picture, pad, pad, W - pad, artBottom, inner);
     const bannerBottom = drawBanner(p, pad - 6 * s, W - pad + 6 * s, artBottom + 16 * s);
     const typeBottom = drawTypeLine(p, pad, W - pad, bannerBottom + 12 * s);
     // The stat chips stand just below the rules box, as on the printed card; they don't overlap it.

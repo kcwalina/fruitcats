@@ -1,0 +1,60 @@
+{
+  "set": "SP1",
+  "name": "Studio Practice",
+  "version": "0.1.0",
+  "status": "prototype",
+  "about": "A pretend set for trying the Artist Studio. Its cards are never played: the game and the playtests don't load it (it isn't in content/index.ts).",
+  "requires": ["SB1"],
+  "tokens": [
+    { "id": "SP1-K01", "name": "Paper Crane", "type": "Critter", "family": "Orchard", "power": 1, "health": 1, "text": "", "flavor": "Folded in a hurry." }
+  ],
+  "cards": [
+    {
+      "id": "SP1-X01", "rarity": "Rare", "type": "Cat", "family": "Citrus", "name": "Yuzu, the Lantern Keeper",
+      "cost": 3, "power": 3, "health": 3, "text": "Hello: Draw a card.", "flavor": "Every lantern in the valley is one she lit."
+    },
+    {
+      "id": "SP1-X02", "rarity": "Legendary", "type": "Cat", "family": "Tropical", "name": "Mango, the Sky Pirate",
+      "cost": 5, "power": 5, "health": 4, "text": "Zoomies.", "flavor": "The clouds are hers. So is your lunch."
+    },
+    {
+      "id": "SP1-X03", "rarity": "Legendary", "type": "Hero Cat", "family": "Orchard", "signature": true, "name": "Plum, the Night Painter",
+      "flavor": "She paints the stars back on every evening.",
+      "kitten": { "name": "Plum, Inky Kit", "text": "Exhaust: A unit you control gets +1 Power this round.\nGrow Up: You have 3 or more units." },
+      "bigCat": { "name": "Plum, Painter of Stars", "power": 3, "text": "Exhaust: Your units get +1 Power this round." }
+    },
+    {
+      "id": "SP1-H01", "rarity": "Legendary", "type": "Hero Cat", "family": "Orchard", "name": "Pip, the Apple Scout",
+      "flavor": "First up the tree. First to fall out of it.",
+      "kitten": { "name": "Pip, Sprout Kit", "text": "Exhaust: Draw a card, then discard a card.\nGrow Up: You have played 2 or more cards this round." },
+      "bigCat": { "name": "Pip, Orchard Ranger", "power": 2, "text": "Exhaust: A unit you control gets +2 Power this round." }
+    },
+    {
+      "id": "SP1-P01", "rarity": "Common", "type": "Critter", "family": "Orchard", "name": "Cider Hedgehog",
+      "cost": 1, "power": 1, "health": 2, "text": "", "flavor": "Prickly outside. Sweet inside."
+    },
+    {
+      "id": "SP1-P02", "rarity": "Common", "type": "Critter", "family": "Orchard", "name": "Pear Owl",
+      "cost": 2, "power": 2, "health": 2, "text": "Hello: Look at the top card of your deck.", "flavor": "Who? Pear."
+    },
+    {
+      "id": "SP1-P03", "rarity": "Uncommon", "type": "Critter", "family": "Orchard", "name": "Crabapple Badger",
+      "cost": 3, "power": 3, "health": 3, "text": "Guardian.", "flavor": "Grumpy about everything, loyal about everyone."
+    },
+    {
+      "id": "SP1-P04", "rarity": "Uncommon", "type": "Trick", "family": "Orchard", "name": "Windfall",
+      "cost": 2, "text": "Draw two cards.", "flavor": "The best apples fall on their own."
+    },
+    {
+      "id": "SP1-P05", "rarity": "Rare", "type": "Toy", "family": "Orchard", "name": "Paper Kite",
+      "cost": 2, "text": "Exhaust: Make a 1/1 Paper Crane.", "flavor": "It never comes down the same way twice."
+    }
+  ],
+  "decks": {
+    "practice-orchard": {
+      "name": "Practice Orchard", "hero": "SP1-H01",
+      "blurb": "A pretend deck for trying the Artist Studio.",
+      "cards": { "SP1-P01": 3, "SP1-P02": 3, "SP1-P03": 3, "SP1-P04": 3, "SP1-P05": 3 }
+    }
+  }
+}

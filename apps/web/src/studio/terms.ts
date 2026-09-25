@@ -9,22 +9,22 @@ export const STUDIO_TERMS_VERSION = 'studio-2026-09-draft-1';
 
 export const STUDIO_TERMS = `
 <h3>What the Studio is</h3>
-<p>The Fruitcats Artist Studio is where you upload the pictures you make for Fruitcats, see them on the cards, and
-talk about them with us. You make your pictures with your own tools; the Studio only receives them.</p>
+<p>The Fruitcats Artist Studio is where you upload the images you make for Fruitcats, see them on the cards, and
+talk about them with us. You make your images with your own tools; the Studio only receives them.</p>
 
-<h3>Your pictures</h3>
+<h3>Your images</h3>
 <ul>
-  <li><b>They stay yours.</b> Uploading a picture doesn’t give it away.</li>
+  <li><b>They stay yours.</b> Uploading an image doesn’t give it away.</li>
   <li>By uploading, you let us <b>store it, show it on card previews, and share it with the people reviewing your
     project</b>, so we can work on it together.</li>
-  <li><b>Using a picture in the game</b> is agreed between you and us, in our agreement for the project. Nothing
+  <li><b>Using an image in the game</b> is agreed between you and us, in our agreement for the project. Nothing
     goes into the game without that.</li>
 </ul>
 
 <h3>Keeping them safe</h3>
 <ul>
-  <li>Every version you upload is kept. The Studio never overwrites or deletes a picture.</li>
-  <li>Only you and your project’s reviewers can see your pictures and comments.</li>
+  <li>Every version you upload is kept. The Studio never overwrites or deletes an image.</li>
+  <li>Only you and your project’s reviewers can see your images and comments.</li>
   <li>If you’d like your uploads deleted, tell us and we will.</li>
 </ul>
 

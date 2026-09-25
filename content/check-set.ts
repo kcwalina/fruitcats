@@ -15,7 +15,7 @@ import {
   type Ability, type CardDef, type Condition, type DeckList, type SetData, type TargetSel,
 } from '../packages/engine/src/index';
 import { CONTENT, loadContent, type ContentSet } from './index';
-import { missingNumbers, suggestText } from './rules-text';
+import { cardTexts, suggestText } from './rules-text';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -24,7 +24,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ACTIONS = BUILT_IN_ACTIONS;
 const TESTS = CONDITION_TESTS;
 const CORE_KEYWORDS = ['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce'];
-const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log'];
+const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log', 'note'];
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'];
 
@@ -81,15 +81,10 @@ function checkSet(set: ContentSet, games: number): Report {
     const text = [c.text, c.kitten?.text, c.bigCat?.text].filter(Boolean).join(' ');
     if (!c.token && !text && (c.keywords?.length || c.abilities?.length))
       r.errors.push(`${where(c)}: has rules but no "text". Suggested: "${suggestText(c)}"`);
-    // The numbers the abilities use must be the ones the text says (data and text can't drift apart).
-    const faces: [string, typeof c.abilities, string | undefined][] = c.type === 'Hero Cat'
-      ? [['Kitten', c.kitten?.abilities, c.kitten?.text], ['Big Cat', c.bigCat?.abilities, c.bigCat?.text]]
-      : [['', c.abilities, c.text]];
-    for (const [side, abilities, faceText] of faces) {
-      const off = faceText ? missingNumbers(abilities, faceText) : [];
-      if (off.length && !c.preview) r.errors.push(`${where(c)}${side ? ` ${side}` : ''}: its abilities use ${off.join(', ')}, which its text doesn't say.`);
-    }
-    for (const k of c.keywords ?? []) if (text && !new RegExp(`\\b${k.split(' ')[0]}\\b`).test(text)) r.warnings.push(`${where(c)}: keyword ${k} isn't in its rules text.`);
+    // Rules text is generated from the data (content/rules-text.ts): written text that says anything else is a bug.
+    for (const [side, written, generated] of cardTexts(c))
+      if (written !== generated)
+        r.errors.push(`${where(c)}${side ? ` ${side}` : ''}: its text doesn't match its data. It should read "${generated.replace(/\n/g, ' / ')}" (npm run write-text writes it).`);
     if (c.type === 'Trick' && !c.abilities?.some((a) => a.when === 'play')) r.errors.push(`${where(c)}: a Trick needs a "play" ability.`);
     if (c.type === 'Toy' && !c.abilities?.some((a) => a.static?.to === 'attached')) r.errors.push(`${where(c)}: a Toy needs a static grant "to": "attached".`);
 

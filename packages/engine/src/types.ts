@@ -43,6 +43,8 @@ export interface CardDef {
   signature?: boolean;
   /** The set this card came from (filled in when the set is registered). */
   set?: string;
+  /** How the rules text calls the card once named ("her"); its name otherwise. */
+  pronoun?: string;
 }
 
 // ── Card abilities, as data ────────────────────────────────────────────────────────────────────────
@@ -119,6 +121,8 @@ export interface Ability {
   static?: StaticEffect;
   /** A line for the game log when it happens. */
   log?: string;
+  /** A reminder printed after the ability's text, in brackets: "(The attacker stays exhausted.)" */
+  note?: string;
 }
 
 /** Where an ability lives, so a queued step (plain JSON) can find it again. */

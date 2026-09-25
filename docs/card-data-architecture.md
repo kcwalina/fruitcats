@@ -140,9 +140,11 @@ with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
 - **Card basics:** types and rarities are valid, units have stats, and every family is defined.
 - **Abilities:** every trigger, condition, target and action is one the engine or the set's plugin knows,
   and every summoned token exists.
-- **Rules text:** every keyword appears in the card's rules text, and every number its abilities use
-  (damage, heals, draws…) is the one its text says, so data and text can't drift apart. A card with no
-  text gets a suggested one, written in the house style from its abilities (`content/rules-text.ts`).
+- **Rules text:** a card's text is generated from its data (`content/rules-text.ts`), in the house style:
+  keywords, then each ability, Grow Up lines, auras, tokens and notes. `npm run write-text` writes it into
+  set.json, and check-set fails when a card's text says anything else, so text and data can't drift
+  apart. For wording the templater can't infer, the data carries it: a card's `pronoun`, an ability's
+  `note` (a reminder in parentheses) and a mechanic's `label` (it reads as "Zest: …").
 - **Decks:** every deck follows the deckbuilding rules.
 - **Art:** every card has an illustration and a composed card.
 - **Budget report:** stats and keywords against each card's cost.
@@ -209,9 +211,6 @@ A designer app, `apps/studio`, for contributors who don't change the code. Its w
 
 ## Still to do
 
-1. **Pawtraits into the set folders**, once the accounts work lands (it serves them from `art/avatars/`).
-2. **Full rules text from data:** `content/rules-text.ts` suggests text for new cards and checks numbers,
-   but written text is still the one players see. Generating every card's text (and checking the words,
-   not only the numbers) would need the templater to cover each card's own phrasing.
-3. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
+1. **Pawtraits into the set folders**: the accounts session is doing it (it serves them from `art/avatars/`).
+2. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
    Collection's sample finishes (stand-ins until the Store grants real copies).

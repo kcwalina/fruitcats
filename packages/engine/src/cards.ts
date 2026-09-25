@@ -35,6 +35,8 @@ export interface MechanicDef {
   abilities?: Ability[];
   /** A small symbol the game shows with the keyword on a unit (🍎 for Ripen). */
   icon?: string;
+  /** A condition written as a label in rules text ("Zest: …") rather than as a clause ("If you're Lush, …"). */
+  label?: boolean;
 }
 
 /** A card set, as its set.json holds it. */

@@ -10,7 +10,7 @@
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, acceptTerms, accountExists, needsTerms, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  AuthError, acceptTerms, accountExists, needsTerms, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
@@ -198,7 +198,8 @@ let panelBusy = false;
 // ── Contact us ──────────────────────────────────────────────────────────────────────────────────
 //
 // A message to the team, answered by email. Signed-in players are answered at their account's email; anyone else
-// types one. It's a view in the Settings panel, like Account, and the sign-in window links to it.
+// types one and confirms it with a code emailed to it, like signing in, before the message goes. It's a view in the
+// Settings panel, like Account, and the sign-in window links to it.
 
 let contactOpen = false;
 let contactEmail = '';
@@ -206,6 +207,9 @@ let contactMessage = '';
 let contactNote = '';
 let contactSent = false;
 let contactBusy = false;
+/** Signed out: the confirmation code's length once it's emailed, which shows the code step (0 = not yet). */
+let contactCodeLength = 0;
+let contactCode = '';
 
 /** The Settings row that opens "Contact us". */
 export function renderContactRow(): string {
@@ -227,9 +231,20 @@ function renderContact(): string {
       <b>${esc(s?.email ?? contactEmail)}</b>, usually within a couple of days. The answer may land in Spam or Junk.</p>
     <button data-click="acct:contactagain">Send another message</button>`;
   return `${head}
+    ${!s && contactCodeLength ? `
+    <p class="account-why">We emailed a code to <b>${esc(contactEmail)}</b>. Type it here to send your message.</p>
+    <label class="account-field">Code
+      <input data-acct="contactcode" class="account-code" inputmode="numeric" autocomplete="one-time-code" enterkeyhint="send"
+        maxlength="${contactCodeLength}" value="${esc(contactCode)}" ${contactBusy ? 'disabled' : ''}>
+    </label>
+    <button class="primary account-go" data-click="acct:contactverify" ${contactBusy ? 'disabled' : ''}>${contactBusy ? 'Sending…' : 'Send message'}</button>
+    <p class="account-error" role="alert">${esc(contactNote)}</p>
+    <p class="account-small">Still nothing after a minute? Look in Spam or Junk, or
+      <button class="link-button" data-click="acct:contactresend" ${contactBusy ? 'disabled' : ''}>send a new code</button>.
+      Wrong email? <button class="link-button" data-click="acct:contactedit" ${contactBusy ? 'disabled' : ''}>Change it</button>.</p>` : `
     <p class="account-why">Stuck, found a bug, or have an idea? Tell us here and we’ll answer by email.</p>
     ${s ? `<p class="account-section-note">We’ll answer at <b>${esc(s.email)}</b>.</p>`
-      : `<label class="account-field">Your email <small>So we can answer you</small>
+      : `<label class="account-field">Your email <small>So we can answer you. We’ll email you a code to confirm it.</small>
         <input data-acct="contactemail" type="email" inputmode="email" autocomplete="email" value="${esc(contactEmail)}"
           placeholder="you@example.com" ${contactBusy ? 'disabled' : ''}>
       </label>`}
@@ -237,8 +252,8 @@ function renderContact(): string {
       <textarea data-acct="contactmessage" class="contact-message" rows="6" maxlength="4000"
         placeholder="What happened, and on which device?" ${contactBusy ? 'disabled' : ''}>${esc(contactMessage)}</textarea>
     </label>
-    <button class="primary account-go" data-click="acct:contactsend" ${contactBusy ? 'disabled' : ''}>${contactBusy ? 'Sending…' : 'Send'}</button>
-    <p class="account-error" role="alert">${esc(contactNote)}</p>`;
+    <button class="primary account-go" data-click="acct:contactsend" ${contactBusy ? 'disabled' : ''}>${contactBusy ? (s ? 'Sending…' : 'One moment…') : s ? 'Send' : 'Continue'}</button>
+    <p class="account-error" role="alert">${esc(contactNote)}</p>`}`;
 }
 
 // ── Friends ─────────────────────────────────────────────────────────────────────────────────────
@@ -314,7 +329,7 @@ export const accountPanelOpen = () => panel;
 export const contactPanelOpen = () => panel && contactOpen;
 export function closeAccountPanel() {
   panel = false; confirmingSignOut = false; confirmingDelete = false; picking = false; panelNote = ''; friendsOpen = false;
-  contactOpen = false; contactNote = '';
+  contactOpen = false; contactNote = ''; contactCodeLength = 0; contactCode = '';
 }
 
 const initial = (name: string) => esc(name.trim().charAt(0).toUpperCase() || '?');
@@ -529,6 +544,11 @@ export function accountInput(input: HTMLInputElement) {
   else if (field === 'invite') invite = input.value;
   else if (field === 'contactemail') contactEmail = input.value;
   else if (field === 'contactmessage') contactMessage = input.value;
+  else if (field === 'contactcode') {
+    contactCode = input.value.replace(/\D/g, '');
+    // A pasted or autofilled code sends straight away, as when signing in.
+    if (contactCodeLength && contactCode.length === contactCodeLength && !contactBusy) void accountClick(hostRef!, 'contactverify');
+  }
   else if (field === 'code') {
     code = input.value.replace(/\D/g, '');
     // A pasted or autofilled code signs in straight away.
@@ -545,6 +565,7 @@ export function accountEnter(input: HTMLInputElement, host: Host) {
   else if (field === 'code') void accountClick(host, 'code');
   else if (field === 'friendcode') void accountClick(host, 'friendadd');
   else if (field === 'invite') void accountClick(host, 'invite');
+  else if (field === 'contactcode') void accountClick(host, 'contactverify');
 }
 
 let hostRef: Host | null = null;
@@ -558,14 +579,36 @@ export async function accountClick(host: Host, action: string) {
     open = false; panel = true; contactOpen = true; contactNote = ''; host.render(); return;
   }
   if (action === 'contactagain') { contactSent = false; contactMessage = ''; host.render(); return; }
-  if (action === 'contactsend') {
+  if (action === 'contactedit') { contactCodeLength = 0; contactCode = ''; contactNote = ''; host.render(); return; }
+  if (action === 'contactsend' || action === 'contactresend') {
     if (contactBusy) return;
     if (!contactMessage.trim()) { contactNote = 'Please write your message.'; host.render(); return; }
-    if (!session() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { contactNote = 'Please enter your email address, so we can answer you.'; host.render(); return; }
+    const signedIn = !!session();
+    if (!signedIn && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { contactNote = 'Please enter your email address, so we can answer you.'; host.render(); return; }
     contactBusy = true; contactNote = ''; host.render();
-    try { await sendSupport(contactMessage.trim(), contactEmail.trim()); contactSent = true; contactMessage = ''; }
-    catch (e) { contactNote = e instanceof AuthError ? e.message : 'Your message couldn’t be sent. Please try again.'; }
-    contactBusy = false; host.render(); return;
+    try {
+      // Signed out, the message waits for the code emailed to the address given.
+      if (signedIn) { await sendSupport(contactMessage.trim(), contactEmail.trim()); contactSent = true; contactMessage = ''; }
+      else {
+        contactCodeLength = await requestSupportCode(contactEmail.trim()); contactCode = '';
+        if (action === 'contactresend') contactNote = 'We’ve sent a new code. Use the one in the newest email.';
+      }
+    } catch (e) { contactNote = e instanceof AuthError ? e.message : 'Your message couldn’t be sent. Please try again.'; }
+    contactBusy = false; host.render();
+    if (contactCodeLength) document.querySelector<HTMLInputElement>('[data-acct="contactcode"]')?.focus();
+    return;
+  }
+  if (action === 'contactverify') {
+    if (contactBusy) return;
+    if (contactCode.length !== contactCodeLength) { contactNote = `Please type the ${contactCodeLength}-digit code from the email.`; host.render(); return; }
+    contactBusy = true; contactNote = ''; host.render();
+    try {
+      await sendSupport(contactMessage.trim(), contactEmail.trim(), contactCode);
+      contactSent = true; contactMessage = ''; contactCodeLength = 0; contactCode = '';
+    } catch (e) { contactNote = e instanceof AuthError ? e.message : 'Your message couldn’t be sent. Please try again.'; }
+    contactBusy = false; host.render();
+    document.querySelector<HTMLInputElement>('[data-acct="contactcode"]')?.select();
+    return;
   }
   if (action === 'panel') { panel = true; confirmingSignOut = false; picking = false; host.render(); return; }
   if (action === 'picker') { void openPicker(host); return; }

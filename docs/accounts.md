@@ -117,9 +117,20 @@ Last updated 2026-09-25.
   - The game gives up on any account call after 15 seconds and says so; a slow or down service never signs anyone
     out (only Entra rejecting the refresh token does).
 - **Contact us** (Settings, and "Trouble signing in?" in the sign-in window): `POST /support` on `viamochi-id`
-  emails the message to the owner (`Support__To` app setting) with Reply-To set to the player; 5 messages an hour
-  per IP address. The message itself is never logged. This is the support address the Terms and Privacy Policy
-  point to, instead of a mailbox.
+  emails the message to the owner (`Support__To` app setting) with Reply-To set to the player. The message itself is
+  never logged. This is the support address the Terms and Privacy Policy point to, instead of a mailbox, so it stays
+  open without an account (locked-out players, parents, copyright notices, privacy requests).
+  - **Signed in:** the message goes straight away, answered at the account's email.
+  - **Signed out:** the player types their email and message, then confirms the email with an 8-digit code
+    (`POST /support/code`), sent from `no-reply@mail.viamochi.com` in the same kind of email as the sign-in code. The
+    message goes only with the right code. A code lasts 15 minutes, works once and stops after 5 wrong tries.
+    viamochi-id makes and checks these codes itself (in memory; a restart just means asking for a new one), not Entra.
+  - **Limits are per sender,** so nothing a spammer does can block anyone else's message (the owner's choice,
+    2026-09-24): 5 messages and 5 code emails an hour per IP address; 3 code emails an hour per email address; 3
+    messages a day per email address (`Support__PerSenderDaily`), counted per UTC day in the `support` table under
+    a hash of the address. The form says so in plain words when a sender reaches a limit.
+  - **No cap across the service.** Past 50 messages in a day (`Support__AlertAt`) viamochi-id logs an error, which
+    emails the owner once (ErrorAlerts), and every message still goes out.
 - **Agreeing to the Terms:** a new account ticks "I agree to the Terms of Use and have read the Privacy Policy"
   before its code. The account keeps the version it agreed to and when (`PUT /me/terms`; `account.terms_accepted` in
   the security log). Anyone signed in whose account hasn't agreed to the current `TERMS_VERSION` (`apps/web/src/auth.ts`)
@@ -323,7 +334,8 @@ PvP.
 Pay-as-you-go Azure has no hard spending cap, so big bills are designed out:
 
 1. **Fixed-price resources only**, autoscale off.
-2. **Limits in our code:** sign-in calls per IP address (30 per 5 minutes), Contact us messages (5 an hour), invite
+2. **Limits in our code:** sign-in calls per IP address (30 per 5 minutes), Contact us messages and code emails
+   (per IP address and per email address; see What's set up), invite
    codes that each create a set number of accounts.
 3. **Azure Policy** allows only the resource types and small sizes we use, so a hijacked identity can't start
    expensive machines. Only the owner can change it.

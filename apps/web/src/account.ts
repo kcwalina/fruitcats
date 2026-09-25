@@ -236,8 +236,8 @@ function renderContact(): string {
       <span class="account-back-balance" aria-hidden="true"></span>
     </div>`;
   if (contactSent) return `${head}
-    <p class="account-why"><b>Thanks, your message is on its way.</b> We’ll answer by email at
-      <b>${esc(s?.email ?? contactEmail)}</b>, usually within a couple of days. The answer may land in Spam or Junk.</p>
+    <p class="account-why"><b>Thanks, your message is on its way.</b> We’ll answer by email${s ? ', at your account’s address' : ''},
+      usually within a couple of days. The answer may land in Spam or Junk.</p>
     <button data-click="acct:contactagain">Send another message</button>`;
   return `${head}
     ${!s && contactCodeLength ? `
@@ -252,7 +252,7 @@ function renderContact(): string {
       <button class="link-button" data-click="acct:contactresend" ${contactBusy ? 'disabled' : ''}>send a new code</button>.
       Wrong email? <button class="link-button" data-click="acct:contactedit" ${contactBusy ? 'disabled' : ''}>Change it</button>.</p>` : `
     <p class="account-why">Stuck, found a bug, or have an idea? Tell us here and we’ll answer by email.</p>
-    ${s ? `<p class="account-section-note">We’ll answer at <b>${esc(s.email)}</b>.</p>`
+    ${s ? '<p class="account-section-note">We’ll answer at your account’s email address.</p>'
       : `<label class="account-field">Your email <small>So we can answer you. We’ll email you a code to confirm it.</small>
         <input data-acct="contactemail" type="email" inputmode="email" autocomplete="email" value="${esc(contactEmail)}"
           placeholder="you@example.com" ${contactBusy ? 'disabled' : ''}>
@@ -410,7 +410,7 @@ export function renderAccountRow(): string {
   const name = s ? s.displayName || s.email : '';
   return `<button class="account-row" data-click="acct:panel" aria-label="Account">
       ${face('small')}
-      <span class="account-who"><b>${s ? esc(name) : 'Account'}</b><small>${s ? esc(s.email) : 'Not signed in'}</small></span>
+      <span class="account-who"><b>${s ? esc(name) : 'Account'}</b><small>${s ? 'Signed in' : 'Not signed in'}</small></span>
       <span class="account-chevron" aria-hidden="true">›</span>
     </button>`;
 }

@@ -1,0 +1,59 @@
+{
+  "set": "MC1",
+  "name": "Mochi",
+  "version": "0.1.0",
+  "status": "prototype",
+  "requires": [
+    "SB1"
+  ],
+  "families": {
+    "Paragon": {
+      "colors": [
+        "#8A8178",
+        "#4A433D",
+        "#F1ECE6"
+      ],
+      "neutral": true,
+      "frameChoice": true,
+      "personality": "The most important cats in Fruitcats",
+      "playsLike": "One legendary card that any deck can add"
+    }
+  },
+  "cards": [
+    {
+      "id": "MC1-X01",
+      "rarity": "Legendary",
+      "type": "Cat",
+      "family": "Paragon",
+      "signature": "rainbow",
+      "name": "Mochi, the Sweet Spirit",
+      "cost": 4,
+      "power": 3,
+      "health": 4,
+      "keywords": [
+        "Guardian",
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        },
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "readyTreats": 2
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Lucky. Hello: Draw a card.\nGoodbye: Ready two of your Treats.",
+      "flavor": "Soft on the outside. Softer on the inside."
+    }
+  ]
+}

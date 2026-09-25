@@ -16,7 +16,7 @@ import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUr
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
-/** A new player's Showcase: Mochi, as a Kitten and as a Big Cat. */
+/** A new player's Showcase: the featured Hero Cat (Tango), as a Kitten and as a Big Cat. */
 const DEFAULT_SHOWCASE = () => [`${featuredHero()}-kitten`, `${featuredHero()}-bigcat`];
 const SHOWCASE_KEY = 'fruitcats-showcase';
 /** When the Showcase last changed on this device (ms), so sync keeps the newest. */
@@ -35,7 +35,7 @@ const idOf = (face: string) => face.replace(/-(kitten|bigcat)$/, '');
 const sideOf = (face: string) => (face.endsWith('-kitten') ? 'kitten' : face.endsWith('-bigcat') ? 'bigcat' : null);
 const sideLabel = (face: string) => (sideOf(face) === 'kitten' ? 'Kitten' : sideOf(face) === 'bigcat' ? 'Big Cat' : '');
 const number = (face: string) => `${String(SET.indexOf(idOf(face)) + 1).padStart(3, '0')}/${String(SET.length).padStart(3, '0')}`;
-/** The name on this face: a Kitten and its Big Cat are named differently ("Mochi, Sunbeam Kit"). */
+/** The name on this face: a Kitten and its Big Cat are named differently ("Tango, Sunbeam Kit"). */
 const faceName = (face: string) => {
   const card = CARDS[idOf(face)], side = sideOf(face);
   return (side === 'kitten' ? card.kitten?.name : side === 'bigcat' ? card.bigCat?.name : card.name) ?? card.name;

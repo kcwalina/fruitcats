@@ -5,7 +5,7 @@ screen. It has two tabs at the top: **Showcase** and **All cards**.
 
 ## Showcase
 
-Your Showcase holds the cards you're proudest of. Everyone starts with Mochi, as a Kitten and as a
+Your Showcase holds the cards you're proudest of. Everyone starts with Tango, as a Kitten and as a
 Big Cat.
 
 - Cards appear one at a time, as big as your screen allows. **Swipe** left and right to go through
@@ -69,7 +69,7 @@ end of the card's collector line, after its number, so you can tell a special pr
 
 Your copies appear in their finish everywhere: in the Collection, the deck builder, your hand and board
 in a game, and on [wallpapers](wallpapers.md). For now the three starter Hero Cats come special:
-**Sunny** is Foil, **Pippin** is Gold and **Mochi** is Prismatic.
+**Sunny** is Foil, **Pippin** is Gold and **Tango** is Prismatic.
 
 ## Wallpapers
 

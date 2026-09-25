@@ -41,6 +41,23 @@ FAMILIES = {                            # main, dark, tint
     "Tropical": ("#F2780C", "#A24E05", "#FFE6CC"),
     "Melon":    ("#3FA66B", "#25714A", "#DDF3E6"),
 }
+# Frame colours an artist may choose for a card that isn't tied to a deck's look: "frameChoice" on its picture in the
+# set's brief, or on its family (Paragon has no colour of its own: its artist always picks).
+# A card that has chosen keeps it in its data: "frame": "<name>". The families' own colours, plus a few neutral ones.
+PALETTES = {
+    "citrus":   ("#F29F05", "#A86400", "#FFF1CC"),
+    "orchard":  ("#D64545", "#8E2A2A", "#FBE0DA"),
+    "tropical": ("#F2780C", "#A24E05", "#FFE6CC"),
+    "garden":   ("#5FA84D", "#3B7430", "#E3F2DC"),
+    "berry":    ("#D6336C", "#8F1D46", "#FBDDE7"),
+    "melon":    ("#3FA66B", "#25714A", "#DDF3E6"),
+    "pepper":   ("#D7261E", "#5A0E0A", "#FFD6C2"),
+    "violet":   ("#4A2F7A", "#1E1236", "#EFE8FF"),
+    "sky":      ("#3B82C4", "#1D4A78", "#E1EEFB"),
+    "midnight": ("#2B3A55", "#141C2B", "#E6ECF7"),
+    "gold":     ("#C8961E", "#7A5A0C", "#FFF3CF"),
+    "ink":      ("#3A3A3A", "#161616", "#EEEEEE"),
+}
 CREAM, INK, MUTED = "#FFF8EC", "#2B211B", "#7A6A5C"
 POWER_COLOR, HEALTH_COLOR = "#E4572E", "#E0457B"
 
@@ -217,10 +234,13 @@ CHROME = {
     "gold":      (["#fff4c2", "#e8b73a", "#8a5a0c", "#f7d774", "#b07d17", "#fff0b0", "#c89224", "#fff4c2"], "#5a3a04"),
     "prismatic": (RAINBOW, "#3a2a5a"),
     "signature": (["#2a1a15", "#120b09"], "#120b09"),
+    "signature-rainbow": (["#1a1420", "#0b0810"], "#0b0810"),
 }
 # Signature: a set's top card is printed only this way (docs/heat-wave-set.md). Charred black stone with
 # glowing lava cracks running through it. Cards opt in with "signature": true; it's never a default print.
+# "signature": "rainbow" is the same stone with cracks glowing in every colour: Mochi's, the game's own card.
 SIGNATURE = "signature"
+RAINBOW_SIGNATURE = "signature-rainbow"
 _textures: dict = {}
 
 
@@ -242,6 +262,27 @@ def signature_texture(xs, ys):
     return rgb
 
 
+def rainbow_signature_texture(xs, ys):
+    """The Signature stone, darker, with every crack glowing through the rainbow: the colour turns around the card's
+    centre, each crack white-hot in its middle."""
+    import numpy as np
+    rng = np.random.default_rng(7)
+    pts = rng.uniform(0, 1, (170, 2)) * (W, H)
+    d = np.sqrt((xs[..., None] - pts[:, 0]) ** 2 + (ys[..., None] - pts[:, 1]) ** 2)
+    d.sort(axis=-1)
+    edge = d[..., 1] - d[..., 0]
+    core = np.exp(-(edge / 3.0) ** 2)[..., None]
+    glow = np.exp(-(edge / 18) ** 2)[..., None]
+    stone = np.array([22, 17, 28], float) + 12 * np.sin(xs / 37 + np.sin(ys / 53) * 2)[..., None] / 2
+    stops = np.array([Image.new("RGB", (1, 1), c).getpixel((0, 0)) for c in RAINBOW], float)
+    t = (np.arctan2(ys - H / 2, xs - W / 2) / (2 * np.pi) + 0.1 + (xs + ys) / (W + H) * 0.35) % 1.0
+    pos = np.linspace(0, 1, len(stops))
+    hue = np.stack([np.interp(t, pos, stops[:, c]) for c in range(3)], -1)
+    rgb = stone * (1 - glow) + hue * glow
+    rgb = rgb * (1 - core) + (hue * 0.35 + 255 * 0.65) * core
+    return rgb
+
+
 def chrome_texture(finish: str) -> Image.Image:
     """The chrome's material, card-sized. Foil is brushed silver with rainbow flashes running across it at
     another angle; gold is polished bands of gold; prismatic is the rainbow turning around the card's
@@ -259,6 +300,8 @@ def chrome_texture(finish: str) -> Image.Image:
         brushed = (1 + 0.04 * np.sin(ys * 1.9 + np.sin(xs / 23) * 3))[..., None]
         if finish == SIGNATURE:
             rgb = signature_texture(xs, ys)
+        elif finish == RAINBOW_SIGNATURE:
+            rgb = rainbow_signature_texture(xs, ys)
         elif finish == "gold":
             rgb = ramp(CHROME["gold"][0], diagonal * 2) * brushed
         else:
@@ -277,7 +320,8 @@ def chrome_texture(finish: str) -> Image.Image:
 
 
 # A finish's code in the collector line, like the codes on real cards: F(oil), G(old), P(rismatic).
-FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white"), SIGNATURE: ("S", "white")}
+FINISH_CODES = {"foil": ("F", "#2e3552"), "gold": ("G", "#4a2c02"), "prismatic": ("P", "white"), SIGNATURE: ("S", "white"),
+                RAINBOW_SIGNATURE: ("S", "white")}
 
 
 def finish_tag(img: Image.Image, right: int, cy: int, finish: str) -> int:
@@ -314,7 +358,9 @@ def centered_ink(draw: ImageDraw.ImageDraw, xy: tuple, text: str, f, fill: str, 
 
 def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "standard") -> Image.Image:
     """The card image. With no art_path, the picture's window is left transparent (a frame)."""
-    main, dark, tint = FAMILIES[card["family"]]
+    if finish == SIGNATURE and card.get("signature") == "rainbow":
+        finish = RAINBOW_SIGNATURE     # the rainbow Signature stone, printed where the card's Signature goes
+    main, dark, tint = PALETTES[card["frame"]] if card.get("frame") in PALETTES else FAMILIES[card["family"]]
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
     text = face.get("text", "")
@@ -446,11 +492,15 @@ def frames(data: dict, set_path: Path, only: list[str] | None) -> int:
     """Each card face without its picture, in the finishes it's sold in: standard, plus the tier the set's
     brief gives it (foil, gold or signature). Tokens are standard only."""
     brief_path = set_path.parent / "art" / "brief.json"
-    tiers = {}
+    tiers, choice = {}, set()
     if brief_path.exists():
         for p in json.loads(brief_path.read_text(encoding="utf-8"))["pictures"]:
             if p.get("card"):
                 tiers[p["card"]] = p.get("tier")
+                if p.get("frameChoice"):
+                    choice.add(p["card"])
+    families = data.get("families", {})
+    choice |= {c["id"] for c in data["cards"] if families.get(c["family"], {}).get("frameChoice")}
     out_dir = set_path.parent / "art" / "cards" / "frames"
     count = 0
     for card in data["cards"] + [dict(t, token=True) for t in data.get("tokens", [])]:
@@ -469,6 +519,12 @@ def frames(data: dict, set_path: Path, only: list[str] | None) -> int:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 compose(card, side, None, f).save(path, quality=90, method=6)
                 count += 1
+                # The artist chooses this card's frame colour: every palette, at frames/p-<name>/[finish/]<key>.
+                for name in (PALETTES if card["id"] in choice else ()):
+                    pp = out_dir / f"p-{name}" / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp")
+                    pp.parent.mkdir(parents=True, exist_ok=True)
+                    compose(dict(card, frame=name), side, None, f).save(pp, quality=90, method=6)
+                    count += 1
     print(f"drew {count} frame(s) into {out_dir.relative_to(ROOT)}")
     return 0
 

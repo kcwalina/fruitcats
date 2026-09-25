@@ -5,7 +5,8 @@ It records the decisions made so far and the steps, in order. Accounts come firs
 [accounts.md](accounts.md) (what's left: [accounts-plan.md](accounts-plan.md)). Other features still to build (PvP, the ladder) are in
 [future-plans.md](future-plans.md).
 
-Last updated 2026-09-24.
+Last updated 2026-09-25. **What's next:** [Making it real](#making-it-real-what-is-left) lists the work between
+the test Store that's live now and one that takes real money.
 
 ## Decisions
 
@@ -16,7 +17,7 @@ Last updated 2026-09-24.
 | **Seller** | **You, as an individual.** No LLC or company: the stores and the Merchant of Record are the legal sellers and handle tax, VAT and refunds, as for most indie developers. |
 | **Accounts** | The one **Via Mochi account**: an email, signed in with an emailed code inside the game. See [accounts.md](accounts.md). The Store needs an account, like the Collection. |
 | **Age** | Anyone can play solo without an account. Accounts need age **13+**. Buying needs **18+ or a parent's approval** (on iOS, Apple's Ask to Buy). |
-| **Web payments** | A **Merchant of Record: Paddle**, or Lemon Squeezy if Paddle won't onboard an individual. |
+| **Web payments** | **Paddle**, a Merchant of Record (decided 2026-09-25). It is the legal seller, so it collects sales tax and VAT and handles refunds and chargebacks; players can still pay with PayPal, cards, Apple Pay or Google Pay inside its checkout. Plain PayPal or Stripe would make the owner the seller, responsible for tax in every country. |
 | **Stores** | Web, then **iPhone and Android** (one Capacitor app), then **Steam** (Electron). The same game code everywhere, with no rewrite. |
 | **Ownership** | **A purchase anywhere is owned everywhere.** Our server holds the one list of what each Via Mochi account owns. A Steam, App Store or Google Play purchase goes to the account signed in on that device; buying needs an account, so no purchase is ever ownerless. |
 | **Pricing** | **The same price on every store, and sales on all stores at once.** The player's experience comes before margin. The game is free to download everywhere. |
@@ -32,8 +33,8 @@ Last updated 2026-09-24.
   - **All cards:** the whole set. Cards you don't have yet show as shadows, ready for the Store to fill in.
   - **Wallpapers:** any card as a phone, tablet or computer wallpaper.
   - The Showcase choice is kept on the device for now. It moves to the account in the accounts plan's phase A2.
-- **Home:** the Store tile exists, marked "Coming soon" (in the public build).
-- **Store browsing, cart and test checkout** (phase 4), in the playtest build only and only for testers. See
+- **Home:** the Store tile, marked "Coming soon" for everyone the API doesn't let in.
+- **Store browsing, cart and test checkout** (phase 4), live on the public site but open only to testers (the owner). See
   [Store browsing: what's built](#store-browsing-whats-built).
 
 ## How it fits together
@@ -153,9 +154,9 @@ inside the game, on every platform. The Store only adds the tester list below.
 
 ## Store experience
 
-- **The Store screen:** a **Decks** tab and a **Cards** tab, plus a cart.
-- **A deck** shows every card in it and marks the cards you already own, with the price reduced for those.
-- **Single cards** have filters, a full-size preview before buying, and "Owned n/max".
+- **The Store screen:** one list of decks and single cards, all the same size, plus a cart (no tabs or filters).
+- **A deck** shows every card in it and marks the cards you already own.
+- **A single card** opens its own page with a full-size preview before buying.
 - **Without an account:** the Store tile is locked like the Collection; tapping it opens the in-game "Sign in or
   create account" screen (accounts plan).
 - **After paying:** a card-by-card **reveal animation**, then a shortcut to "Build a deck with them".
@@ -208,6 +209,146 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 The live game has the Store for everyone, and the live API opens it only to `STORE_TESTERS` (the owner, for now),
 with `STORE=testers`, `STORE_TEST_CHECKOUT=on` and `STORE_SETS=HW1`. Adding a tester is adding their account id to
 `STORE_TESTERS` (tell the accounts and artist tool sessions first: a settings change restarts the API).
+
+## Making it real: what is left
+
+Written 2026-09-25. The Store that's live now is complete up to the payment: testers browse, fill a cart, confirm,
+and a **test order** gives them the cards with no money taken. Five pieces of work turn that into a real Store on
+the web. They're listed roughly in order. Pieces 1 and 3 can start at once, because Paddle's approval and the
+lawyer's review both take time we don't control.
+
+### Requirements for the payment work (the owner's, 2026-09-25)
+
+**No purchase is ever lost or granted twice.** A bug or crash may delay a player's cards; it must never lose a
+payment, because untangling one by hand costs more in support than cards earn. Paddle's record of payments is the
+source of truth for money, and ours can always be rebuilt from it.
+
+1. **Before paying,** the server saves a **pending order** with our order id and passes that id to Paddle with the
+   transaction, so every Paddle payment names an order of ours.
+2. **Paddle's signed webhook** marks the order paid. We answer 2xx only *after* that write is saved; if we crash
+   before it, Paddle sends the webhook again.
+3. **Marking the order paid is the grant.** What an account owns is always worked out from its paid orders, so there
+   is no second "now add the cards" step that could half-happen. It is one write, which happens entirely or not at
+   all.
+4. **Each Paddle transaction can mark one order paid, once.** A repeated webhook, a double tap or a retry changes
+   nothing.
+5. **Not only webhooks:** when the player returns from the overlay, the server asks Paddle about that transaction
+   directly; and a regular check compares every Paddle transaction with our orders and applies anything missing.
+6. **Refunds and chargebacks** go the same way, keyed to the same order.
+7. **Anything the check can't fix raises an alert.** Support finds an order by email or by the number on Paddle's
+   receipt.
+8. **Crash drills in the sandbox,** kept as tests: a crash before the write, after the write, and before answering
+   Paddle must each end with the right cards and no double charge.
+
+**What Paddle gets, and why ownership can't be faked.**
+
+- **Paddle gets no cards.** It gets a line item and price ("Five Alarm deck, $9.99", or "3 single cards") and our
+  order id and account id as custom data. It sells the right to have those items in the player's Via Mochi account,
+  and gives back its own transaction id (`txn_…`).
+- **Owning a card is a row in our database:** account A has 2 copies of `HW1-R03`, from order O. `HW1-R03` is the
+  card's fixed id from its set's data; copies are counts, not objects with their own ids (a player market might need
+  serial numbers later).
+- **No collisions:** order ids are 128-bit random, and the server refuses an existing id for a different account or
+  cart. A test fails if two cards anywhere share an id.
+- **No forgery:** the game never tells the server what it owns. Only a Paddle webhook whose signature checks out (the
+  secret in Key Vault, and the transaction confirmed with Paddle's API) or an admin action (written to the permanent
+  log) grants anything. The device's copy is for playing offline only: editing it can at most change one browser's
+  solo games; anything shared (synced decks, later player-vs-player) is checked by the server.
+
+**Reading ownership is cheap.** The ledger is never searched as a whole:
+
+- **Stored per account.** Orders live in a table whose partition is the account id, so reading one player's orders
+  reads only their rows (a few dozen for a keen buyer), whatever the total size. This is how it's built today.
+- **A running total per account.** With real payments, the same write that marks an order paid also updates one
+  "owned" row in that account's partition (an atomic batch within one partition), so reading what a player owns is
+  a single row. The orders stay the record the total can always be rebuilt from.
+- **Not read to play.** Starting a game uses the copy on the device, not the server. Player-vs-player, later, checks
+  the two decks once when a match starts.
+
+**How fresh the device's copy is.** Cards can leave an account (a refund now; a trade or a sale later), so the copy
+on a device must not keep them for long.
+
+- **Refreshed** when the game opens, when it comes back to the front, when the device is back online (at most once
+  a minute; built 2026-09-25), when the Store opens, and right after a purchase.
+- **The device that gives a card away updates at once:** it made the trade, and the server's answer carries the new
+  total.
+- **A stale copy can't be used for anything that matters.** Every trade, sale, listing or player-vs-player match is
+  checked against the server's total at that moment, so a card already given away can't be given twice or played
+  online. At most, another device of the same player that stayed offline shows it in solo games until it next
+  connects.
+- **For trading, add:** a version number on each account's total, returned with every API answer, so any call
+  notices a change and refreshes; a limit on how long an offline copy is trusted (a few days) before bought cards are
+  shown as "needs to connect"; and, with player-vs-player's live connection, a push that tells a player's other
+  devices to refresh at once.
+
+### 1. Take the payment (Paddle)
+
+- **Owner's part:** sign up for Paddle as an individual (Lemon Squeezy if Paddle refuses), with the website, the
+  Terms and a refund policy for Paddle to review. Paddle gives a **sandbox** (fake cards) at once and, after
+  approval, a live account.
+- **Server:** `POST /v1/store/checkout` prices the cart on the server (the same `priceCart` the test checkout uses,
+  refusing a total the player didn't see), records a **pending order**, and asks Paddle for a transaction with our
+  order id attached. Paddle never takes a price from the game.
+- **Game:** the confirm step opens **Paddle's overlay** (card, Apple Pay, Google Pay, PayPal; local currency, tax
+  included). Paddle asks the 18+ or parent's-permission question and for the EU waiver of the 14-day withdrawal
+  right for digital goods. We never see or store card details.
+- **Webhook:** `POST /webhooks/paddle` checks Paddle's signature, stores each event once (`webhookEvents`), and marks
+  the order **paid**. Only a paid order grants cards. The game waits for that (a short poll of `/v1/store`), then
+  plays the reveal.
+- **Keys:** the Paddle API key and webhook secret go in the Fruitcats Key Vault, read by the API's managed identity.
+  Sandbox and live are separate settings, so a test can never charge a real card.
+- The test checkout stays for testers until launch, when `STORE_TEST_CHECKOUT` is switched off.
+
+### 2. Make ownership real and permanent
+
+- **The ledger:** ownership stays "the account's events, added up", but only **paid** orders (and grants made by
+  hand) count. Every grant, refund and chargeback is also written to the permanent, tamper-proof `purchases` log
+  (designed in the accounts plan, not created yet). Test orders are kept apart, so they can't leak into a real
+  collection.
+- **Refunds and chargebacks** (from Paddle's webhook) remove the cards everywhere. A deck that used them shows the
+  Missing cards bar again and falls back to a starter deck in play. Refunds are made in Paddle's dashboard. An admin
+  endpoint grants or removes items by hand, for support cases.
+- **The rest of the game sees purchases:** the **Collection** shows bought cards as owned (today it still shows only
+  the starter decks), the Showcase and wallpapers can use them, and buying a card with a **Legend Pawtrait** unlocks
+  the Pawtrait in `viamochi-id` (see [From the accounts work](#from-the-accounts-work)).
+- **Offline:** the game keeps its offline copy of what the account owns (already built) and never grants anything to
+  itself.
+
+### 3. Legal and trust
+
+- **Terms of Service and Privacy Policy** updated for purchases: a licence, not ownership (no cash value, no resale);
+  Paddle as the seller of record, with its terms; what we keep about purchases and for how long; minors need a
+  parent's consent. A **refund policy** aligned with Paddle's, and a support contact (Contact us) on receipts and in
+  the Store.
+- **A lawyer's review** (one-time, flat fee) of the Terms, the Privacy Policy and the refund policy before the first
+  real dollar. The brief for the lawyer already exists.
+- **Wording in the Store:** only promises we're sure we can keep. "A deck never charges you for cards you already
+  have" and "every device" are gone. The deck page's "the rest are taken off the price" needs the same check.
+- **Tax:** Paddle collects and pays sales tax and VAT. The owner reports the income as a sole proprietor (see
+  [Legal](#legal-no-company-needed)).
+
+### 4. Decide what's sold and at what price
+
+- **Prices:** confirm or change the starting points (decks $9.99, singles $0.49 to $4.99, a $4.99 minimum order).
+  They live in `packages/store`, so a change is made in one place and covered by tests.
+- **What's on sale at launch:** which sets (`STORE_SETS`; testers see the Halloween set today) and which singles.
+  Every card sold needs its final art.
+- **Premium prints and Signature cards** (Foil, Gold, Signature, First Edition): decide whether any are in the
+  launch, or come later as their own work (new finishes, one product per variant).
+- **Sales:** the server-side sale schedule, if a sale is wanted at launch; otherwise later.
+
+### 5. Run it safely, then launch
+
+- **Monitoring:** alerts when a webhook fails or is refused, when a paid order grants nothing, or when an order stays
+  pending too long. A daily check compares our paid orders with Paddle's and re-applies any missed webhook.
+- **Drills in the sandbox,** each kept as a test: buy; double tap; close the overlay halfway; pay twice for the same
+  cart; refund; chargeback; a webhook sent twice or late; a price changed mid-checkout; an account deleted after
+  buying.
+- **Soft launch:** the owner, then friends and family on `STORE_TESTERS`, making **real small purchases** and
+  refunding some.
+- **Launch day:** `STORE=open` and `STORE_TEST_CHECKOUT` off; rollback is `STORE=off`. Each is an API setting,
+  announced to the other sessions first, with no new game build.
+- **After the web:** iPhone and Android, then Steam (phases 7 and 8), each feeding the same ledger.
 
 ## Cards the Store doesn't sell
 
@@ -271,15 +412,15 @@ is saved either way and can be played once the player has every card.
 | **1** | **Engine and playtest build** | `flags.ts`, the `build:playtest` build and the playtest site; rarity and starter flags; the multi-set card registry; tests | — |
 | **2** | ~~Deck builder, Home, Collection~~ | **Done** | — |
 | **3** | **Accounts** | Done by the accounts plan (phases A0–A2): `apps/api`, sign-in, age check, account deletion, Showcase and decks per account, legal pages. The Store adds only the tester list. How accounts work: [accounts.md](accounts.md). | — |
-| **4** | **Store browsing** (playtest only) | **Built** (not yet deployed): Store tile, catalog, Decks and Cards tabs, cart, missing cards from a deck code, test checkout for testers | 1, 3 |
-| **5** | **Web payments** (playtest only) | Paddle live approval, `/checkout`, webhook grant and revoke, reveal animation, refunds, monitoring, sale schedule | 4, legal pages |
+| **4** | ~~Store browsing~~ | **Done, live for testers** (2026-09-25): Store tile, one list of decks and cards, cart, missing cards from a deck code, test checkout, reveal | — |
+| **5** | **Web payments** (testers only) | Paddle, real ownership, refunds, legal, prices and operations: see [Making it real](#making-it-real-what-is-left) | 4, legal pages |
 | **6** | **Soft launch, then launch** | Friends and family as testers with real small purchases, refund drills, lawyer sign-off, then launch day | 5 |
 | **7** | **iPhone and Android** | Capacitor shell, `platform.ts`, StoreKit and Play Billing, Apple and Google webhooks, store listings, Android's 14-day closed test (at least 12 testers) | 6 |
 | **8** | **Steam** | Electron and steamworks.js shell, Steam Microtransactions and sign-in, store page and review, check Valve's price-parity rules for in-game items | 7 |
 
 ## From the accounts work
 
-- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Mochi, Nova and Reaper)
+- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Tango, Nova and Reaper)
   must also unlock the Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id,
   RowKey the Pawtrait id) in the same step that grants the card, and remove it on a refund. There's no endpoint for
   this yet; `viamochi-id` needs a service-to-service one (see [accounts.md](accounts.md), Avatars).

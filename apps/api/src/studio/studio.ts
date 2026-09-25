@@ -17,6 +17,7 @@
 //   POST /v1/studio/{set}/pictures/{key}/comments        { text, version?, pin?: {x, y}, replyTo? }
 //   POST /v1/studio/{set}/comments/{id}                  { done }  mark a comment done (or not)
 //   POST /v1/studio/{set}/pictures/{key}/review          owner: { state: changes | sketch-ok | approved | waiting }
+//   POST /v1/studio/{set}/pictures/{key}/frame           { palette }  the frame colour the artist chose (cards that let them)
 //   POST /v1/studio/{set}/milestones/{id}                owner: { open } open a step early, or close it again
 //   POST /v1/studio/{set}/suggestions                    { picture, field, value, why? }
 //   POST /v1/studio/{set}/suggestions/{id}               owner: { state: accepted | declined, reply? }
@@ -27,7 +28,7 @@
 //
 // Rows, all in one table (partition | row key):
 //   artists|{set} | {userId}      invites | {code}      versions|{set} | {key}|{version}      states|{set} | {key}
-//   comments|{set} | {id}         suggestions|{set} | {id}      milestones|{set} | {id}      memberships | {userId}|{set}      terms | {userId}
+//   comments|{set} | {id}         suggestions|{set} | {id}      milestones|{set} | {id}      memberships | {userId}|{set}      terms | {userId}      frames|{set} | {key}
 // Pictures are blobs named {set}/{key}/{version}.{ext}, where a version is its upload time and the start of its hash.
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -114,9 +115,9 @@ export function studio(opt: StudioOptions) {
   // ── The set, as the Studio shows it ────────────────────────────────────────────────────────────
 
   async function setView(set: string) {
-    const [versions, states, comments, suggestions, milestones] = await Promise.all(
-      ['versions', 'states', 'comments', 'suggestions', 'milestones'].map((t) => store.list(`${t}|${set}`)));
-    const pictures: Record<string, { state: string; stateAt?: string; stateBy?: string; versions: Row[] }> = {};
+    const [versions, states, comments, suggestions, milestones, frames] = await Promise.all(
+      ['versions', 'states', 'comments', 'suggestions', 'milestones', 'frames'].map((t) => store.list(`${t}|${set}`)));
+    const pictures: Record<string, { state: string; stateAt?: string; stateBy?: string; frame?: string; versions: Row[] }> = {};
     const picture = (key: string) => (pictures[key] ??= { state: 'none', versions: [] });
     for (const v of versions) {
       const [key, version] = v.rk.split('|');
@@ -124,6 +125,7 @@ export function studio(opt: StudioOptions) {
       picture(key).versions.push({ ...row, id: version });
     }
     for (const s of states) Object.assign(picture(s.rk), { state: s.state, stateAt: s.at, stateBy: s.byName });
+    for (const f of frames) picture(f.rk).frame = String(f.palette);
     return {
       set,
       pictures,
@@ -261,6 +263,13 @@ export function studio(opt: StudioOptions) {
         await store.insert(`comments|${set}`, id, row);
         log('studio.commented', { set, key: b, author: row.author });
         return send(res, 201, { ...row, id });
+      }
+      if (cc === 'frame' && rest.length === 3 && method === 'POST') {
+        if (c.kind !== 'account') throw new HttpError(403, 'people_only');
+        const { palette } = await readJson(req) as { palette?: string };
+        if (typeof palette !== 'string' || !/^[a-z]{2,20}$/.test(palette)) throw new HttpError(422, 'bad_palette');
+        await store.upsert(`frames|${set}`, b, { palette, at: new Date().toISOString(), by: c.id, byName: c.name });
+        return send(res, 200, { palette });
       }
       if (cc === 'review' && rest.length === 3 && method === 'POST') {
         if (!owner || c.kind !== 'account') throw new HttpError(403, 'owner_only');

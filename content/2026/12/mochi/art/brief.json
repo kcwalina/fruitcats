@@ -1,0 +1,71 @@
+{
+  "set": "MC1",
+  "name": "Mochi",
+  "version": 1,
+  "about": "Mochi is our signature card: one legendary cat that any player can add to any deck. It's the card we hope everyone wants.",
+  "audience": "Every Fruitcats player.",
+  "style": "Your own style. Mochi isn't part of a deck, so it doesn't need to match one.",
+  "note": "All of this describes the card. How the image looks is up to you, and if it takes the card somewhere else, we'll change the card to fit your image.",
+  "families": {
+    "Paragon": {
+      "world": "Paragon is the family of the game's most important cards; any deck can add them"
+    }
+  },
+  "milestones": [
+    {
+      "id": 1,
+      "title": "Mochi’s card",
+      "note": "The image on the card."
+    },
+    {
+      "id": 2,
+      "title": "Mochi’s Pawtrait",
+      "note": "The round portrait players can wear as their profile picture."
+    }
+  ],
+  "pictures": [
+    {
+      "file": "MC1-X01.webp",
+      "card": "MC1-X01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "signature",
+      "milestone": 1,
+      "draw": "Mochi, the Sweet Spirit: a legendary cat that fits in any deck. In the game it stands in front of your other units to protect them (Guardian), brings you a new card when it arrives, and gives you two Treats back when it leaves. It's Lucky too: if it turns up as a lost Life, it joins the game for free.",
+      "mustKeep": [
+        "the card is a cat named Mochi",
+        "it belongs to the Paragon family: the most important cards, which any deck can add"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "look",
+        "scene"
+      ],
+      "showcase": true,
+      "signature": "requested",
+      "family": "Paragon",
+      "pawtrait": "legend-mochi.webp",
+      "frameChoice": true
+    },
+    {
+      "file": "legend-mochi.webp",
+      "card": null,
+      "kind": "pawtrait",
+      "size": [
+        512,
+        512
+      ],
+      "tier": "legend",
+      "milestone": 2,
+      "draw": "Mochi’s Pawtrait: players who own the card can wear it as their profile picture. It’s shown as a circle, in the account screen, the friends list and on the game board.",
+      "mustKeep": [
+        "the same character as Mochi’s card"
+      ],
+      "open": []
+    }
+  ]
+}

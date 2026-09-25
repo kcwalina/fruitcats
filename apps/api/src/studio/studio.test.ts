@@ -158,6 +158,13 @@ describe('studio', () => {
     expect((await call(OWNER, '/bp1/artists')).body.artists).toContainEqual(expect.objectContaining({ id: 'wanda', email: 'wanda@example.com' }));
   });
 
+  it('keeps the frame colour an artist chose', async () => {
+    const view = await call(OWNER, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'midnight' } });
+    expect(view.body).toEqual({ palette: 'midnight' });
+    expect((await call(OWNER, '/bp1')).body.pictures['BP1-X01'].frame).toBe('midnight');
+    expect((await call(OWNER, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'Not a name!' } })).status).toBe(422);
+  });
+
   it('removes an artist without losing their pictures', async () => {
     expect((await call(OWNER, '/bp1/artists/basil', { method: 'DELETE' })).status).toBe(200);
     expect((await call(ARTIST, '/bp1')).status).toBe(403);

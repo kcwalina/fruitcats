@@ -55,7 +55,7 @@ function checkSet(set: ContentSet, games: number): Report {
     if (other) r.errors.push(`${c.id} is also a card in ${other.data.name}.`);
     if (!TYPES.includes(c.type)) r.errors.push(`${where(c)}: type must be one of ${TYPES.join(', ')}.`);
     if (!c.token && !RARITIES.includes(String(c.rarity))) r.errors.push(`${where(c)}: rarity must be one of ${RARITIES.join(', ')}.`);
-    if (c.type === 'Hero Cat' && c.rarity !== 'Legendary') r.errors.push(`${where(c)}: Hero Cats are Legendary.`);
+    if (c.type === 'Hero Cat' && c.rarity !== 'Legendary' && c.rarity !== 'Rare') r.errors.push(`${where(c)}: Hero Cats are Rare or Legendary.`);
     if (!c.family) r.errors.push(`${where(c)}: needs a family.`);
     else if (!knownFamily(c.family, data)) r.errors.push(`${where(c)}: family ${c.family} isn't defined by this set or one it requires.`);
     if (c.type !== 'Hero Cat' && !c.token && typeof c.cost !== 'number') r.errors.push(`${where(c)}: needs a cost.`);
@@ -134,6 +134,10 @@ function checkSet(set: ContentSet, games: number): Report {
       if (!steps.has(String(p.milestone))) r.errors.push(`Art brief: ${p.file} is in step ${String(p.milestone)}, which isn't one of its milestones.`);
       if (!Array.isArray(p.size) || p.size.length !== 2) r.errors.push(`Art brief: ${p.file} needs a size, [width, height].`);
     }
+    const pickFamilies = new Set(Object.entries(data.families ?? {}).filter(([, f]) => (f as { frameChoice?: boolean }).frameChoice).map(([n]) => n));
+    for (const c of cards.filter((x) => pickFamilies.has(x.family)))
+      if (!pictures.some((p) => p.card === c.id && (p as { frameChoice?: boolean }).frameChoice))
+        r.errors.push(`Art brief: ${c.id} is ${c.family}, whose artist picks the frame colour; give its picture "frameChoice": true.`);
     const noFrame = faces.filter((f) => briefed.has(f) && !existsSync(join(art, 'cards', 'frames', `${f}.webp`)));
     if (noFrame.length) r.warnings.push(`No Studio frame for ${noFrame.join(', ')} (python tools/compose_cards.py --set ${code.toLowerCase()} --frames).`);
   }

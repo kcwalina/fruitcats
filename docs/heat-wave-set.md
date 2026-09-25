@@ -213,7 +213,7 @@ yet pick fights and heat its own units the way the deck wants.
 
 **It wasn't only the bot (2026-09-24).** An LLM playtester (gpt-oss-20b) lost all 23 of its games with Five
 Alarm, and the same player wins 31% with the starters. Two causes, found by swapping Hero Cats between decks:
-the cards cost about 20 points (Five Alarm's cards lose just as badly under Sunny or Mochi), and Blaze about 6
+the cards cost about 20 points (Five Alarm's cards lose just as badly under Sunny or Tango), and Blaze about 6
 (Zest Rush's cards win 39% under Blaze). Heat rarely fired: attacks mostly go at the Hero Cat, so a Pepper unit
 seldom takes a hit and lives, and the 1-Health Pepper units died to the hit instead of heating up.
 

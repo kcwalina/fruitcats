@@ -418,9 +418,9 @@ browser's address bar.
 2. Tap the **Share** button — the square with an arrow pointing up. It is at the bottom of the screen on an
    iPhone, and at the top right on an iPad.
 3. Scroll down the list and tap **Add to Home Screen**.
-4. The name *Fruitcats* and Mochi's picture appear. Tap **Add** (top right).
+4. The name *Fruitcats* and the game's icon appear. Tap **Add** (top right).
 
-Mochi's face is now on your home screen. Tap it and the game fills the screen, with no browser bars.
+The Fruitcats icon is now on your home screen. Tap it and the game fills the screen, with no browser bars.
 
 **Android**
 
@@ -438,7 +438,7 @@ small screen with an arrow — then **Install**.
   changes.
 - It needs an internet connection; there is no offline mode yet.
 - Tap the **speaker** in the top-right corner of the menu to turn the sound on or off.
-- Already pinned an older icon? Delete it from the home screen and add the game again to get Mochi's picture.
+- Already pinned an older icon? Delete it from the home screen and add the game again to get the new icon.
 
 ---
 

@@ -75,7 +75,7 @@ AVATARS = {
     "peapod": ("a black-and-white tuxedo cat wearing a green pea-pod hood", "pale spring green", None),
     "pumpkin": ("a grey tabby wearing an orange pumpkin hood with a curly vine", "pale beige", None),
     # Legend Pawtraits: each comes with its Legendary card.
-    "legend-mochi": ("Mochi, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
+    "legend-mochi": ("Tango, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
                      "ears, wearing a bright golden-orange mango hood with a little crown of green palm leaves and a "
                      "small orange bow at the neck, a proud happy smile", None, "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"),
     # Nova and Reaper are drawn by the Heat Wave card work to match their cards (content/2026/09/heat-wave/avatars/); don't redraw them from these older descriptions.

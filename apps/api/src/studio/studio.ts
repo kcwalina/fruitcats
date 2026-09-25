@@ -194,7 +194,10 @@ export function studio(opt: StudioOptions) {
     const rest = parts.slice(1);
     const [a, b, cc] = rest;
 
-    if (rest.length === 0 && method === 'GET') return send(res, 200, { role, ...(await setView(set)) });
+    if (rest.length === 0 && method === 'GET') {
+      const artist = c.kind === 'account' && !!(await store.get(`artists|${set}`, c.id));
+      return send(res, 200, { role, artist, ...(await setView(set)) });
+    }
 
     if (a === 'changes' && rest.length === 1 && method === 'GET') {
       const since = query.get('since') ?? '';

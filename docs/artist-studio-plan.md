@@ -170,7 +170,7 @@ the artist. They open it, create their Via Mochi account (or sign in), and see t
 `python tools/compose_cards.py --set <code> --frames`. `npm run check-set` checks the brief.
 
 **When pictures are approved.** `npm run studio -- pull <set>` copies each approved picture into the set's folder
-(Pawtraits into `art/avatars/`, key art into `announcement/`) and composes the cards. Review the result with `git
+(Pawtraits into its `avatars/`, key art into its `announcement/`) and composes the cards. Review the result with `git
 diff`, then commit and deploy as usual.
 
 **Studio Practice (SP1)** is a pretend set for trying the Studio. It isn't in `content/index.ts`, so the game, the

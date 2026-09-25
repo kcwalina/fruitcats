@@ -142,8 +142,8 @@ async function main() {
       if (pic?.state !== 'approved') continue;
       const v = [...pic.versions].reverse().find((x) => x.kind === 'final') ?? pic.versions.at(-1)!;
       const bytes = Buffer.from(await (await call(`${set}/pictures/${key}/${v.id}`)).arrayBuffer());
-      // Where each kind of picture lives: card pictures with the set, Pawtraits with the other avatars.
-      const out = p.kind === 'pawtrait' ? join(ROOT, 'art', 'avatars', p.file)
+      // Where each kind of picture lives, all in the set's folder: card pictures, Pawtraits, the announcement.
+      const out = p.kind === 'pawtrait' ? join(folder, 'avatars', p.file)
         : p.kind === 'announcement' ? join(folder, 'announcement', p.file)
           : join(folder, 'art', 'illustrations', `${key}.webp`);
       mkdirSync(dirname(out), { recursive: true });

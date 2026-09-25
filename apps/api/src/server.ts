@@ -1,4 +1,4 @@
-// The Fruitcats API (docs/accounts-plan.md): keeps each Via Mochi account's custom decks and Showcase, so they're the
+// The Fruitcats API (docs/accounts.md): keeps each Via Mochi account's custom decks and Showcase, so they're the
 // same on every device. It only trusts Via Mochi tokens from viamochi-id (checked against its public keys), and each
 // account's data is keyed by the account id in those tokens. Hosted on App Service ("fruitcats-api").
 //
@@ -13,6 +13,7 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { TableClient, TableServiceClient } from '@azure/data-tables';
+import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { CARDS, registerSet } from '@fruitcats/engine';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -233,3 +234,26 @@ const server = createServer(async (req, res) => {
 // the background, so a fresh storage account needs no setup.
 server.listen(Number(process.env.PORT) || 8080, () => console.log('fruitcats-api listening'));
 void Promise.all(['decks', 'showcase'].map((t) => new TableServiceClient(TABLES, credential).createTable(t).catch(() => {})));
+
+// Every 15 minutes, the totals for the owner's dashboard (the Accounts tab of the playtest dashboard):
+// logs/stats/fruitcats-api.json, read by `node tools/ops.mjs snapshot`. Counts only, no ids or deck contents.
+async function writeStats() {
+  try {
+    let decks = 0, deleted = 0, showcases = 0;
+    const accounts = new Set<string>();
+    for await (const row of decksTable.listEntities<{ deleted?: boolean }>({ queryOptions: { select: ['PartitionKey', 'deleted'] } })) {
+      if (row.deleted) { deleted++; continue; }
+      decks++;
+      accounts.add(row.partitionKey!);
+    }
+    for await (const _ of showcaseTable.listEntities({ queryOptions: { select: ['PartitionKey'] } })) showcases++;
+    const stats = { service: 'fruitcats-api', time: new Date().toISOString(), decks, deletedDecks: deleted, accountsWithDecks: accounts.size, showcases };
+    const body = JSON.stringify(stats);
+    await statsBlob.upload(body, Buffer.byteLength(body), { blobHTTPHeaders: { blobContentType: 'application/json' } });
+  } catch (e) {
+    log('ops', 'stats.write_failed', { message: (e as Error).message }, 'warning');
+  }
+}
+const statsBlob = new BlobServiceClient(process.env.BLOB_ENDPOINT ?? 'https://fruitcatsdata.blob.core.windows.net', credential)
+  .getContainerClient('logs').getBlockBlobClient('stats/fruitcats-api.json');
+setTimeout(() => { void writeStats(); setInterval(() => void writeStats(), 15 * 60_000); }, 3 * 60_000);

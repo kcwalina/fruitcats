@@ -200,6 +200,8 @@ function contentMounts(): { url: string; dir: string }[] {
       { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
       { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
       { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
+      // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
+      { url: '/avatars/', dir: join(root, 'avatars') },
     );
   return mounts.filter((m) => existsSync(m.dir));
 }

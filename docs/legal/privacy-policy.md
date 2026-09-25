@@ -1,7 +1,7 @@
 # Fruitcats and Via Mochi Privacy Policy
 
 > **DRAFT for legal review. Not yet in effect.** Written to match what the Service actually collects and keeps
-> (docs/accounts-plan.md: accounts, observability and log retention). Items in **[brackets]** must be confirmed before
+> (docs/accounts.md: accounts, observability and log retention). Items in **[brackets]** must be confirmed before
 > publishing.
 
 **Version:** 2026-09-draft-1. **Effective:** [date of publication].

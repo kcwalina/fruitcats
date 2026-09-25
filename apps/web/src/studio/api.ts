@@ -50,6 +50,8 @@ export interface Suggestion {
 
 export interface SetView {
   role: 'owner' | 'artist' | 'agent';
+  /** The signed-in account is this project's artist (a reviewer can be one too, e.g. to practise). */
+  artist?: boolean;
   set: string;
   pictures: Record<string, { state: string; stateAt?: string; stateBy?: string; versions: Version[] }>;
   comments: Comment[];

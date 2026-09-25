@@ -1,4 +1,4 @@
-// Our own logs (docs/accounts-plan.md, Observability): JSON lines in append blobs, one file per category, hour and
+// Our own logs (docs/accounts.md, Observability): JSON lines in append blobs, one file per category, hour and
 // instance, flushed every ~10 seconds. "ops" is kept 30 days; "security" a year, tamper-proof. Same layout as
 // viamochi-id's, so tools/ops reads both:
 //   logs/logs/ops/fruitcats-api/2026/09/24/21-<instance>.jsonl    security/security/fruitcats-api/2026/09/24/21-<instance>.jsonl

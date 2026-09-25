@@ -1,0 +1,679 @@
+{
+  "set": "BP1",
+  "name": "Berry Picnic",
+  "artist": "Basil Leaf",
+  "version": 1,
+  "dates": {
+    "1": null,
+    "4": null,
+    "all": null
+  },
+  "about": "Berry Picnic is the holiday release. Its deck, Picnic Club, is a picnic in the grass with friends, snacks and the ants that always show up. Three cards sold on their own are wintry and festive.",
+  "audience": "Young adults, mostly young women.",
+  "style": "Basil's own style. The deck's characters are cute, silly and a little chaotic. The paid cards are showcase art.",
+  "families": {
+    "Berry": {
+      "world": "a picnic in the grass: a blanket, a basket, berries, friends, sunshine",
+      "note": "the deck's family; every Berry card should feel like the same picnic"
+    },
+    "Garden": {
+      "world": "cosy and wintry for Ginger: a warm kitchen, a snowy window"
+    },
+    "Citrus": {
+      "world": "wintry for Clementine: a frozen pond, snow, fairy lights"
+    }
+  },
+  "milestones": [
+    {
+      "id": 1,
+      "title": "Ginger (Foil single)",
+      "note": "One picture, from sketch to finished. We get to know each other's taste on one card."
+    },
+    {
+      "id": 2,
+      "title": "Clementine (Gold single)",
+      "note": "One picture, from sketch to finished."
+    },
+    {
+      "id": 3,
+      "title": "Noelle (Signature card)",
+      "note": "Two pictures, Kitten and Big Cat: the best art in the set."
+    },
+    {
+      "id": 4,
+      "title": "Jam (the deck's main pictures)",
+      "note": "Two pictures, Kitten and Big Cat. Signed in a corner."
+    },
+    {
+      "id": 5,
+      "title": "The rest of the deck, in batches",
+      "note": "A few pictures at a time; we reply to each batch."
+    },
+    {
+      "id": 6,
+      "title": "Pawtraits",
+      "note": "After each character's card picture is agreed, so the two match."
+    },
+    {
+      "id": 7,
+      "title": "Announcement key art",
+      "note": "One wide picture for the release announcement."
+    }
+  ],
+  "pictures": [
+    {
+      "file": "BP1-X01.webp",
+      "card": "BP1-X01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "foil",
+      "style": "painted",
+      "milestone": 1,
+      "draw": "A cosy gingerbread cat: a warm, cookie-coloured tabby with icing details, fresh from the oven, in a snug kitchen or a snowy window. Hello heals every friend, so it can be looking after others.",
+      "mustKeep": [
+        "a cat",
+        "gingerbread (the Garden family: ginger is a garden root)"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "showcase": true,
+      "family": "Garden"
+    },
+    {
+      "file": "BP1-X02.webp",
+      "card": "BP1-X02",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "gold",
+      "style": "painted",
+      "milestone": 2,
+      "draw": "A cat in a clementine hood ice skating on a frozen pond, mid-spin, snowflakes and fairy lights. Confident and joyful. It enters ready and hits hard, so it should feel fast.",
+      "mustKeep": [
+        "a cat",
+        "a clementine (the Citrus family)",
+        "the face clearly visible"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "showcase": true,
+      "family": "Citrus",
+      "pawtrait": "legend-clementine.webp"
+    },
+    {
+      "file": "BP1-X03-kitten.webp",
+      "card": "BP1-X03",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "signature",
+      "style": "sticker",
+      "milestone": 3,
+      "draw": "Noelle as a Kitten: a fluffy cranberry cat in the first snow, bright and excited.",
+      "mustKeep": [
+        "a fluffy cat",
+        "cranberries (the Berry family)",
+        "wintry, festive",
+        "the same character as the Big Cat"
+      ],
+      "open": [
+        "name",
+        "breed",
+        "flavor"
+      ],
+      "showcase": true,
+      "side": "kitten",
+      "family": "Berry",
+      "pawtrait": "legend-noelle.webp",
+      "signature": "welcome"
+    },
+    {
+      "file": "BP1-X03-bigcat.webp",
+      "card": "BP1-X03",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "signature",
+      "style": "sticker",
+      "milestone": 3,
+      "draw": "Noelle as a Big Cat: the grown-up winter queen of the picnic. It makes every friend arrive ready, so it can be the one starting the party.",
+      "mustKeep": [
+        "the same character as the Kitten",
+        "cranberries",
+        "wintry, festive"
+      ],
+      "open": [
+        "name",
+        "flavor"
+      ],
+      "showcase": true,
+      "side": "bigcat",
+      "family": "Berry",
+      "signature": "welcome"
+    },
+    {
+      "file": "BP1-H01-kitten.webp",
+      "card": "BP1-H01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "sticker",
+      "milestone": 4,
+      "draw": "Jam as a Kitten: a strawberry tabby, sticky with jam, cheering on a friend.",
+      "mustKeep": [
+        "a cat in a strawberry hood",
+        "the same character as the Big Cat"
+      ],
+      "open": [
+        "name",
+        "flavor"
+      ],
+      "main": true,
+      "side": "kitten",
+      "family": "Berry",
+      "pawtrait": "legend-jam.webp",
+      "signature": "requested"
+    },
+    {
+      "file": "BP1-H01-bigcat.webp",
+      "card": "BP1-H01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "sticker",
+      "milestone": 4,
+      "draw": "Jam as a Big Cat: queen of the picnic, with ants following her everywhere.",
+      "mustKeep": [
+        "the same character as the Kitten",
+        "ants (her ability summons them)"
+      ],
+      "open": [
+        "name",
+        "flavor"
+      ],
+      "main": true,
+      "side": "bigcat",
+      "family": "Berry",
+      "signature": "requested"
+    },
+    {
+      "file": "BP1-B01.webp",
+      "card": "BP1-B01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A tiny ladybug at the picnic. It's Lucky.",
+      "mustKeep": [
+        "something small and lucky"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Lingonberry Ladybug"
+    },
+    {
+      "file": "BP1-B02.webp",
+      "card": "BP1-B02",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A mouse at the picnic, with an ant tagging along.",
+      "mustKeep": [
+        "an ant arrives with it (it summons one)"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Elderberry Mouse"
+    },
+    {
+      "file": "BP1-B03.webp",
+      "card": "BP1-B03",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A bunny who is happiest in a crowd.",
+      "mustKeep": [
+        "gets better with friends around"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Cloudberry Bunny"
+    },
+    {
+      "file": "BP1-B04.webp",
+      "card": "BP1-B04",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A possum guarding the basket, or playing dead. An ant appears when it's defeated.",
+      "mustKeep": [
+        "a guard",
+        "an ant (it leaves one behind)"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Blackberry Possum"
+    },
+    {
+      "file": "BP1-B05.webp",
+      "card": "BP1-B05",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A goose causing chaos: stealing a sandwich, chasing someone off.",
+      "mustKeep": [
+        "it stops an enemy (exhausts it)"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Gooseberry Goose"
+    },
+    {
+      "file": "BP1-B06.webp",
+      "card": "BP1-B06",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A calm capybara everyone leans on.",
+      "mustKeep": [
+        "a guard",
+        "it protects the others"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Huckleberry Capybara"
+    },
+    {
+      "file": "BP1-B07.webp",
+      "card": "BP1-B07",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A big bear raiding the picnic.",
+      "mustKeep": [
+        "big and strong"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Boysenberry Bear"
+    },
+    {
+      "file": "BP1-B08.webp",
+      "card": "BP1-B08",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A strawberry-milk cow arriving with ants in tow.",
+      "mustKeep": [
+        "big",
+        "ants (it summons two)"
+      ],
+      "open": [
+        "name",
+        "animal",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Strawberry Milk Cow"
+    },
+    {
+      "file": "BP1-B09.webp",
+      "card": "BP1-B09",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A line of ants marching off with picnic food.",
+      "mustKeep": [
+        "ants"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "family": "Berry",
+      "workingName": "Ant Parade"
+    },
+    {
+      "file": "BP1-B10.webp",
+      "card": "BP1-B10",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "Everyone sharing food on the blanket.",
+      "mustKeep": [
+        "everyone at once (it boosts every unit)"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "family": "Berry",
+      "workingName": "Potluck"
+    },
+    {
+      "file": "BP1-B11.webp",
+      "card": "BP1-B11",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A fort made of picnic blankets that nothing gets into.",
+      "mustKeep": [
+        "it stops an attack"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "family": "Berry",
+      "workingName": "Blanket Fort"
+    },
+    {
+      "file": "BP1-B12.webp",
+      "card": "BP1-B12",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A handmade friendship bracelet, the kind you trade with friends.",
+      "mustKeep": [
+        "something a character wears (it's a Toy)"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "object"
+      ],
+      "family": "Berry",
+      "workingName": "Friendship Bracelet"
+    },
+    {
+      "file": "BP1-B13.webp",
+      "card": "BP1-B13",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A floppy blueberry ragdoll cat sneaking past everyone.",
+      "mustKeep": [
+        "a cat",
+        "sneaky"
+      ],
+      "open": [
+        "name",
+        "breed",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Bleu, the Blueberry Ragdoll"
+    },
+    {
+      "file": "BP1-B14.webp",
+      "card": "BP1-B14",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A raspberry cat playing music that gets the whole picnic going.",
+      "mustKeep": [
+        "a cat",
+        "it lifts everyone up"
+      ],
+      "open": [
+        "name",
+        "breed",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Razz, the Raspberry DJ"
+    },
+    {
+      "file": "BP1-B15.webp",
+      "card": "BP1-B15",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A huge blackberry Maine Coon, the biggest lap at the picnic, with ants arriving.",
+      "mustKeep": [
+        "a big cat",
+        "a guard",
+        "ants (it summons two)"
+      ],
+      "open": [
+        "name",
+        "breed",
+        "berry",
+        "flavor"
+      ],
+      "family": "Berry",
+      "workingName": "Bramble, the Blackberry Maine Coon"
+    },
+    {
+      "file": "BP1-K01.webp",
+      "card": "BP1-K01",
+      "kind": "token",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "token",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "An ant: the Berry family's token. Many cards summon ants, so this one picture appears a lot.",
+      "mustKeep": [
+        "an ant (the rules call it an Ant)"
+      ],
+      "open": [
+        "flavor",
+        "look"
+      ],
+      "family": "Berry"
+    },
+    {
+      "file": "legend-jam.webp",
+      "card": "BP1-H01",
+      "kind": "pawtrait",
+      "size": [
+        512,
+        512
+      ],
+      "tier": "legend",
+      "style": "sticker",
+      "milestone": 6,
+      "draw": "The head and shoulders of Jam, simple enough to read as a small circle.",
+      "mustKeep": [
+        "the same character as the card"
+      ],
+      "open": [],
+      "family": null
+    },
+    {
+      "file": "legend-clementine.webp",
+      "card": "BP1-X02",
+      "kind": "pawtrait",
+      "size": [
+        512,
+        512
+      ],
+      "tier": "legend",
+      "style": "sticker",
+      "milestone": 6,
+      "draw": "The head and shoulders of Clementine, simple enough to read as a small circle.",
+      "mustKeep": [
+        "the same character as the card"
+      ],
+      "open": [],
+      "family": null
+    },
+    {
+      "file": "legend-noelle.webp",
+      "card": "BP1-X03",
+      "kind": "pawtrait",
+      "size": [
+        512,
+        512
+      ],
+      "tier": "signature",
+      "style": "sticker",
+      "milestone": 6,
+      "draw": "The head and shoulders of Noelle, simple enough to read as a small circle.",
+      "mustKeep": [
+        "the same character as the card"
+      ],
+      "open": [],
+      "family": null
+    },
+    {
+      "file": "key-art.webp",
+      "card": null,
+      "kind": "announcement",
+      "size": [
+        2400,
+        1260
+      ],
+      "tier": "announcement",
+      "style": "painted",
+      "milestone": 7,
+      "draw": "One wide picture for the release announcement: the picnic, with Jam and friends, and a hint of the holidays. We add the title and text, so leave calm space on one side.",
+      "mustKeep": [
+        "no text (we add the title)"
+      ],
+      "open": [
+        "scene",
+        "characters"
+      ]
+    }
+  ]
+}

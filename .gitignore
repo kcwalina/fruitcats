@@ -22,3 +22,5 @@ playtest/reports/
 playtest/.state/
 playtest/paw/bin/
 playtest/paw/obj/
+.studio-dev/
+.studio-downloads/

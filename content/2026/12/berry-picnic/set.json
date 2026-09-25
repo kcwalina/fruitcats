@@ -1,0 +1,613 @@
+{
+  "set": "BP1",
+  "name": "Berry Picnic",
+  "version": "0.1.0",
+  "status": "prototype",
+  "requires": [
+    "SB1"
+  ],
+  "families": {
+    "Berry": {
+      "colors": [
+        "#D6336C",
+        "#8F1D46",
+        "#FBDDE7"
+      ],
+      "personality": "Sweet, social, a little chaotic",
+      "playsLike": "Go wide: fill the Yard with friends, then everyone gets better together",
+      "mechanic": "Picnic",
+      "hint": "a crowd of small units that get stronger together"
+    }
+  },
+  "mechanics": {
+    "Picnic": {
+      "family": "Berry",
+      "kind": "condition",
+      "reminder": "This bonus is on while you control 3 or more units.",
+      "if": {
+        "controlUnits": {
+          "atLeast": 3
+        }
+      },
+      "badge": {
+        "icon": "🧺",
+        "title": "Picnic: 3 or more units — Picnic bonuses are on"
+      }
+    }
+  },
+  "tokens": [
+    {
+      "id": "BP1-K01",
+      "name": "Ant",
+      "type": "Critter",
+      "family": "Berry",
+      "power": 1,
+      "health": 1,
+      "text": "",
+      "flavor": "It brought friends."
+    }
+  ],
+  "cards": [
+    {
+      "id": "BP1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Berry",
+      "name": "Jam, the Strawberry Tabby",
+      "flavor": "Never alone. Never quiet.",
+      "kitten": {
+        "name": "Jam, Sticky Kit",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "buff": {
+                  "power": 1
+                }
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "controlUnits": {
+              "atLeast": 5
+            }
+          }
+        },
+        "text": "Exhaust: A unit you control gets +1 Power this round.\nGrow Up: You control 5 or more units."
+      },
+      "bigCat": {
+        "name": "Jam, Queen of the Picnic",
+        "power": 3,
+        "abilities": [
+          {
+            "when": "exhaust",
+            "do": [
+              {
+                "summon": "BP1-K01"
+              }
+            ]
+          }
+        ],
+        "text": "Exhaust: Summon a 1/1 Ant."
+      }
+    },
+    {
+      "id": "BP1-B01",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Lingonberry Ladybug",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "keywords": [
+        "Lucky"
+      ],
+      "text": "Lucky.",
+      "flavor": "Lucky for you. Unlucky for your sandwich."
+    },
+    {
+      "id": "BP1-B02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Elderberry Mouse",
+      "cost": 1,
+      "power": 1,
+      "health": 1,
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Summon a 1/1 Ant.",
+      "flavor": "Where there are crumbs, there is company."
+    },
+    {
+      "id": "BP1-B03",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Cloudberry Bunny",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1,
+              "health": 1
+            },
+            "to": "self",
+            "while": "Picnic"
+          }
+        }
+      ],
+      "text": "While you have a Picnic, this has +1 Power and +1 Health.",
+      "flavor": "Came for the carrots. Stayed for the gossip."
+    },
+    {
+      "id": "BP1-B04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Blackberry Possum",
+      "cost": 2,
+      "power": 1,
+      "health": 3,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Goodbye: Summon a 1/1 Ant.",
+      "flavor": "It's fine. It's just resting."
+    },
+    {
+      "id": "BP1-B05",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Gooseberry Goose",
+      "cost": 3,
+      "power": 3,
+      "health": 2,
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Exhaust an enemy unit.",
+      "flavor": "Honk."
+    },
+    {
+      "id": "BP1-B06",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Huckleberry Capybara",
+      "cost": 4,
+      "power": 3,
+      "health": 4,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "health": 1
+            },
+            "to": {
+              "each": "own",
+              "other": true
+            },
+            "while": "Picnic"
+          }
+        }
+      ],
+      "text": "Guardian. While you have a Picnic, your other units get +1 Health.",
+      "flavor": "Everyone's favourite blanket."
+    },
+    {
+      "id": "BP1-B07",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Boysenberry Bear",
+      "cost": 5,
+      "power": 5,
+      "health": 5,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "keywords": [
+                "Fierce"
+              ]
+            },
+            "to": "self",
+            "while": "Picnic"
+          }
+        }
+      ],
+      "text": "While you have a Picnic, this has Fierce.",
+      "flavor": "Smarter than the average basket."
+    },
+    {
+      "id": "BP1-B08",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Berry",
+      "name": "Strawberry Milk Cow",
+      "cost": 6,
+      "power": 5,
+      "health": 6,
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            },
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Summon two 1/1 Ants.",
+      "flavor": "She brought the milk. The ants brought themselves."
+    },
+    {
+      "id": "BP1-B09",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Berry",
+      "name": "Ant Parade",
+      "cost": 1,
+      "abilities": [
+        {
+          "when": "play",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            }
+          ],
+          "instead": {
+            "if": "Picnic",
+            "do": [
+              {
+                "summon": "BP1-K01"
+              },
+              {
+                "summon": "BP1-K01"
+              }
+            ]
+          }
+        }
+      ],
+      "text": "Summon a 1/1 Ant. If you have a Picnic, summon two instead.",
+      "flavor": "Left, right, left, right, sandwich."
+    },
+    {
+      "id": "BP1-B10",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Berry",
+      "name": "Potluck",
+      "cost": 2,
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 1
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Each unit you control gets +1 Power this round.",
+      "flavor": "Everyone brought dessert."
+    },
+    {
+      "id": "BP1-B11",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Berry",
+      "name": "Blanket Fort",
+      "cost": 2,
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "pounceOnly": "attack",
+          "target": "attack",
+          "do": [
+            {
+              "cancelAttack": true
+            },
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Pounce. Cancel an attack. Draw a card.",
+      "flavor": "No attacks inside the fort. That's the rule."
+    },
+    {
+      "id": "BP1-B12",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Berry",
+      "name": "Friendship Bracelet",
+      "cost": 1,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1,
+              "health": 1
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "text": "Attached unit gets +1 Power and +1 Health.",
+      "flavor": "Made one for everyone. Even the goose."
+    },
+    {
+      "id": "BP1-B13",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Berry",
+      "name": "Bleu, the Blueberry Ragdoll",
+      "cost": 3,
+      "power": 3,
+      "health": 3,
+      "keywords": [
+        "Sneaky"
+      ],
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1
+            },
+            "to": "self",
+            "while": "Picnic"
+          }
+        }
+      ],
+      "text": "Sneaky. While you have a Picnic, Bleu has +1 Power.",
+      "flavor": "Floppy on purpose."
+    },
+    {
+      "id": "BP1-B14",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Berry",
+      "name": "Razz, the Raspberry DJ",
+      "cost": 4,
+      "power": 3,
+      "health": 4,
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1
+            },
+            "to": {
+              "each": "own",
+              "other": true
+            },
+            "while": "Picnic"
+          }
+        }
+      ],
+      "text": "While you have a Picnic, your other units get +1 Power.",
+      "flavor": "Takes requests. Ignores them."
+    },
+    {
+      "id": "BP1-B15",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Berry",
+      "name": "Bramble, the Blackberry Maine Coon",
+      "cost": 6,
+      "power": 5,
+      "health": 7,
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "summon": "BP1-K01"
+            },
+            {
+              "summon": "BP1-K01"
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Hello: Summon two 1/1 Ants.",
+      "flavor": "The biggest lap at the picnic."
+    },
+    {
+      "id": "BP1-X01",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Garden",
+      "name": "Ginger, the Gingerbread Tabby",
+      "cost": 3,
+      "power": 2,
+      "health": 4,
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Heal 2 from each unit you control.",
+      "flavor": "Warm from the oven. Warmer company."
+    },
+    {
+      "id": "BP1-X02",
+      "rarity": "Legendary",
+      "type": "Cat",
+      "family": "Citrus",
+      "name": "Clementine, the Snowflake Skater",
+      "cost": 4,
+      "power": 4,
+      "health": 3,
+      "keywords": [
+        "Zoomies"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "if": "Zest",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "text": "Zoomies. Hello: Deal 2 damage to an enemy unit if this is not the first card you have played this round.",
+      "flavor": "Three spins, one landing, zero regrets."
+    },
+    {
+      "id": "BP1-X03",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Berry",
+      "signature": true,
+      "name": "Noelle, the Cranberry Forest Cat",
+      "flavor": "First snow. First to the party.",
+      "kitten": {
+        "name": "Noelle, Snowy Kit",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own",
+              "other": true
+            },
+            "do": [
+              {
+                "ready": true
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "playedThisRound": {
+              "atLeast": 3
+            }
+          }
+        },
+        "text": "Exhaust: Ready another unit you control.\nGrow Up: You have played 3 or more cards this round."
+      },
+      "bigCat": {
+        "name": "Noelle, Winter Queen",
+        "power": 2,
+        "abilities": [
+          {
+            "static": {
+              "grant": {
+                "keywords": [
+                  "Zoomies"
+                ]
+              },
+              "to": {
+                "each": "own"
+              },
+              "while": "Picnic"
+            }
+          }
+        ],
+        "text": "While you have a Picnic, your units have Zoomies."
+      }
+    }
+  ],
+  "decks": {
+    "picnic-club": {
+      "name": "Picnic Club",
+      "hero": "BP1-H01",
+      "blurb": "Bring friends. Bring more friends. Fill the Yard, then everyone gets better together. Led by Jam.",
+      "cards": {
+        "BP1-B01": 3,
+        "BP1-B02": 3,
+        "BP1-B03": 3,
+        "BP1-B04": 3,
+        "BP1-B05": 3,
+        "BP1-B06": 3,
+        "BP1-B07": 3,
+        "BP1-B08": 2,
+        "BP1-B09": 3,
+        "BP1-B10": 2,
+        "BP1-B11": 2,
+        "BP1-B12": 3,
+        "BP1-B13": 1,
+        "BP1-B14": 1,
+        "BP1-B15": 1,
+        "SB1-G01": 3,
+        "SB1-G02": 3,
+        "SB1-G03": 3,
+        "SB1-G04": 3,
+        "SB1-G05": 2
+      }
+    }
+  }
+}

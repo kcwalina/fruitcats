@@ -10,7 +10,7 @@
   },
   "about": "Berry Picnic is the holiday release. Its deck, Picnic Club, is a picnic with friends: someone made the plans, everyone brought the wrong snacks, the goose was not invited, and the ants always show up. When a friend heads home, they pass their plate on: that is the deck's mechanic, Leftovers. Three cards sold on their own are wintry and festive.",
   "audience": "Young adults, mostly young women.",
-  "style": "Basil's own style. Found family, low stakes, a little feral: cute, silly and a little chaotic, with running jokes (the ants, the goose, the forks nobody brought). The paid cards are showcase art.",
+  "style": "Basil's own style. Found family, low stakes, a little feral: cute, silly and a little chaotic, with running jokes (the ants, the goose, the forks nobody brought). The cards sold on their own are a chance to show off.",
   "families": {
     "Berry": {
       "world": "a picnic in the grass: a gingham blanket, a basket, berries, friends, sunshine",
@@ -37,7 +37,7 @@
     {
       "id": 3,
       "title": "Noelle (Signature card)",
-      "note": "Two pictures, Kitten and Big Cat: the best art in the set."
+      "note": "Two pictures, Kitten and Big Cat: the set's centrepiece."
     },
     {
       "id": 4,
@@ -74,8 +74,8 @@
       "milestone": 1,
       "draw": "Ginger, the Gingerbread Baker: a cat baker in oven mitts and flour dust, with a tray of gingerbread cats iced with :3 faces, one of them bitten.",
       "mustKeep": [
-        "a cat",
-        "gingerbread (the Garden family: ginger is a garden root)"
+        "we imagined a cat",
+        "we imagined gingerbread (ginger grows in a garden, which is its family)"
       ],
       "open": [
         "name",
@@ -96,11 +96,11 @@
       "tier": "gold",
       "style": "painted",
       "milestone": 2,
-      "draw": "Satsuma, the Snowflake Skater: a cat in a satsuma hood with a knitted pom-pom, mid-spin on a frozen pond, snowflakes and fairy lights, a little dizzy. It enters ready and hits hard, so it should feel fast.",
+      "draw": "Satsuma, the Snowflake Skater: a cat in a satsuma hood with a knitted pom-pom, mid-spin on a frozen pond, snowflakes and fairy lights, a little dizzy. It enters ready and hits hard, so we pictured it fast.",
       "mustKeep": [
-        "a cat",
-        "a satsuma or another citrus (the Citrus family)",
-        "the face clearly visible"
+        "we imagined a cat",
+        "we imagined a satsuma, or another citrus (its family is Citrus)",
+        "it's a card people buy on its own, so it's a chance to show off"
       ],
       "open": [
         "name",
@@ -124,10 +124,10 @@
       "milestone": 3,
       "draw": "Noelle as a Kitten: a fluffy cranberry cat catching snowflakes on her tongue, in the first snow.",
       "mustKeep": [
-        "a fluffy cat",
-        "cranberries (the Berry family)",
-        "wintry, festive",
-        "the same character as the Big Cat"
+        "we imagined a fluffy cat",
+        "we imagined cranberries (its family is Berry)",
+        "we imagined something wintry and festive",
+        "the Kitten and the Big Cat are the same character, one younger"
       ],
       "open": [
         "name",
@@ -153,9 +153,9 @@
       "milestone": 3,
       "draw": "Noelle as a Big Cat (Snow Day): sledding down a hill with the ants, the best day of the year. She sends one favourite friend back into the fun (she readies a unit).",
       "mustKeep": [
-        "the same character as the Kitten",
-        "cranberries",
-        "wintry, festive"
+        "the Kitten and the Big Cat are the same character, one grown up",
+        "we imagined cranberries",
+        "we imagined something wintry and festive"
       ],
       "open": [
         "name",
@@ -179,8 +179,8 @@
       "milestone": 4,
       "draw": "Jam as a Kitten: a strawberry tabby with jam on her face, hugging a picnic basket bigger than she is.",
       "mustKeep": [
-        "a cat in a strawberry hood",
-        "the same character as the Big Cat"
+        "we imagined a cat in a strawberry hood",
+        "the Kitten and the Big Cat are the same character, one younger"
       ],
       "open": [
         "name",
@@ -205,7 +205,7 @@
       "milestone": 4,
       "draw": "Jam as a Big Cat (Club President): standing on the basket with a checklist, running the picnic, the whole club cheering.",
       "mustKeep": [
-        "the same character as the Kitten"
+        "the Kitten and the Big Cat are the same character, one grown up"
       ],
       "open": [
         "name",
@@ -229,7 +229,7 @@
       "milestone": 5,
       "draw": "A tiny ladybug sitting on a sandwich like it owns it. It's Lucky, and it leaves a Crumb for a friend when it goes.",
       "mustKeep": [
-        "something small and lucky"
+        "we imagined something small and lucky"
       ],
       "open": [
         "name",
@@ -253,7 +253,7 @@
       "milestone": 5,
       "draw": "A squirrel with its cheeks full, dropping snacks, with an ant already following.",
       "mustKeep": [
-        "an ant arrives with it (it summons one)"
+        "the card brings an Ant along, so an ant could be in the picture"
       ],
       "open": [
         "name",
@@ -277,7 +277,7 @@
       "milestone": 5,
       "draw": "A fluffy lamb sharing its snack (or its blanket) with a friend.",
       "mustKeep": [
-        "it gives a friend a Crumb"
+        "the card gives a friend a snack (a Crumb)"
       ],
       "open": [
         "name",
@@ -301,8 +301,8 @@
       "milestone": 5,
       "draw": "A possum playing dead on the blanket, tongue out, while an ant sneaks off with its crumb.",
       "mustKeep": [
-        "a guard",
-        "an ant (it leaves one behind)"
+        "the card is a guard (Guardian)",
+        "the card leaves an Ant behind, so an ant could be in the picture"
       ],
       "open": [
         "name",
@@ -326,8 +326,8 @@
       "milestone": 5,
       "draw": "A goose mid-honk, running off with someone's snack.",
       "mustKeep": [
-        "a goose",
-        "stealing (it takes a counter from an enemy)"
+        "we imagined a goose",
+        "the card steals a snack from the other side"
       ],
       "open": [
         "name",
@@ -351,8 +351,8 @@
       "milestone": 5,
       "draw": "A moose who won the fight and kept the cake.",
       "mustKeep": [
-        "big",
-        "it grows when it wins a fight"
+        "we imagined something big",
+        "the card grows when it wins a fight"
       ],
       "open": [
         "name",
@@ -376,8 +376,8 @@
       "milestone": 5,
       "draw": "An alpaca everyone is leaning on, looking smug, passing snacks around.",
       "mustKeep": [
-        "a guard",
-        "it gives everyone a Crumb"
+        "the card is a guard (Guardian)",
+        "the card gives every friend a snack (a Crumb)"
       ],
       "open": [
         "name",
@@ -401,8 +401,8 @@
       "milestone": 5,
       "draw": "A strawberry-milk cow pouring a big glass for one lucky friend.",
       "mustKeep": [
-        "big",
-        "it gives one friend two Crumbs"
+        "we imagined something big",
+        "the card gives one friend two snacks (Crumbs)"
       ],
       "open": [
         "name",
@@ -426,7 +426,7 @@
       "milestone": 5,
       "draw": "Ants marching in single file, carrying one grape.",
       "mustKeep": [
-        "ants"
+        "we imagined ants"
       ],
       "open": [
         "name",
@@ -449,7 +449,7 @@
       "milestone": 5,
       "draw": "A plate of snacks passed around the blanket, even to the other team.",
       "mustKeep": [
-        "everyone gets some, both sides"
+        "the card feeds everyone, the other side too"
       ],
       "open": [
         "name",
@@ -472,7 +472,7 @@
       "milestone": 5,
       "draw": "Someone reaching for a second slice, just in time.",
       "mustKeep": [
-        "one friend gets more"
+        "the card gives one friend a bit more"
       ],
       "open": [
         "name",
@@ -495,7 +495,7 @@
       "milestone": 5,
       "draw": "A beaded friendship bracelet, the kind you trade with friends.",
       "mustKeep": [
-        "something a character wears (it's a Toy)"
+        "it's a Toy, something a character wears"
       ],
       "open": [
         "name",
@@ -518,8 +518,8 @@
       "milestone": 5,
       "draw": "Bleu wrapped in the picnic blanket like a burrito, one eye open, drooling a little.",
       "mustKeep": [
-        "a cat",
-        "blueberries"
+        "we imagined a cat",
+        "we imagined blueberries"
       ],
       "open": [
         "name",
@@ -543,9 +543,9 @@
       "milestone": 5,
       "draw": "Razz with huge headphones and a tiny speaker, ants dancing.",
       "mustKeep": [
-        "a cat",
-        "raspberries",
-        "it lifts everyone up"
+        "we imagined a cat",
+        "we imagined raspberries",
+        "the card makes every friend stronger"
       ],
       "open": [
         "name",
@@ -569,9 +569,9 @@
       "milestone": 5,
       "draw": "Bramble, the huge fluffy friend who packed snacks, sunscreen and a spare cardigan for everyone.",
       "mustKeep": [
-        "a big cat",
-        "blackberries",
-        "a guard"
+        "we imagined a big cat",
+        "we imagined blackberries",
+        "the card is a guard (Guardian)"
       ],
       "open": [
         "name",
@@ -595,7 +595,7 @@
       "milestone": 5,
       "draw": "An Ant: the Berry family's token, tiny and brave. Many cards summon Ants, so this picture appears a lot.",
       "mustKeep": [
-        "an ant (the rules call it an Ant)"
+        "the card is called Ant in the rules; another tiny friend would work too"
       ],
       "open": [
         "flavor",
@@ -616,7 +616,7 @@
       "milestone": 6,
       "draw": "The head and shoulders of Jam, simple enough to read as a small circle.",
       "mustKeep": [
-        "the same character as the card"
+        "players will expect the same character as the card"
       ],
       "open": [],
       "family": null
@@ -634,7 +634,7 @@
       "milestone": 6,
       "draw": "The head and shoulders of Satsuma, simple enough to read as a small circle.",
       "mustKeep": [
-        "the same character as the card"
+        "players will expect the same character as the card"
       ],
       "open": [],
       "family": null
@@ -652,7 +652,7 @@
       "milestone": 6,
       "draw": "The head and shoulders of Noelle, simple enough to read as a small circle.",
       "mustKeep": [
-        "the same character as the card"
+        "players will expect the same character as the card"
       ],
       "open": [],
       "family": null
@@ -670,12 +670,13 @@
       "milestone": 7,
       "draw": "One wide picture for the release announcement: the club's picnic blanket spread on the first snow under fairy lights. Jam pours cocoa, Noelle catches a snowflake, and a line of ants in tiny scarves carries off a gingerbread crumb. We add the title and text, so leave calm space on one side.",
       "mustKeep": [
-        "no text (we add the title)"
+        "we add the title and text on top"
       ],
       "open": [
         "scene",
         "characters"
       ]
     }
-  ]
+  ],
+  "note": "All of this is a starting point. If you have a better idea, go for it: we'll change the card to fit your picture."
 }

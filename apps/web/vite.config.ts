@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => ({
     'import.meta.env.VITE_STORE': JSON.stringify(mode === 'playtest' ? 'on' : 'off'),
   },
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
-  plugins: [docsPages(), contentAssets()],
+  plugins: [docsPages(), contentAssets(), idPassThrough()],
   build: {
     outDir: mode === 'playtest' ? 'dist-playtest' : 'dist',
     rollupOptions: {
@@ -47,7 +47,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   // PORT lets two checkouts (e.g. git worktrees) run dev servers side by side.
-  server: { port: Number(process.env.PORT) || 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] } },
+  server: {
+    port: Number(process.env.PORT) || 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] },
+  },
 }));
 
 // ── Docs pages ─────────────────────────────────────────────────────────────────────────────────
@@ -239,6 +241,42 @@ function contentAssets(): Plugin {
         mkdirSync(dirname(join(outDir, file)), { recursive: true });
         writeFileSync(join(outDir, file), text);
       }
+    },
+  };
+}
+
+// ── Sign-in on any dev port ──────────────────────────────────────────────────────────────────────
+//
+// viamochi-id accepts browser calls only from the game's sites and from a dev server on port 5173. A dev server on
+// another port (a second checkout running side by side) sends them to /__id here instead (src/auth.ts), and this
+// passes them on as if from 5173, to the service's Azure address (its own domain can hang over IPv6 from here). Dev only.
+
+function idPassThrough(): Plugin {
+  return {
+    name: 'fruitcats-id-pass-through',
+    configureServer(server) {
+      server.middlewares.use('/__id', async (req, res) => {
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) chunks.push(chunk as Buffer);
+        const headers: Record<string, string> = {};
+        for (const name of ['content-type', 'authorization', 'accept']) {
+          const value = req.headers[name];
+          if (typeof value === 'string') headers[name] = value;
+        }
+        headers.origin = 'http://localhost:5173';
+        try {
+          const r = await fetch(`https://viamochi-id.azurewebsites.net${req.url ?? '/'}`, {
+            method: req.method, headers, body: chunks.length ? Buffer.concat(chunks) : undefined,
+          });
+          res.statusCode = r.status;
+          const type = r.headers.get('content-type');
+          if (type) res.setHeader('Content-Type', type);
+          res.end(Buffer.from(await r.arrayBuffer()));
+        } catch (e) {
+          res.statusCode = 502;
+          res.end(String(e));
+        }
+      });
     },
   };
 }

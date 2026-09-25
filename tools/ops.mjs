@@ -27,6 +27,11 @@ const SOURCES = [
   { service: 'fruitcats-api', account: 'fruitcatsdata' },
 ];
 const CATEGORIES = { ops: ['logs', 'logs/ops'], security: ['security', 'security'] };
+// Who may read the logs, for the Accounts tab's "Who read the logs" (see logAccess below).
+const IDENTITIES = {
+  'b224f78d-5fdb-49fd-9fa0-0e64fccae134': "Claude's agent",
+};
+const WATCHED_CONTAINERS = ['logs', 'security'];
 
 const args = process.argv.slice(2);
 const command = args[0] ?? 'events';
@@ -149,10 +154,12 @@ async function snapshot() {
       }
     }
   }
+  const access = await logAccess(from, thisHour, cache);
   for (const key of Object.keys(cache)) {
     const hour = key.split('|')[2];
     if (Date.parse(`${hour.replace(/\//g, '-').replace(/-(\d\d)$/, 'T$1')}:00:00Z`) < from - 86_400_000) delete cache[key];
   }
+  mkdirSync(dirname(cacheFile), { recursive: true });
   writeFileSync(cacheFile, JSON.stringify(cache));
 
   const stat = async (account, name) => {
@@ -208,13 +215,93 @@ async function snapshot() {
     activeLast7Days: active.size,
     days,
     recentErrors,
+    logAccess: access,
   };
+}
+
+// ── Who read the logs ────────────────────────────────────────────────────────────────────────────────────────────────
+//
+// Both storage accounts send their read log (Azure Monitor, StorageRead) to their own insights-logs-storageread
+// container (scripts/setup/log-access-audit.ps1). Every read of the logs and security containers is counted by the
+// identity that made it, so the Accounts tab shows how much Claude's agent reads, from where, and whether anyone
+// else reads the logs.
+
+/** "1.2.3.4:5678" -> "1.2.3.4", "[2001:db8::1]:5678" -> "2001:db8::1"; an IPv6 address without a port stays whole. */
+function withoutPort(address) {
+  if (address.startsWith('[')) return address.slice(1, address.indexOf(']'));
+  return address.indexOf(':') === address.lastIndexOf(':') ? address.replace(/:\d+$/, '') : address;
+}
+
+async function logAccess(from, thisHour, cache) {
+  const reads = [];
+  let found = false;
+  try {
+    for (const src of SOURCES) {
+      const box = new BlobServiceClient(`https://${src.account}.blob.core.windows.net`, credential)
+        .getContainerClient('insights-logs-storageread');
+      if (!(await box.exists())) continue;
+      found = true;
+      const names = [];
+      for await (const item of box.listBlobsFlat({ prefix: 'resourceId=' })) names.push(item.name);
+      for (const hour of hours(from)) {
+        const key = `access|${src.account}|${hour}`;
+        if (hour !== thisHour && cache[key]) { reads.push(...cache[key]); continue; }
+        const [y, mo, d, h] = hour.split('/');
+        const folder = `/y=${y}/m=${mo}/d=${d}/h=${h}/`;
+        const got = [];
+        for (const name of names) {
+          if (!name.includes(folder)) continue;
+          const body = await box.getBlobClient(name).downloadToBuffer();
+          for (const line of body.toString('utf8').split('\n')) {
+            if (!line.trim()) continue;
+            let parsed; try { parsed = JSON.parse(line); } catch { continue; }
+            for (const r of parsed.records ?? [parsed]) {
+              const container = String(r.properties?.objectKey ?? '').split('/')[2];
+              if (!WATCHED_CONTAINERS.includes(container)) continue;
+              got.push({
+                t: r.time,
+                a: r.identity?.requester?.appId ?? r.identity?.type ?? 'unknown',
+                ip: withoutPort(String(r.callerIpAddress ?? '')),
+                ok: Number(r.statusCode) < 400,
+                b: Number(r.properties?.responseBodySize ?? 0),
+              });
+            }
+          }
+        }
+        if (hour !== thisHour) cache[key] = got;
+        reads.push(...got);
+      }
+    }
+  } catch (error) {
+    return { error: String(error.message ?? error).slice(0, 200) };
+  }
+  if (!found) return null;
+
+  const byIdentity = new Map();
+  for (const r of reads) {
+    let row = byIdentity.get(r.a);
+    if (!row) {
+      row = { appId: r.a, name: IDENTITIES[r.a] ?? null, reads: 0, denied: 0, bytes: 0, lastAt: null, ips: new Map() };
+      byIdentity.set(r.a, row);
+    }
+    row.reads++;
+    if (!r.ok) row.denied++;
+    row.bytes += r.b;
+    if (!row.lastAt || r.t > row.lastAt) row.lastAt = r.t;
+    row.ips.set(r.ip, (row.ips.get(r.ip) ?? 0) + 1);
+  }
+  const readers = [];
+  for (const row of byIdentity.values()) {
+    const ips = [...row.ips].sort((x, z) => z[1] - x[1]);
+    readers.push({ ...row, ipCount: ips.length, ips: ips.slice(0, 5).map(([ip, n]) => ({ ip, reads: n })) });
+  }
+  readers.sort((x, z) => z.reads - x.reads);
+  return { readers };
 }
 
 /** Requests' count, median and 95th-percentile time, and how many took over 2 seconds. */
 function timing(list) {
   const ms = list.map((e) => e.ms).filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
   const at = (q) => (ms.length ? ms[Math.min(ms.length - 1, Math.floor(q * ms.length))] : null);
-  return { n: ms.length, p50: at(0.5), p95: at(0.95), slow: ms.filter((x) => x > SLOW_MS).length };
+  return { n: ms.length, p50: at(0.5), p95: at(0.95), slow: ms.filter((x) => x > 2000).length };
 }
-const SLOW_MS = 2000;

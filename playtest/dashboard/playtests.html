@@ -264,6 +264,11 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
         <ul id="acct-slowest" class="issues"></ul>
       </div>
     </section>
+    <section class="panel">
+      <div class="eyebrow">Who read the logs, last 14 days</div>
+      <div class="table"><table class="daily" id="acct-access"></table></div>
+      <div class="legend">Every read of the services' logs and security logs, by the identity that made it, from Azure's own read log. Claude's agent reads them for this page and the health watch. Red means an identity nobody named, or reads Azure refused.</div>
+    </section>
   </div>
 </div>
 
@@ -647,6 +652,21 @@ function renderAccounts() {
     : '<li class="note">None.</li>';
   $('acct-slowest').innerHTML = ops.slowest?.length ? ops.slowest.map((r) => `<li><span class="times">${esc(timeOf(r.time))}</span><span><b class="${r.ms > 2000 ? 'slow' : ''}">${(r.ms / 1000).toFixed(1)} s</b> ${esc(r.request)} <span class="note">${esc(r.service)} · ${esc(r.status)}</span></span></li>`).join('')
     : '<li class="note">No requests timed yet.</li>';
+  const access = ops.logAccess;
+  const size = (b) => (b < 1e6 ? `${Math.round(b / 1e3)} KB` : `${(b / 1e6).toFixed(1)} MB`);
+  if (!access) {
+    $('acct-access').innerHTML = '<tbody><tr><td class="zero">Not recording yet: run scripts/setup/log-access-audit.ps1 (docs/accounts.md).</td></tr></tbody>';
+  } else if (access.error) {
+    $('acct-access').innerHTML = `<tbody><tr><td class="bad">Couldn’t read the access log: ${esc(access.error)}</td></tr></tbody>`;
+  } else {
+    $('acct-access').innerHTML = `<thead><tr><th>Identity</th><th>Reads</th><th>Refused</th><th>Data</th><th>From</th><th>Last read</th></tr></thead><tbody>${
+      access.readers.length ? access.readers.map((r) => `<tr>
+        <td class="${r.name ? '' : 'bad'}">${esc(r.name ?? 'Unknown identity')}<br><span class="note mono">${esc(r.appId)}</span></td>
+        <td>${fmtNum(r.reads)}</td>${cell(r.denied, true)}<td>${esc(size(r.bytes))}</td>
+        <td>${r.ips.map((i) => `<span class="mono">${esc(i.ip)}</span> <span class="note">(${fmtNum(i.reads)})</span>`).join('<br>')}${r.ipCount > r.ips.length ? `<br><span class="note">and ${r.ipCount - r.ips.length} more</span>` : ''}</td>
+        <td>${esc(dayOf(r.lastAt))} ${esc(timeOf(r.lastAt))}</td></tr>`).join('')
+      : '<tr><td class="zero" colspan="6">No reads.</td></tr>'}</tbody>`;
+  }
 }
 
 function showTab(tab) {

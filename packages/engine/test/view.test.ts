@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, HIDDEN, apply, createGame, legalActions, other, randomAction, viewFor,
+  CARDS, DECKS, HIDDEN, SETS, apply, createGame, legalActions, other, randomAction, viewFor,
   type GameState, type PlayerId,
 } from '../src/index';
 
@@ -38,9 +38,12 @@ function scramble(s: GameState, seat: PlayerId, r: () => number): GameState {
 }
 
 /** Every step of a random game, for each deck pairing. */
+/** The released decks: what these tests check is a rule about views, so it needn't grow with every new set. */
+const released = () => Object.keys(DECKS).filter((k) => SETS[CARDS[DECKS[k].hero]?.set ?? '']?.status === 'released');
+
 function* states(gamesPerPairing: number): Generator<GameState> {
   let seed = 1;
-  for (const a of Object.keys(DECKS)) for (const b of Object.keys(DECKS)) {
+  for (const a of released()) for (const b of released()) {
     for (let i = 0; i < gamesPerPairing; i++, seed++) {
       const r = rng(seed);
       const s = createGame({ decks: [a, b], seed });

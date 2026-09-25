@@ -141,8 +141,9 @@ export function renderFriends(): string {
     : view.kind === 'waiting' ? renderWaiting(view.friend, view.since)
     : view.kind === 'accept' ? renderAccept(view.id)
     : renderList();
-  const title = view.kind === 'setup' ? `Play ${esc(nameOf(view.friend))}` : view.kind === 'accept' ? 'A challenge' : 'Play a friend';
+  const title = view.kind === 'setup' ? `Play with ${esc(nameOf(view.friend))}` : view.kind === 'accept' ? 'A challenge' : 'Play with a friend';
   const back = view.kind === 'list' ? backButton() : backButton('pf:back', 'Back');
+  // Only a state the player has to act on (or wait out) replaces the screen. Connecting doesn't: the list shows at once.
   return `
   <div class="menu friends">
     <div class="setup-bar">${back}<h2>${title}</h2>${settingsButton()}</div>
@@ -151,29 +152,33 @@ export function renderFriends(): string {
   </div>`;
 }
 
-/** Why online play isn't open to this player right now (in line, paused, …), as the whole screen; null when connected. */
+const FRIEND_ART = () => esc(`${import.meta.env.BASE_URL}ui/mode-friend.webp`);
+
+/** Why online play isn't open to this player right now (in line, paused, …), as the whole screen; null otherwise. */
 function notConnected(): string | null {
   if (live.connected) return null;
   const panel = (title: string, text: string, button = '') => `
-  <div class="setup-body pf-body pf-state">
-    <img class="pf-state-art" src="${esc(`${import.meta.env.BASE_URL}ui/mode-friend.webp`)}" alt="">
-    <h3>${title}</h3>
-    <p>${text}</p>
-    ${button}
+  <div class="setup-body pf-body">
+    <div class="pf-card pf-state">
+      <img class="pf-state-art" src="${FRIEND_ART()}" alt="">
+      <h3>${title}</h3>
+      <p>${text}</p>
+      ${button}
+    </div>
   </div>`;
-  if (live.outdated) return panel('A new version is ready', 'Reload to play online.', '<button class="primary" data-click="pf:reload">Reload</button>');
+  if (live.outdated) return panel('A new version is ready', 'Reload the game to play online.', '<button class="primary" data-click="pf:reload">Reload</button>');
   if (!live.open) return panel('Online games are paused', 'They’ll be back soon. Solo is always open.');
   if (live.waiting) {
     const w = live.waiting;
     return panel(`You’re number ${w.position} in line`,
-      'Lots of cats are playing online right now. You’ll be let in as soon as there’s room: keep this screen open.'
-      + (w.paid ? '<br><small>Players who have bought cards go first, and that includes you.</small>'
-        : '<br><small>Players who have bought cards go first.</small>'),
+      'Lots of cats are playing online right now. Keep this screen open and you’ll be let in as soon as there’s room.'
+      + (w.paid ? '<small>Players who have bought cards go first, and that includes you.</small>'
+        : '<small>Players who have bought cards go first.</small>'),
       '<div class="pf-line-dots" aria-hidden="true"><i></i><i></i><i></i></div>');
   }
   if (live.idle) return panel('Paused to make room', 'Online play was quiet for a while, so we made room for other players.', '<button class="primary" data-click="pf:reconnect">Play online again</button>');
   if (live.elsewhere) return panel('Playing on another device', 'You’re online in another tab or on another device.', '<button class="primary" data-click="pf:reconnect">Play here instead</button>');
-  return panel('Connecting…', '');
+  return null;
 }
 
 function renderList(): string {
@@ -188,8 +193,9 @@ function renderList(): string {
       </span>
     </li>`).join('');
   const friendRow = (r: Row) => {
-    const can = r.status === 'online';
-    const status = r.status === 'online' ? 'Online' : r.status === 'playing' ? 'In a game' : lastSeenText(r.lastSeen);
+    const can = r.status === 'online' && live.connected;
+    // Before the connection says who's online, nobody is shown as offline.
+    const status = !live.connected ? 'Checking…' : r.status === 'online' ? 'Online' : r.status === 'playing' ? 'In a game' : lastSeenText(r.lastSeen);
     const menu = managing === r.id ? (confirming ? `
       <div class="account-confirm" role="alertdialog">
         <p>${confirming === 'block'
@@ -204,10 +210,11 @@ function renderList(): string {
         <button class="link-button" data-click="pf:ask:remove">Remove friend</button>
         <button class="link-button danger-link" data-click="pf:ask:block">Block</button>
       </div>`) : '';
-    return `<li class="pf-friend ${r.status}">
+    const dot = live.connected ? r.status : 'checking';
+    return `<li class="pf-friend ${dot}">
       <div class="pf-row">
-        <button class="pf-pick" data-click="${can ? `pf:pick:${r.id}` : `pf:why:${r.id}`}" ${can ? '' : 'aria-disabled="true"'}>
-          <span class="pf-face-wrap">${pawtrait(r.avatar, 'pf-face')}<span class="pf-dot ${r.status}" aria-hidden="true"></span></span>
+        <button class="pf-pick" data-click="${can ? `pf:pick:${r.id}` : `pf:why:${r.id}`}" ${can ? `aria-label="Play with ${esc(r.name)}"` : 'aria-disabled="true"'}>
+          <span class="pf-face-wrap">${pawtrait(r.avatar, 'pf-face')}<span class="pf-dot ${dot}" aria-hidden="true"></span></span>
           <span class="pf-who"><b>${esc(r.name)}</b><small>${esc(status)}${recordText(r.record) ? ` · ${esc(recordText(r.record))}` : ''}</small></span>
           ${can ? '<span class="pf-play">Play</span>' : ''}
         </button>
@@ -217,24 +224,35 @@ function renderList(): string {
     </li>`;
   };
   const rejoin = live.match && !live.incoming.length ? `<button class="pf-rejoin" data-click="pf:rejoin">Your game is still going · <b>Rejoin</b></button>` : '';
-  const empty = loaded && !list.length ? `
-    <div class="pf-empty">
-      <img src="${esc(`${import.meta.env.BASE_URL}ui/mode-friend.webp`)}" alt="">
-      <p>Add a friend to play them.</p>
-    </div>` : '';
+  const online = list.filter((r) => r.status === 'online').length;
+  const presence = !live.connected ? '<span class="pf-pulse" aria-hidden="true"></span>Checking who’s online…'
+    : online ? `<span class="pf-live-dot" aria-hidden="true"></span>${online === 1 ? '1 friend' : `${online} friends`} online`
+    : 'No one’s online right now';
+  const card = loaded && !list.length ? `
+    <div class="pf-card pf-empty">
+      <img class="pf-empty-art" src="${FRIEND_ART()}" alt="">
+      <h3>Play with your friends</h3>
+      <p>Add a friend with a code. Then, whenever you’re both online, challenge them to a game.</p>
+      <button class="play-button pf-add-first" data-click="pf:add">Add a friend</button>
+    </div>` : `
+    <div class="pf-card">
+      <div class="pf-card-head">
+        <img class="pf-head-art" src="${FRIEND_ART()}" alt="">
+        <div class="pf-head-text">
+          <h3>Your friends</h3>
+          <p class="pf-presence" role="status">${list.length ? presence : 'Loading your friends…'}</p>
+        </div>
+      </div>
+      <ul class="pf-list">
+        ${list.length ? list.map(friendRow).join('') : '<li class="pf-skeleton"></li><li class="pf-skeleton"></li>'}
+      </ul>
+      <button class="pf-add" data-click="pf:add"><span class="pf-plus" aria-hidden="true">+</span>Add a friend</button>
+    </div>`;
   return `
   <div class="setup-body pf-body">
     ${rejoin}
     ${incoming ? `<section class="pf-section"><h3>Challenges for you</h3><ul class="pf-list">${incoming}</ul></section>` : ''}
-    <section class="pf-section">
-      ${list.length ? '<h3>Who do you want to play?</h3>' : ''}
-      ${!loaded && !list.length ? '<p class="account-section-note">Loading…</p>' : ''}
-      ${empty}
-      <ul class="pf-list">
-        ${list.map(friendRow).join('')}
-        <li><button class="pf-add" data-click="pf:add"><span class="pf-plus" aria-hidden="true">+</span> Add a friend</button></li>
-      </ul>
-    </section>
+    ${card}
     <p class="pf-note" role="status">${esc(note)}</p>
   </div>`;
 }
@@ -270,10 +288,10 @@ function renderSetup(friend: string): string {
   <div class="setup-body pf-body pf-setup">
     ${host!.deckPicker(options.startersOnly)}
     <section class="pf-options">
-      ${toggle('teaching', 'Teaching game', `For a friend who’s new: no timer, hints, take-backs, open hands. It doesn’t count.`)}
+      ${toggle('teaching', 'Teaching game', `For a friend who’s new: no timer, hints, take-backs and open hands. It won’t count toward your record.`)}
       ${options.teaching ? '' : `<div class="pf-option"><span class="pf-option-name">Pace<small>${PACES[options.pace].blurb}</small></span>
         <div class="segmented">${pace('relaxed')}${pace('quick')}${pace('untimed')}</div></div>`}
-      ${toggle('startersOnly', 'Starter decks only', 'You both play a starter deck')}
+      ${toggle('startersOnly', 'Starter decks only', 'You both play a starter deck.')}
       ${livesStepper()}
     </section>
     <div class="setup-footer">
@@ -325,14 +343,14 @@ function renderAdd(): string {
   if (add.kind === 'menu') {
     body = `
       <h2 id="pf-add-title">Add a friend</h2>
-      <p class="account-section-note"><b>Together?</b> One of you shows a code, the other scans it.<br>
-        <b>Apart?</b> Show your code and send it by text; your friend types it in.</p>
+      <p class="account-section-note pf-add-how"><b>Sitting together?</b> One of you shows a code and the other scans it.<br>
+        <b>Far apart?</b> Send your code in a message, and your friend types it in below.</p>
       <div class="pf-add-choices">
         <button class="primary" data-click="pf:show">Show my code</button>
-        ${canScan() ? '<button class="primary" data-click="pf:scan">Scan a code</button>' : ''}
+        ${canScan() ? '<button data-click="pf:scan">Scan a code</button>' : ''}
       </div>
       <label class="account-field">Or type your friend’s code
-        <input data-pf="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7" placeholder="K7M-4Q2" enterkeyhint="go" value="${esc(typed)}">
+        <input data-pf="code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7" placeholder="e.g. K7M-4Q2" enterkeyhint="go" value="${esc(typed)}">
       </label>
       <p class="pf-note" role="status">${esc(note)}</p>`;
   } else if (add.kind === 'show') {
@@ -604,7 +622,7 @@ export function friendsClick(action: string, h: FriendsHost): void {
       break;
     case 'why': {
       const s = live.friends.get(arg)?.status;
-      note = s === 'playing' ? `${nameOf(arg)} is in a game right now.` : `${nameOf(arg)} isn’t online. You can play when they are.`;
+      note = !live.connected ? 'One moment: checking who’s online.' : s === 'playing' ? `${nameOf(arg)} is in a game right now.` : `${nameOf(arg)} isn’t online. You can play when they are.`;
       break;
     }
     case 'manage': managing = managing === arg ? null : arg; confirming = null; break;

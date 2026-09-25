@@ -57,6 +57,7 @@ let socket: WebSocket | null = null;
 let wanted = false;
 let retry = 0;
 let retryTimer: number | undefined;
+const WELCOME_WITHIN_MS = 6000;
 
 // ── "I'm here" ───────────────────────────────────────────────────────────────────────────────────
 
@@ -174,17 +175,29 @@ async function connect() {
   await open();
 }
 
-/** Try again after a failure: 1 s, 2 s, 4 s … up to 30 s. */
+/**
+ * Try again after a failure: 1 s, 2 s, then every 3 s. The connection is only wanted while the player is looking at a
+ * friends screen or a game, waiting for it, so a long back-off only makes them wait (a deploy restarting the API once
+ * kept a player on "Connecting…" for 20 seconds). Asking to be let in costs the API next to nothing.
+ */
 function later() {
   if (!wanted || live.outdated) return;
-  retryTimer = window.setTimeout(() => void connect(), Math.min(30_000, 1000 * 2 ** retry++));
+  retryTimer = window.setTimeout(() => void connect(), Math.min(3000, 1000 * 2 ** retry++));
 }
+
+/** The network came back: try now rather than at the next retry. */
+window.addEventListener('online', () => {
+  if (wanted && !socket && !live.connecting) { window.clearTimeout(retryTimer); retry = 0; void connect(); }
+});
 
 async function open() {
   const t = await token();
   if (!t || !wanted) { live.connecting = false; return; }
   const ws = new WebSocket(API.replace(/^http/, 'ws') + LIVE_PATH);
   socket = ws;
+  // Normally welcomed in well under a second. A socket stuck half-open (the API restarting) is given up on and tried
+  // again, rather than left to the browser's own timeout.
+  window.setTimeout(() => { if (socket === ws && !live.connected) ws.close(); }, WELCOME_WITHIN_MS);
   ws.onopen = () => {
     // A local API with fake sign-in takes the name from here; the real one reads it from the token.
     const s = session();

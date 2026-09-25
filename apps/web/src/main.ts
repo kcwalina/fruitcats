@@ -1368,6 +1368,6 @@ if (import.meta.env.DEV) {
 
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
-if (ACCOUNTS) { startSync({ render }); askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
+if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.
 if (STORE && signedIn()) void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });

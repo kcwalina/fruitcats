@@ -4,7 +4,8 @@ Features that aren't built yet, and what they need. Only work still to do is lis
 it comes out of this file. Accounts and the Store have their own documents, [accounts-plan.md](accounts-plan.md) and
 [store-plan.md](store-plan.md).
 
-1. PvP: two people playing each other, not the AI. Friend games and Ranked: see [pvp-plan.md](pvp-plan.md)
+1. PvP: two people playing each other, not the AI. Friend games are built (playtest build); Ranked is next: see
+   [pvp-plan.md](pvp-plan.md)
 2. Ladder boards
 3. Accounts: see [accounts-plan.md](accounts-plan.md)
 4. The Store: see [store-plan.md](store-plan.md)
@@ -33,17 +34,13 @@ system) is [pvp-plan.md](pvp-plan.md). Two versions:
     friends, useless for a ladder.
   - **Cryptographic "mental poker".** Overkill.
 
-Still to change, for both versions:
+Online play is built for friends, on the authoritative server ([pvp-plan.md](pvp-plan.md)): the Pounce timing leak
+is closed (online, the engine always asks, `alwaysAsk`), and the game screen has "my seat" and draws an online game
+from the player's own view. Still to do:
 
-- **Pounce timing leak.** The defender only gets a Pounce prompt when they hold a playable Pounce
-  (`engine.ts`, where `canPounce` is computed). Against the AI that's harmless. Online, the pause tells the
-  attacker "they're holding a Pounce"; on one device, so does being asked to hand it over. Either always
-  prompt (with a quick way to skip), or have the server add a random delay.
-- **Hardcoded seats in the client.** `HUMAN = 0` / `AI = 1` are used throughout `main.ts`. The client needs a
-  "my seat" concept and should render from the redacted view, not the full state.
-
-Online play also needs the server: Node running the same engine, and WebSockets (Azure Web PubSub or a
-small container). It needs Via Mochi accounts too, from the [accounts plan](accounts-plan.md).
+- **Same device (pass-and-play).** A "pass the device" screen that hides the hand; Pounce hands the device over
+  mid-turn, and `alwaysAsk` would make that happen after every play, so it needs its own answer.
+- **Ranked**, on the same match code: see [pvp-plan.md](pvp-plan.md#whats-left).
 
 ## 2. Ladder boards
 
@@ -63,7 +60,7 @@ Needs online PvP and accounts.
 2. **Accounts** ([accounts-plan.md](accounts-plan.md)). The accounts and API are what the Store and online play build
    on.
 3. **The Store** ([store-plan.md](store-plan.md)).
-4. **Online PvP** on the same API, with WebSockets.
+4. **Online PvP** on the same API, with WebSockets: Friend games are built ([pvp-plan.md](pvp-plan.md)).
 5. **Ladder** on top of server-decided results.
 
 The hidden-information work is where to be careful: getting it wrong means shipping a game where people can

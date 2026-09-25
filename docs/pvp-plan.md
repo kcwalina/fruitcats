@@ -1,9 +1,12 @@
-# Friend games and Ranked: the plan
+# Friend games and Ranked
 
-How two people play each other online: first **Friend** games, then **Ranked** (a queue that pairs you with someone
-near your rating). Both modes run on the same **match code**; Friend and Ranked are only two ways into it. The
-background (hidden information, why the server holds the game) is in [future-plans.md](future-plans.md#1-pvp);
-accounts and friends are in [accounts.md](accounts.md).
+How two people play each other online. **Friend** games are built: two friends, each on their own device. **Ranked**
+(a queue that pairs you with someone near your rating) comes next, on the same match code: Friend and Ranked are
+only two ways into one match. The background (hidden information, why the server holds the game) is in
+[future-plans.md](future-plans.md#1-pvp); accounts and friends are in [accounts.md](accounts.md).
+
+Friend games are on in the **playtest build** (`npm run build:playtest`) and in dev with `?online=1`. The public
+build keeps the Friend tile as "Coming soon" until they've been tried out (`ONLINE` in `apps/web/src/flags.ts`).
 
 Last updated 2026-09-25.
 
@@ -11,265 +14,256 @@ Last updated 2026-09-25.
 
 | Topic | Decision |
 |---|---|
-| **Who holds the game** | The Fruitcats API. It runs the same engine, keeps the full `GameState`, and sends each player only `viewFor(state, seat)`. Clients send actions; the server checks them with `legalActions` and applies them. Nothing a client says about the game is trusted. |
-| **One match code for both modes** | Friend games and Ranked run on the same code once two players are paired and each has picked a deck: the match, clock, reconnecting, conceding, emotes, the result, replays. The two modes differ only in how the players are found and what happens after (head-to-head record, or a rating change). This is about not writing the code twice; it has nothing to do with what players own. |
-| **Each player plays their own deck** | Nothing a player owns is ever shared with, lent to or seen by another player: not cards, not decks, not purchases. Each player picks one of their own decks, built from cards their own account owns (the starter decks count, as everyone has them). A friend buying a card changes nothing for anyone else. |
-| **Transport** | One WebSocket per signed-in app, opened at sign-in and kept while the app is open. It carries presence, challenges, the Ranked queue and the match. Not one socket per feature. |
-| **Where Friends lives** | Inside the game mode, not in a place of its own. The Home screen keeps its six tiles, with no tile added: the existing **Friend** play tile (next to Solo and Ranked) opens **Play a friend**, where you pick who to play from your friends or add a new friend. Friends are something you use to start a game, not a page you visit. Settings → Account → Friends goes away. |
-| **Challenges** | Only to friends who are online now. No challenges to offline friends in the first version (no push notifications yet). |
-| **Deck check** | The same rule in both modes: a finished 50-card deck of cards the player's own account owns. The server checks it against that account's ownership in the Store, so a deck with cards the account doesn't own can't be played. |
-| **Clock** | Every online game has a clock, with the same code for both modes; only the numbers differ (see [The clock](#the-clock)). Without one, a player who walks away holds the other hostage. |
-| **Talking** | A few cat emotes (Meow, Purr, Hiss, Good game), no typed chat. Players are 13 and up and meet strangers in Ranked. One tap mutes the other player's emotes. |
-| **Pounce and Lucky** | Online, the defender is always asked, whether or not they hold a Pounce. The engine gets an option for it. |
-| **Client** | The game screen draws a `PlayerView` for "my seat", whether the game is Solo or online. Solo moves to the same path, so there is one game screen, not two. |
-
-## What's there now, and what changes
-
-The Friends prototype (`apps/web/src/account.ts`, `renderFriends`) works (list, codes, remove, block), but:
-
-- **It's hard to find.** Settings gear → Account → Friends. The Home screen's Friend tile, which is where people will
-  look, says "Coming soon".
-- **A friend can't be played.** Tapping a friend opens only Remove and Block. The main thing you'd want to do with a
-  friend is missing, and the only things there are destructive.
-- **Adding a friend needs both people there at once.** The code lasts 15 minutes and works once, and the Friend tile
-  promises "send them a link", but there is no link.
-- **No presence.** You can't tell who is around to play.
-- **It looks like a settings page:** a list capped at 30% of the screen height, one status line shared by every
-  message, small type.
-
-The Play a friend screen replaces it. The calls to viamochi-id (`listFriends`, `newFriendCode`, `redeemFriendCode`,
-`removeFriend` in `auth.ts`) stay as they are.
+| **Who holds the game** | The Fruitcats API. It runs the same engine, keeps the full `GameState`, and sends each player only `viewFor(state, seat)`: never the other player's hand, the deck order or the seed. A move is checked against the rules on the server before it's applied. Nothing a client says about the game is trusted. |
+| **One match code for both modes** | Friend games and Ranked run on the same code once two players are paired and each has picked a deck: the match, clock, reconnecting, conceding, emotes, the result, replays. What differs is in one `MatchRules` object; the match never asks which mode it's in. This is about not writing the code twice; it has nothing to do with what players own. |
+| **Each player plays their own deck** | Nothing a player owns is ever shared with, lent to or seen by another player: not cards, not decks, not purchases. Each player picks one of their own decks, built from cards their own account owns (the starter decks count, as everyone has them). The server checks every card against that account's ownership in the Store. |
+| **Transport** | One WebSocket per signed-in app (`/v1/live`), kept while the app is open. It carries presence, friend codes, challenges and the match. |
+| **Where friends live** | Inside the Friend game mode, not in a place of their own. The Home screen keeps its six tiles: the **Friend** tile opens **Play a friend**, where you pick who to play from your friends, or add one. Settings → Account → Friends is gone. |
+| **Adding a friend** | A code, never a link. Together: one phone shows its code as a QR code, the other scans it inside the game, sees whose code it is and taps **Add**. Or type the code. Codes are viamochi-id's: 6 characters, 15 minutes, one use. |
+| **Challenges** | Only to friends who are online now. A challenge nobody answers is withdrawn after 60 seconds. |
+| **Friendly, not cutthroat** | In a Friend game, running out of time never makes a move for you: the other player decides (give more time, nudge, or, after a while, take the win or call it off). Ranked is the strict one. |
+| **Teaching games** | One switch when challenging, for a friend who is new: no timer, hints, take-backs, open hands, slower replays, a kinder end, and it doesn't count. |
+| **Handicap** | Each player may choose to start with fewer Lives (9 down to 3), for themselves only. Both players see it. |
+| **Talking** | Seven emotes (Meow, Purr, Hiss, Nice play, Good try, Want a hint?, Good game; the two kindest only in teaching games), no typed chat. One tap mutes the other player's. |
+| **Pounce and Lucky** | Online, the defender is always asked about a Pounce, and a player who loses a Life about Lucky, whether or not they have anything to play (the engine's `alwaysAsk`). The question is let go after the same short wait either way, so the wait tells the other player nothing. |
 
 ## The player's experience
 
 ### The flow, the same in both modes
 
 ```
- Friend:  Play a friend → pick friend → pick deck → Waiting for Pippin… ─┐
-                                                                            ├→ Versus → Game → Result
- Ranked:  Ranked        → pick deck   → Find a match → Looking for a player… ─┘
+ Friend:  Play a friend → pick friend → deck and options → Waiting for Pippin… ─┐
+                                                                                ├→ Versus → Game → Result
+ Ranked:  Ranked        → pick deck   → Find a match     → Looking for a player… ─┘   (Ranked: to come)
 ```
-
-Deck picker, waiting screen, Versus splash, game and Result are the **same screens**. Friend and Ranked change a few
-words on them and the buttons at the end.
 
 ### Play a friend (Home → Friend)
 
-The Friend tile is a way to start a game, like Solo, so the screen it opens asks one thing: **who do you want to
-play?** Picking a friend is the first step of the game; adding a friend is one of the choices in that same list, not
-a separate place. Signed out, the tile shows "Sign in to open", like Collection. Signed in:
+The Friend tile starts a game, like Solo, so the screen it opens asks one thing: **who do you want to play?** Signed
+out, the tile says "Sign in to open". Signed in, its line says "Online", "2 challenges waiting" (with a badge), or
+"Rejoin · Pippin" when a game is still going.
 
-1. **Challenges for you** (only when there are some), at the top: Pippin's Pawtrait, "Pippin wants to play",
-   **Pick a deck** and **Not now**.
-2. **Your game with Pippin · Round 4 · Rejoin**, when an online game is still going (after a refresh, or on another
-   device).
-3. **Who to play**: your friends, online first, then in a game, then offline. Each row: Pawtrait with a status dot,
-   name, one status line ("Online", "In a game", "Last seen 3 days ago") and your record against them ("You 3 – 2").
-   Tapping an online friend picks them. Remove and Block are in a quiet ⋯ menu on the row, each with a confirmation,
-   as now.
-4. **+ Add a friend**, the last entry of the same list. It opens a sheet:
-   - **Invite link**, `fruitcats.viamochi.com/f/K7M4Q2`, with **Share** (the phone's share sheet) or **Copy**.
-     Opening the link signs you in if needed and adds the friend.
-   - The same code, large, for reading out, and a QR code for someone standing next to you.
-   - **Have a code?** A box that formats as you type (`K7M-4Q2`) and adds as soon as the sixth character is in.
-     Errors show under the box, not in a shared status line.
+1. **Challenges for you**, at the top when there are some: "Sam wants to play", with the pace, and "they start with 7
+   Lives" if Sam gave themselves a handicap. **Pick a deck** or **Not now**.
+2. **Your game is still going · Rejoin**, after a reload or on another device.
+3. **Who do you want to play?** Your friends, online first, then in a game, then offline. Each row: Pawtrait with a
+   status dot, name, a status line ("Online", "In a game", "Last seen 3 days ago") and your record against them
+   ("You 3 – 2"). An online friend has a **Play** pill; tapping an offline friend says they aren't online. Remove and
+   Block are in the ⋯ menu beside the row, each with a confirmation.
+4. **+ Add a friend**, the last row of the same list. With no friends yet, it's the only row.
 
-With no friends yet, the list holds only **+ Add a friend**, with a picture of cats and one line: "Add a friend to
-play them."
+A friend's challenge while you're anywhere else (Home, the Store, a Solo game) shows as a small banner at the top:
+"Sam wants to play", **See** or ×. It doesn't pause or cover the game.
 
-Once someone is added, the sheet closes and the new friend is in the list, ready to tap: adding a friend leads
-straight into playing them.
+### Adding a friend
 
-The Friend tile shows a small badge with the number of challenges waiting; the tile itself doesn't change.
+**+ Add a friend** opens a sheet: **Show my code**, **Scan a code** (only where there's a camera), or a box to type
+the code.
+
+- **Show my code**: a QR code, and the code under it (`K7M-4Q2`) for reading out. The screen stays awake while it's
+  showing, and the code quietly renews itself before it runs out. When a friend adds you, the sheet changes by itself
+  to "You and Pippin are now friends!", with **Play Pippin** and **Done**.
+- **Scan a code**: the camera opens inside the game. The moment it reads a code, it closes and asks "Add Sam as a
+  friend?", with Sam's Pawtrait and name, **Add** and **Cancel**. Nothing happens until Add.
+- **Typing**: the box formats as you type and, at the sixth character, goes to the same confirmation. If the code
+  isn't on anyone's screen at that moment (they read it out and closed the sheet), the confirmation says so and shows
+  the code instead of a name.
+- After **Add**: "You and Sam are now friends!", with **Play Sam** (when Sam is online) and **Done**.
+
+The QR code holds `FRUITCATS FRIEND K7M4Q2`: the code, and nothing a phone's camera app would open. Scanning uses the
+browser's own reader where there is one (Chrome on Android) and jsQR otherwise (iPhone), loaded only when the camera
+opens (`apps/web/src/qr.ts`).
 
 ### Challenging a friend
 
-1. Tapping Pippin opens the deck picker: the Solo carousel, showing only decks you can play online.
-2. **Challenge Pippin** leads to the waiting screen: your Pawtrait and Pippin's facing each other, "Waiting for
-   Pippin…", a 60-second ring and **Cancel**.
-3. Pippin gets a banner wherever they are in the app ("Pippin wants to play", **See**). In a Solo game it's a small
-   banner that doesn't pause or cover anything. Pippin picks a deck and the game starts.
-4. If Pippin says **Not now**, you see "Pippin can't play right now." If the ring runs out, "No answer from
-   Pippin." Either way you go back to Play a friend.
+Tapping a friend opens the challenge:
 
-Neither player sees the other's deck before the game. The Hero Cats are shown on the Versus splash, as they would be
-on the table.
+- **Deck**: the Solo carousel. Only your finished decks can be played.
+- **Teaching game** (a switch): "For a friend who's new: no timer, hints, take-backs, open hands. It doesn't count."
+- **Pace**, unless it's a teaching game: **Relaxed** (2 minutes a move, the default), **Quick** (45 seconds) or **No
+  timer**.
+- **Starter decks only** (a switch): both players play a starter deck, so an experienced player can't bring a tuned
+  one.
+- **Your Lives**: 9, or fewer as a handicap (down to 3).
 
-### Versus splash (both modes)
+**Challenge Pippin** leads to the waiting screen: both Pawtraits, "Waiting for Pippin…", a 60-second ring and
+**Cancel**. If Pippin says Not now: "Pippin can't play right now." If the ring runs out: "No answer from Pippin."
 
-Two or three seconds: both Pawtraits, names and Hero Cats, and who takes the Yarn Ball first. Ranked adds each
-player's rating.
+Answering a challenge shows what it is (pace, teaching, starter decks, their handicap), the deck carousel (starter
+decks only when the challenge says so), **Your Lives**, and **Not now** or **Play**. Someone who has never finished a
+game is told they can ask for a teaching game instead.
 
-### In the game (both modes)
+### Versus
 
-The game screen as in Solo, with:
+Three seconds (a tap skips it): both Pawtraits and names, both Hero Cats, anyone starting with fewer Lives, who takes
+the Yarn Ball first, and the pace.
 
-- **The other player's Pawtrait and name** where the computer's face is now.
-- **The clock** as a ring around the Pawtrait of whoever is deciding, and their reserve in small numbers under it.
-- **Emotes**: a small button beside your Pawtrait opens four cat emotes; the other player's appear as a bubble over
-  their Pawtrait. A mute button is next to them.
-- **Concede** in the game menu, with a confirmation.
-- **Pounce and Lucky**: "Pounce? (skips in 2 s)" is always shown to the defender, with nothing to play when they
-  hold no Pounce, so waiting tells the attacker nothing.
-- **If someone's connection drops**: "Pippin's connection dropped. Waiting 0:47". Their clock doesn't run while they
-  are gone. If they aren't back in time, they lose (see [Connection drops](#connection-drops)).
+### In the game
 
-### Result (both modes)
+The game screen as in Solo, drawn from the view the server sent, with:
 
-Win or lose art as in Solo, the number of rounds, and:
+- **The other player's Pawtrait** where the computer's face is, and their name everywhere Solo says "Opponent".
+- **The clock**: a chip under the Pawtrait of whoever is deciding ("1:32", "Reserve 0:40", "Out of time", "Paused"),
+  red in the last 10 seconds.
+- **Hold on** (Relaxed and Quick): two per game, each adds time to the move in front of you. The other player sees
+  "Pippin needs a moment."
+- **Pounce and Lucky**: "Pippin plays Pocket Hamster. Pounce?" or "Nothing to Pounce with: it happens in a moment",
+  with **Wait (2)** to keep the question open and **Let it happen**.
+- **When the other player runs out of time** (Friend games): "Pippin is out of time." **Give more time** or **Nudge**
+  (their phone vibrates and says "Sam nudged you: your move!"). After 3 more minutes, also **Take the win** or **Call it
+  off**. Nothing is ever played for them.
+- **If a connection drops**: "Pippin's connection dropped. Waiting 2:59 for them to come back." The clock stops;
+  you can still make your own move. After that, **Take the win** or **Call it off** (or just keep waiting). They come
+  back by opening the app on any device: the Friend tile says **Rejoin**.
+- **Emotes**: 🐾 beside your Pawtrait opens them; the other player's appear as a bubble over their Pawtrait.
+  **Mute their emotes** is in the same menu.
+- **Concede** beside Rules and Home, with a confirmation. **Home** leaves the screen but not the game: it goes on,
+  and the Friend tile rejoins it.
 
-- **Friend:** your record against them ("You 3 – 2 Pippin"), **Rematch** and **Home**. When one player taps Rematch,
-  the other sees "Pippin wants a rematch". When both tap it, a new game starts, each player keeping the deck they just played, and the other
-  player takes the Yarn Ball first.
-- **Ranked:** the rating change ("1,240 → 1,256 (+16)"), **Play again** (back into the queue with the same deck)
-  and **Home**.
+### Teaching games
+
+- **No timer**, and the Pounce and Lucky questions stay open 8 seconds instead of 2.5.
+- **What should I do?** suggests a move, in words ("Play Cherry Robin on Pear Hedgehog.") and by lighting it up. It's
+  the Solo AI at full strength, which never looks at hidden cards: it blanks out the other hand before it thinks.
+- **Take back**: undoes your last move if the other player hasn't moved since and it showed you nothing new (no card
+  drawn, no Life turned over, not a mulligan). The game is rebuilt from its seed and the moves before it.
+- **Show my hand**: either player can show their hand to the other, face up above their Pawtrait.
+- **The other player's moves play 1.5 times slower**, so someone new can follow them.
+- **A kinder end**: "Good game!" instead of "You lose!", and what you managed ("You took 5 of Sam's Lives").
+- **It doesn't count** in your record against each other.
+
+### Result
+
+"You win!", "You lose!", "A draw!" or "Called off", how it ended ("Pippin conceded.", "Pippin ran out of time.",
+"Pippin was away."), the number of rounds, and your record against them ("You 3 – 2 Pippin"). **Rematch** and
+**Home**. When one player taps Rematch, the other's button says "Sam wants a rematch: Play!". A rematch keeps both
+decks, the pace and the handicaps, and the other player takes the Yarn Ball first.
+
+## The clock
+
+The same code in every mode (`Match` in `apps/api/src/live/match.ts`); only the numbers (`PACES`, `RANKED_CLOCK` in
+`packages/match/src/index.ts`) and what happens when time runs out differ.
+
+| | Relaxed | Quick | No timer (and teaching) | Ranked |
+|---|---|---|---|---|
+| Each move | 2 min | 45 s | none | 30 s |
+| Reserve for the game | none | none | none | 2 min |
+| Hold on | 2 × 2 min | 2 × 1 min | none | none |
+| Out of time | the other player decides | the other player decides | never | the plainest move is made for you |
+| Pounce / Lucky question | 2.5 s (8 s in teaching games) | 2.5 s | 8 s | 2.5 s |
+
+The plainest move: pass, keep the hand, let the Pounce go, keep the Lucky card, the first choice offered. In Ranked,
+three timeouts in a row lose the game. The clock stops while either player's connection is down.
+
+## Connection drops
+
+A player whose connection drops has **3 minutes** (Friend) or **60 seconds** (Ranked) to come back. Ranked then
+counts it as a loss; a Friend game lets the one still there take the win or call it off, or keep waiting. A game with
+both players gone for 30 minutes is called off. A game going when the API restarts is rebuilt from its record and
+waits for both players to come back.
 
 ## How it's built
 
 ### Code used by both modes, and not
 
-| Piece | Both modes | Friend only | Ranked only |
+| Piece | Both modes | Friend only | Ranked only (to come) |
 |---|---|---|---|
-| Socket, sign-in on the socket, reconnecting | ✓ | | |
-| Presence (online, in a game, in the queue) | ✓ (Ranked uses it to show "in the queue") | shown to friends | |
-| Finding the other player | | challenge and accept | queue and matchmaker |
-| Deck check (finished, every card owned by that player's account) | ✓ | | |
-| Match: engine, views, clock, drops, concede, emotes | ✓ | | |
-| Match record: seed, decks, actions, winner | ✓ | | |
-| After the game | | head-to-head, rematch | rating, play again |
-| Screens: deck picker, waiting, Versus, game, Result | ✓ | wording and buttons | wording and buttons |
+| Socket, sign-in on it, reconnecting (`socket.ts`, `live.ts`) | ✓ | | |
+| Presence (`hub.ts`) | ✓ | shown to friends | |
+| Finding the other player | | challenges (`hub.ts`) | the queue |
+| Deck check: finished, every card owned by that account (`server.ts`) | ✓ | starter decks only, if asked | |
+| The match: engine, views, clock, drops, concede, emotes, rematch (`match.ts`) | ✓ | | |
+| The record: seed, decks, moves, result (`records.ts`) | ✓ | | |
+| After the game | | the record between you | the rating |
+| The game screen, Versus, Result (`main.ts`, `online.ts`) | ✓ | | |
 
-Everything that differs between the modes sits in one small **rules** object that the match is created with. The
-match code never asks which mode it's in:
+### Shared (`packages/match`)
 
-```ts
-interface MatchRules {
-  kind: 'friend' | 'ranked';     // only for the record and the Result screen's wording
-  clock: ClockRules;             // see "The clock"
-  dropGraceSeconds: number;      // how long a dropped player has to come back
-  rematch: boolean;              // Friend: true. Ranked: false (Play again re-queues)
-}
-```
+What the game and the API both need, written once: every message each way (`ClientMessage`, `ServerMessage`), the
+rules (`MatchRules`, `ClockRules`, `PACES`, `friendRules`, `rankedRules`), the emotes, and friend-code helpers.
 
 ### Server (`apps/api/src/live/`)
 
-The API is already Node on App Service and imports the engine and card data, so it holds the games. New files, each
-with one job:
+| File | Job |
+|---|---|
+| `socket.ts` | The WebSocket at `/v1/live` (the `ws` package). The token comes in the first message, never in the address, so it isn't logged. Pings every 25 s; a socket that stops answering is closed. |
+| `hub.ts` | One connection per account (the newest wins). Presence, friend codes (whose code is this, and "they added you"), challenges, and starting, restoring and forgetting matches. Knows nothing about sockets, so its tests use plain functions. |
+| `match.ts` | **The core, used by both modes.** One class, `Match`: rebuilds the game from its record, checks and applies moves, sends each player their view (with only the new events), runs the clock, handles drops, concedes, emotes, hints, take-backs, open hands and rematch requests. |
+| `records.ts` | The `matches` table (games going, and finished ones by month: the replays), `rivals` (the record between two friends) and `seen` (last seen). Export my data includes a player's records and last seen; Delete account erases them. Finished replays keep only account ids and cards, no names. |
+
+**Who is friends with whom is viamochi-id's.** When a game connects, the API asks viamochi-id's `/friends` with the
+player's own token, and asks again when the player says their friends changed. A challenge only goes between two
+people on each other's lists; blocking in viamochi-id removes the friendship, so a blocked player can't challenge.
+No change to viamochi-id was needed.
+
+**Friend codes and the API.** The game still gets and redeems codes at viamochi-id, as the old Friends page did. The
+game showing a code also tells the API ("this is my code"), so a friend who scans it can be shown whose it is before
+adding. After adding, the game tells the API, which tells the friend's phone to look again at its friends. The API
+never adds anyone: that's only viamochi-id's.
+
+**One instance.** Games live in the memory of one API instance, with their records written at most once a second.
+App Service needs **Web Sockets switched on** (Configuration → General settings) and must stay at one instance. When
+that's not enough, the socket moves to Azure Web PubSub; `socket.ts` is the only file that knows about the transport.
+
+**Same rules on both sides.** The game sends its `PROTOCOL` and the engine's `RULES_VERSION` when it connects; if they
+aren't the server's, it's told a new version is ready and offered a reload before it can play online.
+
+`seq` in a move is the number of moves applied so far (`GameState.actions`): a move sent for an older state (a
+double tap, a message that crossed another) is never applied twice; the player is sent the game again.
+
+### Game (`apps/web/src/`)
 
 | File | Job |
 |---|---|
-| `socket.ts` | The WebSocket (the small `ws` package): signs in with the same Via Mochi token the API checks now, heartbeats, and hands each message to the file below that handles it. |
-| `presence.ts` | Who is connected and what they're doing. Tells each player's online friends when that changes. |
-| `match.ts` | **The core, used by both modes.** `startMatch(seats, decks, rules)`: makes the game with a fresh seed, applies actions, sends each seat its view, runs the clock, handles drops, concedes and emotes, and when the game ends calls `rules.kind`'s finish (below). |
-| `matches.ts` | Keeps each match's record in a `matches` table: seed, engine and content version, decks, the actions so far, and the result. The game is always rebuilt as seed + actions, so an API restart loses nothing. The same record is the replay. |
-| `decks.ts` | `checkDeck(account, deck)`: 50 cards, legal, every card owned by that account (the Store's ownership code). Used by both modes. |
-| `challenges.ts` | **Friend's way in.** Send, accept, decline, cancel, expire after 60 s; checks the two are friends. Ends in `startMatch`. After the game: the head-to-head record, and rematches. |
-| `queue.ts` | **Ranked's way in, later.** Pairs players whose ratings are close, allowing a wider gap the longer someone waits. Ends in `startMatch`. |
-| `ratings.ts` | **Ranked, later.** Glicko-2 from match results, and the ladder. |
-
-**Checking friendship without changing viamochi-id.** When a socket signs in, the API asks viamochi-id's `/friends`
-with that player's own token and keeps the list for the connection. A challenge is only accepted between two people
-on each other's lists. Blocking in viamochi-id already removes the friendship, so a blocked player can't challenge.
-
-**One instance for now.** Games live in the memory of one API instance, with the record written after every action.
-App Service needs Web Sockets switched on and must stay at one instance. When there are too many players for that,
-the socket moves to Azure Web PubSub; `socket.ts` is the only file that knows about the transport.
-
-**Same version on both sides.** The client sends its build when it connects. If it isn't the build the server runs,
-it's told "A new version of Fruitcats is ready" and reloads before it can play online, so both engines always agree.
-
-### Messages
-
-Plain JSON, one type per message.
-
-| Client → server | Server → client |
-|---|---|
-| `hello { token, build }` | `welcome { you, friends: presence[] }` / `update-needed` |
-| `challenge { friend, deck }`, `accept { challenge, deck }`, `decline`, `cancel` | `presence { account, status }`, `challenge { from, id }`, `challenge-ended { id, why }` |
-| `queue-join { deck }`, `queue-leave` (Ranked) | `queue { waitedSeconds, range }` (Ranked) |
-| `act { match, seq, action }` | `match-start { match, seat, opponent, view, clock }` |
-| `emote { match, emote }`, `concede { match }`, `rejoin { match }`, `rematch { match }` | `match-view { match, seq, view, events, clock }`, `emote`, `opponent-away { back-by }`, `match-end { result }` |
-
-`seq` is the number of actions applied so far (`GameState.actions`). An action sent for an older `seq` is refused,
-so a double tap or a late message can't be applied twice.
-
-### Client (`apps/web/src/`)
-
-The main change is that the game screen stops knowing who the other player is.
-
-- **`session.ts`**: one interface for "a game I'm in":
-  `{ seat; view(): PlayerView; act(action): void; opponent: { name; pawtrait } }`.
-  - `LocalSession` for Solo and the tutorial: holds the full `GameState` and runs the AI, as `main.ts` does now,
-    and gives the screen `viewFor(state, seat)`.
-  - `RemoteSession` for online games: its view comes from the server, and `act` sends to it.
-- **`main.ts`**: `HUMAN` and `AI` become `session.seat` and the other seat. The screen draws only the view, so
-  Solo checks the hidden-information rules every time anyone plays, well before anyone plays online.
-- **`live.ts`**: the socket, kept open while signed in, reconnects with backoff, passes messages on.
-- **`friends.ts`**: the Play a friend screen and the Add a friend sheet (out of `account.ts`).
-- **`match-screens.ts`**: waiting, Versus and Result, used by both modes.
-- **`ranked.ts`**, later: the Ranked screen and queue.
+| `live.ts` | The connection: kept while signed in, reconnects with backoff (at once when the app comes back into view), and keeps what the server last said (presence, challenges, the match you're in). |
+| `friends.ts` | Play a friend: the list, the challenge, waiting, answering, the Add a friend sheet, the challenge banner. |
+| `qr.ts` | A friend code as a QR code (qrcode-generator, MIT), and scanning one (the browser's reader, or jsQR, Apache-2.0). |
+| `online.ts` | An online game's own parts of the game screen: the clock, Hold on, out-of-time and dropped-connection choices, emotes, teaching helps, Versus and the result. |
+| `main.ts` | The board, for Solo and online alike. `mySeat` and `theirSeat` replace the old fixed seats. Online, the board is the view the server sent and a move goes to the server; its events play as animations before the new view is drawn, as a Solo move's do. |
 
 ### Engine
 
-- **`pounceAlways`** game option: the defender is always prompted, and `legalActions` offers only "skip" when
-  there's nothing to play. The same for Lucky. Solo leaves it off.
-- **A test that no view gives anything away**: play many simulated games and check that no player's view, log line or
-  event names a card that player can't see. Card abilities can write their own log lines
-  (`ability.log`, the log in a card's code), so this has to be a test, not a rule someone remembers.
+- **`GameOptions.lives`**: each player's starting Lives (the handicap). The Lives given up stay in the deck, and
+  `PlayerState.handicap` says how many, so both players see it.
+- **`GameOptions.alwaysAsk`**: always ask about Pounce and Lucky. `legalActions` then offers only "let it happen" (or
+  "keep it") when there's nothing to play.
+- `packages/engine/test/view.test.ts` already checks that a player's view never depends on hidden information;
+  `online.test.ts` checks the two options.
 
-## The clock
+## Trying it
 
-The same code for both modes; only the numbers change.
+Two browsers as two friends, on your own computer, with no email codes:
 
-| | Friend | Ranked |
-|---|---|---|
-| Each decision | 60 s | 45 s |
-| Reserve, used once the decision's time runs out | 3 min per game | 2 min per game |
-| Mulligan and first Treats | 30 s | 30 s |
-| Pounce / Lucky prompt | 2 s, then skipped (the defender can hold it by tapping) | same |
+```bash
+npm run api:local -- --fake-sign-in     # the API on http://localhost:8790; everyone who connects is everyone's friend
+npm run dev                             # the game on http://localhost:5173
+```
 
-When both run out, the server makes the plainest legal move: pass, keep the hand, skip the Pounce, the first choice
-offered. Three timeouts in a row lose the game.
+Open `http://localhost:5173/?online=1&api=http://localhost:8790` in two browser profiles. In each, set a session in
+the console, with a different 32-hex-digit id and name:
 
-## Connection drops
+```js
+localStorage.setItem('viamochi-session', JSON.stringify({ userId: 'a'.repeat(32), displayName: 'Sam', email: 'sam@example.com',
+  refreshToken: 'x', token: 'dev-' + 'a'.repeat(32), expires: Date.now() + 864e6, signedInAt: Date.now(), avatar: 'orange',
+  terms: '2026-09-draft-1', birthYear: 1990 })); location.reload();
+```
 
-A player whose connection drops has **60 seconds** to come back (Ranked) or **3 minutes** (Friend); their clock
-stops meanwhile. They come back by reopening the app on any device, signed in: the Friend (or Ranked) tile offers **Rejoin**. After
-that, Ranked counts it as a loss. Friend asks the one still there: **Keep waiting** or **Take the win**.
+Adding friends needs the real viamochi-id (codes are made and redeemed there), so try that on the playtest site.
+`apps/api/test/live.test.ts` plays whole games through the hub, with the clock, drops, teaching helps, handicaps,
+friend codes and a restart.
 
-## Ranked, on top of this
+## What's left
 
-When the Friend version works, Ranked adds only:
-
-- a **Ranked** screen: your rating, the deck picker, **Find a match**;
-- `queue.ts` and `ratings.ts` on the server;
-- the ladder;
-- the rating on the Versus and Result screens.
-
-Things Ranked needs that Friend games don't, to decide before it's built:
-
-- **Names in front of strangers.** Display names so far are only seen by friends. Ranked shows them to anyone:
-  they need the same checks as other text players write, or Ranked shows a Pawtrait and a made-up name instead.
-- **Not meeting someone again.** A "don't match me with this player" list, kept by the queue.
-- **Released cards only.** Prototype sets are allowed in Friend games but not in Ranked.
-
-## Build order
-
-Each step can be tested and shipped by itself.
-
-1. **The client stops assuming who's who.** `session.ts`, `LocalSession`, `main.ts` drawing `PlayerView`, the
-   engine's `pounceAlways` option and the no-leak test. Solo plays exactly as before. No server.
-2. **The match on the server.** `socket.ts`, `match.ts`, `matches.ts`, `decks.ts`, `RemoteSession`, and the
-   waiting, Versus and Result screens. Tried by starting a match between two browser tabs signed in as two dev
-   accounts (`npm run api:local -- --fake-sign-in`).
-3. **Friends.** `presence.ts`, `challenges.ts`, Play a friend (with Add a friend in it), invite links, rematch and
-   head-to-head. The Friend tile opens. Settings → Account → Friends goes away.
-4. **Ranked.** `queue.ts`, `ratings.ts`, the Ranked screen and the ladder.
-
-## Questions for the owner
-
-1. **Invite links.** Links are much easier to pass on than a 15-minute code. A link that works for 7 days, or until
-   it's used, needs a change in viamochi-id. Worth it now, or ship with today's codes and add links later?
-2. **Friend games without a clock.** The plan gives them a relaxed clock. Should friends be able to choose "No
-   clock" when challenging?
-3. **Emotes.** Four emotes, no chat: agreed?
+- **Ranked**: the queue (pairs players whose ratings are close, widening the gap the longer someone waits), Glicko-2
+  ratings and the ladder, a Ranked screen, and the rating on Versus and the result. The match, the clock
+  (`rankedRules`) and the screens are already there. To decide first:
+  - **Names in front of strangers.** Display names so far are only seen by friends. Ranked shows them to anyone: they
+    need checking, or Ranked shows a Pawtrait and a made-up name.
+  - **Not meeting someone again**: a "don't match me with this player" list, kept by the queue.
+  - **Released cards only**: prototype sets are allowed in Friend games, not in Ranked.
+- **Offer the tutorial to a first-timer** who's been challenged. Today they're told they can ask for a teaching game.
+- **Notifications** for a challenge while the app is closed (web push, later the app stores'). Until then a challenge
+  only reaches a friend who has the game open.
+- **Before the public build turns it on**: Web Sockets on for `fruitcats-api` (and one instance), the privacy policy
+  to mention the record between friends, last seen and the replays, and a playtest with real phones (the camera
+  scanning a QR code on another phone's screen).

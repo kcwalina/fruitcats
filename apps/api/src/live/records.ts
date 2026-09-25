@@ -1,9 +1,10 @@
 // What online play keeps (docs/pvp-plan.md), in the API's tables:
 //   matches  "live" / {id}         each game still going: its record (seed, decks, moves), so a restart loses nothing
-//            "done-YYYY-MM" / {id}  finished games, by month: the replays
+//            "done-YYYY-MM" / {id}  finished games, by month: the replays. Only account ids, no names or Pawtraits, so
+//                                    a deleted account leaves nothing that says who it was
 //   rivals   {account} / {friend}  games that counted between two friends: wins, losses, draws
 //   seen     {account} / "seen"    when an account was last online, for "Last seen 3 days ago"
-// Nothing a player typed is stored here apart from their display name, which is in the match record as it was shown.
+// Nothing a player typed is kept once a game is over: a game still going has the names it shows, a finished one doesn't.
 
 import type { Tally } from '@fruitcats/match';
 import type { Row, Table } from '../tables';
@@ -58,7 +59,9 @@ export function tableStore(matches: Table, rivals: Table, seenTable: Table): Liv
       return out;
     },
     async finishMatch(r) {
-      await matches.put({ partitionKey: month(r.createdAt), rowKey: r.id, ...split(JSON.stringify(r)) });
+      // Names (the player's and their deck's) are what players typed: a replay keeps only the account ids and the cards.
+      const kept: MatchRecord = { ...r, seats: r.seats.map((s) => ({ ...s, person: { id: s.person.id, name: '', avatar: '' }, deck: { ...s.deck, name: '' } })) as MatchRecord['seats'] };
+      await matches.put({ partitionKey: month(r.createdAt), rowKey: r.id, ...split(JSON.stringify(kept)) });
       await matches.remove('live', r.id);
     },
     async tally(account, friend) {

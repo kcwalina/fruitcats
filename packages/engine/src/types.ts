@@ -41,6 +41,11 @@ export interface CardDef {
   token?: boolean;
   /** Printed as a Signature card (compose_cards.py). No effect on the rules. */
   signature?: boolean;
+  /**
+   * Never sold in the Store, and how it's gotten instead: 'promo' (given out at an event, say). Players get such cards
+   * by grants, and later perhaps from each other (docs/store-plan.md, Cards the Store doesn't sell). No effect on play.
+   */
+  exclusive?: string;
   /** The set this card came from (filled in when the set is registered). */
   set?: string;
   /** How the rules text calls the card once named ("her"); its name otherwise. */

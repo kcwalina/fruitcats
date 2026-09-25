@@ -5,7 +5,7 @@ It records the decisions made so far and the steps, in order. Accounts come firs
 [accounts.md](accounts.md) (what's left: [accounts-plan.md](accounts-plan.md)). Other features still to build (PvP, the ladder) are in
 [future-plans.md](future-plans.md).
 
-Last updated 2026-09-23.
+Last updated 2026-09-24.
 
 ## Decisions
 
@@ -21,7 +21,7 @@ Last updated 2026-09-23.
 | **Ownership** | **A purchase anywhere is owned everywhere.** Our server holds the one list of what each Via Mochi account owns. A Steam, App Store or Google Play purchase goes to the account signed in on that device; buying needs an account, so no purchase is ever ownerless. |
 | **Pricing** | **The same price on every store, and sales on all stores at once.** The player's experience comes before margin. The game is free to download everywhere. |
 | **Infrastructure** | Azure only, in the **ViaMochi Production** subscription (`rg-fruitcats`), set up by the accounts plan. Nothing reuses the mochi suite's resources. |
-| **Rollout** | Everything to do with purchases stays **hidden from the public** until launch: a separate playtest build and site, a tester list, and sandbox payments. |
+| **Rollout** | Everything to do with purchases stays **hidden from the public** until launch. The Store's code is in the live game, but the API opens it only to a tester list (see [Hidden until launch](#hidden-until-launch)); payments are sandbox only. |
 | **Rollback** | The git tag `pre-store` (`a9d7d08`) marks main before any store work. `pre-payments` is moved to the latest main just before the first payment or account code. |
 
 ## Already done
@@ -32,7 +32,9 @@ Last updated 2026-09-23.
   - **All cards:** the whole set. Cards you don't have yet show as shadows, ready for the Store to fill in.
   - **Wallpapers:** any card as a phone, tablet or computer wallpaper.
   - The Showcase choice is kept on the device for now. It moves to the account in the accounts plan's phase A2.
-- **Home:** the Store tile exists, marked "Coming soon".
+- **Home:** the Store tile exists, marked "Coming soon" (in the public build).
+- **Store browsing, cart and test checkout** (phase 4), in the playtest build only and only for testers. See
+  [Store browsing: what's built](#store-browsing-whats-built).
 
 ## How it fits together
 
@@ -164,17 +166,73 @@ inside the game, on every platform. The Store only adds the tester list below.
   - an easy path to a refund
 - **Settings:** the Account screen from the accounts plan, plus Restore purchases (iOS) and the legal pages.
 
+## Store browsing: what's built
+
+Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step yet.
+
+- **The rules, in one place:** `packages/store` (`@fruitcats/store`) works out the catalog, every price, what a
+  cart comes to, and which cards a deck is missing. The API and the game both use it; the API's answer is the one
+  that counts. Money is whole cents. It has its own tests.
+- **What's for sale:** every card and deck of the sets on sale. The Starter Box is marked `"starter": true` in its
+  `set.json`: its decks are the free starter decks and its cards are never sold. Cards marked `exclusive` are never
+  sold either (see below).
+- **The API** (`apps/api/src/store.ts`): `GET /v1/store` (catalog, what you own, your orders), `POST
+  /v1/store/quote`, `POST /v1/store/test-checkout` and `POST /v1/store/test-reset`.
+  - A test order brings the cards without payment. It's refused unless the total the player saw is still the total,
+    and the same order id sent twice is answered once, so a double tap or a retry never buys twice.
+  - What an account owns is worked out from its orders every time, so there's no second tally to drift.
+- **Who sees it:** app settings on the API. `STORE` = `off` (default), `testers` or `open`; `STORE_TESTERS` = account
+  ids; `STORE_TEST_CHECKOUT` = `on` lets testers place test orders; `STORE_SETS` limits the sets on sale. In the
+  game, the Store is in every build (`src/flags.ts`, `STORE`); for accounts the API doesn't let in, the tile stays
+  "Coming soon".
+- **In the game** (`apps/web/src/storefront.ts`, `shop.ts`): the Store tile, Decks and Cards tabs, a deck's page,
+  the cart, a confirmation step, then the new cards revealed one by one and "Build a deck with them".
+- **A deck from a code** with cards you don't have: the deck is saved, then the game shows **Missing cards**: each
+  card's picture and price, all picked, with the total and **Add to cart** below. Tap a card to leave it out. If a
+  Store deck brings the same cards for less, it says so. The deck builder also says "Missing N cards" on the deck
+  and offers **See the missing cards**.
+
+### Trying it on your computer
+
+1. `npm run api:local` runs the API on port 8790 with its data in `.local-api/` (nothing in Azure is touched).
+   The Store is open to any account there, with test checkout on.
+2. `npm run dev`, then open `http://localhost:5173/?store=1&api=http://localhost:8790` and sign in as usual.
+3. To start over, delete `.local-api/`, or use "Remove my test purchases" at the bottom of the cart.
+
+### On the live site, for testers only
+
+The live game has the Store for everyone, and the live API opens it only to `STORE_TESTERS` (the owner, for now),
+with `STORE=testers`, `STORE_TEST_CHECKOUT=on` and `STORE_SETS=HW1`. Adding a tester is adding their account id to
+`STORE_TESTERS` (tell the accounts and artist tool sessions first: a settings change restarts the API).
+
+## Cards the Store doesn't sell
+
+Some cards will never be sold: promo cards, event cards, rare prizes. A card says so with `"exclusive": "promo"`
+(or another reason) in its set's data. The Store leaves it out, and the rules have a test for it.
+
+**A deck code with such cards:** Missing cards lists them apart, under "Not sold in the Store", greyed, with why
+("Promo · not sold", or "Not in the Store yet" for a set that isn't on sale). The rest can still be bought. The deck
+is saved either way and can be played once the player has every card.
+
+**Later: players trading and selling cards.** Not planned yet, but the design leaves room for it:
+
+- Ownership is a list of events per account (today: orders), added up. A trade or a sale between players becomes two
+  more events (one account gives copies, the other gets them), so nothing about ownership has to be redesigned.
+- Every event already records where the copies came from. A market will also need to know which copies can be
+  traded (bought ones, maybe not starter ones), so each event will carry that too.
+- The Missing cards page has a place for "Find it on the market" beside cards the Store doesn't sell.
+- Anything to do with money between players needs its own legal check first (the Merchant of Record, taxes, and the
+  loot-box and gambling rules in some countries).
+
 ## Hidden until launch
 
-- **Two builds from one codebase:**
-  - **Public** (`fruitcats.viamochi.com`): purchase features compiled out, so they can't be switched on.
-  - **Playtest** (`playtest.fruitcats.viamochi.com`): features compiled in, sandbox payments only, and optionally password-protected (SWA Standard, about $9 a month).
-- **Tester list on the server:** only listed Via Mochi accounts can create a profile or check out. Anyone else sees "private playtest", and no profile is created for them.
-- **Launch day:**
-  1. Build the public site with the features on.
-  2. Set `PUBLIC_LAUNCH=true` on the API.
-  3. Deploy.
-- **Rollback:** redeploy the previous build.
+- **One build, gated on the server** (the owner's choice, 2026-09-24, replacing "two builds"): the Store's code is
+  in the live game for everyone, and the API decides who may open it.
+  - Accounts not on `STORE_TESTERS` get `403 store_private`: their Store tile stays "Coming soon", the unreleased
+    sets aren't loaded, and nothing changes for them.
+  - Payments, when they come, will also be refused by the API for anyone not let in.
+- **Launch day:** set `STORE=open` on the API (and turn `STORE_TEST_CHECKOUT` off). No game build needed.
+- **Rollback:** set `STORE=off`. Everyone's tile goes back to "Coming soon".
 
 ## Legal (no company needed)
 
@@ -209,7 +267,7 @@ inside the game, on every platform. The Store only adds the tester list below.
 | **1** | **Engine and playtest build** | `flags.ts`, the `build:playtest` build and the playtest site; rarity and starter flags; the multi-set card registry; tests | — |
 | **2** | ~~Deck builder, Home, Collection~~ | **Done** | — |
 | **3** | **Accounts** | Done by the accounts plan (phases A0–A2): `apps/api`, sign-in, age check, account deletion, Showcase and decks per account, legal pages. The Store adds only the tester list. How accounts work: [accounts.md](accounts.md). | — |
-| **4** | **Store browsing** (playtest only) | Store tile, catalog, Decks and Cards tabs, cart, admin grant for testing | 1, 3 |
+| **4** | **Store browsing** (playtest only) | **Built** (not yet deployed): Store tile, catalog, Decks and Cards tabs, cart, missing cards from a deck code, test checkout for testers | 1, 3 |
 | **5** | **Web payments** (playtest only) | Paddle live approval, `/checkout`, webhook grant and revoke, reveal animation, refunds, monitoring, sale schedule | 4, legal pages |
 | **6** | **Soft launch, then launch** | Friends and family as testers with real small purchases, refund drills, lawyer sign-off, then launch day | 5 |
 | **7** | **iPhone and Android** | Capacitor shell, `platform.ts`, StoreKit and Play Billing, Apple and Google webhooks, store listings, Android's 14-day closed test (at least 12 testers) | 6 |

@@ -602,6 +602,15 @@ button.copy-code:hover { background: rgba(61, 157, 82, 0.1); box-shadow: none; }
   pointer-events: none; animation: note-fade 4.5s ease-in forwards;
 }
 @keyframes note-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+/* A deck holding cards you don't have yet (a deck from a code): how many, and the way to the Store. */
+.missing-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; width: min(760px, 100%);
+  padding: 8px 12px; border-radius: 14px; background: #fff4dc; box-shadow: inset 0 0 0 2px #f0c77a;
+  font-size: 14px; font-weight: 700; line-height: 1.35; color: #7a4a0c; text-align: center;
+}
+button.missing-shop { min-height: 38px; padding: 6px 16px; white-space: nowrap; }
+.deck-lines li.short { background: #fff1dc; }
+.line-short { color: #b3620b; font-weight: 800; }
 /* Filters: a row of family buttons and a row of type buttons, all the same width. */
 .filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; width: 100%; }
 .chip-row { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 6px; width: min(460px, 100%); }

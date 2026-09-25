@@ -12,6 +12,17 @@
       "autoPort": true
     },
     {
+      "name": "web-lan",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "apps/web",
+        "--host"
+      ],
+      "port": 5174,
+      "autoPort": true
+    },
+    {
       "name": "studio-api",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

@@ -7,7 +7,10 @@ import {
   CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, cardName, catCount, copyLimit, deckCode, deckSize, otherFamilies,
   parseDeckCode, type DeckList,
 } from '@fruitcats/engine';
+import { missingForDeck } from '@fruitcats/store';
 import { owned, ownedCards, ownedHeroes } from './collection';
+import { STORE } from './flags';
+import { catalog, storeAccess } from './shop';
 import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
 import { BASE, artUrl, backButton, esc, famClass, settingsButton } from './ui';
 import { familyInfo } from './sets';
@@ -42,7 +45,14 @@ let codeNote = '';
 
 export interface BuilderHost {
   render(): void;
+  /** Open the Store with this deck's missing cards in the cart. */
+  openStore?(deck: DeckList): void;
 }
+
+/** Copies of the deck's cards (its Hero Cat too) the player doesn't have yet. */
+const missingCopies = (deck: DeckList) => Object.values(missingForDeck(deck, owned)).reduce((a, b) => a + b, 0);
+/** The Store can sell cards to this player (it's built in and open to them). */
+const canShop = () => STORE && storeAccess() === 'open' && !!catalog();
 
 /** Opening the Deck builder from Home: always your decks first. */
 export function openDeckBuilder(): void {
@@ -134,8 +144,13 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
       return;
     }
     case 'import': importing = true; importText = ''; importError = ''; break;
+    // A deck with cards you don't have yet: the Store, with them in the cart.
+    case 'shop': { const deck = shownDeck(); if (deck && host.openStore) { host.openStore(deck); return; } break; }
     case 'cancelimport': importing = false; break;
-    case 'doimport': importDeck(); break;
+    case 'doimport':
+      importDeck();
+      if (importedWithMissing && editing && host.openStore) { importedWithMissing = false; host.openStore(editing); return; }
+      break;
     case 'confirmdelete':
       if (deleting) {
         deleteDeck(deleting);
@@ -210,7 +225,10 @@ function importDeck(): void {
   importing = false;
   edit(deck, false);
   save();
+  importedWithMissing = canShop() && missingCopies(deck) > 0;
 }
+/** A deck from a code that needs cards you don't have: the builder goes on to show them in the Store. */
+let importedWithMissing = false;
 
 /** Tells the player their work is kept, since there's no Save button to press. */
 function saveState(): string {
@@ -304,7 +322,9 @@ function renderDeckList(): string {
         <div class="deck-tiles">
           ${mine.map((d) => {
             const ready = isReady(d);
-            const status = `<span class="deck-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : `${deckSize(d)} / ${DECK_RULES.size} cards`}</span>`;
+            const missing = ready ? 0 : missingCopies(d);
+            const status = `<span class="deck-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓'
+              : missing ? `Missing ${missing} ${missing === 1 ? 'card' : 'cards'}` : `${deckSize(d)} / ${DECK_RULES.size} cards`}</span>`;
             return `<div class="deck-tile-wrap">${deckTile(`deck:open:${d.id}`, d, '', status)}
               <button class="tile-delete" data-click="deck:delete:${d.id}" aria-label="Delete ${esc(d.name)}" title="Delete deck">${BIN}</button></div>`;
           }).join('')}
@@ -425,6 +445,7 @@ function renderBuilder(): string {
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Cats <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
     </div>
+    ${readOnly ? '' : renderMissing(deck)}
     ${readOnly ? '' : renderFilters(order)}
     ${message ? `<p class="build-message" role="status">${esc(message)}</p>` : ''}
     <div class="build-main">
@@ -434,6 +455,20 @@ function renderBuilder(): string {
       ${renderDeckPanel(deck, order, readOnly, ready)}
     </div>
   </div>`;
+}
+
+/**
+ * A deck holding cards you don't have (a deck from a code, or after test purchases were removed) says how many, and
+ * where the Store is open to you, offers to get them.
+ */
+function renderMissing(deck: DeckList): string {
+  const n = missingCopies(deck);
+  if (!n) return '';
+  const what = `${n} ${n === 1 ? 'card' : 'cards'} in this deck ${n === 1 ? 'isn’t' : 'aren’t'} in your collection yet.`;
+  return `<div class="missing-bar" role="status">
+      <span>${what} ${canShop() ? '' : 'The deck can be played once you have them.'}</span>
+      ${canShop() ? '<button class="primary missing-shop" data-click="deck:shop">See the missing cards</button>' : ''}
+    </div>`;
 }
 
 function renderFilters(order: string[]): string {
@@ -494,9 +529,10 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           </div>
           <ul class="deck-lines" data-keep-scroll="deck">
             ${ids.length ? ids.map((id) => `
-              <li class="${famClass(id)}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
+              <li class="${famClass(id)} ${!readOnly && owned(id) < deck.cards[id] ? 'short' : ''}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
                 <span class="line-cost">${CARDS[id].cost ?? ''}</span>
-                <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}</span>
+                <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}${!readOnly && owned(id) < deck.cards[id]
+                  ? ` <small class="line-short">${owned(id) ? `you have ${owned(id)}` : 'not yours yet'}</small>` : ''}</span>
                 ${readOnly ? `<span class="line-qty">×${deck.cards[id]}</span>` : `
                 <button class="line-btn" data-click="deck:remove:${id}" aria-label="Remove one ${esc(cardName(id))}">−</button>
                 <span class="line-qty">${deck.cards[id]}</span>

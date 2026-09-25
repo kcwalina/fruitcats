@@ -5,11 +5,11 @@
 // It syncs when you sign in (which also uploads the decks this device already had), when the game starts, when you
 // come back to it, when the connection returns, and two seconds after each change. Offline, changes simply wait.
 
+import { API } from './api';
 import { session, signOut, token } from './auth';
 import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type MyDeck } from './mydecks';
 import { applySyncedShowcase, forgetShowcase, onShowcaseChanged, savedShowcase } from './showcase';
-
-const API = 'https://api.fruitcats.viamochi.com';
+import { forgetStore } from './shop';
 
 interface Host { render(): void }
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
@@ -70,8 +70,13 @@ async function run(): Promise<boolean> {
   }
   if (!session()) return false;   // signed out while this was running
   const before = JSON.stringify(listDecks());
+  // A deck is only ever removed here because the account says it was deleted, never because the answer left it out:
+  // a server that rejects decks it shouldn't (it once couldn't read the card sets and dropped every deck) must not
+  // be able to wipe them from the device. Such a deck stays here and is sent again at the next sync.
+  const answered = new Set(merged.decks.map((d) => d.id));
+  const kept = listDecks().filter((d) => !answered.has(d.id));
   applySyncedDecks(
-    merged.decks.filter((d) => !d.deleted && d.deck).map((d): MyDeck => ({ id: d.id, updatedAt: d.updatedAt, ...d.deck! })),
+    [...merged.decks.filter((d) => !d.deleted && d.deck).map((d): MyDeck => ({ id: d.id, updatedAt: d.updatedAt, ...d.deck! })), ...kept],
     merged.decks.filter((d) => d.deleted).map((d) => d.id),
   );
   const saved = savedShowcase();
@@ -81,11 +86,12 @@ async function run(): Promise<boolean> {
 }
 
 /**
- * Sign out: send anything unsynced first, then this device forgets the account's decks and Showcase, so the next
- * person to sign in here doesn't see them. They stay safe in the account.
+ * Sign out: send anything unsynced first, then this device forgets the account's decks, Showcase and Store copy, so
+ * the next person to sign in here doesn't see them. They stay safe in the account.
  */
 export async function signOutAndForget() {
   await syncNow();
+  forgetStore();
   signOut();
   forgetDecks();
   forgetShowcase();

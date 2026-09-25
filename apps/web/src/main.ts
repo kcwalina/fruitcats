@@ -7,8 +7,10 @@ import { count, summary } from './progress';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { badgeMechanics, deckBlurb, familyInfo, heroParade, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
-import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder } from './deckbuilder';
-import { ACCOUNTS } from './flags';
+import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
+import { ACCOUNTS, STORE } from './flags';
+import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
+import { refreshStore, storeAccess } from './shop';
 import { startSync } from './sync';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
@@ -22,7 +24,7 @@ import {
 import {
   CARDS, DECKS, DECK_RULES, MECHANICS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
   legalActions, readyTreats, unitHealth, unitPower,
-  type Action, type GameState, type PlayerId, type Target, type Unit,
+  type Action, type DeckList, type GameState, type PlayerId, type Target, type Unit,
 } from '@fruitcats/engine';
 
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
@@ -63,7 +65,7 @@ const AI: PlayerId = 1;
 
 /** Home: the game modes. Solo: deck and difficulty for a game against the AI. Decks: the deck builder.
  *  Collection: your Display Case and the Binder. */
-type Screen = 'home' | 'solo' | 'decks' | 'collection' | 'game';
+type Screen = 'home' | 'solo' | 'decks' | 'collection' | 'store' | 'game';
 interface Selection {
   label: string;
   options: Action[];
@@ -365,6 +367,7 @@ function onClick(key: string) {
     if (raw === 'solo') screen = 'solo';
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
     else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
+    else if (raw === 'store' && storeOpen()) { openStore(storeHost); screen = 'store'; }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
     else if (raw === 'tutorial') { startGame(true); return; }
     else if (raw === 'soon') homeNote = MODES.find((m) => m.key === key.split(':')[2])?.soon ?? '';
@@ -381,7 +384,11 @@ function onClick(key: string) {
     return;
   }
   if (kind === 'deck') {
-    deckClick(raw, key.split(':')[2] ?? '', { render });
+    deckClick(raw, key.split(':')[2] ?? '', builderHost);
+    return;
+  }
+  if (STORE && kind === 'store') {
+    storeClick(raw, key.split(':').slice(2).join(':'), storeHost);
     return;
   }
   if (kind === 'col') {
@@ -533,7 +540,7 @@ function render() {
   const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')]
     .map((el) => [el.dataset.keepScroll, [el.scrollTop, el.scrollLeft]] as const));
   app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder()
-    : screen === 'collection' ? renderShowcase() : renderGame())
+    : screen === 'collection' ? renderShowcase() : screen === 'store' && STORE ? renderStore() : renderGame())
     + (showSettings ? renderSettings() : '') + (ACCOUNTS ? renderAccount() : '');
   for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
     [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
@@ -573,6 +580,23 @@ const ACCOUNT_TILES: Record<string, string> = {
   decks: 'Your decks live in your Via Mochi account, so they’re on every device.',
 };
 
+/**
+ * The Store opens only for an account the Fruitcats API lets in (its testers, until launch). For everyone else, signed
+ * in or not, the tile stays "Coming soon" (store-plan.md, Hidden until launch).
+ */
+const storeOpen = () => STORE && signedIn() && storeAccess() === 'open';
+
+const storeHost: StoreHost = {
+  render,
+  openDeckBuilder: () => { openDeckBuilder(); screen = 'decks'; render(); },
+  backToBuilder: () => { screen = 'decks'; render(); },
+};
+/** The deck builder can send a deck's missing cards to the Store. */
+const builderHost: BuilderHost = {
+  render,
+  openStore: (deck: DeckList) => { if (STORE) { openStoreForDeck(storeHost, deck); screen = 'store'; render(); } },
+};
+
 /** The unfinished game, for the Resume button: "Round 4 · Sunny vs Pippin". */
 function savedGameLabel(): string | null {
   const saved = loadGame()?.game;
@@ -597,7 +621,9 @@ function renderHome(): string {
     <nav class="modes">
       ${MODE_GROUPS.map((group) => `
       <div class="mode-group">
-        ${group.map((m) => {
+        ${group.map((mode) => {
+          // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
+          const m = mode.key === 'store' && storeOpen() ? { ...mode, soon: '' } : mode;
           // Every tile is the same: picture, name, and one line under it. That line says "Coming soon",
           // or on Solo, that a game is waiting to be continued.
           const resume = m.key === 'solo' && saved;
@@ -1322,6 +1348,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
     if (screen === 'collection' && showcaseEscape({ render })) return;
+    if (STORE && screen === 'store' && storeEscape(storeHost)) return;
     if (selection) { selection = null; render(); }
   }
 });
@@ -1341,3 +1368,5 @@ if (import.meta.env.DEV) {
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
 if (ACCOUNTS) { startSync({ render }); askForTermsIfNeeded({ render }); }
+// Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.
+if (STORE && signedIn()) void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });

@@ -755,7 +755,7 @@ function actionBox(p: BriefPicture, state: State, versions: Version[], stepOpen:
     const review = !versions.length ? '<p class="muted small">Nothing uploaded yet.</p>' : `
       <p class="small">${last?.kind === 'sketch' ? 'The newest version is a <b>sketch</b>.' : 'The newest version is <b>finished</b>.'} Write what to change as a comment first: the artist sees both.</p>
       <div class="review-buttons">
-        ${last?.kind === 'sketch' && state !== 'sketch-ok'
+        ${last?.kind === 'sketch' && state !== 'sketch-ok' && state !== 'approved'
           ? `<button class="btn good" data-click="review:${key}:sketch-ok">Approve the sketch</button>`
           : state !== 'approved' ? `<button class="btn good" data-click="review:${key}:approved">Approve</button>` : ''}
         ${state !== 'changes' ? `<button class="btn warn" data-click="review:${key}:changes">Ask for changes</button>` : ''}
@@ -884,7 +884,9 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
       <p class="pv-note">The card shows your whole image, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
   } else if (tab === 'game') body = gamePreview(p, url, code, key);
   else {
-    body = url ? `<div class="walls">${DEVICES.map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`).join('')}</div>
+    // The phone comes first and largest: most wallpapers are made for a phone's lock screen.
+    const wall = ([d, label]: [string, string]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`;
+    body = url ? `<div class="walls">${wall(DEVICES[0])}<div class="walls-more">${DEVICES.slice(1).map(wall).join('')}</div></div>
       <p class="pv-note">Players can make any card they own into a wallpaper. A phone keeps only the middle of your image, with the clock over its upper part.</p>`
       : '<p class="pv-empty">Upload an image to see it as a wallpaper.</p>';
   }

@@ -1,0 +1,407 @@
+{
+  "set": "TP1",
+  "name": "Tryout",
+  "artist": "You",
+  "version": 1,
+  "dates": {
+    "1": null,
+    "4": null,
+    "all": null
+  },
+  "about": "A pretend project for trying the Studio as an artist. Nothing here goes into the game: upload anything you like and see how it looks.",
+  "audience": "Anyone trying the Studio.",
+  "style": "Any style. This set is for practice.",
+  "families": {
+    "Orchard": {
+      "world": "an apple orchard at golden hour: ladders, baskets, falling leaves",
+      "note": "the practice deck's family"
+    },
+    "Citrus": {
+      "world": "a mountain valley at dusk, full of paper lanterns"
+    },
+    "Tropical": {
+      "world": "high above the clouds, on a flying ship"
+    }
+  },
+  "milestones": [
+    {
+      "id": 1,
+      "title": "Yuzu (Foil single)",
+      "note": "One picture, from sketch to finished. We get to know each other's taste on one card."
+    },
+    {
+      "id": 2,
+      "title": "Mango (Gold single)",
+      "note": "One picture, from sketch to finished."
+    },
+    {
+      "id": 3,
+      "title": "Plum (Signature card)",
+      "note": "Two pictures, Kitten and Big Cat: the best art in the set."
+    },
+    {
+      "id": 4,
+      "title": "Pip (the deck's main pictures)",
+      "note": "Two pictures, Kitten and Big Cat. Signed in a corner."
+    },
+    {
+      "id": 5,
+      "title": "The rest of the deck",
+      "note": "A few pictures at a time; we reply to each batch."
+    },
+    {
+      "id": 6,
+      "title": "Pawtraits",
+      "note": "After each character's card picture is agreed, so the two match."
+    },
+    {
+      "id": 7,
+      "title": "Announcement key art",
+      "note": "One wide picture for the release announcement."
+    }
+  ],
+  "pictures": [
+    {
+      "file": "TP1-X01.webp",
+      "card": "TP1-X01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "foil",
+      "style": "painted",
+      "milestone": 1,
+      "draw": "A calm cat in a yuzu-yellow hood, lighting paper lanterns on a mountain path at dusk. Warm light on her face from the lantern in her paws.",
+      "mustKeep": [
+        "a cat",
+        "a yuzu or citrus hood (the Citrus family)",
+        "the face clearly visible"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "showcase": true,
+      "family": "Citrus",
+      "pawtrait": "legend-yuzu.webp"
+    },
+    {
+      "file": "TP1-X02.webp",
+      "card": "TP1-X02",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "gold",
+      "style": "painted",
+      "milestone": 2,
+      "draw": "A swashbuckling cat in a mango hood on the deck of a flying ship, one boot on the rail, clouds rushing past. It has Zoomies, so it should feel fast.",
+      "mustKeep": [
+        "a cat",
+        "a mango (the Tropical family)",
+        "the face clearly visible"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene",
+        "object"
+      ],
+      "showcase": true,
+      "family": "Tropical",
+      "pawtrait": "legend-mango.webp"
+    },
+    {
+      "file": "TP1-X03-kitten.webp",
+      "card": "TP1-X03",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "signature",
+      "style": "sticker",
+      "milestone": 3,
+      "draw": "Plum as a Kitten: a small purple cat with paint on her paws, dabbing a star onto the night sky.",
+      "mustKeep": [
+        "a cat",
+        "a plum (the Orchard family)",
+        "the same character as the Big Cat"
+      ],
+      "open": [
+        "name",
+        "breed",
+        "flavor"
+      ],
+      "showcase": true,
+      "side": "kitten",
+      "family": "Orchard",
+      "signature": "welcome"
+    },
+    {
+      "file": "TP1-X03-bigcat.webp",
+      "card": "TP1-X03",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "signature",
+      "style": "sticker",
+      "milestone": 3,
+      "draw": "Plum grown up: a tall, elegant painter cat on a rooftop, a sky full of stars she painted swirling behind her.",
+      "mustKeep": [
+        "a cat",
+        "a plum (the Orchard family)",
+        "the same character as the Kitten"
+      ],
+      "open": [
+        "name",
+        "breed",
+        "flavor"
+      ],
+      "showcase": true,
+      "side": "bigcat",
+      "family": "Orchard",
+      "signature": "requested"
+    },
+    {
+      "file": "TP1-H01-kitten.webp",
+      "card": "TP1-H01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "sticker",
+      "milestone": 4,
+      "draw": "Pip as a Kitten: a tiny cat in a red apple hood, halfway up an apple tree, very proud of itself.",
+      "mustKeep": [
+        "a cat",
+        "an apple hood (the Orchard family)"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "look"
+      ],
+      "main": true,
+      "side": "kitten",
+      "family": "Orchard",
+      "signature": "requested"
+    },
+    {
+      "file": "TP1-H01-bigcat.webp",
+      "card": "TP1-H01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "sticker",
+      "milestone": 4,
+      "draw": "Pip grown up: a confident ranger cat with a satchel of apples, keeping watch over the orchard.",
+      "mustKeep": [
+        "a cat",
+        "an apple hood (the Orchard family)",
+        "the same character as the Kitten"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "look"
+      ],
+      "main": true,
+      "side": "bigcat",
+      "family": "Orchard",
+      "signature": "requested"
+    },
+    {
+      "file": "TP1-P01.webp",
+      "card": "TP1-P01",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A round little hedgehog with apple-peel spines, curled up in a basket of apples.",
+      "mustKeep": [
+        "a hedgehog"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "family": "Orchard"
+    },
+    {
+      "file": "TP1-P02.webp",
+      "card": "TP1-P02",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A pear-shaped owl on a branch at golden hour, peering at the viewer.",
+      "mustKeep": [
+        "an owl",
+        "a pear"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "animal"
+      ],
+      "family": "Orchard"
+    },
+    {
+      "file": "TP1-P03.webp",
+      "card": "TP1-P03",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A stocky badger guarding the orchard gate, arms folded, crabapples around its feet.",
+      "mustKeep": [
+        "a badger",
+        "guarding something (it has Guardian)"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "family": "Orchard"
+    },
+    {
+      "file": "TP1-P04.webp",
+      "card": "TP1-P04",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A gust of wind shaking a tree, apples tumbling down into waiting paws. No main character needed: the moment itself.",
+      "mustKeep": [
+        "falling fruit"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "scene"
+      ],
+      "family": "Orchard"
+    },
+    {
+      "file": "TP1-P05.webp",
+      "card": "TP1-P05",
+      "kind": "card",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "deck",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A paper kite shaped like a leaf, high above the orchard, its string leading down out of the picture.",
+      "mustKeep": [
+        "a paper kite"
+      ],
+      "open": [
+        "name",
+        "flavor",
+        "look"
+      ],
+      "family": "Orchard"
+    },
+    {
+      "file": "TP1-K01.webp",
+      "card": "TP1-K01",
+      "kind": "token",
+      "size": [
+        1536,
+        1024
+      ],
+      "tier": "token",
+      "style": "painted",
+      "milestone": 5,
+      "draw": "A small folded paper crane, come to life, hopping between fallen leaves.",
+      "mustKeep": [
+        "a paper crane (the Paper Kite makes it)"
+      ],
+      "open": [
+        "flavor"
+      ],
+      "family": "Orchard"
+    },
+    {
+      "file": "legend-yuzu.webp",
+      "card": null,
+      "kind": "pawtrait",
+      "size": [
+        512,
+        512
+      ],
+      "tier": "legend",
+      "milestone": 6,
+      "draw": "Yuzu's head and shoulders, from the Foil card, looking at the viewer. Simple warm background.",
+      "mustKeep": [
+        "the same character as her card"
+      ],
+      "open": []
+    },
+    {
+      "file": "legend-mango.webp",
+      "card": null,
+      "kind": "pawtrait",
+      "size": [
+        512,
+        512
+      ],
+      "tier": "legend",
+      "milestone": 6,
+      "draw": "Mango's head and shoulders, from the Gold card, with a pirate grin.",
+      "mustKeep": [
+        "the same character as the card"
+      ],
+      "open": []
+    },
+    {
+      "file": "key-art.webp",
+      "card": null,
+      "kind": "announcement",
+      "size": [
+        2400,
+        1260
+      ],
+      "tier": "announcement",
+      "milestone": 7,
+      "draw": "The set's cast together: Pip in the middle of the orchard, Yuzu's lanterns and Mango's ship in the sky behind. Leave some calm space on the left for the set's name.",
+      "mustKeep": [
+        "Pip in the middle"
+      ],
+      "open": [
+        "scene"
+      ]
+    }
+  ]
+}

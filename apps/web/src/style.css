@@ -1119,7 +1119,7 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
 }
 
 /* ── An online game (src/online.ts) ─────────────────────────────────────────────────────────────── */
-.player-face.online { position: relative; display: flex; align-items: center; gap: 6px; }
+.player-face.online { position: relative; }
 .clock-chip {
   position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); white-space: nowrap;
   padding: 1px 8px; border-radius: 999px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
@@ -1133,13 +1133,34 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
   background: #fff; box-shadow: var(--shadow); font-weight: 800; animation: pop 0.25s ease-out;
 }
 .emote-bubble::after { content: ''; position: absolute; right: 20px; top: 100%; border: 7px solid transparent; border-top-color: #fff; }
-.emote-bar { position: relative; }
-.emote-open { width: 36px; height: 36px; padding: 0; font-size: 18px; }
+/* Your 🐾 badge sits on the Pawtrait's top corner (the clock is under it): tap it for the emotes, which open above. */
+.player-face .emote-open {
+  position: absolute; left: -10px; top: -6px; z-index: 3; width: 30px; height: 30px; padding: 0; border-radius: 50%;
+  font-size: 15px; line-height: 1; background: var(--panel); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(60, 30, 10, 0.35);
+}
 .emote-menu {
   position: absolute; z-index: 20; right: 0; bottom: calc(100% + 6px); display: flex; flex-direction: column; gap: 4px;
   padding: 8px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); min-width: 150px;
 }
 .emote-menu button { text-align: left; }
+/* The ⋯ menu beside Rules and Home: Concede, Show my hand, Mute. It opens above the button on phones (the row is at
+   the bottom), below it on wide screens (the row is at the top of the side column). */
+.game-menu-wrap { position: relative; display: flex; }
+.game-menu-open { font-size: 22px; line-height: 1; font-weight: 800; }
+.game-menu {
+  position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); display: flex; flex-direction: column; gap: 6px;
+  padding: 8px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); min-width: 190px;
+}
+@media (max-width: 1000px) { .game-menu { top: auto; bottom: calc(100% + 6px); } }
+.game-menu button { width: 100%; text-align: left; }
+/* Use ability / Big Cat attack sit in the stats column, under the Hero Cat's text, instead of squeezing it. */
+.stats .hero-actions { margin-top: 2px; }
+@media (max-width: 640px) {
+  .stats:has(.hero-actions) .ability { display: none; }
+  .stats .hero-actions button { white-space: nowrap; }
+  .midbar .buttons button { white-space: nowrap; }
+  .midbar .buttons .yarn-ico { display: none; }   /* "Take the Yarn" on one line */
+}
 .foe-hand.shown { display: flex; gap: 4px; }
 .foe-hand.shown img { height: calc(var(--card-h) * 0.6); border-radius: 6px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
 .midbar .notice { margin-bottom: 2px; }
@@ -1184,3 +1205,10 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
   .pf-option:has(.segmented) { flex-direction: column; align-items: stretch; }
   .pf-option .segmented button { flex: 1; }
 }
+/* In the bottom row, ⋯ is a small round button like the gear; its menu's buttons don't stretch like the row's. */
+.side-buttons .game-menu-wrap { flex: 0 0 auto; }
+.side-buttons .game-menu-open { flex: 0 0 44px; width: 44px; max-width: none; padding: 0; }
+.side-buttons .game-menu button { flex: none; max-width: none; }
+/* Your own emote shows to the left of your Pawtrait, clear of your 🐾 badge. */
+.emote-bubble.mine { right: calc(100% + 22px); bottom: auto; top: 50%; transform: translateY(-50%); animation: none; }
+.emote-bubble.mine::after { right: -12px; top: 50%; margin-top: -7px; border-top-color: transparent; border-left-color: #fff; }

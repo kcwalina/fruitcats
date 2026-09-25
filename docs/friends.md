@@ -19,7 +19,10 @@ Already have an account on another device? Same steps: type your email, then the
 
 ## Add a friend
 
-Easiest with both phones together: one shows a code, the other scans it.
+Two ways: **together**, one phone shows a QR code and the other scans it; or **apart**, you send your code by text and
+your friend types it in.
+
+### Together: scan the QR code
 
 <div class="steps">
 <figure><img src="guide/friends/friend-1-empty.webp" alt="Play a friend, with only Add a friend in the list" loading="lazy"><figcaption><b>1</b> Both of you: tap <b>Friend</b>, then <b>+ Add a friend</b>.</figcaption></figure>
@@ -30,8 +33,16 @@ Easiest with both phones together: one shows a code, the other scans it.
 <figure><img src="guide/friends/friend-6-done.webp" alt="You and Sam are now friends!" loading="lazy"><figcaption><b>6</b> Friends! Both phones say so, with a <b>Play</b> button.</figcaption></figure>
 </div>
 
-Not together? The code is under the QR code (like **K7M-4Q2**): read it out or send it, and your friend types it in the
-box under **Scan a code**. A code works once, for 15 minutes.
+### Apart: send your code
+
+<div class="steps">
+<figure><img src="guide/friends/friend-3-code.webp" alt="Your friend code, with Send the code and Copy the code" loading="lazy"><figcaption><b>1</b> Tap <b>Friend</b> → <b>+ Add a friend</b> → <b>Show my code</b>, then <b>Send the code</b>: pick Messages, WhatsApp or anything else.</figcaption></figure>
+<figure><img src="guide/friends/friend-typed.webp" alt="Add a friend, with a code being typed into the box" loading="lazy"><figcaption><b>2</b> Your friend taps <b>Friend</b> → <b>+ Add a friend</b> and types the code into the box.</figcaption></figure>
+<figure><img src="guide/friends/friend-5-confirm.webp" alt="Add Sam as a friend? Cancel or Add" loading="lazy"><figcaption><b>3</b> They check it's you, and tap <b>Add</b>.</figcaption></figure>
+</div>
+
+A code works **once**, for **15 minutes**: send it when your friend is ready. Out of time? Show your code again for a new one.
+On a computer, **Copy the code** copies the message, ready to paste.
 
 ## Play a friend
 
@@ -43,8 +54,9 @@ box under **Scan a code**. A code works once, for 15 minutes.
 <figure><img src="guide/friends/play-5-answer.webp" alt="A challenge: pick a deck, then Not now or Play" loading="lazy"><figcaption><b>5</b> They pick their deck and tap <b>Play</b>.</figcaption></figure>
 <figure><img src="guide/friends/play-6-versus.webp" alt="You vs Sam, with both Hero Cats" loading="lazy"><figcaption><b>6</b> The game starts.</figcaption></figure>
 <figure><img src="guide/friends/play-7-game.webp" alt="An online game: Sam says Meow!, your clock shows 2:00" loading="lazy"><figcaption><b>7</b> Play as usual. The clock under your Pawtrait shows your time; <b>Hold on</b> gives you more.</figcaption></figure>
-<figure><img src="guide/friends/play-8-emotes.webp" alt="The emote menu: Meow!, Purr, Hiss!, Good game!" loading="lazy"><figcaption><b>8</b> Tap 🐾 to say something.</figcaption></figure>
-<figure><img src="guide/friends/play-9-result.webp" alt="You win! You 1 – 0 Sam, with Rematch and Home" loading="lazy"><figcaption><b>9</b> At the end: your score against each other, and <b>Rematch</b>.</figcaption></figure>
+<figure><img src="guide/friends/play-8-emotes.webp" alt="The emote menu: Meow!, Purr, Hiss!, Good game!" loading="lazy"><figcaption><b>8</b> Tap 🐾 on your Pawtrait to say something.</figcaption></figure>
+<figure><img src="guide/friends/play-menu.webp" alt="The ⋯ menu: Mute their emotes, Concede" loading="lazy"><figcaption><b>9</b> ⋯ has the rest: <b>Concede</b>, <b>Mute their emotes</b>, and in a teaching game <b>Show my hand</b>.</figcaption></figure>
+<figure><img src="guide/friends/play-9-result.webp" alt="You win! You 1 – 0 Sam, with Rematch and Home" loading="lazy"><figcaption><b>10</b> At the end: your score against each other, and <b>Rematch</b>.</figcaption></figure>
 </div>
 
 ### How to play: the choices

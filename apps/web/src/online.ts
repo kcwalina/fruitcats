@@ -27,6 +27,8 @@ export interface Online {
   emotes: { seat: PlayerId; text: string; at: number }[];
   muted: boolean;
   emoting: boolean;
+  /** The ⋯ menu beside Rules and Home (Concede, Show my hand, Mute). */
+  menu: boolean;
   /** A teaching game's suggested move. */
   hint: Action | null;
   /** Someone used a "Hold on" just now. */
@@ -54,7 +56,7 @@ export function enterMatch(msg: Extract<ServerMessage, { t: 'match' }>) {
   const muted = ol?.muted ?? false;
   ol = {
     info: msg.info, clock: msg.clock, clockAt: Date.now(), showing: msg.showing, end: msg.end, rematch: msg.rematch,
-    away: null, emotes: [], muted, emoting: false, hint: null, held: null, nudgedAt: 0,
+    away: null, emotes: [], muted, emoting: false, menu: false, hint: null, held: null, nudgedAt: 0,
     versusUntil: fresh ? Date.now() + 3200 : 0, conceding: false, sent: false, undone: null,
   };
 }
@@ -127,14 +129,21 @@ export function clockChip(seat: PlayerId): string {
   return `<span class="clock-chip ${ol.clock.phase} ${low ? 'low' : ''}" data-clock="${seat}">${clockText()}</span>`;
 }
 
-/** The Pawtrait on the board, with emote bubbles over it. */
+/**
+ * The Pawtrait on the board, in the same place and size as in Solo. Everything online adds sits on it and takes no room:
+ * the clock under it, emote bubbles over it, and on yours a small 🐾 badge that opens the emotes.
+ */
 export function playerFace(seat: PlayerId): string {
   if (!ol) return '';
   const now = Date.now();
   const bubble = ol.emotes.filter((e) => e.seat === seat && now - e.at < 3000).at(-1);
+  const mine = seat === mySeat();
+  const list = (Object.keys(EMOTES) as Emote[]).filter((e) => teaching() || !['hint', 'goodtry'].includes(e));
   return `${pawtrait(ol.info.players[seat].avatar, 'board-pawtrait')}
-    ${bubble ? `<span class="emote-bubble ${seat === mySeat() ? 'mine' : ''}">${esc(bubble.text)}</span>` : ''}
-    ${clockChip(seat)}`;
+    ${bubble ? `<span class="emote-bubble ${mine ? 'mine' : ''}">${esc(bubble.text)}</span>` : ''}
+    ${clockChip(seat)}
+    ${mine && !ol.end ? `<button class="emote-open" data-click="ol:emotes" aria-expanded="${ol.emoting}" aria-label="Say something" title="Say something">🐾</button>` : ''}
+    ${mine && ol.emoting ? `<div class="emote-menu">${list.map((e) => `<button data-click="ol:emote:${e}">${esc(EMOTES[e])}</button>`).join('')}</div>` : ''}`;
 }
 
 // Once a second: the clock's numbers, redrawn in place (no full render, so a card being dragged isn't disturbed).
@@ -255,25 +264,22 @@ export function hintText(s: GameState, a: Action): string {
 
 // ── Side buttons, emotes ────────────────────────────────────────────────────────────────────────
 
-/** Buttons beside Rules and Settings in an online game. */
+/**
+ * One ⋯ button beside Rules, Settings and Home, the same in every online game, so the row never grows or wraps. It
+ * opens the rest: Concede, Show my hand (teaching games), Mute their emotes.
+ */
 export function onlineSideButtons(): string {
-  if (!ol) return '';
-  const show = teaching() && !ol.end
-    ? `<button data-click="ol:show" aria-pressed="${ol.showing[mySeat()]}">${ol.showing[mySeat()] ? 'Hide my hand' : 'Show my hand'}</button>` : '';
-  const concede = ol.end ? '' : ol.conceding
-    ? '<button class="danger" data-click="ol:concede">Yes, concede</button>'
-    : '<button data-click="ol:concedeask">Concede</button>';
-  return `${show}${concede}`;
-}
-
-/** The emote button and its choices, beside your Pawtrait. */
-export function emoteBar(): string {
   if (!ol || ol.end) return '';
-  const list = (Object.keys(EMOTES) as Emote[]).filter((e) => teaching() || !['hint', 'goodtry'].includes(e));
-  return `<div class="emote-bar">
-    <button class="icon-button emote-open" data-click="ol:emotes" aria-expanded="${ol.emoting}" aria-label="Say something" title="Say something">🐾</button>
-    ${ol.emoting ? `<div class="emote-menu">${list.map((e) => `<button data-click="ol:emote:${e}">${esc(EMOTES[e])}</button>`).join('')}
-      <button class="link-button" data-click="ol:mute">${ol.muted ? 'Show their emotes' : 'Mute their emotes'}</button></div>` : ''}
+  const show = teaching()
+    ? `<button data-click="ol:show" aria-pressed="${ol.showing[mySeat()]}">${ol.showing[mySeat()] ? 'Hide my hand' : 'Show my hand'}</button>` : '';
+  const concede = ol.conceding
+    ? '<button class="danger" data-click="ol:concede">Yes, concede</button>'
+    : '<button data-click="ol:concedeask">Concede…</button>';
+  return `<div class="game-menu-wrap">
+    <button class="game-menu-open" data-click="ol:menu" aria-expanded="${ol.menu}" aria-label="More" title="More">⋯</button>
+    ${ol.menu ? `<div class="game-menu">${show}
+      <button data-click="ol:mute">${ol.muted ? 'Show their emotes' : 'Mute their emotes'}</button>
+      ${concede}</div>` : ''}
   </div>`;
 }
 
@@ -355,14 +361,15 @@ export function onlineClick(action: string): 'home' | void {
     case 'hold': send({ t: 'hold', match: id }); return;
     case 'time': send({ t: 'time', match: id, what: arg as 'give' | 'nudge' }); return;
     case 'end': send({ t: 'end', match: id, how: arg as 'claim' | 'call-off' }); return;
+    case 'menu': ol.menu = !ol.menu; ol.conceding = false; ol.emoting = false; return;
     case 'concedeask': ol.conceding = true; return;
-    case 'concede': send({ t: 'end', match: id, how: 'concede' }); ol.conceding = false; return;
+    case 'concede': send({ t: 'end', match: id, how: 'concede' }); ol.conceding = false; ol.menu = false; return;
     case 'hint': send({ t: 'hint', match: id }); return;
     case 'undo': send({ t: 'undo', match: id }); return;
-    case 'show': send({ t: 'show', match: id, on: !ol.showing[mySeat()] }); return;
-    case 'emotes': ol.emoting = !ol.emoting; return;
+    case 'show': send({ t: 'show', match: id, on: !ol.showing[mySeat()] }); ol.menu = false; return;
+    case 'emotes': ol.emoting = !ol.emoting; ol.menu = false; return;
     case 'emote': send({ t: 'emote', match: id, emote: arg as Emote }); ol.emoting = false; return;
-    case 'mute': ol.muted = !ol.muted; ol.emoting = false; return;
+    case 'mute': ol.muted = !ol.muted; ol.menu = false; return;
     case 'rematch': send({ t: 'rematch', match: id }); return;
     case 'home': return 'home';
   }

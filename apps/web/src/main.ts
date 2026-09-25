@@ -22,7 +22,7 @@ import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDe
 import { addOpen, closeAddSheet, closeFriends, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
 import { live, onLive, send, startLive, stopLive, wantConnection } from './live';
 import {
-  emoteBar, enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
+  enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
   playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
 } from './online';
 import {
@@ -1062,13 +1062,13 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
       </div>
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
            data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+      ${p === mySeat && (canAbility || canAttack) ? `<div class="hero-actions">
+        ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
+        ${canAttack ? '<button class="primary" data-click="btn:heroattack">Big Cat attack</button>' : ''}
+      </div>` : ''}
     </div>
-    ${p === mySeat && (canAbility || canAttack) ? `<div class="hero-actions">
-      ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
-      ${canAttack ? '<button class="primary" data-click="btn:heroattack">Big Cat attack</button>' : ''}
-    </div>` : ''}
     ${p === theirSeat ? shownHand(s) ?? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
-    ${ol ? `<div class="player-face online">${playerFace(p)}${p === mySeat ? emoteBar() : ''}</div>`
+    ${ol ? `<div class="player-face online">${playerFace(p)}</div>`
       : ACCOUNTS ? `<div class="player-face">${boardFace(p === mySeat ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
 }

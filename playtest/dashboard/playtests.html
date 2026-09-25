@@ -202,7 +202,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
           <select id="kind">
             <option value="llm-playtest">LLM playtest: gpt-oss plays the bot and reports</option>
             <option value="balance">Bot gauntlet: starters, random and changed decks</option>
-            <option value="deck-hunt">Deck hunt: the LLM designs decks to break the game</option>
+            <option value="deck-hunt">Deck hunt: Kimi K3 designs decks to break the game (a few cents)</option>
             <option value="deck-build">Build a deck: Kimi K3 builds one for a goal (up to $1)</option>
             <option value="nightly">Nightly run, now</option>
           </select>
@@ -501,7 +501,7 @@ function buildRequest() {
       invalid: goal.length < 3 ? 'Say what the deck is for.' : '',
     };
   }
-  if (kind === 'deck-hunt') return { args: `--provider pc2024 --ideas ${n('ideas')}`, label: `Deck hunt, ${n('ideas')} ideas` };
+  if (kind === 'deck-hunt') return { args: `--provider fireworks-k3 --ideas ${n('ideas')}`, label: `Deck hunt, ${n('ideas')} ideas, Kimi K3` };
   return { args: `--provider pc2024 --hours ${n('hours')}`, label: `Nightly run with ${n('hours')} h of LLM games` };
 }
 $('kind').addEventListener('change', renderOptions);

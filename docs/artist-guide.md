@@ -25,8 +25,8 @@ For each set of cards, we send you an **art brief** that lists every picture the
 - **sometimes one wide picture for the set's announcement**, the web page that tells players about the release
 
 Two pictures in each deck are its **main pictures**: the deck's main character, drawn in two forms. They are
-the face of the deck and what sells it, so they need to be the strongest pictures you make for it. Cards that
-players buy on their own also need **showcase art**. The brief marks all of these.
+the face of the deck, so they're the place for your strongest work. Cards that players buy on their own are a
+chance to show off, too. The brief marks all of these.
 
 ### Sizes and files
 
@@ -53,11 +53,11 @@ The steps start with the cards sold on their own, one at a time, then the deck's
 rest of the deck in small batches, with Pawtraits and the announcement picture last. See
 [Milestones](#milestones) for the details.
 
-### Your ideas are welcome
+### Your ideas come first
 
-Many names and details were placeholders we picked quickly. If a card would look better as a different
-animal, with a different name or a different scene, suggest it. The brief marks what is open to change on
-each card. See [Suggesting changes](#suggesting-changes).
+You're a collaborator. Everything in the brief is a suggestion: the story, the names, the scenes, even what a card
+does. If you want to draw something else, go for it, and we'll change the card to fit your picture. See
+[Suggesting changes](#suggesting-changes).
 
 ### One request
 
@@ -67,7 +67,7 @@ other pictures are welcome too.
 ### Where to find more
 
 - [About Fruitcats](#about-fruitcats) and [the art brief](#the-art-brief)
-- [Card tiers](#card-tiers): which cards need showcase art, and what that means
+- [Card tiers](#card-tiers): which cards are sold on their own, and what has worked well for them
 - [Two styles](#two-styles): painted scenes, and plush stickers for Hero Cats
 - [Pawtraits](#pawtraits-avatars)
 - [How your picture is used](#how-your-picture-is-used): on the card, small in the game, and as a wallpaper
@@ -103,14 +103,14 @@ For each picture, the brief tells you:
 - the file name
 - the size
 - what to draw
-- which details must not change, because the card's name or rules depend on them (for example, "the cat has
-  no hair")
-- whether the card is an ordinary card or a card people pay for (paid cards need better art; see
-  [Card tiers](#card-tiers))
-- what is open to change on the card (see [Suggesting changes](#suggesting-changes))
+- the things we had in mind for it (for example, "we imagined a hairless cat")
+- whether the card is an ordinary card or one people buy on its own (see [Card tiers](#card-tiers))
 - which milestone the picture belongs to
 
-The brief also marks the pictures that need something extra:
+All of it is a starting point. If you have a better idea, go for it, and we'll change the card to fit your
+picture (see [Suggesting changes](#suggesting-changes)).
+
+The brief also marks the pictures that come in more than one piece:
 
 - **Hero Cats** have two pictures, one for each form (Kitten and Big Cat).
 - **Some cards come with a Pawtrait.** See [Pawtraits](#pawtraits-avatars).
@@ -119,23 +119,25 @@ The brief also marks the pictures that need something extra:
 
 ## Card tiers
 
-Cards are sold in different ways, and a card that costs more needs better art.
+Cards are sold in different ways. The ones people buy on their own are a chance to show off.
 
-| Kind of card | How it's sold | How it looks in the game | What the art needs |
+| Kind of card | How it's sold | How it looks in the game | What we hope for |
 |---|---|---|---|
-| **Deck card** | Inside a deck of 50 cards. The deck costs $9.99. | A frame in the colours of the card's family | A clear, good picture in the set's style |
-| **Token** | Not sold. Another card creates it during a game. | A frame in the colours of the card's family | Same as a deck card. If a paid card creates it, make it as good as the paid card. |
-| **Foil card** | Sold on its own for $1.49 | A shiny silver frame | Showcase art (see below) |
-| **Gold card** | Sold on its own for $4.99 | A gold frame | Showcase art, with more detail than a Foil card |
-| **Signature card** | Sold on its own for $19.99. Each set has only one. It is always a Hero Cat. | A black stone frame with glowing cracks | The best art in the set, for both of its pictures (Kitten and Big Cat) |
+| **Deck card** | Inside a deck of 50 cards. The deck costs $9.99. | A frame in the colours of the card's family | A clear, fun picture in the set's style |
+| **Token** | Not sold. Another card creates it during a game. | A frame in the colours of the card's family | Like a deck card. If a card sold on its own creates it, it's worth the same care. |
+| **Foil card** | Sold on its own for $1.49 | A shiny silver frame | A picture people want to show off (see below) |
+| **Gold card** | Sold on its own for $4.99 | A gold frame | The same, a step richer |
+| **Signature card** | Sold on its own for $19.99. Each set has only one. It is always a Hero Cat. | A black stone frame with glowing cracks | The set's centrepiece, in both of its pictures (Kitten and Big Cat) |
 
-People who pay for a card should get something they want to keep and show to others. It should never look
-like an ordinary deck card. We call this **showcase art**. Showcase art has:
+People who buy a card on its own get something they'd like to keep and show to friends, so these are the cards
+to go all out on. We call this **showcase art**. Things that have worked well for us:
 
-- **the cat's face clearly visible.** Nothing covers it: no closed helmet, no turned head, no shadow.
-- **a heroic pose.** The character looks confident and strong. A low camera angle helps.
-- **dramatic light.** For example, a strong light behind the character, or a glowing object in the scene.
-- **a lot of detail.** For example, decorated armour or clothes, a full background, sparks or mist.
+- the character's face easy to see
+- a confident, heroic pose
+- dramatic light, like a glow behind the character
+- rich detail: clothes, a full background, sparks or snow
+
+These are ideas, not rules. A quiet, funny or unexpected picture can be just as special.
 
 Compare the Heat Wave cards: an ordinary deck card, then a Foil card (Jack), a Gold card (Nova) and the
 Signature card (Reaper).
@@ -185,13 +187,13 @@ In cute sets, the face is minimal and sewn-on: tiny dot eyes, a small smile, pin
 the forehead, long straight whiskers. In "cool" sets (like Heat Wave), it has attitude instead: narrowed eyes, one
 raised eyebrow, a cocky half-smile, no blush.
 
-A **Signature** Hero Cat keeps the sticker style but is pushed to showcase level: a glowing halo behind it,
+A **Signature** Hero Cat has kept the sticker style and gone further, for example with a glowing halo behind it,
 costume details (Reaper has a cape and glowing ember cracks), stronger contrast and a commanding pose.
 
 ### Families
 
 Every card belongs to a **family**, and each family has its own background world and frame colours. The frame
-colours are added by us, but your backgrounds should belong to the same world. Families so far:
+colours are added by us, and backgrounds from the same world help a family feel like one place. Families so far:
 
 | Family | Background world (painted scenes) |
 |---|---|
@@ -232,10 +234,10 @@ Pawtrait is a **Legend Pawtrait** if it comes with a Legendary card. The brief m
 
 *How players see Pawtraits. The ring is added by the game. The small ones show the size in a game.*
 
-It should be **recognisably the same character as the card**: same fur colour, same hood, same markings. But it's drawn much
-simpler, because it's shown as small as a thumbnail.
+Players will expect it to be **the same character as the card**, drawn simpler, because it's shown as small as a
+thumbnail.
 
-**Things we've rejected for Pawtraits, so please avoid them:**
+**What hasn't worked for Pawtraits so far:**
 
 - busy, detailed, hairy or painterly: no fur strands, no wrinkles, no fine patterns
 - scary or menacing faces: at icon size they just look unfriendly
@@ -367,24 +369,20 @@ find each picture by its name. Capitals and dashes matter:
 
 ## Suggesting changes
 
-The cards were designed before anyone drew them, and many names and details are just what we picked first.
-What matters most is that the cards look great, so we're happy to change things to fit a better picture.
+You're a collaborator, not someone filling in our spec. The art is the most important part of Fruitcats, and
+everything we wrote is a suggestion: the story, the names, the titles, the scenes, even what a card does. We
+designed the cards before anyone drew them, so a lot of it is just what we picked first.
 
-**Usually open to change** (the brief lists what's open on each card):
+If you want to draw something else, go for it. Tell us your idea, with a sketch or on its own, and we'll change
+the card's name, text or rules to fit your picture. Some examples:
 
-- a character's name, and the kind of animal or fruit it is (a Critter could be a hedgehog instead of a mouse)
-- the flavour text, the line in italics that has no effect on the game
-- the scene, the pose and the objects in it
+- a different animal, fruit or character
+- a new name or title
+- a different scene, pose or mood
+- a card that does something else, because your picture suggests it
 
-**Fixed**, because the rules depend on them:
-
-- what the card does, its cost and its numbers
-- words the rules use, like a token's name ("Ant") or a keyword
-- the family's fruit: a Berry card should still have berries in it
-- the "must keep" details the brief lists for each card
-
-Send a suggestion with a sketch, or on its own. We reply with yes, no, or a question. If you're not sure
-whether something is open, ask.
+The only real requirements are technical: a file we can read, and the picture's size and shape for the card
+(see [Sizes and file formats](#sizes-and-file-formats-for-reference)).
 
 ## Sizes and file formats (for reference)
 
@@ -423,8 +421,8 @@ Hero Cats are the decks' mascots, so they share one recognisable look: the flat 
 Everything else is a painted scene.
 
 **Is a paid card's art a different picture from its deck-card version?**
-Paid singles are their own cards, not upgrades of a deck card, so there's only one picture per card. It must
-just be showcase quality.
+Paid singles are their own cards, not upgrades of a deck card, so there's only one picture per card: one to show
+off.
 
 **Do I have to design for wallpapers?**
 No. The card comes first. But for the paid cards, it's worth checking that the middle of the picture works on
@@ -439,7 +437,7 @@ encourage it on the paid cards and on the set's Signature card. See
 [Your signature](#your-signature) for where a signature stays visible.
 
 **Something in the brief doesn't make sense, or two cards clash.**
-Ask. Cards and rules are final, but descriptions of the art can change.
+Ask, or tell us what you'd rather draw. Anything in the brief can change, including the cards' rules.
 
 **Where can I see a finished example?**
 Heat Wave. Its announcement page, <https://fruitcats.viamochi.com/announcements/heat-wave>, shows its cards,
@@ -454,31 +452,29 @@ Use this list while you work, and again before you send your pictures.
 **Before you start**
 
 - [ ] I have read the art brief for the set.
-- [ ] I know which cards are paid cards (Foil, Gold, Signature) and need showcase art.
+- [ ] I know which cards are sold on their own (Foil, Gold, Signature): the ones to show off.
 - [ ] I know which cards are Hero Cats (two pictures each, sticker style).
 - [ ] I know which cards need a Pawtrait, and which tokens need a picture.
 - [ ] I know the set's tone and the background world of each family in it.
-- [ ] I know the "must keep" details for each card.
+- [ ] I know what we had in mind for each card, and where I'd like to do something else.
 
 **Milestones**
 
 - [ ] I did the cards sold on their own one at a time, and got a reply on each before starting the next.
 - [ ] I sent the deck's two main pictures, finished and signed, and we agreed on them.
 - [ ] I'm sending the rest in batches, and waiting for a reply before going far with the next batch.
-- [ ] I sent suggestions for any names or details I wanted to change.
+- [ ] I told you about anything I wanted to change: names, characters, scenes or what a card does.
 
 **Each final picture**
 
 - [ ] It has the size and the file name from the brief.
 - [ ] If I signed it, I checked that the signature stays visible on the card.
-- [ ] It keeps the "must keep" details from the brief.
 - [ ] I checked how it looks at a small size.
 - [ ] On Lucky cards, I checked what the clover covers in the top-right corner.
 
 **Paid cards (Foil, Gold, Signature)**
 
-- [ ] The character's face is clearly visible.
-- [ ] The pose is heroic, the light is dramatic, and there is plenty of detail.
+- [ ] It's a picture I'd be proud to have people buy and show off.
 - [ ] I checked how the middle of the picture looks on its own, as on a phone wallpaper.
 
 **Hero Cats and Pawtraits**

@@ -11,6 +11,8 @@ docs/art-brief-heat-wave.md. Write for the artist: no rules jargon they'd need t
 Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, naming and delivery. This
 brief lists what this set needs.
 
+**All of this is a starting point. If you have a better idea, go for it: we'll change the card to fit your picture.**
+
 ## The set in a few lines
 
 <Two or three sentences: what the set is about and who it's for.>
@@ -39,7 +41,7 @@ words: expressions, poses, palette, what's allowed and what isn't.>
 **Sizes:** card pictures (including Hero Cat faces and tokens) are **1536 × 1024**, landscape. Pawtraits are
 **512 × 512**, square. Save them as WebP with the file names below.
 
-Of these, <n> are **showcase** (paid singles and the Signature card). Cards the deck reuses from other sets
+Of these, <n> are sold on their own (a chance to show off). Cards the deck reuses from other sets
 need no art: <list them, or "none">.
 
 ## Cards
@@ -54,14 +56,14 @@ Style: Painted or Sticker. Pawtrait: the file name, or "no".>
 
 ## Card by card
 
-<One block per image. "What to draw" is a starting point the artist may improve. "Must keep" lists only the
-details the card's name, rules or other cards depend on.>
+<One block per image. Everything here is a suggestion: "Our idea" is a starting point, and "Things we had in
+mind" are ideas the artist can change, along with the card's name and rules.>
 
 ### `<ID>.webp`: <Name>
 
 - **Tier:** <tier> · **Style:** <style>
-- **What to draw:** <subject, pose, setting, light>
-- **Must keep:** <details that can't change>
+- **Our idea for this picture:** <subject, pose, setting, light>
+- **Things we had in mind:** <ideas we had; the artist may change any of them>
 - **Also appears on:** <other cards showing this character, or "none">
 - **Main picture:** <for each deck's Hero Cat: "a main picture: draw it first, and sign it in a corner"; otherwise delete>
 
@@ -70,7 +72,7 @@ details the card's name, rules or other cards depend on.>
 ### `legend-<name>.webp`: <Name>
 
 - **Comes with:** <card>
-- **Must match the card:** <fur, hood, markings>
+- **Like the card:** <fur, hood, markings>
 - **Expression:** <happy / cheeky / cool smirk>
 - **Background:** <golden sunburst (default) / the Signature card's own backdrop>
 

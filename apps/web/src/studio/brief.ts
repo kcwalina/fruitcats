@@ -48,14 +48,14 @@ export const TIER_NAMES: Record<Tier, string> = {
 };
 
 export const FIELD_NAMES: Record<string, string> = {
-  name: 'Name', flavor: 'Flavour text', animal: 'Animal', berry: 'Berry', breed: 'Breed', scene: 'Scene',
-  object: 'Object', look: 'Look', characters: 'Characters',
+  name: 'The card’s name', flavor: 'The flavour text', animal: 'Animal', berry: 'Berry', breed: 'Breed', scene: 'The scene',
+  object: 'Object', look: 'The character', characters: 'Characters', rules: 'What the card does', other: 'Something else',
 };
 
 export type State = 'none' | 'waiting' | 'changes' | 'sketch-ok' | 'approved';
 
 export const STATE_NAMES: Record<State, string> = {
-  none: 'Not started', waiting: 'Sent for review', changes: 'Changes asked', 'sketch-ok': 'Sketch approved', approved: 'Approved',
+  none: 'Not started', waiting: 'Sent', changes: 'Our thoughts are in', 'sketch-ok': 'Sketch approved', approved: 'Approved',
 };
 
 export function stateOf(view: SetView | null, key: string): State {
@@ -119,7 +119,7 @@ export function nextPicture(brief: Brief, view: SetView | null): BriefPicture | 
 export function nextAction(p: BriefPicture, state: State, versions: Version[]): { title: string; text: string } {
   const sketch = sketchFirst(p);
   if (state === 'approved') return { title: 'Approved', text: 'This picture is done. Thank you!' };
-  if (state === 'changes') return { title: 'Changes asked', text: 'Read the comments below, then upload a new version. Your earlier versions are kept.' };
+  if (state === 'changes') return { title: 'Our thoughts are in', text: 'Read the comments below. Take what helps, then upload a new version. Your earlier versions are kept.' };
   if (state === 'sketch-ok') return { title: 'Sketch approved: finish it', text: 'Finish the picture in your own tools, then upload it here as a WebP file.' };
   if (state === 'waiting') {
     const last = versions[versions.length - 1];

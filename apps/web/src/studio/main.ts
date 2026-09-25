@@ -276,24 +276,25 @@ function image(code: string, key: string, version: string): { url: string | null
 
 /** Checks on a picture against its brief: size, shape and file type. */
 /**
- * What the Studio says about a chosen picture. A sketch may be any size or format: at most a calm note. A finished
- * picture must be exactly the brief's size, as WebP; otherwise it can't be sent (`blocked`), and `fix` says why.
+ * What the Studio says about a chosen picture. Only what the card technically needs can stop a finished picture: the
+ * right shape (or the card would stretch it) and enough pixels (or it would look blurry). Any of WebP, PNG and JPEG
+ * is fine: we convert. A sketch can be anything.
  */
-function checks(p: BriefPicture, w: number, h: number, format: string, kind: 'sketch' | 'final'): { notes: string[]; blocked: boolean; fix: string } {
+function checks(p: BriefPicture, w: number, h: number, _format: string, kind: 'sketch' | 'final'): { notes: string[]; blocked: boolean; fix: string } {
   const [bw, bh] = p.size;
-  const exact = w === bw && h === bh;
   const sameShape = Math.abs(w / h - bw / bh) < 0.01;
+  const bigEnough = w >= bw && h >= bh;
   if (kind === 'sketch') {
     const notes = [`${w} × ${h} pixels. Any size is fine for a sketch.`];
     if (!sameShape) notes.push(`Its shape differs from the card’s picture (${bw} × ${bh}), so it looks stretched on the card. That’s fine for a sketch.`);
     return { notes, blocked: false, fix: '' };
   }
   const wrong: string[] = [];
-  if (!exact) wrong.push(`${bw} × ${bh} pixels (this one is ${w} × ${h})`);
-  if (format !== 'webp') wrong.push(`a WebP file (this one is ${format.toUpperCase()})`);
+  if (!sameShape) wrong.push(`the card’s shape (${bw} × ${bh}, or larger in the same proportions), or the card would stretch it`);
+  else if (!bigEnough) wrong.push(`at least ${bw} × ${bh} pixels, or it would look blurry on large screens`);
   return wrong.length
-    ? { notes: [], blocked: true, fix: `A finished picture must be ${wrong.join(' and ')}. Please export it again and choose it here. Or send this one as a sketch.` }
-    : { notes: [`${w} × ${h} pixels, WebP: exactly right.`], blocked: false, fix: '' };
+    ? { notes: [], blocked: true, fix: `This one is ${w} × ${h}. For the card, the finished picture needs to be ${wrong.join('; ')}. You can still send this one as a sketch.` }
+    : { notes: [`${w} × ${h} pixels: fits the card.`], blocked: false, fix: '' };
 }
 
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
@@ -401,11 +402,13 @@ function wizardPage(code: string, chosen?: string): string {
     return `<main class="wizard">${banner}<section class="wz-card wz-welcome">
       <small>${esc(brief.name)}</small>
       <h1>Welcome${S.me?.name ? `, ${esc(S.me.name)}` : ''}!</h1>
-      <p class="wz-lead">You’ll make <b>${total} pictures</b> for ${esc(brief.name)}, one at a time.</p>
+      <p class="wz-lead">The art is the heart of Fruitcats, and ${esc(brief.name)} has <b>${total} pictures</b> to make, one at a time.</p>
+      <p class="wz-tools">For each picture we share our ideas: a character, a scene, a name. They’re a starting point, not rules.
+        If you see it differently, follow your idea and tell us: we’ll adapt the card’s name and what it does to your picture.</p>
       <p class="wz-tools"><b>Make your pictures with the tools of your choice</b>, as you always do. This site is only for
         <b>uploading</b> them: you see each one on the real card, and we reply here.</p>
-      <ol class="wz-how"><li><b>Read</b> what the picture should show.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
-        <li><b>We reply</b> here, with comments on your sketch.</li><li><b>Upload the finished picture.</b></li></ol>
+      <ol class="wz-how"><li><b>Read</b> our ideas for the picture.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
+        <li><b>We talk it over</b> here, in comments.</li><li><b>Upload the finished picture.</b></li></ol>
       <p>The Studio always shows you what to do next. Every version you upload is kept safely.</p>
       <button class="btn primary big" data-click="welcome:${code}">Start with the first picture</button>
     </section></main>`;
@@ -439,16 +442,17 @@ function wizardPage(code: string, chosen?: string): string {
   const heading = state === 'changes' ? `Upload a new version of ${name}` : state === 'sketch-ok' ? `Upload the finished ${name}`
     : state === 'approved' ? `${name} is approved` : state === 'waiting' ? `${name}: sent for review`
       : sketch ? `Upload a sketch of ${name}` : `Upload ${name}`;
-  const lead = state === 'changes' ? 'We asked for a few changes, below. Make them in your own tools, then upload the new version here.'
+  const lead = state === 'changes' ? 'We left some thoughts below. Take what helps, in your own tools, then upload a new version here. Reply if you see it differently.'
     : state === 'sketch-ok' ? 'We like your sketch. Finish the picture in your own tools, then upload it here.'
       : state === 'approved' ? 'Done. If you change it later in your own tools, you can upload a new version here: it comes back to us for a look.'
         : state === 'waiting' ? 'We’re looking at it and will reply here. You can upload a new version any time.'
-          : sketch ? 'Make a rough sketch in your own tools (the pose, the composition and the main colours), then upload it here. We’ll reply before you finish it.'
+          : sketch ? 'Make a rough sketch in your own tools (the idea, the composition and the main colours), then upload it here. We’ll talk it over before you finish it.'
             : 'Make it in your own tools, then upload it here: a sketch if you’d like an early opinion, or the finished picture.';
   const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
   const pic = shown(code, key);
-  const facts = [`${current.size[0]} × ${current.size[1]} pixels`, current.kind === 'pawtrait' ? 'shown as a circle' : '',
-    current.signature === 'requested' ? 'please sign it in a corner' : '', current.showcase ? 'showcase art: face visible, heroic pose, dramatic light, lots of detail' : '']
+  const facts = [`The file: ${current.size[0]} × ${current.size[1]} pixels${current.kind === 'pawtrait' ? ', shown as a circle' : ''}`,
+    current.signature === 'requested' ? 'we’d love your signature in a corner' : '',
+    current.showcase ? 'a card people buy on its own, so it’s a chance to show off' : '']
     .filter(Boolean).join(' · ');
   const away = picked && next && keyOf(next) !== key;
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
@@ -460,8 +464,9 @@ function wizardPage(code: string, chosen?: string): string {
       ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<p>${authorLabel(c)} ${esc(c.text)}</p>`).join('')}</div>` : ''}
       <div class="wz-two">
         <div class="wz-brief">
-          <h3>What the picture shows</h3><p>${esc(current.draw)}</p>
-          ${current.mustKeep?.length ? `<h3>Please keep</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+          <h3>Our idea for this picture</h3><p>${esc(current.draw)}</p>
+          ${current.mustKeep?.length ? `<h3>Things we had in mind</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+          <p class="idea-note">All of this is a starting point. If you have a better idea, go for it: we’ll change the card to fit your picture.</p>
           <p class="muted small">${esc(facts)}</p>
           ${openFields(code, current)}
         </div>
@@ -591,14 +596,14 @@ function picturePage(code: string, key: string): string {
       <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main picture' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
       ${actionBox(p, state, versions, stepInfo.open, stepInfo.after)}
-      <section><h3>What the picture shows</h3><p>${esc(p.draw)}</p></section>
-      ${p.mustKeep?.length ? `<section><h3>Please keep</h3><ul>${p.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>
-        <p class="muted small">The game’s rules or other cards depend on these.</p></section>` : ''}
+      <section><h3>Our idea for this picture</h3><p>${esc(p.draw)}</p>
+        ${p.mustKeep?.length ? `<h3>Things we had in mind</h3><ul>${p.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+        <p class="muted small">A starting point: the artist may go another way, and we adapt the card.</p></section>
       ${cardText(p)}
       ${openFields(code, p)}
       <section class="facts"><h3>File</h3><p><b>${p.size[0]} × ${p.size[1]}</b> pixels, WebP${p.kind === 'pawtrait' ? ', shown as a circle' : ''}.
-        ${p.signature === 'requested' ? '<br>Please <b>sign</b> this picture in a corner.' : p.signature === 'welcome' ? '<br>Your signature is welcome on this one.' : ''}
-        ${p.showcase ? '<br>This is <b>showcase art</b>: the face clearly visible, a heroic pose, dramatic light, lots of detail.' : ''}</p></section>
+        ${p.signature ? '<br>We’d love your signature in a corner.' : ''}
+        ${p.showcase ? '<br>A card people buy on its own, so it’s a chance to show off.' : ''}</p></section>
       <nav class="prevnext">${prev ? `<a href="#/${code}/${keyOf(prev)}">‹ ${esc(title(prev))}</a>` : '<span></span>'}${next ? `<a href="#/${code}/${keyOf(next)}">${esc(title(next))} ›</a>` : ''}</nav>
     </aside>
     <section class="stage">
@@ -685,26 +690,27 @@ function cardText(p: BriefPicture): string {
 }
 
 /** The things the artist may change, and their suggestions. */
+/** Anything about the card can change to fit the picture: the artist proposes, and we adapt the card. */
+const SUGGEST_FIELDS = ['name', 'look', 'scene', 'flavor', 'rules', 'other'];
+
 function openFields(code: string, p: BriefPicture): string {
   const key = keyOf(p);
   const mine = (S.views.get(code)?.suggestions ?? []).filter((s) => s.picture === key);
-  if (!p.open?.length && !mine.length) return '';
   const owner = reviewing();
   const form = S.suggesting ? `<div class="suggest-form">
-      <label class="field">What to change<select data-in="sfield">${(p.open ?? []).map((f) => `<option value="${f}" ${S.suggesting!.field === f ? 'selected' : ''}>${esc(FIELD_NAMES[f] ?? f)}</option>`).join('')}</select></label>
-      <label class="field">Your suggestion<input data-in="svalue" value="${esc(S.suggesting.value)}" placeholder="e.g. Ginger Snap, the Cookie Cat"></label>
-      <label class="field">Why <small>optional</small><input data-in="swhy" value="${esc(S.suggesting.why)}"></label>
-      <div class="row"><button class="btn primary small" data-click="suggestsend:${key}">Send suggestion</button><button class="link" data-click="suggestcancel">Cancel</button></div></div>` : '';
-  return `<section class="open-fields"><h3>You may change</h3>
-    ${p.open?.length ? `<p>${p.open.map((f) => `<span class="chip">${esc(FIELD_NAMES[f] ?? f)}</span>`).join(' ')}</p>
-      <p class="muted small">If a name or a detail doesn’t fit the picture you have in mind, suggest a change. We decide together.</p>` : ''}
+      <label class="field">What would you change?<select data-in="sfield">${SUGGEST_FIELDS.map((f) => `<option value="${f}" ${S.suggesting!.field === f ? 'selected' : ''}>${esc(FIELD_NAMES[f] ?? f)}</option>`).join('')}</select></label>
+      <label class="field">Your idea<input data-in="svalue" value="${esc(S.suggesting.value)}" placeholder="e.g. a gingerbread knight instead of a baker"></label>
+      <label class="field">Anything else we should know <small>optional</small><input data-in="swhy" value="${esc(S.suggesting.why)}"></label>
+      <div class="row"><button class="btn primary small" data-click="suggestsend:${key}">Send your idea</button><button class="link" data-click="suggestcancel">Cancel</button></div></div>` : '';
+  return `<section class="open-fields"><h3>Your ideas</h3>
+    <p class="muted small">A different character, name, scene or anything else: tell us, and we’ll adapt the card to your picture.</p>
     ${mine.map((s) => suggestionRow(code, s, owner)).join('')}
-    ${form || (S.guest || !p.open?.length ? '' : `<button class="btn ghost small" data-click="suggest:${p.open[0]}">Suggest a change</button>`)}
+    ${form || (S.guest ? '' : `<button class="btn ghost small" data-click="suggest:name">Share an idea</button>`)}
   </section>`;
 }
 
 function suggestionRow(code: string, s: Suggestion, owner: boolean): string {
-  const label = s.state === 'accepted' ? 'Accepted' : s.state === 'declined' ? 'Not this time' : 'Waiting for us';
+  const label = s.state === 'accepted' ? 'We’ll do it' : s.state === 'declined' ? 'Let’s talk' : 'We’re looking at it';
   return `<div class="suggestion ${s.state}"><p><b>${esc(FIELD_NAMES[s.field] ?? s.field)}:</b> “${esc(s.value)}” <span class="chip">${label}</span></p>
     ${s.why ? `<p class="small muted">${esc(s.why)}</p>` : ''}${s.reply ? `<p class="small">Reply: ${esc(s.reply)}</p>` : ''}
     ${owner && s.state === 'open' ? `<div class="row"><button class="btn good small" data-click="decide:${code}:${s.id}:accepted">Accept</button>

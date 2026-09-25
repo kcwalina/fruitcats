@@ -44,13 +44,34 @@ const requestArg = (): string | undefined => {
 };
 
 const lastWrite = new Map<string, number>();
+/** Each unfinished run's latest progress, so the heartbeat can write it again. */
+const latest = new Map<string, RunProgress>();
+const beats = new Map<string, ReturnType<typeof setInterval>>();
+/**
+ * PC2024's paw calls a run abandoned when its progress.json hasn't changed for 15 minutes, and one phase of a
+ * nightly (a whole LLM playtest inside it) can run for hours. While a run is alive its progress is written
+ * again every 5 minutes, so "abandoned" means the runner really stopped.
+ */
+const HEARTBEAT_MS = 5 * 60_000;
+function writeProgress(dir: string, p: RunProgress): void {
+  try { writeFileSync(join(dir, 'progress.json'), JSON.stringify(p)); } catch { /* progress is a courtesy */ }
+}
 /** Records progress, at most every 5 seconds per run (always when a phase completes). */
 export function reportProgress(run: { id: string; startedAt: Date; dir: string }, kind: RunKind, phase: string, done: number, total: number): void {
   const now = Date.now();
   if (done < total && now - (lastWrite.get(run.id) ?? 0) < 5000) return;
   lastWrite.set(run.id, now);
   const p: RunProgress = { id: run.id, kind, startedAt: run.startedAt.toISOString(), phase, done, total, updatedAt: new Date(now).toISOString(), request: requestArg() };
-  try { writeFileSync(join(run.dir, 'progress.json'), JSON.stringify(p)); } catch { /* progress is a courtesy */ }
+  writeProgress(run.dir, p);
+  latest.set(run.id, p);
+  if (!beats.has(run.id)) {
+    const beat = setInterval(() => {
+      const last = latest.get(run.id);
+      if (last) writeProgress(run.dir, { ...last, updatedAt: new Date().toISOString() });
+    }, HEARTBEAT_MS);
+    beat.unref();
+    beats.set(run.id, beat);
+  }
 }
 
 export const cardsHash = (): string => seedFrom(JSON.stringify([CARDS, DECKS])).toString(16).padStart(8, '0');
@@ -96,6 +117,9 @@ export function finishRun(
     details,
     request: requestArg(),
   };
+  clearInterval(beats.get(run.id));
+  beats.delete(run.id);
+  latest.delete(run.id);
   writeFileSync(join(run.dir, 'summary.json'), JSON.stringify(summary, null, 2));
   writeFileSync(join(run.dir, 'report.md'), markdown);
   return summary;

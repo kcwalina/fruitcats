@@ -1,5 +1,18 @@
 {
   "lastNightly": "2026-09-25",
+  "llmRunsCounted": [
+    "llm-playtest-20260925-025525",
+    "llm-playtest-20260925-023403",
+    "llm-playtest-20260925-012504",
+    "llm-playtest-20260925-002717",
+    "llm-playtest-20260924-232128",
+    "llm-playtest-20260924-224715",
+    "llm-playtest-20260924-223344",
+    "llm-playtest-20260924-222045",
+    "llm-playtest-20260924-220746",
+    "llm-playtest-20260924-213334",
+    "llm-playtest-20260924-194959"
+  ],
   "decks": {
     "heat-assault": {
       "name": "Heat Assault",
@@ -41,7 +54,7 @@
           }
         ],
         "llm": {
-          "games": 12,
+          "games": 6,
           "won": 0
         }
       }
@@ -127,8 +140,8 @@
           }
         ],
         "llm": {
-          "games": 18,
-          "won": 2
+          "games": 9,
+          "won": 1
         }
       }
     },
@@ -172,8 +185,8 @@
           }
         ],
         "llm": {
-          "games": 18,
-          "won": 4
+          "games": 9,
+          "won": 2
         }
       }
     },

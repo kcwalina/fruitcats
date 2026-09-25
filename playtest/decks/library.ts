@@ -46,6 +46,8 @@ export interface LibraryFile {
   decks: Record<string, LibraryDeck>;
   /** The day `decks nightly` last ran (yyyy-mm-dd), so it runs once a day. */
   lastNightly?: string;
+  /** LLM playtest runs whose games are already in the decks' stats (the latest 300), so none counts twice. */
+  llmRunsCounted?: string[];
 }
 
 const FILE = () => fileURLToPath(new URL('./library.json', import.meta.url));
@@ -63,7 +65,8 @@ export function readLibrary(): LibraryFile {
 
 export function writeLibrary(file: LibraryFile): void {
   if (!canSaveLibrary()) throw new Error('The deck library can only be changed in a checkout (playtest/decks/library.json).');
-  writeFileSync(FILE(), `${JSON.stringify({ ...(file.lastNightly ? { lastNightly: file.lastNightly } : {}), decks: file.decks }, null, 2)}\n`);
+  const { decks, ...rest } = file;
+  writeFileSync(FILE(), `${JSON.stringify({ ...rest, decks }, null, 2)}\n`);
 }
 
 /**

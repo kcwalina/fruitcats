@@ -104,6 +104,18 @@ Last updated 2026-09-24.
 - **Deck and Showcase sync** through `fruitcats-api` (`POST /v1/sync`, Table Storage `decks` and `showcase`).
 - **Playtest build:** `npm run build:playtest` builds `apps/web` with the flags in `src/flags.ts` on (`ACCOUNTS`),
   into `dist-playtest/`. The public `npm run build` compiles them out.
+- **Alerts when something breaks** (2026-09-25), to the owner's phone and email through `ag-owner-alerts`:
+  - `<app>-errors`: more than 10 server errors (HTTP 5xx) in 5 minutes, per app (`viamochi-id`, `fruitcats-api`).
+  - `<app>-unhealthy`: the app fails its App Service health check (`/healthz`) for 5 minutes.
+  - `viamochi-id` also emails the owner a list of the errors it logged (`ErrorAlerts.cs`), at most once an hour.
+  - Both deploy scripts wait for `/healthz` after deploying and restart the app if it doesn't answer within
+    2 minutes (a deploy once left `viamochi-id` hung while starting).
+  - The game gives up on any account call after 15 seconds and says so; a slow or down service never signs anyone
+    out (only Entra rejecting the refresh token does).
+- **Contact us** (Settings, and "Trouble signing in?" in the sign-in window): `POST /support` on `viamochi-id`
+  emails the message to the owner (`Support__To` app setting) with Reply-To set to the player; 5 messages an hour
+  per IP address. The message itself is never logged. This is the support address the Terms and Privacy Policy
+  point to, instead of a mailbox.
 - **Agreeing to the Terms:** a new account ticks "I agree to the Terms of Use and have read the Privacy Policy"
   before its code. The account keeps the version it agreed to and when (`PUT /me/terms`; `account.terms_accepted` in
   the security log). Anyone signed in whose account hasn't agreed to the current `TERMS_VERSION` (`apps/web/src/auth.ts`)

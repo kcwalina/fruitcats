@@ -23,8 +23,8 @@ let inviteThenSignIn = false;
 
 export function renderSignIn(inviting: boolean, notice = ''): string {
   const intro = inviting
-    ? '<p class="si-lead">You’ve been invited to make pictures for Fruitcats. Sign in, or create your account, to open your project.</p>'
-    : '<p class="si-lead">Where artists upload their pictures for Fruitcats. Make them with the tools of your choice; here you upload them and see them on the cards.</p>';
+    ? '<p class="si-lead">You’ve been invited to make images for Fruitcats. Sign in, or create your account, to open your project.</p>'
+    : '<p class="si-lead">Where artists upload their images for Fruitcats. Make them with the tools of your choice; here you upload them and see them on the cards.</p>';
   let body = '';
   if (DEV) {
     body = `<p class="si-small">Development: choose a pretend account.</p>
@@ -41,7 +41,7 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
       <button class="btn primary wide" data-click="si:invite" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Continue'}</button>`;
   } else if (step === 'details') {
     body = `<p class="si-small">New to Via Mochi: <b>${esc(email)}</b>. <button class="link" data-click="si:back">Use a different email</button></p>
-      <label class="field">Your name <small>What we’ll see on your comments and pictures</small>
+      <label class="field">Your name <small>What we’ll see on your comments and images</small>
         <input data-in="name" maxlength="40" autocomplete="name" value="${esc(displayName)}" ${busy ? 'disabled' : ''}></label>
       <button class="btn primary wide" data-click="si:details" ${busy ? 'disabled' : ''}>${busy ? 'Sending your code…' : 'Email me a code'}</button>`;
   } else {
@@ -56,8 +56,8 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
   return `<main class="si">
     <div class="si-art" aria-hidden="true">
       <div class="si-fan">${['foil/SP1-X01', 'signature/SP1-X03-kitten', 'gold/SP1-X02'].map((f) =>
-        `<div class="si-card"><div class="si-window"><span>Your picture</span></div><img src="${BASE}cards/sp1/frames/${f}.webp" alt=""></div>`).join('')}</div>
-      <p>Make the picture with your own tools and upload it here. We add the frame, the name and the rules, and you see it on the card straight away.</p>
+        `<div class="si-card"><div class="si-window"><span>Your image</span></div><img src="${BASE}cards/sp1/frames/${f}.webp" alt=""></div>`).join('')}</div>
+      <p>Make the image with your own tools and upload it here. We add the frame, the name and the rules, and you see it on the card straight away.</p>
     </div>
     <div class="si-panel">
       <div class="brand"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></div>

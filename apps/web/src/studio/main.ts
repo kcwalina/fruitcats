@@ -300,14 +300,14 @@ function checks(p: BriefPicture, w: number, h: number, _format: string, kind: 's
   const bigEnough = w >= bw && h >= bh;
   if (kind === 'sketch') {
     const notes = [`${w} × ${h} pixels. Any size is fine for a sketch.`];
-    if (!sameShape) notes.push(`Its shape differs from the card’s picture (${bw} × ${bh}), so it looks stretched on the card. That’s fine for a sketch.`);
+    if (!sameShape) notes.push(`Its shape differs from the card’s image (${bw} × ${bh}), so it looks stretched on the card. That’s fine for a sketch.`);
     return { notes, blocked: false, fix: '' };
   }
   const wrong: string[] = [];
   if (!sameShape) wrong.push(`the card’s shape (${bw} × ${bh}, or larger in the same proportions), or the card would stretch it`);
   else if (!bigEnough) wrong.push(`at least ${bw} × ${bh} pixels, or it would look blurry on large screens`);
   return wrong.length
-    ? { notes: [], blocked: true, fix: `This one is ${w} × ${h}. For the card, the finished picture needs to be ${wrong.join('; ')}. You can still send this one as a sketch.` }
+    ? { notes: [], blocked: true, fix: `This one is ${w} × ${h}. For the card, the finished image needs to be ${wrong.join('; ')}. You can still send this one as a sketch.` }
     : { notes: [`${w} × ${h} pixels: fits the card.`], blocked: false, fix: '' };
 }
 
@@ -343,7 +343,7 @@ function page(): string {
       : r.page === 'comments' ? commentsWalk(r.code)
         : reviewing() ? picturePage(r.code, r.key) : wizardPage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
-    ${S.guest ? `<div class="banner">You’re looking around without signing in. Pictures you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
+    ${S.guest ? `<div class="banner">You’re looking around without signing in. Images you choose stay on this computer. <button class="link" data-click="signin">Sign in</button></div>` : ''}
     ${body}${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
 }
 
@@ -389,7 +389,7 @@ function setsPage(): string {
   }
   return `<main class="sets"><h1>Projects</h1><div class="set-grid">${mine.map((s) => {
     const brief = S.briefs.get(s.code);
-    return `<a class="set-tile" href="#/${s.code}"><b>${esc(s.name)}</b><span>${esc(s.set)}${brief ? ` · ${brief.pictures.length} pictures` : ''}</span></a>`;
+    return `<a class="set-tile" href="#/${s.code}"><b>${esc(s.name)}</b><span>${esc(s.set)}${brief ? ` · ${brief.pictures.length} images` : ''}</span></a>`;
   }).join('')}</div></main>`;
 }
 
@@ -400,7 +400,7 @@ function termsPage(): string {
   return `<main class="wizard"><section class="wz-card terms">
     <small>Before you start</small>
     <h1>The Studio’s terms</h1>
-    <p class="wz-lead">A short page on how the Studio treats your pictures and your account. These are the Studio’s own
+    <p class="wz-lead">A short page on how the Studio treats your images and your account. These are the Studio’s own
       terms, separate from the game’s.</p>
     <div class="terms-text">${STUDIO_TERMS}</div>
     <label class="check big-check"><input type="checkbox" data-in="adult" ${S.adult ? 'checked' : ''}><span>I’m 18 or older, and I accept these terms.</span></label>
@@ -433,15 +433,15 @@ function wizardPage(code: string, chosen?: string): string {
     return `<main class="wizard">${banner}<section class="wz-card wz-welcome">
       <small>${esc(brief.name)}</small>
       <h1>Welcome${S.me?.name ? `, ${esc(S.me.name)}` : ''}!</h1>
-      <p class="wz-lead">The art is the heart of Fruitcats, and ${esc(brief.name)} has <b>${total} pictures</b> to make, one at a time.</p>
-      <p class="wz-tools">For each picture we share our ideas: a character, a scene, a name. They’re a starting point, not rules.
-        If you see it differently, follow your idea and tell us: we’ll adapt the card’s name and what it does to your picture.</p>
-      <p class="wz-tools"><b>Make your pictures with the tools of your choice</b>, as you always do. This site is only for
+      <p class="wz-lead">The art is the heart of Fruitcats, and ${esc(brief.name)} has <b>${total} images</b> to make, one at a time.</p>
+      <p class="wz-tools">For each image we share our ideas: a character, a scene, a name. They’re a starting point, not rules.
+        If you see it differently, follow your idea and tell us: we’ll adapt the card’s name and what it does to your image.</p>
+      <p class="wz-tools"><b>Make your images with the tools of your choice</b>, as you always do. This site is only for
         <b>uploading</b> them: you see each one on the real card, and we reply here.</p>
-      <ol class="wz-how"><li><b>Read</b> our ideas for the picture.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
-        <li><b>We talk it over</b> here, in comments.</li><li><b>Upload the finished picture.</b></li></ol>
+      <ol class="wz-how"><li><b>Read</b> our ideas for the image.</li><li><b>Make a sketch</b> in your own tools, and <b>upload</b> it here.</li>
+        <li><b>We talk it over</b> here, in comments.</li><li><b>Upload the finished image.</b></li></ol>
       <p>The Studio always shows you what to do next. Every version you upload is kept safely.</p>
-      <button class="btn primary big" data-click="welcome:${code}">Start with the first picture</button>
+      <button class="btn primary big" data-click="welcome:${code}">Start with the first image</button>
     </section></main>`;
   }
 
@@ -449,7 +449,7 @@ function wizardPage(code: string, chosen?: string): string {
   const picked = chosen ? brief.pictures.find((x) => keyOf(x) === chosen) ?? null : null;
   const current = picked ?? next;
   const progress = `<div class="wz-progress"><div class="bar"><i style="width:${total ? Math.round((approved / total) * 100) : 0}%"></i></div>
-    <span>${approved} of ${total} pictures done</span></div>`;
+    <span>${approved} of ${total} images done</span></div>`;
   const sent = S.justSent ? `<div class="wz-sent">✓ ${esc(S.justSent)} is sent. We’ll reply on it here.</div>` : '';
   const side = wizardSide(code, brief, view, current, next);
 
@@ -457,10 +457,10 @@ function wizardPage(code: string, chosen?: string): string {
     const withUs = brief.pictures.filter((x) => stateOf(view, keyOf(x)) === 'waiting');
     const done = approved === total && total > 0;
     return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}<section class="wz-card">
-      ${done ? `<h1>Every picture is done</h1><p class="wz-lead">Thank you for your work on ${esc(brief.name)}!</p>`
+      ${done ? `<h1>Every image is done</h1><p class="wz-lead">Thank you for your work on ${esc(brief.name)}!</p>`
         : `<h1>That’s everything for now</h1>
-          <p class="wz-lead">We’re looking at what you sent. Our replies appear here, and the next picture opens as soon as we approve ${withUs.length === 1 ? 'it' : 'them'}.
-            Meanwhile you can open any of your pictures on the left and send a new version.</p>`}
+          <p class="wz-lead">We’re looking at what you sent. Our replies appear here, and the next image opens as soon as we approve ${withUs.length === 1 ? 'it' : 'them'}.
+            Meanwhile you can open any of your images on the left and send a new version.</p>`}
     </section></main></div>`;
   }
 
@@ -473,12 +473,12 @@ function wizardPage(code: string, chosen?: string): string {
   const heading = state === 'changes' ? `${name}: our comments` : state === 'sketch-ok' ? `Upload the finished ${name}`
     : state === 'approved' ? `${name} is approved` : state === 'waiting' ? `${name}: sent for review`
       : sketch ? `Upload a sketch of ${name}` : `Upload ${name}`;
-  const lead = state === 'changes' ? 'We left some comments. Take what helps; if you change the picture in your own tools, upload the new version here. Or reply, or just move on.'
-    : state === 'sketch-ok' ? 'We like your sketch. Finish the picture in your own tools, then upload it here.'
+  const lead = state === 'changes' ? 'We left some comments. Take what helps; if you change the image in your own tools, upload the new version here. Or reply, or just move on.'
+    : state === 'sketch-ok' ? 'We like your sketch. Finish the image in your own tools, then upload it here.'
       : state === 'approved' ? 'Done. If you change it later in your own tools, you can upload a new version here: it comes back to us for a look.'
         : state === 'waiting' ? 'We’re looking at it and will reply here. You can upload a new version any time.'
           : sketch ? 'Make a rough sketch in your own tools (the idea, the composition and the main colours), then upload it here. We’ll talk it over before you finish it.'
-            : 'Make it in your own tools, then upload it here: a sketch if you’d like an early opinion, or the finished picture.';
+            : 'Make it in your own tools, then upload it here: a sketch if you’d like an early opinion, or the finished image.';
   const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
   const pic = shown(code, key);
   const facts = [`The file: ${current.size[0]} × ${current.size[1]} pixels${current.kind === 'pawtrait' ? ', shown as a circle' : ''}`,
@@ -487,7 +487,7 @@ function wizardPage(code: string, chosen?: string): string {
     .filter(Boolean).join(' · ');
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
     <section class="wz-card">
-      <small>Picture ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
+      <small>Image ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
       <h1>${esc(heading)}</h1>
       <p class="wz-lead">${esc(lead)}</p>
       ${asks.length ? `<div class="wz-asks">${asks.map((c) => `<div class="ask"><p>${authorLabel(c)} ${esc(c.text)}</p>
@@ -495,9 +495,9 @@ function wizardPage(code: string, chosen?: string): string {
         <p class="small muted">Comments are our thoughts, to take or leave. You can move on whenever you like.</p></div>` : ''}
       <div class="wz-two">
         <div class="wz-brief">
-          <h3>Our idea for this picture</h3><p>${esc(current.draw)}</p>
+          <h3>Our idea for this image</h3><p>${esc(current.draw)}</p>
           ${current.mustKeep?.length ? `<h3>Things we had in mind</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
-          <p class="idea-note">All of this is a starting point. If you have a better idea, go for it: we’ll change the card to fit your picture.</p>
+          <p class="idea-note">All of this is a starting point. If you have a better idea, go for it: we’ll change the card to fit your image.</p>
           <p class="muted small">${esc(facts)}</p>
           ${openFields(code, current)}
         </div>
@@ -551,7 +551,7 @@ function commentsWalk(code: string): string {
         <textarea data-in="walkreply" rows="3" placeholder="Reply, if you like">${esc(S.draft.get(`walk:${c.id}`) ?? '')}</textarea>
         <div class="row"><button class="btn" data-click="walkreply:${c.id}">Reply</button>
           <button class="btn primary" data-click="walkdone:${c.id}">Resolve</button>
-          <span class="grow"></span><a class="small" href="#/${code}/${c.picture}">Open this picture</a></div>
+          <span class="grow"></span><a class="small" href="#/${code}/${c.picture}">Open this image</a></div>
       </div>
     </section></main></div>`;
 }
@@ -571,9 +571,9 @@ function wizardSide(code: string, brief: Brief, view: SetView | null, current: B
   return `<aside class="wz-side">
     <a class="btn ${onNext ? 'ghost' : 'primary'} wide wz-next" href="#/${code}">${next ? `Next: ${esc(title(next))}${sideLabel(next) ? ` (${sideLabel(next)})` : ''}` : 'Where things stand'}</a>
     ${open ? `<a class="btn ${S.route.page === 'comments' ? 'ghost' : ''} wide" href="#/${code}/comments">💬 Comments to read (${open})</a>` : ''}
-    <h4>Your pictures</h4>
+    <h4>Your images</h4>
     ${groups.length ? groups.map((g) => `<div class="wz-group"><small>${esc(g.st.milestone.title)}</small>${g.items.map(item).join('')}</div>`).join('')
-      : '<p class="muted small">Pictures you send appear here, so you can come back to them.</p>'}
+      : '<p class="muted small">Images you send appear here, so you can come back to them.</p>'}
   </aside>`;
 }
 
@@ -625,13 +625,13 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
   const task = toReview.length || suggestions.length || news.length
     ? `<section class="panel attention"><h2>To review</h2>
         ${toReview.map((p) => `<a class="news-item" href="#/${code}/${keyOf(p)}"><b>${esc(title(p))}${sideLabel(p) ? ` (${sideLabel(p)})` : ''}</b>:
-          ${versionsOf(view, keyOf(p)).at(-1)?.kind === 'sketch' ? 'a new sketch' : 'a new picture'}. Approve it or ask for changes.</a>`).join('')}
+          ${versionsOf(view, keyOf(p)).at(-1)?.kind === 'sketch' ? 'a new sketch' : 'a new image'}. Approve it or ask for changes.</a>`).join('')}
         ${suggestions.map((x) => `<a class="news-item" href="#/${code}/${x.picture}">${esc(x.byName)} suggests a new ${esc((FIELD_NAMES[x.field] ?? x.field).toLowerCase())} for <b>${esc(pictureTitle(code, x.picture))}</b>: “${esc(x.value)}”</a>`).join('')}
         ${news.map((c) => `<a class="news-item" href="#/${code}/${c.picture}">${esc(c.authorName)} wrote on <b>${esc(pictureTitle(code, c.picture))}</b>: ${esc(c.text.slice(0, 140))}</a>`).join('')}
         ${news.length ? `<button class="link" data-click="seen:${code}">Mark messages as read</button>` : ''}</section>`
     : `<section class="panel"><h2>Nothing for you to do right now</h2>
-        <p>${current ? `${who} is on picture ${brief.pictures.indexOf(current) + 1} of ${total}: <b>${esc(title(current))}</b>. When they send it, it appears here for you to review.`
-          : approved === total ? 'Every picture is approved.' : `${who} has sent everything that’s open. It appears here as soon as there’s more.`}</p></section>`;
+        <p>${current ? `${who} is on image ${brief.pictures.indexOf(current) + 1} of ${total}: <b>${esc(title(current))}</b>. When they send it, it appears here for you to review.`
+          : approved === total ? 'Every image is approved.' : `${who} has sent everything that’s open. It appears here as soon as there’s more.`}</p></section>`;
   return `<main class="home">${head}${task}
     <section class="panel quiet"><h2>Artist</h2>${artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b>${a.email ? `<span>${esc(a.email)}</span>` : ''}
         <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('')}
@@ -648,7 +648,7 @@ function picturePage(code: string, key: string): string {
   const brief = S.briefs.get(code);
   if (!brief) return notLoaded();
   const p = brief.pictures.find((x) => keyOf(x) === key);
-  if (!p) return `<main class="empty"><h1>No such picture</h1><p><a href="#/${code}">Back to ${esc(brief.name)}</a></p></main>`;
+  if (!p) return `<main class="empty"><h1>No such image</h1><p><a href="#/${code}">Back to ${esc(brief.name)}</a></p></main>`;
   const view = S.views.get(code) ?? null;
   const state = stateOf(view, key);
   const versions = versionsOf(view, key);
@@ -658,12 +658,12 @@ function picturePage(code: string, key: string): string {
   const stepInfo = { open: at < 0 || all[at].open, after: at > 0 ? all[at - 1].milestone.title : '' };
   const i = brief.pictures.indexOf(p);
   const prev = brief.pictures[i - 1], next = brief.pictures[i + 1];
-  return `<main class="picture">
+  return `<main class="image">
     <aside class="brief">
-      <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main picture' : ''}</small>
+      <div class="brief-head"><small>${esc(TIER_NAMES[p.tier])}${p.style ? ` · ${p.style === 'sticker' ? 'Sticker style' : 'Painted scene'}` : ''}${p.main ? ' · Main image' : ''}</small>
         <h1>${esc(title(p))}</h1>${sideLabel(p) ? `<p class="muted">${sideLabel(p)} form</p>` : ''}${stateChip(state)}</div>
       ${actionBox(p, state, versions, stepInfo.open, stepInfo.after)}
-      <section><h3>Our idea for this picture</h3><p>${esc(p.draw)}</p>
+      <section><h3>Our idea for this image</h3><p>${esc(p.draw)}</p>
         ${p.mustKeep?.length ? `<h3>Things we had in mind</h3><ul>${p.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
         <p class="muted small">A starting point: the artist may go another way, and we adapt the card.</p></section>
       ${cardText(p)}
@@ -728,20 +728,20 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
       <p><b>${esc(local.file.name)}</b> · ${kb(local.file.size)}</p>
       <ul class="checks">${list.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>
       ${list.fix ? `<p class="fix">${esc(list.fix)}</p>` : ''}
-      ${S.guest ? '<p class="muted small">This picture is only on your computer. Sign in to send it to us.</p>' : `
+      ${S.guest ? '<p class="muted small">This image is only on your computer. Sign in to send it to us.</p>' : `
         <div class="seg" role="radiogroup" aria-label="What is it?">
           <button class="${S.uploadKind === 'sketch' ? 'on' : ''}" data-click="kind:sketch" role="radio" aria-checked="${S.uploadKind === 'sketch'}">A sketch</button>
           <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">Finished</button></div>
         <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
         ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
           : `<button class="btn primary wide" data-click="upload:${key}" ${list.blocked ? 'disabled' : ''}>Send to Fruitcats</button>`}`}
-      ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another picture' : 'Don’t send it'}</button>`}
+      ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another image' : 'Don’t send it'}</button>`}
       ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
     </div>`;
   } else {
     return `<label class="drop" data-drop="${key}">
       <input type="file" accept="image/webp,image/png,image/jpeg" data-file="${key}" hidden>
-      <b>${versions.length ? 'Upload a new version' : 'Upload your picture'}</b>
+      <b>${versions.length ? 'Upload a new version' : 'Upload your image'}</b>
       <span>Drop the file here, or click to choose it on your computer. You’ll see it ${where} before you send it.</span></label>`;
   }
 }
@@ -770,7 +770,7 @@ function openFields(code: string, p: BriefPicture): string {
       <label class="field">Anything else we should know <small>optional</small><input data-in="swhy" value="${esc(S.suggesting.why)}"></label>
       <div class="row"><button class="btn primary small" data-click="suggestsend:${key}">Send your idea</button><button class="link" data-click="suggestcancel">Cancel</button></div></div>` : '';
   return `<section class="open-fields"><h3>Your ideas</h3>
-    <p class="muted small">A different character, name, scene or anything else: tell us, and we’ll adapt the card to your picture.</p>
+    <p class="muted small">A different character, name, scene or anything else: tell us, and we’ll adapt the card to your image.</p>
     ${mine.map((s) => suggestionRow(code, s, owner)).join('')}
     ${form || (S.guest ? '' : `<button class="btn ghost small" data-click="suggest:name">Share an idea</button>`)}
   </section>`;
@@ -801,9 +801,9 @@ function versionStrip(key: string, versions: Version[], pic: ReturnType<typeof s
 
 function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown>): string {
   const key = keyOf(p);
-  const tabs: [Tab, string][] = p.kind === 'pawtrait' ? [['card', 'Pawtrait'], ['picture', 'Picture']]
-    : p.kind === 'announcement' ? [['card', 'Announcement'], ['picture', 'Picture']]
-      : [['card', 'On the card'], ['game', 'In the game'], ['wallpaper', 'Wallpapers'], ['picture', 'Picture']];
+  const tabs: [Tab, string][] = p.kind === 'pawtrait' ? [['card', 'Pawtrait'], ['picture', 'Image']]
+    : p.kind === 'announcement' ? [['card', 'Announcement'], ['picture', 'Image']]
+      : [['card', 'On the card'], ['game', 'In the game'], ['wallpaper', 'Wallpapers'], ['picture', 'Image']];
   const tab = tabs.some(([t]) => t === S.tab) ? S.tab : 'card';
   const url = pic.url;
   let body = '';
@@ -816,12 +816,12 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
     const finish = S.finish.get(key) ?? finishes.at(-1)!.finish;
     body = `${finishes.length > 1 ? `<div class="seg small">${finishes.map((f) => `<button class="${f.finish === finish ? 'on' : ''}" data-click="finish:${key}:${f.finish}">${f.label}</button>`).join('')}</div>` : ''}
       <div class="card-stage">${cardPreview(code, key, finish, url, 420, pinsFor(code, key, pic.version))}</div>
-      <p class="pv-note">The card shows your whole picture, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
+      <p class="pv-note">The card shows your whole image, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
   } else if (tab === 'game') body = gamePreview(p, url, code, key);
   else {
     body = url ? `<div class="walls">${DEVICES.map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`).join('')}</div>
-      <p class="pv-note">Players can make any card they own into a wallpaper. A phone keeps only the middle of your picture, with the clock over its upper part.</p>`
-      : '<p class="pv-empty">Upload a picture to see it as a wallpaper.</p>';
+      <p class="pv-note">Players can make any card they own into a wallpaper. A phone keeps only the middle of your image, with the clock over its upper part.</p>`
+      : '<p class="pv-empty">Upload an image to see it as a wallpaper.</p>';
   }
   return `<div class="tabs" role="tablist">${tabs.map(([t, label]) => `<button role="tab" aria-selected="${t === tab}" class="${t === tab ? 'on' : ''}" data-click="tab:${t}">${label}</button>`).join('')}</div>
     <div class="preview tab-${tab} ${url ? '' : 'is-empty'}" data-preview="${key}">${body}</div>`;
@@ -835,7 +835,7 @@ function pinsFor(code: string, key: string, version: Version | null): string {
 
 /** The picture itself, large, with the comments' pins on it. Click to pin a comment to a spot. */
 function pictureView(code: string, key: string, url: string | null, version: Version | null): string {
-  if (!url) return '<p class="pv-empty">No picture uploaded yet.</p>';
+  if (!url) return '<p class="pv-empty">No image uploaded yet.</p>';
   const pins = pinsFor(code, key, version)
     + (S.pin ? `<span class="pin new" style="left:${S.pin.x * 100}%;top:${S.pin.y * 100}%"><i>+</i></span>` : '');
   return `<div class="bigpic ${S.pinning ? 'pinning' : ''}" data-pinboard="1"><img src="${url}" alt="">${pins}</div>
@@ -888,7 +888,7 @@ async function fillWallpapers() {
   const artId = pic.local ? `local-${pic.local.file.name}-${pic.local.file.lastModified}` : `${code}/${key}/${pic.version?.id}`;
   for (const el of holders) {
     const made = wallpaper(p, pic.url, artId, el.dataset.wall as 'phone' | 'tablet' | 'computer');
-    if (!made) { el.innerHTML = '<p class="pv-empty">No wallpaper for this picture.</p>'; continue; }
+    if (!made) { el.innerHTML = '<p class="pv-empty">No wallpaper for this image.</p>'; continue; }
     made.then((src) => {
       if (!el.isConnected) return;
       el.querySelector('.spinner')?.remove();
@@ -909,7 +909,7 @@ async function choose(key: string, file: File) {
   const url = URL.createObjectURL(file);
   const img = new Image();
   const ok = await new Promise<boolean>((resolve) => { img.onload = () => resolve(true); img.onerror = () => resolve(false); img.src = url; });
-  if (!ok) { S.uploadError = 'That file isn’t a picture the browser can open. Please use WebP, PNG or JPEG.'; render(); return; }
+  if (!ok) { S.uploadError = 'That file isn’t an image the browser can open. Please use WebP, PNG or JPEG.'; render(); return; }
   const format = file.type === 'image/webp' ? 'webp' : file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpeg' : file.name.split('.').pop()?.toLowerCase() ?? '?';
   const old = S.local.get(key);
   if (old) URL.revokeObjectURL(old.url);
@@ -950,7 +950,7 @@ async function send(key: string) {
     flash('Sent. It’s safely stored, and we’ll have a look.');
   } catch (e) {
     S.uploading = null;
-    S.uploadError = `${api.explain(e)} Your picture is still on your computer.`;
+    S.uploadError = `${api.explain(e)} Your image is still on your computer.`;
     render();
   }
 }
@@ -1054,7 +1054,7 @@ async function act(action: string) {
       return;
     }
     case 'remove':
-      if (!confirm('Remove this artist from the set? Their pictures and comments stay.')) return;
+      if (!confirm('Remove this artist from the set? Their images and comments stay.')) return;
       await work(async () => { await api.removeArtist(args[0], args[1]); S.roster = await api.artists(args[0]); });
       return;
   }

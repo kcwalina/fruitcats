@@ -31,7 +31,7 @@ export function cardPreview(code: string, key: string, finish: string, art: stri
   const window = `left:${ART.left * 100}%;top:${ART.top * 100}%;width:${ART.width * 100}%;height:${ART.height * 100}%`;
   return `<div class="pv-card" style="width:${width}px">
     ${art ? `<img class="pv-card-art" src="${art}" alt="" style="${window}">`
-      : `<div class="pv-card-empty" style="${window}"><span>Your picture goes here</span></div>`}
+      : `<div class="pv-card-empty" style="${window}"><span>Your image goes here</span></div>`}
     <img class="pv-card-frame" src="${frameUrl(code, key, finish)}" alt="">
     ${pins ? `<div class="pv-pins" style="${window}">${pins}</div>` : ''}
   </div>`;
@@ -72,8 +72,8 @@ export function gamePreview(p: BriefPicture, art: string | null, code: string, k
     <figure><div class="pv-stage pv-yard">${tile(shape === 'hero' ? 96 : 160)}</div><figcaption>As ${shapeName}, on a computer</figcaption></figure>` : ''}
   </div>
   ${shape ? `<p class="pv-note">${shape === 'hero'
-    ? 'The Hero Cat’s tile is a little wider than tall, so the top and bottom of your picture are trimmed.'
-    : 'A unit’s tile is taller than wide, so the left and right of your picture are cut off. The character in the middle stays.'}</p>` : ''}`;
+    ? 'The Hero Cat’s tile is a little wider than tall, so the top and bottom of your image are trimmed.'
+    : 'A unit’s tile is taller than wide, so the left and right of your image are cut off. The character in the middle stays.'}</p>` : ''}`;
 }
 
 /** A Pawtrait in the circles the game shows it in. */

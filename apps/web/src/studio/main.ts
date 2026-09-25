@@ -328,7 +328,7 @@ function page(): string {
   }
   const r = S.route;
   const body = r.page === 'sets' ? setsPage() : r.page === 'home' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
-    : r.page === 'all' ? (reviewing() ? picturesPage(r.code) : wizardPage(r.code))
+    : r.page === 'all' ? (reviewing() ? homePage(r.code) : wizardPage(r.code))
       : r.page === 'comments' ? commentsWalk(r.code)
         : reviewing() ? picturePage(r.code, r.key) : wizardPage(r.code, r.key);
   return `${topBar()}${S.error ? `<div class="banner error">${esc(S.error)} <button class="link" data-click="dismiss">Close</button></div>` : ''}
@@ -573,7 +573,6 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
       <button class="btn primary" data-click="assign:${code}" ${S.busy ? 'disabled' : ''}>${S.busy ? 'Checking…' : 'Assign'}</button></div>
     ${S.assignError ? `<p class="error">${esc(S.assignError)}</p>` : ''}`;
   const head = homeHead(code, brief, null, approved, total);
-  const allLink = `<p class="all-link"><a href="#/${code}/all">See all ${total} pictures</a></p>`;
 
   // A new project: the one thing to do is choose its artist.
   if (!artists.length) {
@@ -581,7 +580,7 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
       <section class="panel attention"><h2>Assign an artist</h2>
         <p>This is the only thing to do for now. Type the email of the game account of the artist who will make the pictures for ${esc(brief.name)}.
           We check that the account exists. They then open <b>${esc(`${location.origin}${location.pathname}`)}</b>, sign in, and start.</p>
-        ${assign}</section>${allLink}</main>`;
+        ${assign}</section></main>`;
   }
 
   const who = artists.map((a) => esc(a.name)).join(' and ');
@@ -603,32 +602,10 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
     <section class="panel quiet"><h2>Artist</h2>${artists.map((a) => `<div class="roster-row"><b>${esc(a.name)}</b>${a.email ? `<span>${esc(a.email)}</span>` : ''}
         <span class="grow"></span><button class="btn ghost small" data-click="remove:${code}:${a.id}">Remove…</button></div>`).join('')}
 </section>
-    ${allLink}</main>`;
+    </main>`;
 }
 
-/** Every picture of a project, in the artist's order: a reference, never the first thing anyone sees. */
-function picturesPage(code: string): string {
-  const brief = S.briefs.get(code);
-  if (!brief) return notLoaded();
-  const view = S.views.get(code) ?? null;
-  return `<main class="home"><p class="all-link"><a href="#/${code}">‹ Back</a></p>
-    <section class="panel"><h2>All pictures of ${esc(brief.name)}</h2>
-      <p class="muted">In the order the artist draws them. Each step opens when the one before it is approved.</p>
-      ${steps(brief, view).map((st, i) => `<div class="rstep"><h3>${i + 1}. ${esc(st.milestone.title)}</h3>
-        <div class="thumbs">${st.pictures.map((p) => thumb(code, p, true)).join('')}</div></div>`).join('')}
-    </section></main>`;
-}
 
-function thumb(code: string, p: BriefPicture, reachable: boolean): string {
-  const key = keyOf(p), state = stateOf(S.views.get(code) ?? null, key);
-  const url = shown(code, key).url;
-  const pic = p.kind === 'pawtrait' ? `<div class="thumb-paw" style="${url ? `background-image:url(${url})` : ''}"></div>`
-    : p.kind === 'announcement' ? `<div class="thumb-wide" style="${url ? `background-image:url(${url})` : ''}"></div>`
-      : cardPreview(code, key, finishesOf(p).at(-1)!.finish, url, 104);
-  const dot = unread(code, key).length ? '<i class="dot" title="New comments"></i>' : '';
-  const inner = `${pic}<b>${esc(title(p))}</b><small>${sideLabel(p) ? `${sideLabel(p)} · ` : ''}${TIER_NAMES[p.tier]}</small>${stateChip(state)}${dot}`;
-  return reachable ? `<a class="thumb" href="#/${code}/${key}">${inner}</a>` : `<div class="thumb locked">${inner}</div>`;
-}
 
 
 // ── A picture ────────────────────────────────────────────────────────────────────────────────────

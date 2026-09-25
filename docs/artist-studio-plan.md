@@ -169,6 +169,13 @@ the artist. They open it, create their Via Mochi account (or sign in), and see t
 **Adding a set.** A set appears in the Studio when its folder has `art/brief.json`. Then draw its frames:
 `python tools/compose_cards.py --set <code> --frames`. `npm run check-set` checks the brief.
 
+**Frames the artist chooses.** A card marked `frameChoice` in its brief (every Paragon card) shows a row of frame
+colours in the Studio, and one more tile after them: the artist's own image. It's uploaded like a picture, as
+versions of `<key>-frame` (kind `frame`, not reviewed on its own), and the choice is saved as `image:<version>`. The
+Studio shows it under the see-through frames in `frames/p-image/`; `pull` saves it at `art/frames/<card>.webp` and sets
+the card's `frameImage`, and `compose_cards.py` fills the frame and the background behind the name with it (the small
+accents use the `ink` colours). Paid prints keep their own frame material, with the image behind the name.
+
 **When pictures are approved.** `npm run studio -- pull <set>` copies each approved picture into the set's folder
 (Pawtraits into its `avatars/`, key art into its `announcement/`) and composes the cards. Review the result with `git
 diff`, then commit and deploy as usual.

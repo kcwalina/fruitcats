@@ -152,7 +152,7 @@ Signature card (Reaper).
 
 You make one picture per card. (A Hero Cat needs two, because it has two forms: Kitten and Big Cat.) The card's
 frame is part of its design, decided before the project reaches you, so you never make a picture per frame. A few
-cards, such as the Paragon family's, let you pick the frame's colour in the Studio, to suit your picture.
+cards, such as the Paragon family's, let you pick the frame's colour in the Studio, or use an image of your own for it, to suit your picture.
 
 ## Two styles
 

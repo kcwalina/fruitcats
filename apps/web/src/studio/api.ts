@@ -125,7 +125,7 @@ export const invite = (set: string, note: string) => call<{ code: string; url: s
 export const removeArtist = (set: string, id: string) => call(`${set}/artists/${id}`, { method: 'DELETE' });
 
 /** Upload a picture, reporting progress from 0 to 1. Resolves once the server has stored and checked it. */
-export async function upload(set: string, key: string, file: File, kind: 'sketch' | 'final', note: string,
+export async function upload(set: string, key: string, file: File, kind: 'sketch' | 'final' | 'frame', note: string,
   progress: (fraction: number) => void): Promise<Version> {
   const auth = await authorization();
   if (!auth) throw new ApiError(401, 'signed_out');

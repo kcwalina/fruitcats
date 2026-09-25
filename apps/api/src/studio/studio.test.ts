@@ -169,6 +169,20 @@ describe('studio', () => {
     expect((await call(OWNER, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'Not a name!' } })).status).toBe(422);
   });
 
+  it('keeps an image an artist chose for the frame, without touching the card picture’s review', async () => {
+    const before = (await call(OWNER, '/bp1')).body.pictures['BP1-X01'].state;
+    const up = await call(ARTIST, '/bp1/pictures/BP1-X01-frame?kind=frame', { body: png(1200, 800, 7) });
+    expect(up.status).toBe(201);
+    expect(up.body.kind).toBe('frame');
+    expect((await call(ARTIST, '/bp1/pictures/BP1-X01/frame', { json: { palette: `image:${up.body.id}` } })).status).toBe(200);
+    const view = (await call(OWNER, '/bp1')).body;
+    expect(view.pictures['BP1-X01'].frame).toBe(`image:${up.body.id}`);
+    expect(view.pictures['BP1-X01'].state).toBe(before);
+    expect(view.pictures['BP1-X01-frame'].state).toBe('none');
+    // Only an image that was uploaded for this card's frame.
+    expect((await call(ARTIST, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'image:20260101T000000000Z-deadbeef' } })).status).toBe(422);
+  });
+
   it('removes an artist without losing their pictures', async () => {
     expect((await call(OWNER, '/bp1/artists/basil', { method: 'DELETE' })).status).toBe(200);
     expect((await call(ARTIST, '/bp1')).status).toBe(403);

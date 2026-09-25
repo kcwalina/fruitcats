@@ -137,7 +137,7 @@ async function main() {
     const view = await json<View>(set);
     let count = 0;
     const setFile = join(folder, 'set.json');
-    const setData = JSON.parse(readFileSync(setFile, 'utf8')) as { cards: { id: string; frame?: string }[] };
+    const setData = JSON.parse(readFileSync(setFile, 'utf8')) as { cards: { id: string; frame?: string; frameImage?: string }[] };
     let framesChanged = false;
     for (const p of brief.pictures) {
       const key = p.file.replace(/\.[a-z]+$/, '');
@@ -158,13 +158,29 @@ async function main() {
       }
       console.log(`${key}: version ${v.id} → ${relative(ROOT, out)}`);
       count++;
-      // A frame colour the artist chose goes into the card's data, so the finished card is drawn in it.
+      // A frame colour the artist chose goes into the card's data, so the finished card is drawn in it. Or their own
+      // image for the frame: saved in the set's folder at art/frames/<card>.webp, and named by the card's frameImage.
       const card = setData.cards.find((c) => `${c.id}` === key || key.startsWith(`${c.id}-`));
-      const frame = pic.frame && pic.frame !== 'own' ? pic.frame : undefined;
-      if (card && card.frame !== frame) {
-        if (frame) card.frame = frame; else delete card.frame;
+      const chosen = pic.frame && pic.frame !== 'own' ? pic.frame : undefined;
+      const image = chosen?.startsWith('image:') ? chosen.slice(6) : undefined;
+      if (card && image) {
+        const rel = `art/frames/${card.id}.webp`, out = join(folder, rel);
+        mkdirSync(dirname(out), { recursive: true });
+        const fv = view.pictures[`${key}-frame`]?.versions.find((x) => x.id === image);
+        const fbytes = Buffer.from(await (await call(`${set}/pictures/${key}-frame/${image}`)).arrayBuffer());
+        if (fv?.format === 'webp') writeFileSync(out, fbytes);
+        else {
+          const tmp = `${out}.${fv?.format ?? 'png'}`;
+          writeFileSync(tmp, fbytes);
+          execFileSync('python', ['-c', 'import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2], quality=92, method=6); import os; os.remove(sys.argv[1])', tmp, out]);
+        }
+        if (card.frameImage !== rel || card.frame) { card.frameImage = rel; delete card.frame; framesChanged = true; }
+        console.log(`${card.id}: frame image version ${image} → ${relative(ROOT, out)}`);
+      } else if (card && (card.frame !== chosen || card.frameImage)) {
+        if (chosen) card.frame = chosen; else delete card.frame;
+        delete card.frameImage;
         framesChanged = true;
-        console.log(`${card.id}: frame colour ${frame ?? 'its family’s own'}`);
+        console.log(`${card.id}: frame colour ${chosen ?? 'its family’s own'}`);
       }
     }
     if (framesChanged) writeFileSync(setFile, `${JSON.stringify(setData, null, 2)}\n`);

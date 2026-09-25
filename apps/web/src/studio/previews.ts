@@ -33,18 +33,27 @@ export const PALETTES: [string, string, string][] = [
   ['gold', '#C8961E', '#7A5A0C'], ['garden', '#5FA84D', '#3B7430'], ['melon', '#3FA66B', '#25714A'], ['ink', '#3A3A3A', '#161616'],
 ];
 
-/** The frame colour each card is shown in, for cards whose artist chooses it: set by the Studio as it draws a page. */
+/** The frame colour each card is shown in, for cards whose artist chooses it: set by the Studio as it draws a page.
+ * "image:<version>" (or "image:local") is the artist's own image instead of a colour. */
 export const framePalettes = new Map<string, string>();
+/** The artist's own frame images, as addresses for <img>, by set/key. */
+export const frameImages = new Map<string, string>();
+
+const isImage = (palette?: string) => !!palette?.startsWith('image:');
 
 const frameUrl = (code: string, key: string, finish: string) => {
   const palette = framePalettes.get(`${code}/${key}`);
-  return `${BASE}cards/${code}/frames/${palette ? `p-${palette}/` : ''}${finish === 'standard' ? '' : `${finish}/`}${key}.webp`;
+  const dir = isImage(palette) ? 'p-image/' : palette ? `p-${palette}/` : '';
+  return `${BASE}cards/${code}/frames/${dir}${finish === 'standard' ? '' : `${finish}/`}${key}.webp`;
 };
 
 /** The picture on its card. With no picture yet, the window shows where it will go. */
 export function cardPreview(code: string, key: string, finish: string, art: string | null, width: number, pins = ''): string {
   const window = `left:${ART.left * 100}%;top:${ART.top * 100}%;width:${ART.width * 100}%;height:${ART.height * 100}%`;
+  // The artist's own frame image goes under the frame, which is see-through where it shows (p-image frames).
+  const own = isImage(framePalettes.get(`${code}/${key}`)) ? frameImages.get(`${code}/${key}`) : undefined;
   return `<div class="pv-card" style="width:${width}px">
+    ${own ? `<img class="pv-card-bg" src="${own}" alt="">` : ''}
     ${art ? `<img class="pv-card-art" src="${art}" alt="" style="${window}">`
       : `<div class="pv-card-empty" style="${window}"><span>Your image goes here</span></div>`}
     <img class="pv-card-frame" src="${frameUrl(code, key, finish)}" alt="">

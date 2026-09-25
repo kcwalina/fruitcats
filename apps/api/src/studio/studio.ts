@@ -17,7 +17,8 @@
 //   POST /v1/studio/{set}/pictures/{key}/comments        { text, version?, pin?: {x, y}, replyTo? }
 //   POST /v1/studio/{set}/comments/{id}                  { done }  mark a comment done (or not)
 //   POST /v1/studio/{set}/pictures/{key}/review          owner: { state: changes | sketch-ok | approved | waiting }
-//   POST /v1/studio/{set}/pictures/{key}/frame           { palette }  the frame colour the artist chose (cards that let them)
+//   POST /v1/studio/{set}/pictures/{key}/frame           { palette }  the frame colour the artist chose (cards that let them),
+//                                                        or "image:<version>": their own image, uploaded to {key}-frame with kind=frame
 //   POST /v1/studio/{set}/milestones/{id}                owner: { open } open a step early, or close it again
 //   POST /v1/studio/{set}/suggestions                    { picture, field, value, why? }
 //   POST /v1/studio/{set}/suggestions/{id}               owner: { state: accepted | declined, reply? }
@@ -153,11 +154,12 @@ export function studio(opt: StudioOptions) {
       throw new HttpError(500, 'not_stored');
     }
     const row: Row = {
-      blob, kind: kind === 'sketch' ? 'sketch' : 'final', format: picture.format, width: picture.width, height: picture.height,
+      blob, kind: kind === 'sketch' ? 'sketch' : kind === 'frame' ? 'frame' : 'final', format: picture.format, width: picture.width, height: picture.height,
       bytes: bytes.length, sha256: hash, by: c.id, byName: c.name, at: new Date().toISOString(), note: note.slice(0, 500),
     };
     await store.insert(`versions|${set}`, `${key}|${version}`, row);
-    await store.upsert(`states|${set}`, key, { state: 'waiting', at: row.at as string, by: c.id, byName: c.name });
+    // A frame image isn't a picture to review on its own: it goes with its card's picture.
+    if (row.kind !== 'frame') await store.upsert(`states|${set}`, key, { state: 'waiting', at: row.at as string, by: c.id, byName: c.name });
     log('studio.uploaded', { set, key, version, userId: c.id, bytes: bytes.length });
     return { ...row, id: version };
   }
@@ -270,7 +272,10 @@ export function studio(opt: StudioOptions) {
       if (cc === 'frame' && rest.length === 3 && method === 'POST') {
         if (c.kind !== 'account') throw new HttpError(403, 'people_only');
         const { palette } = await readJson(req) as { palette?: string };
-        if (typeof palette !== 'string' || !/^[a-z]{2,20}$/.test(palette)) throw new HttpError(422, 'bad_palette');
+        const image = typeof palette === 'string' && palette.startsWith('image:') ? palette.slice(6) : null;
+        if (typeof palette !== 'string') throw new HttpError(422, 'bad_palette');
+        if (image !== null ? !validVersion(image) || !(await store.get(`versions|${set}`, `${b}-frame|${image}`))
+          : !/^[a-z]{2,20}$/.test(palette)) throw new HttpError(422, 'bad_palette');
         await store.upsert(`frames|${set}`, b, { palette, at: new Date().toISOString(), by: c.id, byName: c.name });
         return send(res, 200, { palette });
       }

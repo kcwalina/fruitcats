@@ -58,6 +58,22 @@ PALETTES = {
     "gold":     ("#C8961E", "#7A5A0C", "#FFF3CF"),
     "ink":      ("#3A3A3A", "#161616", "#EEEEEE"),
 }
+# Instead of a colour, the artist may give a card's frame an image of their own: "frameImage": "<path in the set's
+# folder>". It fills the frame and the background behind the card's name; the small accents use the "ink" colours.
+# For the Studio's frames, FRAME_HOLE leaves those parts see-through, and the Studio shows the image under them.
+FRAME_HOLE = "__studio_hole__"
+SET_DIR: Path | None = None
+
+
+def cover(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """The image scaled to fill `size`, centred, with the overflow cut off."""
+    w, h = size
+    scale = max(w / image.width, h / image.height)
+    big = image.convert("RGBA").resize((round(image.width * scale), round(image.height * scale)), Image.LANCZOS)
+    x, y = (big.width - w) // 2, (big.height - h) // 2
+    return big.crop((x, y, x + w, y + h))
+
+
 CREAM, INK, MUTED = "#FFF8EC", "#2B211B", "#7A6A5C"
 POWER_COLOR, HEALTH_COLOR = "#E4572E", "#E0457B"
 
@@ -360,7 +376,9 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
     """The card image. With no art_path, the picture's window is left transparent (a frame)."""
     if finish == SIGNATURE and card.get("signature") == "rainbow":
         finish = RAINBOW_SIGNATURE     # the rainbow Signature stone, printed where the card's Signature goes
-    main, dark, tint = PALETTES[card["frame"]] if card.get("frame") in PALETTES else FAMILIES[card["family"]]
+    frame_image = card.get("frameImage")
+    main, dark, tint = (PALETTES["ink"] if frame_image
+                        else PALETTES[card["frame"]] if card.get("frame") in PALETTES else FAMILIES[card["family"]])
     face = card[{"kitten": "kitten", "bigcat": "bigCat"}[side]] if side else card
     name = face["name"]
     text = face.get("text", "")
@@ -396,6 +414,15 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
     # Name banner
     d.rounded_rectangle((36, 30, W - 36, 126), radius=26, fill=main, outline=dark, width=4)
     cd.rounded_rectangle((36, 30, W - 36, 126), radius=26, outline=255, width=5)
+    if frame_image:
+        # The artist's image in the frame and behind the name (or, for the Studio, a hole where it goes).
+        fill = chrome.copy()
+        ImageDraw.Draw(fill).rounded_rectangle((36, 30, W - 36, 126), radius=26, fill=255)
+        texture = (Image.new("RGBA", (W, H), (0, 0, 0, 0)) if frame_image == FRAME_HOLE
+                   else cover(Image.open((SET_DIR or ROOT) / frame_image), (W, H)))
+        img.paste(texture, (0, 0), fill)
+        d.rounded_rectangle((36, 30, W - 36, 126), radius=26, outline=dark, width=4)
+        d.rounded_rectangle((21, 21, W - 22, H - 22), radius=30, outline=dark, width=2)
     title, _, epithet = name.partition(", ")
     title_font = font("segoeuib.ttf", 42)
     while title_font.getlength(title) > 520 and title_font.size > 26:
@@ -525,6 +552,12 @@ def frames(data: dict, set_path: Path, only: list[str] | None) -> int:
                     pp.parent.mkdir(parents=True, exist_ok=True)
                     compose(dict(card, frame=name), side, None, f).save(pp, quality=90, method=6)
                     count += 1
+                # Or the artist's own image: frames/p-image/ has the frame and the name's background see-through.
+                if card["id"] in choice:
+                    pp = out_dir / "p-image" / (f"{key}.webp" if f == "standard" else f"{f}/{key}.webp")
+                    pp.parent.mkdir(parents=True, exist_ok=True)
+                    compose(dict(card, frameImage=FRAME_HOLE), side, None, f).save(pp, quality=90, method=6)
+                    count += 1
     print(f"drew {count} frame(s) into {out_dir.relative_to(ROOT)}")
     return 0
 
@@ -542,7 +575,8 @@ def main() -> int:
     data = json.loads(set_path.read_text(encoding="utf-8"))
     cards = {c["id"]: c for c in data["cards"]}
     # A set can add families (with their colours) and family mechanics, and names itself in the footer.
-    global FOOTER, KEYWORDS
+    global FOOTER, KEYWORDS, SET_DIR
+    SET_DIR = set_path.parent
     for family, info in data.get("families", {}).items():
         FAMILIES[family] = tuple(info["colors"])
     if data.get("mechanics"):
@@ -603,21 +637,22 @@ def main() -> int:
 
     # Hero Cats first, the mightiest one (the only Big Cat with the most Power and Fierce) on top.
     heroes = [c for c in data["cards"] if c["type"] == "Hero Cat"]
-    mightiest = max(heroes, key=lambda c: (c["bigCat"].get("power", 0), "Fierce" in c["bigCat"]["text"]))
-    others = [h for h in heroes if h is not mightiest]
-    note = " *(preview — not in the Starter Box yet)*" if mightiest.get("preview") else ""
-    sections.append(
-        f'## {mightiest["name"]} — the mightiest Hero Cat{note}\n\n'
-        f'The only Big Cat with {mightiest["bigCat"]["power"]} Power and Fierce.\n\n'
-        f'<table>\n<tr><td align="center">{cell(mightiest["id"] + "-kitten", width=300)}</td>'
-        f'<td align="center">{cell(mightiest["id"] + "-bigcat", width=300)}</td></tr>\n</table>\n')
-    hero_entries = [cell(f'{h["id"]}-{side}') for h in others for side in ("kitten", "bigcat")]
-    sections.append("## All Hero Cats\n\nEach Hero Cat starts as a Kitten and Grows Up into a Big Cat. "
-                    + ", ".join(h["name"] + (" (preview)" if h.get("preview") else "") for h in others)
-                    + f".\n\n<table>\n{grid(hero_entries)}\n</table>\n")
+    if heroes:   # a set may have none (Mochi is a single Paragon card)
+        mightiest = max(heroes, key=lambda c: (c["bigCat"].get("power", 0), "Fierce" in c["bigCat"]["text"]))
+        others = [h for h in heroes if h is not mightiest]
+        note = " *(preview — not in the Starter Box yet)*" if mightiest.get("preview") else ""
+        sections.append(
+            f'## {mightiest["name"]} — the mightiest Hero Cat{note}\n\n'
+            f'The only Big Cat with {mightiest["bigCat"]["power"]} Power and Fierce.\n\n'
+            f'<table>\n<tr><td align="center">{cell(mightiest["id"] + "-kitten", width=300)}</td>'
+            f'<td align="center">{cell(mightiest["id"] + "-bigcat", width=300)}</td></tr>\n</table>\n')
+        hero_entries = [cell(f'{h["id"]}-{side}') for h in others for side in ("kitten", "bigcat")]
+        sections.append("## All Hero Cats\n\nEach Hero Cat starts as a Kitten and Grows Up into a Big Cat. "
+                        + ", ".join(h["name"] + (" (preview)" if h.get("preview") else "") for h in others)
+                        + f".\n\n<table>\n{grid(hero_entries)}\n</table>\n")
 
     garden = set()
-    for deck in data["decks"].values():
+    for deck in data.get("decks", {}).values():
         entries = []
         for cid, qty in deck["cards"].items():
             if cid not in cards:                   # a card from another set (the Starter Box's Garden)

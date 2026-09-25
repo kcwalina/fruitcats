@@ -17,7 +17,7 @@ import {
   FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
   type Brief, type BriefPicture, type State,
 } from './brief';
-import { DEVICES, LOCK_CLOCK, PALETTES, announcementPreview, cardPreview, finishesOf, framePalettes, gamePreview, pawtraitPreview, wallpaper } from './previews';
+import { DEVICES, LOCK_CLOCK, PALETTES, announcementPreview, cardPreview, finishesOf, frameImages, framePalettes, gamePreview, pawtraitPreview, wallpaper } from './previews';
 import { renderSignIn, signInClick, signInEnter, signInInput } from './signin';
 import { STUDIO_TERMS, STUDIO_TERMS_VERSION } from './terms';
 import './studio.css';
@@ -338,6 +338,12 @@ function syncPalettes() {
       const saved = view?.pictures[key]?.frame;
       const palette = S.framePick.get(id) ?? (saved === 'own' ? '' : saved) ?? p.framePalette;
       if (palette) framePalettes.set(id, palette);
+      // A saved frame image: fetch it once, then draw again with it.
+      const version = palette?.startsWith('image:') ? palette.slice(6) : '';
+      if (version && version !== 'local' && !frameImages.has(id)) {
+        frameImages.set(id, '');
+        api.imageUrl(code, `${key}-frame`, version).then((u) => { frameImages.set(id, u); render(); }).catch(() => frameImages.delete(id));
+      }
     }
   }
 }
@@ -354,7 +360,36 @@ function frameChooser(code: string, p: BriefPicture): string {
       : '<b>Pick the frame colour for this card.</b> It has no colour of its own: choose the one that suits your image. Until you do, it’s shown in grey.';
   return `<div class="frame-choice ${!own && !current ? 'unpicked' : ''}"><p>${text}</p>
     <div class="swatches">${own ? `<button class="swatch family ${current ? '' : 'on'}" title="The card’s own colour" aria-label="The card’s own colour" data-click="frame:${key}:"><span>Own</span></button>` : ''}${PALETTES.map(([name, main, dark]) => `<button class="swatch ${name === current ? 'on' : ''}" title="${name}" aria-label="${name}"
-      style="background:linear-gradient(135deg, ${main} 55%, ${dark} 55%)" data-click="frame:${key}:${name}"></button>`).join('')}</div></div>`;
+      style="background:linear-gradient(135deg, ${main} 55%, ${dark} 55%)" data-click="frame:${key}:${name}"></button>`).join('')}${frameImageTile(code, key, current)}</div></div>`;
+}
+
+/** One more option after the colours: the artist's own image for the frame. */
+function frameImageTile(code: string, key: string, current: string | undefined): string {
+  const on = !!current?.startsWith('image:');
+  const url = on ? frameImages.get(`${code}/${key}`) : '';
+  return `<label class="swatch own-image ${on ? 'on' : ''}" title="Your own image" aria-label="Your own image"${url ? ` style="background-image:url(${url})"` : ''}>
+    <input type="file" accept="image/webp,image/png,image/jpeg" data-frameimage="${key}" hidden>
+    ${url ? '' : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M5 17l4.5-4.5 3 3 2.5-2.5L19 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'}</label>`;
+}
+
+/** The artist picked an image of their own for a card's frame: show it at once, and keep it if they're signed in. */
+async function chooseFrameImage(key: string, file: File) {
+  if (S.route.page === 'sets') return;
+  const code = S.route.code, id = `${code}/${key}`;
+  const url = URL.createObjectURL(file);
+  const ok = await new Promise<boolean>((resolve) => { const img = new Image(); img.onload = () => resolve(true); img.onerror = () => resolve(false); img.src = url; });
+  if (!ok) { URL.revokeObjectURL(url); S.error = 'That file isn’t an image the browser can open. Please use WebP, PNG or JPEG.'; render(); return; }
+  frameImages.set(id, url);
+  S.framePick.set(id, 'image:local');
+  render();
+  if (!S.me || S.guest) return;
+  try {
+    const v = await api.upload(code, `${key}-frame`, file, 'frame', '', () => {});
+    await api.setFrame(code, key, `image:${v.id}`);
+    S.framePick.set(id, `image:${v.id}`);
+    await refresh(code);
+  } catch (e) { S.error = api.explain(e); }
+  render();
 }
 
 function page(): string {
@@ -1191,6 +1226,7 @@ root.addEventListener('input', (e) => {
 root.addEventListener('change', (e) => {
   const el = e.target as HTMLInputElement;
   if (el.dataset.file && el.files?.[0]) void choose(el.dataset.file, el.files[0]);
+  if (el.dataset.frameimage && el.files?.[0]) void chooseFrameImage(el.dataset.frameimage, el.files[0]);
   if (el.dataset.in === 'sfield' && S.suggesting) S.suggesting.field = el.value;
   if (!S.me && !S.guest && el.dataset.in === 'agree') signInInput(el, () => void afterSignIn(), render);
 });

@@ -12,13 +12,10 @@ Last updated 2026-09-25.
 
 ## Waiting for the owner
 
-These have their own guided sessions ("Guide owner through Via Mochi DNS steps" and "Guide owner through launch
-paperwork").
+These have their own guided session ("Guide owner through launch paperwork"). The DNS steps are done (2026-09-25):
+`_dmarc.mail` added, domain auto-renew on, and the zone stays where it is (see
+[accounts.md](accounts.md#the-domain-and-its-dns)).
 
-- **DMARC record for `mail.viamochi.com`**, to help code emails out of spam folders.
-- **Move the `viamochi.com` DNS zone into ViaMochi Production** (Stage 2 in [accounts.md](accounts.md#dns-in-two-stages)):
-  copy every record, switch the nameservers at the registrar, delete the old zone. After this, the Visual Studio
-  subscription can't affect Fruitcats.
 - **Privacy Policy and Terms:** a lawyer review of both. The placeholders are filled (2026-09-24): every contact
   route is Contact us (on viamochi.com, no account needed); the documents name "Via Mochi (viamochi.com)", with no
   personal name and no mailing address; no marketing emails at launch. What's left in brackets is for the lawyer.
@@ -41,6 +38,8 @@ paperwork").
   its pitfalls are in [accounts.md](accounts.md).
 - **Photo Pawtraits** (uploads), after moderation exists.
 - **The Mochi family apps** moving onto Via Mochi accounts: optional, the suite's own project.
+- **Moving `viamochi.com` out of the Visual Studio subscription:** only by transferring the domain to an outside
+  registrar where the owner already has an account, then copying the zone into `rg-viamochi-shared`.
 - **Google Play:** confirm it has no rule like Apple's against requiring an account before a purchase.
 
 ## Dates

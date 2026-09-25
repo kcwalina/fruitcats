@@ -482,10 +482,14 @@ function wizardPage(code: string, chosen?: string): string {
             : 'Make it in your own tools, then upload it here: a sketch if you’d like an early opinion, or the finished image.';
   const asks = (view?.comments ?? []).filter((c) => c.picture === key && !c.done && c.author !== 'artist');
   const pic = shown(code, key);
-  const facts = [`The file: ${current.size[0]} × ${current.size[1]} pixels${current.kind === 'pawtrait' ? ', shown as a circle' : ''}`,
-    current.signature === 'requested' ? 'we’d love your signature in a corner' : '',
-    current.showcase ? 'a card people buy on its own, so it’s a chance to show off' : '']
-    .filter(Boolean).join(' · ');
+  const facts = [current.signature === 'requested' ? 'We’d love your signature in a corner.' : '',
+    current.showcase ? 'A card people buy on its own, so it’s a chance to show off.' : '']
+    .filter(Boolean).join(' ');
+  const [fw, fh] = current.size;
+  const fileNeeds = `<div class="file-needs"><h3>What we need from the finished image</h3>
+    <p><b>Format:</b> WebP, PNG or JPEG</p>
+    <p><b>Size:</b> ${fw} × ${fh} pixels (larger is fine, in the same shape)${current.kind === 'pawtrait' ? '. It’s shown as a circle.' : ''}</p>
+    <p class="small">Sketches can be any size and format.</p></div>`;
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
     <section class="wz-card">
       <small>Image ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
@@ -499,10 +503,10 @@ function wizardPage(code: string, chosen?: string): string {
           <h3>About this card</h3><p>${esc(current.draw)}</p>
           ${current.mustKeep?.length ? `<h3>More about the card</h3><ul>${current.mustKeep.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
           <p class="idea-note">This describes the card, not your image. How you make the image is up to you, and if it takes the card somewhere else, we’ll change the card.</p>
-          <p class="muted small">${esc(facts)}</p>
+          ${facts ? `<p>${esc(facts)}</p>` : ''}
           ${openFields(code, current)}
         </div>
-        <div class="wz-upload">${uploadBox(current, versions)}</div>
+        <div class="wz-upload">${fileNeeds}${uploadBox(current, versions)}</div>
       </div>
     </section>
     ${pic.url ? `<section class="wz-card"><h2>How it looks</h2>${versionStrip(key, versions, pic)}${previewTabs(code, current, pic)}</section>` : ''}
@@ -669,7 +673,7 @@ function picturePage(code: string, key: string): string {
         <p class="muted small">The card’s draft, not art direction: the artist makes the image their way, and we adapt the card.</p></section>
       ${cardText(p)}
       ${openFields(code, p)}
-      <section class="facts"><h3>File</h3><p><b>${p.size[0]} × ${p.size[1]}</b> pixels, WebP${p.kind === 'pawtrait' ? ', shown as a circle' : ''}.
+      <section class="facts"><h3>File</h3><p><b>${p.size[0]} × ${p.size[1]}</b> pixels (or larger, same shape), as WebP, PNG or JPEG${p.kind === 'pawtrait' ? ', shown as a circle' : ''}.
         ${p.signature ? '<br>We’d love your signature in a corner.' : ''}
         ${p.showcase ? '<br>A card people buy on its own, so it’s a chance to show off.' : ''}</p></section>
       <nav class="prevnext">${prev ? `<a href="#/${code}/${keyOf(prev)}">‹ ${esc(title(prev))}</a>` : '<span></span>'}${next ? `<a href="#/${code}/${keyOf(next)}">${esc(title(next))} ›</a>` : ''}</nav>

@@ -525,3 +525,7 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .invite-ready { display: flex; gap: 12px; align-items: center; background: var(--paper); border: 2px solid #f6c79f; border-radius: 12px; padding: 12px 14px; margin: 10px 0 6px; }
 .invite-ready code { flex: 1; font-size: 14px; word-break: break-all; user-select: all; }
 .invite-new { display: flex; gap: 12px; align-items: center; }
+.file-needs { background: #fff7ec; border: 2px solid #f6c79f; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+.file-needs h3 { text-transform: none; letter-spacing: 0; font: 600 16px Fredoka, sans-serif; color: var(--ink); margin-bottom: 6px; }
+.file-needs p { margin: 2px 0; font-size: 15px; color: var(--ink); }
+.file-needs p.small { font-size: 13px; color: var(--ink-2); margin-top: 6px; }

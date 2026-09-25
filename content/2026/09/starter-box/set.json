@@ -1,7 +1,7 @@
 {
   "set": "SB1",
   "name": "Starter Box",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "status": "released",
   "released": "2026-09",
   "families": {
@@ -1416,42 +1416,6 @@
         "Fierce",
         "Sneaky"
       ]
-    },
-    {
-      "id": "SB1-P01",
-      "rarity": "Legendary",
-      "type": "Hero Cat",
-      "family": "Berry",
-      "preview": true,
-      "name": "Jam, the Strawberry Tabby",
-      "flavor": "Never alone. Never quiet.",
-      "kitten": {
-        "name": "Jam, Sticky Kit",
-        "text": "Exhaust, pay 1: Summon a 1/1 Seed Mouse token.\nGrow Up: You control 5 or more units."
-      },
-      "bigCat": {
-        "name": "Jam, Queen of the Patch",
-        "power": 2,
-        "text": "Your Critters that cost 2 or less get +1 Power."
-      }
-    },
-    {
-      "id": "SB1-P03",
-      "rarity": "Legendary",
-      "type": "Hero Cat",
-      "family": "Melon",
-      "preview": true,
-      "name": "Duchess, the Watermelon Persian",
-      "flavor": "She has not moved in three days. Neither have you.",
-      "kitten": {
-        "name": "Duchess, Pampered Kit",
-        "text": "Exhaust: Exhaust an enemy unit that costs 2 or less.\nGrow Up: You have 10 or more cards in your Compost."
-      },
-      "bigCat": {
-        "name": "Duchess, Grand Duchess",
-        "power": 3,
-        "text": "Exhaust: Exhaust an enemy unit."
-      }
     }
   ],
   "decks": {

@@ -26,6 +26,8 @@ export interface Session {
   signedInAt: number;
   /** The avatar ("Pawtrait") this account wears. */
   avatar?: string;
+  /** The version of the Terms of Use this account last agreed to (null: never). */
+  terms?: string | null;
 }
 
 /** Where a sign-in stands between the email and the code. Kept only in memory. */
@@ -163,6 +165,7 @@ async function finish(entra: Record<string, any>, email: string): Promise<Sessio
     refreshToken: entra.refresh_token, token: ours.access_token, expires: Date.now() + ours.expires_in * 1000,
     signedInAt: session()?.signedInAt ?? Date.now(),
     avatar: ours.user.avatar,
+    terms: ours.user.terms ?? null,
   };
   saveSession(s);
   return s;
@@ -264,6 +267,25 @@ export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> 
 }
 
 /** Wear an avatar. */
+/** Has this account still to agree to the current Terms of Use and Privacy Policy? */
+export function needsTerms(): boolean {
+  const s = session();
+  return !!s && s.terms !== TERMS_VERSION;
+}
+
+/** The player agreed to the current Terms of Use and Privacy Policy: recorded in their account. */
+export async function acceptTerms(): Promise<void> {
+  const t = await token();
+  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  const r = await request(`${ID_SERVICE}/me/terms`, {
+    method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version: TERMS_VERSION }),
+  });
+  if (!r.ok) throw new AuthError('terms', 'Couldn’t save that. Please try again.');
+  const s = session();
+  if (s) saveSession({ ...s, terms: TERMS_VERSION });
+}
+
 export async function chooseAvatar(id: string): Promise<void> {
   const t = await token();
   if (!t) throw new AuthError('signed_out', 'Please sign in again.');

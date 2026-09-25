@@ -49,10 +49,10 @@ export function featuredHero(): string {
   return [...releasedHeroes()].sort((a, b) => score(b) - score(a))[0] ?? Object.keys(CARDS)[0];
 }
 
-/** Up to five Hero Cats for the home screen's parade, the featured one in the middle. */
-export function heroParade(): string[] {
-  const star = featuredHero();
-  const rest = releasedHeroes().filter((id) => id !== star).slice(0, 4);
+/** Up to five pictures for the home screen's parade: the featured Hero Cat in the middle, then the others, then `extras`. */
+export function heroParade(extras: string[], picture: (id: string) => string): string[] {
+  const star = picture(featuredHero());
+  const rest = [...releasedHeroes().filter((id) => id !== featuredHero()).map(picture), ...extras].slice(0, 4);
   const half = Math.ceil(rest.length / 2);
   return [...rest.slice(0, half), star, ...rest.slice(half)];
 }

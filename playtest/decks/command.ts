@@ -33,7 +33,8 @@ type Found = Omit<LibraryDeck, 'addedAt'>;
 /** The decks worth keeping from deck hunts (those that beat the starters often enough) and deck builds (the pick). */
 export function worthKeeping(runs: RunSummary[], min: number): Found[] {
   const found: Found[] = [];
-  for (const r of runs) {
+  // A run with the fake provider (random answers, for trying the pipeline) never made a deck worth keeping.
+  for (const r of runs.filter((x) => x.details.provider !== 'fake')) {
     if (r.kind === 'deck-hunt') {
       for (const d of (r.details.decks ?? []) as { name: string; idea: string; hero: string; cards: Record<string, number>; vsStarters: number }[]) {
         if (d.vsStarters < min) continue;

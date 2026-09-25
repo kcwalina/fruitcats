@@ -143,7 +143,6 @@ inside the game, on every platform. The Store only adds the tester list below.
 ## Cards and catalog
 
 - **Rarity** (common, uncommon, rare, legendary) and a **starter** flag go in each set's data (`content/<year>/<month>/<set>/set.json`).
-  - Preview cards (Jam, Duchess) become the first sellable cards, or go into a new set, `sb2.json`.
 - **A card registry that loads several sets.** Today `CARDS` and `DECKS` come from a single file.
 - **Ownership:** `owned(id)` becomes the starter cards plus the account's entitlements. Without an account, a player has only the starter cards.
 - **Copy limit:** the Store never sells more copies of a card than a deck can use.
@@ -220,5 +219,5 @@ inside the game, on every platform. The Store only adds the tester list below.
 
 - Prices: deck and single-card price points.
 - Whether to pay for SWA Standard (about $9 a month) to password-protect the playtest site, or rely on an unlisted address plus the tester list.
-- Which cards come first: the two preview Hero Cats (Jam, Duchess), a new set, or premium variants of existing cards.
+- Which cards come first: a new set, or premium variants of existing cards.
 - The Showcase and the wallpaper for cards the player doesn't own yet: show them locked, or leave them out.

@@ -272,6 +272,8 @@ button.pawtrait:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 
 .account-confirm-buttons { display: flex; gap: 8px; }
 .account-confirm-buttons button { flex: 1; min-height: 44px; }
 button.danger { background: #c8402a; border-color: #a8321f; color: #fff; }
+.account-terms-links { display: flex; justify-content: center; gap: 12px; margin: 0; }
+.account-terms-links a { flex: 1; text-align: center; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px solid rgba(120, 70, 20, 0.2); font-weight: 800; color: #b4561a; text-decoration: none; }
 .account-spam .nowrap { white-space: nowrap; }
 .account-spam { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff3d6; border: 1px solid #f0c46a; color: #6b4210; font-size: 14px; line-height: 1.4; }
 .account-more { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }

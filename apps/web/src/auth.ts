@@ -36,6 +36,9 @@ export interface Session {
   terms?: string | null;
   /** Agreed on this device, not yet recorded in the account (saved in the background; see acceptTerms). */
   termsPending?: string;
+  /** The account's birth year, for the age checks (13+ for an account, 18+ to buy). Null until the account has one:
+   *  an account made in the Artist Studio gives it at the game's Terms step. */
+  birthYear?: number | null;
 }
 
 /** Where a sign-in stands between the email and the code. Kept only in memory. */
@@ -166,10 +169,12 @@ export async function useInvite(code: string): Promise<void> {
 }
 
 /** New account: its details go in first, then the code confirms the email. */
-export async function startSignUp(email: string, displayName: string, birthYear: number): Promise<Pending> {
+export async function startSignUp(email: string, displayName: string, birthYear?: number): Promise<Pending> {
   const started = await entraPost('signup/v1.0/start', {
     username: email, challenge_type: 'oob redirect', invite_code: inviteCode,
-    attributes: JSON.stringify({ displayName, [BIRTH_YEAR]: String(birthYear) }),
+    // One Via Mochi account for every app: only the name is needed. Each app asks its own questions (the game asks
+    // the birth year at sign-up, or at its Terms step for an account made elsewhere).
+    attributes: JSON.stringify({ displayName, ...(birthYear ? { [BIRTH_YEAR]: String(birthYear) } : {}) }),
   });
   return challenge('signUp', email, 'signup/v1.0/challenge', started.continuation_token);
 }
@@ -216,6 +221,8 @@ async function finish(entra: Record<string, any>, email: string): Promise<Sessio
     signedInAt: session()?.signedInAt ?? Date.now(),
     avatar: ours.user.avatar,
     terms: ours.user.terms ?? null,
+    // Given at the Terms step and not yet saved in the account: kept, like the agreement.
+    birthYear: ours.user.birthYear ?? session()?.birthYear ?? null,
     ...(pending && pending !== ours.user.terms ? { termsPending: pending } : {}),
   };
   saveSession(s);
@@ -352,7 +359,7 @@ async function supportError(r: Response, fallback: string): Promise<AuthError> {
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */
 export function needsTerms(): boolean {
   const s = session();
-  return !!s && s.terms !== TERMS_VERSION && s.termsPending !== TERMS_VERSION;
+  return !!s && ((s.terms !== TERMS_VERSION && s.termsPending !== TERMS_VERSION) || s.birthYear == null);
 }
 
 /**
@@ -360,10 +367,10 @@ export function needsTerms(): boolean {
  * on this device and recorded in the account in the background, tried again at each start until it's saved
  * (saveAgreedTerms). A slow or restarting service never holds the player at the dialog.
  */
-export function agreeToTerms(): void {
+export function agreeToTerms(birthYear?: number): void {
   const s = session();
   if (!s) return;
-  saveSession({ ...s, termsPending: TERMS_VERSION });
+  saveSession({ ...s, termsPending: TERMS_VERSION, ...(birthYear && s.birthYear == null ? { birthYear } : {}) });
   void saveAgreedTerms();
 }
 
@@ -379,7 +386,7 @@ export async function acceptTerms(): Promise<void> {
   if (!t) throw noToken();
   const r = await request(`${ID_SERVICE}/me/terms`, {
     method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ version: TERMS_VERSION }),
+    body: JSON.stringify({ version: TERMS_VERSION, ...(session()?.birthYear ? { birthYear: session()!.birthYear } : {}) }),
   });
   if (!r.ok) throw new AuthError('terms', 'Couldn’t save that. Please try again.');
   const s = session();

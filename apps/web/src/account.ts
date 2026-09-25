@@ -173,6 +173,10 @@ function termsStep(): string {
       <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a>
       <a href="${BASE}privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
     </p>
+    ${session()?.birthYear == null ? `<label class="account-field">Birth year <small>Fruitcats accounts are for ages ${MIN_AGE} and up</small>
+      <input data-acct="year" inputmode="numeric" maxlength="4" autocomplete="bday-year" enterkeyhint="next"
+        placeholder="e.g. 1990" value="${esc(birthYear)}" ${busy ? 'disabled' : ''}>
+    </label>` : ''}
     <label class="account-agree">
       <input type="checkbox" data-acct="agree" ${agreed ? 'checked' : ''} ${busy ? 'disabled' : ''}>
       <span>I agree to the Terms of Use and have read the Privacy Policy</span>
@@ -724,14 +728,19 @@ export async function accountClick(host: Host, action: string) {
         throw e;
       }
       // A new account ticked the Terms before its code; an existing one may not have agreed to these Terms yet.
-      if (pending?.flow === 'signUp') agreeToTerms();   // saved in the background, not waited for
+      if (pending?.flow === 'signUp') agreeToTerms(Number(birthYear) || undefined);   // saved in the background, not waited for
       step = needsTerms() ? 'terms' : 'welcome';
       startSync(host);
     });
   } else if (action === 'terms') {
+    // An account made elsewhere (the Artist Studio) has no birth year yet: the game asks for it here.
+    const askYear = session()?.birthYear == null;
+    const year = Number(birthYear), thisYear = new Date().getFullYear();
+    if (askYear && !(year >= 1900 && year <= thisYear)) { error = 'Please enter your birth year, like 1990.'; host.render(); return; }
+    if (askYear && thisYear - year < MIN_AGE) { error = `Sorry, Fruitcats accounts are for ages ${MIN_AGE} and up. Sign out to keep playing Solo.`; host.render(); return; }
     if (!agreed) { error = 'Please tick the box to agree, or sign out.'; host.render(); return; }
     // No waiting on the service: the agreement is kept here and saved in the background (auth.ts, agreeToTerms).
-    agreeToTerms();
+    agreeToTerms(askYear ? year : undefined);
     step = pending ? 'welcome' : 'email';
     if (!pending) open = false;
     host.render();

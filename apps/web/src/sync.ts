@@ -70,8 +70,13 @@ async function run(): Promise<boolean> {
   }
   if (!session()) return false;   // signed out while this was running
   const before = JSON.stringify(listDecks());
+  // A deck is only ever removed here because the account says it was deleted, never because the answer left it out:
+  // a server that rejects decks it shouldn't (it once couldn't read the card sets and dropped every deck) must not
+  // be able to wipe them from the device. Such a deck stays here and is sent again at the next sync.
+  const answered = new Set(merged.decks.map((d) => d.id));
+  const kept = listDecks().filter((d) => !answered.has(d.id));
   applySyncedDecks(
-    merged.decks.filter((d) => !d.deleted && d.deck).map((d): MyDeck => ({ id: d.id, updatedAt: d.updatedAt, ...d.deck! })),
+    [...merged.decks.filter((d) => !d.deleted && d.deck).map((d): MyDeck => ({ id: d.id, updatedAt: d.updatedAt, ...d.deck! })), ...kept],
     merged.decks.filter((d) => d.deleted).map((d) => d.id),
   );
   const saved = savedShowcase();

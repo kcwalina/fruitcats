@@ -23,7 +23,7 @@ describe('generated decks', () => {
       const deck = mutateDeck(rng, DECKS[keys[i % keys.length]], 1 + (i % 10), `m${i}`);
       expect(deckProblems(deck)).toEqual([]);
     }
-  });
+  }, 60_000); // 1,000 decks: over the default 5 s when the whole suite runs at once
 
   it('a card pool holds only the hero family, Garden and the partner', () => {
     const pool = cardPool('SB1-H01', 'Orchard');

@@ -2,7 +2,7 @@
 // with a handful of cards swapped (closer to what players actually build). Both are checked with the same
 // `deckProblems` the deck builder uses, so every generated deck is one a player could make.
 
-import { BEHAVIOURS, CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, catCount, copyLimit, deckProblems, deckSize, type DeckList } from '../lib/engine';
+import { BEHAVIOURS, CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, catCount, copyLimit, deckProblems, deckSize, otherFamilies, type DeckList } from '../lib/engine';
 import { pick, pickWeighted, type Rng } from '../lib/rng';
 
 /** Hero Cats that can be played: their Exhaust abilities and Grow Up are implemented (not previews). */
@@ -68,6 +68,31 @@ export function mutateDeck(rng: Rng, base: DeckList, swaps: number, name: string
   const families = new Set(Object.keys(base.cards).map((id) => CARDS[id].family));
   const partner = [...families].find((f) => f !== CARDS[base.hero].family && f !== NEUTRAL_FAMILY);
   return fill(deck, cardPool(base.hero, partner), rng);
+}
+
+/**
+ * A deck that breaks only the size rule (an LLM that can't count to 50), brought to exactly 50: extra copies
+ * come off the cards it has most of, the most expensive first; missing cards are filled from its own families
+ * as randomDeck would. Returns null when something else is wrong too, and how many cards changed.
+ */
+export function fitToSize(deck: DeckList, rng: Rng): { deck: DeckList; changed: number } | null {
+  if (!CARDS[deck.hero]) return null;
+  const others = deckProblems({ ...deck, cards: {} }).filter((p) => !/^Add \d+ more/.test(p));
+  const sizeOnly = deckProblems(deck).every((p) => /^(Add|Remove) \d+ /.test(p));
+  if (others.length || !sizeOnly) return null;
+  const out: DeckList = { ...deck, cards: { ...deck.cards } };
+  let changed = 0;
+  while (deckSize(out) > DECK_RULES.size) {
+    const id = Object.keys(out.cards).sort((a, b) => out.cards[b] - out.cards[a] || (CARDS[b].cost ?? 0) - (CARDS[a].cost ?? 0))[0];
+    if (--out.cards[id] === 0) delete out.cards[id];
+    changed++;
+  }
+  if (deckSize(out) < DECK_RULES.size) {
+    const partner = otherFamilies(out)[0];
+    changed += DECK_RULES.size - deckSize(out);
+    fill(out, cardPool(out.hero, partner), rng);
+  }
+  return deckProblems(out).length ? null : { deck: out, changed };
 }
 
 export const STARTERS = (): string[] => Object.keys(DECKS);

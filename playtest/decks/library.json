@@ -1,3 +1,37 @@
 {
-  "decks": {}
+  "decks": {
+    "heat-assault": {
+      "name": "Heat Assault",
+      "hero": "HW1-H01",
+      "cards": {
+        "HW1-K01": 2,
+        "HW1-P01": 2,
+        "HW1-P02": 3,
+        "HW1-P03": 3,
+        "HW1-P04": 3,
+        "HW1-P05": 3,
+        "HW1-P06": 3,
+        "HW1-P07": 3,
+        "HW1-P08": 3,
+        "HW1-P09": 3,
+        "HW1-P10": 3,
+        "HW1-P11": 3,
+        "HW1-P12": 3,
+        "HW1-P13": 1,
+        "HW1-P14": 1,
+        "HW1-P15": 1,
+        "SB1-G01": 2,
+        "SB1-G02": 2,
+        "SB1-G03": 2,
+        "SB1-G04": 2,
+        "SB1-G05": 2
+      },
+      "source": "built",
+      "about": "A pure heat‑based board wipe that relies on high‑damage critters and heat tricks to finish opponents quickly.",
+      "goal": "an aggressive Pepper deck that wins before round 8",
+      "vsStarters": 0.5416666666666666,
+      "from": "deck-build-20260925-005651 (gpt-oss:20b)",
+      "addedAt": "2026-09-25T01:09:44.109Z"
+    }
+  }
 }

@@ -7,7 +7,7 @@ Last updated 2026-09-25.
 
 ## Waiting for the owner
 
-These have their own guided session ("Guide owner through launch paperwork"). The DNS steps are done (2026-09-25):
+Each has its own guided session: "Guide owner through the lawyer review" and "Guide owner through the Azure email limit request". The DNS steps are done (2026-09-25):
 `_dmarc.mail` added, domain auto-renew on, and the zone stays where it is (see
 [accounts.md](accounts.md#the-domain-and-its-dns)).
 

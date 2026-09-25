@@ -70,6 +70,17 @@ export interface GameOptions {
   seed?: number;
   /** Force the starting Yarn Ball holder (random otherwise). */
   firstPlayer?: PlayerId;
+  /**
+   * Lives each player starts with (1 to 9; 9 when left out). A player may give some up as a handicap, so a friend who
+   * is new to the game has a fairer match. The Lives given up stay in the deck.
+   */
+  lives?: [number, number];
+  /**
+   * Online play: always ask the defender about a Pounce, and a player who loses a Life about Lucky, even with nothing
+   * to play. Otherwise the pause while they decide tells the other player they hold a Pounce, or that the Life was
+   * Lucky (future-plans.md, Pounce timing leak). Nothing to play means the only choice is to let it happen.
+   */
+  alwaysAsk?: boolean;
 }
 
 export function createGame(options: GameOptions): GameState {
@@ -91,6 +102,7 @@ export function createGame(options: GameOptions): GameState {
     actions: 0,
     startingYarn: 0,
   };
+  if (options.alwaysAsk) s.alwaysAsk = true;
   for (const p of [0, 1] as PlayerId[]) {
     const list = resolveDeck(options.decks[p]);
     // Shuffle first, then number the cards: numbering the sorted deck list would let anyone who sees
@@ -98,7 +110,8 @@ export function createGame(options: GameOptions): GameState {
     const ids = deckCardIds(list);
     shuffle(s, ids);
     const deck = ids.map((id) => ({ uid: s.nextUid++, id }));
-    const lives = deck.splice(0, LIVES);
+    const startingLives = Math.max(1, Math.min(LIVES, Math.floor(options.lives?.[p] ?? LIVES)));
+    const lives = deck.splice(0, startingLives);
     const hand = deck.splice(0, STARTING_HAND);
     s.players[p] = {
       name: options.names?.[p] ?? `Player ${p + 1}`,
@@ -106,6 +119,7 @@ export function createGame(options: GameOptions): GameState {
       hero: { id: list.hero, grown: false, exhausted: false },
       deck, hand, lives, pantry: [], yard: [], compost: [], playedThisRound: 0,
     };
+    if (startingLives < LIVES) s.players[p].handicap = LIVES - startingLives;
   }
   s.yarn = options.firstPlayer ?? (random(s) < 0.5 ? 0 : 1);
   s.startingYarn = s.yarn;
@@ -492,6 +506,8 @@ export function legalActions(s: GameState): Action[] {
     }
     case 'lucky': {
       const card = me.hand.find((c) => c.uid === prompt.uid)!;
+      // Asked about every lost Life (alwaysAsk): only a Lucky one may be played.
+      if (!keywords(card.id).lucky) return [{ t: 'keepLucky' }];
       return [...playChoices(s, p, card, 'lucky').map((c) => withChoice({ t: 'lucky' } as Action, c)), { t: 'keepLucky' }];
     }
     case 'choose':
@@ -655,7 +671,7 @@ function openWindow(s: GameState, window: Window): void {
   s.window = window;
   const defender = other(window.by);
   const canPounce = s.players[defender].hand.some((c) => playChoices(s, defender, c, 'pounce').length > 0);
-  if (canPounce) s.prompt = { kind: 'pounce', player: defender };
+  if (canPounce || s.alwaysAsk) s.prompt = { kind: 'pounce', player: defender };
 }
 
 // ── The step machine ─────────────────────────────────────────────────────────────────────────────
@@ -793,7 +809,7 @@ function exec(s: GameState, step: Step): void {
         break;
       }
       if (step.n > 1) s.queue.unshift({ t: 'loseLife', p: step.p, n: step.n - 1 });
-      if (keywords(card.id).lucky && playChoices(s, step.p, card, 'lucky').length)
+      if (s.alwaysAsk || (keywords(card.id).lucky && playChoices(s, step.p, card, 'lucky').length))
         s.prompt = { kind: 'lucky', player: step.p, uid: card.uid };
       break;
     }

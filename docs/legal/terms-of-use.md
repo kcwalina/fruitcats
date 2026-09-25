@@ -120,8 +120,22 @@ a waiver of class actions, with a way to opt out.
 
 ## 7. Online features
 
-- Sync across devices, friends, PvP and the Store need an internet connection and a Via Mochi account. Solo play with
-  the starter decks works without either.
+- Sync across devices, friends, online play and the Store need an internet connection and a Via Mochi account. Solo
+  play with the starter decks works without either.
+- **Online play has limited room.** Online games run on servers with room for a limited number of players at a time.
+  When they're full, you wait in line until there's room. **We don't promise how long that takes, or that you'll get
+  in at all at a given time.** We decide how much room there is, and may change it at any time.
+- **Players who have bought Digital Items may be let in first.** This is a courtesy we may change or stop at any time.
+  It isn't something you buy, and it doesn't guarantee you a place, a waiting time, or any access to online play.
+- **Buying doesn't buy online play.** A purchase gets you licenses to Digital Items (section 4). It doesn't include
+  any right to play online, to server time, or to online play being available. Not being able to play online, or
+  having to wait, isn't a fault in anything you bought, and we don't owe you a refund or compensation for it. Refunds
+  are the Seller's to decide, under its terms and the law (section 5).
+- **We may pause or switch off online play** at any time and without notice, for example for maintenance, to protect
+  the Service, or to keep its running costs in check. Solo play doesn't depend on it.
+- **Idle and abandoned games.** To make room for others, we may disconnect you after a while without activity, and
+  end online games that have been left: for example a game nobody has moved in for a day, or that both players have
+  left. Such a game may count as a loss for the player who left, or be called off with no result.
 - **Fair play.** In online play the server decides results. We may reset results, ratings or ladder standings that
   come from cheating, bugs or exploits.
 
@@ -257,6 +271,11 @@ Copyright Act with **Contact us** in the game, or at **fruitcats.viamochi.com** 
   app stores' requirements.
 - EU/UK digital-content withdrawal wording and the checkout consent text; Paddle's own buyer terms.
 - Section 11 (ending the Service): whether to promise an offline mode.
+- Section 7 (online play has limited room): online play runs on a fixed number of servers, with a waiting line when
+  it's full, and buyers are let in first. The owner wants no obligation to provide online play, or any waiting time, to
+  anyone, buyers included. Check that letting buyers in first doesn't create an implied promise of access (consumer
+  law; the EU Digital Content Directive's conformity rules, since online play isn't part of the Digital Items sold),
+  and that the wording holds for the app stores.
 - Section 4 (cards can change after purchase): check it against the EU Digital Content Directive (Art. 19), which
   allows changes to purchased digital content only if the contract provides for them with a valid reason, at no cost
   to the consumer, with clear notice, and, if a change hurts the consumer more than a little, with a right to end the

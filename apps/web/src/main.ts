@@ -8,7 +8,7 @@ import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from
 import { badgeMechanics, deckBlurb, familyInfo, heroParade, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
-import { ACCOUNTS, STORE } from './flags';
+import { ACCOUNTS, ONLINE, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
 import { startSync } from './sync';
@@ -19,13 +19,19 @@ import {
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
+import { addOpen, closeAddSheet, closeFriends, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
+import { live, onLive, send, startLive, stopLive, wantConnection } from './live';
+import {
+  emoteBar, enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
+  playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
+} from './online';
 import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, MECHANICS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
-  legalActions, readyTreats, unitHealth, unitPower,
-  type Action, type DeckList, type GameState, type PlayerId, type Target, type Unit,
+  legalActions, other, readyTreats, unitHealth, unitPower,
+  type Action, type DeckList, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
 
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
@@ -54,19 +60,29 @@ const VERBS: Record<string, string> = {
   discards: 'discard', wins: 'win', starts: 'start', POUNCES: 'POUNCE', attacks: 'attack', uses: 'use',
 };
 const humanize = (text: string) =>
-  text.replace(/\bYou's\b/g, 'Your')
+  youify(text).replace(/\bYou's\b/g, 'Your')
     .replace(/\bYou (\w+)\b/g, (m, verb: string) => (VERBS[verb] ? `You ${VERBS[verb]}` : m))
     .replace(/\bYou (\w+) their\b/g, 'You $1 your')
     .replace(/(?<!^)(?<![.!] )\bYour\b/g, 'your');
 
+/** Online, the story names you by your display name: say "You" instead, as in Solo. */
+function youify(text: string): string {
+  if (!ol || !game) return text;
+  const me = game.players[mySeat].name;
+  return text.split(`${me}'s`).join("You's").split(`${me} `).join('You ');
+}
+/** The other player, as the prompt bar names them. */
+const foeName = () => (ol ? them().name : 'Opponent');
+
 // ── App state ────────────────────────────────────────────────────────────────────────────────────
 
-const HUMAN: PlayerId = 0;
-const AI: PlayerId = 1;
+/** Your seat and the other player's. In Solo you're always seat 0; online, the server says which (online.ts). */
+let mySeat: PlayerId = 0;
+let theirSeat: PlayerId = 1;
 
 /** Home: the game modes. Solo: deck and difficulty for a game against the AI. Decks: the deck builder.
  *  Collection: your Display Case and the Binder. */
-type Screen = 'home' | 'solo' | 'decks' | 'collection' | 'store' | 'game';
+type Screen = 'home' | 'solo' | 'friends' | 'decks' | 'collection' | 'store' | 'game';
 interface Selection {
   label: string;
   options: Action[];
@@ -145,7 +161,7 @@ const targetKey = (t?: Target) => (!t ? '' : t.kind === 'unit' ? `unit:${t.uid}`
 const actionTarget = (a: Action): Target | undefined => ('target' in a ? a.target : undefined);
 
 function humanPrompt() {
-  return game && game.winner === null && game.prompt?.player === HUMAN ? game.prompt : null;
+  return game && game.winner === null && game.prompt?.player === mySeat ? game.prompt : null;
 }
 
 function describeWindow(s: GameState): string {
@@ -153,13 +169,13 @@ function describeWindow(s: GameState): string {
   if (!w) return '';
   const tgt = (t?: Target) => {
     if (!t) return '';
-    if (t.kind === 'hero') return t.player === HUMAN ? 'your Hero Cat' : 'their Hero Cat';
+    if (t.kind === 'hero') return t.player === mySeat ? 'your Hero Cat' : 'their Hero Cat';
     const u = s.players.flatMap((pl) => pl.yard).find((x) => x.uid === t.uid);
     return u ? cardName(u.id) : 'a unit';
   };
-  if (w.kind === 'play') return `Opponent plays <b>${esc(cardName(w.card.id))}</b>${w.target ? ` targeting <b>${tgt(w.target)}</b>` : ''}.`;
+  if (w.kind === 'play') return `${esc(foeName())} plays <b>${esc(cardName(w.card.id))}</b>${w.target ? ` targeting <b>${tgt(w.target)}</b>` : ''}.`;
   const attacker = w.attacker.kind === 'hero' ? 'their Big Cat' : tgt(w.attacker);
-  return `Opponent attacks <b>${tgt(w.target)}</b> with <b>${attacker}</b>.`;
+  return `${esc(foeName())} attacks <b>${tgt(w.target)}</b> with <b>${attacker}</b>.`;
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────────────────────────
@@ -180,13 +196,13 @@ let notice = '';
 function markHumanTurnDone() {
   if (!game) return;
   foeFrom = game.log.length;
-  foeUnitsBefore = new Set(game.players[AI].yard.map((u) => u.uid));
+  foeUnitsBefore = new Set(game.players[theirSeat].yard.map((u) => u.uid));
 }
 
 /** What the opponent has done since your last action, for the recap line in the prompt bar. */
 function foeRecap(s: GameState): string[] {
   return s.log.slice(foeFrom)
-    .filter((e) => e.player === AI && !/plants? |keeps their hand|mulligans/.test(e.text))
+    .filter((e) => e.player === theirSeat && !/plants? |keeps their hand|mulligans/.test(e.text))
     .map((e) => humanize(e.text));
 }
 
@@ -200,9 +216,10 @@ async function showEvents(from: number): Promise<boolean> {
   const events = g.events.slice(from);
   if (!hasBeats(events)) return true;
   await playEvents(events, {
-    human: HUMAN,
-    cardImage: (p, id) => (p === HUMAN ? yourCardUrl : cardUrl)(id),
-    speed: speed === 'fast' ? 0.6 : 1,
+    human: mySeat,
+    cardImage: (p, id) => (p === mySeat ? yourCardUrl : cardUrl)(id),
+    // A teaching game plays the other player's moves slower, so someone new can follow them.
+    speed: (speed === 'fast' ? 0.6 : 1) * (teaching() && events.some((e) => 'p' in e && e.p === theirSeat) ? 1.5 : 1),
   });
   resetLogSounds(g); // their sounds played with the animation
   return game === g;
@@ -210,7 +227,8 @@ async function showEvents(from: number): Promise<boolean> {
 
 async function act(action: Action) {
   if (!game || isAnimating()) return;
-  const me = game.players[HUMAN];
+  if (ol) { actOnline(action); return; }
+  const me = game.players[mySeat];
   const from = (game.events ??= []).length;
   const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
   const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
@@ -233,13 +251,118 @@ async function act(action: Action) {
   scheduleAi();
 }
 
+/** Online: the move goes to the server, which checks it and sends both players the result (onLive, below). */
+function actOnline(action: Action) {
+  if (!game || !ol || ol.sent || ol.end) return;
+  const me = game.players[mySeat];
+  const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
+  const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
+  if (!send({ t: 'act', match: ol.info.id, seq: game.actions, action })) { flash = 'Not connected. Reconnecting…'; render(); return; }
+  ol.sent = true;
+  hintLine = '';
+  markHumanTurnDone();
+  flash = '';
+  notice = plantedNames.length ? `Planted ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'}.` : '';
+  selection = null;
+  confirming = null;
+  picks = new Set();
+  render();
+}
+
+// ── Online games ─────────────────────────────────────────────────────────────────────────────────
+//
+// The server sends the whole match when it starts (or when you come back to it), then a view after every move:
+// each view carries only the events since the last one, which play as animations before the new view is drawn,
+// exactly as a Solo move does. Views that arrive during an animation wait their turn.
+
+let viewQueue: PlayerView[] = [];
+/** The whole story of the online game so far, as received (views bring only its new lines). */
+let storyLines: PlayerView['log'] = [];
+/** A teaching game's suggested move, in words, until the next move. */
+let hintLine = '';
+let showingViews = false;
+
+function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { t: 'match' }>) {
+  const same = ol?.info.id === msg.info.id;
+  enterMatch(msg);
+  mySeat = msg.info.seat;
+  theirSeat = other(mySeat);
+  window.clearTimeout(aiTimer);
+  stopTutorial();
+  tutorialGame = false;
+  viewQueue = [];
+  storyLines = msg.view.log;
+  game = msg.view;
+  if (!same) { unitArrivals.clear(); resetLogSounds(game); }
+  selection = null; confirming = null; picks = new Set(); notice = ''; flash = '';
+  markHumanTurnDone();
+  renderedFoeUnits = new Set(game.players[theirSeat].yard.map((u) => u.uid));
+  renderedTreats = new Map(game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])));
+  if (screen === 'friends') closeFriends();
+  screen = 'game';
+  showSettings = false;
+  render();
+  // The Versus splash goes by itself.
+  if (ol && ol.versusUntil > Date.now()) window.setTimeout(renderUnlessAnimating, ol.versusUntil - Date.now() + 50);
+}
+
+async function showViews() {
+  if (showingViews) return;
+  showingViews = true;
+  while (viewQueue.length) {
+    const v = viewQueue.shift()!;
+    game = v;
+    if (!(await showEvents(0))) break;
+    render();
+  }
+  showingViews = false;
+}
+
+/** Leave an online game for Home. A game still going carries on: the Friend tile offers to rejoin it. */
+function leaveOnline() {
+  if (ol?.end) { leaveMatch(); game = null; }
+  screen = 'home';
+  homeNote = '';
+}
+
+/** Stop drawing an online game (Solo is starting), without leaving it: it can be rejoined. */
+function setOnlineAside() {
+  if (ol?.end) leaveMatch();
+  forgetOnline();
+  mySeat = 0;
+  theirSeat = 1;
+}
+
+onLive((msg) => {
+  if (msg.t === 'match') { openOnline(msg); return; }
+  if (!onlineMessage(msg)) {
+    if (msg.t === 'error' && ol && screen === 'game' && msg.message !== 'replaced' && msg.message !== 'signed_out') { ol.sent = false; flash = msg.message; render(); }
+    return;
+  }
+  if (msg.t === 'view') {
+    // The view carries only the story lines since the last one: put the story back together.
+    storyLines = [...storyLines.slice(0, msg.logFrom), ...msg.view.log];
+    viewQueue.push({ ...msg.view, log: storyLines });
+    void showViews();
+    return;
+  }
+  if (msg.t === 'hint' && game) {
+    hintLine = msg.action ? hintText(game, msg.action) : 'No suggestion right now.';
+  }
+  if (msg.t === 'hint' && game && msg.action) {
+    const a = msg.action;
+    if (a.t === 'play' || a.t === 'attack' || a.t === 'pounce' || (a.t === 'ability' && a.target)) selection = { label: 'the suggested move', options: [a] };
+  }
+  if (!isAnimating()) render();
+});
+
 function scheduleAi() {
   window.clearTimeout(aiTimer);
-  if (!game || game.winner !== null || game.prompt?.player !== AI) return;
+  if (!game || ol || game.winner !== null || game.prompt?.player !== theirSeat) return;
   if (tutorialBlocksAi()) return; // resumed when the balloon is closed
   const delay = aiDelayScale * (game.prompt.kind === 'pounce' || game.prompt.kind === 'plant' ? 450 : 850);
   aiTimer = window.setTimeout(async () => {
-    if (!game || game.prompt?.player !== AI || isAnimating()) return;
+    if (!game || ol || game.prompt?.player !== theirSeat || isAnimating()) return;
     const from = (game.events ??= []).length;
     apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill, random: aiRandom }));
     if (!(await showEvents(from))) return;
@@ -249,6 +372,7 @@ function scheduleAi() {
 }
 
 function startGame(tutorial = false) {
+  setOnlineAside();
   // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
   // with you going first, so its balloons can talk about specific cards.
   // Against your own deck, it leads a starter with a different Hero Cat.
@@ -257,7 +381,7 @@ function startGame(tutorial = false) {
   const theirDeck = tutorial ? 'orchard-guard'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   game = tutorial
-    ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: HUMAN })
+    ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: mySeat })
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
   aiRandom = devSeed === undefined || tutorial ? undefined : mulberry(devSeed);
   tutorialGame = tutorial;
@@ -271,8 +395,8 @@ function startGame(tutorial = false) {
   else stopTutorial();
   // Swapping cards before you know what a card costs is a decision made in the dark, so on a first
   // game the hand is kept for you and the bar says so. (The engine always asks; the app may answer.)
-  if (tutorial && game.prompt?.kind === 'mulligan' && game.prompt.player === HUMAN) {
-    const hand = game.players[HUMAN].hand;
+  if (tutorial && game.prompt?.kind === 'mulligan' && game.prompt.player === mySeat) {
+    const hand = game.players[mySeat].hand;
     const cheap = hand.filter((c) => (CARDS[c.id].cost ?? 0) <= 2 && CARDS[c.id].type !== 'Trick');
     // A hand with nothing cheap cannot make a first move, so swap its priciest cards: an ordinary
     // legal mulligan, which cuts dead openings from about 6% to about 2%.
@@ -327,13 +451,13 @@ function zoomText(key: string): string {
 function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   const def = CARDS[id];
   const name = cardName(id);
-  const ready = readyTreats(s, HUMAN);
+  const ready = readyTreats(s, mySeat);
   const k = keywords(id);
   if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Pounce cards can be played while your opponent is acting — ${name} isn't one.`;
   if (promptKind !== 'action') return `You can't play cards right now.`;
   if (abilitiesOf(id).some((a) => a.pounceOnly === 'attack')) return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
   if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Treats — you have ${ready} ready. Spent Treats come back at the start of next round.`;
-  const yard = s.players[HUMAN].yard;
+  const yard = s.players[mySeat].yard;
   if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
   if (def.type === 'Cat' && yard.some((u) => u.id === id)) return `${name} is already in your Yard, and Cats are one of a kind.`;
   if (def.type === 'Toy') return `${name} needs one of your units without a Toy to attach to.`;
@@ -356,7 +480,7 @@ function onClick(key: string) {
   // couldn't find out what the opponent's ability did (the portrait's long press wasn't discovered).
   if (kind === 'heroinfo' && game) {
     const p = value as PlayerId;
-    openZoom((p === HUMAN ? yourCardUrl : cardUrl)(heroKey(game, p)), heroKey(game, p));
+    openZoom((p === mySeat ? yourCardUrl : cardUrl)(heroKey(game, p)), heroKey(game, p));
     return;
   }
   if (kind === 'home') {
@@ -366,6 +490,16 @@ function onClick(key: string) {
     const needs = ACCOUNTS && !signedIn() ? ACCOUNT_TILES[raw] : undefined;
     if (needs) { openAccount({ render }, needs, () => onClick(key)); return; }
     if (raw === 'solo') screen = 'solo';
+    else if (raw === 'friend' && ONLINE) {
+      // A game still going opens straight away; one this screen has lost track of is asked for again.
+      // A game still going is rejoined as soon as the connection opens (live.ts).
+      if (ol && game && !ol.end) screen = 'game';
+      else {
+        openFriends(friendsHost);
+        screen = 'friends';
+        if (live.connected && live.match && !ol) send({ t: 'rejoin', match: live.match });
+      }
+    }
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
     else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
     else if (raw === 'store' && storeOpen()) { openStore(storeHost); screen = 'store'; }
@@ -382,6 +516,18 @@ function onClick(key: string) {
     // A deck: tapping one slides it to the middle, which chooses it (see deckCarouselMounted).
     const card = [...app.querySelectorAll<HTMLElement>('.deck-choice')].find((el) => el.dataset.click === key);
     if (card) centerDeck(card, 'smooth');
+    return;
+  }
+  if (ONLINE && kind === 'pf') {
+    const rest = key.slice('pf:'.length);
+    // A challenge from the banner on another screen opens Play a friend at that challenge.
+    if (rest.startsWith('see:') && screen !== 'friends') { openFriends(friendsHost, rest.slice(4)); screen = 'friends'; render(); return; }
+    friendsClick(rest, friendsHost);
+    return;
+  }
+  if (ONLINE && kind === 'ol') {
+    if (onlineClick(key.slice('ol:'.length)) === 'home') leaveOnline();
+    render();
     return;
   }
   if (kind === 'deck') {
@@ -418,7 +564,7 @@ function onClick(key: string) {
     if (raw === 'rules') showRules = !showRules;
     // Closing Settings also leaves the Account panel, so Settings opens on its main page next time.
     if (raw === 'settings') { showSettings = !showSettings; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) warmPawtraits(); } }
-    if (raw === 'back') { screen = 'home'; homeNote = ''; }
+    if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
     if (raw === 'again') { startGame(); return; }
     render();
@@ -480,7 +626,7 @@ function onClick(key: string) {
       render();
       return;
     }
-    const card = game.players[HUMAN].hand.find((c) => c.uid === value)!;
+    const card = game.players[mySeat].hand.find((c) => c.uid === value)!;
     const options = legal.filter((a) => (a.t === 'play' || a.t === 'pounce') && a.uid === value);
     if (!options.length) {
       flash = whyUnplayable(game, card.id, prompt.kind);
@@ -492,7 +638,7 @@ function onClick(key: string) {
 
   if (kind === 'unit' && prompt.kind === 'action') {
     const options = legal.filter((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === value);
-    const unit = game.players[HUMAN].yard.find((u) => u.uid === value);
+    const unit = game.players[mySeat].yard.find((u) => u.uid === value);
     if (unit && options.length) {
       selection = { label: `${cardName(unit.id)}’s attack`, options };
       render();
@@ -507,7 +653,7 @@ function onClick(key: string) {
 // Solo game replaces it. A finished game is forgotten.
 
 function persist() {
-  if (!game || tutorialGame) return;
+  if (!game || tutorialGame || ol) return;
   if (game.winner !== null) { clearSave(); return; }
   saveGame({
     game, difficulty, unitArrivals: [...unitArrivals], foeFrom, foeUnitsBefore: [...foeUnitsBefore],
@@ -517,6 +663,7 @@ function persist() {
 function resumeSavedGame(): boolean {
   const save = loadGame();
   if (!save) return false;
+  setOnlineAside();
   game = save.game;
   game.events ??= []; // saved before events existed
   tutorialGame = false;
@@ -526,7 +673,7 @@ function resumeSavedGame(): boolean {
   foeFrom = save.foeFrom ?? game.log.length;
   foeUnitsBefore = new Set(save.foeUnitsBefore ?? []);
   // What's already on the board was on screen before: don't animate it arriving again.
-  renderedFoeUnits = new Set(game.players[AI].yard.map((u) => u.uid));
+  renderedFoeUnits = new Set(game.players[theirSeat].yard.map((u) => u.uid));
   renderedTreats = new Map(game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])));
   resetLogSounds(game);
   screen = 'game';
@@ -535,21 +682,33 @@ function resumeSavedGame(): boolean {
 
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
 
+/** The connection's news redraws the screen, but never in the middle of an animation (it redraws after). */
+function renderUnlessAnimating() { if (!isAnimating()) render(); }
+
 function render() {
   document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
   // Scrolling lists (the deck builder's cards) keep their place when the screen is redrawn.
   const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')]
     .map((el) => [el.dataset.keepScroll, [el.scrollTop, el.scrollLeft]] as const));
-  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'decks' ? renderDeckBuilder()
+  // Signed in, the game says "I'm here" now and then; it holds a connection only while playing online: on Play a friend,
+  // and while an online game is going (or its result is showing). Signing out stops both.
+  if (ONLINE && signedIn()) {
+    startLive({ render: renderUnlessAnimating });
+    wantConnection(screen === 'friends' || (!!ol && (!ol.end || screen === 'game')));
+  } else if (ONLINE) stopLive();
+  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'friends' && ONLINE ? renderFriends()
+    : screen === 'decks' ? renderDeckBuilder()
     : screen === 'collection' ? renderShowcase() : screen === 'store' && STORE ? renderStore() : renderGame())
+    + (ONLINE ? renderChallengeBanner(screen === 'friends', screen === 'game' && !!ol && !ol.end) : '')
     + (showSettings ? renderSettings() : '') + (ACCOUNTS ? renderAccount() : '');
   for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
     [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
   if (screen === 'collection') showcaseMounted();
-  if (screen === 'solo') deckCarouselMounted(!scrolled.has('decks'));
-  renderedFoeUnits = new Set(game?.players[AI].yard.map((u) => u.uid) ?? []);
+  if (screen === 'solo' || screen === 'friends') deckCarouselMounted(!scrolled.has('decks'));
+  if (screen === 'friends') friendsMounted();
+  renderedFoeUnits = new Set(game?.players[theirSeat].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
-  if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, HUMAN); } else stopTutorial();
+  if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, mySeat); } else stopTutorial();
   persist();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
   if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
@@ -577,6 +736,7 @@ const MODES = MODE_GROUPS.flat();
 
 /** With accounts on, the tiles that need one, and the line on why that heads "Sign in or create account". */
 const ACCOUNT_TILES: Record<string, string> = {
+  friend: 'Your friends live in your Via Mochi account: add them, and play them online.',
   collection: 'Your collection lives in your Via Mochi account, so it’s on every device.',
   decks: 'Your decks live in your Via Mochi account, so they’re on every device.',
 };
@@ -604,6 +764,19 @@ function savedGameLabel(): string | null {
   return saved ? `Round ${saved.round} · <span class="nowrap">${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}</span>` : null;
 }
 
+/** The Friend tile's line: a game to rejoin, challenges waiting, or just "Online". */
+function friendTileLine(): { line: string; badge: number; waiting: boolean } {
+  const n = live.incoming.length;
+  if (!live.open) return { line: '<span class="mode-sub">Paused for now</span>', badge: 0, waiting: false };
+  if (live.waiting) return { line: `<span class="mode-sub continue-line">In line · ${live.waiting.position}</span>`, badge: 0, waiting: true };
+  if ((ol && !ol.end) || live.match) {
+    const who = ol ? ` · ${esc(them().name)}` : '';
+    return { line: `<span class="mode-sub continue-line">Rejoin${who}</span>`, badge: n, waiting: true };
+  }
+  if (n) return { line: `<span class="mode-sub continue-line">${n} challenge${n > 1 ? 's' : ''} waiting</span>`, badge: n, waiting: true };
+  return { line: '<span class="mode-sub">Online</span>', badge: 0, waiting: false };
+}
+
 function renderHome(): string {
   // The mightiest Hero Cat (Tango) takes the centre spot.
   // Jam and Duchess are home-screen art, not cards: they fill the parade after the Hero Cats.
@@ -624,17 +797,20 @@ function renderHome(): string {
       <div class="mode-group">
         ${group.map((mode) => {
           // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
-          const m = mode.key === 'store' && storeOpen() ? { ...mode, soon: '' } : mode;
+          const m = (mode.key === 'store' && storeOpen()) || (mode.key === 'friend' && ONLINE) ? { ...mode, soon: '' } : mode;
           // Every tile is the same: picture, name, and one line under it. That line says "Coming soon",
           // or on Solo, that a game is waiting to be continued.
           const resume = m.key === 'solo' && saved;
-          const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES;
+          const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES && !(m.key === 'friend' && !ONLINE);
+          const friend = m.key === 'friend' && ONLINE && !needsAccount ? friendTileLine() : null;
           const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
             : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
             : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
+            : friend ? friend.line
             : `<span class="mode-sub">${m.sub}</span>`;
           return `
-        <button class="mode-card ${m.soon ? 'soon' : ''} ${resume ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
+        <button class="mode-card ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
+          ${friend?.badge ? `<span class="mode-badge" aria-label="${friend.badge} waiting">${friend.badge}</span>` : ''}
           <img src="${BASE}ui/mode-${m.key}.webp" alt="">
           <span class="mode-text"><span class="mode-name">${m.name}</span>${status}</span>
         </button>`;
@@ -650,16 +826,17 @@ function renderHome(): string {
   </div>`;
 }
 
-function renderDeckPicker(): string {
+function renderDeckPicker(startersOnly = false): string {
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
   if (!deckForKey(deckInView)) deckInView = myDeck;
   // Every deck is the same card in one carousel: the starters, then your own. The one in the middle is
   // your deck; one of yours still short of 50 cards can sit there, but you can't play it yet.
+  if (startersOnly && !(deckInView in DECKS)) deckInView = myDeck in DECKS ? myDeck : Object.keys(DECKS)[0];
   const decks = [
     ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb(key) })),
-    ...listDecks().map((d) => {
+    ...(startersOnly ? [] : listDecks()).map((d) => {
       const ready = isReady(d);
       return { key: customKey(d.id), deck: d, ready,
         blurb: ready ? `Your own deck, led by ${esc(cardName(d.hero))}.`
@@ -689,6 +866,18 @@ function renderDeckPicker(): string {
 
 const deckChoiceClass = (key: string, ready: boolean) => ['deck-choice', key.startsWith('custom:') && 'mine',
   key === deckInView && 'in-view', key === deckInView && ready && 'chosen', !ready && 'unready'].filter(Boolean).join(' ');
+
+/** What Play a friend needs from this file: Solo's deck carousel, and the deck in its middle. */
+const friendsHost: FriendsHost = {
+  render,
+  deckPicker: (startersOnly) => renderDeckPicker(startersOnly),
+  chosenDeck(startersOnly) {
+    const d = deckForKey(deckInView);
+    if (!d || !isReady(d) || (startersOnly && !(deckInView in DECKS))) return null;
+    return { name: d.name, hero: d.hero, cards: { ...d.cards } };
+  },
+  hasPlayed,
+};
 
 /** Slides a deck in Solo's carousel to the middle. */
 function centerDeck(card: HTMLElement, behavior: ScrollBehavior) {
@@ -723,7 +912,10 @@ function deckCarouselMounted(first: boolean) {
     if (nearest.dataset.ready === 'true') { myDeck = deckInView; saveChosenDeck(myDeck); }
     for (const el of cards) el.className = deckChoiceClass(keyOf(el), el.dataset.ready === 'true');
     const footer = app.querySelector('.setup-footer');
-    if (footer) footer.outerHTML = renderSoloFooter();
+    if (footer && screen === 'solo') footer.outerHTML = renderSoloFooter();
+    // Play a friend: its button waits for a finished deck too.
+    for (const b of app.querySelectorAll<HTMLButtonElement>('[data-click="pf:challenge"], [data-click^="pf:accept:"]'))
+      b.disabled = nearest.dataset.ready !== 'true' || !live.connected;
   };
   update();
   track.addEventListener('scroll', () => { frame ||= requestAnimationFrame(update); }, { passive: true });
@@ -785,23 +977,25 @@ function renderGame(): string {
   return `
   <div class="game">
     <main class="board ${targets.size ? 'targeting' : ''}">
-      ${renderPlayer(s, AI, targets)}
-      ${renderYard(s, AI, targets, attackers)}
+      ${renderPlayer(s, theirSeat, targets)}
+      ${renderYard(s, theirSeat, targets, attackers)}
       ${renderMidbar(s, legal)}
-      ${renderYard(s, HUMAN, targets, attackers)}
-      ${renderPlayer(s, HUMAN, targets, legal)}
+      ${renderYard(s, mySeat, targets, attackers)}
+      ${renderPlayer(s, mySeat, targets, legal)}
       ${renderHand(s, playable)}
     </main>
     <aside class="side">
-      <div class="inspector"><img id="zoom" src="${yourCardUrl(heroKey(s, HUMAN))}" alt=""></div>
+      <div class="inspector"><img id="zoom" src="${yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
-        <button data-click="ui:quit">Home</button>
+        <button data-click="${ol ? 'ol:home' : 'ui:quit'}">Home</button>
+        ${onlineSideButtons()}
       </div>
-      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === HUMAN ? 'me' : e.player === AI ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
+      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
     </aside>
-    ${s.winner !== null ? renderGameOver(s) : ''}
+    ${ol ? renderOnlineResult(s) : s.winner !== null ? renderGameOver(s) : ''}
+    ${ol ? renderVersus(s as PlayerView) : ''}
     ${showRules ? renderRules() : ''}
   </div>`;
 }
@@ -813,7 +1007,7 @@ function renderGame(): string {
  */
 function renderPantry(s: GameState, p: PlayerId): string {
   const pl = s.players[p];
-  const mine = p === HUMAN;
+  const mine = p === mySeat;
   let planted = 0, spent = 0, readied = 0;
   const tokens = pl.pantry.map((t) => {
     const before = renderedTreats.get(t.card.uid);
@@ -847,19 +1041,19 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   const canAttack = legal.some((a) => a.t === 'attack' && a.attacker.kind === 'hero');
 
   return `
-  <section class="player ${p === HUMAN ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
+  <section class="player ${p === mySeat ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
     <div class="hero-slot">
     <div class="hero ${famClass(pl.hero.id)} ${attackMark(key)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
-         data-click="${key}" data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
+         data-click="${key}" data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
     </div>
     ${yarn}${took}
     </div>
     <div class="stats">
-      <div class="who">${esc(pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
+      <div class="who">${esc(ol && p === mySeat ? 'You' : pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
-        <div class="lives" title="${pl.lives.length} of 9 Lives left"><span class="life-heart ${pl.lives.length <= 3 ? 'low' : ''}"><b>${pl.lives.length}</b></span></div>
+        <div class="lives" title="${pl.lives.length} of ${9 - (pl.handicap ?? 0)} Lives left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives.length <= 3 ? 'low' : ''}"><b>${pl.lives.length}</b></span></div>
         <div class="counters">
           <span title="Cards in hand">✋ ${pl.hand.length}</span>
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
@@ -867,14 +1061,15 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
         </div>
       </div>
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
-           data-zoom="${(p === HUMAN ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+           data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
     </div>
-    ${p === HUMAN && (canAbility || canAttack) ? `<div class="hero-actions">
+    ${p === mySeat && (canAbility || canAttack) ? `<div class="hero-actions">
       ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
       ${canAttack ? '<button class="primary" data-click="btn:heroattack">Big Cat attack</button>' : ''}
     </div>` : ''}
-    ${p === AI ? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
-    ${ACCOUNTS ? `<div class="player-face">${boardFace(p === HUMAN ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
+    ${p === theirSeat ? shownHand(s) ?? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
+    ${ol ? `<div class="player-face online">${playerFace(p)}${p === mySeat ? emoteBar() : ''}</div>`
+      : ACCOUNTS ? `<div class="player-face">${boardFace(p === mySeat ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
 }
 
@@ -928,12 +1123,12 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   const selected = selection?.options.some((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === u.uid);
   const cls = [
     'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected', attackMark(key),
-    owner === AI && !foeUnitsBefore.has(u.uid) && 'fresh',
-    owner === AI && !renderedFoeUnits.has(u.uid) && 'arriving',
-    owner === HUMAN && attackers.has(u.uid) && !selection && 'can-act',
+    owner === theirSeat && !foeUnitsBefore.has(u.uid) && 'fresh',
+    owner === theirSeat && !renderedFoeUnits.has(u.uid) && 'arriving',
+    owner === mySeat && attackers.has(u.uid) && !selection && 'can-act',
   ].filter(Boolean).join(' ');
   return `
-  <div class="${cls}" data-click="${key}" data-zoom="${(owner === HUMAN ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
+  <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
@@ -946,8 +1141,8 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
 
 function renderYard(s: GameState, p: PlayerId, targets: Set<string>, attackers: Set<number>): string {
   const yard = s.players[p].yard;
-  return `<section class="yard ${p === HUMAN ? 'me' : 'foe'}">
-    ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === HUMAN ? 'Your' : 'Their'} Yard is empty</div>`}
+  return `<section class="yard ${p === mySeat ? 'me' : 'foe'}">
+    ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === mySeat ? 'Your' : 'Their'} Yard is empty</div>`}
     ${renderPantry(s, p)}
   </section>`;
 }
@@ -959,8 +1154,8 @@ function renderHand(s: GameState, playable: Set<number>): string {
   const luckyUid = prompt?.kind === 'lucky' ? prompt.uid : -1;
   const selectedUid = selection?.options.find((a) => a.t === 'play' || a.t === 'pounce') as { uid?: number } | undefined;
   return `<section class="hand">
-    ${s.players[HUMAN].hand.map((c) => {
-      const zestOn = (s.players[HUMAN].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
+    ${s.players[mySeat].hand.map((c) => {
+      const zestOn = (s.players[mySeat].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
       const cls = [
         'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
@@ -975,8 +1170,9 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   let text = '';
   let buttons = '';
 
+  const onl = ol ? onlineBar(s, !!prompt) : null;
   if (s.winner !== null) text = 'Game over.';
-  else if (!prompt) text = `<span class="dots">Opponent's turn — they take one action, then it is yours again</span>`;
+  else if (!prompt) text = onl?.text ?? `<span class="dots">Opponent's turn — they take one action, then it is yours again</span>`;
   else if (selection) {
     text = `Choose a target for <b>${esc(selection.label)}</b>.`;
     buttons = '<button data-click="btn:cancel">Cancel</button>';
@@ -997,7 +1193,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Discard ${picks.size}/${prompt.count}</button>`;
         break;
       case 'plant': {
-        const chosen = picks.size === 1 ? s.players[HUMAN].hand.find((c) => c.uid === [...picks][0]) : undefined;
+        const chosen = picks.size === 1 ? s.players[mySeat].hand.find((c) => c.uid === [...picks][0]) : undefined;
         text = chosen
           ? `Bury <b>${esc(cardName(chosen.id))}</b> as a Treat? It pays for other cards and can’t be played.`
           : '<b>New round!</b> You may bury one card face-down as <b>1 more Treat</b> (it won’t be played). Click a card, or Skip.';
@@ -1022,16 +1218,16 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         // about 1 opening in 10 starts with every card costing more than your 2 Treats.
         let why = 'Nothing left to do — pass.';
         if (!hints.length) {
-          const costs = s.players[HUMAN].hand.map((c) => CARDS[c.id].cost ?? 0);
+          const costs = s.players[mySeat].hand.map((c) => CARDS[c.id].cost ?? 0);
           const cheapest = costs.length ? Math.min(...costs) : 0;
-          const treats = readyTreats(s, HUMAN);
+          const treats = readyTreats(s, mySeat);
           if (costs.length && cheapest > treats)
             why = `<b>You can't afford anything yet:</b> your cheapest card costs <b>${cheapest}</b> and you have `
               + `<b>${treats}</b> ready ${treats === 1 ? 'Treat' : 'Treats'}. Pass — next round you plant another `
               + `Treat and draw 2 cards.`;
           else if (costs.length) {
             // Affordable but unplayable: say which card and why, e.g. a Toy with no unit to attach to.
-            const blocked = s.players[HUMAN].hand.find((c) => (CARDS[c.id].cost ?? 0) <= treats);
+            const blocked = s.players[mySeat].hand.find((c) => (CARDS[c.id].cost ?? 0) <= treats);
             why = `<b>Nothing you can play right now.</b> ${blocked ? esc(whyUnplayable(s, blocked.id, 'action')) : ''} Pass.`;
           }
         }
@@ -1042,14 +1238,19 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         break;
       }
       case 'pounce':
-        text = `${describeWindow(s)} <b>Pounce?</b> Click a glowing Pounce card, or let it happen.`;
+        // Online, you're asked every time (so a pause gives nothing away), even with no Pounce to play.
+        text = legal.some((a) => a.t === 'pounce')
+          ? `${describeWindow(s)} <b>Pounce?</b> Click a glowing Pounce card, or let it happen.`
+          : `${describeWindow(s)} Nothing to Pounce with: it happens in a moment.`;
         buttons = '<button class="primary" data-click="btn:decline">Let it happen</button>';
         break;
       case 'lucky': {
-        const card = s.players[HUMAN].hand.find((c) => c.uid === prompt.uid)!;
+        const card = s.players[mySeat].hand.find((c) => c.uid === prompt.uid)!;
         const free = legal.some((a) => a.t === 'lucky' && !a.target);
         const targeted = legal.some((a) => a.t === 'lucky' && a.target);
-        text = `🍀 <b>Lucky!</b> The Life you lost is <b>${esc(cardName(card.id))}</b> — play it for free${targeted ? ' by choosing a target' : ''}?`;
+        text = free || targeted
+          ? `🍀 <b>Lucky!</b> The Life you lost is <b>${esc(cardName(card.id))}</b> — play it for free${targeted ? ' by choosing a target' : ''}?`
+          : `The Life you lost is <b>${esc(cardName(card.id))}</b>. It goes to your hand.`;
         buttons = `${free ? '<button class="primary" data-click="btn:free">Play for free</button>' : ''}<button data-click="btn:keep">Keep in hand</button>`;
         break;
       }
@@ -1061,12 +1262,16 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   // What the opponent just did, so its moves don't go unnoticed between your own.
   // (Hidden during a Pounce window, whose own prompt already describes the opponent's move.)
   const recap = humanPrompt()?.kind === 'pounce' ? [] : foeRecap(s).slice(-3);
+  const foe = foeName();
+  const withoutName = (t: string) => (t.startsWith(`${foe}'s `) ? `their ${t.slice(foe.length + 3)}` : t.startsWith(`${foe} `) ? t.slice(foe.length + 1) : t);
   const recapLine = recap.length
-    ? `<div class="recap"><b>Opponent:</b> ${recap.map((t) => esc(t.replace(/^Opponent('s)? /, (_, pos) => (pos ? 'their ' : '')))).join(' → ')}</div>`
+    ? `<div class="recap"><b>${esc(foe)}:</b> ${recap.map((t) => esc(withoutName(t))).join(' → ')}</div>`
     : '';
+  if (prompt && onl?.text) text = `${onl.text} ${text}`;
+  if (onl?.buttons) buttons = `${onl.buttons}${buttons}`;
   return `<section class="midbar">
     <div class="round"><small>Round</small><b>${s.round}</b></div>
-    <div class="prompt">${notice ? `<div class="notice">✓ ${esc(notice)}</div>` : ''}${recapLine}${text}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
+    <div class="prompt">${notice ? `<div class="notice">✓ ${esc(notice)}</div>` : ''}${recapLine}${text}${hintLine && prompt ? `<div class="hint-line">💡 ${esc(hintLine)}</div>` : ''}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
     <div class="buttons">${buttons}</div>
   </section>`;
 }
@@ -1079,10 +1284,10 @@ function renderGameOver(s: GameState): string {
     countedGame = s;
     markPlayed();
     count('finished');
-    if (s.winner === HUMAN) count('won');
+    if (s.winner === mySeat) count('won');
   }
-  const won = s.winner === HUMAN;
-  const heroP = won ? HUMAN : AI;
+  const won = s.winner === mySeat;
+  const heroP = won ? mySeat : theirSeat;
   return `<div class="overlay">
     <div class="game-over ${won ? 'won' : 'lost'}">
       <img src="${artUrl(`${s.players[heroP].hero.id}-bigcat`)}" alt="">
@@ -1155,6 +1360,13 @@ app.addEventListener('input', (event) => {
   if (input) deckInput(input);
   const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
   if (field) accountInput(field);
+  const pf = ONLINE ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-pf]:not([type="checkbox"])') : null;
+  if (pf) friendsInput(pf);
+});
+// Play a friend's toggles (teaching game, starter decks only) are checkboxes: they report a change, not input.
+app.addEventListener('change', (event) => {
+  const pf = ONLINE ? (event.target as HTMLElement).closest<HTMLInputElement>('input[type="checkbox"][data-pf]') : null;
+  if (pf) friendsInput(pf);
 });
 app.addEventListener('keydown', (event) => {
   const input = (event.target as HTMLElement).closest<HTMLInputElement>('[data-rename], [data-newname]');
@@ -1246,7 +1458,7 @@ window.addEventListener('pointerup', (event) => {
   if (onBoard && d.options.length === 1 && untargeted.length === 1) return act(untargeted[0]);
   if (!onBoard || !d.options.some((a) => actionTarget(a))) { selection = null; render(); return; }
   // Dropped on the board but it needs a target: keep the targets lit for a click.
-  selection = { label: d.key.startsWith('hand:') ? cardName(game!.players[HUMAN].hand.find((c) => `hand:${c.uid}` === d.key)?.id ?? '') : 'the attack', options: d.options };
+  selection = { label: d.key.startsWith('hand:') ? cardName(game!.players[mySeat].hand.find((c) => `hand:${c.uid}` === d.key)?.id ?? '') : 'the attack', options: d.options };
   render();
 });
 
@@ -1275,7 +1487,7 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   const cost = cardKey && !/-(kitten|bigcat)$/.test(cardKey) ? CARDS[cardKey]?.cost : undefined;
   // Treats are the game's only currency, and a playtester got through a whole game without noticing.
   const price = cost === undefined ? '' : (() => {
-    const ready = game ? readyTreats(game, HUMAN) : 0;
+    const ready = game ? readyTreats(game, mySeat) : 0;
     const enough = ready >= cost;
     return `<p class="zoom-cost ${enough ? '' : 'short'}">Costs <b>${cost}</b> ${cost === 1 ? 'Treat' : 'Treats'}`
       + `${game ? ` · you have <b>${ready}</b> ready${enough ? '' : ' — not enough yet'}` : ''}</p>`;
@@ -1345,6 +1557,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && ACCOUNTS && accountOpen()) { closeAccount({ render }); return; }
   if (event.key === 'Escape' && ACCOUNTS && showSettings && accountPanelOpen()) { closeAccountPanel(); render(); return; }
   if (event.key === 'Escape' && showSettings) { showSettings = false; render(); return; }
+  if (event.key === 'Escape' && ONLINE && screen === 'friends' && addOpen()) { closeAddSheet(); return; }
   if (screen === 'collection' && !showSettings && showcaseArrow(event.key, { render })) return;
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
@@ -1358,7 +1571,8 @@ document.addEventListener('keydown', (event) => {
 if (import.meta.env.DEV) {
   Object.assign(window, {
     fruitcats: {
-      get game() { return game; }, chooseAction, legalActions, apply, render, CARDS,
+      get game() { return game; }, chooseAction, legalActions, apply, render, CARDS, act,
+      get online() { return ol; },
       set fast(on: boolean) { aiDelayScale = on ? 0 : 1; },
       set aiDelay(scale: number) { aiDelayScale = scale; },
       get animating() { return isAnimating(); },
@@ -1366,6 +1580,7 @@ if (import.meta.env.DEV) {
   });
 }
 
+if (ONLINE) onlineTicks(renderUnlessAnimating);
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
 if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }

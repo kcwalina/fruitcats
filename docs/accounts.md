@@ -195,8 +195,8 @@ The same on web, iPhone, iPad, Android and Steam, always in the game's own scree
 - **Players who already have decks today:** on their first sign-in on that device, the local decks and Showcase are
   uploaded once into the account (a deck with the same id keeps the newer version), then the local copies are
   cleared.
-- **Friends:** Home → Friends lists them with avatars. "Add a friend" shows your friend code and QR code, or you
-  type theirs.
+- **Friends:** in the Friend game mode: Home → Friend → Play a friend lists them, online first, and **+ Add a friend**
+  shows your code as a QR code for a friend to scan in the game, or you type theirs ([pvp-plan.md](pvp-plan.md)).
 - **Account screen:** avatar (a cat portrait or your own picture) and display name, the email (shown, not
   changeable), sign out, sign out on all devices, export data, delete account (30-day grace period, then deleted).
 - **Sync:** each deck is stored with an `updatedAt`, and the newest wins. Offline edits wait in a queue. Sync runs at

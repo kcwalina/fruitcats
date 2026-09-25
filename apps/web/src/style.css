@@ -279,13 +279,7 @@ button.danger { background: #c8402a; border-color: #a8321f; color: #fff; }
 .account-spam { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff3d6; border: 1px solid #f0c46a; color: #6b4210; font-size: 14px; line-height: 1.4; }
 .account-more { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 /* Friends (Account > Friends). */
-.friend-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: calc(var(--vh, 1vh) * 30); overflow-y: auto; }
-button.friend-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 6px 10px; min-height: 52px; text-align: left; border-radius: 14px; }
-.friend-name { flex: 1; font-weight: 800; overflow-wrap: anywhere; }
-.friend-face { flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #fff; }
 .friend-menu { display: flex; justify-content: space-between; padding: 6px 12px 2px; font-size: 14px; }
-.friend-add { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid rgba(120, 70, 20, 0.15); }
-.friend-add h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .friend-code { margin: 0; text-align: center; font: 700 32px Fredoka, Nunito, sans-serif; letter-spacing: 0.12em; color: #b4561a; }
 button.link-button.danger-link { color: #b8321f; }
 /* The Via Mochi account window (src/account.ts): one narrow card, a step at a time. */
@@ -1033,3 +1027,155 @@ body.dragging .hand-card:hover { transform: none; }
   .solo .difficulty-choice img { width: 34px; height: 34px; }
   .solo .diff-sub { display: none; }
 }
+
+/* ── Play a friend (src/friends.ts) ──────────────────────────────────────────────────────────────
+   One screen for picking who to play: friends online first, each a big row with a Play pill; adding a friend is the
+   last row. Then the challenge (deck, options), waiting, and answering a friend's challenge. */
+.menu.friends {
+  justify-content: flex-start; gap: 0;
+  padding-top: max(calc(var(--vh, 1vh) * 1.5), env(safe-area-inset-top));
+  padding-bottom: max(calc(var(--vh, 1vh) * 2), env(safe-area-inset-bottom));
+}
+.pf-body { justify-content: flex-start; overflow-y: auto; width: min(100%, 560px); gap: 18px; padding: 16px 0 24px; }
+.pf-body > * { flex: none; }   /* scroll rather than squeeze: the deck carousel keeps its height */
+.pf-setup { width: min(100%, 900px); }
+.pf-offline { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: var(--muted); }
+.pf-section { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.pf-section h3 { margin: 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.pf-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pf-row { display: flex; align-items: stretch; gap: 6px; }
+button.pf-pick {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; min-height: 64px;
+  text-align: left; border-radius: 18px;
+}
+button.pf-pick[aria-disabled="true"] { opacity: 0.72; }
+.pf-friend.offline .pf-face { filter: saturate(0.5); }
+button.pf-more { flex: none; width: 44px; border-radius: 16px; font-size: 20px; color: var(--muted); }
+.pf-face-wrap { position: relative; flex: none; }
+.pf-face { display: block; flex: none; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #fff; }
+.legend-frame.pf-face, .signature-frame.pf-face { width: 48px; height: 48px; }
+.pf-dot { position: absolute; right: -1px; bottom: -1px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; background: #bfb2a2; }
+.pf-dot.online { background: var(--good); }
+.pf-dot.playing { background: var(--glow); }
+.pf-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pf-who b { font-size: 16px; overflow-wrap: anywhere; }
+.pf-who small { color: var(--muted); font-weight: 600; font-size: 13px; }
+.pf-play { flex: none; padding: 6px 16px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 800; }
+.pf-friend .friend-menu, .pf-friend .account-confirm { margin: 6px 4px 0; }
+button.pf-add { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; min-height: 64px; border-radius: 18px; border-style: dashed; font-size: 16px; }
+.pf-plus { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #ffe7cf; color: #b4561a; font: 700 28px Fredoka, Nunito, sans-serif; }
+.pf-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pf-empty img { width: 120px; height: 120px; border-radius: 20px; object-fit: cover; box-shadow: var(--shadow); }
+.pf-empty p { margin: 0; font-weight: 700; }
+.pf-note { min-height: 1.3em; margin: 0; font-size: 14px; font-weight: 700; text-align: center; }
+.pf-challenge, .pf-from {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px;
+  background: #fff3de; border: 2px solid #f7c98f; flex-wrap: wrap;
+}
+.pf-challenge-buttons { display: flex; gap: 8px; margin-left: auto; }
+.pf-from { width: min(100%, 560px); text-align: left; }
+.pf-tip { margin: 0; max-width: 560px; font-size: 14px; line-height: 1.4; background: #eef8ee; border: 2px solid #b9dfbe; border-radius: 14px; padding: 8px 12px; }
+button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color: #f7c98f; background: #fff3de; font-size: 15px; }
+.pf-options { width: min(100%, 560px); display: flex; flex-direction: column; gap: 10px; }
+.pf-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 8px 12px; border-radius: 16px; background: var(--panel); border: 2px solid var(--line); }
+.pf-option-name { display: flex; flex-direction: column; font-weight: 800; }
+.pf-option-name small { font-weight: 600; font-size: 12.5px; color: var(--muted); }
+.pf-toggle { cursor: pointer; }
+.pf-toggle input { flex: none; width: 24px; height: 24px; accent-color: var(--accent); }
+.pf-option .segmented button { width: auto; padding: 0 12px; }
+.pf-stepper { display: flex; align-items: center; gap: 10px; }
+.pf-stepper b { min-width: 1.4em; text-align: center; font: 700 22px Fredoka, Nunito, sans-serif; }
+.pf-stepper .icon-button { width: 40px; height: 40px; font-size: 22px; padding: 0; }
+.pf-waiting { justify-content: center; }
+.pf-versus { display: flex; align-items: center; gap: 18px; }
+.pf-big-face { display: block; width: 96px; height: 96px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px #fff, var(--shadow); margin: 0 auto; }
+.legend-frame.pf-big-face, .signature-frame.pf-big-face { width: 96px; height: 96px; }
+.pf-vs { font: 700 28px Fredoka, Nunito, sans-serif; color: #b4561a; }
+.pf-waiting-text { margin: 0; font: 700 20px Fredoka, Nunito, sans-serif; }
+.pf-ring {
+  --p: 1; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--p) * 360deg), #f1e3cc 0);
+}
+.pf-ring span { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--panel); font-weight: 800; }
+.pf-add-sheet { gap: 14px; }
+.pf-add-sheet h2 { margin: 0; font-size: 22px; }
+.pf-add-choices { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.pf-add-choices button { min-height: 48px; padding: 8px 20px; }
+.pf-qr { width: min(260px, 70vw); margin: 0 auto; padding: 12px; background: #fff; border-radius: 18px; box-shadow: inset 0 0 0 2px var(--line); }
+.pf-qr .qr { display: block; width: 100%; height: auto; }
+.pf-camera { position: relative; width: min(300px, 76vw); aspect-ratio: 1; margin: 0 auto; border-radius: 20px; overflow: hidden; background: #2b1d12; }
+.pf-camera video { width: 100%; height: 100%; object-fit: cover; }
+.pf-frame { position: absolute; inset: 18%; border: 3px solid rgba(255, 255, 255, 0.9); border-radius: 16px; box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.25); }
+/* A friend's challenge while you're elsewhere: a small banner at the top that covers nothing important. */
+.pf-banner {
+  position: fixed; z-index: 60; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  width: min(94vw, 480px); display: flex; align-items: center; gap: 10px; padding: 8px 10px; text-align: left;
+  background: var(--panel); border: 2px solid #f7c98f; border-radius: 18px; box-shadow: var(--shadow);
+}
+.pf-banner .pf-face { width: 40px; height: 40px; }
+.mode-badge {
+  position: absolute; z-index: 2; top: 2px; right: 2px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px;
+  background: #e0457b; color: #fff; font-weight: 800; font-size: 14px; line-height: 24px; box-shadow: 0 0 0 2px #fff;
+}
+
+/* ── An online game (src/online.ts) ─────────────────────────────────────────────────────────────── */
+.player-face.online { position: relative; display: flex; align-items: center; gap: 6px; }
+.clock-chip {
+  position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); white-space: nowrap;
+  padding: 1px 8px; border-radius: 999px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  font: 700 13px Fredoka, Nunito, sans-serif; font-variant-numeric: tabular-nums;
+}
+.clock-chip.reserve { background: #fff0c2; }
+.clock-chip.overtime, .clock-chip.low { background: #ffd9d2; color: #b8321f; }
+.clock-chip.paused { background: #eee; color: var(--muted); }
+.emote-bubble {
+  position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 5; white-space: nowrap; padding: 6px 12px; border-radius: 16px;
+  background: #fff; box-shadow: var(--shadow); font-weight: 800; animation: pop 0.25s ease-out;
+}
+.emote-bubble::after { content: ''; position: absolute; right: 20px; top: 100%; border: 7px solid transparent; border-top-color: #fff; }
+.emote-bar { position: relative; }
+.emote-open { width: 36px; height: 36px; padding: 0; font-size: 18px; }
+.emote-menu {
+  position: absolute; z-index: 20; right: 0; bottom: calc(100% + 6px); display: flex; flex-direction: column; gap: 4px;
+  padding: 8px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); min-width: 150px;
+}
+.emote-menu button { text-align: left; }
+.foe-hand.shown { display: flex; gap: 4px; }
+.foe-hand.shown img { height: calc(var(--card-h) * 0.6); border-radius: 6px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.midbar .notice { margin-bottom: 2px; }
+.midbar .buttons small { font-weight: 700; opacity: 0.8; }
+.side-buttons .danger { border-color: #e8b9a8; background: #fff3ee; color: #b8321f; }
+.overlay.versus { cursor: pointer; }
+.vs-card { background: var(--panel); border-radius: 24px; padding: 22px 26px; box-shadow: var(--shadow); animation: pop 0.3s ease-out; text-align: center; }
+.vs-card p { margin: 14px 0 0; font-weight: 700; color: var(--muted); }
+.vs-sides { display: flex; align-items: center; gap: 22px; }
+.vs-side { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 150px; }
+.vs-side b { font: 700 20px Fredoka, Nunito, sans-serif; }
+.vs-side small { font-weight: 700; color: var(--muted); }
+.vs-face { display: block; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px #fff, var(--shadow); }
+.legend-frame.vs-face, .signature-frame.vs-face { width: 84px; height: 84px; }
+.vs-hero { width: 110px; height: 110px; object-fit: cover; border-radius: 16px; box-shadow: var(--shadow); }
+.vs-word { font: 700 34px Fredoka, Nunito, sans-serif; color: #b4561a; }
+.result-record { margin: 4px 0 0; font: 700 18px Fredoka, Nunito, sans-serif; }
+.result-kind { margin: 4px 0 0; max-width: 360px; }
+@media (max-width: 640px) {
+  .vs-sides { gap: 8px; }
+  .vs-side { width: 120px; }
+  .vs-hero { width: 84px; height: 84px; }
+  .pf-challenge-buttons { width: 100%; margin-left: 0; }
+  .pf-challenge-buttons button { flex: 1; }
+}
+/* An online game has more buttons beside Rules (Concede, Show my hand): they wrap rather than run off the side. */
+.side-buttons { flex-wrap: wrap; }
+.midbar .hint-line { margin-top: 2px; color: #2e7d45; font-weight: 800; }
+/* Play a friend when it isn't connected: waiting in line, paused, made room. One card, centred. */
+.pf-state { justify-content: center; align-items: center; text-align: center; gap: 10px; }
+.pf-state-art { width: 120px; height: 120px; border-radius: 22px; object-fit: cover; box-shadow: var(--shadow); }
+.pf-state h3 { margin: 6px 0 0; font: 700 24px Fredoka, Nunito, sans-serif; }
+.pf-state p { margin: 0; max-width: 380px; line-height: 1.45; font-weight: 600; }
+.pf-state small { color: var(--muted); }
+.pf-line-dots { display: flex; gap: 8px; margin-top: 6px; }
+.pf-line-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pf-dot 1.2s infinite ease-in-out; }
+.pf-line-dots i:nth-child(2) { animation-delay: 0.2s; }
+.pf-line-dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pf-dot { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }

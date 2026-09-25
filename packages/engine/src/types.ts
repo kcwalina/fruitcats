@@ -182,6 +182,8 @@ export interface PlayerState {
   compost: CardInst[];
   /** Cards this player has played this round (actions, Pounces and Lucky plays): Citrus's Zest. */
   playedThisRound?: number;
+  /** Lives this player gave up at the start, as a handicap (GameOptions.lives). */
+  handicap?: number;
 }
 
 export type Target = { kind: 'unit'; uid: number } | { kind: 'hero'; player: PlayerId };
@@ -294,4 +296,6 @@ export interface GameState {
   startingYarn: PlayerId;
   /** Triggered abilities run since the last action: a cap stops two cards triggering each other forever. */
   chain?: number;
+  /** Online play: Pounce and Lucky are always asked (GameOptions.alwaysAsk). */
+  alwaysAsk?: true;
 }

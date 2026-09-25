@@ -1,19 +1,20 @@
 // The Via Mochi account window: "Sign in or create account", and the Account row in Settings. Only shown when the
 // ACCOUNTS flag is on (src/flags.ts). One window for both signing in and signing up, so there's nothing to get wrong:
 //   1. your email;
+//   1b. if it's new and accounts are still for playtesters only: the invite code they were sent;
 //   2. if it's new: your name, birth year and the Terms (asked before the code, so there's only one code to type);
 //   3. the code from the email.
 // Talking to the account service is src/auth.ts; this file is only the screens.
 
 import {
-  AuthError, TERMS_VERSION, accountExists, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
+  AuthError, TERMS_VERSION, accountExists, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   listFriends, newFriendCode, redeemFriendCode, removeFriend, resend, restoredOnSignIn, session, type Friend,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
 import { BASE, esc } from './ui';
 
-type Step = 'email' | 'details' | 'code' | 'welcome';
+type Step = 'email' | 'invite' | 'details' | 'code' | 'welcome';
 
 interface Host { render(): void }
 
@@ -27,6 +28,9 @@ let displayName = '';
 let birthYear = '';
 let agreed = false;
 let code = '';
+let invite = '';
+/** The email already has a sign-in but no account yet (made before invites): after the invite, sign in. */
+let inviteThenSignIn = false;
 let pending: Pending | null = null;
 /** Where to go once signed in: the tile that asked for an account. */
 let then: (() => void) | null = null;
@@ -64,7 +68,7 @@ function benefits(): string {
 
 export function renderAccount(): string {
   if (!open) return '';
-  const body = step === 'email' ? emailStep() : step === 'details' ? detailsStep() : step === 'code' ? codeStep() : welcomeStep();
+  const body = step === 'email' ? emailStep() : step === 'invite' ? inviteStep() : step === 'details' ? detailsStep() : step === 'code' ? codeStep() : welcomeStep();
   return `<div class="overlay" data-account-overlay>
     <div class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-title">
       <button class="icon-button account-close" data-click="acct:close" aria-label="Close" title="Close">×</button>
@@ -86,6 +90,22 @@ function emailStep(): string {
     </label>
     <button class="primary account-go" data-click="acct:email" ${busy ? 'disabled' : ''}>${busy ? 'One moment…' : 'Continue'}</button>
     <p class="account-small">No password. We email you a code each time you sign in on a new device.</p>`;
+}
+
+function inviteStep(): string {
+  return `
+    <img class="account-cat" src="${BASE}sb1/SB1-P01-kitten.webp" alt="">
+    <h2 id="account-title">Got an invite code?</h2>
+    <p class="account-why">Fruitcats accounts are open to playtesters for now.
+      Type the invite code you were sent.</p>
+    <p class="account-small">New account for <b>${esc(email)}</b></p>
+    <label class="account-field">Invite code
+      <input data-acct="invite" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next"
+        maxlength="40" value="${esc(invite)}" ${busy ? 'disabled' : ''}>
+    </label>
+    <button class="primary account-go" data-click="acct:invite" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Continue'}</button>
+    <p class="account-small">No code yet? You can still play Solo.
+      <button class="link-button" data-click="acct:back">Use a different email</button></p>`;
 }
 
 function detailsStep(): string {
@@ -419,6 +439,7 @@ export function accountInput(input: HTMLInputElement) {
   else if (field === 'year') birthYear = input.value.replace(/\D/g, '');
   else if (field === 'agree') agreed = input.checked;
   else if (field === 'friendcode') theirCode = input.value;
+  else if (field === 'invite') invite = input.value;
   else if (field === 'code') {
     code = input.value.replace(/\D/g, '');
     // A pasted or autofilled code signs in straight away.
@@ -434,6 +455,7 @@ export function accountEnter(input: HTMLInputElement, host: Host) {
   else if (field === 'year') input.blur();
   else if (field === 'code') void accountClick(host, 'code');
   else if (field === 'friendcode') void accountClick(host, 'friendadd');
+  else if (field === 'invite') void accountClick(host, 'invite');
 }
 
 let hostRef: Host | null = null;
@@ -515,7 +537,15 @@ export async function accountClick(host: Host, action: string) {
   if (action === 'email') {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { error = 'Please enter your email address.'; host.render(); return; }
     await work(host, async () => {
+      inviteThenSignIn = false;
       if (await accountExists(email)) { pending = await startSignIn(email); code = ''; step = 'code'; }
+      else step = (await invitesRequired()) ? 'invite' : 'details';
+    });
+  } else if (action === 'invite') {
+    if (!invite.trim()) { error = 'Please type your invite code.'; host.render(); return; }
+    await work(host, async () => {
+      await useInvite(invite);
+      if (inviteThenSignIn) { pending = await startSignIn(email); code = ''; step = 'code'; }
       else step = 'details';
     });
   } else if (action === 'details') {
@@ -534,7 +564,18 @@ export async function accountClick(host: Host, action: string) {
   } else if (action === 'code') {
     if (!pending) return;
     if (code.length !== pending.codeLength) { error = `The code has ${pending.codeLength} digits.`; host.render(); return; }
-    await work(host, async () => { await submitCode(pending!, code); step = 'welcome'; startSync(host); });
+    await work(host, async () => {
+      try { await submitCode(pending!, code); }
+      catch (e) {
+        // Signed in to an email that never finished making its account: it needs an invite like any new one.
+        if (e instanceof AuthError && e.code === 'invite_required' && pending?.flow === 'signIn') {
+          inviteThenSignIn = true; pending = null; step = 'invite';
+          throw new AuthError('invite_required', 'This email doesn’t have an account yet. Type your invite code to make one.');
+        }
+        throw e;
+      }
+      step = 'welcome'; startSync(host);
+    });
   } else if (action === 'resend') {
     if (!pending) return;
     await work(host, async () => { pending = await resend(pending!); code = ''; error = 'We sent a new code.'; });
@@ -548,6 +589,7 @@ async function work(host: Host, run: () => Promise<void>) {
     error = e instanceof AuthError ? e.message : 'Something went wrong. Please try again.';
     if (e instanceof AuthError && e.code === 'expired') { step = pending ? 'code' : 'email'; }
     if (e instanceof AuthError && e.code === 'user_already_exists') step = 'email';
+    if (e instanceof AuthError && e.code === 'invite_required') step = 'invite';
   }
   busy = false;
   host.render();

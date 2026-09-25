@@ -90,10 +90,36 @@ export async function startSignIn(email: string): Promise<Pending> {
   return challenge('signIn', email, 'oauth2/v2.0/challenge', started.continuation_token);
 }
 
+// ── Invite codes (playtest) ─────────────────────────────────────────────────────────────────────
+//
+// While accounts are for playtesters only, a new account needs an invite code. The account service decides whether
+// one is needed (none once sign-up opens to everyone) and counts each account against its code.
+
+/** The invite code for the account being created, sent with the sign-up and the first token exchange. */
+let inviteCode = '';
+
+/** Does creating an account need an invite code right now? */
+export async function invitesRequired(): Promise<boolean> {
+  const r = await request(`${ID_SERVICE}/invites/check`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: '' }),
+  });
+  return r.status === 403;
+}
+
+/** Check an invite code, and use it for the account about to be created. */
+export async function useInvite(code: string): Promise<void> {
+  const r = await request(`${ID_SERVICE}/invites/check`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+  });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw toError(r.status, json);
+  inviteCode = code.trim();
+}
+
 /** New account: its details go in first, then the code confirms the email. */
 export async function startSignUp(email: string, displayName: string, birthYear: number): Promise<Pending> {
   const started = await entraPost('signup/v1.0/start', {
-    username: email, challenge_type: 'oob redirect',
+    username: email, challenge_type: 'oob redirect', invite_code: inviteCode,
     attributes: JSON.stringify({ displayName, [BIRTH_YEAR]: String(birthYear) }),
   });
   return challenge('signUp', email, 'signup/v1.0/challenge', started.continuation_token);
@@ -125,7 +151,10 @@ async function challenge(flow: Pending['flow'], email: string, path: string, con
 
 /** Swap Entra's token for ours and remember the session. */
 async function finish(entra: Record<string, any>, email: string): Promise<Session> {
-  const r = await request(`${ID_SERVICE}/token`, { method: 'POST', headers: { Authorization: `Bearer ${entra.access_token}` } });
+  const r = await request(`${ID_SERVICE}/token`, {
+    method: 'POST', headers: { Authorization: `Bearer ${entra.access_token}`, ...(inviteCode ? { 'X-Invite-Code': inviteCode } : {}) },
+  });
+  if (r.status === 403) throw toError(403, await r.json().catch(() => ({})));
   if (!r.ok) throw new AuthError('exchange', 'Signed in, but Via Mochi couldn’t open your account. Please try again.');
   const ours = await r.json();
   restoredOnSignIn = !!ours.restored;
@@ -267,6 +296,7 @@ function toError(status: number, json: Record<string, any>): AuthError {
   const error: string = json.error ?? (status === 429 ? 'too_many' : 'unknown');
   const sub: string = json.suberror ?? '';
   if (json.challenge_type === 'redirect') return new AuthError('redirect', 'This account can’t sign in here yet.');
+  if (error === 'invite_required') return new AuthError('invite_required', json.error_description ?? 'Please enter your invite code.');
   if (status === 429) return new AuthError('too_many', 'Too many tries. Wait a few minutes, then try again.');
   if (sub === 'invalid_oob_value') return new AuthError('wrong_code', 'That code doesn’t match. Check the latest email and try again.');
   if (error === 'expired_token') return new AuthError('expired', 'That code has expired. Send a new one.');

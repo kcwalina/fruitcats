@@ -46,6 +46,21 @@ describe('STORE=preview', () => {
     }
   });
 
+  it('offers no way to pay, even with Paddle set up and checkouts on: Add to cart stays "Coming soon"', async () => {
+    const { FAKE_CONFIG, fakePaddle } = await import('../src/fakepaddle');
+    const fake = fakePaddle();
+    preview.usePaddle(FAKE_CONFIG, fake.api);
+    const cart = [{ product: deckProduct('five-alarm'), qty: 1 }];
+    for (const user of [ALICE, BOB]) {
+      const [, body] = await call(preview, user, 'GET', '/v1/store') as [number, { payments?: unknown; testCheckout: boolean }];
+      expect(body.payments).toBeUndefined();
+      expect(body.testCheckout).toBe(false);
+      expect(await call(preview, user, 'POST', '/v1/store/checkout', { orderId: `preview-pay-${user.slice(0, 4)}`, cart, total: 999 })).toEqual([403, { error: 'payments_off' }]);
+    }
+    expect(fake.created).toBe(0);
+    preview.usePaddle(null, null);
+  });
+
   it('no longer counts the test orders as owned cards', async () => {
     expect(await preview.purchasedCards(ALICE)).toEqual({});
     const [, body] = await call(preview, ALICE, 'GET', '/v1/store') as [number, { owned: object; orders: unknown[] }];

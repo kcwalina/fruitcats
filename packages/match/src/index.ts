@@ -6,10 +6,43 @@
 
 import type { Action, DeckList, PlayerId, PlayerView } from '@fruitcats/engine';
 
-/** Where the game connects: one WebSocket per signed-in app, for presence, friend codes, challenges and matches. */
+/**
+ * Where the game connects while it's playing online (Play a friend, waiting, a game): one WebSocket for presence,
+ * friend codes, challenges and matches. The rest of the time the game holds no connection: it says it's here with a
+ * small request now and then (HERE_PATH), which is also how a challenge reaches it.
+ */
 export const LIVE_PATH = '/v1/live';
+/** "I'm here" (POST, every HERE_EVERY_MS while the game is open): answers with challenges waiting and a game going. */
+export const HERE_PATH = '/v1/live/here';
+/** "Let me in" (POST): in, or a place in the waiting line when online play is full, or closed. */
+export const ENTER_PATH = '/v1/live/enter';
+export const HERE_EVERY_MS = 20_000;
+/** A player who hasn't said they're here for this long is offline. */
+export const HERE_MS = 50_000;
+/** While waiting in line, ask again this often. A place is kept only while it's asked for. */
+export const ENTER_EVERY_MS = 10_000;
 /** Bumped when a message changes shape: an older game is asked to reload before it can play online. */
-export const PROTOCOL = 1;
+export const PROTOCOL = 2;
+
+/** A challenge waiting for you, as "I'm here" or the connection brings it. */
+export interface ChallengeNote { id: string; from: Person; options: ChallengeOptions; lives: number }
+
+export interface HereAnswer {
+  /** Online play is on (the kill switch: LIVE=off on the API turns it off). */
+  open: boolean;
+  challenges: ChallengeNote[];
+  /** A game you're in that's still going. */
+  match: string | null;
+}
+
+/**
+ * The answer to "let me in". Online play has room for a fixed number of players at once (no autoscaling, so the bill
+ * can't grow by itself). When it's full, players wait in line; players who have bought cards go first.
+ */
+export type EnterAnswer =
+  | { status: 'in' }
+  | { status: 'waiting'; position: number; paid: boolean }
+  | { status: 'closed' };
 
 // ── The clock ────────────────────────────────────────────────────────────────────────────────────
 
@@ -196,8 +229,8 @@ export interface MatchEnd {
 export type ClientMessage =
   /** First message on a new connection. `name` is only used by a local API with fake sign-in. */
   | { t: 'hello'; token: string; protocol: number; rules: number; avatar: string; name?: string }
-  /** Look again at who my friends are (after adding or removing one). */
-  | { t: 'friends' }
+  /** My friends' presence again; `again`: also ask viamochi-id who they are (after adding or removing one). */
+  | { t: 'friends'; again?: boolean }
   /** The friend code I'm showing (a QR code or typed), so a friend who scans it sees who I am first; null: stopped. */
   | { t: 'code'; code: string | null }
   /** Whose code is this? Asked before adding, so the player can confirm. */
@@ -229,6 +262,11 @@ export type ServerMessage =
   | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null }
   /** This game is older than the server: reload to play online. */
   | { t: 'update' }
+  /** Online play is full (ask to be let in first), or switched off. The connection is closed after this. */
+  | { t: 'full' }
+  | { t: 'closed' }
+  /** Nothing happened on this connection for a while and it isn't in a game: it's closed to make room. */
+  | { t: 'idle' }
   | { t: 'error'; message: string }
   | { t: 'presence'; friend: FriendStatus }
   | { t: 'friends'; friends: FriendStatus[] }
@@ -240,8 +278,11 @@ export type ServerMessage =
   | { t: 'challenge-ended'; id: string; why: 'declined' | 'cancelled' | 'expired' | 'offline' | 'busy' | 'started' }
   /** A match you're in: its players and rules, and where it stands. Sent at the start and when you rejoin. */
   | { t: 'match'; info: MatchInfo; view: PlayerView; clock: ClockView; showing: [boolean, boolean]; rematch: [boolean, boolean]; end: MatchEnd | null }
-  /** The game moved on. `view.events` holds only what happened since the last view you were sent. */
-  | { t: 'view'; match: string; view: PlayerView; clock: ClockView; showing: [boolean, boolean]; undone?: PlayerId }
+  /**
+   * The game moved on. `view.events` holds only what happened since the last view you were sent, and `view.log` only
+   * the story from line `logFrom` on (the lines before it are the ones you already have).
+   */
+  | { t: 'view'; match: string; view: PlayerView; logFrom: number; clock: ClockView; showing: [boolean, boolean]; undone?: PlayerId }
   | { t: 'clock'; match: string; clock: ClockView; held?: PlayerId }
   | { t: 'emote'; match: string; seat: PlayerId; emote: Emote }
   | { t: 'away'; match: string; seat: PlayerId; left: number }

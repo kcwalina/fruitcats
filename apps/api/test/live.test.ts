@@ -24,10 +24,14 @@ function memoryTable(): Table {
   };
 }
 
-const A = 'a'.repeat(32), B = 'b'.repeat(32), C = 'c'.repeat(32);
-const NAMES: Record<string, string> = { [A]: 'Sam', [B]: 'Pippin', [C]: 'Stranger' };
-/** Sam and Pippin are friends; the stranger is nobody's. */
-const FRIENDS: Record<string, string[]> = { [A]: [B], [B]: [A], [C]: [] };
+const A = 'a'.repeat(32), B = 'b'.repeat(32), C = 'c'.repeat(32), D = 'd'.repeat(32);
+const NAMES: Record<string, string> = { [A]: 'Sam', [B]: 'Pippin', [C]: 'Stranger', [D]: 'Dot' };
+/** Sam and Pippin are friends; the stranger and Dot are nobody's. */
+const FRIENDS: Record<string, string[]> = { [A]: [B], [B]: [A], [C]: [], [D]: [] };
+/** Dot has bought cards. */
+const PAID = new Set([D]);
+let maxPlayers = 100;
+let open = true;
 const STARTER = DECKS['zest-rush'];
 const OTHER = DECKS['orchard-guard'];
 const RELAXED: ChallengeOptions = { pace: 'relaxed', teaching: false, startersOnly: false };
@@ -39,8 +43,12 @@ let store: ReturnType<typeof tableStore>;
 let hub: ReturnType<typeof createHub>;
 
 function makeHub() {
+  hub?.stop();
   store = tableStore(memoryTable(), memoryTable(), memoryTable());
   hub = createHub({
+    async paid(account) { return PAID.has(account); },
+    get maxPlayers() { return maxPlayers; },
+    open: () => open,
     store,
     async verify(token) { const id = token.slice(4); return NAMES[id] ? { id, name: NAMES[id] } : null; },
     async friendsOf(account) { return FRIENDS[account] ?? []; },
@@ -63,7 +71,9 @@ interface Player {
   match: string | null;
 }
 
-async function connect(id: string): Promise<Player> {
+/** Ask to be let in, then connect. */
+async function connect(id: string, letIn = true): Promise<Player> {
+  if (letIn) expect(await hub.enter(id)).toEqual({ status: 'in' });
   const inbox: ServerMessage[] = [];
   const p: Player = {
     id, inbox, view: null, match: null,
@@ -120,6 +130,8 @@ async function playOut(players: Player[], seed = 1) {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+  maxPlayers = 100;
+  open = true;
   makeHub();
 });
 afterEach(() => { vi.useRealTimers(); });
@@ -361,6 +373,116 @@ describe('the clock in a Friend game', () => {
   });
 });
 
+describe('room for a fixed number of players', () => {
+  it('lets players in while there is room, then keeps a waiting line, buyers first', async () => {
+    maxPlayers = 2;
+    const sam = await connect(A);
+    await connect(B);
+    expect(await hub.enter(C)).toEqual({ status: 'waiting', position: 1, paid: false });
+    // Dot has bought cards: ahead of the stranger, who joined first.
+    expect(await hub.enter(D)).toEqual({ status: 'waiting', position: 1, paid: true });
+    expect(await hub.enter(C)).toEqual({ status: 'waiting', position: 2, paid: false });
+    // Someone leaves: the first in line gets the place.
+    sam.drop();
+    await flush();
+    expect(await hub.enter(C)).toEqual({ status: 'waiting', position: 1, paid: false });
+    expect(await hub.enter(D)).toEqual({ status: 'in' });
+  });
+
+  it('forgets a place in line nobody asks about any more', async () => {
+    maxPlayers = 1;
+    await connect(A);
+    expect((await hub.enter(C)).status).toBe('waiting');
+    vi.advanceTimersByTime(61_000);   // swept every 30 s; kept 30 s after it was last asked for
+    expect(hub.counts().waiting).toBe(0);
+  });
+
+  it('refuses a connection that wasn’t let in', async () => {
+    const stranger = await connect(C, false);
+    expect(stranger.last('full')).toBeDefined();
+    expect(hub.counts().connected).toBe(0);
+  });
+
+  it('never makes a player wait to come back to their game', async () => {
+    maxPlayers = 2;
+    const [, pippin] = await startGame();
+    pippin.drop();
+    await flush();
+    await connect(C);                                   // the place is taken meanwhile
+    expect(await hub.enter(B)).toEqual({ status: 'in' });
+  });
+
+  it('closes a connection that does nothing for 10 minutes, but never one in a game', async () => {
+    const [sam] = await startGame();
+    const dot = await connect(D);
+    vi.advanceTimersByTime(11 * 60_000);
+    expect(dot.last('idle')).toBeDefined();
+    expect(sam.last('idle')).toBeUndefined();
+    expect(hub.counts().connected).toBe(2);
+  });
+
+  it('can be switched off', async () => {
+    open = false;
+    expect(await hub.enter(A)).toEqual({ status: 'closed' });
+    const sam = await connect(A, false);
+    expect(sam.last('closed')).toBeDefined();
+    expect(hub.here(A).open).toBe(false);
+  });
+});
+
+describe('"I’m here", without a connection', () => {
+  it('shows a friend online, and brings them a challenge, keeping them a place', async () => {
+    maxPlayers = 2;
+    expect(hub.here(B)).toEqual({ open: true, challenges: [], match: null });   // Pippin's game is open, not connected
+    const sam = await connect(A);
+    expect(sam.last('welcome')!.friends[0]).toMatchObject({ id: B, status: 'online' });
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    expect(sam.last('sent')).toBeDefined();
+    const [note] = hub.here(B).challenges;
+    expect(note).toMatchObject({ from: { name: 'Sam' }, options: RELAXED });
+    // A place was kept for Pippin: online play is now full for anyone else.
+    expect((await hub.enter(C)).status).toBe('waiting');
+    const pippin = await connect(B);
+    expect(pippin.last('challenge')!.id).toBe(note.id);
+    pippin.send({ t: 'accept', id: note.id, deck: OTHER, lives: 9 });
+    await flush();
+    expect(pippin.last('match')).toBeDefined();
+  });
+
+  it('won’t challenge a friend who isn’t around', async () => {
+    const sam = await connect(A);
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    expect(sam.last('error')!.message).toMatch(/aren’t online/);
+    hub.here(B);
+    vi.advanceTimersByTime(80_000);
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    expect(sam.last('sent')).toBeUndefined();
+  });
+
+  it('tells a player whose game is going', async () => {
+    const [sam, pippin] = await startGame();
+    pippin.drop();
+    await flush();
+    expect(hub.here(B).match).toBe(sam.match);
+  });
+});
+
+describe('what a move sends', () => {
+  it('sends only the new lines of the story', async () => {
+    const [sam, pippin] = await startGame();
+    const mover = sam.view!.prompt ? sam : pippin;
+    const before = mover.last('match')!.view.log.length;
+    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.actions, action: { t: 'mulligan', uids: [] } });
+    await flush();
+    const v = mover.last('view')!;
+    expect(v.logFrom).toBe(before);
+    expect(v.view.log.length).toBeLessThan(4);
+  });
+});
+
 describe('letting go of games', () => {
   it('forgets a finished game once both players have left it', async () => {
     const [sam, pippin] = await startGame();
@@ -525,7 +647,9 @@ describe('after a restart', () => {
 
     // A new hub on the same tables, as after a restart.
     const kept = store;
+    hub.stop();
     hub = createHub({
+      async paid() { return false; }, maxPlayers: 100, open: () => true,
       store: kept, async verify(token) { const x = token.slice(4); return { id: x, name: NAMES[x] }; },
       async friendsOf(a) { return FRIENDS[a]; }, async checkDeck() { return null; }, log() {},
     });

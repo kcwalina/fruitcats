@@ -20,7 +20,7 @@ import {
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
 import { addOpen, closeAddSheet, closeFriends, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
-import { live, onLive, send, startLive, stopLive } from './live';
+import { live, onLive, send, startLive, stopLive, wantConnection } from './live';
 import {
   emoteBar, enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
   playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
@@ -276,6 +276,8 @@ function actOnline(action: Action) {
 // exactly as a Solo move does. Views that arrive during an animation wait their turn.
 
 let viewQueue: PlayerView[] = [];
+/** The whole story of the online game so far, as received (views bring only its new lines). */
+let storyLines: PlayerView['log'] = [];
 /** A teaching game's suggested move, in words, until the next move. */
 let hintLine = '';
 let showingViews = false;
@@ -289,6 +291,7 @@ function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { 
   stopTutorial();
   tutorialGame = false;
   viewQueue = [];
+  storyLines = msg.view.log;
   game = msg.view;
   if (!same) { unitArrivals.clear(); resetLogSounds(game); }
   selection = null; confirming = null; picks = new Set(); notice = ''; flash = '';
@@ -337,7 +340,9 @@ onLive((msg) => {
     return;
   }
   if (msg.t === 'view') {
-    viewQueue.push(msg.view);
+    // The view carries only the story lines since the last one: put the story back together.
+    storyLines = [...storyLines.slice(0, msg.logFrom), ...msg.view.log];
+    viewQueue.push({ ...msg.view, log: storyLines });
     void showViews();
     return;
   }
@@ -487,9 +492,13 @@ function onClick(key: string) {
     if (raw === 'solo') screen = 'solo';
     else if (raw === 'friend' && ONLINE) {
       // A game still going opens straight away; one this screen has lost track of is asked for again.
+      // A game still going is rejoined as soon as the connection opens (live.ts).
       if (ol && game && !ol.end) screen = 'game';
-      else if (live.match && !ol) { send({ t: 'rejoin', match: live.match }); return; }
-      else { openFriends(friendsHost); screen = 'friends'; }
+      else {
+        openFriends(friendsHost);
+        screen = 'friends';
+        if (live.connected && live.match && !ol) send({ t: 'rejoin', match: live.match });
+      }
     }
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
     else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
@@ -681,8 +690,12 @@ function render() {
   // Scrolling lists (the deck builder's cards) keep their place when the screen is redrawn.
   const scrolled = new Map([...app.querySelectorAll<HTMLElement>('[data-keep-scroll]')]
     .map((el) => [el.dataset.keepScroll, [el.scrollTop, el.scrollLeft]] as const));
-  // Online play needs the connection while signed in; signing out closes it.
-  if (ONLINE && signedIn()) startLive({ render: renderUnlessAnimating }); else if (ONLINE) stopLive();
+  // Signed in, the game says "I'm here" now and then; it holds a connection only while playing online: on Play a friend,
+  // and while an online game is going (or its result is showing). Signing out stops both.
+  if (ONLINE && signedIn()) {
+    startLive({ render: renderUnlessAnimating });
+    wantConnection(screen === 'friends' || (!!ol && (!ol.end || screen === 'game')));
+  } else if (ONLINE) stopLive();
   app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'friends' && ONLINE ? renderFriends()
     : screen === 'decks' ? renderDeckBuilder()
     : screen === 'collection' ? renderShowcase() : screen === 'store' && STORE ? renderStore() : renderGame())
@@ -754,12 +767,14 @@ function savedGameLabel(): string | null {
 /** The Friend tile's line: a game to rejoin, challenges waiting, or just "Online". */
 function friendTileLine(): { line: string; badge: number; waiting: boolean } {
   const n = live.incoming.length;
+  if (!live.open) return { line: '<span class="mode-sub">Paused for now</span>', badge: 0, waiting: false };
+  if (live.waiting) return { line: `<span class="mode-sub continue-line">In line · ${live.waiting.position}</span>`, badge: 0, waiting: true };
   if ((ol && !ol.end) || live.match) {
     const who = ol ? ` · ${esc(them().name)}` : '';
     return { line: `<span class="mode-sub continue-line">Rejoin${who}</span>`, badge: n, waiting: true };
   }
   if (n) return { line: `<span class="mode-sub continue-line">${n} challenge${n > 1 ? 's' : ''} waiting</span>`, badge: n, waiting: true };
-  return { line: `<span class="mode-sub">${live.connected ? 'Online' : 'Your friends'}</span>`, badge: 0, waiting: false };
+  return { line: '<span class="mode-sub">Online</span>', badge: 0, waiting: false };
 }
 
 function renderHome(): string {

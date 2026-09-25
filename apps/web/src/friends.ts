@@ -11,7 +11,7 @@ import type { DeckList } from '@fruitcats/engine';
 import { MIN_LIVES, PACES, type ChallengeOptions, type Pace, type Person } from '@fruitcats/match';
 import { pawtrait } from './account';
 import { AuthError, listFriends, newFriendCode, redeemFriendCode, removeFriend, type Friend } from './auth';
-import { live, onLive, send } from './live';
+import { live, onLive, reconnect, send } from './live';
 import { canScan, codeFromQr, qrSvg, scan } from './qr';
 import { backButton, esc, settingsButton } from './ui';
 
@@ -38,6 +38,9 @@ type AddStep =
   | { kind: 'scan' }
   | { kind: 'confirm'; code: string; person: Person | null }
   | { kind: 'done'; person: { id: string; name: string; avatar: string } };
+
+/** How long a challenge waits for an answer (the API's CHALLENGE_MS): the waiting ring counts it down. */
+const WAIT_S = 120;
 
 let host: FriendsHost | null = null;
 /** Whether the Add a friend sheet is open. */
@@ -68,8 +71,11 @@ export function openFriends(h: FriendsHost, answer?: string) {
   note = ''; managing = null; confirming = null;
   if (answer) myLives = 9;
   void loadFriends();
-  send({ t: 'friends' });
 }
+
+// While the list is showing, friends' presence is asked for again every 30 seconds. (A friend who only has the game open
+// is "here" without a connection, so their coming and going isn't announced.)
+window.setInterval(() => { if (host && view.kind === 'list' && live.connected && document.visibilityState === 'visible') send({ t: 'friends' }); }, 30_000);
 
 /** Leaving the screen: stop the camera and the code, and withdraw a challenge still waiting. */
 export function closeFriends() {
@@ -140,10 +146,34 @@ export function renderFriends(): string {
   return `
   <div class="menu friends">
     <div class="setup-bar">${back}<h2>${title}</h2>${settingsButton()}</div>
-    ${!live.connected ? `<p class="pf-offline">${live.outdated ? 'A new version of Fruitcats is ready. <button class="link-button" data-click="pf:reload">Reload</button> to play online.' : 'Connecting…'}</p>` : ''}
-    ${body}
+    ${notConnected() ?? body}
     ${adding ? renderAdd() : ''}
   </div>`;
+}
+
+/** Why online play isn't open to this player right now (in line, paused, …), as the whole screen; null when connected. */
+function notConnected(): string | null {
+  if (live.connected) return null;
+  const panel = (title: string, text: string, button = '') => `
+  <div class="setup-body pf-body pf-state">
+    <img class="pf-state-art" src="${esc(`${import.meta.env.BASE_URL}ui/mode-friend.webp`)}" alt="">
+    <h3>${title}</h3>
+    <p>${text}</p>
+    ${button}
+  </div>`;
+  if (live.outdated) return panel('A new version is ready', 'Reload to play online.', '<button class="primary" data-click="pf:reload">Reload</button>');
+  if (!live.open) return panel('Online games are paused', 'They’ll be back soon. Solo is always open.');
+  if (live.waiting) {
+    const w = live.waiting;
+    return panel(`You’re number ${w.position} in line`,
+      'Lots of cats are playing online right now. You’ll be let in as soon as there’s room: keep this screen open.'
+      + (w.paid ? '<br><small>Players who have bought cards go first, and that includes you.</small>'
+        : '<br><small>Players who have bought cards go first.</small>'),
+      '<div class="pf-line-dots" aria-hidden="true"><i></i><i></i><i></i></div>');
+  }
+  if (live.idle) return panel('Paused to make room', 'Online play was quiet for a while, so we made room for other players.', '<button class="primary" data-click="pf:reconnect">Play online again</button>');
+  if (live.elsewhere) return panel('Playing on another device', 'You’re online in another tab or on another device.', '<button class="primary" data-click="pf:reconnect">Play here instead</button>');
+  return panel('Connecting…', '');
 }
 
 function renderList(): string {
@@ -158,7 +188,7 @@ function renderList(): string {
       </span>
     </li>`).join('');
   const friendRow = (r: Row) => {
-    const can = r.status === 'online' && live.connected;
+    const can = r.status === 'online';
     const status = r.status === 'online' ? 'Online' : r.status === 'playing' ? 'In a game' : lastSeenText(r.lastSeen);
     const menu = managing === r.id ? (confirming ? `
       <div class="account-confirm" role="alertdialog">
@@ -256,7 +286,7 @@ function renderSetup(friend: string): string {
 function renderWaiting(friend: string, since: number): string {
   const me = live.you;
   const them = personOf(friend);
-  const left = Math.max(0, 60 - Math.floor((Date.now() - since) / 1000));
+  const left = Math.max(0, WAIT_S - Math.floor((Date.now() - since) / 1000));
   return `
   <div class="setup-body pf-body pf-waiting">
     <div class="pf-versus">
@@ -265,7 +295,7 @@ function renderWaiting(friend: string, since: number): string {
       ${pawtrait(them.avatar, 'pf-big-face')}
     </div>
     <p class="pf-waiting-text">Waiting for ${esc(them.name)}…</p>
-    <div class="pf-ring" style="--p:${left / 60}" data-pf-countdown="${since}"><span>${left}</span></div>
+    <div class="pf-ring" style="--p:${left / WAIT_S}" data-pf-countdown="${since}"><span>${left}</span></div>
     <button data-click="pf:cancel">Cancel</button>
   </div>`;
 }
@@ -378,8 +408,8 @@ let scannerVideo: HTMLVideoElement | null = null;
 window.setInterval(() => {
   const ring = document.querySelector<HTMLElement>('[data-pf-countdown]');
   if (!ring) return;
-  const left = Math.max(0, 60 - Math.floor((Date.now() - Number(ring.dataset.pfCountdown)) / 1000));
-  ring.style.setProperty('--p', String(left / 60));
+  const left = Math.max(0, WAIT_S - Math.floor((Date.now() - Number(ring.dataset.pfCountdown)) / 1000));
+  ring.style.setProperty('--p', String(left / WAIT_S));
   ring.firstElementChild!.textContent = String(left);
 }, 1000);
 
@@ -495,7 +525,7 @@ onLive((msg) => {
           stopShowing();
           add = { kind: 'done', person: { id: f.id, name: f.displayName || msg.by.name, avatar: f.avatar } };
         }
-        send({ t: 'friends' });
+        send({ t: 'friends', again: true });
         host?.render();
       }).catch(() => {});
       return;
@@ -540,6 +570,7 @@ export function friendsClick(action: string, h: FriendsHost): void {
       view = { kind: 'list' }; note = '';
       break;
     case 'reload': location.reload(); return;
+    case 'reconnect': reconnect(); return;
     case 'pick':
       if (add.kind !== 'menu') closeAdd();
       view = { kind: 'setup', friend: arg }; note = ''; myLives = 9;
@@ -611,7 +642,7 @@ async function removeOrBlock(id: string, block: boolean) {
     people.delete(id);
     live.friends.delete(id);
     note = block ? 'Blocked.' : 'Removed.';
-    send({ t: 'friends' });
+    send({ t: 'friends', again: true });
   } catch (e) {
     note = e instanceof AuthError ? e.message : 'Couldn’t do that.';
   }

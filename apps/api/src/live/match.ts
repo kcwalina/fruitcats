@@ -95,6 +95,8 @@ export class Match {
   private leftResult: [boolean, boolean] = [false, false];
   /** How many of the game's events each player has been sent, so each view carries only what's new. */
   private sentEvents: [number, number] = [0, 0];
+  /** Likewise the story (the log): each view carries only the lines a player hasn't had yet. */
+  private sentLog: [number, number] = [0, 0];
   private lastNudge = 0;
   private lastEmote: [number, number] = [0, 0];
 
@@ -140,23 +142,28 @@ export class Match {
   /** The whole match, for a player joining or coming back: no events to replay. */
   matchMessage(seat: PlayerId): ServerMessage {
     this.sentEvents[seat] = this.state.events.length;
+    this.sentLog[seat] = 0;
     const view = this.viewOf(seat);
     return { t: 'match', info: this.info(seat), view, clock: this.clockView(), showing: this.showing, rematch: this.wantsRematch, end: this.end };
   }
 
-  /** What this player may see, with only the events since their last view. */
+  /** What this player may see, with only the events and story lines since their last view. */
   private viewOf(seat: PlayerId): PlayerView {
     const v = viewFor(this.state, seat);
     v.events = this.state.events.slice(this.sentEvents[seat]);
     this.sentEvents[seat] = this.state.events.length;
+    v.log = this.state.log.slice(this.sentLog[seat]);
+    this.sentLog[seat] = this.state.log.length;
     const foe = other(seat);
     if (this.showing[foe]) v.players[foe].hand = structuredClone(this.state.players[foe].hand);
     return v;
   }
 
   private broadcast(undone?: PlayerId) {
-    for (const seat of [0, 1] as PlayerId[])
-      this.host.send(this.account(seat), { t: 'view', match: this.id, view: this.viewOf(seat), clock: this.clockView(), showing: this.showing, undone });
+    for (const seat of [0, 1] as PlayerId[]) {
+      const logFrom = this.sentLog[seat];
+      this.host.send(this.account(seat), { t: 'view', match: this.id, view: this.viewOf(seat), logFrom, clock: this.clockView(), showing: this.showing, undone });
+    }
   }
 
   private sendClock(held?: PlayerId) {
@@ -461,6 +468,7 @@ export class Match {
     this.record.played = this.record.played.slice(0, at);
     this.state = rebuild(this.record, at);
     this.sentEvents = [this.state.events.length, this.state.events.length];
+    this.sentLog = [0, 0];   // the story is rewritten: send it whole
     this.startDecision();
     this.broadcast(seat);
     this.host.save(this);

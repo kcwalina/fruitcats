@@ -1,4 +1,5 @@
-// Online play's switchboard (docs/pvp-plan.md): each signed-in game keeps one connection here, which carries
+// Online play's switchboard (docs/pvp-plan.md). A game that's playing online (Play a friend, waiting, a game) keeps one
+// connection here, which carries
 //   - presence: which of your friends are online, or in a game;
 //   - friend codes: the code you're showing (as a QR code or typed), so a friend who scans it sees who you are before
 //     adding you. Adding itself is viamochi-id's (the game redeems the code there, as before);
@@ -8,13 +9,23 @@
 // Who is friends with whom is viamochi-id's: the hub asks it with the player's own token when they connect, and again
 // when they say their friends changed. A challenge is only sent between two people on each other's lists.
 //
+// What it costs is fixed (docs/pvp-plan.md, What online play costs). There's room for `maxPlayers` connections at once
+// and no more, so the bill can't grow by itself:
+//   - a game that isn't playing online holds no connection. It says "I'm here" now and then (here()), which is how its
+//     friends see it online and how a challenge reaches it;
+//   - to connect, a game asks to be let in first (enter()). When there's no room it gets a place in the waiting line and
+//     asks again every few seconds; players who have bought cards go first. Waiting holds no connection either;
+//   - a connection that isn't in a game and does nothing for 10 minutes is closed, to make room;
+//   - LIVE=off on the API turns online play off (docs/emergency-stop.md).
+//
 // The hub knows nothing about sockets: socket.ts turns a WebSocket into connect/receive/closed, and the tests use
 // plain functions.
 
 import { CARDS, RULES_VERSION, other, type DeckList, type PlayerId } from '@fruitcats/engine';
 import {
-  PROTOCOL, cleanLives, cleanOptions, friendRules, normalizeCode, validCode,
-  type ChallengeOptions, type ClientMessage, type FriendStatus, type Person, type ServerMessage, type Tally,
+  HERE_MS, PROTOCOL, cleanLives, cleanOptions, friendRules, normalizeCode, validCode,
+  type ChallengeNote, type ChallengeOptions, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person,
+  type ServerMessage, type Tally,
 } from '@fruitcats/match';
 import { Match, newMatchId, newSeed, type MatchHost, type MatchRecord } from './match';
 import type { LiveStore } from './records';
@@ -27,6 +38,12 @@ export interface HubDeps {
   friendsOf(account: string, token: string): Promise<string[]>;
   /** Why this deck can't be played by this account (not finished, cards not owned), or null if it can. */
   checkDeck(account: string, deck: DeckList, startersOnly: boolean): Promise<string | null>;
+  /** Has this account bought anything? Buyers go first in the waiting line. */
+  paid(account: string): Promise<boolean>;
+  /** How many players may be connected at once. */
+  maxPlayers: number;
+  /** Online play is switched on (LIVE=off turns it off). */
+  open(): boolean;
   log(event: string, fields?: Record<string, unknown>): void;
 }
 
@@ -45,6 +62,8 @@ interface Conn {
   close(): void;
   /** Code lookups in the last minute, so codes can't be guessed by trying them all. */
   lookups: number[];
+  /** When this connection last did something (other than asking for presence), to close it when idle. */
+  active: number;
 }
 
 interface Challenge {
@@ -57,8 +76,16 @@ interface Challenge {
   timer: ReturnType<typeof setTimeout>;
 }
 
-/** A challenge nobody answers is withdrawn after this long. */
-export const CHALLENGE_MS = 60_000;
+/** A challenge nobody answers is withdrawn after this long. (A friend who isn't connected hears of it within HERE_EVERY_MS.) */
+export const CHALLENGE_MS = 120_000;
+/** Once let in, this long to connect before the place goes to someone else. */
+export const LET_IN_MS = 60_000;
+/** A place in the waiting line is kept this long after it was last asked for. */
+const WAITING_KEPT_MS = 30_000;
+/** A connection that isn't in a game and does nothing for this long is closed, to make room. */
+export const IDLE_CONNECTION_MS = 10 * 60_000;
+/** Whether someone has bought anything, remembered this long. */
+const PAID_KEPT_MS = 10 * 60_000;
 /** A friend code works for 15 minutes (viamochi-id's rule); after that the hub forgets it too. */
 const CODE_MS = 15 * 60_000;
 const LOOKUPS_PER_MINUTE = 12;
@@ -71,13 +98,90 @@ export function createHub(deps: HubDeps) {
   const challenges = new Map<string, Challenge>();
   const codes = new Map<string, { account: string; person: Person; expires: number }>();
   const saving = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Games that said "I'm here" lately, without a connection: account → when, and who (for their friends' lists). */
+  const here = new Map<string, { at: number; person?: Person }>();
+  /** Let in and not connected yet: account → until when the place is kept. */
+  const letIn = new Map<string, number>();
+  /** The waiting line: account → when they joined, whether they've bought anything, and when they last asked. */
+  const waiting = new Map<string, { since: number; paid: boolean; asked: number }>();
+  const paidCache = new Map<string, { paid: boolean; at: number }>();
 
   const sendTo = (account: string, msg: ServerMessage) => conns.get(account)?.send(msg);
+
+  // ── Room: letting players in, and the waiting line ────────────────────────────────────────────
+
+  /** Places taken: connections, and players let in who haven't connected yet. */
+  const taken = () => conns.size + letIn.size;
+
+  async function isPaid(account: string): Promise<boolean> {
+    const known = paidCache.get(account);
+    if (known && Date.now() - known.at < PAID_KEPT_MS) return known.paid;
+    let paid = false;
+    try { paid = await deps.paid(account); } catch { paid = known?.paid ?? false; }
+    paidCache.set(account, { paid, at: Date.now() });
+    return paid;
+  }
+
+  /** The line in order: buyers first, then by when they joined. */
+  const line = () => [...waiting.entries()].sort(([, a], [, b]) => Number(b.paid) - Number(a.paid) || a.since - b.since).map(([a]) => a);
+
+  async function enter(account: string): Promise<EnterAnswer> {
+    if (!deps.open()) return { status: 'closed' };
+    sweep();
+    // Already here, or in a game (coming back to it never waits), or let in a moment ago.
+    if (conns.has(account) || matchOf.has(account) || letIn.has(account)) {
+      if (!conns.has(account)) letIn.set(account, Date.now() + LET_IN_MS);
+      waiting.delete(account);
+      return { status: 'in' };
+    }
+    const paid = await isPaid(account);
+    const spot = waiting.get(account);
+    if (spot) { spot.asked = Date.now(); spot.paid = paid; } else waiting.set(account, { since: Date.now(), paid, asked: Date.now() });
+    const order = line();
+    const room = deps.maxPlayers - taken();
+    const position = order.indexOf(account);
+    if (position < room) {
+      waiting.delete(account);
+      letIn.set(account, Date.now() + LET_IN_MS);
+      if (spot) deps.log('live.let_in', { waited: Math.round((Date.now() - spot.since) / 1000), paid });
+      return { status: 'in' };
+    }
+    if (!spot) deps.log('live.waiting', { position: position - room + 1, paid, players: taken() });
+    return { status: 'waiting', position: position - Math.max(0, room) + 1, paid };
+  }
+
+  function hereNow(account: string, person?: Person): HereAnswer {
+    here.set(account, { at: Date.now(), person });
+    const m = matches.get(matchOf.get(account) ?? '');
+    const notes: ChallengeNote[] = [];
+    for (const ch of challenges.values()) {
+      if (ch.to !== account) continue;
+      const from = conns.get(ch.from);
+      if (from) notes.push({ id: ch.id, from: from.person, options: ch.options, lives: ch.lives });
+    }
+    return { open: deps.open(), challenges: notes, match: m && !m.end ? m.id : null };
+  }
+
+  /** Let go of what's run out: presence, places in line, places kept, idle connections. */
+  function sweep() {
+    const now = Date.now();
+    for (const [a, h] of here) if (now - h.at > HERE_MS) { here.delete(a); void deps.store.seen(a, new Date(h.at).toISOString()).catch(() => {}); }
+    for (const [a, w] of waiting) if (now - w.asked > WAITING_KEPT_MS) waiting.delete(a);
+    for (const [a, until] of letIn) if (until < now) letIn.delete(a);
+    for (const c of conns.values()) {
+      if (now - c.active < IDLE_CONNECTION_MS || inGame(c.account!)) continue;
+      c.send({ t: 'idle' });
+      c.close();
+      conns.delete(c.account!);
+      afterClose(c);
+    }
+  }
+  const sweeper = setInterval(sweep, 30_000);
 
   // ── Presence ──────────────────────────────────────────────────────────────────────────────────
 
   const statusOf = (account: string): FriendStatus['status'] => {
-    if (!conns.has(account)) return 'offline';
+    if (!conns.has(account)) return Date.now() - (here.get(account)?.at ?? 0) <= HERE_MS ? 'online' : 'offline';
     const m = matches.get(matchOf.get(account) ?? '');
     return m && !m.end ? 'playing' : 'online';
   };
@@ -98,13 +202,30 @@ export function createHub(deps: HubDeps) {
       const status = statusOf(f);
       out.push({
         id: f, status,
-        lastSeen: status === 'offline' ? await deps.store.lastSeen(f) : undefined,
-        person: conns.get(f)?.person,
-        record: await deps.store.tally(c.account!, f),
+        lastSeen: status === 'offline' ? await lastSeen(f) : undefined,
+        person: conns.get(f)?.person ?? (status === 'online' ? here.get(f)?.person : undefined),
+        record: await tally(c.account!, f),
       });
     }
     return out;
   }
+
+  // Presence is asked for every 30 s while Play a friend is open: records and last-seen are remembered, not read each time.
+  const tallies = new Map<string, Tally>();
+  const tally = async (a: string, b: string) => {
+    const key = `${a}|${b}`;
+    let t = tallies.get(key);
+    if (!t) { t = await deps.store.tally(a, b); tallies.set(key, t); }
+    return t;
+  };
+  const seenCache = new Map<string, { at: string | undefined; read: number }>();
+  const lastSeen = async (a: string) => {
+    const known = seenCache.get(a);
+    if (known && Date.now() - known.read < 5 * 60_000) return known.at;
+    const at = await deps.store.lastSeen(a);
+    seenCache.set(a, { at, read: Date.now() });
+    return at;
+  };
 
   // ── Matches ───────────────────────────────────────────────────────────────────────────────────
 
@@ -121,13 +242,18 @@ export function createHub(deps: HubDeps) {
     },
     async finished(m) {
       const [a, b] = [m.account(0), m.account(1)];
+      // The end of a game counts as something happening: both players get their time on the result screen.
+      for (const acct of [a, b]) { const c = conns.get(acct); if (c) c.active = Date.now(); }
       deps.log('live.match_ended', { match: m.id, kind: m.record.rules.kind, how: m.end?.how, winner: m.end?.winner, moves: m.record.played.length });
       for (const acct of [a, b]) announce(acct);
       const w = m.end?.winner;
       if (!m.record.rules.counts || w === null || w === undefined) return [undefined, undefined];
       try {
         const resultFor = (seat: PlayerId) => (w === 'draw' ? 'draw' : w === seat ? 'win' : 'loss');
-        return [await deps.store.addResult(a, b, resultFor(0)), await deps.store.addResult(b, a, resultFor(1))] as [Tally, Tally];
+        const both = [await deps.store.addResult(a, b, resultFor(0)), await deps.store.addResult(b, a, resultFor(1))] as [Tally, Tally];
+        tallies.set(`${a}|${b}`, both[0]);
+        tallies.set(`${b}|${a}`, both[1]);
+        return both;
       } catch (e) {
         deps.log('live.record_failed', { match: m.id, message: (e as Error).message });
         return [undefined, undefined];
@@ -170,6 +296,8 @@ export function createHub(deps: HubDeps) {
   function endChallenge(ch: Challenge, why: 'declined' | 'cancelled' | 'expired' | 'offline' | 'busy' | 'started') {
     if (!challenges.delete(ch.id)) return;
     clearTimeout(ch.timer);
+    // The place kept for a friend who never connected goes back.
+    if (!conns.has(ch.to) && why !== 'started') letIn.delete(ch.to);
     sendTo(ch.from, { t: 'challenge-ended', id: ch.id, why });
     sendTo(ch.to, { t: 'challenge-ended', id: ch.id, why });
   }
@@ -182,20 +310,27 @@ export function createHub(deps: HubDeps) {
     const lives = cleanLives(msg.lives);
     const error = (message: string) => c.send({ t: 'error', message });
     if (!options || lives === null || typeof msg.to !== 'string') return error('That challenge didn’t make sense.');
+    // A friend may be connected, or only "here" (the game open, not playing online): the challenge reaches them either way.
     const them = conns.get(msg.to);
-    if (!c.friends.has(msg.to) || !them?.friends.has(me)) return error('You can only challenge a friend.');
+    if (!c.friends.has(msg.to) || (them && !them.friends.has(me))) return error('You can only challenge a friend.');
+    if (statusOf(msg.to) === 'offline') return error('They aren’t online right now.');
     if (inGame(me)) return error('Finish your game first.');
-    if (inGame(msg.to)) return error(`${them.person.name} is in a game.`);
+    if (inGame(msg.to)) return error('They’re in a game.');
     for (const ch of challenges.values())
       if ((ch.from === me && ch.to === msg.to) || (ch.from === msg.to && ch.to === me)) return error('There’s already a challenge between you.');
     const deck = cleanDeck(msg.deck);
     const problem = deck ? await deps.checkDeck(me, deck, options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
+    // Keep a place for the friend, so answering never puts them in the waiting line. No place: say so now.
+    if (!them && !letIn.has(msg.to)) {
+      if (taken() >= deps.maxPlayers) return error('Online play is full right now, so your friend couldn’t join. Try again in a few minutes.');
+      letIn.set(msg.to, Date.now() + CHALLENGE_MS + LET_IN_MS);
+    }
     const id = newMatchId();
     const ch: Challenge = { id, from: me, to: msg.to, deck: deck!, options, lives, timer: setTimeout(() => endChallenge(ch, 'expired'), CHALLENGE_MS) };
     challenges.set(id, ch);
     c.send({ t: 'sent', id, to: msg.to });
-    them.send({ t: 'challenge', id, from: c.person, options, lives });
+    them?.send({ t: 'challenge', id, from: c.person, options, lives });
     deps.log('live.challenge', { from: me, to: msg.to, pace: options.pace, teaching: options.teaching });
   }
 
@@ -221,6 +356,11 @@ export function createHub(deps: HubDeps) {
     if (msg.protocol !== PROTOCOL || msg.rules !== RULES_VERSION) { c.send({ t: 'update' }); return; }
     const who = typeof msg.token === 'string' ? await deps.verify(msg.token, typeof msg.name === 'string' ? msg.name : undefined) : null;
     if (!who) { c.send({ t: 'error', message: 'signed_out' }); c.close(); return; }
+    if (!deps.open()) { c.send({ t: 'closed' }); c.close(); return; }
+    // Only a player who was let in (or is in a game, or already connected on another device) may connect.
+    if (!conns.has(who.id) && !matchOf.has(who.id) && !letIn.has(who.id)) { c.send({ t: 'full' }); c.close(); return; }
+    letIn.delete(who.id);
+    here.delete(who.id);
     const avatar = typeof msg.avatar === 'string' && /^[a-z0-9-]{1,40}$/.test(msg.avatar) ? msg.avatar : 'cat';
     c.account = who.id;
     c.token = msg.token;
@@ -232,6 +372,11 @@ export function createHub(deps: HubDeps) {
     if (older && older !== c) { older.send({ t: 'error', message: 'replaced' }); older.close(); }
     const m = matches.get(matchOf.get(who.id) ?? '');
     c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m && !m.end ? m.id : null });
+    // Challenges sent while this game was only "here".
+    for (const ch of challenges.values()) {
+      const from = conns.get(ch.from);
+      if (ch.to === who.id && from) c.send({ t: 'challenge', id: ch.id, from: from.person, options: ch.options, lives: ch.lives });
+    }
     if (m) m.connected(m.seatOf(who.id)!);
     announce(who.id);
   }
@@ -244,11 +389,14 @@ export function createHub(deps: HubDeps) {
     if (msg.t === 'hello') { await hello(c, msg); return; }
     const me = c.account;
     if (!me) return;
+    if (msg.t !== 'friends') c.active = Date.now();
     switch (msg.t) {
       case 'friends':
-        try { c.friends = new Set(await deps.friendsOf(me, c.token)); } catch { /* keep the list we had */ }
+        if (msg.again) {
+          try { c.friends = new Set(await deps.friendsOf(me, c.token)); } catch { /* keep the list we had */ }
+          announce(me);
+        }
         c.send({ t: 'friends', friends: await statuses(c) });
-        announce(me);
         return;
       case 'code': {
         for (const [code, v] of codes) if (v.account === me) codes.delete(code);
@@ -295,7 +443,13 @@ export function createHub(deps: HubDeps) {
     const me = c.account;
     if (!me || conns.get(me) !== c) return;
     conns.delete(me);
+    afterClose(c);
+  }
+
+  function afterClose(c: Conn) {
+    const me = c.account!;
     void deps.store.seen(me, new Date().toISOString()).catch(() => {});
+    seenCache.delete(me);
     for (const ch of [...challenges.values()]) if (ch.from === me || ch.to === me) endChallenge(ch, 'offline');
     for (const [code, v] of codes) if (v.account === me) codes.delete(code);
     const m = matches.get(matchOf.get(me) ?? '');
@@ -306,7 +460,7 @@ export function createHub(deps: HubDeps) {
   return {
     /** A new connection. `send` and `close` talk to its socket. */
     connect(send: (msg: ServerMessage) => void, close: () => void): Connection {
-      const c: Conn = { account: null, person: { id: '', name: '', avatar: '' }, token: '', friends: new Set(), send, close, lookups: [] };
+      const c: Conn = { account: null, person: { id: '', name: '', avatar: '' }, token: '', friends: new Set(), send, close, lookups: [], active: Date.now() };
       // One message at a time per connection, in order, even when one waits on viamochi-id.
       let queue = Promise.resolve();
       return {
@@ -329,8 +483,13 @@ export function createHub(deps: HubDeps) {
         }
       }
     },
-    /** For tests and the stats: how many are connected and playing. */
-    counts: () => ({ connected: conns.size, matches: matches.size, challenges: challenges.size }),
+    /** "Let me in": in, a place in the waiting line, or closed. */
+    enter,
+    /** "I'm here": the game is open but not playing online. */
+    here: hereNow,
+    /** For tests and the stats: how many are connected, playing and waiting. */
+    counts: () => ({ connected: conns.size, matches: matches.size, challenges: challenges.size, waiting: waiting.size, letIn: letIn.size, here: here.size }),
+    stop: () => clearInterval(sweeper),
   };
 }
 

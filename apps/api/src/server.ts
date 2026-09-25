@@ -9,6 +9,11 @@
 //   /v1/store…                       →  the Store, while it's only for testers (store.ts)
 //   /v1/studio/...                   →  the Artist Studio (studio/studio.ts, docs/artist-studio-plan.md)
 //   /v1/live  (WebSocket)            →  online play: presence, friend codes, challenges, matches (live/, docs/pvp-plan.md)
+//   POST /v1/live/here               →  "I'm here": challenges waiting, a game going (the game isn't playing online)
+//   POST /v1/live/enter              →  "let me in": in, a place in the waiting line, or closed
+//
+// Online play's settings: LIVE=off turns it off (docs/emergency-stop.md); LIVE_MAX_PLAYERS is how many may be connected
+// at once (default 300: App Service's Basic plan allows 350 WebSockets per instance).
 //
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
@@ -18,6 +23,7 @@ import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { CARDS, DECKS, deckProblems, registerSet, type DeckList } from '@fruitcats/engine';
+import { ENTER_PATH, HERE_PATH } from '@fruitcats/match';
 import { collectionOf, isStarterSet } from '@fruitcats/store';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { loadContent } from '../../../content';
@@ -55,16 +61,37 @@ interface SyncShowcase { faces: string[]; updatedAt: number }
 /** Local only (npm run api:local -- --fake-sign-in): "Bearer dev-<account id>" is that account, no email code needed. */
 const FAKE_SIGN_IN = !!LOCAL_DATA && process.env.FAKE_SIGN_IN === 'on';
 
-async function accountOf(req: IncomingMessage): Promise<string | null> {
+/**
+ * Tokens already checked, until they expire: every open game says "I'm here" every 20 seconds, and checking a token's
+ * signature each time would be most of what that costs.
+ */
+const checked = new Map<string, { sub: string; name: string; exp: number }>();
+
+/** The signed-in account and the display name in its token. */
+async function whoOf(req: IncomingMessage): Promise<{ id: string; name: string } | null> {
   const auth = req.headers.authorization ?? '';
-  if (FAKE_SIGN_IN && /^Bearer dev-[0-9a-f]{32}$/.test(auth)) return auth.slice('Bearer dev-'.length);
+  if (FAKE_SIGN_IN && /^Bearer dev-[0-9a-f]{32}$/.test(auth)) {
+    const id = auth.slice('Bearer dev-'.length);
+    fakeAccounts.add(id);
+    return { id, name: '' };
+  }
   if (!auth.startsWith('Bearer ')) return null;
+  const known = checked.get(auth);
+  if (known && known.exp > Date.now()) return { id: known.sub, name: known.name };
   try {
     const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-    return typeof payload.sub === 'string' && /^[0-9a-f]{32}$/.test(payload.sub) ? payload.sub : null;
+    if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+    const name = typeof payload.name === 'string' ? payload.name.slice(0, 40) : '';
+    if (checked.size > 50_000) checked.clear();
+    checked.set(auth, { sub: payload.sub, name, exp: (payload.exp ?? 0) * 1000 });
+    return { id: payload.sub, name };
   } catch {
     return null;
   }
+}
+
+async function accountOf(req: IncomingMessage): Promise<string | null> {
+  return (await whoOf(req))?.id ?? null;
 }
 
 /** The signed-in account and its display name, for the Artist Studio. */
@@ -220,6 +247,16 @@ const server = createServer(async (req, res) => {
   try {
     if (req.url === '/healthz') return send(res, 200, 'ok');
     if (req.url?.startsWith('/v1/studio/')) return await serveStudio(req, res);
+    if ((req.url === HERE_PATH || req.url === ENTER_PATH) && req.method === 'POST') {
+      const who = await whoOf(req);
+      if (!who) return send(res, 401, { error: 'signed_out' });
+      if (req.url === ENTER_PATH) return send(res, 200, await hub.enter(who.id));
+      // The Pawtrait comes from the game (it's only a picture); the name from the token, or, faked locally, from the game.
+      const body = await readJson(req).catch(() => ({})) as { avatar?: unknown; name?: unknown };
+      const avatar = typeof body.avatar === 'string' && /^[a-z0-9-]{1,40}$/.test(body.avatar) ? body.avatar : 'cat';
+      const name = (FAKE_SIGN_IN && typeof body.name === 'string' ? body.name.slice(0, 40) : who.name) || 'A friend';
+      return send(res, 200, hub.here(who.id, { id: who.id, name, avatar }));
+    }
     if (req.url === '/v1/sync' && req.method === 'POST') {
       const user = await accountOf(req);
       if (!user) return send(res, 401, { error: 'signed_out' });
@@ -301,6 +338,9 @@ const hub = createHub({
     const problems = deckProblems(deck, owned);
     return problems.length ? `That deck can’t be played: ${problems[0]}` : null;
   },
+  async paid(account) { return Object.keys(await purchasedCards(account)).length > 0; },
+  maxPlayers: Number(process.env.LIVE_MAX_PLAYERS) || 300,
+  open: () => process.env.LIVE !== 'off',
   log: (event, fields) => log('ops', event, fields),
 });
 attachLive(server, hub, originAllowed);

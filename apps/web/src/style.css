@@ -1168,3 +1168,14 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
 /* An online game has more buttons beside Rules (Concede, Show my hand): they wrap rather than run off the side. */
 .side-buttons { flex-wrap: wrap; }
 .midbar .hint-line { margin-top: 2px; color: #2e7d45; font-weight: 800; }
+/* Play a friend when it isn't connected: waiting in line, paused, made room. One card, centred. */
+.pf-state { justify-content: center; align-items: center; text-align: center; gap: 10px; }
+.pf-state-art { width: 120px; height: 120px; border-radius: 22px; object-fit: cover; box-shadow: var(--shadow); }
+.pf-state h3 { margin: 6px 0 0; font: 700 24px Fredoka, Nunito, sans-serif; }
+.pf-state p { margin: 0; max-width: 380px; line-height: 1.45; font-weight: 600; }
+.pf-state small { color: var(--muted); }
+.pf-line-dots { display: flex; gap: 8px; margin-top: 6px; }
+.pf-line-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pf-dot 1.2s infinite ease-in-out; }
+.pf-line-dots i:nth-child(2) { animation-delay: 0.2s; }
+.pf-line-dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pf-dot { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }

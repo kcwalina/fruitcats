@@ -31,7 +31,7 @@ beforeAll(async () => {
 });
 afterAll(() => { server.close(); rmSync(dir, { recursive: true, force: true }); });
 
-const OWNER = 'Dev owner:Krzysztof';
+const OWNER = 'Dev owner:Reviewer';
 const ARTIST = 'Dev basil:Basil';
 const STRANGER = 'Dev nobody:Nobody';
 const AGENT = 'Studio-Agent secret-key';
@@ -86,6 +86,10 @@ describe('studio', () => {
     const invite = await call(OWNER, '/bp1/invites', { json: { note: 'Basil' } });
     expect(invite.status).toBe(201);
     expect(invite.body.url).toContain('studio.html?invite=');
+    // A reviewer or an agent opening the link uses nothing up and becomes no one's artist.
+    expect((await call(OWNER, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'bp1', reviewer: true });
+    expect((await call(AGENT, `/invites/${invite.body.code}`, { json: {} })).status).toBe(403);
+    expect((await call(OWNER, '/bp1/artists')).body.artists).toEqual([]);
     expect((await call(ARTIST, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'bp1' });
     expect((await call(STRANGER, `/invites/${invite.body.code}`, { json: {} })).status).toBe(409);
     expect((await call(ARTIST, '/me')).body.sets).toEqual(['bp1']);
@@ -124,7 +128,7 @@ describe('studio', () => {
     const ai = await call(AGENT, '/bp1/pictures/BP1-X01/comments', { json: { text: 'The star is cut off on a phone.', version, pin: { x: 0.9, y: 0.2 } } });
     expect(ai.body).toMatchObject({ author: 'ai', authorName: 'Claude', pinX: 0.9, pinY: 0.2, version });
     const mine = await call(OWNER, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Love the colours.' } });
-    expect(mine.body).toMatchObject({ author: 'owner', authorName: 'Krzysztof' });
+    expect(mine.body).toMatchObject({ author: 'owner', authorName: 'Reviewer' });
     const reply = await call(ARTIST, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Moving it left.', replyTo: ai.body.id } });
     expect(reply.body).toMatchObject({ author: 'artist', replyTo: ai.body.id });
     expect((await call(ARTIST, `/bp1/comments/${ai.body.id}`, { json: { done: true } })).body.done).toBe(true);

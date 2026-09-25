@@ -65,7 +65,7 @@ export class ApiError extends Error {
 
 // ── Development accounts ─────────────────────────────────────────────────────────────────────────
 
-export const DEV_ACCOUNTS: [string, string][] = [['owner', 'Krzysztof (reviewer)'], ['basil', 'Basil (artist)'], ['newcomer', 'Newcomer (not invited)']];
+export const DEV_ACCOUNTS: [string, string][] = [['owner', 'Reviewer (owner)'], ['basil', 'Basil (artist)'], ['newcomer', 'Newcomer (not invited)']];
 
 export function devUser(): string | null {
   try { return localStorage.getItem(DEV_USER); } catch { return null; }

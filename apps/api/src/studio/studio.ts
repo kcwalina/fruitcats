@@ -191,8 +191,11 @@ export function studio(opt: StudioOptions) {
       if (c.kind !== 'account') throw new HttpError(403, 'accounts_only');
       const invite = await store.get('invites', parts[1]);
       if (!invite || Date.parse(String(invite.expires)) < Date.now()) throw new HttpError(404, 'invite_not_found');
-      if (invite.usedBy && invite.usedBy !== c.id) throw new HttpError(409, 'invite_used');
       const set = String(invite.set);
+      // A reviewer who opens an artist's link (to check it, or by accident) only looks at the project: the invite
+      // stays unused for the artist, and the reviewer isn't made an artist. (Agents never get here: accounts only.)
+      if (isOwner(c)) return send(res, 200, { set, reviewer: true });
+      if (invite.usedBy && invite.usedBy !== c.id) throw new HttpError(409, 'invite_used');
       const at = new Date().toISOString();
       await store.upsert(`artists|${set}`, c.id, { name: c.name, joined: at, invite: parts[1] });
       await store.upsert('memberships', `${c.id}|${set}`, { userId: c.id, set });

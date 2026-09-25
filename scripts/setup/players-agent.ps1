@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $tenant = 'b795dd5c-aa4f-43e2-ab15-5e0bf0cdcff4'   # viamochiplayers.onmicrosoft.com
 $env:AZURE_CONFIG_DIR = "$HOME\.azure-viamochi-bootstrap-players"
 
-Write-Host "1/4 Sign in to the player tenant in the browser window (as kcwalina@msn.com)..."
+Write-Host "1/4 Sign in to the player tenant in the browser window..."
 az login --tenant $tenant --allow-no-subscriptions -o none
 
 Write-Host "2/4 Creating the agent app 'claude-agent-players' with a certificate..."

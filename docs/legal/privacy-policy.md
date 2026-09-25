@@ -136,21 +136,3 @@ the top show which one applies.
 **To reach us, use Contact us in the game:** open Settings and choose **Contact us** (or, in the sign-in window,
 **Trouble signing in?**). You don't need an account, and we answer by email. If you don't have the game, open
 **fruitcats.viamochi.com** in any web browser: it's free, with nothing to download, and Contact us is there too.
-
----
-
-### Notes for the lawyer review (remove before publishing)
-
-- The documents name the controller only as "Via Mochi (viamochi.com)", not the owner personally, at the owner's
-  wish, with no mailing address (the contact is Contact us on viamochi.com). Confirm that meets GDPR Art. 13's
-  requirement to give the controller's identity and contact details.
-- Confirm the EU/UK transfer mechanism (Microsoft's DPA and SCCs) and whether an EU/UK representative is needed.
-- COPPA: the 13+ age gate via birth year; the under-18 parental-permission wording.
-- CCPA/CPRA thresholds likely don't apply at launch, but the wording is harmless; check state laws (e.g. Washington's My
-  Health My Data Act doesn't apply: no health data).
-- Purchase records kept indefinitely in anonymised form: confirm this is acceptable under GDPR's storage limitation.
-- Records of finished online games keep the two account ids (not names), which stay pseudonymous after an account is
-  deleted, as the logs do, and are kept 30 days. Confirm that's acceptable.
-- Marketing emails: none at launch, but the owner wants them later. Then: opt-in (not pre-ticked) with a Settings
-  switch, an unsubscribe link, and a separate sending domain. CAN-SPAM wants a postal address in each marketing email,
-  and the owner prefers not to publish one: is a mailbox-service address or PO box enough?

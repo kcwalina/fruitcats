@@ -43,7 +43,7 @@ def main() -> int:
         return face.get("text") or None
 
     L = [f"# Art brief: {brief['name']} ({brief['set']})", "",
-         f"**For:** {brief['artist']} · **From:** Krzysztof Cwalina · **Sent:** <date>", "",
+         f"**For:** {brief['artist']} · **From:** Via Mochi · **Sent:** <date>", "",
          "Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, milestones and suggesting",
          "changes. This brief lists what this set needs. You'll work through it in the Artist Studio",
          f"(<{STUDIO}>), which shows the same steps one at a time.", "",

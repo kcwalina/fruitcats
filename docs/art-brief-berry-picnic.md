@@ -1,6 +1,6 @@
 # Art brief: Berry Picnic (BP1)
 
-**For:** Basil Leaf · **From:** Krzysztof Cwalina · **Sent:** <date>
+**For:** Basil Leaf · **From:** Via Mochi · **Sent:** <date>
 
 Please read the [artist guide](artist-guide.md) first: it covers sizes, styles, milestones and suggesting
 changes. This brief lists what this set needs. You'll work through it in the Artist Studio

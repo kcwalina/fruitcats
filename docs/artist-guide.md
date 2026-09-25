@@ -43,9 +43,9 @@ else is your choice, and this guide explains what has worked well so far.
 
 You work in the **Artist Studio**, a website that takes you through the set one step at a time:
 
-1. Open the Studio at <https://fruitcats.viamochi.com/studio.html>. Sign in, or create a Via Mochi account. While sign-up is by invitation, we
-   send you a sign-up code to use.
-2. We add you to your set's project. From then on it opens whenever you sign in.
+1. Open the invite link we send you. It opens the Artist Studio.
+2. Sign in with your email, or create your Via Mochi account there: no password, we email you a code. The link
+   then takes you straight into your set's project, and it opens whenever you sign in after that.
 3. Follow the steps. Each one shows what to draw, and when you upload a picture you see it on the real card,
    small in the game and as a wallpaper. We comment on each picture, and the next step opens once we agree.
 

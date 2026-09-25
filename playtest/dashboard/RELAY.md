@@ -12,8 +12,8 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
    (it copies each request's `name` onto its run, so a run keeps its name after the request is gone). For each file
    it lists in `playtest/.state/upload/`, write it with ArtifactData `set` into collection `runs`, document id
    = the file name without `.json` (use `batch` with `file_path` entries, at most 50 per batch). Also `set`
-   collection `meta`, document `dashboard`, from `playtest/.state/meta.json` (the decks, family colors and
-   personas the page names and colors things with; its `updatedAt` is the page's "synced" time, so write it
+   collection `meta`, document `dashboard`, from `playtest/.state/meta.json` (the decks, family colors,
+   personas, library decks and Hero Cats the page names and colors things with; its `updatedAt` is the page's "synced" time, so write it
    every pass). A document that already exists (a running run, `meta/dashboard`) needs its current version:
    `get` it and pass `if_version`, or the batch refuses it. Then
    `npm run reports -- mark`. Runs still going are uploaded each time with their progress and are not
@@ -25,8 +25,9 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
    - `npm run reports -- start <command> --args "<args>" --request <id> --pc2024 http://192.168.1.74:5280`,
      using the request's `command`, `args` and `id` exactly as stored, plus `--name "<name>"` when the request
      has a `name` (the run row then carries it from the start; skip `--name` if it holds a double quote). `command` must be one of `nightly`,
-     `balance`, `llm-playtest`, `deck-hunt`, `llm-compare` and `args` may hold only letters, digits, spaces, dots, commas and
-     dashes; if either is not, mark the request `failed` with a note saying so and don't run anything.
+     `balance`, `llm-playtest`, `deck-hunt`, `deck-build`, `llm-compare` and `args` may hold only letters, digits, spaces, dots, commas and
+     dashes; if either is not, mark the request `failed` with a note saying so and don't run anything. (A custom deck
+     arrives in `args` as a deck code, `FC1.…`, and a deck build's goal as plain words: both fit.)
    - Printed `"started":true` (exit 0): `update` the request with `status: "started"`, `startedAt` (now,
      ISO), `note: "Started on PC2024."` If it also printed `Upload now: <file>`, `set` that file into `runs`
      (id = file name without `.json`) and `meta/dashboard` from `playtest/.state/meta.json` right away, in

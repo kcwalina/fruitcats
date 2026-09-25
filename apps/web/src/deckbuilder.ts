@@ -4,8 +4,8 @@
 // ever lost; Done just goes back to your decks.
 
 import {
-  CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, cardName, catCount, copyLimit, deckSize, otherFamilies,
-  type DeckList,
+  CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, cardName, catCount, copyLimit, deckCode, deckSize, otherFamilies,
+  parseDeckCode, type DeckList,
 } from '@fruitcats/engine';
 import { owned, ownedCards, ownedHeroes } from './collection';
 import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
@@ -33,6 +33,12 @@ let deleting: string | null = null;
 let newName = '';
 /** Why the last tapped card couldn't go in. */
 let message = '';
+/** "Deck from a code": open, what's typed in it, and why it wasn't taken. */
+let importing = false;
+let importText = '';
+let importError = '';
+/** "Copied" under Copy deck code, until the next tap. */
+let codeNote = '';
 
 export interface BuilderHost {
   render(): void;
@@ -91,6 +97,7 @@ function change(id: string, delta: number) {
 /** Clicks on `deck:<action>:<arg>`. */
 export function deckClick(action: string, arg: string, host: BuilderHost): void {
   if (action !== 'add') message = '';
+  codeNote = '';
   switch (action) {
     case 'list': leave(); break;
     case 'new': page = 'new'; newName = ''; break;
@@ -116,6 +123,19 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     // Deleting asks first, in a dialog: from a deck's tile in Your decks, or from inside the builder.
     case 'delete': if (getDeck(arg)) deleting = arg; break;
     case 'keep': deleting = null; break;
+    // A deck code (FC1.…) is a whole deck on one line: copied out of the builder, pasted into Your decks.
+    case 'copycode': {
+      const deck = shownDeck();
+      if (!deck) break;
+      void copyText(deckCode(deck)).then((ok) => {
+        codeNote = ok ? 'Copied. Paste it anywhere to share this deck.' : 'Couldn’t copy it here.';
+        host.render();
+      });
+      return;
+    }
+    case 'import': importing = true; importText = ''; importError = ''; break;
+    case 'cancelimport': importing = false; break;
+    case 'doimport': importDeck(); break;
     case 'confirmdelete':
       if (deleting) {
         deleteDeck(deleting);
@@ -125,6 +145,8 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
       break;
   }
   host.render();
+  // The code box is ready for a paste as soon as it opens, and again after a code it couldn't read.
+  if (importing && (action === 'import' || action === 'doimport')) document.querySelector<HTMLTextAreaElement>('[data-deckcode]')?.focus();
   if (action === 'rename') {
     const input = document.querySelector<HTMLInputElement>('[data-rename]');
     input?.focus();
@@ -132,8 +154,9 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
   }
 }
 
-/** Typing in a name box: New deck's, or the builder's (which renames the deck as you type). */
+/** Typing in a name box: New deck's, or the builder's (which renames the deck as you type); or a deck code. */
 export function deckInput(input: HTMLInputElement): void {
+  if (input.matches('[data-deckcode]')) { importText = input.value; return; }
   if (input.matches('[data-newname]')) newName = input.value;
   else if (input.matches('[data-rename]')) renameDeck(input.value);
 }
@@ -156,6 +179,39 @@ export function renameDeck(name: string): void {
   if (state) state.outerHTML = saveState();
 }
 
+/** The clipboard API needs permission and a secure context; the old textarea trick works nearly everywhere else. */
+function copyText(text: string): Promise<boolean> {
+  const legacy = () => {
+    const box = document.createElement('textarea');
+    box.value = text;
+    box.setAttribute('readonly', '');
+    box.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;padding:0';
+    document.body.append(box);
+    box.select();
+    const ok = document.execCommand('copy');
+    box.remove();
+    return ok;
+  };
+  if (!navigator.clipboard) return Promise.resolve(legacy());
+  return navigator.clipboard.writeText(text).then(() => true, () => legacy());
+}
+
+/**
+ * A pasted deck code becomes one of your decks, opened in the builder. Cards this game doesn't know are left
+ * out; cards you don't have yet stay in, and the builder says which (it can't be played until you have them).
+ */
+function importDeck(): void {
+  const parsed = parseDeckCode(importText.replace(/\s+/g, ''));
+  if (!parsed) { importError = 'That isn’t a deck code. Copy the whole code and paste it here.'; return; }
+  if (CARDS[parsed.hero]?.type !== 'Hero Cat') { importError = 'This deck’s Hero Cat isn’t in the game yet.'; return; }
+  const deck = newDeck(parsed.hero);
+  deck.name = parsed.name.slice(0, 40);
+  deck.cards = Object.fromEntries(Object.entries(parsed.cards).filter(([id]) => CARDS[id] && CARDS[id].type !== 'Hero Cat'));
+  importing = false;
+  edit(deck, false);
+  save();
+}
+
 /** Tells the player their work is kept, since there's no Save button to press. */
 function saveState(): string {
   return isNew
@@ -164,7 +220,22 @@ function saveState(): string {
 }
 
 export function renderDeckBuilder(): string {
-  return renderPage() + renderDeleteDialog();
+  return renderPage() + renderDeleteDialog() + (importing && page === 'list' ? renderImportDialog() : '');
+}
+
+function renderImportDialog(): string {
+  return `<div class="overlay">
+    <div class="settings delete-dialog import-dialog" role="dialog" aria-label="Deck from a code">
+      <h2>Deck from a code</h2>
+      <p>Paste a deck code someone shared. It becomes one of your decks.</p>
+      <textarea class="code-box" data-deckcode rows="4" placeholder="FC1.…" spellcheck="false" autocomplete="off" autocapitalize="off">${esc(importText)}</textarea>
+      ${importError ? `<p class="import-error" role="alert">${esc(importError)}</p>` : ''}
+      <div class="delete-buttons">
+        <button data-click="deck:cancelimport">Cancel</button>
+        <button class="primary" data-click="deck:doimport">Add deck</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderPage(): string {
@@ -192,6 +263,9 @@ function renderDeleteDialog(): string {
 
 /** A small pencil, for renaming. */
 const PENCIL = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>`;
+
+/** Two chain links, for deck codes. */
+const CODE = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>`;
 
 /** A small bin, for the Delete buttons. */
 const BIN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>`;
@@ -238,6 +312,11 @@ function renderDeckList(): string {
             <span class="new-plus" aria-hidden="true">+</span>
             <span class="deck-tile-text"><span class="deck-name">New deck</span>
               <span class="deck-tile-sub">Pick a Hero Cat, then ${DECK_RULES.size} cards</span></span>
+          </button>
+          <button class="deck-tile new-deck" data-click="deck:import">
+            <span class="new-plus code-plus" aria-hidden="true">${CODE}</span>
+            <span class="deck-tile-text"><span class="deck-name">Deck from a code</span>
+              <span class="deck-tile-sub">Paste a code someone shared</span></span>
           </button>
         </div>
       </section>
@@ -424,10 +503,11 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
                 <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}" ${addProblem(deck, id, owned, true) ? 'disabled' : ''}>+</button>`}
               </li>`).join('') : '<li class="deck-empty">Tap cards to add them to your deck.</li>'}
           </ul>
-          ${readOnly || isNew ? '' : `
           <div class="deck-actions">
-            <button class="delete-deck" data-click="deck:delete:${editing!.id}">${BIN} Delete deck</button>
-          </div>`}
+            ${size ? `<button class="copy-code" data-click="deck:copycode">${CODE} Copy deck code</button>` : ''}
+            ${codeNote ? `<p class="code-note" role="status">${esc(codeNote)}</p>` : ''}
+            ${readOnly || isNew ? '' : `<button class="delete-deck" data-click="deck:delete:${editing!.id}">${BIN} Delete deck</button>`}
+          </div>
         </div>
       </aside>`;
 }

@@ -88,6 +88,7 @@ header p { margin: 4px 0 0; color: var(--muted); }
 .progress span { display: block; height: 100%; background: var(--accent); }
 .start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
 .runform { display: grid; gap: 12px; margin-top: 12px; }
+#opts { display: grid; gap: 12px; }
 .field { display: grid; gap: 4px; }
 .field label { font-weight: 700; font-size: 13px; }
 .field input, .field select { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; }
@@ -117,6 +118,15 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 .report th { color: var(--muted); font-weight: 700; }
 .report code { font: 12px var(--mono); background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
 .empty { color: var(--muted); padding: 24px 4px; }
+.customs { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.customs li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--ground); }
+.customs .name { font-weight: 800; overflow-wrap: anywhere; }
+.customs .rate { font: 600 13px var(--mono); }
+.customs .sub, .customs .about { grid-column: 2 / 4; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.customs .about { color: var(--ink); }
+.field textarea { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; resize: vertical; }
+.field textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field .hint { color: var(--muted); font-size: 12px; }
 .note { color: var(--muted); font-size: 13px; }
 .synced { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 .synced.stale { color: var(--warn); font-weight: 700; }
@@ -161,6 +171,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
             <option value="llm-playtest">LLM playtest: gpt-oss plays the bot and reports</option>
             <option value="balance">Bot gauntlet: starters, random and changed decks</option>
             <option value="deck-hunt">Deck hunt: the LLM designs decks to break the game</option>
+            <option value="deck-build">Build a deck: the LLM builds one for a goal</option>
             <option value="nightly">Nightly run, now</option>
           </select>
         </div>
@@ -175,6 +186,12 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
       <ul id="requests" class="issues"><li class="note">Loading…</li></ul>
       <div class="legend">A queued run starts at the relay's next sync, within about 10 minutes, and shows under Runs as soon as it starts. PC2024 plays one run at a time; a request waits while another run is going. Finished requests leave this list after 3 days; their runs stay under Runs, with their names.</div>
     </div>
+  </section>
+
+  <section class="panel">
+    <div class="eyebrow">Custom decks</div>
+    <ul id="customs" class="customs"><li class="note">Loading…</li></ul>
+    <div class="legend">The deck library (playtest/decks/library.json) and the best decks recent deck hunts and deck builds found. Any of them can be played in a run above. Win rates are bot games against the starter decks.</div>
   </section>
 
   <section class="panel chart">
@@ -195,7 +212,7 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 <script>
 // Decks, family colors and personas come from the document the relay uploads (meta/dashboard), built from the card
 // data, so a new deck appears here by itself. Until it loads, or for a deck it doesn't know, the key stands in.
-let meta = { decks: [], personas: [] };
+let meta = { decks: [], personas: [], library: [], heroes: [] };
 function decks() {
   const known = meta.decks.map((d) => ({ key: d.key, name: d.name, color: d.color }));
   const seen = new Set(known.map((d) => d.key));
@@ -204,7 +221,7 @@ function decks() {
   }
   return known;
 }
-const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', 'llm-compare': 'LLM player comparison', nightly: 'Nightly run', weekly: 'Weekly run' };
+const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', 'deck-build': 'Deck build', 'llm-compare': 'LLM player comparison', nightly: 'Nightly run', weekly: 'Weekly run' };
 let runs = [];
 let requests = [];
 let db = null;
@@ -355,14 +372,48 @@ const progressBar = (r) => `<div class="progress" role="progressbar" aria-valuem
 
 // ── Starting runs: the form writes a request; the relay on the laptop sends it to PC2024 ───────────────
 const starterOptions = () => meta.decks.map((d) => [d.key, d.name]);
+// Custom decks: the library's (from meta/dashboard) and the ones recent runs found (deck hunts that beat the
+// starters, deck builds' picks), newest first. A run is given a custom deck as its deck code, which PC2024 can
+// play whether or not the deck has reached its copy of the library yet.
+const SOURCE = { hunt: 'deck hunt', built: 'built by the LLM', imported: 'imported', generated: 'generated', found: 'found in a run' };
+function customDecks() {
+  const out = (meta.library ?? []).map((d) => ({ ...d, inLibrary: true }));
+  const seen = new Set(out.map((d) => d.code.split('.').slice(2).join('.')));
+  for (const r of runs) {
+    const d = r.details ?? {};
+    const found = r.kind === 'deck-hunt' ? (d.decks ?? []).filter((x) => x.code && x.vsStarters >= 0.5)
+      : r.kind === 'deck-build' && d.pick?.code ? [{ ...d.pick, vsStarters: d.pick.vsStarters }] : [];
+    for (const x of found) {
+      const body = x.code.split('.').slice(2).join('.');
+      if (seen.has(body)) continue;
+      seen.add(body);
+      const hero = meta.heroes?.find((h) => h.id === x.hero);
+      out.push({ name: x.name.replace(/^hunt: /, ''), code: x.code, hero: x.hero, heroName: hero?.name ?? x.hero, families: hero ? [hero.family] : [],
+        source: r.kind === 'deck-hunt' ? 'hunt' : 'built', about: x.idea ?? '', goal: d.goal, vsStarters: x.vsStarters, run: r.id, addedAt: r.startedAt });
+    }
+  }
+  return out;
+}
+const customOptions = () => customDecks().slice(0, 40).map((d) => [d.code, d.name]);
+const deckName = (v) => meta.decks.find((d) => d.key === v)?.name ?? customDecks().find((d) => d.code === v)?.name ?? v;
+const groups = (...gs) => gs.filter(([, opts]) => opts.length);
 const num = (id, label, value, min, max, step = 1) => `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" value="${value}" min="${min}" max="${max}" step="${step}" required></div>`;
-const select = (id, label, options) => `<div class="field"><label for="${id}">${label}</label><select id="${id}">${options.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></div>`;
+const opt = ([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`;
+const select = (id, label, options) => `<div class="field"><label for="${id}">${label}</label><select id="${id}">${options.map(opt).join('')}</select></div>`;
+/** A select with option groups: [[group label, options], …]; a group labelled '' has no heading. */
+const groupSelect = (id, label, gs) => `<div class="field"><label for="${id}">${label}</label><select id="${id}">${gs.map(([g, options]) =>
+  g ? `<optgroup label="${esc(g)}">${options.map(opt).join('')}</optgroup>` : options.map(opt).join('')).join('')}</select></div>`;
+/** What PC2024's playtester lets through in a run's arguments: letters, digits, spaces, dots, commas, dashes. */
+const safeText = (t) => t.replace(/[’']/g, '').replace(/[^A-Za-z0-9 .,-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
 function renderOptions() {
   const kind = $('kind').value;
   $('opts').innerHTML = {
     'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'Each in turn'], ...meta.personas.map((p) => [p.key, p.name])])}</div>
-      <div class="row">${select('deck', 'LLM plays', [['', 'Every matchup, in turn'], ...starterOptions()])}${select('vs', 'Against', starterOptions().slice().reverse())}</div>`,
-    balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}</div>`,
+      <div class="row">${groupSelect('deck', 'LLM plays', groups(['', [['', 'Every matchup, in turn']]], ['Starter decks', starterOptions()], ['Custom decks', customOptions()]))}${groupSelect('vs', 'Against', groups(['', [['starters', 'Every starter deck']]], ['Starter decks', starterOptions().slice().reverse()], ['Custom decks', customOptions()]))}</div>`,
+    balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}${groupSelect('extra', 'Also against the starters', groups(['', [['', 'No other decks'], ['library', 'Every library deck']]], ['Custom decks', customOptions()]))}</div>`,
+    'deck-build': `<div class="field"><label for="goal">What the deck is for</label><textarea id="goal" rows="2" maxlength="200" required placeholder="e.g. an aggressive Pepper deck, or a fun deck for a beginner"></textarea><span class="hint">Letters, numbers and plain punctuation.</span></div>
+      <div class="row">${select('hero', 'Hero Cat', [['', 'The LLM chooses'], ...(meta.heroes ?? []).map((h) => [h.id, `${h.name} (${h.family})`])])}${groupSelect('bvs', 'Tested against', groups(['', [['starters', 'Every starter deck']]], ['Starter decks', starterOptions()], ['Custom decks', customOptions()]))}</div>
+      <div class="row">${num('candidates', 'Decks a round', 3, 1, 6)}${num('rounds', 'Rounds', 2, 1, 4)}</div>`,
     'deck-hunt': `<div class="row">${num('ideas', 'Deck ideas', 6, 1, 12)}</div>`,
     nightly: `<div class="row">${num('hours', 'Hours of LLM games', 2, 0.5, 8, 0.5)}</div>`,
   }[kind];
@@ -374,13 +425,27 @@ function buildRequest() {
   const n = (id) => Number($(id).value);
   if (kind === 'llm-playtest') {
     const deck = $('deck').value, vs = $('vs').value, persona = $('persona').value;
-    const name = (k) => meta.decks.find((d) => d.key === k)?.name ?? k;
+    const vsName = vs === 'starters' ? 'every starter' : deckName(vs);
     return {
       args: `--provider pc2024 --parallel 8 --games ${n('games')} --persona ${persona}${deck ? ` --deck ${deck} --vs ${vs}` : ''}`,
-      label: `${n('games')} LLM games${deck ? `, ${name(deck)} vs ${name(vs)}` : ''}${persona === 'all' ? '' : `, ${$('persona').selectedOptions[0].text.toLowerCase()}`}`,
+      label: `${n('games')} LLM games${deck ? `, ${deckName(deck)} vs ${vsName}` : ''}${persona === 'all' ? '' : `, ${$('persona').selectedOptions[0].text.toLowerCase()}`}`,
     };
   }
-  if (kind === 'balance') return { args: `--scale ${n('scale')} --quiet`, label: `Bot gauntlet at size ${n('scale')}` };
+  if (kind === 'balance') {
+    const extra = $('extra').value;
+    return {
+      args: `--scale ${n('scale')} --quiet${extra ? ` --${extra === 'library' ? 'library' : `deck ${extra}`}` : ''}`,
+      label: `Bot gauntlet at size ${n('scale')}${extra ? `, with ${extra === 'library' ? 'the library decks' : deckName(extra)}` : ''}`,
+    };
+  }
+  if (kind === 'deck-build') {
+    const goal = safeText($('goal').value), hero = $('hero').value, vs = $('bvs').value;
+    return {
+      args: `--provider pc2024 --candidates ${n('candidates')} --rounds ${n('rounds')} --vs ${vs}${hero ? ` --hero ${hero}` : ''} --goal ${goal}`,
+      label: `Build a deck: ${goal}${vs === 'starters' ? '' : `, against ${deckName(vs)}`}`,
+      invalid: goal.length < 3 ? 'Say what the deck is for.' : '',
+    };
+  }
   if (kind === 'deck-hunt') return { args: `--provider pc2024 --ideas ${n('ideas')}`, label: `Deck hunt, ${n('ideas')} ideas` };
   return { args: `--provider pc2024 --hours ${n('hours')}`, label: `Nightly run with ${n('hours')} h of LLM games` };
 }
@@ -389,7 +454,8 @@ renderOptions();
 $('runform').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!db) return;
-  const { args, label } = buildRequest();
+  const { args, label, invalid } = buildRequest();
+  if (invalid) { $('formnote').textContent = invalid; return; }
   const name = $('runname').value.trim().slice(0, 60);
   const id = `req-${Date.now()}`;
   $('formnote').textContent = 'Queuing…';
@@ -424,6 +490,10 @@ function renderRequests() {
     return `<li><span class="pill ${esc(status)}">${esc(text)}</span><span>${esc(q.name || q.label)}${q.name ? ` <span class="note">(${esc(q.label)})</span>` : ''} <span class="times">${esc(dayOf(q.createdAt) === dayOf(new Date().toISOString()) ? timeOf(q.createdAt) : `${when(q.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })} ${timeOf(q.createdAt)}`)}</span>${progress ? `<br><span class="note">${esc(progress)}</span>` : note ? `<br><span class="note">${esc(note)}</span>` : ''}${run ? `<br><button class="link" data-run="${esc(run.id)}">See the run</button>` : ''}${q.status === 'queued' ? ` <button class="link" data-cancel="${esc(q.id)}">Cancel</button>` : ''}</span></li>`;
   }).join('');
 }
+$('customs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-run]');
+  if (b) { selected = b.dataset.run; renderRuns(); renderDetail(); $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+});
 $('requests').addEventListener('click', async (e) => {
   const b = e.target.closest('button');
   if (!b) return;
@@ -453,6 +523,19 @@ function renderDetail() {
   for (const b of document.querySelectorAll('.run')) b.setAttribute('aria-current', String(b.dataset.id === selected));
 }
 
+function renderCustoms() {
+  const all = customDecks();
+  if (!all.length) { $('customs').innerHTML = '<li class="note">No custom decks yet. Deck hunts and deck builds find them; <span class="mono">npm run decks -- import</span> keeps the good ones.</li>'; return; }
+  $('customs').innerHTML = all.slice(0, 24).map((d) => {
+    const color = meta.decks.find((x) => x.hero === d.hero)?.color ?? d.color ?? 'var(--muted)';
+    const where = d.inLibrary ? `library: ${esc(d.key)}` : `<button class="link" data-run="${esc(d.run)}">${esc(SOURCE[d.source] ?? d.source)}</button>`;
+    return `<li><span class="dot" style="background:${esc(color)}"></span><span class="name">${esc(d.name)}</span>
+      <span class="rate">${typeof d.vsStarters === 'number' ? `${Math.round(d.vsStarters * 100)}%` : ''}</span>
+      <span class="sub">${esc(d.heroName)}${d.families?.length ? ` · ${esc(d.families.join(' + '))}` : ''} · ${d.inLibrary ? `${esc(SOURCE[d.source] ?? d.source)} · ` : ''}${where}</span>
+      ${d.goal || d.about ? `<span class="about">${esc(d.goal ? `For: ${d.goal}. ` : '')}${esc(d.about)}</span>` : ''}</li>`;
+  }).join('');
+}
+
 function renderAll() {
   const latest = runs[0];
   const pill = $('latest-pill');
@@ -462,7 +545,7 @@ function renderAll() {
     pill.textContent = `Latest: ${latest.result}`;
     $('subtitle').textContent = `${runs.length} runs · last one ${dayOf(latest.startedAt)} at ${timeOf(latest.startedAt)}.`;
   }
-  renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests(); renderSynced();
+  renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests(); renderSynced(); renderCustoms();
 }
 
 let resizeTimer;
@@ -490,7 +573,13 @@ $('runs').addEventListener('click', (e) => {
     return;
   }
   db.collection('runs').orderBy('startedAt', 'desc').limit(300).onSnapshot(
-    (snap) => { runs = snap.docs.map((doc) => doc.data()); renderAll(); },
+    (snap) => {
+      // The form's custom decks include what runs found: fill them in once the runs first arrive.
+      const first = !runs.length;
+      runs = snap.docs.map((doc) => doc.data());
+      if (first) renderOptions();
+      renderAll();
+    },
     () => { $('runs').innerHTML = '<div class="empty">The run data stopped updating. Reload the page to try again.</div>'; },
   );
   db.doc('meta/dashboard').onSnapshot((snap) => {

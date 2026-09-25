@@ -8,6 +8,7 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 - [Starter Box card list](docs/starter-box-cards.md) — three ready-to-play 50-card decks, including Mango Tango led by Mochi
 - [Design notes](docs/design-notes.md) — research, rationale, and balance hypotheses to test
 - [Starter Box card images](content/2026/09/starter-box/art/cards/README.md) — every card, rendered
+- [Artist guide](docs/artist-guide.md) — what art a new deck needs, for the artists who draw it; with an [art brief template](docs/art-brief-template.md) and the [Heat Wave brief](docs/art-brief-heat-wave.md)
 
 ## Play it
 

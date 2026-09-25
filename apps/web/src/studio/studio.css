@@ -513,3 +513,4 @@ main.home, main.picture, main.artists, main.sets { animation: fade 0.2s ease-out
 .walk-reply { font-size: 14px; background: var(--paper); border-radius: 8px; padding: 6px 10px; }
 .walk textarea { margin: 8px 0; }
 @media (max-width: 900px) { .walk { grid-template-columns: 1fr; } }
+.wz-next { white-space: normal; text-align: center; line-height: 1.3; }

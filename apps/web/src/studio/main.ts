@@ -460,9 +460,7 @@ function wizardPage(code: string, chosen?: string): string {
     current.signature === 'requested' ? 'we’d love your signature in a corner' : '',
     current.showcase ? 'a card people buy on its own, so it’s a chance to show off' : '']
     .filter(Boolean).join(' · ');
-  const away = !!picked && !!next && keyOf(next) !== key;
   return `<div class="wz-layout">${side}<main class="wizard">${banner}${progress}${sent}
-    ${away ? `<div class="wz-away">You’re looking at an earlier picture. <a class="btn primary small" href="#/${code}">Back to your next task</a></div>` : ''}
     <section class="wz-card">
       <small>Picture ${n} of ${total} · ${esc(TIER_NAMES[current.tier])}</small>
       <h1>${esc(heading)}</h1>
@@ -546,7 +544,7 @@ function wizardSide(code: string, brief: Brief, view: SetView | null, current: B
   };
   const open = openComments(code).length;
   return `<aside class="wz-side">
-    <a class="btn ${onNext ? 'ghost' : 'primary'} wide" href="#/${code}">${next ? 'Your next task' : 'Where things stand'}</a>
+    <a class="btn ${onNext ? 'ghost' : 'primary'} wide wz-next" href="#/${code}">${next ? `Next: ${esc(title(next))}${sideLabel(next) ? ` (${sideLabel(next)})` : ''}` : 'Where things stand'}</a>
     ${open ? `<a class="btn ${S.route.page === 'comments' ? 'ghost' : ''} wide" href="#/${code}/comments">💬 Comments to read (${open})</a>` : ''}
     <h4>Your pictures</h4>
     ${groups.length ? groups.map((g) => `<div class="wz-group"><small>${esc(g.st.milestone.title)}</small>${g.items.map(item).join('')}</div>`).join('')

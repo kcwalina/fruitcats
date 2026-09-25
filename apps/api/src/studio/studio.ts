@@ -7,7 +7,8 @@
 //   agent   (an AI, with an agent key): read everything and comment. Its comments are always labelled AI.
 // The server decides the label on every comment from who signed in, so no one can post as someone else.
 //
-//   GET  /v1/studio/me                                   who you are, your role and your sets
+//   GET  /v1/studio/me                                   who you are, your role, your sets, and the Studio terms you accepted
+//   POST /v1/studio/terms                                { version, adult: true }  accept the Studio's own terms (not the game's)
 //   POST /v1/studio/invites/{code}                       accept an invite: join its set
 //   GET  /v1/studio/{set}                                everything about the set's pictures: versions, states, comments, suggestions
 //   GET  /v1/studio/{set}/changes?since={iso}            what happened since then, newest first
@@ -26,7 +27,7 @@
 //
 // Rows, all in one table (partition | row key):
 //   artists|{set} | {userId}      invites | {code}      versions|{set} | {key}|{version}      states|{set} | {key}
-//   comments|{set} | {id}         suggestions|{set} | {id}      milestones|{set} | {id}      memberships | {userId}|{set}
+//   comments|{set} | {id}         suggestions|{set} | {id}      milestones|{set} | {id}      memberships | {userId}|{set}      terms | {userId}
 // Pictures are blobs named {set}/{key}/{version}.{ext}, where a version is its upload time and the start of its hash.
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -169,7 +170,19 @@ export function studio(opt: StudioOptions) {
 
     if (parts[0] === 'me' && parts.length === 1 && method === 'GET') {
       const role = c.kind === 'agent' ? 'agent' : isOwner(c) ? 'owner' : 'artist';
-      return send(res, 200, { id: c.kind === 'account' ? c.id : null, name: c.name, role, sets: await mySets(c) });
+      const terms = c.kind === 'account' ? await store.get('terms', c.id) : null;
+      return send(res, 200, { id: c.kind === 'account' ? c.id : null, name: c.name, role, sets: await mySets(c), terms: terms ? String(terms.version) : null });
+    }
+
+    // The Studio's own terms, accepted once per account and version: separate from the game's Terms of Use.
+    if (parts[0] === 'terms' && parts.length === 1 && method === 'POST') {
+      if (c.kind !== 'account') throw new HttpError(403, 'accounts_only');
+      const { version, adult } = await readJson(req) as { version?: string; adult?: boolean };
+      if (typeof version !== 'string' || !/^[\w.-]{1,40}$/.test(version)) throw new HttpError(422, 'bad_version');
+      if (adult !== true) throw new HttpError(422, 'adults_only');
+      await store.upsert('terms', c.id, { version, adult: true, at: new Date().toISOString() });
+      log('studio.terms_accepted', { userId: c.id, version });
+      return send(res, 200, { terms: version });
     }
 
     if (parts[0] === 'invites' && parts.length === 2 && method === 'POST') {
@@ -216,6 +229,7 @@ export function studio(opt: StudioOptions) {
     if (a === 'pictures' && b && validKey(b)) {
       if (rest.length === 2 && method === 'POST') {
         if (c.kind !== 'account') throw new HttpError(403, 'agents_cannot_upload');
+        if (!owner && !(await store.get('terms', c.id))) throw new HttpError(403, 'terms');
         const bytes = await readBody(req, MAX_PICTURE);
         return send(res, 201, await upload(c, set, b, bytes, query.get('kind') ?? 'final', query.get('note') ?? ''));
       }

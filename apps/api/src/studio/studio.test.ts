@@ -94,6 +94,14 @@ describe('studio', () => {
     expect((await call(OWNER, '/bp1/artists')).body.artists).toMatchObject([{ id: 'basil', name: 'Basil' }]);
   });
 
+  it('asks an artist to accept the Studio’s terms before uploading', async () => {
+    expect((await call(ARTIST, '/me')).body.terms).toBeNull();
+    expect((await call(ARTIST, '/bp1/pictures/BP1-X01', { body: png(1536, 1024, 9) })).body).toEqual({ error: 'terms' });
+    expect((await call(ARTIST, '/terms', { json: { version: 'studio-1' } })).status).toBe(422);
+    expect((await call(ARTIST, '/terms', { json: { version: 'studio-1', adult: true } })).status).toBe(200);
+    expect((await call(ARTIST, '/me')).body.terms).toBe('studio-1');
+  });
+
   it('keeps every upload, checks it and serves it back', async () => {
     const first = await call(ARTIST, '/bp1/pictures/BP1-X01?kind=sketch&note=first%20idea', { body: png(1536, 1024, 1) });
     expect(first.status).toBe(201);

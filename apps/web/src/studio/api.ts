@@ -7,7 +7,7 @@ export const DEV = import.meta.env.DEV && new URLSearchParams(location.search).h
 const API = DEV ? 'http://localhost:8787' : 'https://api.fruitcats.viamochi.com';
 const DEV_USER = 'studio-dev-user';
 
-export interface Me { id: string | null; name: string; role: 'owner' | 'artist' | 'agent'; sets: string[] | '*' }
+export interface Me { id: string | null; name: string; role: 'owner' | 'artist' | 'agent'; sets: string[] | '*'; terms?: string | null }
 
 export interface Version {
   id: string;
@@ -104,6 +104,7 @@ async function call<T>(path: string, init: { method?: string; json?: unknown } =
 }
 
 export const me = () => call<Me>('me');
+export const acceptTerms = (version: string) => call<{ terms: string }>('terms', { json: { version, adult: true } });
 export const acceptInvite = (code: string) => call<{ set: string }>(`invites/${encodeURIComponent(code)}`, { json: {} });
 export const setView = (set: string) => call<SetView>(set);
 export const comment = (set: string, key: string, body: { text: string; version?: string; pin?: { x: number; y: number }; replyTo?: string }) =>
@@ -176,6 +177,8 @@ export function explain(e: unknown): string {
     bad_size: 'That picture’s size can’t be right. Please check it.',
     not_stored: 'The upload didn’t arrive intact. Please try again: nothing was lost.',
     owner_only: 'Only a reviewer can do that.',
+    adults_only: 'The Studio is for adults: please confirm you’re 18 or older.',
+    terms: 'Please accept the Studio’s terms first.',
     no_account: 'No game account uses that email. Check the spelling, or ask them to create an account in the game first.',
     bad_email: 'That doesn’t look like an email address.',
   };

@@ -5,8 +5,9 @@ How two people play each other online. **Friend** games are built: two friends, 
 only two ways into one match. The background (hidden information, why the server holds the game) is in
 [future-plans.md](future-plans.md#1-pvp); accounts and friends are in [accounts.md](accounts.md).
 
-Friend games are on in the **playtest build** (`npm run build:playtest`) and in dev with `?online=1`. The public
-build keeps the Friend tile as "Coming soon" until they've been tried out (`ONLINE` in `apps/web/src/flags.ts`).
+Friend games are on in every build: they need a Via Mochi account, and accounts are for invited playtesters only for
+now, so only they can play. `LIVE=off` on the API switches online play off without a new build
+(docs/emergency-stop.md); `ONLINE` in `apps/web/src/flags.ts` takes it out of the game.
 
 Last updated 2026-09-25.
 
@@ -216,7 +217,7 @@ adding. After adding, the game tells the API, which tells the friend's phone to 
 never adds anyone: that's only viamochi-id's.
 
 **One instance.** Games live in the memory of one API instance, with their records written at most once a second.
-App Service needs **Web Sockets switched on** (Configuration → General settings) and must stay at one instance. When
+App Service needs **Web Sockets switched on** (the API's `deploy.ps1` switches them on each time) and must stay at one instance. When
 that's not enough, the socket moves to Azure Web PubSub; `socket.ts` is the only file that knows about the transport.
 
 **Same rules on both sides.** The game sends its `PROTOCOL` and the engine's `RULES_VERSION` when it connects; if they
@@ -327,7 +328,7 @@ friend codes and a restart.
 - **Offer the tutorial to a first-timer** who's been challenged. Today they're told they can ask for a teaching game.
 - **Notifications** for a challenge while the app is closed (web push, later the app stores'). Until then a challenge
   only reaches a friend who has the game open.
-- **Before the public build turns it on**: Web Sockets on for `fruitcats-api` (and one instance); the lawyer's review
+- **Before accounts open beyond playtesters**: the lawyer's review
   of the Terms' online play section (7) and the privacy policy's online play lines; a
   playtest with real phones (the camera scanning a QR code on another phone's screen). When the Terms are published,
   `TERMS_VERSION` (apps/web/src/auth.ts) moves to the published version, so everyone agrees to them again.

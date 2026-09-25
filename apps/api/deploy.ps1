@@ -8,6 +8,10 @@ $env:AZURE_CONFIG_DIR = $dir
 az login --service-principal -u $cfg.appId --certificate "$dir\deploy.pem" --tenant $cfg.tenant --allow-no-subscriptions -o none
 if ($LASTEXITCODE) { throw 'Sign-in as deploy-viamochi failed.' }
 
+# Online play needs Web Sockets on (docs/pvp-plan.md). Setting it again when it's already on changes nothing.
+az webapp config set --subscription 32564bc0-941d-4aa9-9b15-5b3a85c57693 -g rg-viamochi-apps -n fruitcats-api --web-sockets-enabled true -o none
+if ($LASTEXITCODE) { throw 'Could not switch on Web Sockets for fruitcats-api.' }
+
 # One bundled file: the server and everything it imports, the game's card data included.
 npm run build --prefix $PSScriptRoot
 if ($LASTEXITCODE) { throw 'Build failed.' }

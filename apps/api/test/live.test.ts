@@ -8,7 +8,7 @@ import {
   ASK_MS, OVERTIME_CLAIM_MS, PACES, PROTOCOL, rankedRules, type ChallengeOptions, type ClientMessage, type ServerMessage,
 } from '@fruitcats/match';
 import { CHALLENGE_MS, createHub } from '../src/live/hub';
-import { Match, type MatchHost, type MatchRecord } from '../src/live/match';
+import { IDLE_MS, Match, RESULT_KEEP_MS, type MatchHost, type MatchRecord } from '../src/live/match';
 import { tableStore } from '../src/live/records';
 import type { Row, Table } from '../src/tables';
 
@@ -358,6 +358,47 @@ describe('the clock in a Friend game', () => {
     sam.send({ t: 'end', match: sam.match!, how: 'claim' });
     await flush();
     expect(sam.last('end')!.end).toMatchObject({ winner: 0, how: 'claimed' });
+  });
+});
+
+describe('letting go of games', () => {
+  it('forgets a finished game once both players have left it', async () => {
+    const [sam, pippin] = await startGame();
+    sam.send({ t: 'end', match: sam.match!, how: 'concede' });
+    await flush();
+    expect(hub.counts().matches).toBe(1);   // kept for the result screen and a rematch
+    sam.send({ t: 'leave', match: sam.match! });
+    pippin.send({ t: 'leave', match: pippin.match! });
+    await flush();
+    expect(hub.counts().matches).toBe(0);
+  });
+
+  it('forgets a finished game nobody leaves, after a while', async () => {
+    const [sam] = await startGame();
+    sam.send({ t: 'end', match: sam.match!, how: 'concede' });
+    await flush();
+    vi.advanceTimersByTime(RESULT_KEEP_MS + 1);
+    expect(hub.counts().matches).toBe(0);
+  });
+
+  it('calls off a game both players abandoned, then forgets it', async () => {
+    const [sam, pippin] = await startGame();
+    sam.drop(); pippin.drop();
+    await flush();
+    vi.advanceTimersByTime(30 * 60_000 + 1);
+    await flush();
+    vi.advanceTimersByTime(2000);
+    await flush();
+    expect(await store.liveMatches()).toEqual([]);          // moved to the finished games
+    vi.advanceTimersByTime(RESULT_KEEP_MS + 1);
+    expect(hub.counts().matches).toBe(0);
+  });
+
+  it('calls off a game nobody has moved in for a day, even with a player still there', async () => {
+    const [sam] = await startGame({ ...RELAXED, pace: 'untimed' });
+    vi.advanceTimersByTime(IDLE_MS + 1);
+    await flush();
+    expect(sam.last('end')!.end).toEqual({ winner: null, how: 'called-off' });
   });
 });
 

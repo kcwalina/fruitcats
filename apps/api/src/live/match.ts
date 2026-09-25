@@ -50,8 +50,16 @@ export interface MatchHost {
   forget(m: Match): void;
 }
 
+// How a match is let go, so nothing stays in memory for good:
+//   - both players gone 30 minutes: called off;
+//   - no move for 24 hours, whoever is still connected: called off (a game with no timer, or a friend who keeps waiting);
+//   - over: forgotten once both players leave the result, or 10 minutes after it ended, whichever comes first.
 /** A game left with both players gone this long is called off. */
 const BOTH_GONE_MS = 30 * 60_000;
+/** A game with no move for this long is called off, even with a player still connected. */
+export const IDLE_MS = 24 * 60 * 60_000;
+/** A finished game is kept this long for its result screen and a rematch, then forgotten. */
+export const RESULT_KEEP_MS = 10 * 60_000;
 /** Emotes: at most one per this long, per player. */
 const EMOTE_EVERY_MS = 1500;
 
@@ -79,6 +87,7 @@ export class Match {
   private away: [number | null, number | null] = [null, null];
   private awayTimers: [ReturnType<typeof setTimeout> | undefined, ReturnType<typeof setTimeout> | undefined] = [undefined, undefined];
   private goneTimer: ReturnType<typeof setTimeout> | undefined;
+  private idleTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** Teaching games: whether each player is showing their hand to the other. */
   private showing: [boolean, boolean] = [false, false];
@@ -108,6 +117,7 @@ export class Match {
 
   /** Both players see the game start. A match rebuilt after a restart waits for them to come back. */
   start(restored = false) {
+    this.touch();
     if (restored) {
       this.away = [Date.now(), Date.now()];
       this.goneTimer = setTimeout(() => void this.finish({ winner: null, how: 'called-off' }), BOTH_GONE_MS);
@@ -243,7 +253,14 @@ export class Match {
     this.afterChange();
   }
 
+  /** A move was made: the game isn't idle. */
+  private touch() {
+    clearTimeout(this.idleTimer);
+    this.idleTimer = setTimeout(() => void this.finish({ winner: null, how: 'called-off' }), IDLE_MS);
+  }
+
   private afterChange() {
+    this.touch();
     if (this.state.winner !== null) { void this.finish({ winner: this.state.winner, how: 'played' }); return; }
     this.startDecision();
     this.broadcast();
@@ -407,7 +424,10 @@ export class Match {
     if (this.record.end) return;
     clearTimeout(this.timer);
     clearTimeout(this.goneTimer);
+    clearTimeout(this.idleTimer);
     for (const t of this.awayTimers) clearTimeout(t);
+    // Kept for the result screen and a rematch, then let go even if nobody says they've left.
+    setTimeout(() => this.host.forget(this), RESULT_KEEP_MS);
     this.phase = 'none';
     this.deadline = null;
     this.record.end = end;

@@ -142,6 +142,7 @@ export function createHub(deps: HubDeps) {
   };
 
   function forget(m: Match) {
+    if (matches.get(m.id) !== m) return;   // already forgotten (both left, then the result's time ran out)
     matches.delete(m.id);
     for (const seat of [0, 1] as PlayerId[]) if (matchOf.get(m.account(seat)) === m.id) matchOf.delete(m.account(seat));
   }

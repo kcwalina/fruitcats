@@ -230,6 +230,49 @@ double tap, a message that crossed another) is never applied twice; the player i
 - `packages/engine/test/view.test.ts` already checks that a player's view never depends on hidden information;
   `online.test.ts` checks the two options.
 
+## How much one server can take
+
+Measured with 500 games at once through the real hub and match code (a development machine; App Service's B1 is
+likely somewhat slower):
+
+| | Measured | What it means |
+|---|---|---|
+| Memory per game | ~25 KB at the start, ~105 KB after 120 moves | 1,000 games ≈ 100 MB |
+| CPU per move (check, apply, both views, send) | 0.67 ms | With a move every ~5 s per game, one core at half load plays roughly 1,000–2,000 games at once. Node uses one core, so more cores don't help one process. |
+| Sent per move, both players | ~14 KB | Each view resends the whole story log. 1,000 games ≈ 3 MB/s out, which costs real money in egress. |
+| Table writes | at most one per game per second, all in the `live` partition | One partition takes about 2,000 writes a second: roughly 10,000 games. |
+
+What runs out first, in order:
+
+1. **Connections, today.** `fruitcats-api` shares one **B1** plan with viamochi-id and mochi-ops. App Service documents
+   a limit of **350 WebSockets per instance on Basic** (no fixed limit on Standard and Premium), and every signed-in
+   game that's open holds one, playing or not. Before the public build turns online play on: `fruitcats-api` on its
+   own Premium v3 plan, Web Sockets on, one instance.
+2. **Bandwidth.** Send only the new lines of the story with each view, as the events already are. About ten times
+   less; a small change in `Match.viewOf` and the game's `showViews`.
+3. **One Node process.** Around a thousand or two games at once. Before that point, split the work: the socket to
+   **Azure Web PubSub** (it holds the connections and scales by units of 1,000), and several API instances, each
+   owning some matches. Which instance owns a match is written in a table (a lease), and messages for it go to that
+   instance. `socket.ts` is the only file that knows about the transport, and a match can always be rebuilt from its
+   record, so a match can move to another instance.
+4. **The `live` partition.** Around 10,000 games: spread games still going over several partitions (by the first
+   character of the match id).
+
+## How long things are kept
+
+In the API's memory:
+
+- **A game going**: until it ends. Nobody moving for **24 hours**, whoever is still connected, calls it off; both
+  players gone for **30 minutes** calls it off.
+- **A finished game**: until both players leave its result, or **10 minutes** after it ended.
+- **A challenge**: 60 seconds. **A friend code on a screen**: until the code is used, replaced, or its phone disconnects.
+- **A connection**: until its socket closes, or stops answering pings (25 s).
+
+In the tables: a game going is in `matches/live` until it ends, then moves to its month (`done-YYYY-MM`) as a replay,
+with account ids and cards only. **Replays are kept for good for now: a retention period (and a job that deletes
+older months) is to decide**, and to put in the privacy policy. The record between two friends (`rivals`) and last
+seen (`seen`) are kept while the account exists; Delete account erases them.
+
 ## Trying it
 
 Two browsers as two friends, on your own computer, with no email codes:

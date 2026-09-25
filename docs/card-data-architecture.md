@@ -153,24 +153,40 @@ Errors fail the check; warnings don't. `npm test` runs the same checks on every 
 
 ## Card packs: new sets on a running site
 
-Every set folder is also published as a **card pack**:
-- the index at `/packs/index.json`,
-- each set's data at `/packs/<set>/set.json`,
-- its art at `/<set>/` and `/cards/<set>/`.
+Every set can be published as a **card pack**, its data and its art, without deploying the game:
+
+```
+npm run publish-pack -- heat-wave            # check-set, then upload; --dry-run to only check
+```
+
+- **Where packs live:** the pack storage, the `fruitcatspacks` storage account (ViaMochi Production,
+  `rg-fruitcats`, westus2). Its public-read container `packs` holds `index.json`, and for each set
+  `<set>/set.json`, `<set>/art/illustrations/` and `<set>/art/cards/`. Anyone may read it, from any
+  origin; only the Via Mochi deploy and agent identities may write (shared keys are off). The pack list and
+  set data aren't cached; art may be cached for a day.
+- **What the command does:**
+  1. Runs `check-set` and stops on any error.
+  2. Uploads the art, then the data.
+  3. Updates `index.json` last, so a game never sees a pack whose files aren't up yet.
+
+  It signs in as the deploy identity (`~/.azure-viamochi-deploy`), never your own Azure login.
+- **The site's own list:** the site also lists the sets it was built with at `/packs/index.json`, as a
+  fallback.
 
 The game starts through `apps/web/src/boot.ts`:
 1. It registers the sets it was built with.
-2. It reads the pack index, and registers any **released** pack it doesn't have, or a newer version of
-   one it has. It waits at most 1.5 seconds, so offline or slow starts still work.
+2. It reads the pack storage's list, then the site's, and registers any **released** pack it doesn't have,
+   or a newer version of one it has. It waits at most 1.5 seconds, so offline or slow starts still work.
 3. Only then does it load the game, so every screen sees the full catalog from its first render.
 
-A pack whose cards need plugin code the game doesn't have is skipped with a console warning (the
-engine's `missingPieces` names what's missing): code only arrives with a new build of the game. In dev,
-`?prototypes` also takes prototype packs, to try a prototype set in the real game.
+Card images come from each card's set (`ART_BASES` in `apps/web/src/ui.ts`): the site's own addresses for
+built-in sets, the pack storage for packs. Wallpapers load pack art with CORS so the canvas can still be
+saved.
 
-Today the packs are published with the site itself (`npm run deploy`, which never takes the site down).
-Publishing a pack on its own, without deploying the game, needs a separate place to host packs. That
-decision is still open (see Still to do).
+- **Plugins:** a pack whose cards need plugin code the game doesn't have is skipped with a console warning
+  (the engine's `missingPieces` names what's missing). Code only arrives with a new build of the game.
+- **Prototypes:** prototype packs are taken only with `?prototypes` in the address, so a playtester can
+  play an unreleased set on the real site. Heat Wave is published this way.
 
 ## The Studio (future: not to build yet)
 
@@ -194,13 +210,8 @@ A designer app, `apps/studio`, for contributors who don't change the code. Its w
 ## Still to do
 
 1. **Pawtraits into the set folders**, once the accounts work lands (it serves them from `art/avatars/`).
-2. **Hosting packs apart from the game,** so a new set can be published without deploying the game:
-   for example an Azure Storage container behind the site. The game already takes packs from
-   `/packs/index.json`, so only the address and a publish command would change.
-3. **Full rules text from data:** `content/rules-text.ts` suggests text for new cards and checks numbers,
+2. **Full rules text from data:** `content/rules-text.ts` suggests text for new cards and checks numbers,
    but written text is still the one players see. Generating every card's text (and checking the words,
    not only the numbers) would need the templater to cover each card's own phrasing.
-4. **The LLM playtesters' rules primer** lists the Starter Box mechanics by hand; the balance-testing
-   work is generating it from the loaded sets.
-5. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
+3. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
    Collection's sample finishes (stand-ins until the Store grants real copies).

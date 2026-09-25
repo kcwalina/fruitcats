@@ -17,7 +17,7 @@ describe('rules text and data agree', () => {
   });
   it('suggests text in the house style for a card that has none', () => {
     expect(suggestText(CARDS['SB1-C09'])).toBe('Pounce. Lucky. Deal 2 damage to a unit.');
-    expect(suggestText(CARDS['HW1-P04'])).toBe('Heat. Hello: Deal 1 damage to a unit.');
+    expect(suggestText(CARDS['HW1-P04'])).toBe('Heat. Hello: Deal 2 damage to an enemy unit.');
     expect(suggestText(CARDS['SB1-C06'])).toBe('Hello: Deal 1 damage to a unit. Zest: deal 2 instead.');
   });
 });

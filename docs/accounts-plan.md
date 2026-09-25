@@ -104,6 +104,16 @@ Last updated 2026-09-24.
 - **Deck and Showcase sync** through `fruitcats-api` (`POST /v1/sync`, Table Storage `decks` and `showcase`).
 - **Playtest build:** `npm run build:playtest` builds `apps/web` with the flags in `src/flags.ts` on (`ACCOUNTS`),
   into `dist-playtest/`. The public `npm run build` compiles them out.
+- **Invite codes (playtest only, 2026-09-24):** a new account needs an invite code; existing accounts never do.
+  - The game asks for it right after a new email ("Got an invite code?"), before any code email is sent, so nobody
+    waits for approval. Without a code, Solo still works.
+  - Each code creates a set number of accounts, then stops working. The first is `PURR-F4ZA`, for 10 accounts
+    (the hyphen and letter case don't matter).
+  - `viamochi-id` checks it twice: before the code email (`/auth/signup/v1.0/start`) and when the account is made
+    (`/token`, which counts it in the `invites` table).
+  - **A new code:** the App Service setting `ViaMochi__Invites__<CODE>` = how many accounts (letters and digits
+    only in the name), set as the agent. **Opening sign-up to everyone:** remove every `ViaMochi__Invites__*` setting;
+    the invite step then disappears by itself.
 - A separate "Via Mochi" workforce directory was tried and dropped: Microsoft now requires a paid Entra ID P1
   license in the home directory to create one. Isolation comes from the subscription instead.
 

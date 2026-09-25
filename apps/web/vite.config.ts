@@ -26,11 +26,12 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'legal/privacy-policy.md', html: 'privacy.html' },
 ];
 
-// `vite build --mode playtest` (npm run build:playtest) turns on the features still hidden from the public site
-// (src/flags.ts) and builds into dist-playtest/, so it can't be uploaded to the public site by mistake.
+// Accounts (src/flags.ts) are on in every build since 2026-09-24: while sign-up needs a playtest invite code, the
+// public site has them too. `vite build --mode playtest` (npm run build:playtest) builds into dist-playtest/ for the
+// playtest site; any feature still hidden from the public goes in its `define` only.
 export default defineConfig(({ mode }) => ({
   base: './',
-  define: mode === 'playtest' ? { 'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on') } : {},
+  define: { 'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on') },
   publicDir: fileURLToPath(new URL('../../art', import.meta.url)),
   plugins: [docsPages(), contentAssets()],
   build: {

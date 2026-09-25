@@ -26,7 +26,8 @@
     "nightly": "tsx playtest/runner.ts nightly",
     "llm-compare": "tsx playtest/runner.ts llm-compare",
     "check-set": "tsx content/check-set.ts",
-    "studio": "tsx tools/studio.ts"
+    "studio": "tsx tools/studio.ts",
+    "publish-pack": "tsx content/publish-pack.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

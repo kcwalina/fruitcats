@@ -23,11 +23,12 @@
     "Heat": {
       "family": "Pepper",
       "kind": "keyword",
-      "reminder": "Whenever this unit is dealt damage and survives, it gets +1 Power, up to +3.",
+      "reminder": "Whenever this unit is dealt damage and survives, it gets +1 Power and +1 Health, up to +3.",
       "counter": {
         "name": "heat",
         "power": 1,
-        "log": "{name} heats up (+{n} Power)."
+        "log": "{name} heats up (+{n}/+{n}).",
+        "health": 1
       },
       "abilities": [
         {
@@ -93,11 +94,11 @@
         "growUp": {
           "if": {
             "unitsInComposts": {
-              "atLeast": 5
+              "atLeast": 4
             }
           }
         },
-        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nGrow Up: 5 or more Cats and Critters are in the Composts."
+        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nGrow Up: 4 or more Cats and Critters are in the Composts."
       },
       "bigCat": {
         "name": "Blaze, Wildfire",
@@ -139,7 +140,7 @@
       "name": "Pepperoncini Bat",
       "cost": 1,
       "power": 1,
-      "health": 2,
+      "health": 3,
       "keywords": [
         "Heat"
       ],
@@ -171,7 +172,10 @@
         }
       ],
       "flavor": "Nine pounds. Ninety percent attitude.",
-      "text": "Hello: You may deal 1 damage to another unit you control."
+      "text": "Zoomies. Hello: You may deal 1 damage to another unit you control.",
+      "keywords": [
+        "Zoomies"
+      ]
     },
     {
       "id": "HW1-P03",
@@ -181,7 +185,7 @@
       "name": "Jalapeño Honey Badger",
       "cost": 2,
       "power": 2,
-      "health": 3,
+      "health": 4,
       "keywords": [
         "Heat"
       ],
@@ -196,7 +200,7 @@
       "name": "Serrano Wolf",
       "cost": 3,
       "power": 3,
-      "health": 3,
+      "health": 4,
       "keywords": [
         "Heat"
       ],
@@ -204,17 +208,17 @@
         {
           "when": "hello",
           "target": {
-            "unit": "any"
+            "unit": "enemy"
           },
           "do": [
             {
-              "damage": 1
+              "damage": 2
             }
           ]
         }
       ],
       "flavor": "Howls at the moon. The moon backs off.",
-      "text": "Heat. Hello: Deal 1 damage to a unit."
+      "text": "Heat. Hello: Deal 2 damage to an enemy unit."
     },
     {
       "id": "HW1-P05",
@@ -240,7 +244,7 @@
       "name": "Habanero Bull",
       "cost": 4,
       "power": 4,
-      "health": 4,
+      "health": 5,
       "keywords": [
         "Heat"
       ],
@@ -255,7 +259,7 @@
       "name": "Scotch Bonnet Rhino",
       "cost": 5,
       "power": 4,
-      "health": 4,
+      "health": 5,
       "keywords": [
         "Fierce",
         "Heat"

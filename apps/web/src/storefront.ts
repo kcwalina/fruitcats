@@ -222,7 +222,7 @@ export function renderStore(): string {
     ${backdrop ? `<div class="ambient" aria-hidden="true"><div class="ambient-layer show" style="background-image:url(${artUrl(backdrop)})"></div></div>` : ''}
     <div class="collection-top store-top">
       ${back}
-      <h2 class="store-title">${title}</h2>
+      <h1 class="store-head"><img class="sh-art" src="${BASE}ui/mode-store.webp" alt=""><span>${title}</span></h1>
       <button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
         ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>
     </div>
@@ -277,13 +277,13 @@ function renderShop(): string {
 }
 
 /**
- * A deck as a boxed deck of cards: its Hero Cat on the front, a side for depth, and card tops showing over the rim, so it
- * reads as a pack to open. `big` for its own page.
+ * A deck as a deck of cards: its cover (the Hero Cat, in its family's colours) on top of a stack of real card backs,
+ * every card exactly a card's size, so it's never smaller than a single card beside it. `big` for its own page.
  */
 function deckBox(p: DeckProduct, big = false): string {
   return `<span class="deck-box ${famClass(p.hero)} ${big ? 'big' : ''}" aria-hidden="true">
-      <span class="db-cards"><i></i><i></i><i></i></span>
-      <span class="db-side"></span>
+      <img class="db-back b2" src="${BASE}ui/cardback.webp" alt="" draggable="false">
+      <img class="db-back b1" src="${BASE}ui/cardback.webp" alt="" draggable="false">
       <span class="db-front">
         <img src="${artUrl(`${p.hero}-kitten`)}" alt="" loading="lazy" draggable="false" ${FALLBACK}>
         <span class="db-band"><b>${esc(p.name)}</b><small>${Object.values(p.cards).reduce((a, b) => a + b, 0) + 1} cards</small></span>

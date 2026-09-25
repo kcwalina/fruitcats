@@ -73,7 +73,7 @@ export async function askForTermsIfNeeded(host: Host) {
 const BENEFITS = [
   ['Your collection, everywhere', 'Cards and decks are kept in your account, on phone, tablet, computer and Steam.'],
   ['Safe if you lose your device', 'New phone? Sign in and everything is there. Nothing lives only on one device.'],
-  ['Buy once, own everywhere', 'Cards from the Store work on every device, whichever store you bought them in.'],
+  ['Buy once, keep it', 'Cards from the Store stay in your account wherever you play signed in, whichever store you bought them in.'],
   ['Friends and online play', 'Add friends and play them online, when those arrive.'],
 ];
 

@@ -6,7 +6,8 @@
 //   POST /v1/sync   { decks: SyncDeck[], showcase?: SyncShowcase }  →  the merged state, the same shape
 //   GET  /v1/export                  →  everything stored for the signed-in account ("Export my data")
 //   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
-//   /v1/store…                       →  the Store, while it's only for testers (store.ts)
+//   /v1/store…                       →  the Store (store.ts)
+//   POST /v1/webhooks/paddle         →  Paddle's signed payment events (store.ts, paddle.ts)
 //   /v1/studio/...                   →  the Artist Studio (studio/studio.ts, docs/artist-studio-plan.md)
 //   /v1/live  (WebSocket)            →  online play: presence, friend codes, challenges, matches (live/, docs/pvp-plan.md)
 //   POST /v1/live/here               →  "I'm here": challenges waiting, a game going (the game isn't playing online)
@@ -31,7 +32,7 @@ import { log } from './logs';
 import { createHub } from './live/hub';
 import { tableStore } from './live/records';
 import { attachLive } from './live/socket';
-import { eraseOrders, exportOrders, purchasedCards, storeRequest } from './store';
+import { eraseOrders, exportOrders, paddleWebhook, purchasedCards, reconcile, storeRequest } from './store';
 import { azureStore } from './studio/store';
 import { studio } from './studio/studio';
 import { LOCAL_DATA, table } from './tables';
@@ -217,7 +218,7 @@ function send(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-async function readJson(req: IncomingMessage): Promise<unknown> {
+async function readRaw(req: IncomingMessage): Promise<Buffer> {
   let size = 0;
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
@@ -225,7 +226,11 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
     if (size > MAX_BODY) throw new Error('too large');
     chunks.push(chunk as Buffer);
   }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+  return Buffer.concat(chunks);
+}
+
+async function readJson(req: IncomingMessage): Promise<unknown> {
+  return JSON.parse((await readRaw(req)).toString('utf8') || '{}');
 }
 
 const server = createServer(async (req, res) => {
@@ -247,6 +252,12 @@ const server = createServer(async (req, res) => {
   try {
     if (req.url === '/healthz') return send(res, 200, 'ok');
     if (req.url?.startsWith('/v1/studio/')) return await serveStudio(req, res);
+    if (req.url === '/v1/webhooks/paddle' && req.method === 'POST') {
+      // Signed by Paddle over the exact bytes, so the body is read raw. Answered 200 only once the event is saved.
+      const sig = req.headers['paddle-signature'];
+      const [status, body] = await paddleWebhook(Array.isArray(sig) ? sig[0] : sig, await readRaw(req));
+      return send(res, status, body);
+    }
     if ((req.url === HERE_PATH || req.url === ENTER_PATH) && req.method === 'POST') {
       const who = await whoOf(req);
       if (!who) return send(res, 401, { error: 'signed_out' });
@@ -374,3 +385,9 @@ const statsBlob = new BlobServiceClient(process.env.BLOB_ENDPOINT ?? 'https://fr
   .getContainerClient('logs').getBlockBlobClient('stats/fruitcats-api.json');
 // Not for the API run locally (LOCAL_DATA): its rows aren't in Azure.
 if (!LOCAL_DATA) setTimeout(() => { void writeStats(); setInterval(() => void writeStats(), 15 * 60_000); }, 3 * 60_000);
+
+// The Store's regular check against Paddle (store.ts, reconcile): every hour, and once a day also every account's owned
+// total. Does nothing without Paddle keys.
+let checks = 0;
+const check = () => void reconcile({ deep: checks++ % 24 === 0 }).catch((e) => log('ops', 'store.alert', { what: 'the regular check failed', message: (e as Error).message }, 'error'));
+setTimeout(() => { check(); setInterval(check, 60 * 60_000); }, 5 * 60_000);

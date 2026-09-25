@@ -9,6 +9,15 @@ import { DefaultAzureCredential } from '@azure/identity';
 
 export type Row = { partitionKey: string; rowKey: string } & Record<string, unknown>;
 
+/**
+ * One step of a batch. `etag` (from a row as it was read) makes the step fail if the row changed since; `create` fails
+ * if the row exists.
+ */
+export type BatchStep =
+  | { op: 'create'; row: Row }
+  | { op: 'replace'; row: Row; etag: string }
+  | { op: 'upsert'; row: Row };
+
 export interface Table {
   /** Every row of one partition (one account). */
   list<T extends Row>(partition: string): Promise<T[]>;
@@ -18,6 +27,13 @@ export interface Table {
   /** Write a row only if there's none with the same keys yet. False if there was. */
   add(row: Row): Promise<boolean>;
   remove(partition: string, row: string): Promise<void>;
+  /**
+   * Write several rows of one partition all at once, or none of them: false if any step's condition failed (a row
+   * changed since it was read, or a row to create exists). Rows read with get/list carry their `etag`.
+   */
+  batch(steps: BatchStep[]): Promise<boolean>;
+  /** Rows of every partition whose fields equal these values (small tables or rare checks only: it reads widely). */
+  where<T extends Row>(match: Record<string, string>): Promise<T[]>;
 }
 
 export const LOCAL_DATA = process.env.LOCAL_DATA;
@@ -55,6 +71,26 @@ function azureTable(name: string): Table {
     async remove(partition, row) {
       try { await client.deleteEntity(partition, row); } catch (e) { if (!notFound(e)) throw e; }
     },
+    async batch(steps) {
+      const strip = ({ etag: _, ...row }: Row) => row as Row;
+      try {
+        await client.submitTransaction(steps.map((s) =>
+          s.op === 'create' ? ['create', strip(s.row)] as const
+            : s.op === 'upsert' ? ['upsert', strip(s.row), 'Replace'] as const
+              : ['update', strip(s.row), 'Replace', { etag: s.etag }] as const));
+        return true;
+      } catch (e) {
+        const status = (e as { statusCode?: number }).statusCode;
+        if (status === 409 || status === 412) return false;
+        throw e;
+      }
+    },
+    async where<T extends Row>(match: Record<string, string>) {
+      const filter = Object.entries(match).map(([k, v]) => `${k} eq '${v.replace(/'/g, "''")}'`).join(' and ');
+      const rows: T[] = [];
+      for await (const row of client.listEntities<T>({ queryOptions: { filter } })) rows.push(row as T);
+      return rows;
+    },
   };
 }
 
@@ -67,16 +103,33 @@ function localTable(name: string): Table {
   const key = (p: string, r: string) => `${p}|${r}`;
   const save = () => writeFileSync(file, JSON.stringify(rows, null, 2));
   const copy = <T>(x: unknown) => structuredClone(x) as T;
+  // Like Azure's: every write gives the row a new etag.
+  let tag = Date.now();
+  const stamp = (row: Row) => ({ ...copy<Row>(row), etag: `W/"${++tag}"` });
   return {
     async list<T extends Row>(partition: string) { return Object.values(rows).filter((r) => r.partitionKey === partition).map((r) => copy<T>(r)); },
     async get<T extends Row>(partition: string, row: string) { const r = rows[key(partition, row)]; return r ? copy<T>(r) : null; },
-    async put(row) { rows[key(row.partitionKey, row.rowKey)] = copy(row); save(); },
+    async put(row) { rows[key(row.partitionKey, row.rowKey)] = stamp(row); save(); },
     async add(row) {
       if (rows[key(row.partitionKey, row.rowKey)]) return false;
-      rows[key(row.partitionKey, row.rowKey)] = copy(row);
+      rows[key(row.partitionKey, row.rowKey)] = stamp(row);
       save();
       return true;
     },
     async remove(partition, row) { delete rows[key(partition, row)]; save(); },
+    async batch(steps) {
+      if (new Set(steps.map((s) => s.row.partitionKey)).size > 1) throw new Error('a batch is one partition');
+      for (const s of steps) {
+        const have = rows[key(s.row.partitionKey, s.row.rowKey)];
+        if (s.op === 'create' && have) return false;
+        if (s.op === 'replace' && have?.etag !== s.etag) return false;
+      }
+      for (const s of steps) rows[key(s.row.partitionKey, s.row.rowKey)] = stamp(s.row);
+      save();
+      return true;
+    },
+    async where<T extends Row>(match: Record<string, string>) {
+      return Object.values(rows).filter((r) => Object.entries(match).every(([k, v]) => r[k] === v)).map((r) => copy<T>(r));
+    },
   };
 }

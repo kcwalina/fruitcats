@@ -21,6 +21,8 @@ function memoryTable(): Table {
     async put(row) { rows.set(key(row.partitionKey, row.rowKey), structuredClone(row)); },
     async add(row) { if (rows.has(key(row.partitionKey, row.rowKey))) return false; rows.set(key(row.partitionKey, row.rowKey), structuredClone(row)); return true; },
     async remove(p, r) { rows.delete(key(p, r)); },
+    async batch() { throw new Error('not used here'); },
+    async where() { throw new Error('not used here'); },
   };
 }
 

@@ -156,6 +156,9 @@ Last updated 2026-09-25.
 - **Invite codes (playtest only, 2026-09-24):** a new account needs an invite code; existing accounts never do.
   - The game asks for it right after a new email ("Got an invite code?"), before any code email is sent, so nobody
     waits for approval. Without a code, Solo still works.
+  - **An invite link:** `https://fruitcats.viamochi.com/?invite=CODE` opens the account window by itself (unless
+    someone is already signed in on that device), and the code is used after the email, so there's no invite step to
+    type. If the code doesn't work, the usual invite step shows, with the reason.
   - Each code creates a set number of accounts, then stops working. The first is `PURR-F4ZA`, for 10 accounts
     (the hyphen and letter case don't matter).
   - `viamochi-id` checks it twice: before the code email (`/auth/signup/v1.0/start`) and when the account is made

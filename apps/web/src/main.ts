@@ -14,7 +14,7 @@ import { refreshStore, storeAccess } from './shop';
 import { startSync } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
-  accountClick, accountEnter, askForTermsIfNeeded, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
+  accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
@@ -1582,6 +1582,8 @@ if (ONLINE) onlineTicks(renderUnlessAnimating);
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
 if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
+// An invite link for playtesters (?invite=CODE): open the account window, and the code is used after their email.
+if (ACCOUNTS && takeInviteFromLink()) openAccount({ render }, 'You’re invited! Type your email to create your account.');
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.
 // Refreshed again whenever the game comes back to the front or back online (at most once a minute), so cards the
 // account no longer has (a refund; later, a trade) don't linger on this device.

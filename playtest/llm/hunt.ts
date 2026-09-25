@@ -53,8 +53,7 @@ export async function runDeckHunt(provider: Provider, ideas: number, scale: numb
 }
 
 export async function deckHuntCommand(): Promise<number> {
-  // A hunt with a goal is a deck build: PC2024's playtester paw accepts `deck-hunt`, and a paw deployed before
-  // 2026-09-25 doesn't know `deck-build` yet.
+  // A hunt with a goal is a deck build (older requests were sent that way).
   if (textArg('goal')) return deckBuildCommand();
   const summary = await runDeckHunt(getProvider(arg('provider') ?? 'pc2024', arg('model')), numArg('ideas') ?? 6, numArg('scale') ?? 1);
   console.log(`${summary.result.toUpperCase()}: ${(summary.details.decks as unknown[]).length} deck(s) tested. Report: ${summary.id}`);

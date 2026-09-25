@@ -128,6 +128,31 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 .field textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .field .hint { color: var(--muted); font-size: 12px; }
 .note { color: var(--muted); font-size: 13px; }
+/* Tabs: Playtests and Accounts (the Via Mochi services, from ops/accounts). */
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+.tabs button { font: 700 14px var(--body); color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; cursor: pointer; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.tabpanel { display: contents; }
+.tabpanel[hidden] { display: none; }
+.acct-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.svc { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.svc b { font: 600 17px var(--display); }
+.svc .pill { white-space: nowrap; flex: none; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+.kpi { background: var(--sunk); border-radius: 12px; padding: 12px 14px; }
+.kpi .num { display: block; font-size: 28px; font-weight: 600; line-height: 1.2; }
+.kpi small { color: var(--muted); font-size: 12px; }
+.daily { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+.daily th, .daily td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.daily th:first-child, .daily td:first-child { text-align: left; }
+.daily td.barcell { width: 40%; text-align: left; }
+.daily .minibar { height: 8px; border-radius: 4px; background: var(--accent); }
+.daily td.zero { color: var(--muted); }
+.daily td.bad { color: var(--block); font-weight: 800; }
+.invite { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; }
+.invite .track { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.invite .track span { display: block; height: 100%; background: var(--accent); }
 .synced { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 .synced.stale { color: var(--warn); font-weight: 700; }
 @media (max-width: 860px) {
@@ -141,13 +166,20 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 <div class="wrap">
   <header>
     <div>
-      <div class="eyebrow">Fruitcats · automated playtesting</div>
-      <h1>Playtests</h1>
+      <div class="eyebrow" id="eyebrow">Fruitcats · automated playtesting</div>
+      <h1 id="title">Playtests</h1>
       <p id="subtitle">Bot gauntlets, deploy checks and LLM playtesters, newest first.</p>
       <p id="synced" class="synced" role="status"></p>
     </div>
     <span id="latest-pill" class="pill pass" hidden></span>
   </header>
+
+  <nav class="tabs" role="tablist" aria-label="Dashboard">
+    <button role="tab" id="tabbtn-playtests" data-tab="playtests" aria-controls="tab-playtests" aria-selected="true">Playtests</button>
+    <button role="tab" id="tabbtn-accounts" data-tab="accounts" aria-controls="tab-accounts" aria-selected="false">Accounts</button>
+  </nav>
+
+  <div id="tab-playtests" class="tabpanel" role="tabpanel" aria-labelledby="tabbtn-playtests">
 
   <section class="status">
     <div class="panel">
@@ -170,8 +202,8 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
           <select id="kind">
             <option value="llm-playtest">LLM playtest: gpt-oss plays the bot and reports</option>
             <option value="balance">Bot gauntlet: starters, random and changed decks</option>
-            <option value="deck-hunt">Deck hunt: the LLM designs decks to break the game</option>
-            <option value="deck-build">Build a deck: the LLM builds one for a goal</option>
+            <option value="deck-hunt">Deck hunt: Kimi K3 designs decks to break the game (a few cents)</option>
+            <option value="deck-build">Build a deck: Kimi K3 builds one for a goal (up to $1)</option>
             <option value="nightly">Nightly run, now</option>
           </select>
         </div>
@@ -207,6 +239,29 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
     </nav>
     <article id="detail" class="panel detail"><div class="empty">Pick a run to read its report.</div></article>
   </section>
+  </div>
+
+  <div id="tab-accounts" class="tabpanel" role="tabpanel" aria-labelledby="tabbtn-accounts" hidden>
+    <section class="acct-status" id="acct-health"><div class="panel"><div class="empty">Loading…</div></div></section>
+    <section class="panel">
+      <div class="eyebrow">Players</div>
+      <div id="acct-kpis" class="kpis"></div>
+    </section>
+    <section class="status">
+      <div class="panel">
+        <div class="eyebrow">Last 14 days (UTC)</div>
+        <div class="table"><table class="daily" id="acct-days"></table></div>
+        <div class="legend">Sign-ins are completed sign-ins, with the number of people in brackets. Syncs are deck and Showcase saves from the game. New accounts come from the account service's own records.</div>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Invite codes</div>
+        <div id="acct-invites"></div>
+        <div class="legend">While sign-up is for playtesters, each new account uses up one invite. A new code is an App Service setting on viamochi-id (docs/accounts.md).</div>
+        <div class="eyebrow" style="margin-top:20px">Errors, last 24 hours</div>
+        <ul id="acct-errors" class="issues"></ul>
+      </div>
+    </section>
+  </div>
 </div>
 
 <script>
@@ -411,7 +466,7 @@ function renderOptions() {
     'llm-playtest': `<div class="row">${num('games', 'Games', 20, 1, 200)}${select('persona', 'Playtester', [['all', 'Each in turn'], ...meta.personas.map((p) => [p.key, p.name])])}</div>
       <div class="row">${groupSelect('deck', 'LLM plays', groups(['', [['', 'Every matchup, in turn']]], ['Starter decks', starterOptions()], ['Custom decks', customOptions()]))}${groupSelect('vs', 'Against', groups(['', [['starters', 'Every starter deck']]], ['Starter decks', starterOptions().slice().reverse()], ['Custom decks', customOptions()]))}</div>`,
     balance: `<div class="row">${num('scale', 'Size (1 = about 20,000 games)', 1, 0.2, 5, 0.1)}${groupSelect('extra', 'Also against the starters', groups(['', [['', 'No other decks'], ['library', 'Every library deck']]], ['Custom decks', customOptions()]))}</div>`,
-    'deck-build': `<div class="field"><label for="goal">What the deck is for</label><textarea id="goal" rows="2" maxlength="200" required placeholder="e.g. an aggressive Pepper deck, or a fun deck for a beginner"></textarea><span class="hint">Letters, numbers and plain punctuation.</span></div>
+    'deck-build': `<div class="field"><label for="goal">What the deck is for</label><textarea id="goal" rows="2" maxlength="200" required placeholder="e.g. an aggressive Pepper deck, or a fun deck for a beginner"></textarea><span class="hint">Letters, numbers and plain punctuation. Built on the laptop with Kimi K3 on Fireworks (about $0.10–0.40, never more than $1); the good ones go in the deck library.</span></div>
       <div class="row">${select('hero', 'Hero Cat', [['', 'The LLM chooses'], ...(meta.heroes ?? []).map((h) => [h.id, `${h.name} (${h.family})`])])}${groupSelect('bvs', 'Tested against', groups(['', [['starters', 'Every starter deck']]], ['Starter decks', starterOptions()], ['Custom decks', customOptions()]))}</div>
       <div class="row">${num('candidates', 'Decks a round', 3, 1, 6)}${num('rounds', 'Rounds', 2, 1, 4)}</div>`,
     'deck-hunt': `<div class="row">${num('ideas', 'Deck ideas', 6, 1, 12)}</div>`,
@@ -441,12 +496,12 @@ function buildRequest() {
   if (kind === 'deck-build') {
     const goal = safeText($('goal').value), hero = $('hero').value, vs = $('bvs').value;
     return {
-      args: `--provider pc2024 --candidates ${n('candidates')} --rounds ${n('rounds')} --vs ${vs}${hero ? ` --hero ${hero}` : ''} --goal ${goal}`,
+      args: `--provider fireworks-k3 --max-usd 1 --candidates ${n('candidates')} --rounds ${n('rounds')} --vs ${vs}${hero ? ` --hero ${hero}` : ''} --goal ${goal}`,
       label: `Build a deck: ${goal}${vs === 'starters' ? '' : `, against ${deckName(vs)}`}`,
       invalid: goal.length < 3 ? 'Say what the deck is for.' : '',
     };
   }
-  if (kind === 'deck-hunt') return { args: `--provider pc2024 --ideas ${n('ideas')}`, label: `Deck hunt, ${n('ideas')} ideas` };
+  if (kind === 'deck-hunt') return { args: `--provider fireworks-k3 --ideas ${n('ideas')}`, label: `Deck hunt, ${n('ideas')} ideas, Kimi K3` };
   return { args: `--provider pc2024 --hours ${n('hours')}`, label: `Nightly run with ${n('hours')} h of LLM games` };
 }
 $('kind').addEventListener('change', renderOptions);
@@ -460,9 +515,7 @@ $('runform').addEventListener('submit', async (e) => {
   const id = `req-${Date.now()}`;
   $('formnote').textContent = 'Queuing…';
   try {
-    // PC2024's playtester paw takes deck builds as `deck-hunt --goal …` until its next deploy knows `deck-build`.
-    const command = $('kind').value === 'deck-build' ? 'deck-hunt' : $('kind').value;
-    await db.collection('requests').doc(id).set({ id, command, args, label, ...(name ? { name } : {}), status: 'queued', createdAt: new Date().toISOString() });
+    await db.collection('requests').doc(id).set({ id, command: $('kind').value, args, label, ...(name ? { name } : {}), status: 'queued', createdAt: new Date().toISOString() });
     $('formnote').textContent = `Queued: ${name || label}.`;
     $('runname').value = '';
   } catch (err) {
@@ -550,6 +603,61 @@ function renderAll() {
   renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests(); renderSynced(); renderCustoms();
 }
 
+// ── Accounts tab: the Via Mochi services (ops/accounts, written by the relay from `node tools/ops.mjs snapshot`) ──
+let ops = null;
+const fmtNum = (n) => (n == null ? '—' : Number(n).toLocaleString());
+function renderAccounts() {
+  if (!ops) return;
+  const ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+  const names = { 'viamochi-id': ['Account service', 'id.viamochi.com: sign-in, friends, Pawtraits'], 'fruitcats-api': ['Deck sync', 'api.fruitcats.viamochi.com: decks and Showcase'] };
+  $('acct-health').innerHTML = ops.health.map((h) => `<div class="panel svc">
+      <div><b>${esc(names[h.service]?.[0] ?? h.service)}</b><div class="note">${esc(names[h.service]?.[1] ?? '')}</div></div>
+      <span class="pill ${h.ok ? 'pass' : 'block'}">${h.ok ? `Up · ${h.ms} ms` : 'Down'}</span>
+    </div>`).join('') + `<div class="panel svc"><div><b>Checked</b><div class="note">${esc(dayOf(ops.updatedAt))} at ${esc(timeOf(ops.updatedAt))}</div></div><span class="pill ${Date.now() - Date.parse(ops.updatedAt) > 30 * 60000 ? 'warn' : 'pass'}">${esc(ago(ops.updatedAt))}</span></div>`;
+  const week = ops.days.slice(-7);
+  const sum = (k) => week.reduce((t, d) => t + (d[k] ?? 0), 0);
+  const a = ops.accounts;
+  const kpis = [
+    ['Accounts', a?.total, a ? `${a.deleting} being deleted` : 'waiting for the service’s totals'],
+    ['New this week', sum('newAccounts'), 'accounts created'],
+    ['Active this week', ops.activeLast7Days, 'signed in or synced'],
+    ['Sign-ins this week', sum('signins'), `${sum('codes')} code emails sent`],
+    ['Saved decks', ops.decks?.decks, ops.decks ? `in ${ops.decks.accountsWithDecks} account${ops.decks.accountsWithDecks === 1 ? '' : 's'}` : ''],
+    ['Friendships', ops.friendships, ''],
+    ['Contact us', sum('support'), 'messages this week'],
+    ['Errors', sum('errors'), 'this week'],
+  ];
+  $('acct-kpis').innerHTML = kpis.map(([label, n, sub]) => `<div class="kpi"><small>${esc(label)}</small><span class="num">${fmtNum(n)}</span><small>${esc(sub)}</small></div>`).join('');
+  const max = Math.max(1, ...ops.days.map((d) => d.signins + d.syncs));
+  const cell = (n, bad = false) => `<td class="${n ? (bad ? 'bad' : '') : 'zero'}">${n}</td>`;
+  $('acct-days').innerHTML = `<thead><tr><th>Day</th><th>New</th><th>Sign-ins</th><th>Syncs</th><th>Contact</th><th>Errors</th><th class="barcell">Activity</th></tr></thead><tbody>${
+    [...ops.days].reverse().map((d) => `<tr><td>${esc(new Date(d.day + 'T12:00:00Z').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</td>${cell(d.newAccounts)}<td class="${d.signins ? '' : 'zero'}">${d.signins}${d.signins ? ` <span class="note">(${d.signinUsers})</span>` : ''}</td>${cell(d.syncs)}${cell(d.support)}${cell(d.errors, true)}<td class="barcell"><div class="minibar" style="width:${((d.signins + d.syncs) / max) * 100}%"></div></td></tr>`).join('')}</tbody>`;
+  $('acct-invites').innerHTML = ops.invites?.length ? ops.invites.map((i) => `<div class="invite"><span class="mono">${esc(i.code)}</span><span class="track"><span style="width:${Math.min(100, (i.used / i.size) * 100)}%"></span></span><span class="num">${i.used} / ${i.size}</span></div>`).join('')
+    : `<p class="note">${a ? 'No invite codes: sign-up is open to everyone.' : 'Waiting for the service’s totals.'}</p>`;
+  $('acct-errors').innerHTML = ops.recentErrors?.length ? ops.recentErrors.map((e) => `<li><span class="times">${esc(timeOf(e.time))}</span><span><b>${esc(e.event || 'error')}</b> <span class="note">${esc(e.service)}</span>${e.message ? `<br><span class="note">${esc(e.message)}</span>` : ''}</span></li>`).join('')
+    : '<li class="note">None.</li>';
+}
+
+function showTab(tab) {
+  for (const t of ['playtests', 'accounts']) {
+    $(`tab-${t}`).hidden = t !== tab;
+    $(`tabbtn-${t}`).setAttribute('aria-selected', String(t === tab));
+  }
+  $('latest-pill').style.visibility = tab === 'playtests' ? '' : 'hidden';
+  $('eyebrow').textContent = tab === 'playtests' ? 'Fruitcats · automated playtesting' : 'Fruitcats · Via Mochi services';
+  $('title').textContent = tab === 'playtests' ? 'Playtests' : 'Accounts';
+  for (const id of ['subtitle', 'synced']) $(id).hidden = tab !== 'playtests';
+  try { localStorage.setItem('fc-dashboard-tab', tab); } catch { /* fine without it */ }
+  if (tab === 'playtests') renderTrend();
+}
+document.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); });
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const next = $('tabbtn-playtests').getAttribute('aria-selected') === 'true' ? 'accounts' : 'playtests';
+  showTab(next); $(`tabbtn-${next}`).focus();
+});
+try { if (localStorage.getItem('fc-dashboard-tab') === 'accounts') showTab('accounts'); } catch { /* storage may be blocked */ }
+
 let resizeTimer;
 addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderTrend, 150); });
 
@@ -572,8 +680,14 @@ $('runs').addEventListener('click', (e) => {
     for (const id of ['decks', 'runs']) $(id).innerHTML = '<div class="empty">Run data isn\'t available in this view.</div>';
     $('issues').innerHTML = '<li class="note">—</li>';
     $('trend').innerHTML = '';
+    $('acct-health').innerHTML = '<div class="panel"><div class="empty">Account data isn\'t available in this view.</div></div>';
     return;
   }
+  db.doc('ops/accounts').onSnapshot((snap) => {
+    if (!snap.exists) { $('acct-health').innerHTML = '<div class="panel"><div class="empty">No account data yet: it arrives with the relay\'s next sync.</div></div>'; return; }
+    ops = snap.data();
+    renderAccounts();
+  }, () => { /* keeps what it has */ });
   db.collection('runs').orderBy('startedAt', 'desc').limit(300).onSnapshot(
     (snap) => {
       // The form's custom decks include what runs found: fill them in once the runs first arrive.

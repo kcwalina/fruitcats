@@ -2,7 +2,7 @@
 
 This document covers the Store: how Fruitcats sells decks and cards on the web, iPhone, Android and Steam.
 It records the decisions made so far and the steps, in order. Accounts come first and have their own document,
-[accounts-plan.md](accounts-plan.md). Other features still to build (PvP, the ladder) are in
+[accounts.md](accounts.md) (what's left: [accounts-plan.md](accounts-plan.md)). Other features still to build (PvP, the ladder) are in
 [future-plans.md](future-plans.md).
 
 Last updated 2026-09-24.
@@ -14,7 +14,7 @@ Last updated 2026-09-24.
 | **What is sold** | Fixed **decks** and **single cards the player sees before buying**. No random paid packs (loot-box laws), and no free cards earned by playing. The fun of opening a pack comes from a reveal animation after buying. |
 | **Singles** | Bought through a **cart** with a minimum order of about $4.99, because payment fees would eat a $0.99 purchase. No virtual currency. |
 | **Seller** | **You, as an individual.** No LLC or company: the stores and the Merchant of Record are the legal sellers and handle tax, VAT and refunds, as for most indie developers. |
-| **Accounts** | The one **Via Mochi account**: an email, signed in with an emailed code inside the game. See [accounts-plan.md](accounts-plan.md). The Store needs an account, like the Collection. |
+| **Accounts** | The one **Via Mochi account**: an email, signed in with an emailed code inside the game. See [accounts.md](accounts.md). The Store needs an account, like the Collection. |
 | **Age** | Anyone can play solo without an account. Accounts need age **13+**. Buying needs **18+ or a parent's approval** (on iOS, Apple's Ask to Buy). |
 | **Web payments** | A **Merchant of Record: Paddle**, or Lemon Squeezy if Paddle won't onboard an individual. |
 | **Stores** | Web, then **iPhone and Android** (one Capacitor app), then **Steam** (Electron). The same game code everywhere, with no rewrite. |
@@ -58,7 +58,7 @@ Last updated 2026-09-24.
 
 ## Accounts
 
-Covered by [accounts-plan.md](accounts-plan.md): one Via Mochi account per email, signed in with an emailed code
+Covered by [accounts.md](accounts.md): one Via Mochi account per email, signed in with an emailed code
 inside the game, on every platform. The Store only adds the tester list below.
 
 ## Backend: `apps/api`
@@ -266,12 +266,23 @@ is saved either way and can be played once the player has every card.
 | **0** | **Decide and try out** | Rough prices. Paddle trial: sandbox checkout and webhook, and whether Paddle accepts individuals. | your sign-ups |
 | **1** | **Engine and playtest build** | `flags.ts`, the `build:playtest` build and the playtest site; rarity and starter flags; the multi-set card registry; tests | — |
 | **2** | ~~Deck builder, Home, Collection~~ | **Done** | — |
-| **3** | **Accounts** | Done by the accounts plan (phases A0–A2): `apps/api`, sign-in, age check, account deletion, Showcase and decks per account, legal pages. The Store adds only the tester list. | [accounts-plan.md](accounts-plan.md) |
+| **3** | **Accounts** | Done by the accounts plan (phases A0–A2): `apps/api`, sign-in, age check, account deletion, Showcase and decks per account, legal pages. The Store adds only the tester list. How accounts work: [accounts.md](accounts.md). | — |
 | **4** | **Store browsing** (playtest only) | **Built** (not yet deployed): Store tile, catalog, Decks and Cards tabs, cart, missing cards from a deck code, test checkout for testers | 1, 3 |
 | **5** | **Web payments** (playtest only) | Paddle live approval, `/checkout`, webhook grant and revoke, reveal animation, refunds, monitoring, sale schedule | 4, legal pages |
 | **6** | **Soft launch, then launch** | Friends and family as testers with real small purchases, refund drills, lawyer sign-off, then launch day | 5 |
 | **7** | **iPhone and Android** | Capacitor shell, `platform.ts`, StoreKit and Play Billing, Apple and Google webhooks, store listings, Android's 14-day closed test (at least 12 testers) | 6 |
 | **8** | **Steam** | Electron and steamworks.js shell, Steam Microtransactions and sign-in, store page and review, check Valve's price-parity rules for in-game items | 7 |
+
+## From the accounts work
+
+- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Mochi, Nova and Reaper)
+  must also unlock the Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id,
+  RowKey the Pawtrait id) in the same step that grants the card, and remove it on a refund. There's no endpoint for
+  this yet; `viamochi-id` needs a service-to-service one (see [accounts.md](accounts.md), Avatars).
+- **Purchases log:** the `purchases` log category (kept forever, tamper-proof) is designed in
+  [accounts.md](accounts.md) but not created yet; the Store creates it with its first purchase code.
+- **Contact us** in the game is the support channel the Store's receipts and refund policy should point to; there is no
+  support mailbox.
 
 ## Open questions
 

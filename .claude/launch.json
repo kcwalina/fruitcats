@@ -21,6 +21,17 @@
       ],
       "port": 5174,
       "autoPort": true
+    },
+    {
+      "name": "studio-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "studio:dev",
+        "-w",
+        "@fruitcats/api"
+      ],
+      "port": 8787
     }
   ]
 }

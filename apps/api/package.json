@@ -6,7 +6,8 @@
     "build": "esbuild src/server.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/server.mjs --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\"",
     "start": "node dist/server.mjs",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File deploy.ps1",
-    "local": "tsx src/local.ts"
+    "local": "tsx src/local.ts",
+    "studio:dev": "tsx src/studio/dev.ts"
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.2",

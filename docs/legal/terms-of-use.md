@@ -1,7 +1,7 @@
 # Fruitcats and Via Mochi Terms of Use
 
 > **DRAFT for legal review. Not yet in effect.** Written from the decisions in
-> docs/accounts-plan.md and docs/store-plan.md. Items in **[brackets]** must be
+> docs/accounts.md and docs/store-plan.md. Items in **[brackets]** must be
 > confirmed before publishing. The store plan calls for a one-time review by a games or technology lawyer before
 > real sign-ups and before the first sale.
 

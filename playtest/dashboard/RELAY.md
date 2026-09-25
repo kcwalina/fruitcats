@@ -20,15 +20,27 @@ Work in `C:\git\fruitcats`; PC2024's catsitter is `http://192.168.1.74:5280`.
    marked, so the next pass updates them.
    **Clean-up:** `pending` lists requests older than 14 days that aren't queued in
    `playtest/.state/expired-requests.json`; `delete` each from `requests` (one `batch`). Runs are never deleted.
+2b. **Accounts tab.** `node tools/ops.mjs snapshot` (it reads the Via Mochi services' logs and totals as Claude's
+   agent identity, about a minute the first time, seconds after that), then write `playtest/.state/ops.json` with
+   ArtifactData `set` into collection `ops`, document id `accounts` (`get` it first and pass `if_version`, as for
+   `meta/dashboard`). If the snapshot fails, skip this step and carry on: the tab shows how old its data is.
 3. **Requests to PC2024.** ArtifactData `query` collection `requests` where `status == "queued"`,
    ordered by `createdAt` ascending. Take only the oldest one (PC2024 plays one run at a time):
+   - **`deck-build` and `deck-hunt` requests run here on the laptop, not on PC2024**: they use Kimi K3 on
+     Fireworks, whose key only this machine has (PC2024's model can't design decks). Check `args` as below and
+     that it holds `--provider fireworks-k3`, and for `deck-build` `--max-usd 1` (a larger `--max-usd` or another
+     provider: mark it `failed`). For a hunt run `npm run deck-hunt -- <args> --request <id>` the same way. `update` it to `status: "started"`,
+     `startedAt`, `note: "Building on the laptop with Kimi K3."`, then run
+     `npm run deck-build -- <args> --request <id>` and wait for it (a few minutes). Its run is in this
+     checkout's reports, so the next `pending` uploads it; `npm run decks -- import` then keeps its pick
+     (commit `playtest/decks/library.json` only if the checkout has no other changes; otherwise leave it).
+     At most one deck build per pass.
    - `npm run reports -- start <command> --args "<args>" --request <id> --pc2024 http://192.168.1.74:5280`,
      using the request's `command`, `args` and `id` exactly as stored, plus `--name "<name>"` when the request
      has a `name` (the run row then carries it from the start; skip `--name` if it holds a double quote). `command` must be one of `nightly`,
      `balance`, `llm-playtest`, `deck-hunt`, `deck-build`, `llm-compare` and `args` may hold only letters, digits, spaces, dots, commas and
      dashes; if either is not, mark the request `failed` with a note saying so and don't run anything. (A custom deck
-     arrives in `args` as a deck code, `FC1.…`, and a deck build's goal as plain words: both fit. The page sends a
-     deck build as `deck-hunt` with `--goal`, which the runner treats as `deck-build`, until PC2024's paw knows `deck-build`.)
+     arrives in `args` as a deck code, `FC1.…`, and a deck build's goal as plain words: both fit.)
    - Printed `"started":true` (exit 0): `update` the request with `status: "started"`, `startedAt` (now,
      ISO), `note: "Started on PC2024."` If it also printed `Upload now: <file>`, `set` that file into `runs`
      (id = file name without `.json`) and `meta/dashboard` from `playtest/.state/meta.json` right away, in

@@ -22,6 +22,8 @@ playtest/reports/
 playtest/.state/
 playtest/paw/bin/
 playtest/paw/obj/
+.studio-dev/
+.studio-downloads/
 
 # The API run locally (npm run api:local) keeps its rows here.
 .local-api/

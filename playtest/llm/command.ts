@@ -65,8 +65,9 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
   const worker = async () => {
     while (next < o.games && Date.now() < deadline && budget.remaining() > 0) {
       const i = next++;
-      const persona = o.personas[i % o.personas.length];
-      const [deck, vs] = pairs[Math.floor(i / o.personas.length) % pairs.length];
+      // Every matchup once before any repeats, then the next persona: a short run still plays every deck.
+      const [deck, vs] = pairs[i % pairs.length];
+      const persona = o.personas[(Math.floor(i / pairs.length) + i) % o.personas.length];
       const seed = seedFrom(`${o.seedTag ?? run.id}:${i}`);
       try {
         const g = await playLlmGame(o.provider, persona, deck, vs, seed, budget, o.player);

@@ -2,7 +2,7 @@
 //
 // The unattended run PC2024's playtester starts every night:
 //   1. the full bot gauntlet (starters, random and mutated decks, the deck library, card impact, bot check)
-//   2. an LLM deck hunt: decks designed to break the game, played by the bots
+//   2. an LLM deck hunt (only with nightly.huntProvider set: PC2024's model can't design decks)
 //   3. LLM playtest games with custom decks (customShare of the time left): tonight's best hunted decks,
 //      two library decks, a random deck and a starter with cards swapped, each against the starters
 //   4. LLM playtest games with the starter decks until the time is up
@@ -90,11 +90,17 @@ export async function nightlyCommand(): Promise<number> {
       problems.push({ level: 'warn', text: `The LLM provider ${provider.name} was not reachable, so no LLM playtests ran: ${(e as Error).message}` });
     }
     if (reachable) {
-      reportProgress(run, 'nightly', 'deck hunt', 1, 4);
-      log(`Deck hunt with ${provider.name} ${provider.model}…`);
       let hunted: DeckList[] = [];
-      try {
-        const hunt = await runDeckHunt(provider, cfg.deckIdeas, 1);
+      // PC2024's gpt-oss can't design legal decks (it invents Hero Cats and card ids; 0 of 6 on 2026-09-25), so
+      // the nightly hunts only with a model that can, named in nightly.huntProvider. Hunts with Kimi K3 run on
+      // the laptop, which has its key: `npm run deck-hunt -- --provider fireworks-k3`.
+      const huntProvider = (cfg as { huntProvider?: string }).huntProvider;
+      if (!huntProvider) {
+        md.push('## Deck hunt', '', 'Off: PC2024\'s model can\'t design legal decks. Custom decks tonight come from the deck library.', '');
+      } else try {
+        reportProgress(run, 'nightly', 'deck hunt', 1, 4);
+        log(`Deck hunt with ${huntProvider}…`);
+        const hunt = await runDeckHunt(getProvider(huntProvider), cfg.deckIdeas, 1);
         parts.deckHunt = hunt.id;
         hunted = (hunt.details.decks as { name: string; hero: string; cards: Record<string, number> }[]).slice(0, 2).map((d) => ({ name: d.name, hero: d.hero, cards: d.cards }));
         problems.push(...hunt.problems);

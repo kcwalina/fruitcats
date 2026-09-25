@@ -1,4 +1,4 @@
-// Via Mochi sign-in (docs/accounts-plan.md). The only module that knows about Microsoft Entra: the game asks it to
+// Via Mochi sign-in (docs/accounts.md). The only module that knows about Microsoft Entra: the game asks it to
 // start with an email, check a code, and hand out a token; nothing else changes if Entra is ever replaced.
 //
 // Entra's "native authentication" API sends the one-time codes. Browsers can't call it directly, so every call goes
@@ -15,6 +15,8 @@ const SCOPE = `openid offline_access api://${CLIENT_ID}/play`;
 const BIRTH_YEAR = 'extension_6758f33d2f4d4c119a640bcbadfe8dc5_BirthYear';
 const SESSION_KEY = 'viamochi-session';
 /** The Terms of Use version a new account accepts (docs/legal/terms-of-use.md). */
+/** How long any call to the account service may take before the game gives up and says so. */
+const REQUEST_TIMEOUT_MS = 15_000;
 export const TERMS_VERSION = '2026-09-draft-1';
 
 export interface Session {
@@ -71,10 +73,17 @@ export async function token(): Promise<string | null> {
     const entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: s.refreshToken, scope: SCOPE });
     return (await finish(entra, s.email)).token;
   } catch (e) {
-    // Only a rejected refresh token signs the player out; being offline doesn't.
-    if (e instanceof AuthError && e.code !== 'network') signOut();
+    // Only Entra rejecting the refresh token signs the player out. Being offline, or our service being down or slow,
+    // doesn't: they're still signed in once it's back.
+    if (e instanceof AuthError && (e.code === 'invalid_grant' || e.code === 'expired')) signOut();
     return null;
   }
+}
+
+/** Why there's no token: signed out, or the service can't be reached right now. */
+function noToken(): AuthError {
+  return session() ? new AuthError('timeout', 'Via Mochi isn’t answering right now. Please try again in a minute.')
+    : new AuthError('signed_out', 'Please sign in again.');
 }
 
 // ── Signing in and creating accounts ────────────────────────────────────────────────────────────
@@ -184,7 +193,7 @@ export let restoredOnSignIn = false;
 /** Everything held for this account, by the account service and by Fruitcats, as one file's contents. */
 export async function exportData(): Promise<string> {
   const t = await token();
-  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  if (!t) throw noToken();
   const get = async (url: string) => {
     const r = await request(url, { headers: { Authorization: `Bearer ${t}` } });
     if (!r.ok) throw new AuthError('export', 'Couldn’t gather your data. Please try again.');
@@ -197,7 +206,7 @@ export async function exportData(): Promise<string> {
 /** Schedule this account's deletion (30 days; signing in again before then cancels it). Returns the date. */
 export async function deleteAccount(): Promise<Date> {
   const t = await token();
-  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  if (!t) throw noToken();
   const r = await request(`${ID_SERVICE}/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
   if (!r.ok) throw new AuthError('delete', 'Couldn’t delete your account. Please try again.');
   return new Date((await r.json()).deleteAfter);
@@ -209,7 +218,7 @@ export interface Friend { id: string; displayName: string | null; avatar: string
 
 async function withToken(path: string, init: RequestInit = {}): Promise<Response> {
   const t = await token();
-  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  if (!t) throw noToken();
   return request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` } });
 }
 
@@ -260,7 +269,7 @@ export async function avatarCatalog(): Promise<Avatar[]> {
 /** The avatars this account may wear, and the one it wears. Also refreshes the session's copy. */
 export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> }> {
   const t = await token();
-  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  if (!t) throw noToken();
   const r = await request(`${ID_SERVICE}/me`, { headers: { Authorization: `Bearer ${t}` } });
   if (!r.ok) throw new AuthError('me', 'Couldn’t load your account. Please try again.');
   const me = await r.json();
@@ -270,6 +279,18 @@ export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> 
 }
 
 /** Wear an avatar. */
+/** "Contact us": emailed to the team, answered by email (the account's, or `email` when signed out). */
+export async function sendSupport(message: string, email: string): Promise<void> {
+  const t = session() ? await token() : null;
+  const r = await request(`${ID_SERVICE}/support`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+    body: JSON.stringify({ message, email, app: 'Fruitcats', device: navigator.userAgent }),
+  });
+  if (r.status === 429) throw new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
+  if (!r.ok) throw new AuthError('support', (await r.json().catch(() => ({}))).message ?? 'Your message couldn’t be sent. Please try again.');
+}
+
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */
 export function needsTerms(): boolean {
   const s = session();
@@ -279,7 +300,7 @@ export function needsTerms(): boolean {
 /** The player agreed to the current Terms of Use and Privacy Policy: recorded in their account. */
 export async function acceptTerms(): Promise<void> {
   const t = await token();
-  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  if (!t) throw noToken();
   const r = await request(`${ID_SERVICE}/me/terms`, {
     method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ version: TERMS_VERSION }),
@@ -291,7 +312,7 @@ export async function acceptTerms(): Promise<void> {
 
 export async function chooseAvatar(id: string): Promise<void> {
   const t = await token();
-  if (!t) throw new AuthError('signed_out', 'Please sign in again.');
+  if (!t) throw noToken();
   const r = await request(`${ID_SERVICE}/me/avatar`, {
     method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
   });
@@ -313,7 +334,12 @@ async function entraPost(path: string, fields: Record<string, string>): Promise<
 }
 
 async function request(url: string, init: RequestInit): Promise<Response> {
-  try { return await fetch(url, init); } catch { throw new AuthError('network', 'You seem to be offline. Check your connection and try again.'); }
+  // Never wait for ever: a stuck request leaves a greyed-out button and "Loading…" with no way out.
+  try { return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }); } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError')
+      throw new AuthError('timeout', 'Via Mochi isn’t answering right now. Please try again in a minute.');
+    throw new AuthError('network', 'You seem to be offline. Check your connection and try again.');
+  }
 }
 
 /** Entra's errors, in words a player understands. */

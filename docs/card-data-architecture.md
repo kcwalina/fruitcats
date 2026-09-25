@@ -47,11 +47,14 @@ Still to do is listed at the end.
     art/illustrations/<id>.webp        text-free art (Hero Cats: <id>-kitten / <id>-bigcat)
     art/cards/<id>.webp, art/cards/<finish>/<id>.webp   composed by tools/compose_cards.py
     announcement/              its announcement page (index.html, share.jpg)
+    avatars/legend-<name>.webp the Legend Pawtraits that come with its cards (tools/generate_avatars.py)
   ```
 
   The site publishes each folder at stable addresses (`apps/web/vite.config.ts`, contentAssets):
-  `/<set>/<id>.webp`, `/cards/<set>/…` and `/announcements/<set-folder>/`. Pawtraits stay in `art/avatars/`
-  for now: the accounts work and its avatar server use those paths.
+  `/<set>/<id>.webp`, `/cards/<set>/…`, `/announcements/<set-folder>/`, and `/avatars/<id>.webp` for Legend
+  Pawtraits (everyday Pawtraits belong to no set and stay in `art/avatars/`, published at the same address). In
+  the game, Pawtraits are shown from the account service (`id.viamochi.com/avatars/`), which keeps its own copy
+  in the `viamochi-id` repo so every Via Mochi app can use them; a new or redrawn Pawtrait is copied there too.
 
 | Set | Folder | Status | Plugin |
 |---|---|---|---|
@@ -211,6 +214,5 @@ A designer app, `apps/studio`, for contributors who don't change the code. Its w
 
 ## Still to do
 
-1. **Pawtraits into the set folders**: the accounts session is doing it (it serves them from `art/avatars/`).
-2. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
+1. **Left in the web client on purpose:** the tutorial's decks (it teaches with them) and the
    Collection's sample finishes (stand-ins until the Store grants real copies).

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DECKS, deckCode, deckProblems, parseDeckCode, prototypeDecks, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, deckCode, deckProblems, parseDeckCode, prototypeDecks, type DeckList } from '../lib/engine';
 import { mulberry } from '../lib/rng';
-import { fitToSize, playableHeroes, randomDeck } from '../balance/decks';
+import { assembleDeck, playableHeroes, randomDeck } from '../balance/decks';
 import { brokenLibraryDecks, loadDeck, loadDecks } from '../decks/library';
 
 const sorted = (d: DeckList) => ({ ...d, cards: Object.fromEntries(Object.entries(d.cards).sort(([a], [b]) => a.localeCompare(b))) });
@@ -40,18 +40,25 @@ describe('deck library', () => {
   });
 });
 
-describe('fitToSize', () => {
-  it('brings a deck that is only the wrong size to exactly 50, and leaves other problems alone', () => {
-    const base = DECKS['orchard-guard'];
-    const short: DeckList = { ...base, cards: { ...base.cards } };
-    for (const id of Object.keys(short.cards).slice(0, 4)) delete short.cards[id];
-    const long: DeckList = { ...base, cards: { ...base.cards, 'SB1-G05': 3, 'SB1-G01': 3 } };
-    const tooMany: DeckList = { ...long, cards: { ...long.cards, 'SB1-G02': 9 } };
-    for (const d of [short, long]) {
-      const fitted = fitToSize(d, mulberry(1));
-      expect(fitted).not.toBeNull();
-      expect(deckProblems(fitted!.deck)).toEqual([]);
-    }
-    expect(fitToSize(tooMany, mulberry(1))).toBeNull();
+describe('assembleDeck', () => {
+  it('makes a legal deck from a sloppy wish list, and says what it changed', () => {
+    const og = DECKS['orchard-guard'];
+    // Names instead of ids, a Hero Cat by name, too many copies, a third family, and too few cards.
+    const wish: Record<string, number> = {};
+    for (const id of Object.keys(og.cards).slice(0, 10)) wish[CARDS[id].name] = 5;
+    wish['No Such Card'] = 3;
+    const zest = Object.keys(DECKS['zest-rush'].cards).find((id) => CARDS[id].family === 'Citrus')!;
+    const mango = Object.keys(DECKS['mango-tango'].cards).find((id) => CARDS[id].family === 'Tropical')!;
+    wish[zest] = 3; wish[CARDS[mango].name] = 1;
+    const made = assembleDeck('Sloppy', CARDS[og.hero].name.split(',')[0], wish, mulberry(1))!;
+    expect(deckProblems(made.deck)).toEqual([]);
+    expect(made.deck.cards[mango]).toBeUndefined();
+    expect(made.notes.join(' ')).toMatch(/unknown card/);
+    expect(made.notes.join(' ')).toMatch(/Tropical left out/);
+    expect(made.chosen).toBeGreaterThan(20);
+  });
+
+  it('turns down a deck without a Hero Cat it can use', () => {
+    expect(assembleDeck('x', 'Nobody', { 'SB1-G01': 3 }, mulberry(1))).toBeNull();
   });
 });

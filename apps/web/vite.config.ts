@@ -10,7 +10,8 @@ import { defineConfig, type Plugin } from 'vite';
 // /announcements/<set-folder>/ (its announcement page).
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
 // rulebook (rules.html), the card list (cards.html), what's on a card (anatomy.html), and guides to the
-// Collection and to wallpapers.
+// Collection and to wallpapers. And the Artist Studio (studio.html, docs/artist-studio-plan.md), where artists
+// upload their pictures and see them on cards.
 
 /** The documentation's pages, in tab order. `tab` is the section's name in the header; the home has none. */
 const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
@@ -42,6 +43,7 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('index.html', import.meta.url)),
+        studio: fileURLToPath(new URL('studio.html', import.meta.url)),
         ...Object.fromEntries(DOC_PAGES.map((d) => [d.html.replace('.html', ''), fileURLToPath(new URL(d.html, import.meta.url))])),
       },
     },
@@ -187,6 +189,12 @@ function packFiles(): Record<string, string> {
     }, null, 1),
   };
   for (const s of sets) files[`packs/${s.code}/set.json`] = JSON.stringify(s.data);
+  // The Artist Studio (studio.html): each set's art brief, and the list of sets that have one.
+  const briefs = sets.filter((s) => existsSync(join(s.root, 'art', 'brief.json')));
+  files['studio/index.json'] = JSON.stringify({
+    sets: briefs.map((s) => ({ set: s.data.set, code: s.code, name: s.data.name, status: s.data.status, folder: s.folder })),
+  }, null, 1);
+  for (const s of briefs) files[`studio/${s.code}/brief.json`] = readFileSync(join(s.root, 'art', 'brief.json'), 'utf8');
   return files;
 }
 
@@ -198,6 +206,8 @@ function contentMounts(): { url: string; dir: string }[] {
       { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
       { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
       { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
+      // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
+      { url: '/avatars/', dir: join(root, 'avatars') },
     );
   return mounts.filter((m) => existsSync(m.dir));
 }

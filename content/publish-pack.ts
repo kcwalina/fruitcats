@@ -68,6 +68,14 @@ async function main(): Promise<void> {
   const current = await fetch(`${PUBLIC}/index.json`, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : { packs: [] })).catch(() => ({ packs: [] })) as { packs: PackEntry[] };
   const index = { packs: [...current.packs.filter((p) => p.set !== entry.set), entry] };
 
+  // Games that have a set built in take its pack only if the pack's version is higher: a changed set needs a new version.
+  const before = current.packs.find((p) => p.set === entry.set);
+  if (before && before.version === entry.version) {
+    const published = await fetch(`${PUBLIC}/${entry.data}`, { cache: 'no-cache' }).then((r) => (r.ok ? r.text() : '')).catch(() => '');
+    if (published && published !== JSON.stringify(set.data))
+      console.log(`  ! The data changed but the version is still ${entry.version}. Games that have ${set.data.name} built in won't take it: bump "version" in set.json.`);
+  }
+
   console.log(`  → ${PUBLIC}/${entry.data}, ${entry.art}, ${entry.cards}, index.json (${index.packs.length} pack(s))`);
   if (dry) return;
   if (!existsSync(CONFIG_DIR)) throw new Error(`No Azure sign-in at ${CONFIG_DIR} (the Via Mochi deploy identity).`);

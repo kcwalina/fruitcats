@@ -460,7 +460,9 @@ $('runform').addEventListener('submit', async (e) => {
   const id = `req-${Date.now()}`;
   $('formnote').textContent = 'Queuing…';
   try {
-    await db.collection('requests').doc(id).set({ id, command: $('kind').value, args, label, ...(name ? { name } : {}), status: 'queued', createdAt: new Date().toISOString() });
+    // PC2024's playtester paw takes deck builds as `deck-hunt --goal …` until its next deploy knows `deck-build`.
+    const command = $('kind').value === 'deck-build' ? 'deck-hunt' : $('kind').value;
+    await db.collection('requests').doc(id).set({ id, command, args, label, ...(name ? { name } : {}), status: 'queued', createdAt: new Date().toISOString() });
     $('formnote').textContent = `Queued: ${name || label}.`;
     $('runname').value = '';
   } catch (err) {

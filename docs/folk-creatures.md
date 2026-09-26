@@ -16,8 +16,10 @@ open between Veli and Mimi.
 - **Not a game cliché** (no elves, dragons, fox spirits).
 - **A folk of small beings**, so a deck can be a family of characters, like the Domowiki.
 
-The images below are reference pictures from Wikimedia Commons. Many of these creatures have no freely licensed
-picture at all. Following the art guidelines, artists get descriptions in words, not these images.
+The pictures are for reference only. Some come from Wikimedia Commons and are free to use; the others belong to
+their makers, and each section says whose they are and links to where they are shown. None may go into the game.
+Following the art guidelines, artists get descriptions in words, not these pictures. Pictures made with image
+generators were left out.
 
 ## Summary
 
@@ -28,23 +30,23 @@ picture at all. Following the art guidelines, artists get descriptions in words,
 | <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Domovoi.jpg" width="80"> | [Domowiki](#domowiki) | Poland, Slavic | Every home has its own little old house spirit living behind the stove; keep the home kind and he keeps it lucky. [More](https://en.wikipedia.org/wiki/Domovoy) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/SekienKodama.jpg" width="80"> | [Kodama](#kodama) | Japan | Spirits living in old trees; the echo in the mountains is a kodama answering you. [More](https://en.wikipedia.org/wiki/Kodama_(spirit)) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/6/69/An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg" width="80"> | [Pari](#pari) | Persia (Iran) | Winged beings of Persian poetry and fairy tales, once harmful spirits, later the very picture of beauty and goodness. [More](https://en.wikipedia.org/wiki/Par%C4%AB) |
-| (no free image) | [Nuno sa punso](#nuno-sa-punso) | Philippines | The old man of the mound: step past an anthill without saying "tabi tabi po" (excuse me) and he'll make you pay. [More](https://en.wikipedia.org/wiki/Nuno_sa_punso) |
-| (no free image) | [Yech](#yech) | Kashmir, India | A sprite in a white cap that comes near houses on snowy nights; snatch the cap and it grants your wishes. [More](https://searchkashmir.org/yach/) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/6/65/Wudaxian_%28Five_Great_Immortals%29.svg" width="80"> | [Hedgehog Immortals](#hedgehog-immortals) | North China | A hedgehog living in your courtyard may be a spirit that settles in with the family and keeps it prosperous. [More](https://folklore.elpub.ru/jour/article/view/76) |
-| (no free image) | [Mmoatia](#mmoatia) | Akan, Ghana | Foot-high forest folk with backward feet who talk in whistles, love bananas, and teach healing. [More](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Classic_Maya_Clay_Figurine%2C_Jaina_Island%2C_Campeche_-_9757546556.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
+| <img src="https://www.rappler.com/tachyon/2025/10/Tabi-tabi-po.jpg" width="80"> | [Nuno sa punso](#nuno-sa-punso) | Philippines | The old man of the mound: step past an anthill without saying "tabi tabi po" (excuse me) and he'll make you pay. [More](https://en.wikipedia.org/wiki/Nuno_sa_punso) |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/MET_1986_510.jpg" width="80"> | [Yech](#yech) | Kashmir, India | A sprite in a white cap that comes near houses on snowy nights; snatch the cap and it grants your wishes. [More](https://searchkashmir.org/yach/) |
+| <img src="http://k.sinaimg.cn/n/sinacn20190527s/201/w641h360/20190527/2b98-hxntqyz1002047.jpg/w700d1q75cms.jpg" width="80"> | [Hedgehog Immortals](#hedgehog-immortals) | North China | A hedgehog living in your courtyard may be a spirit that settles in with the family and keeps it prosperous. [More](https://folklore.elpub.ru/jour/article/view/76) |
+| <img src="https://archive.org/download/1930-rattray/page/n82_w800.jpg" width="80"> | [Mmoatia](#mmoatia) | Akan, Ghana | Foot-high forest folk with backward feet who talk in whistles, love bananas, and teach healing. [More](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/) |
+| <img src="https://2114141.fs1.hubspotusercontent-na1.net/hubfs/2114141/Imported_Blog_Media/2307-Casita-del-Alux-by-Alberto-Chuc-3.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/7/74/Momoy_I.jpg" width="80"> | [Momoyes](#momoyes) | Andes of Venezuela | Knee-high bearded men of the mountain lakes; leave litter by their lake and they give it back to you. [More](https://es.wikipedia.org/wiki/Momoy) |
-| (no free image) | [Veli](#veli) (recommended for Oceania) | Fiji | Small hairy forest folk who grow their own kava, sing sweetly, and can't resist stealing iron tools. [More](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31) |
+| <img src="https://www.fijitimes.com.fj/wp-content/uploads/2026/04/Fiji_88022.webp" width="80"> | [Veli](#veli) (recommended for Oceania) | Fiji | Small hairy forest folk who grow their own kava, sing sweetly, and can't resist stealing iron tools. [More](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/1/1d/Anbangbang_gallery_Mimi_rock_art_cropped.jpg" width="80"> | [Mimi](#mimi) (Oceania, only with a community partner) | Kunwinjku, Arnhem Land, Australia | Spirits so thin a strong wind could snap them, who live in rock cracks and taught people to paint. [More](https://en.wikipedia.org/wiki/Mimi_(folklore)) |
 
 **Backups**
 
 | | Creature | Backup for | Lore in one line |
 |---|---|---|---|
-| (no free image) | [Devchar](#devchar) | India | Goan prankster spirits, easy to trick into a bottle; villagers leave giant sandals so one can stroll at night. [More](https://talkingmyths.com/the-spirit-in-the-bottle/) |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Shree_dev_bodgeshwar.jpg" width="80"> | [Devchar](#devchar) | India | Goan prankster spirits, easy to trick into a bottle; villagers leave giant sandals so one can stroll at night. [More](https://talkingmyths.com/the-spirit-in-the-bottle/) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Imperial_Encyclopaedia_-_Animal_Kingdom_-_pic291_-_%E7%95%B6%E5%BA%B7%E5%9C%96.png" width="80"> | [Dangkang](#dangkang) | China | A tusked pig-beast that cries out its own name and announces a great harvest. [More](https://baike.baidu.com/en/item/Dangkang/25344) |
-| (no free image) | [Aziza](#aziza) | Africa | Little hairy folk living in anthills who help hunters and taught people to use fire. [More](https://en.wikipedia.org/wiki/Aziza_(mythology)) |
-| (no free image) | [Wiklatmu'j](#wiklatmuj) | North America | Mi'kmaq rock people whose favourite joke is tying knots in your hair. [More](http://www.native-languages.org/wiklatmuj.htm) |
+| <img src="https://www.reciprocitree.com/wp-content/uploads/2019/05/Aziza-by-Cherubinoir-1-300x300.jpg" width="80"> | [Aziza](#aziza) | Africa | Little hairy folk living in anthills who help hunters and taught people to use fire. [More](https://en.wikipedia.org/wiki/Aziza_(mythology)) |
+| <img src="https://assets-artbooks.artcanada.com/wp-content/uploads/2026/06/19100728/michael-francis-micmac-legends-little-people-1a.jpg" width="80"> | [Wiklatmu'j](#wiklatmuj) | North America | Mi'kmaq rock people whose favourite joke is tying knots in your hair. [More](http://www.native-languages.org/wiklatmuj.htm) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/La_Pincoya.jpg" width="80"> | [Pincoya](#pincoya) | South America | A girl dressed in seaweed whose dance on the beach decides whether the fish come. [More](https://en.wikipedia.org/wiki/Pincoya) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/9/9e/Patupaiarehe_%28V._Deroles%29.jpg" width="80"> | [Patupaiarehe](#patupaiarehe) | Oceania | Pale fairy folk of the mountain mist who play flutes; a chief tricked them and learned to make fishing nets. [More](https://en.wikipedia.org/wiki/Patupaiarehe) |
 
@@ -92,6 +94,7 @@ throwing water outside, still say "tabi tabi po" ("excuse me, please let me pass
 and he may make your foot swell; be polite and he leaves you alone.
 
 - More: [Wikipedia, Nuno sa punso](https://en.wikipedia.org/wiki/Nuno_sa_punso)
+- Image: the "Tabi tabi po" mural in Bonifacio Global City, Taguig: a nuno in a salakot hat asleep in his mound. Copyrighted; shown in [Rappler](https://www.rappler.com/culture-desk/noteworthy/bonifacio-global-city-must-see-murals-meaning/).
 
 ### Yech
 
@@ -108,6 +111,7 @@ lentils) outside for it.
 - Care: one newspaper column says it feeds on corpses; no other source does. Leave that out. Khichri Amavasya is a
   living custom, so show it respectfully.
 - More: [SearchKashmir, Yach](https://searchkashmir.org/yach/)
+- Image: a 9th-century Kashmiri stone pedestal with a Yaksha, the Yech's ancient ancestor ([The Met](https://www.metmuseum.org/art/collection/search/38406), public domain). No picture of the white-capped sprite itself exists that we could find; [SearchKashmir shows a Khichri Amavasya offering](https://searchkashmir.org/khich-mavas-feast-for-yetis-and-dogs/).
 
 ### Hedgehog Immortals
 
@@ -124,7 +128,7 @@ White Immortal is a healer who appears as a white-haired old woman.
   deck to the household hedgehogs.
 - More: [Mazo, "Were-hedgehogs in Chinese texts"](https://folklore.elpub.ru/jour/article/view/76),
   [Wikipedia, Wudaxian](https://en.wikipedia.org/wiki/Wudaxian)
-- Image: the Five Great Immortals.
+- Image: a modern cartoon of the Five Great Immortals, each holding its sign; the hedgehog holds 白. Copyrighted; shown in [Sina](https://k.sina.cn/article_6319522468_178ac42a400100kt73.html). Few pictures of the hedgehog immortal exist online.
 
 ### Mmoatia
 
@@ -141,6 +145,7 @@ tricks.
 - Care: a living belief; show them as spirits, never as demons.
 - More: [Pursiful, Mmoatia](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/),
   [Rattray, Akan-Ashanti Folk-Tales](https://archive.org/details/akanashantifolkt0000ratt)
+- Image: "Then the hunter fired a gun at the fairies", drawn by an Akan student at Achimota for Rattray's book (1930, [public domain](https://archive.org/details/1930-rattray/page/n82/mode/1up)): mmoatia playing under a banana tree.
 
 ### Alux
 
@@ -154,7 +159,7 @@ a ceremony for the aluxes before breaking ground.
 
 - Care: a living, openly shared belief. A Maya or Yucatecan reviewer would help.
 - More: [Wikipedia, Alux](https://en.wikipedia.org/wiki/Alux)
-- Image: a Classic Maya clay figurine from Jaina Island, not an alux, but the look the stories describe.
+- Image: a stone alux house in Yucatán with a small alux on top. Photo by Alberto Chuc, copyrighted; shown in [Yucatán Today](https://yucatantoday.com/en/blog/a-house-for-an-alux).
 
 ### Momoyes
 
@@ -169,6 +174,7 @@ and their party brings wind and rain.
 - Why it fits: benign and mischievous defenders of nature, already a whole folk of small beings, and almost unknown
   outside Venezuela.
 - More: [Wikipedia (Spanish), Momoy](https://es.wikipedia.org/wiki/Momoy)
+- Image: a painted wooden Momoy with a long black beard and a tall hat ([Commons](https://commons.wikimedia.org/wiki/File:Momoy_I.jpg), CC BY-SA 3.0). There is also a [stone Momoy statue in Boconó](https://www.curiosoteatro.com/2024/11/descubre-la-fascinante-leyenda-del-momoy.html).
 
 ### Veli
 
@@ -183,6 +189,7 @@ their one known vice is stealing iron tools.
 - Trade-off: it is Oceania, not Australia, and it is a little close to the Mmoatia (both small forest folk).
 - Care: still a living belief for older Fijians; a Fijian reviewer would help.
 - More: [ANU Press, "Fiji: A Place Called Home"](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31)
+- Image: an ink drawing of a veli in the forest. Copyrighted; shown in [The Fiji Times](https://www.fijitimes.com.fj/folklore-the-little-people-of-the-land-encounter-on-the-mountain/).
 
 ### Mimi
 
@@ -210,6 +217,7 @@ Devchar into a bottle through a keyhole. At one guardian's shrine, villagers lea
 stroll the village at night. Accounts vary a lot, from a tiny bearded prankster to a giant in a white dhoti.
 
 - More: [Talking Myths, The spirit in the bottle](https://talkingmyths.com/the-spirit-in-the-bottle/)
+- Image: the idol of Dev Bodgeshwar in Mapusa, a Goan guardian spirit of the same kind, not a Devchar itself ([Commons](https://commons.wikimedia.org/wiki/File:Shree_dev_bodgeshwar.jpg), CC BY-SA 4.0). No picture of a Devchar exists that we could find; photographing the Gade rites that call on them is said to be forbidden.
 
 ### Dangkang
 
@@ -220,7 +228,7 @@ harvest. It could lead a family of lucky beasts from the same book, such as the 
 white tail that you can keep to chase away sorrow.
 
 - More: [Baidu Baike, Dangkang](https://baike.baidu.com/en/item/Dangkang/25344)
-- Image: Dangkang in the Qing imperial encyclopaedia.
+- Image: Dangkang in the Qing imperial encyclopaedia ([Commons](https://commons.wikimedia.org/wiki/File:Imperial_Encyclopaedia_-_Animal_Kingdom_-_pic291_-_%E7%95%B6%E5%BA%B7%E5%9C%96.png), public domain).
 
 ### Aziza
 
@@ -233,6 +241,7 @@ said to have taught people to use fire.
 - Care: the winged "fairy" Aziza seen online is probably a Western addition; draw them hairy and wingless. Aziza is
   linked to the power of Vodun charms, and some traditions treat it as a single god.
 - More: [Wikipedia, Aziza](https://en.wikipedia.org/wiki/Aziza_(mythology))
+- Image: modern art of a small, hairy Aziza among flowers, by Cherubinoir. Copyrighted; shown in [Reciprocitree](https://www.reciprocitree.com/uncategorized/the-aziza-faerie-of-dahomey-west-africa/). No traditional Fon picture was found.
 
 ### Wiklatmu'j
 
@@ -244,6 +253,7 @@ them.
 
 - Care: openly taught, including by First Nations schools; still ask a Mi'kmaq reviewer.
 - More: [Native Languages, Wiklatmu'j](http://www.native-languages.org/wiklatmuj.htm)
+- Image: "Micmac Indian Legends of the Little People", a 1963 screen print by the Mi'kmaw artist Michael Francis: little people in a birchbark canoe. Copyrighted; shown by the [Art Canada Institute](https://www.aci-iac.ca/art-books/wabanaki-modern/key-works/legends-of-the-little-people/).
 
 ### Pincoya
 
@@ -254,6 +264,7 @@ faces the land, the village has wronged the sea and the catch will be poor. She 
 father Millalobo, the gold-covered king of the sea, her mother Huenchula, and her brother Pincoy.
 
 - More: [Wikipedia, Pincoya](https://en.wikipedia.org/wiki/Pincoya)
+- Image: the Pincoya statue in Ancud ([Commons](https://commons.wikimedia.org/wiki/File:La_Pincoya.jpg), CC BY 2.0).
 
 ### Patupaiarehe
 
@@ -265,6 +276,7 @@ undone until dawn chased them off, and that is how people learned to make fishin
 
 - Care: some traditions include abductions. Widely published, but work with a Māori artist or advisor.
 - More: [Wikipedia, Patupaiarehe](https://en.wikipedia.org/wiki/Patupaiarehe)
+- Image: a painting of patupaiarehe by V. Deroles ([Commons](https://commons.wikimedia.org/wiki/File:Patupaiarehe_(V._Deroles).jpg)).
 
 ## Rejected
 

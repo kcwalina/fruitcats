@@ -190,7 +190,6 @@ their one known vice is stealing iron tools.
 - More: [ANU Press, "Fiji: A Place Called Home"](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31)
 - Image: an ink drawing of a veli in the forest. Copyrighted; shown in [The Fiji Times](https://www.fijitimes.com.fj/folklore-the-little-people-of-the-land-encounter-on-the-mountain/).
 
-
 ## Backups
 
 ### Devchar
@@ -284,13 +283,13 @@ not in the game.
 
 | Tile | Creature | What it shows |
 |---|---|---|
-| Solo | [Kodama](#kodama) | At the roots of its old tree with a small lantern: you call out alone, and the echo answers. |
+| Solo | [Domowiki](#domowiki) | Waving you in at a small door with warm light: come in and play by the stove. |
 | Friend | [Hedgehog Immortals](#hedgehog-immortals) | Two household hedgehogs passing a card. |
 | Ranked | [Pari](#pari) | Lifting a little golden cup, like the Persian painting above. |
 | Collection | [Yech](#yech) | In its white cap in the snow, a bowl of khichri beside it, hugging a stack of cards. |
 | Store | [Veli](#veli) | Behind a small stall with wild bananas and a kava bowl, wearing tapa cloth. |
 | Deck builder | [Nuno sa punso](#nuno-sa-punso) | On top of his mound in a salakot hat, fanning out cards. |
-| Tutorial | [Domowiki](#domowiki) | Waving you in at a small door with warm light. |
+| Tutorial | [Kodama](#kodama) | At the roots of its old tree with a small lantern, lighting the way for a new player. |
 | Documentation | [Mmoatia](#mmoatia) | Under a banana leaf, reading a big book of herbs (they teach healing). |
 
 - Left out on purpose: Alux (shown as small Maya people; wait for a

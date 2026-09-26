@@ -6,6 +6,7 @@ export {
 } from './cards';
 export {
   DECK_RULES, NEUTRAL_FAMILY, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem, deckCode, parseDeckCode,
+  sameCards, builtInTwin, starterBase, deckChanges,
 } from './decks';
 export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef } from './cards';
 export {

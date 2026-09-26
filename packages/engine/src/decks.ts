@@ -1,7 +1,7 @@
 // Deckbuilding rules (rulebook §11.1): which decks are legal, and why a card can't be added to one.
 // Messages are written for players, since the deck builder shows them as they are.
 
-import { CARDS, isNeutralFamily, type DeckList } from './cards';
+import { CARDS, DECKS, isNeutralFamily, type DeckList } from './cards';
 import { DECK_SIZE, cardName } from './engine';
 
 export const DECK_RULES = {
@@ -128,4 +128,44 @@ export function parseDeckCode(code: string): DeckList | null {
     cards[q[1]] = (cards[q[1]] ?? 0) + Number(q[2] ?? 1);
   }
   return { name: m[1].replace(/-/g, ' ').trim() || `${cardName(m[2])}'s deck`, hero: m[2], cards };
+}
+
+/** The same Hero Cat and the same cards (the name doesn't matter). */
+export function sameCards(a: DeckList, b: DeckList): boolean {
+  if (a.hero !== b.hero) return false;
+  const ids = new Set([...Object.keys(a.cards), ...Object.keys(b.cards)]);
+  return [...ids].every((id) => (a.cards[id] ?? 0) === (b.cards[id] ?? 0));
+}
+
+/** The key of the game's own deck (a starter) this deck is exactly the same as, or null. */
+export function builtInTwin(deck: DeckList): string | null {
+  return Object.keys(DECKS).find((key) => sameCards(deck, DECKS[key])) ?? null;
+}
+
+/**
+ * The starter deck this deck was made from, or null: the starter with the same Hero Cat that shares the most
+ * cards with it, when at least half of the deck is still that starter's. It's worked out from the cards, not
+ * stored, so it holds on every device and for a deck from a code too.
+ */
+export function starterBase(deck: DeckList): string | null {
+  let best: string | null = null;
+  let bestShared = Math.ceil(DECK_RULES.size / 2) - 1;
+  for (const [key, starter] of Object.entries(DECKS)) {
+    if (starter.hero !== deck.hero) continue;
+    const shared = Object.entries(starter.cards).reduce((n, [id, qty]) => n + Math.min(qty, deck.cards[id] ?? 0), 0);
+    if (shared > bestShared) { best = key; bestShared = shared; }
+  }
+  return best;
+}
+
+/** What changed from `base` to `deck`: copies put in (card id → how many more) and copies taken out. */
+export function deckChanges(deck: DeckList, base: DeckList): { added: Record<string, number>; removed: Record<string, number> } {
+  const added: Record<string, number> = {};
+  const removed: Record<string, number> = {};
+  for (const id of new Set([...Object.keys(deck.cards), ...Object.keys(base.cards)])) {
+    const diff = (deck.cards[id] ?? 0) - (base.cards[id] ?? 0);
+    if (diff > 0) added[id] = diff;
+    else if (diff < 0) removed[id] = -diff;
+  }
+  return { added, removed };
 }

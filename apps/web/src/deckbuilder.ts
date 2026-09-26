@@ -4,8 +4,8 @@
 // ever lost; Done just goes back to your decks.
 
 import {
-  CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, cardName, catCount, copyLimit, deckCode, deckSize, otherFamilies,
-  parseDeckCode, type DeckList,
+  CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, builtInTwin, cardName, catCount, copyLimit, deckChanges, deckCode,
+  deckSize, otherFamilies, parseDeckCode, starterBase, type DeckList,
 } from '@fruitcats/engine';
 import { missingForDeck } from '@fruitcats/store';
 import { owned, ownedCards, ownedHeroes } from './collection';
@@ -42,6 +42,8 @@ let importText = '';
 let importError = '';
 /** "Copied" under Copy deck code, until the next tap. */
 let codeNote = '';
+/** Done was tapped on a deck with exactly a starter's cards: the dialog saying it isn't kept. */
+let twinAsk = false;
 
 export interface BuilderHost {
   render(): void;
@@ -80,15 +82,24 @@ function edit(deck: MyDeck, fresh: boolean) {
 }
 
 function leave() {
+  twinAsk = false;
   page = 'list';
   editing = null;
   starterKey = null;
 }
 
 function save() {
-  if (!editing) return;
+  // A deck with exactly the cards of one of the game's own decks isn't kept: that deck is already in the game.
+  // What's stored stays as it was before, until a change makes the deck different again.
+  if (!editing || builtInTwin(editing)) return;
   saveDeck(editing);
   isNew = false;
+}
+
+/** Done: back to your decks, unless the deck is the same as a starter, which gets a word first. */
+function done() {
+  if (editing && builtInTwin(editing)) twinAsk = true;
+  else leave();
 }
 
 function change(id: string, delta: number) {
@@ -110,6 +121,19 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
   codeNote = '';
   switch (action) {
     case 'list': leave(); break;
+    case 'done': done(); break;
+    case 'twinstay': twinAsk = false; break;
+    case 'twinleave': twinAsk = false; leave(); break;
+    // A starter's cards as a new deck of your own, to change. It's kept once it's different from the starter.
+    case 'copy': {
+      const starter = DECKS[arg];
+      if (!starter) break;
+      const deck = newDeck(starter.hero);
+      deck.name = `My ${starter.name}`.slice(0, 40);
+      deck.cards = { ...starter.cards };
+      edit(deck, true);
+      break;
+    }
     case 'new': page = 'new'; newName = ''; break;
     case 'hero': {
       if (!ownedHeroes().includes(arg)) break;
@@ -219,6 +243,8 @@ function importDeck(): void {
   const parsed = parseDeckCode(importText.replace(/\s+/g, ''));
   if (!parsed) { importError = 'That isn’t a deck code. Copy the whole code and paste it here.'; return; }
   if (CARDS[parsed.hero]?.type !== 'Hero Cat') { importError = 'This deck’s Hero Cat isn’t in the game yet.'; return; }
+  const twin = builtInTwin(parsed);
+  if (twin) { importError = `That’s the ${DECKS[twin].name} starter deck. It’s already in the game, under Starter decks.`; return; }
   const deck = newDeck(parsed.hero);
   deck.name = parsed.name.slice(0, 40);
   deck.cards = Object.fromEntries(Object.entries(parsed.cards).filter(([id]) => CARDS[id] && CARDS[id].type !== 'Hero Cat'));
@@ -232,13 +258,35 @@ let importedWithMissing = false;
 
 /** Tells the player their work is kept, since there's no Save button to press. */
 function saveState(): string {
+  const twin = editing && builtInTwin(editing);
+  if (twin) return `<span class="save-state twin">Same as the ${esc(DECKS[twin].name)} starter · change a card to keep it</span>`;
   return isNew
     ? '<span class="save-state">Changes save as you go</span>'
     : '<span class="save-state saved">All changes saved ✓</span>';
 }
 
 export function renderDeckBuilder(): string {
-  return renderPage() + renderDeleteDialog() + (importing && page === 'list' ? renderImportDialog() : '');
+  return renderPage() + renderDeleteDialog() + (importing && page === 'list' ? renderImportDialog() : '')
+    + (twinAsk && page === 'edit' ? renderTwinDialog() : '');
+}
+
+/** Done on a deck with exactly a starter's cards: it isn't kept, and here's why. */
+function renderTwinDialog(): string {
+  const twin = editing && builtInTwin(editing);
+  if (!twin) { twinAsk = false; return ''; }
+  const starter = DECKS[twin];
+  return `<div class="overlay">
+    <div class="settings delete-dialog" role="alertdialog" aria-label="Same as a starter deck">
+      <img class="delete-art" src="${artUrl(`${starter.hero}-kitten`)}" alt="">
+      <h2>This is the ${esc(starter.name)} deck</h2>
+      <p>It has the same cards as the ${esc(starter.name)} starter deck, which is already in the game, so it isn’t kept.
+        Change a card to make it your own.${isNew ? '' : ' If you leave, your deck stays as it was before.'}</p>
+      <div class="delete-buttons">
+        <button data-click="deck:twinleave">Leave</button>
+        <button class="primary" data-click="deck:twinstay">Change a card</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderImportDialog(): string {
@@ -291,6 +339,9 @@ const BIN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" 
 // ── Your decks ───────────────────────────────────────────────────────────────────────────────────
 
 function deckTile(click: string, deck: DeckList, tag: string, status = ''): string {
+  // Your own deck made from a starter says which.
+  const from = click.startsWith('deck:open:') ? starterBase(deck) : null;
+  if (from) tag += `<span class="from-tag">From ${esc(DECKS[from].name)}</span>`;
   const hero = CARDS[deck.hero];
   const families = [hero.family, ...otherFamilies(deck)].join(' + ');
   return `
@@ -405,6 +456,8 @@ function sortCards(ids: string[], order: string[]): string[] {
 function renderBuilder(): string {
   const deck = shownDeck()!;
   const readOnly = !editing;
+  const baseKey = readOnly ? null : starterBase(deck);
+  const base = baseKey ? DECKS[baseKey] : null;
   const order = familyOrder(deck);
   const size = deckSize(deck);
   const issues = problems(deck);
@@ -425,7 +478,8 @@ function renderBuilder(): string {
       data-zoom="${yourCardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">`;
   const bar = readOnly
     ? `${backButton('deck:list', 'Your decks')}${portrait}
-      <div class="build-title"><h2>${esc(deck.name)}</h2><span class="save-state">Starter deck · can't be changed</span></div>`
+      <div class="build-title"><h2>${esc(deck.name)}</h2><span class="save-state">Starter deck</span></div>
+      <button class="primary done-deck copy-deck" data-click="deck:copy:${starterKey}">Make my own</button>`
     : `${portrait}<div class="build-title">
         <label class="name-edit">
           <input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done" autocomplete="off">
@@ -433,7 +487,7 @@ function renderBuilder(): string {
         </label>
         ${saveState()}
       </div>
-      <button class="primary done-deck" data-click="deck:list">Done</button>`;
+      <button class="primary done-deck" data-click="deck:done">Done</button>`;
 
   return `
   <div class="menu decks builder ${readOnly ? 'read-only' : ''} ${sheetOpen ? 'sheet-open' : ''}">
@@ -445,17 +499,33 @@ function renderBuilder(): string {
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Cats <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
     </div>
+    ${base ? renderChanges(deck, base) : ''}
     ${readOnly ? '' : renderMissing(deck)}
     ${readOnly ? '' : renderFilters(order)}
     ${message ? `<p class="build-message" role="status">${esc(message)}</p>` : ''}
     <div class="build-main">
       <div class="pool" data-keep-scroll="pool">
-        ${pool.length ? pool.map((id) => renderPoolCard(deck, id, readOnly)).join('') : '<p class="pool-empty">No cards match these filters.</p>'}
+        ${pool.length ? pool.map((id) => renderPoolCard(deck, id, readOnly, base)).join('') : '<p class="pool-empty">No cards match these filters.</p>'}
       </div>
-      ${renderDeckPanel(deck, order, readOnly, ready)}
+      ${renderDeckPanel(deck, order, readOnly, ready, base)}
     </div>
   </div>`;
 }
+
+/** A deck made from a starter: which one, and how many cards differ (the new ones are marked in blue). */
+function renderChanges(deck: DeckList, base: DeckList): string {
+  const { added, removed } = deckChanges(deck, base);
+  const count = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+  const put = count(added);
+  const out = count(removed);
+  const what = put || out
+    ? [put ? `<span class="chg-new">${put} new</span>` : '', out ? `${out} taken out` : ''].filter(Boolean).join(' · ')
+    : 'no changes yet';
+  return `<div class="changes-bar">Made from <b>${esc(base.name)}</b> · ${what}</div>`;
+}
+
+/** A card the starter doesn't have says "New"; more copies than the starter has says "+1". */
+const newLabel = (count: number, inBase: number) => (inBase ? `+${count - inBase}` : 'New');
 
 /**
  * A deck holding cards you don't have (a deck from a code, or after test purchases were removed) says how many, and
@@ -483,7 +553,7 @@ function renderFilters(order: string[]): string {
     </div>`;
 }
 
-function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
+function renderPoolCard(deck: DeckList, id: string, readOnly: boolean, base: DeckList | null): string {
   const name = CARDS[id].name;
   const count = deck.cards[id] ?? 0;
   if (readOnly) {
@@ -495,11 +565,13 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
   const maxed = count >= usable;
   const blocked = !maxed && addProblem(deck, id, owned, true) !== null;
   const pips = Array.from({ length: usable }, (_, i) => `<i class="${i < count ? 'on' : ''}"></i>`).join('');
+  const added = !!base && count > (base.cards[id] ?? 0);
   return `
-    <div class="pool-card ${blocked ? 'blocked' : ''} ${maxed ? 'maxed' : ''} ${count ? 'in-deck' : ''}">
+    <div class="pool-card ${blocked ? 'blocked' : ''} ${maxed ? 'maxed' : ''} ${count ? 'in-deck' : ''} ${added ? 'added' : ''}">
       <button class="pool-face" data-click="deck:add:${id}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}"
         aria-label="Add ${esc(name)} (${count} of ${usable} in deck)">
         <img src="${yourCardUrl(id)}" alt="" decoding="async"></button>
+      ${added ? `<span class="new-badge">${newLabel(count, base!.cards[id] ?? 0)}</span>` : ''}
       <div class="pool-foot">
         <span class="pips" title="${count} of ${usable} in your deck">${pips}</span>
         ${count ? `<button class="pool-remove" data-click="deck:remove:${id}" aria-label="Remove one ${esc(name)}">−</button>` : ''}
@@ -507,7 +579,11 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean): string {
     </div>`;
 }
 
-function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, ready: boolean): string {
+function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, ready: boolean, base: DeckList | null): string {
+  // A deck made from a starter lists what it took out of it, under its own cards.
+  const removed = base ? deckChanges(deck, base).removed : {};
+  const out = sortCards(Object.keys(removed), order).sort((a, b) => (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0));
+  const isAdded = (id: string) => !!base && deck.cards[id] > (base.cards[id] ?? 0);
   const ids = sortCards(Object.keys(deck.cards), order).sort((a, b) => (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0));
   const size = deckSize(deck);
   // The cost curve: how many cards at each cost, 7 and up together.
@@ -529,15 +605,23 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           </div>
           <ul class="deck-lines" data-keep-scroll="deck">
             ${ids.length ? ids.map((id) => `
-              <li class="${famClass(id)} ${!readOnly && owned(id) < deck.cards[id] ? 'short' : ''}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
+              <li class="${famClass(id)} ${!readOnly && owned(id) < deck.cards[id] ? 'short' : ''} ${isAdded(id) ? 'added' : ''}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
                 <span class="line-cost">${CARDS[id].cost ?? ''}</span>
-                <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}${!readOnly && owned(id) < deck.cards[id]
+                <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}${isAdded(id)
+                  ? ` <small class="line-new">${newLabel(deck.cards[id], base!.cards[id] ?? 0)}</small>` : ''}${!readOnly && owned(id) < deck.cards[id]
                   ? ` <small class="line-short">${owned(id) ? `you have ${owned(id)}` : 'not yours yet'}</small>` : ''}</span>
                 ${readOnly ? `<span class="line-qty">×${deck.cards[id]}</span>` : `
                 <button class="line-btn" data-click="deck:remove:${id}" aria-label="Remove one ${esc(cardName(id))}">−</button>
                 <span class="line-qty">${deck.cards[id]}</span>
                 <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}" ${addProblem(deck, id, owned, true) ? 'disabled' : ''}>+</button>`}
               </li>`).join('') : '<li class="deck-empty">Tap cards to add them to your deck.</li>'}
+            ${out.length ? `<li class="deck-out-head">Taken out of ${esc(base!.name)}</li>${out.map((id) => `
+              <li class="${famClass(id)} taken-out" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
+                <span class="line-cost">${CARDS[id].cost ?? ''}</span>
+                <span class="line-name">${esc(cardName(id))}</span>
+                <span class="line-qty">−${removed[id]}</span>
+                <button class="line-btn" data-click="deck:add:${id}" aria-label="Put back one ${esc(cardName(id))}" ${addProblem(deck, id, owned, true) ? 'disabled' : ''}>+</button>
+              </li>`).join('')}` : ''}
           </ul>
           <div class="deck-actions">
             ${size ? `<button class="copy-code" data-click="deck:copycode">${CODE} Copy deck code</button>` : ''}

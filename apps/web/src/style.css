@@ -556,7 +556,8 @@ button.copy-code:hover { background: rgba(61, 157, 82, 0.1); box-shadow: none; }
 .build-bar {
   grid-template-columns: auto minmax(0, 1fr) auto; max-width: none; gap: 10px; padding: 6px 10px; border-radius: 18px;
 }
-.read-only .build-bar { grid-template-columns: auto auto minmax(0, 1fr); }
+.read-only .build-bar { grid-template-columns: auto auto minmax(0, 1fr) auto; }
+button.copy-deck { white-space: nowrap; }
 .bar-hero { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #fff6dc, 0 0 0 4px var(--fam, var(--parchment-edge)); }
 .build-title { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-align: left; }
 .setup-bar.build-bar h2 {   /* beats skin.css's white menu heading: this one sits on parchment */
@@ -667,6 +668,34 @@ button.pool-remove { width: 28px; height: 28px; padding: 0; border-radius: 50%; 
 .line-qty { font-weight: 800; min-width: 18px; text-align: center; }
 button.line-btn { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 18px; line-height: 1; }
 button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
+/* A deck made from a starter: its cards the starter doesn't have are marked in blue ("New", or "+1" for an extra
+   copy), and the cards it took out are listed after, faded and struck through, with + to put one back. */
+.changes-bar {
+  width: min(760px, 100%); padding: 6px 12px; border-radius: 14px; text-align: center; font-size: 14px; font-weight: 700;
+  color: #2b4f73; background: #eaf4ff; box-shadow: inset 0 0 0 2px #9cc8f0;
+}
+.chg-new { color: #1f6fc0; }
+.deck-lines li.added { background: #e3f0ff; box-shadow: inset 0 0 0 2px #7fb6ec; }
+.line-new {
+  display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 11px; line-height: 16px; vertical-align: 1px;
+  color: #fff !important; background: #2f80d0;
+}
+.deck-lines li.deck-out-head {
+  display: block; border: none; background: none; margin: 10px 0 4px; padding: 0 2px;
+  font-size: 12.5px; font-weight: 800; color: var(--muted);
+}
+.deck-lines li.taken-out { grid-template-columns: 24px minmax(0, 1fr) auto auto; background: rgba(255, 255, 255, 0.3); }
+.taken-out .line-cost, .taken-out .line-name, .taken-out .line-qty { opacity: 0.55; }
+.taken-out .line-name { text-decoration: line-through; }
+.pool-card.added .pool-face img { box-shadow: 0 0 0 3px #3b8ee0, var(--shadow); }
+.new-badge {
+  position: absolute; top: -6px; left: -4px; z-index: 1; padding: 1px 8px; border-radius: 999px; pointer-events: none;
+  font: 800 12px/18px Fredoka, Nunito, sans-serif; color: #fff; background: #2f80d0; box-shadow: 0 1px 3px rgba(20, 50, 90, 0.4);
+}
+.save-state.twin { color: #1f5f9e; }
+.from-tag {
+  font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 8px; border-radius: 999px; background: #3b82c4;
+}
 .sheet-lead { margin: 0; font-size: 14px; display: none; }
 .deck-actions { display: flex; flex-direction: column; gap: 8px; flex: none; }
 .deck-actions .play-button { font-size: 18px; padding: 10px 12px; }

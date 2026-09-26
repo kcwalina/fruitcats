@@ -36,6 +36,22 @@ export interface Table {
   where<T extends Row>(match: Record<string, string>): Promise<T[]>;
 }
 
+/**
+ * Write `row` if `wins(stored)` says it should replace the row stored now (null: there's none). The check and the write
+ * are one step, guarded by the stored row's etag: when another write lands in between (two devices syncing at the same
+ * moment, a retry racing its first try), the row is read again and the question asked again, so an older version can
+ * never overwrite a newer one. `stored` is the row as already read, if it was. Returns the row that now stands.
+ */
+export async function writeIf<T extends Row>(table: Table, row: Row, wins: (stored: T | null) => boolean, stored?: T | null): Promise<Row | null> {
+  let now = stored !== undefined ? stored : await table.get<T>(row.partitionKey, row.rowKey);
+  for (let i = 0; i < 5; i++) {
+    if (!wins(now)) return now;
+    if (await table.batch([now ? { op: 'replace', row, etag: String(now.etag ?? '') } : { op: 'create', row }])) return row;
+    now = await table.get<T>(row.partitionKey, row.rowKey);
+  }
+  throw new Error(`${row.partitionKey}/${row.rowKey}: too many writes at once`);
+}
+
 export const LOCAL_DATA = process.env.LOCAL_DATA;
 const TABLES = process.env.TABLE_ENDPOINT ?? 'https://fruitcatsdata.table.core.windows.net';
 

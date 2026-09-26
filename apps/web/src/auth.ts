@@ -6,7 +6,7 @@
 // token, which is what our APIs accept.
 
 import { API } from './api';
-import { NO_RETRY, NetError, SAFE_RETRY, fetchRetry, requestId } from './net';
+import { NO_RETRY, NetError, SAFE_RETRY, fetchRetry, requestId, type RetryPolicy } from './net';
 
 // viamochi-id accepts calls from the game's sites and from a dev server on port 5173 only. A dev server on another port
 // (a second checkout running side by side) goes through its own /__id proxy instead (vite.config.ts).
@@ -343,9 +343,28 @@ export async function deleteAccount(): Promise<Date> {
 export interface Friend { id: string; displayName: string | null; avatar: string; since: string }
 
 async function withToken(path: string, init: RequestInit, retry: boolean): Promise<Response> {
-  const t = await token();
+  let t = await token();
   if (!t) throw noToken();
-  return request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` } }, retry);
+  const send = (bearer: string) => request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${bearer}` } }, retry);
+  const r = await send(t);
+  // Turned away (a 401 happens before the service does anything, so asking again is safe): this device's token may be
+  // older than it thinks. A fresh one, and one more try, before the answer is believed.
+  if (r.status !== 401 || !await refreshAccount() || !(t = await token())) return r;
+  return send(t);
+}
+
+/**
+ * A call to one of our other services (the Fruitcats API) with this account's token, as `policy` allows (net.ts).
+ * Null when there's no token (signed out, or the account service can't be reached right now). A 401 gets a fresh token
+ * and one more try, as withToken. Throws a NetError when no answer came at all.
+ */
+export async function authedFetch(url: string, init: RequestInit, policy: RetryPolicy): Promise<Response | null> {
+  let t = await token();
+  if (!t) return null;
+  const send = (bearer: string) => fetchRetry(url, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${bearer}` } }, policy);
+  const r = await send(t);
+  if (r.status !== 401 || !await refreshAccount() || !(t = await token())) return r;
+  return send(t);
 }
 
 export async function listFriends(): Promise<Friend[]> {

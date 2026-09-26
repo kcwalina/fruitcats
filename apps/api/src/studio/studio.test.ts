@@ -137,6 +137,26 @@ describe('studio', () => {
     expect(changes.body.items.filter((i: { type: string }) => i.type === 'comment')).toHaveLength(3);
   });
 
+  it('adds a comment sent twice with the same request id once, and a new one again', async () => {
+    const say = (requestId: string) => call(ARTIST, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Sent twice?', requestId } });
+    const first = await say('0123456789abcdef');
+    const again = await say('0123456789abcdef');
+    expect(again.status).toBe(201);
+    expect(again.body.id).toBe(first.body.id);
+    const other = await say('fedcba9876543210');
+    expect(other.body.id).not.toBe(first.body.id);
+    const view = await call(OWNER, '/bp1');
+    expect(view.body.comments.filter((c: { text: string }) => c.text === 'Sent twice?')).toHaveLength(2);
+  });
+
+  it('keeps one version when the same picture is sent again as the newest', async () => {
+    const first = await call(ARTIST, '/bp1/pictures/BP1-X02', { body: png(1536, 1024, 42) });
+    const again = await call(ARTIST, '/bp1/pictures/BP1-X02', { body: png(1536, 1024, 42) });
+    expect(again.status).toBe(201);
+    expect(again.body.id).toBe(first.body.id);
+    expect((await call(OWNER, '/bp1')).body.pictures['BP1-X02'].versions).toHaveLength(1);
+  });
+
   it('lets only the owner review, open steps and decide suggestions', async () => {
     expect((await call(ARTIST, '/bp1/pictures/BP1-X01/review', { json: { state: 'approved' } })).status).toBe(403);
     expect((await call(AGENT, '/bp1/pictures/BP1-X01/review', { json: { state: 'approved' } })).status).toBe(403);

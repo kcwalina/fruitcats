@@ -17,8 +17,8 @@ import {
   type ChallengeNote, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person, type ServerMessage,
 } from '@fruitcats/match';
 import { API } from './api';
-import { session, token } from './auth';
-import { timeoutSignal } from './net';
+import { authedFetch, refreshAccount, session, token } from './auth';
+import { NO_RETRY } from './net';
 
 export type Challenge = ChallengeNote;
 
@@ -61,6 +61,8 @@ let retryTimer: number | undefined;
 /** Asking to be let in right now: a second connect() (the network coming back, the tab shown) waits for it. */
 let entering = false;
 const WELCOME_WITHIN_MS = 6000;
+/** Times in a row the server said "signed out" at the door. */
+let turnedAway = 0;
 /** "I'm here" and asking to be let in are tiny: an answer slower than this won't come, so ask again instead. */
 const POST_WITHIN_MS = 8000;
 
@@ -104,17 +106,16 @@ async function sayHere() {
   hereTimer = window.setTimeout(() => void sayHere(), HERE_EVERY_MS);
 }
 
+/** Null when there was no answer (offline, too slow, the API restarting): the caller asks again later. */
 async function post<T>(path: string, body?: unknown): Promise<T | null> {
-  const t = await token();
-  if (!t) return null;
   try {
-    const r = await fetch(API + path, {
-      // Without a limit, a request lost on a dropped connection could leave "Connecting…" up for minutes.
-      signal: timeoutSignal(POST_WITHIN_MS),
-      method: 'POST', headers: { Authorization: `Bearer ${t}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    // Without a limit, a request lost on a dropped connection could leave "Connecting…" up for minutes. Not retried
+    // here: the callers ask again on their own schedule.
+    const r = await authedFetch(API + path, {
+      method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
-    });
-    return r.ok ? (await r.json()) as T : null;
+    }, { ...NO_RETRY, attemptMs: POST_WITHIN_MS, budgetMs: POST_WITHIN_MS });
+    return r?.ok ? (await r.json()) as T : null;
   } catch {
     return null;
   }
@@ -153,6 +154,7 @@ export function reconnect() {
   live.idle = false;
   live.elsewhere = false;
   wanted = false;
+  turnedAway = 0;
   wantConnection(true);
   render();
 }
@@ -240,6 +242,7 @@ function received(msg: ServerMessage) {
       live.connected = true;
       live.connecting = false;
       retry = 0;
+      turnedAway = 0;
       live.you = msg.you;
       live.friends = new Map(msg.friends.map((f) => [f.id, f]));
       live.match = msg.match;
@@ -255,7 +258,12 @@ function received(msg: ServerMessage) {
       // This account connected on another device or tab, or the sign-in wasn't accepted: stop until the player asks,
       // so two tabs never take the connection from each other back and forth.
       if (msg.message === 'replaced') { live.elsewhere = true; wanted = false; }
-      if (msg.message === 'signed_out') { live.idle = true; wanted = false; }
+      // Turned away at the door: most often a token the API couldn't check just then (viamochi-id restarting), or one
+      // older than this device thought. Get a fresh token and try again (onclose); a player who is really signed out
+      // has no token then, and the tries stop there.
+      // Turned away every time even so: stop and let the player ask, rather than knock for ever.
+      if (msg.message === 'signed_out' && ++turnedAway >= 5) { live.idle = true; wanted = false; }
+      else if (msg.message === 'signed_out') void refreshAccount();
       break;
     case 'friends': live.friends = new Map(msg.friends.map((f) => [f.id, f])); break;
     case 'presence': live.friends.set(msg.friend.id, { ...live.friends.get(msg.friend.id), ...msg.friend }); break;

@@ -5,7 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
-import { badgeMechanics, deckBlurb, familyInfo, heroParade, mechanicGlossary } from './sets';
+import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
@@ -41,7 +41,8 @@ import {
 const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Ball">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
-for (const [name, file] of [['--img-menu-bg', 'menu-bg.webp'], ['--img-playmat', 'playmat.webp'], ['--img-cardback', 'cardback.webp'],
+// The shell's backdrop is Folkborn's neutral grove (grove-tall on portrait screens), so every deck's art style fits on it.
+for (const [name, file] of [['--img-menu-bg', 'grove.webp'], ['--img-menu-bg-tall', 'grove-tall.webp'], ['--img-playmat', 'table.webp'], ['--img-cardback', 'cardback.webp'],
   ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'mode-store.webp']])
   document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}`, location.href).href}")`);
 // --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible
@@ -801,20 +802,14 @@ function friendTileLine(): { line: string; badge: number; waiting: boolean } {
 }
 
 function renderHome(): string {
-  // The mightiest Hero Cat (Tango) takes the centre spot.
-  // Jam and Duchess are home-screen art, not cards: they fill the parade after the Hero Cats.
-  const heroes = heroParade(['cat-jam', 'cat-duchess'].map((k) => `${BASE}ui/${k}.webp`), (id) => artUrl(`${id}-bigcat`));
   const saved = savedGameLabel();
   return `
   <div class="menu home">
     ${ACCOUNTS ? renderHomeAccount() : ''}
     ${settingsButton('corner-settings')}
-    <div class="hero-parade">
-      ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${k})"></div>`).join('')}
-    </div>
     <header class="title">
-      <h1>Fruitcats</h1>
-      <p>A cozy card game of fruit-hooded cats.</p>
+      <h1>Folkborn</h1>
+      <p>Gentle legends from every corner of the world</p>
     </header>
     <nav class="modes">
       ${MODE_GROUPS.map((group) => `
@@ -835,16 +830,16 @@ function renderHome(): string {
           return `
         <button class="mode-card ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
           ${friend?.badge ? `<span class="mode-badge" aria-label="${friend.badge} waiting">${friend.badge}</span>` : ''}
-          <img src="${BASE}ui/mode-${m.key}.webp" alt="">
+          <img src="${BASE}ui/tile-${m.key}.webp" alt="">
           <span class="mode-text"><span class="mode-name">${m.name}</span>${status}</span>
         </button>`;
         }).join('')}
       </div>`).join('')}
       <div class="mode-group mode-more">
         <button class="mode-card mini" data-click="home:tutorial" title="A guided first game with tips">
-          <img src="${BASE}ui/icon-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
+          <img src="${BASE}ui/tile-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
         <a class="mode-card mini" href="${BASE}docs.html">
-          <img src="${BASE}ui/icon-rules.webp" alt=""><span class="mode-name">Documentation</span></a>
+          <img src="${BASE}ui/tile-docs.webp" alt=""><span class="mode-name">Documentation</span></a>
       </div>
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>

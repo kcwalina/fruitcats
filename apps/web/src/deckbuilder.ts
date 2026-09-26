@@ -358,7 +358,6 @@ function renderDeckList(): string {
     </div>
     <div class="decks-body">
       <section class="deck-group">
-        <h3>Your decks</h3>
         <div class="deck-tiles">
           ${mine.map((d) => {
             const ready = isReady(d);
@@ -403,7 +402,7 @@ function renderNewDeck(): string {
   return `
   <div class="menu decks newdeck">
     <div class="setup-bar">
-      ${backButton('deck:list', 'Your decks')}
+      ${backButton('deck:list', 'Deck builder')}
       <h2>New deck</h2>
       ${settingsButton()}
     </div>

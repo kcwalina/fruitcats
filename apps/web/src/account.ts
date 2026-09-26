@@ -377,7 +377,7 @@ async function openPicker(host: Host) {
   try {
     const [all, mine] = await Promise.all([avatarCatalog(), myAvatars()]);
     avatars = all; owned = mine.owned; wearing = mine.avatar;
-  } catch (e) { pickerError = e instanceof AuthError ? e.message : 'Couldn’t load the Pawtraits.'; }
+  } catch (e) { pickerError = e instanceof AuthError ? e.message : 'Couldn’t load the Portraits.'; }
   pickerBusy = false;
   if (picking) host.render();
 }
@@ -387,7 +387,7 @@ async function openPicker(host: Host) {
  * opponent wears the everyday Pawtrait of the fruit family its deck leads.
  */
 const FAMILY_PAWTRAIT: Record<string, string> = {
-  Citrus: 'orange', Orchard: 'apple', Tropical: 'pineapple', Berry: 'strawberry', Melon: 'watermelon', Garden: 'peapod', Domowiki: 'blueberry',
+  Citrus: 'orange', Orchard: 'apple', Tropical: 'pineapple', Berry: 'strawberry', Melon: 'watermelon', Garden: 'peapod', Domowiki: 'lemon',
 };
 export function boardFace(who: 'you' | 'computer', family: string): string {
   const id = who === 'you' ? session()?.avatar : FAMILY_PAWTRAIT[family] ?? 'lemon';
@@ -400,7 +400,7 @@ function renderPicker(): string {
     `<button class="${filter === f ? 'chosen' : ''}" data-click="acct:filter:${f}" aria-pressed="${filter === f}">${label}</button>`;
   const tile = (a: Avatar) => {
     const mine = owned.has(a.id);
-    const title = a.kind === 'legend' ? `${a.name} · Legend Pawtrait` : a.name;
+    const title = a.kind === 'legend' ? `${a.name} · Legend Portrait` : a.name;
     return `<button class="pawtrait ${a.kind} ${a.id === wearing ? 'wearing' : ''} ${mine ? '' : 'locked'}"
         data-click="acct:wear:${a.id}" ${pickerBusy ? 'disabled' : ''} title="${esc(title)}" aria-label="${esc(title)}${mine ? '' : ' (locked)'}">
         ${pawtrait(a.id, 'pawtrait-img')}
@@ -410,11 +410,11 @@ function renderPicker(): string {
   };
   return `<div class="account-panel-head">
       <button class="icon-button account-back" data-click="acct:pickerback" aria-label="Back to Account" title="Back to Account">‹</button>
-      <h2>Pawtraits</h2>
+      <h2>Portraits</h2>
       <span class="account-back-balance" aria-hidden="true"></span>
     </div>
     <div class="segmented pawtrait-filter">${chip('all', 'All')}${chip('everyday', 'Everyday')}${chip('legend', 'Legend')}</div>
-    ${filter === 'legend' ? '<p class="account-section-note">Legend Pawtraits come with Legendary cards. Own the card and its Pawtrait is yours to wear.</p>' : ''}
+    ${filter === 'legend' ? '<p class="account-section-note">Legend Portraits come with Legendary cards. Own the card and its Portrait is yours to wear.</p>' : ''}
     ${pickerBusy && !avatars.length ? '<p class="account-section-note">Loading…</p>' : sections(shown, tile)}
     <p class="account-error" role="alert">${esc(pickerError)}</p>`;
 }
@@ -427,21 +427,21 @@ function sections(shown: Avatar[], tile: (a: Avatar) => string): string {
   if (!everyday.length || !legend.length) return grid(shown);
   return `<div class="pawtrait-shelves">
       <h3 class="pawtrait-shelf">Everyday</h3>${grid(everyday)}
-      <h3 class="pawtrait-shelf legend">Legend Pawtraits <small>come with Legendary cards</small></h3>${grid(legend)}
+      <h3 class="pawtrait-shelf legend">Legend Portraits <small>come with Legendary cards</small></h3>${grid(legend)}
     </div>`;
 }
 
 async function wear(host: Host, id: string) {
   if (!owned.has(id)) {
     const a = avatars.find((x) => x.id === id);
-    pickerError = `${a?.name ?? 'This'} is a Legend Pawtrait: it comes with ${a?.cardName ?? 'a Legendary card'}.`;
+    pickerError = `${a?.name ?? 'This'} is a Legend Portrait: it comes with ${a?.cardName ?? 'a Legendary card'}.`;
     host.render();
     return;
   }
   if (id === wearing) return;
   pickerBusy = true; pickerError = '';
   host.render();
-  try { await chooseAvatar(id); wearing = id; } catch (e) { pickerError = e instanceof AuthError ? e.message : 'Couldn’t change your Pawtrait.'; }
+  try { await chooseAvatar(id); wearing = id; } catch (e) { pickerError = e instanceof AuthError ? e.message : 'Couldn’t change your Portrait.'; }
   pickerBusy = false;
   host.render();
 }
@@ -482,7 +482,7 @@ export function renderAccountPanel(): string {
       </div>` : '<button class="account-section-button" data-click="acct:signoutask">Sign out</button>';
   const deletion = confirmingDelete ? `
       <div class="account-confirm" role="alertdialog" aria-label="Delete your account?">
-        <p><b>Delete your Via Mochi account?</b> In 30 days your account, collection, decks and Pawtraits are erased for
+        <p><b>Delete your Via Mochi account?</b> In 30 days your account, collection, decks and Portraits are erased for
         good, and you’re signed out everywhere now. Changed your mind? Sign in again before then and nothing is lost.</p>
         <div class="account-confirm-buttons">
           <button data-click="acct:deletecancel">Keep my account</button>
@@ -491,7 +491,7 @@ export function renderAccountPanel(): string {
       </div>` : '';
   return `
       <div class="account-card">
-        <button class="account-face-button" data-click="acct:picker" aria-label="Change your Pawtrait">${face()}<span class="account-face-edit">Change</span></button>
+        <button class="account-face-button" data-click="acct:picker" aria-label="Change your Portrait">${face()}<span class="account-face-edit">Change</span></button>
         <span class="account-who"><b>${esc(name)}</b><small>${esc(s.email)}</small></span>
       </div>
       <p class="account-section-note">Signed in on this device${since ? ` since ${esc(since)}` : ''}. Your collection and decks are kept in your Via Mochi account.</p>

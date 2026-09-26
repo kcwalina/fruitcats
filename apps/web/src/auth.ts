@@ -427,7 +427,7 @@ export async function removeFriend(id: string, block = false): Promise<void> {
 export interface Avatar { id: string; name: string; kind: 'everyday' | 'legend'; cardId: string | null; cardName: string | null }
 
 /** Bumped when the images are redrawn: browsers keep them for a week. */
-const AVATAR_VERSION = 4;
+const AVATAR_VERSION = 5;
 export const avatarUrl = (id: string) => `${ID_SERVICE}/avatars/${id}.webp?v=${AVATAR_VERSION}`;
 
 let catalog: Avatar[] | null = null;
@@ -435,7 +435,7 @@ let catalog: Avatar[] | null = null;
 export async function avatarCatalog(): Promise<Avatar[]> {
   if (catalog) return catalog;
   const r = await request(`${ID_SERVICE}/avatars`, {}, true);
-  if (!r.ok) throw await failed(r, 'Couldn’t load the Pawtraits. Please try again.');
+  if (!r.ok) throw await failed(r, 'Couldn’t load the Portraits. Please try again.');
   return (catalog = await r.json());
 }
 
@@ -530,7 +530,7 @@ export async function chooseAvatar(id: string): Promise<void> {
   const r = await request(`${ID_SERVICE}/me/avatar`, {
     method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
   }, true);
-  if (!r.ok) throw new AuthError('avatar', (await r.json().catch(() => ({}))).message ?? 'Couldn’t change your Pawtrait.');
+  if (!r.ok) throw new AuthError('avatar', (await r.json().catch(() => ({}))).message ?? 'Couldn’t change your Portrait.');
   const s = session();
   if (s) saveSession({ ...s, avatar: id });
 }

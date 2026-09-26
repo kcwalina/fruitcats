@@ -2,6 +2,7 @@
 // written into the client: families' one-line hints, mechanics' plain-language reminders and badges, deck
 // blurbs, and which Hero Cat is the face of the game.
 
+import { isStarterSet } from '@fruitcats/store';
 import { CARDS, DECKS, FAMILIES, MECHANICS, SETS, type MechanicDef } from '@fruitcats/engine';
 
 /** A family's signature mechanic and its one-line hint (deck picker, deck builder). */
@@ -43,10 +44,14 @@ function releasedHeroes(): string[] {
     .map((c) => c.id);
 }
 
-/** The face of the game: the mightiest Big Cat (most Power, Fierce breaking ties). Tango, today. */
+/**
+ * The face of the game: a starter set's hero before any other (the starter deck is the one everyone has), the
+ * mightiest Awakened side (most Power, Fierce breaking ties) among those. Dziadziuś, today.
+ */
 export function featuredHero(): string {
   const score = (id: string) => (CARDS[id].bigCat?.power ?? 0) * 2 + (CARDS[id].bigCat?.keywords?.includes('Fierce') ? 1 : 0);
-  return [...releasedHeroes()].sort((a, b) => score(b) - score(a))[0] ?? Object.keys(CARDS)[0];
+  const starter = (id: string) => Number(isStarterSet(CARDS[id].set ?? ''));
+  return [...releasedHeroes()].sort((a, b) => starter(b) - starter(a) || score(b) - score(a))[0] ?? Object.keys(CARDS)[0];
 }
 
 /** Up to five pictures for the home screen's parade: the featured Hero Cat in the middle, then the others, then `extras`. */

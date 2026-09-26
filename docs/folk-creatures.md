@@ -5,8 +5,8 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 inhabited continent, plus backups.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
-from a research pass (about 170 articles, one agent per continent), and the owner approved them. Oceania is still
-open between Veli and Mimi.
+from a research pass (about 170 articles, one agent per continent), and the owner approved them, with Veli for
+Oceania.
 
 **What we looked for**
 
@@ -36,8 +36,7 @@ generators were left out.
 | <img src="https://archive.org/download/1930-rattray/page/n82_w800.jpg" width="80"> | [Mmoatia](#mmoatia) | Akan, Ghana | Foot-high forest folk with backward feet who talk in whistles, love bananas, and teach healing. [More](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/) |
 | <img src="https://2114141.fs1.hubspotusercontent-na1.net/hubfs/2114141/Imported_Blog_Media/2307-Casita-del-Alux-by-Alberto-Chuc-3.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Momoy_I.jpg/330px-Momoy_I.jpg" width="80"> | [Momoyes](#momoyes) | Andes of Venezuela | Knee-high bearded men of the mountain lakes; leave litter by their lake and they give it back to you. [More](https://es.wikipedia.org/wiki/Momoy) |
-| <img src="https://www.fijitimes.com.fj/wp-content/uploads/2026/04/Fiji_88022.webp" width="80"> | [Veli](#veli) (recommended for Oceania) | Fiji | Small hairy forest folk who grow their own kava, sing sweetly, and can't resist stealing iron tools. [More](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Anbangbang_gallery_Mimi_rock_art_cropped.jpg/330px-Anbangbang_gallery_Mimi_rock_art_cropped.jpg" width="80"> | [Mimi](#mimi) (Oceania, only with a community partner) | Kunwinjku, Arnhem Land, Australia | Spirits so thin a strong wind could snap them, who live in rock cracks and taught people to paint. [More](https://en.wikipedia.org/wiki/Mimi_(folklore)) |
+| <img src="https://www.fijitimes.com.fj/wp-content/uploads/2026/04/Fiji_88022.webp" width="80"> | [Veli](#veli) | Fiji | Small hairy forest folk who grow their own kava, sing sweetly, and can't resist stealing iron tools. [More](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31) |
 
 **Backups**
 
@@ -178,7 +177,7 @@ and their party brings wind and rain.
 
 ### Veli
 
-**From:** the iTaukei (indigenous Fijians) of Fiji. Also called leka. Recommended for the Oceania deck.
+**From:** the iTaukei (indigenous Fijians) of Fiji. Also called leka. The Oceania deck.
 
 Small, hairy people who live in hollow trees, caves and dugouts. They grow their own wild bananas and kava and wear
 tapa cloth finer than anything people make. They sing sweetly, but they beat anyone who damages their plants, and
@@ -191,20 +190,6 @@ their one known vice is stealing iron tools.
 - More: [ANU Press, "Fiji: A Place Called Home"](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31)
 - Image: an ink drawing of a veli in the forest. Copyrighted; shown in [The Fiji Times](https://www.fijitimes.com.fj/folklore-the-little-people-of-the-land-encounter-on-the-mountain/).
 
-### Mimi
-
-**From:** the Kunwinjku and other peoples of western Arnhem Land, Northern Territory, Australia. Also spelled Mimih.
-
-Spirits so thin that a strong wind would snap them, so they live inside cracks in the rock and blow on the stone to
-open and close it. They lived in the land before people, and taught them to hunt, cook and paint.
-
-- Why it fits: the most captivating story of the whole search.
-- Care (high): Mimi appear in public rock art and bark paintings, but some Mimi paintings are sacred and may be
-  seen only by senior men or women. The right to paint Mimi is inherited. Australia's official protocols for First
-  Nations cultural material call for the community's consent, credit, and a share of the income. Do this deck only
-  in partnership with Kunwinjku artists, never as an in-house design.
-- More: [Wikipedia, Mimi](https://en.wikipedia.org/wiki/Mimi_(folklore))
-- Image: Mimi figures in the Anbangbang rock gallery, Kakadu.
 
 ## Backups
 
@@ -285,6 +270,8 @@ undone until dawn chased them off, and that is how people learned to make fishin
 - **Curupira** (Brazil): São Paulo's official forest mascot and in a Netflix series; older versions kill.
 - **Abatwa** (Zulu): shoot you with poisoned arrows if you admit they're small; a folk "shrinking" of real peoples.
 - **Yumboes** (Wolof): lovely, but the only source is one secondhand Victorian anecdote.
+- **Mimi** (Kunwinjku, Arnhem Land, Australia): the best story of the search, but some Mimi images are sacred,
+  the right to paint them is inherited, and the community's consent is required. Too many restrictions.
 - **Khyah** (Newar, Nepal): charming attic spirits guarding Lakshmi's coins, but Nepal, not India.
 
 ## Home screen tiles
@@ -306,7 +293,7 @@ not in the game.
 | Tutorial | [Domowiki](#domowiki) | Waving you in at a small door with warm light. |
 | Documentation | [Mmoatia](#mmoatia) | Under a banana leaf, reading a big book of herbs (they teach healing). |
 
-- Left out on purpose: Mimi (only with a community partner) and Alux (shown as small Maya people; wait for a
+- Left out on purpose: Alux (shown as small Maya people; wait for a
   reviewer). Momoyes has no tile yet.
 - All eight are drawn as small spirit creatures, never as caricatures of real peoples. The Care notes above still
   apply to the final tile art.

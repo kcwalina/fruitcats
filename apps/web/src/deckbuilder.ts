@@ -327,26 +327,22 @@ const PENCIL = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="tru
 /** Two chain links, for deck codes. */
 const CODE = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>`;
 
-/** Two overlapping pages, for copying a deck. */
-const COPY = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`;
-
 /** A small bin, for the Delete buttons. */
 const BIN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>`;
 
 // ── Your decks ───────────────────────────────────────────────────────────────────────────────────
 
-/** A deck as a tile: tap it to open it (your decks) or to copy it (`copy`, with a Copy label under its name). */
+/** A deck as a tile: tap it to open it (your decks) or, under Start from a deck, to copy it (`copy`). */
 function deckTile(click: string, deck: DeckList, tag: string, status = '', copy = false): string {
   const hero = CARDS[deck.hero];
   const families = [hero.family, ...otherFamilies(deck)].join(' + ');
   return `
-    <button class="deck-tile ${copy ? 'copy-tile' : ''} ${famClass(deck.hero)}" data-click="${click}" ${copy ? `aria-label="Copy ${esc(deck.name)}"` : ''}>
+    <button class="deck-tile ${famClass(deck.hero)}" data-click="${click}" ${copy ? `aria-label="Copy ${esc(deck.name)}"` : ''}>
       <img class="deck-tile-art" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
       <span class="deck-tile-text">
         <span class="deck-name">${esc(deck.name)}</span>
         <span class="deck-tile-sub"><span class="deck-class">${esc(families)}</span> ${tag}</span>
         ${status}
-        ${copy ? `<span class="copy-label" aria-hidden="true">${COPY} Copy</span>` : ''}
       </span>
     </button>`;
 }
@@ -392,8 +388,6 @@ function renderDeckList(): string {
       </section>
       <section class="deck-group">
         <h3>Start from a deck</h3>
-        <p class="deck-group-lead">Tap a deck to get your own copy of it, then swap cards in and out. The deck you copy stays as it is,
-          and the cards that are different from it are marked in blue.</p>
         <div class="deck-tiles">
           ${Object.entries(DECKS).map(([key, d]) => deckTile(`deck:copy:${key}`, d, '<span class="starter-tag">Ready-made</span>', '', true)).join('')}
           ${mine.filter((d) => deckSize(d) > 0).map((d) => deckTile(`deck:copy:${customKey(d.id)}`, d, '<span class="mine-tag">Your deck</span>', '', true)).join('')}

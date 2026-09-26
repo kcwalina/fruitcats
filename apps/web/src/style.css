@@ -547,12 +547,7 @@ button.copy-code:hover { background: rgba(61, 157, 82, 0.1); box-shadow: none; }
 /* The rules are in the rulebook (§11.1): a tile beside New deck and Deck from a code links to them. */
 a.rules-tile { text-decoration: none; }
 .rules-plus { padding: 10px; object-fit: contain; }
-/* Start from a deck: what it's for, then decks to copy, each with a Copy label under its name. */
-.deck-group-lead { margin: -2px 0 10px; max-width: 640px; font-size: 14px; font-weight: 600; line-height: 1.4; }
-.copy-label {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; margin-top: 2px; padding: 3px 12px; border-radius: 999px;
-  font: 700 14px Fredoka, Nunito, sans-serif; color: #fff; background: #2f80d0; box-shadow: 0 2px 0 #1f5f9e;
-}
+/* Start from a deck: tapping a deck there makes your own copy of it. */
 .mine-tag { font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 8px; border-radius: 999px; background: #3d9d52; }
 
 /* The builder: header, filters, then the cards you have beside the deck. */

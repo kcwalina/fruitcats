@@ -7,6 +7,7 @@ import { count, summary } from './progress';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { badgeMechanics, deckBlurb, familyInfo, heroParade, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
+import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
 import { ACCOUNTS, ONLINE, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
@@ -590,7 +591,7 @@ function onClick(key: string) {
       case 'yarn':
         // "You can only pass for the rest of this round" is only a cost when there is something
         // else you could do. With nothing but Pass left, the warning just gets in the way.
-        if (confirming !== 'yarn' && legal.some((a) => a.t !== 'takeYarn' && a.t !== 'pass')) {
+        if (confirming !== 'yarn' && yarnNeedsConfirm(legal)) {
           confirming = 'yarn';
           render();
           return;
@@ -1205,14 +1206,12 @@ function renderMidbar(s: GameState, legal: Action[]): string {
       }
       case 'action': {
         if (confirming === 'yarn') {
-          text = `Take the <b>Yarn Ball</b>? You’ll act first next round, but you can only <b>pass</b> for the rest of this one.`;
+          text = yarnConfirmText(legal);
           buttons = `<button class="primary" data-click="btn:yarn">Take it ${YARN_ICON}</button>`
             + '<button data-click="btn:cancel">Cancel</button>';
           break;
         }
-        const hints = [];
-        if (legal.some((a) => a.t === 'play')) hints.push('play a glowing card');
-        if (legal.some((a) => a.t === 'attack')) hints.push('attack with a glowing unit');
+        const hints = otherMoves(legal);
         // "One thing, then they go" is the rule players miss most: they line up three attacks and are
         // surprised the opponent acts in between.
         // "Nothing left to do" reads like a bug when the real reason is that you can't afford anything:
@@ -1232,7 +1231,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
             why = `<b>Nothing you can play right now.</b> ${blocked ? esc(whyUnplayable(s, blocked.id, 'action')) : ''} Pass.`;
           }
         }
-        text = `<b>Your action.</b> ${hints.length ? `${hints.join(' or ').replace(/^./, (c) => c.toUpperCase())} (click or drag).` : why}`
+        text = `<b>Your action.</b> ${hints.length ? `${orList(hints).replace(/^./, (c) => c.toUpperCase())}${legal.some((a) => a.t === 'play' || a.t === 'attack') ? ' (click or drag)' : ''}.` : why}`
           + ` <span class="turn-hint">One thing, then your opponent acts.</span>`;
         buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn ${YARN_ICON}</button>` : ''}
           <button class="primary" data-click="btn:pass">Pass</button>`;

@@ -95,7 +95,10 @@ function clause(c: Condition): string {
     if (def?.noun) return `${who} has ${counters(def.noun, c.unitHasCounter.atLeast)}`;
     return `${who} has +${c.unitHasCounter.atLeast} ${mechanicOfCounter(c.unitHasCounter.name)}`;
   }
-  if ('playedThisRound' in c) return `you've played ${c.playedThisRound.atLeast - 1} other card(s) this round`;
+  if ('playedThisRound' in c) {
+    const n = c.playedThisRound.atLeast - 1;
+    return `you've played ${n} other card${n === 1 ? '' : 's'} this round`;
+  }
   return '';
 }
 
@@ -204,6 +207,8 @@ export function abilityText(a: Ability, card: CardDef): string {
 
   let body: string;
   if (lead) body = lead + clauses.join('. ') + '.';
+  else if (a.if !== undefined && typeof a.if === 'object' && 'not' in a.if && typeof a.if.not === 'object')
+    body = `Unless ${clause(a.if.not)}, ${clauses.join('. ')}.`;
   else if (a.if !== undefined && !isLabel(a.if)) body = `If ${clause(a.if)}, ${clauses.join('. ')}.`;
   // A unit's own label bonus runs on from its label, lower case: "Zest: gets +1 Power this round."
   else body = ownLabelBonus ? clauses.map((c) => `${c}.`).join(' ') : sentences(clauses);

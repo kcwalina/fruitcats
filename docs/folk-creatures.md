@@ -5,7 +5,9 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 inhabited continent, plus backups.
 
 **In the game now: the Domowiki.** Since 2026-09-26 they are the game's starter deck, the one every player has
-(content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)). The other creatures below are planned decks.
+(content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)). **Designed: the Pari**, the second deck, a
+prototype waiting for the owner's review (content/2026/10/pari, [pari-set.md](pari-set.md)). The other creatures
+below are planned decks.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
 from a research pass (about 170 articles, one agent per continent), and the owner approved them, with Veli for
@@ -86,6 +88,10 @@ kodama answering.
 Winged beings of Persian poetry and fairy tales. In the oldest Zoroastrian texts they were harmful spirits, but over the
 centuries they became the image of beauty and goodness, and "pari" is still a word for a beautiful person. Many
 tales are about a pari and a mortal falling in love.
+
+**Designed** (prototype, 2026-09-26): a fast, flying deck whose rules come from the tales: paris come in
+companies (Company), slip away as doves (Feather Coat), and only the third Orange-Peri lives. Its hero is
+Parijan, the littlest pari. Cards, lore and art: [pari-set.md](pari-set.md).
 
 - More: [Wikipedia, Parī](https://en.wikipedia.org/wiki/Par%C4%AB)
 - Image: a winged figure with a cup and wine flask, Persian painting (Freer Gallery).

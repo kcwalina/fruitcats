@@ -1,12 +1,13 @@
 // The playtest dashboard's server side (docs/playtests.md). Two kinds of callers:
 //
-//   the owner  (a Via Mochi account listed in PLAYTEST_OWNERS) reads everything on fruitcats.viamochi.com/playtests.html
+//   the owner  (a Via Mochi account listed in PLAYTEST_OWNERS) reads everything on fruitcats.viamochi.com/portal.html
 //              and queues runs;
 //   a runner   (PC2024's playtester, with its runner key) reports its runs as they go and picks up queued runs.
 //
 // PC2024 only ever calls out to this API; nothing here calls PC2024. When it's off, the page still works and new
 // requests wait until it asks for work again.
 //
+//   GET    /v1/playtests/owner                  owner   { owner: true }: the game shows the owner its Portal link (anyone else gets 403)
 //   GET    /v1/playtests                        owner   runs (newest 300, without reports), requests, meta, ops, runner
 //   GET    /v1/playtests/runs/{id}              owner   one run with its report
 //   POST   /v1/playtests/requests               owner   { command, args, label, name? } → the queued request
@@ -124,6 +125,7 @@ export function playtests(opt: PlaytestOptions) {
   const newest = <T>(list: T[], key: (x: T) => string, n: number) => list.sort((a, b) => key(b).localeCompare(key(a))).slice(0, n);
 
   async function forOwner(method: string, path: string, body: () => Promise<unknown>): Promise<Answer> {
+    if (method === 'GET' && path === '/v1/playtests/owner') return [200, { owner: true }];
     const { runs, requests } = await load();
     if (method === 'GET' && path === '/v1/playtests') {
       const [meta, ops] = await Promise.all([docs.get('meta.json'), docs.get('ops.json')]);

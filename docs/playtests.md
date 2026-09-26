@@ -1,8 +1,9 @@
-# The playtest dashboard
+# The Portal (the playtest dashboard)
 
-The playtest dashboard shows the owner every automated playtest run and the health of the Via Mochi services, and
-lets them queue new runs. It is at **https://fruitcats.viamochi.com/playtests.html**. Only the owner's Via Mochi
-account can open it: sign in on the site's Account page first.
+The Portal shows the owner every automated playtest run and the health of the Via Mochi services, and
+lets them queue new runs. It is at **https://fruitcats.viamochi.com/portal.html**. Only the owner's Via Mochi
+account can open it. In the game, Settings > Account has a **Portal** link, shown only to the owner. The old address,
+`/playtests.html`, still redirects to it.
 
 It runs without any Claude session. Before 2026-09-26 it was a claude.ai artifact, and a Claude Code task on the
 laptop copied data in and out of it every 10 minutes. That relay is gone, and so is the Claude health watch that
@@ -12,7 +13,7 @@ ran every 20 minutes.
 
 Three pieces, and only one of them lives at home:
 
-- **The page** (`apps/web/playtests.html`, `apps/web/src/playtests/`) is part of the game's website. It asks the
+- **The page** (`apps/web/portal.html`, `apps/web/src/playtests/`) is part of the game's website. It asks the
   Fruitcats API for everything every 20 seconds while it's open.
 - **The Fruitcats API** (`apps/api/src/playtests/`) keeps the runs, the requests, the deck names and the Accounts
   tab's numbers in the `playtests` blob container of `fruitcatsdata`. Every 10 minutes it works out the Accounts tab
@@ -25,7 +26,7 @@ The API never calls PC2024. When PC2024 is off or asleep, the page still works. 
 checked in, and queued runs wait until it's back.
 
 ```
-fruitcats.viamochi.com/playtests.html  ──(owner's sign-in)──▶  api.fruitcats.viamochi.com/v1/playtests
+fruitcats.viamochi.com/portal.html  ──(owner's sign-in)──▶  api.fruitcats.viamochi.com/v1/playtests
                                                                     ▲
 PC2024 mochi-playtester  ──(runner key, outbound only)──────────────┘
 ```

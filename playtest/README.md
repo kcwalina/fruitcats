@@ -106,8 +106,8 @@ publishes next to the game (`/playtest/runner.mjs`, so it always tests the live 
 
 ## The dashboard
 
-[fruitcats.viamochi.com/playtests.html](https://fruitcats.viamochi.com/playtests.html) (the owner's account only;
-source in `apps/web/playtests.html`, data in the Fruitcats API, docs/playtests.md) shows every run: the latest starter win rates against the target band,
+[fruitcats.viamochi.com/portal.html](https://fruitcats.viamochi.com/portal.html) (the owner's account only;
+source in `apps/web/portal.html`, data in the Fruitcats API, docs/playtests.md) shows every run: the latest starter win rates against the target band,
 issues flagged more than once, the win rates over time, runs in progress, each run's report, and the custom
 decks (the library and what recent deck hunts and deck builds found). Its "Start a run" form queues custom runs,
 including LLM playtests and bot gauntlets with custom decks and "Build a deck". PC2024's playtester sends its runs

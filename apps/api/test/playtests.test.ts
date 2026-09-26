@@ -32,6 +32,13 @@ describe('who may do what', () => {
     expect(await call(PC, 'GET', '/v1/playtests/runner/keys')).toEqual([200, { FIREWORKS_API_KEY: 'k' }]);
   });
 
+  it('tells the owner, and only the owner, that they are the owner (the game shows a Portal link on it)', async () => {
+    const { call } = setup();
+    expect(await call(OWNER, 'GET', '/v1/playtests/owner')).toEqual([200, { owner: true }]);
+    expect((await call(PC, 'GET', '/v1/playtests/owner'))[0]).toBe(403);
+    expect((await call(null, 'GET', '/v1/playtests/owner'))[0]).toBe(401);
+  });
+
   it('refuses requests the runner must not run', () => {
     expect(requestProblem('rm', '')).toMatch(/must be one of/);
     expect(requestProblem('balance', '--scale 1; del C:')).toMatch(/letters, digits/);

@@ -16,7 +16,7 @@ import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, renderContactPanel, pickingPawtrait, accountInput, accountOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
-  boardFace, renderAccountPanel, renderHomeAccount, signedIn, warmPawtraits,
+  boardFace, renderAccountPanel, renderHomeAccount, signedIn, warmOwner, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
@@ -550,7 +550,7 @@ function onClick(key: string) {
     if (raw === 'open') showSettings = false;
     if (raw === 'contact') { showSettings = true; settingsSection = 'contact'; }
     // Home's Pawtrait opens Settings on its Account section.
-    if (raw === 'home') { showSettings = true; settingsSection = 'account'; warmPawtraits(); render(); return; }
+    if (raw === 'home') { showSettings = true; settingsSection = 'account'; warmPawtraits(); warmOwner(render); render(); return; }
     void accountClick({ render }, key.slice('acct:'.length));
     return;
   }
@@ -569,7 +569,7 @@ function onClick(key: string) {
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
     // Settings closes, and opens fresh on its first section next time.
-    if (raw === 'settings') { showSettings = !showSettings; settingsSection = null; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) warmPawtraits(); } }
+    if (raw === 'settings') { showSettings = !showSettings; settingsSection = null; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) { warmPawtraits(); warmOwner(render); } } }
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
     if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }

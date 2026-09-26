@@ -321,7 +321,7 @@ Your personal-project users never move.
   `logs/<category>/<service>/yyyy/mm/dd/hh-<instance>.jsonl`, flushed every ~10 seconds.
 - **Reading:** `tools/ops.mjs`, a CLI for people and agents (`events`, `tail`, with filters).
 - **The owner's dashboard:** the **Accounts** tab of the playtest dashboard
-  ([fruitcats.viamochi.com/playtests.html](https://fruitcats.viamochi.com/playtests.html), docs/playtests.md):
+  ([fruitcats.viamochi.com/portal.html](https://fruitcats.viamochi.com/portal.html), docs/playtests.md):
   both services' health, accounts, new accounts, active players, sign-ins, code emails, syncs, Contact us messages
   and errors over 14 days, invite codes used, and the last day's errors. Each service writes its totals (counts
   only) to `logs/stats/<service>.json` every 15 minutes; fruitcats-api combines them with the logs every 10 minutes

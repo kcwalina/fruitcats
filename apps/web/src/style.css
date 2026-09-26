@@ -359,6 +359,7 @@ button.link-button {
   color: #b4561a; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer;
 }
 button.link-button:hover { box-shadow: none; transform: none; }
+a.link-button { color: #b4561a; font-weight: 800; text-decoration: underline; }
 .deck-art { display: none; }
 /* Difficulty: three picture tiles, chosen like a deck. */
 .difficulty-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(100%, 480px); }

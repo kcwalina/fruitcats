@@ -13,8 +13,9 @@
 import {
   AuthError, agreeToTerms, accountExists, needsTerms, refreshAccount, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
   codeDigits, oneTap, resend, restoredOnSignIn, session,
-  startSignIn, startSignUp, submitCode, type Avatar, type Pending,
+  startSignIn, startSignUp, submitCode, token, type Avatar, type Pending,
 } from './auth';
+import { API } from './api';
 import { signOutAndForget, startSync } from './sync';
 import { ONLINE, STORE } from './flags';
 import { refreshStore } from './shop';
@@ -342,6 +343,29 @@ export function warmPawtraits() {
 }
 const preloaded: HTMLImageElement[] = [];
 
+/** The account (its email) the API has said is the owner's, whose Settings shows a link to the Portal. */
+let ownerEmail: string | null = null;
+let ownerAsked: string | null = null;
+
+/**
+ * Ask the API whether this account is the owner's, so Settings can show the Portal link. Called when Settings opens; the
+ * API answers 403 to everyone else, who never see the link. Asked once per account; an ask that failed is tried again.
+ */
+export function warmOwner(render: () => void) {
+  const s = session();
+  if (!s || ownerAsked === s.email) return;
+  ownerAsked = s.email;
+  void (async () => {
+    try {
+      const t = await token();
+      if (!t) { ownerAsked = null; return; }
+      const r = await fetch(`${API}/v1/playtests/owner`, { headers: { Authorization: `Bearer ${t}` }, signal: AbortSignal.timeout(10_000) });
+      if (r.ok && session()?.email === s.email) { ownerEmail = s.email; render(); }
+      else if (r.status >= 500) ownerAsked = null;
+    } catch { ownerAsked = null; }
+  })();
+}
+
 async function openPicker(host: Host) {
   picking = true; pickerError = '';
   // Show what's known right away: the catalog if it's loaded, what you wear, and what everyone owns. What you've
@@ -473,6 +497,7 @@ export function renderAccountPanel(): string {
       <p class="account-section-note">Signed in on this device${since ? ` since ${esc(since)}` : ''}. Your collection and decks are kept in your Via Mochi account.</p>
       ${signOut}
       <div class="account-more">
+        ${ownerEmail === s.email ? `<a class="link-button" href="${BASE}portal.html">Portal</a>` : ''}
         <button class="link-button" data-click="acct:export" ${panelBusy ? 'disabled' : ''}>Export my data</button>
         <button class="link-button danger-link" data-click="acct:deleteask">Delete account</button>
       </div>

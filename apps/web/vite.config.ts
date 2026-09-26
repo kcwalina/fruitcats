@@ -11,7 +11,7 @@ import { defineConfig, type Plugin } from 'vite';
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
 // getting-started guides (how to play, your account, friends, the Collection, wallpapers), then the rulebook
 // (rules.html), the card list (cards.html) and what's on a card (anatomy.html). And the Artist Studio (studio.html, docs/artist-studio-plan.md), where artists
-// upload their pictures and see them on cards. And the owner's playtest dashboard (playtests.html, docs/playtests.md).
+// upload their pictures and see them on cards. And the owner's playtest Portal (portal.html, docs/playtests.md).
 
 /** The documentation's pages, in tab order. `tab` is the section's name in the header; the home has none. */
 const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
@@ -64,6 +64,7 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: fileURLToPath(new URL('index.html', import.meta.url)),
         studio: fileURLToPath(new URL('studio.html', import.meta.url)),
+        portal: fileURLToPath(new URL('portal.html', import.meta.url)),
         playtests: fileURLToPath(new URL('playtests.html', import.meta.url)),
         ...Object.fromEntries(DOC_PAGES.map((d) => [d.html.replace('.html', ''), fileURLToPath(new URL(d.html, import.meta.url))])),
       },

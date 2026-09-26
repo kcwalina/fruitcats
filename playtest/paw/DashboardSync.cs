@@ -9,7 +9,7 @@ using System.Text.Json.Nodes;
 namespace mochi.playtester;
 
 /// <summary>
-/// Keeps the playtest dashboard (fruitcats.viamochi.com/playtests.html) up to date, by calling out to the Fruitcats
+/// Keeps the playtest dashboard (fruitcats.viamochi.com/portal.html) up to date, by calling out to the Fruitcats
 /// API: every <see cref="PlaytesterConfig.DashboardSeconds"/> it sends new and running runs, asks for a queued run
 /// when it's free and starts it, and once an hour sends the deck and persona names the page shows (docs/playtests.md).
 ///

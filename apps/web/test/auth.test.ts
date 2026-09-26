@@ -237,7 +237,7 @@ describe('contact us', () => {
 
 describe('staying signed in', () => {
   const KEY = 'viamochi-session';
-  const HOUR = 60 * 60_000;
+  const DAY = 24 * 60 * 60_000;
 
   /** Signed in, with a token that has run out, so the next token() asks Entra for a new one. */
   async function signedInWithOldToken() {
@@ -257,7 +257,7 @@ describe('staying signed in', () => {
     const auth = await signedInWithOldToken();
     route = signInRoutes({ 'oauth2/v2.0/token': refused });
     expect(await settle(auth.token())).toBeNull();
-    expect(auth.session()).toMatchObject({ email: 'kim@example.com', refused: { tries: 1 } });
+    expect(auth.session()).toMatchObject({ email: 'kim@example.com', refused: { tries: 1, why: 'invalid_grant' } });
     expect(await settle(auth.token())).toBeNull();
     expect(count('oauth2/v2.0/token', 'refresh_token')).toBe(1);
   });
@@ -272,15 +272,15 @@ describe('staying signed in', () => {
     expect(auth.session()?.refused).toBeUndefined();
   });
 
-  it('is signed out only after Entra has refused several times over an hour', async () => {
+  it('is signed out only after Entra has kept refusing for about three months', async () => {
     const auth = await signedInWithOldToken();
     route = signInRoutes({ 'oauth2/v2.0/token': refused });
-    // Three refusals in a few minutes: still signed in.
-    edit({ refused: { first: Date.now() - 20 * 60_000, last: Date.now() - 6 * 60_000, tries: 2 } });
+    // Many refusals over a couple of months (a phone left in a drawer): still signed in.
+    edit({ refused: { first: Date.now() - 60 * DAY, last: Date.now() - 6 * 60_000, tries: 40 } });
     await settle(auth.token());
-    expect(auth.session()?.refused?.tries).toBe(3);
-    // The same refusals spread over more than an hour: the sign-in is really gone.
-    edit({ refused: { first: Date.now() - 2 * HOUR, last: Date.now() - 6 * 60_000, tries: 3 } });
+    expect(auth.session()?.refused?.tries).toBe(41);
+    // Refused for more than 90 days: the sign-in is really gone.
+    edit({ refused: { first: Date.now() - 91 * DAY, last: Date.now() - 6 * 60_000, tries: 50 } });
     await settle(auth.token());
     expect(auth.session()).toBeNull();
   });

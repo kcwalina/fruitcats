@@ -234,3 +234,62 @@ describe('contact us', () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe('staying signed in', () => {
+  const KEY = 'viamochi-session';
+  const HOUR = 60 * 60_000;
+
+  /** Signed in, with a token that has run out, so the next token() asks Entra for a new one. */
+  async function signedInWithOldToken() {
+    const auth = await load();
+    route = signInRoutes();
+    await auth.submitCode(await auth.startSignIn('kim@example.com'), '12345678');
+    const s = JSON.parse(localStorage.getItem(KEY)!);
+    localStorage.setItem(KEY, JSON.stringify({ ...s, expires: 0 }));
+    calls.length = 0;
+    return auth;
+  }
+  const edit = (change: Record<string, unknown>) =>
+    localStorage.setItem(KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(KEY)!), ...change }));
+  const refused = () => fail(400, { error: 'invalid_grant' });
+
+  it('is not signed out by one refusal from Entra, and does not ask again at once', async () => {
+    const auth = await signedInWithOldToken();
+    route = signInRoutes({ 'oauth2/v2.0/token': refused });
+    expect(await settle(auth.token())).toBeNull();
+    expect(auth.session()).toMatchObject({ email: 'kim@example.com', refused: { tries: 1 } });
+    expect(await settle(auth.token())).toBeNull();
+    expect(count('oauth2/v2.0/token', 'refresh_token')).toBe(1);
+  });
+
+  it('is renewed when Entra answers again, and the refusals are forgotten', async () => {
+    const auth = await signedInWithOldToken();
+    route = signInRoutes({ 'oauth2/v2.0/token': refused });
+    await settle(auth.token());
+    route = signInRoutes();
+    edit({ refused: { first: Date.now() - 6 * 60_000, last: Date.now() - 6 * 60_000, tries: 1 } });
+    expect(await settle(auth.token())).toBe('ours');
+    expect(auth.session()?.refused).toBeUndefined();
+  });
+
+  it('is signed out only after Entra has refused several times over an hour', async () => {
+    const auth = await signedInWithOldToken();
+    route = signInRoutes({ 'oauth2/v2.0/token': refused });
+    // Three refusals in a few minutes: still signed in.
+    edit({ refused: { first: Date.now() - 20 * 60_000, last: Date.now() - 6 * 60_000, tries: 2 } });
+    await settle(auth.token());
+    expect(auth.session()?.refused?.tries).toBe(3);
+    // The same refusals spread over more than an hour: the sign-in is really gone.
+    edit({ refused: { first: Date.now() - 2 * HOUR, last: Date.now() - 6 * 60_000, tries: 3 } });
+    await settle(auth.token());
+    expect(auth.session()).toBeNull();
+  });
+
+  it('is never signed out by being offline', async () => {
+    const auth = await signedInWithOldToken();
+    route = signInRoutes({ 'oauth2/v2.0/token': () => offline() });
+    for (let i = 0; i < 5; i++) expect(await settle(auth.token())).toBeNull();
+    expect(auth.session()).toMatchObject({ email: 'kim@example.com' });
+    expect(auth.session()?.refused).toBeUndefined();
+  });
+});

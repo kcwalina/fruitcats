@@ -24,7 +24,7 @@
 /* Top: Home, the Showcase / All cards switch, Settings. */
 .collection-top {
   display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 12px; flex: none;
-  padding: max(10px, env(safe-area-inset-top)) 14px 6px; width: 100%; max-width: 900px; margin: 0 auto;
+  padding: var(--corner-top) var(--corner-right) 6px var(--corner-left); width: 100%;
 }
 .seg {
   justify-self: center; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 999px;
@@ -271,7 +271,7 @@ button.undo-btn {
 /* Phones held sideways (and other short screens): the name and buttons share one row under the cards,
    and the details and dots give way, so the cards keep as much height as possible. */
 @media (max-height: 500px) {
-  .collection-top { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 0; }
+  .collection-top { padding-bottom: 0; }
   .viewer { --card-w: calc((var(--vh, 1vh) * 100 - 128px) * 0.714); }
   .viewer-track { padding-top: 30px; padding-bottom: 46px; margin: -22px 0 -40px; }
   .viewer-info { display: flex; justify-content: center; align-items: center; gap: 16px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }

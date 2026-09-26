@@ -65,8 +65,17 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 
 /* ── Menu: a single screen, sized by viewport height ─────────────────── */
 
+/* The corners: where the account face, the gear, and every screen's Home / back button and gear sit, on every screen and
+   every device. Every header that has them reaches out to these (so an iPad held sideways doesn't pull them in). */
+:root {
+  --corner-top: max(12px, env(safe-area-inset-top));
+  --corner-left: max(12px, env(safe-area-inset-left));
+  --corner-right: max(12px, env(safe-area-inset-right));
+}
+/* A menu is as wide as the screen; its content keeps the old width (--menu-max less 16px gutters) and centres. */
 .menu {
-  height: 100%; max-width: 1100px; margin: 0 auto; padding: calc(var(--vh, 1vh) * 1.5) 16px; text-align: center;
+  --menu-max: 1100px; --menu-pad: max(16px, calc((100vw - var(--menu-max)) / 2 + 16px));
+  height: 100%; padding: calc(var(--vh, 1vh) * 1.5) var(--menu-pad); text-align: center;
   display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; gap: calc(var(--vh, 1vh) * 0.8);
 }
 
@@ -111,9 +120,9 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 /* Settings: a round gear button. On Home it sits in the top-right corner. */
 .icon-button { width: 44px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; flex: none; }
 .icon-button img { width: 30px; height: 30px; object-fit: contain; }
-.corner-settings { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); z-index: 5; }
+.corner-settings { position: fixed; top: var(--corner-top); right: var(--corner-right); z-index: 5; }
 /* Home's top-left corner (src/account.ts): your Pawtrait when signed in, a Sign in button when not. */
-.corner-account { position: fixed; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); z-index: 5; }
+.corner-account { position: fixed; top: var(--corner-top); left: var(--corner-left); z-index: 5; }
 button.corner-face { width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; background: none; border: 0; box-shadow: none; }
 .corner-face .account-avatar.small { width: 44px; height: 44px; box-shadow: 0 0 0 3px #fff, var(--shadow); }
 button.corner-signin { height: 44px; padding: 0 18px; border-radius: 999px; font-weight: 700; }
@@ -374,6 +383,13 @@ button.link-button:hover { box-shadow: none; transform: none; }
   padding-bottom: max(calc(var(--vh, 1vh) * 2), env(safe-area-inset-bottom));
 }
 .setup-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; width: 100%; max-width: 900px; }
+/* A menu's header (Home or back on the left, the gear on the right) spans the whole screen, so its buttons stand exactly
+   where Home's account face and gear do. (The deck builder's parchment bar has no such buttons: it stays with the page.) */
+.menu:is(.solo, .friends, .decks):not(.builder) { padding-top: var(--corner-top); }
+.menu > .setup-bar:not(.build-bar) {
+  width: auto; max-width: none; align-self: stretch;
+  margin-inline: calc(var(--corner-left) - var(--menu-pad)) calc(var(--corner-right) - var(--menu-pad));
+}
 .setup-bar .back-button { justify-self: start; }
 .setup-bar .settings-button { justify-self: end; }
 .setup-bar h2 { margin: 0; font-size: clamp(18px, calc(var(--vh, 1vh) * 3.2), 30px); }
@@ -551,7 +567,7 @@ a.rules-tile { text-decoration: none; }
 .mine-tag { font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 8px; border-radius: 999px; background: #3d9d52; }
 
 /* The builder: header, filters, then the cards you have beside the deck. */
-.menu.builder { max-width: 1300px; gap: 8px; justify-content: flex-start; }
+.menu.builder { --menu-max: 1300px; gap: 8px; justify-content: flex-start; }
 /* The header is a parchment bar, like the deck bar at the bottom: text never sits on the painted sky.
    The name is on the left with a small flat pencil after it and "All changes saved" under it; Done is
    on the right. */

@@ -824,13 +824,14 @@ function renderHome(): string {
         </button>`;
         }).join('')}
       </div>`).join('')}
+      <div class="mode-group mode-more">
+        <button class="mode-card mini" data-click="home:tutorial" title="A guided first game with tips">
+          <img src="${BASE}ui/icon-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
+        <a class="mode-card mini" href="${BASE}docs.html">
+          <img src="${BASE}ui/icon-rules.webp" alt=""><span class="mode-name">Documentation</span></a>
+      </div>
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
-    <footer class="home-footer">
-      <button class="footer-button" data-click="home:tutorial" title="A guided first game with tips">
-        <img class="btn-ico" src="${BASE}ui/icon-tutorial.webp" alt="">Tutorial</button>
-      <a class="footer-button" href="${BASE}docs.html"><img class="btn-ico" src="${BASE}ui/icon-rules.webp" alt="">Documentation</a>
-    </footer>
   </div>`;
 }
 

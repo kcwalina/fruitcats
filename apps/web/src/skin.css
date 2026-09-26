@@ -9,7 +9,7 @@
   --wood: #8a5427;
   --gold: #e7b24a;
   --gold-light: #ffe6a3;
-  /* "You picked this": the green of the Tutorial/Rules buttons. Gold is decoration, never selection. */
+  /* "You picked this": the green of a chosen deck or difficulty. Gold is decoration, never selection. */
   --pick: #3d9d52;
   --pick-dark: #276c37;
   --pick-tint: #e6f7e8;
@@ -114,6 +114,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .mode-card:hover { transform: translateY(-3px); }
 .mode-card img { box-shadow: 0 0 0 2px #fff6dc; }
+.mode-card.mini { color: inherit; font: inherit; }
+.mode-card.mini img { box-shadow: none; }
 .mode-name { color: var(--ink); }
 .mode-sub { color: var(--muted); }
 .mode-card.soon img { filter: saturate(0.45); opacity: 0.8; }
@@ -514,16 +516,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 .menu-link:hover { filter: brightness(1.04); transform: translateY(-1px); }
 .menu-link:active { transform: translateY(2px); box-shadow: 0 1px 0 #c08f4a, inset 0 1px 0 #fff; }
-/* Home's Tutorial and Rules: the same green button, each with its drawn icon. */
-.footer-button {
-  font: 600 16px Fredoka, Nunito, sans-serif; color: #fff; text-shadow: 0 1px 0 rgba(0, 70, 20, 0.5);
-  padding: 0 18px 0 12px; border-radius: 14px; background: linear-gradient(#8fd997, #3d9d52);
-  box-shadow: 0 3px 0 #276c37, 0 6px 12px rgba(20, 70, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s;
-}
-.footer-button:hover { filter: brightness(1.05); transform: translateY(-1px); }
-.footer-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #276c37, inset 0 1px 0 rgba(255, 255, 255, 0.5); }
-.btn-ico { filter: drop-shadow(0 1px 1px rgba(0, 50, 10, 0.35)); }
 /* Round icon buttons (the gear, Home on the Solo screen): cream like the others, never stretched. */
 .icon-button { border-radius: 999px; }
 .side-buttons .icon-button { flex: 0 0 44px; width: 44px; max-width: none; padding: 0; }

@@ -531,7 +531,7 @@ function onClick(key: string) {
     return;
   }
   if (kind === 'deck') {
-    deckClick(raw, key.split(':')[2] ?? '', builderHost);
+    deckClick(raw, key.split(':').slice(2).join(':'), builderHost);
     return;
   }
   if (STORE && kind === 'store') {

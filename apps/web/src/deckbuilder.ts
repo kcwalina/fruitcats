@@ -1,17 +1,18 @@
-// The deck builder: your decks, a new deck's Hero Cat, and the builder itself (the cards you have on
+// The deck builder: your decks, decks to copy (ready-made ones and yours; a copy remembers the deck it came from and
+// marks what's different), a new deck's Hero Cat, and the builder itself (the cards you have on
 // the left, the deck on the right). The rules come from the engine (rulebook §11.1) and the copies you
 // have from collection.ts. Every change is saved as it's made, and the header says so, so no work is
 // ever lost; Done just goes back to your decks.
 
 import {
   CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, builtInTwin, cardName, catCount, copyLimit, deckChanges, deckCode,
-  deckSize, otherFamilies, parseDeckCode, starterBase, type DeckList,
+  deckSize, otherFamilies, parseDeckCode, sameCards, type DeckList,
 } from '@fruitcats/engine';
 import { missingForDeck } from '@fruitcats/store';
 import { owned, ownedCards, ownedHeroes } from './collection';
 import { STORE } from './flags';
 import { catalog, storeAccess } from './shop';
-import { deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
+import { copyDeck, customKey, deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
 import { BASE, artUrl, backButton, esc, famClass, settingsButton } from './ui';
 import { familyInfo } from './sets';
 import { finishFrame, yourCardUrl } from './rarity';
@@ -21,11 +22,10 @@ const TYPES = [['all', 'All'], ['Cat', 'Cats'], ['Critter', 'Critters'], ['Trick
 type TypeFilter = (typeof TYPES)[number][0];
 
 let page: Page = 'list';
-/** The deck being built, or a starter being looked at (read-only). */
+/** The deck being built. */
 let editing: MyDeck | null = null;
 /** A new deck isn't stored until its first change, so backing out of an empty one leaves nothing behind. */
 let isNew = false;
-let starterKey: string | null = null;
 let familyFilter = 'all';
 let typeFilter: TypeFilter = 'all';
 /** Phones: the deck list is a sheet over the cards. */
@@ -42,7 +42,7 @@ let importText = '';
 let importError = '';
 /** "Copied" under Copy deck code, until the next tap. */
 let codeNote = '';
-/** Done was tapped on a deck with exactly a starter's cards: the dialog saying it isn't kept. */
+/** Done was tapped on a deck that is the same as a ready-made deck or the deck it was copied from: the dialog saying it isn't kept. */
 let twinAsk = false;
 
 export interface BuilderHost {
@@ -60,10 +60,7 @@ const canShop = () => STORE && storeAccess() === 'open' && !!catalog();
 export function openDeckBuilder(): void {
   page = 'list';
   editing = null;
-  starterKey = null;
 }
-
-const shownDeck = (): DeckList | null => editing ?? (starterKey ? DECKS[starterKey] : null);
 
 function resetView() {
   page = 'edit';
@@ -77,7 +74,6 @@ function resetView() {
 function edit(deck: MyDeck, fresh: boolean) {
   editing = deck;
   isNew = fresh;
-  starterKey = null;
   resetView();
 }
 
@@ -85,20 +81,30 @@ function leave() {
   twinAsk = false;
   page = 'list';
   editing = null;
-  starterKey = null;
+}
+
+/**
+ * The deck this one has exactly the same cards as, so there's no point keeping it: a ready-made deck, or the deck it
+ * was copied from (as it was then). Its name, and whether it's ready-made; null when the deck is its own.
+ */
+function twinOf(deck: MyDeck): { name: string; readyMade: boolean } | null {
+  const key = builtInTwin(deck);
+  if (key) return { name: DECKS[key].name, readyMade: true };
+  if (deck.from && sameCards(deck, { ...deck.from, hero: deck.hero })) return { name: deck.from.name, readyMade: false };
+  return null;
 }
 
 function save() {
-  // A deck with exactly the cards of one of the game's own decks isn't kept: that deck is already in the game.
-  // What's stored stays as it was before, until a change makes the deck different again.
-  if (!editing || builtInTwin(editing)) return;
+  // A deck that is a copy of another with nothing changed isn't kept. What's stored stays as it was before, until a
+  // change makes the deck different again.
+  if (!editing || twinOf(editing)) return;
   saveDeck(editing);
   isNew = false;
 }
 
-/** Done: back to your decks, unless the deck is the same as a starter, which gets a word first. */
+/** Done: back to your decks, unless the deck is only a copy, which gets a word first. */
 function done() {
-  if (editing && builtInTwin(editing)) twinAsk = true;
+  if (editing && twinOf(editing)) twinAsk = true;
   else leave();
 }
 
@@ -124,16 +130,8 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     case 'done': done(); break;
     case 'twinstay': twinAsk = false; break;
     case 'twinleave': twinAsk = false; leave(); break;
-    // A starter's cards as a new deck of your own, to change. It's kept once it's different from the starter.
-    case 'copy': {
-      const starter = DECKS[arg];
-      if (!starter) break;
-      const deck = newDeck(starter.hero);
-      deck.name = `My ${starter.name}`.slice(0, 40);
-      deck.cards = { ...starter.cards };
-      edit(deck, true);
-      break;
-    }
+    // A ready-made deck or one of yours, copied into a new deck to change. It's kept once it's different.
+    case 'copy': { const deck = copyDeck(arg); if (deck) edit(deck, true); break; }
     case 'new': page = 'new'; newName = ''; break;
     case 'hero': {
       if (!ownedHeroes().includes(arg)) break;
@@ -146,9 +144,6 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     }
     case 'rename': break;   // the pencil: the name box is focused once the screen is drawn
     case 'open': { const deck = getDeck(arg); if (deck) edit(deck, false); break; }
-    case 'starter':
-      if (arg in DECKS) { editing = null; starterKey = arg; resetView(); }
-      break;
     case 'add': change(arg, 1); break;
     case 'remove': change(arg, -1); break;
     case 'fam': familyFilter = arg; break;
@@ -159,7 +154,7 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     case 'keep': deleting = null; break;
     // A deck code (FC1.…) is a whole deck on one line: copied out of the builder, pasted into Your decks.
     case 'copycode': {
-      const deck = shownDeck();
+      const deck = editing;
       if (!deck) break;
       void copyText(deckCode(deck)).then((ok) => {
         codeNote = ok ? 'Copied. Paste it anywhere to share this deck.' : 'Couldn’t copy it here.';
@@ -169,7 +164,7 @@ export function deckClick(action: string, arg: string, host: BuilderHost): void 
     }
     case 'import': importing = true; importText = ''; importError = ''; break;
     // A deck with cards you don't have yet: the Store, with them in the cart.
-    case 'shop': { const deck = shownDeck(); if (deck && host.openStore) { host.openStore(deck); return; } break; }
+    case 'shop': { const deck = editing; if (deck && host.openStore) { host.openStore(deck); return; } break; }
     case 'cancelimport': importing = false; break;
     case 'doimport':
       importDeck();
@@ -244,7 +239,7 @@ function importDeck(): void {
   if (!parsed) { importError = 'That isn’t a deck code. Copy the whole code and paste it here.'; return; }
   if (CARDS[parsed.hero]?.type !== 'Hero Cat') { importError = 'This deck’s Hero Cat isn’t in the game yet.'; return; }
   const twin = builtInTwin(parsed);
-  if (twin) { importError = `That’s the ${DECKS[twin].name} starter deck. It’s already in the game, under Starter decks.`; return; }
+  if (twin) { importError = `That’s ${DECKS[twin].name}, a ready-made deck. It’s already in the game: find it under Start from a deck.`; return; }
   const deck = newDeck(parsed.hero);
   deck.name = parsed.name.slice(0, 40);
   deck.cards = Object.fromEntries(Object.entries(parsed.cards).filter(([id]) => CARDS[id] && CARDS[id].type !== 'Hero Cat'));
@@ -258,8 +253,8 @@ let importedWithMissing = false;
 
 /** Tells the player their work is kept, since there's no Save button to press. */
 function saveState(): string {
-  const twin = editing && builtInTwin(editing);
-  if (twin) return `<span class="save-state twin">Same as the ${esc(DECKS[twin].name)} starter · change a card to keep it</span>`;
+  const twin = editing && twinOf(editing);
+  if (twin) return `<span class="save-state twin">Same as ${esc(twin.name)} · change a card to keep it</span>`;
   return isNew
     ? '<span class="save-state">Changes save as you go</span>'
     : '<span class="save-state saved">All changes saved ✓</span>';
@@ -270,17 +265,16 @@ export function renderDeckBuilder(): string {
     + (twinAsk && page === 'edit' ? renderTwinDialog() : '');
 }
 
-/** Done on a deck with exactly a starter's cards: it isn't kept, and here's why. */
+/** Done on a deck that is only a copy (nothing changed): it isn't kept, and here's why. */
 function renderTwinDialog(): string {
-  const twin = editing && builtInTwin(editing);
-  if (!twin) { twinAsk = false; return ''; }
-  const starter = DECKS[twin];
+  const twin = editing && twinOf(editing);
+  if (!editing || !twin) { twinAsk = false; return ''; }
   return `<div class="overlay">
-    <div class="settings delete-dialog" role="alertdialog" aria-label="Same as a starter deck">
-      <img class="delete-art" src="${artUrl(`${starter.hero}-kitten`)}" alt="">
-      <h2>This is the ${esc(starter.name)} deck</h2>
-      <p>It has the same cards as the ${esc(starter.name)} starter deck, which is already in the game, so it isn’t kept.
-        Change a card to make it your own.${isNew ? '' : ' If you leave, your deck stays as it was before.'}</p>
+    <div class="settings delete-dialog" role="alertdialog" aria-label="Nothing changed">
+      <img class="delete-art" src="${artUrl(`${editing.hero}-kitten`)}" alt="">
+      <h2>Same as ${esc(twin.name)}</h2>
+      <p>It has the same cards as ${twin.readyMade ? `${esc(twin.name)}, a ready-made deck that’s already in the game`
+        : `your deck ${esc(twin.name)}`}, so it isn’t kept. Change a card to make it your own.${isNew ? '' : ' If you leave, your deck stays as it was before.'}</p>
       <div class="delete-buttons">
         <button data-click="deck:twinleave">Leave</button>
         <button class="primary" data-click="deck:twinstay">Change a card</button>
@@ -306,7 +300,7 @@ function renderImportDialog(): string {
 
 function renderPage(): string {
   if (page === 'new') return renderNewDeck();
-  if (page === 'edit' && shownDeck()) return renderBuilder();
+  if (page === 'edit' && editing) return renderBuilder(editing);
   page = 'list';
   return renderDeckList();
 }
@@ -333,24 +327,26 @@ const PENCIL = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="tru
 /** Two chain links, for deck codes. */
 const CODE = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>`;
 
+/** Two overlapping pages, for copying a deck. */
+const COPY = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>`;
+
 /** A small bin, for the Delete buttons. */
 const BIN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>`;
 
 // ── Your decks ───────────────────────────────────────────────────────────────────────────────────
 
-function deckTile(click: string, deck: DeckList, tag: string, status = ''): string {
-  // Your own deck made from a starter says which.
-  const from = click.startsWith('deck:open:') ? starterBase(deck) : null;
-  if (from) tag += `<span class="from-tag">From ${esc(DECKS[from].name)}</span>`;
+/** A deck as a tile: tap it to open it (your decks) or to copy it (`copy`, with a Copy label under its name). */
+function deckTile(click: string, deck: DeckList, tag: string, status = '', copy = false): string {
   const hero = CARDS[deck.hero];
   const families = [hero.family, ...otherFamilies(deck)].join(' + ');
   return `
-    <button class="deck-tile ${famClass(deck.hero)}" data-click="${click}">
+    <button class="deck-tile ${copy ? 'copy-tile' : ''} ${famClass(deck.hero)}" data-click="${click}" ${copy ? `aria-label="Copy ${esc(deck.name)}"` : ''}>
       <img class="deck-tile-art" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
       <span class="deck-tile-text">
         <span class="deck-name">${esc(deck.name)}</span>
         <span class="deck-tile-sub"><span class="deck-class">${esc(families)}</span> ${tag}</span>
         ${status}
+        ${copy ? `<span class="copy-label" aria-hidden="true">${COPY} Copy</span>` : ''}
       </span>
     </button>`;
 }
@@ -366,17 +362,15 @@ function renderDeckList(): string {
     </div>
     <div class="decks-body">
       <section class="deck-group">
-        <div class="deck-group-head">
-          <h3>Your decks</h3>
-          <a class="rules-link" href="${BASE}rules.html#11-1-deckbuilding"><img class="btn-ico" src="${BASE}ui/icon-rules.webp" alt="">Deck building rules</a>
-        </div>
+        <h3>Your decks</h3>
         <div class="deck-tiles">
           ${mine.map((d) => {
             const ready = isReady(d);
             const missing = ready ? 0 : missingCopies(d);
             const status = `<span class="deck-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓'
               : missing ? `Missing ${missing} ${missing === 1 ? 'card' : 'cards'}` : `${deckSize(d)} / ${DECK_RULES.size} cards`}</span>`;
-            return `<div class="deck-tile-wrap">${deckTile(`deck:open:${d.id}`, d, '', status)}
+            const from = d.from ? `<span class="from-tag">From ${esc(d.from.name)}</span>` : '';
+            return `<div class="deck-tile-wrap">${deckTile(`deck:open:${d.id}`, d, from, status)}
               <button class="tile-delete" data-click="deck:delete:${d.id}" aria-label="Delete ${esc(d.name)}" title="Delete deck">${BIN}</button></div>`;
           }).join('')}
           <button class="deck-tile new-deck" data-click="deck:new">
@@ -389,12 +383,20 @@ function renderDeckList(): string {
             <span class="deck-tile-text"><span class="deck-name">Deck from a code</span>
               <span class="deck-tile-sub">Paste a code someone shared</span></span>
           </button>
+          <a class="deck-tile new-deck rules-tile" href="${BASE}rules.html#11-1-deckbuilding">
+            <img class="new-plus rules-plus" src="${BASE}ui/icon-rules.webp" alt="">
+            <span class="deck-tile-text"><span class="deck-name">Deck building rules</span>
+              <span class="deck-tile-sub">What a deck can hold</span></span>
+          </a>
         </div>
       </section>
       <section class="deck-group">
-        <h3>Starter decks</h3>
+        <h3>Start from a deck</h3>
+        <p class="deck-group-lead">Tap a deck to get your own copy of it, then swap cards in and out. The deck you copy stays as it is,
+          and the cards that are different from it are marked in blue.</p>
         <div class="deck-tiles">
-          ${Object.entries(DECKS).map(([key, d]) => deckTile(`deck:starter:${key}`, d, '<span class="starter-tag">Starter</span>')).join('')}
+          ${Object.entries(DECKS).map(([key, d]) => deckTile(`deck:copy:${key}`, d, '<span class="starter-tag">Ready-made</span>', '', true)).join('')}
+          ${mine.filter((d) => deckSize(d) > 0).map((d) => deckTile(`deck:copy:${customKey(d.id)}`, d, '<span class="mine-tag">Your deck</span>', '', true)).join('')}
         </div>
       </section>
     </div>
@@ -453,34 +455,24 @@ function sortCards(ids: string[], order: string[]): string[] {
     || (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0) || a.localeCompare(b));
 }
 
-function renderBuilder(): string {
-  const deck = shownDeck()!;
-  const readOnly = !editing;
-  const baseKey = readOnly ? null : starterBase(deck);
-  const base = baseKey ? DECKS[baseKey] : null;
+function renderBuilder(deck: MyDeck): string {
+  // A copy of another deck: that deck as it was then, to show what's different from it.
+  const base: DeckList | null = deck.from ? { ...deck.from, hero: deck.hero } : null;
   const order = familyOrder(deck);
   const size = deckSize(deck);
   const issues = problems(deck);
   const ready = issues.length === 0;
 
-  const pool = readOnly
-    ? sortCards(Object.keys(deck.cards), order)
-    : sortCards(ownedCards(), order).filter((id) =>
-      (familyFilter === 'all' || CARDS[id].family === familyFilter) && (typeFilter === 'all' || CARDS[id].type === typeFilter));
+  const pool = sortCards(ownedCards(), order).filter((id) =>
+    (familyFilter === 'all' || CARDS[id].family === familyFilter) && (typeFilter === 'all' || CARDS[id].type === typeFilter));
 
-  const status = readOnly
-    ? `<span class="build-status ready">Starter deck · ${size} cards · fixed</span>`
-    : `<span class="build-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : esc(issues[0])}</span>`;
+  const status = `<span class="build-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : esc(issues[0])}</span>`;
 
-  // Your own deck: its name (tap to rename) with the "saved" line under it, and Done at the top right
-  // where a phone's thumb and eye expect it. A starter: a way back, then its name.
+  // The deck's name (tap to rename) with the "saved" line under it, and Done at the top right where a phone's thumb
+  // and eye expect it.
   const portrait = `<img class="bar-hero ${famClass(deck.hero)}" src="${artUrl(`${deck.hero}-kitten`)}" alt="${esc(cardName(deck.hero))}"
       data-zoom="${yourCardUrl(`${deck.hero}-kitten`)}" data-zoom-card="${deck.hero}-kitten">`;
-  const bar = readOnly
-    ? `${backButton('deck:list', 'Your decks')}${portrait}
-      <div class="build-title"><h2>${esc(deck.name)}</h2><span class="save-state">Starter deck</span></div>
-      <button class="primary done-deck copy-deck" data-click="deck:copy:${starterKey}">Make my own</button>`
-    : `${portrait}<div class="build-title">
+  const bar = `${portrait}<div class="build-title">
         <label class="name-edit">
           <input class="deck-name-input" data-rename value="${esc(deck.name)}" maxlength="40" aria-label="Deck name" enterkeyhint="done" autocomplete="off">
           <button class="name-pencil" data-click="deck:rename" aria-label="Rename deck" title="Rename deck">${PENCIL}</button>
@@ -490,7 +482,7 @@ function renderBuilder(): string {
       <button class="primary done-deck" data-click="deck:done">Done</button>`;
 
   return `
-  <div class="menu decks builder ${readOnly ? 'read-only' : ''} ${sheetOpen ? 'sheet-open' : ''}">
+  <div class="menu decks builder ${sheetOpen ? 'sheet-open' : ''}">
     <div class="setup-bar build-bar">${bar}</div>
     <div class="build-head">
       <div class="build-lead">
@@ -500,19 +492,19 @@ function renderBuilder(): string {
       ${status}
     </div>
     ${base ? renderChanges(deck, base) : ''}
-    ${readOnly ? '' : renderMissing(deck)}
-    ${readOnly ? '' : renderFilters(order)}
+    ${renderMissing(deck)}
+    ${renderFilters(order)}
     ${message ? `<p class="build-message" role="status">${esc(message)}</p>` : ''}
     <div class="build-main">
       <div class="pool" data-keep-scroll="pool">
-        ${pool.length ? pool.map((id) => renderPoolCard(deck, id, readOnly, base)).join('') : '<p class="pool-empty">No cards match these filters.</p>'}
+        ${pool.length ? pool.map((id) => renderPoolCard(deck, id, base)).join('') : '<p class="pool-empty">No cards match these filters.</p>'}
       </div>
-      ${renderDeckPanel(deck, order, readOnly, ready, base)}
+      ${renderDeckPanel(deck, order, ready, base)}
     </div>
   </div>`;
 }
 
-/** A deck made from a starter: which one, and how many cards differ (the new ones are marked in blue). */
+/** A copy of another deck: which one, and how many cards differ (the new ones are marked in blue). */
 function renderChanges(deck: DeckList, base: DeckList): string {
   const { added, removed } = deckChanges(deck, base);
   const count = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
@@ -524,7 +516,7 @@ function renderChanges(deck: DeckList, base: DeckList): string {
   return `<div class="changes-bar">Made from <b>${esc(base.name)}</b> · ${what}</div>`;
 }
 
-/** A card the starter doesn't have says "New"; more copies than the starter has says "+1". */
+/** A card the deck it was copied from doesn't have says "New"; more copies than it has says "+1". */
 const newLabel = (count: number, inBase: number) => (inBase ? `+${count - inBase}` : 'New');
 
 /**
@@ -553,14 +545,9 @@ function renderFilters(order: string[]): string {
     </div>`;
 }
 
-function renderPoolCard(deck: DeckList, id: string, readOnly: boolean, base: DeckList | null): string {
+function renderPoolCard(deck: DeckList, id: string, base: DeckList | null): string {
   const name = CARDS[id].name;
   const count = deck.cards[id] ?? 0;
-  if (readOnly) {
-    return `<div class="pool-card"><div class="pool-face" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
-      <img src="${yourCardUrl(id)}" alt="${esc(name)}" decoding="async"></div>
-      <span class="pool-count">×${count}</span></div>`;
-  }
   const usable = Math.min(copyLimit(id), owned(id));
   const maxed = count >= usable;
   const blocked = !maxed && addProblem(deck, id, owned, true) !== null;
@@ -579,8 +566,8 @@ function renderPoolCard(deck: DeckList, id: string, readOnly: boolean, base: Dec
     </div>`;
 }
 
-function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, ready: boolean, base: DeckList | null): string {
-  // A deck made from a starter lists what it took out of it, under its own cards.
+function renderDeckPanel(deck: MyDeck, order: string[], ready: boolean, base: DeckList | null): string {
+  // A copy of another deck lists what it took out of it, under its own cards.
   const removed = base ? deckChanges(deck, base).removed : {};
   const out = sortCards(Object.keys(removed), order).sort((a, b) => (CARDS[a].cost ?? 0) - (CARDS[b].cost ?? 0));
   const isAdded = (id: string) => !!base && deck.cards[id] > (base.cards[id] ?? 0);
@@ -605,15 +592,14 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           </div>
           <ul class="deck-lines" data-keep-scroll="deck">
             ${ids.length ? ids.map((id) => `
-              <li class="${famClass(id)} ${!readOnly && owned(id) < deck.cards[id] ? 'short' : ''} ${isAdded(id) ? 'added' : ''}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
+              <li class="${famClass(id)} ${owned(id) < deck.cards[id] ? 'short' : ''} ${isAdded(id) ? 'added' : ''}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
                 <span class="line-cost">${CARDS[id].cost ?? ''}</span>
                 <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}${isAdded(id)
-                  ? ` <small class="line-new">${newLabel(deck.cards[id], base!.cards[id] ?? 0)}</small>` : ''}${!readOnly && owned(id) < deck.cards[id]
+                  ? ` <small class="line-new">${newLabel(deck.cards[id], base!.cards[id] ?? 0)}</small>` : ''}${owned(id) < deck.cards[id]
                   ? ` <small class="line-short">${owned(id) ? `you have ${owned(id)}` : 'not yours yet'}</small>` : ''}</span>
-                ${readOnly ? `<span class="line-qty">×${deck.cards[id]}</span>` : `
                 <button class="line-btn" data-click="deck:remove:${id}" aria-label="Remove one ${esc(cardName(id))}">−</button>
                 <span class="line-qty">${deck.cards[id]}</span>
-                <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}" ${addProblem(deck, id, owned, true) ? 'disabled' : ''}>+</button>`}
+                <button class="line-btn" data-click="deck:add:${id}" aria-label="Add one ${esc(cardName(id))}" ${addProblem(deck, id, owned, true) ? 'disabled' : ''}>+</button>
               </li>`).join('') : '<li class="deck-empty">Tap cards to add them to your deck.</li>'}
             ${out.length ? `<li class="deck-out-head">Taken out of ${esc(base!.name)}</li>${out.map((id) => `
               <li class="${famClass(id)} taken-out" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
@@ -626,7 +612,7 @@ function renderDeckPanel(deck: DeckList, order: string[], readOnly: boolean, rea
           <div class="deck-actions">
             ${size ? `<button class="copy-code" data-click="deck:copycode">${CODE} Copy deck code</button>` : ''}
             ${codeNote ? `<p class="code-note" role="status">${esc(codeNote)}</p>` : ''}
-            ${readOnly || isNew ? '' : `<button class="delete-deck" data-click="deck:delete:${editing!.id}">${BIN} Delete deck</button>`}
+            ${isNew ? '' : `<button class="delete-deck" data-click="deck:delete:${deck.id}">${BIN} Delete deck</button>`}
           </div>
         </div>
       </aside>`;

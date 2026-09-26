@@ -544,25 +544,25 @@ button.copy-code:hover { background: rgba(61, 157, 82, 0.1); box-shadow: none; }
 .import-dialog .code-box:focus { outline: none; border-color: #3d9d52; box-shadow: 0 0 0 3px rgba(61, 157, 82, 0.25); }
 .delete-dialog p.import-error { margin: -4px 0 12px; color: #b3261e; }
 .new-plus { width: 64px; height: 64px; flex: none; display: grid; place-items: center; font: 700 40px/1 Fredoka, Nunito, sans-serif; border-radius: 12px; }
-/* The rules are in the rulebook (§11.1); a link to them sits beside "Your decks". */
-.deck-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-.deck-group-head h3 { margin: 0; }
-.rules-link {
-  display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 4px 12px 4px 8px; border-radius: 999px;
-  font: 700 14px Fredoka, Nunito, sans-serif; text-decoration: none;
+/* The rules are in the rulebook (§11.1): a tile beside New deck and Deck from a code links to them. */
+a.rules-tile { text-decoration: none; }
+.rules-plus { padding: 10px; object-fit: contain; }
+/* Start from a deck: what it's for, then decks to copy, each with a Copy label under its name. */
+.deck-group-lead { margin: -2px 0 10px; max-width: 640px; font-size: 14px; font-weight: 600; line-height: 1.4; }
+.copy-label {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; margin-top: 2px; padding: 3px 12px; border-radius: 999px;
+  font: 700 14px Fredoka, Nunito, sans-serif; color: #fff; background: #2f80d0; box-shadow: 0 2px 0 #1f5f9e;
 }
-.rules-link .btn-ico { width: 22px; height: 22px; }
+.mine-tag { font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 1px 8px; border-radius: 999px; background: #3d9d52; }
 
 /* The builder: header, filters, then the cards you have beside the deck. */
 .menu.builder { max-width: 1300px; gap: 8px; justify-content: flex-start; }
 /* The header is a parchment bar, like the deck bar at the bottom: text never sits on the painted sky.
    The name is on the left with a small flat pencil after it and "All changes saved" under it; Done is
-   on the right. A starter has a back button before its name instead. */
+   on the right. */
 .build-bar {
   grid-template-columns: auto minmax(0, 1fr) auto; max-width: none; gap: 10px; padding: 6px 10px; border-radius: 18px;
 }
-.read-only .build-bar { grid-template-columns: auto auto minmax(0, 1fr) auto; }
-button.copy-deck { white-space: nowrap; }
 .bar-hero { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #fff6dc, 0 0 0 4px var(--fam, var(--parchment-edge)); }
 .build-title { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-align: left; }
 .setup-bar.build-bar h2 {   /* beats skin.css's white menu heading: this one sits on parchment */
@@ -644,10 +644,6 @@ button.pool-face, .pool-face {
 .pips i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b07a3a; background: rgba(255, 255, 255, 0.6); }
 .pips i.on { background: var(--accent); border-color: #c4561a; }
 button.pool-remove { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 18px; line-height: 1; }
-.pool-count {
-  position: absolute; top: 6px; right: 6px; padding: 1px 8px; border-radius: 999px; font-weight: 800; font-size: 13px;
-  background: var(--accent); color: #fff;
-}
 
 .deck-panel { min-height: 0; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; text-align: left; }
 .deck-toggle { display: none; }

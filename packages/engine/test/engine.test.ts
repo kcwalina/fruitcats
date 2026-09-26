@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, RARITIES, addProblem, apply, chooseAction, createGame, builtInTwin, deckCardIds, deckChanges, deckProblems, legalActions, starterBase, randomAction,
+  CARDS, DECKS, RARITIES, addProblem, apply, chooseAction, createGame, builtInTwin, deckCardIds, deckChanges, deckProblems, legalActions, randomAction,
   keywords, unitHealth, unitPower, type DeckList, type GameState,
 } from '../src/index';
 
@@ -47,19 +47,13 @@ describe('decks made from a starter', () => {
     const starter = DECKS['zest-rush'];
     const copy: DeckList = { name: 'Mine', hero: starter.hero, cards: { ...starter.cards } };
     expect(builtInTwin(copy)).toBe('zest-rush');
-    expect(starterBase(copy)).toBe('zest-rush');
     const [out] = Object.keys(starter.cards);
     const other = Object.keys(DECKS['orchard-guard'].cards).find((id) => !(id in starter.cards))!;
     copy.cards[out] -= 1;
     if (!copy.cards[out]) delete copy.cards[out];
     copy.cards[other] = 1;
     expect(builtInTwin(copy)).toBeNull();
-    expect(starterBase(copy)).toBe('zest-rush');
     expect(deckChanges(copy, starter)).toEqual({ added: { [other]: 1 }, removed: { [out]: 1 } });
-  });
-
-  it('a deck built from nothing is not made from a starter', () => {
-    expect(starterBase({ name: 'Empty', hero: DECKS['zest-rush'].hero, cards: {} })).toBeNull();
   });
 });
 

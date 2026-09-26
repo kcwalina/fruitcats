@@ -38,6 +38,9 @@ export interface Session {
   /** The account's birth year, for the age checks (13+ for an account, 18+ to buy). Null until the account has one:
    *  an account made in the Artist Studio gives it at the game's Terms step. */
   birthYear?: number | null;
+  /** Entra has refused to renew this sign-in (see `refusedRefresh`): when first and last, how many times, and its latest
+   *  reason. Gone once a renewal works. */
+  refused?: { first: number; last: number; tries: number; why?: string };
 }
 
 /**
@@ -64,6 +67,8 @@ export interface Pending {
 }
 
 export class AuthError extends Error {
+  /** Entra's own description of the failure, for diagnosis only (never shown to players). */
+  detail?: string;
   constructor(readonly code: string, message: string) { super(message); }
 }
 
@@ -96,7 +101,29 @@ export async function token(): Promise<string | null> {
   return refreshing;
 }
 
+/**
+ * Entra saying no to a renewal isn't final: it can answer that way during its own trouble, and a player who loses a
+ * signed-in session has to wait for a code email again. Like any app, a device stays signed in for months: it keeps the
+ * sign-in through any number of refusals (and any time offline), asks again no sooner than REFUSED_RETRY_MS, and gives up
+ * only once Entra has kept refusing for REFUSED_FOR_MS, when the sign-in really is gone.
+ */
+const REFUSED_RETRY_MS = 5 * 60_000;
+const REFUSED_TRIES = 3;
+const REFUSED_FOR_MS = 90 * 24 * 60 * 60_000;
+
+function refusedRefresh(e: AuthError) {
+  const now = session();
+  if (!now) return;
+  const at = Date.now(), first = now.refused?.first ?? at, tries = (now.refused?.tries ?? 0) + 1;
+  const why = [e.code, e.detail].filter(Boolean).join(': ').slice(0, 300);
+  if (tries >= REFUSED_TRIES && at - first >= REFUSED_FOR_MS) signOut();
+  else saveSession({ ...now, refused: { first, last: at, tries, why } });
+  console.warn('Entra refused to renew the sign-in:', why);
+}
+
 async function refresh(s: Session): Promise<string | null> {
+  // Refused a moment ago: don't ask Entra again yet (the caller carries on signed in, without a fresh token).
+  if (s.refused && Date.now() - s.refused.last < REFUSED_RETRY_MS) return null;
   try {
     const entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: s.refreshToken, scope: SCOPE });
     // Entra hands out a new refresh token each time: kept at once, so an exchange that fails below doesn't leave this
@@ -105,9 +132,9 @@ async function refresh(s: Session): Promise<string | null> {
     if (now && entra.refresh_token) saveSession({ ...now, refreshToken: entra.refresh_token });
     return (await finish(entra, s.email)).token;
   } catch (e) {
-    // Only Entra rejecting the refresh token signs the player out. Being offline, or our service being down or slow,
-    // doesn't: they're still signed in once it's back.
-    if (e instanceof AuthError && (e.code === 'invalid_grant' || e.code === 'expired')) signOut();
+    // Being offline, or our service being down or slow, never signs the player out: they're still signed in once it's
+    // back. Entra rejecting the refresh token counts against the sign-in, but only a long run of them ends it.
+    if (e instanceof AuthError && (e.code === 'invalid_grant' || e.code === 'expired')) refusedRefresh(e);
     return null;
   }
 }
@@ -526,7 +553,7 @@ async function entraPost(path: string, fields: Record<string, string>): Promise<
   }, safeToRepeat(path, fields));
   const json = await r.json().catch(() => ({}));
   if (r.ok && json.challenge_type !== 'redirect') return json;
-  throw toError(r.status, json);
+  throw Object.assign(toError(r.status, json), { detail: json.error_description });
 }
 
 /**

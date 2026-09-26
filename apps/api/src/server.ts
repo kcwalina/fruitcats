@@ -187,8 +187,11 @@ const serveStudio = studio({
 
 // The playtest dashboard (playtests/, docs/playtests.md). The owner signs in with a Via Mochi account; PC2024's
 // playtester sends "Bearer runner-<key>", checked against PLAYTEST_RUNNERS ("PC2024:<sha256 of the key>", comma-separated).
+// The hashes aren't secret, so the runners known today are written here; the setting replaces them. PC2024's is in its
+// /health; "laptop" (~/.fruitcats-playtests/runner.key) brought over the runs the old dashboard had.
+const KNOWN_RUNNERS = 'PC2024:9669627a20837bb85f124a6d528227dfda3e83ac980d2457ae4a8a4dce004ab2,laptop:b5b7f687de7b022850598615791300b446c7c451cfc2590c057da0ecd8453403';
 const PLAYTEST_OWNERS = (process.env.PLAYTEST_OWNERS ?? process.env.STUDIO_OWNERS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-const PLAYTEST_RUNNERS = (process.env.PLAYTEST_RUNNERS ?? '').split(',').filter(Boolean).map((pair) => {
+const PLAYTEST_RUNNERS = (process.env.PLAYTEST_RUNNERS ?? (LOCAL_DATA ? '' : KNOWN_RUNNERS)).split(',').filter(Boolean).map((pair) => {
   const [name, hash] = pair.split(':');
   return { name: name.trim(), hash: (hash ?? '').trim().toLowerCase() };
 });

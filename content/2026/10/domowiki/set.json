@@ -49,22 +49,25 @@
       "Moving house, families carried embers from the old stove, or an old shoe, and asked him along: 'Grandfather, come with us to the new home.'",
       "He braids the manes of the horses he likes and tires out the ones he doesn't.",
       "A warm, furry hand touching you at night was a sign of good times ahead; a cold one, of trouble.",
-      "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha."
+      "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha.",
+      "Folklorists describe the Domowik as the household's own piece of Rod, the Slavic god of kin and ancestors: each family's first forefather, still looking after his descendants.",
+      "Families often called him 'grandfather' (Polish dziadek, or fondly dziadziuś), never by name, out of respect."
     ],
     "sources": [
-      "https://en.wikipedia.org/wiki/Domovoy"
+      "https://en.wikipedia.org/wiki/Domovoy",
+      "https://en.wikipedia.org/wiki/Slavic_Native_Faith%27s_theology_and_cosmology"
     ]
   },
   "cards": [
     {
       "id": "DW1-H01",
-      "rarity": "Rare",
+      "rarity": "Legendary",
       "type": "Hero Cat",
       "family": "Domowiki",
-      "name": "Dziadek, the House Grandfather",
-      "flavor": "Every family has one. The lucky ones feed him.",
+      "name": "Dziadziuś, Heart of the House",
+      "flavor": "The smallest Domowik in the house. Everyone listens to him anyway.",
       "kitten": {
-        "name": "Dziadek, New to the House",
+        "name": "Dziadziuś, Heart of the House",
         "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats.",
         "abilities": [
           {
@@ -85,7 +88,7 @@
         }
       },
       "bigCat": {
-        "name": "Dziadek, Master of the House",
+        "name": "Dziadziuś, Master of the House",
         "power": 4,
         "text": "Fierce. Exhaust: Ready two of your Treats.",
         "keywords": [
@@ -101,7 +104,8 @@
             ]
           }
         ]
-      }
+      },
+      "frame": "gold"
     },
     {
       "id": "DW1-D01",

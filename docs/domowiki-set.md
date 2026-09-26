@@ -36,15 +36,20 @@ fantasy: offerings (Treats) now, and the big spirits wake once the house is **We
 - Gameplay that follows the folklore more closely (angry Domowiki, moving house, the warm or cold hand) can come
   later, as the deck is tuned; nothing here needs engine code.
 
-## Hero: Dziadek, the House Grandfather (DW1-H01, Rare)
+## Hero: Dziadziuś, Heart of the House (DW1-H01, Legendary)
 
 | Side | Name | Power | Text |
 |---|---|---|---|
-| Kitten | Dziadek, New to the House | – | Exhaust: Ready one of your Treats. Grow Up: You have 8 or more Treats. |
-| Big Cat | Dziadek, Master of the House | 4 | Fierce. Exhaust: Ready two of your Treats. |
+| Kitten | Dziadziuś, Heart of the House | – | Exhaust: Ready one of your Treats. Grow Up: You have 8 or more Treats. |
+| Big Cat | Dziadziuś, Master of the House | 4 | Fierce. Exhaust: Ready two of your Treats. |
 
-*Dziadek* is Polish for grandfather: families called the house spirit "grandfather". The engine still calls the
-leader a Hero Cat, with Kitten and Big Cat sides; renaming those is part of the wider re-theme.
+*Dziadziuś* is the affectionate Polish word for grandpa: families called their house spirit "grandfather". The hero
+is the cutest Domowik of all, painted like the rest of the deck (the owner's call, 2026-09-26: a grand, glowing
+"forefather god" looked like a Santa Claus and lost what makes the deck captivating). What marks him as the leader is
+the card, not a halo: Legendary (the crown mark) and the only gold frame in the deck.
+
+The engine still calls the leader a Hero Cat, with Kitten and Big Cat sides; renaming those is part of the wider
+re-theme (docs/retheme-proposal.md).
 
 ## The deck (50 cards)
 

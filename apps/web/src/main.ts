@@ -19,8 +19,8 @@ import {
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
-import { addOpen, closeAddSheet, closeFriends, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
-import { live, onLive, send, startLive, stopLive, wantConnection } from './live';
+import { addOpen, closeAddSheet, closeFriends, friendName, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
+import { live, onGameFound, onLive, send, startLive, stopLive, wantConnection } from './live';
 import {
   enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
   playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
@@ -774,6 +774,7 @@ function friendTileLine(): { line: string; badge: number; waiting: boolean } {
   // Short, plain words: the line must fit under the tile on the narrowest phone.
   if ((ol && !ol.end) || live.match) return { line: '<span class="mode-sub continue-line">Back to the game</span>', badge: n, waiting: true };
   if (n) return { line: '<span class="mode-sub continue-line">Join the game</span>', badge: n, waiting: true };
+  if (live.outgoing) return { line: `<span class="mode-sub continue-line">Waiting for ${esc(friendName(live.outgoing.to))}</span>`, badge: 0, waiting: true };
   return { line: '<span class="mode-sub">Online</span>', badge: 0, waiting: false };
 }
 
@@ -827,17 +828,16 @@ function renderHome(): string {
   </div>`;
 }
 
-function renderDeckPicker(startersOnly = false): string {
+function renderDeckPicker(): string {
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
   if (!deckForKey(deckInView)) deckInView = myDeck;
   // Every deck is the same card in one carousel: the starters, then your own. The one in the middle is
   // your deck; one of yours still short of 50 cards can sit there, but you can't play it yet.
-  if (startersOnly && !(deckInView in DECKS)) deckInView = myDeck in DECKS ? myDeck : Object.keys(DECKS)[0];
   const decks = [
     ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb(key) })),
-    ...(startersOnly ? [] : listDecks()).map((d) => {
+    ...listDecks().map((d) => {
       const ready = isReady(d);
       return { key: customKey(d.id), deck: d, ready,
         blurb: ready ? `Your own deck, led by ${esc(cardName(d.hero))}.`
@@ -871,10 +871,10 @@ const deckChoiceClass = (key: string, ready: boolean) => ['deck-choice', key.sta
 /** What Play a friend needs from this file: Solo's deck carousel, and the deck in its middle. */
 const friendsHost: FriendsHost = {
   render,
-  deckPicker: (startersOnly) => renderDeckPicker(startersOnly),
-  chosenDeck(startersOnly) {
+  deckPicker: renderDeckPicker,
+  chosenDeck() {
     const d = deckForKey(deckInView);
-    if (!d || !isReady(d) || (startersOnly && !(deckInView in DECKS))) return null;
+    if (!d || !isReady(d)) return null;
     return { name: d.name, hero: d.hero, cards: { ...d.cards } };
   },
   hasPlayed,
@@ -1582,6 +1582,13 @@ if (import.meta.env.DEV) {
 }
 
 if (ONLINE) onlineTicks(renderUnlessAnimating);
+// A friend said yes while this game wasn't connected (closed, in the background, on another screen): from Home or Play
+// a friend, go straight to the game. (Anywhere else, the Friend tile says "Back to the game".)
+if (ONLINE) onGameFound(() => {
+  if (screen !== 'home' && screen !== 'friends') return;
+  if (screen !== 'friends') { openFriends(friendsHost); screen = 'friends'; }
+  render();   // Play a friend connects, and the connection takes the game back up (welcome's match)
+});
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
 if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }

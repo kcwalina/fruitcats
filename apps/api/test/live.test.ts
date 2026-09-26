@@ -7,7 +7,7 @@ import { DECKS, HIDDEN, RULES_VERSION, legalActions, type Action, type PlayerVie
 import {
   ASK_MS, OVERTIME_CLAIM_MS, PACES, PROTOCOL, rankedRules, type ChallengeOptions, type ClientMessage, type ServerMessage,
 } from '@fruitcats/match';
-import { CHALLENGE_AWAY_MS, CHALLENGE_MS, createHub } from '../src/live/hub';
+import { CHALLENGE_MS, createHub } from '../src/live/hub';
 import { IDLE_MS, Match, RESULT_KEEP_MS, type MatchHost, type MatchRecord } from '../src/live/match';
 import { tableStore } from '../src/live/records';
 import type { Row, Table } from '../src/tables';
@@ -204,25 +204,27 @@ describe('presence and challenges', () => {
     expect(hub.counts().matches).toBe(0);
   });
 
-  it('keeps a challenge while the one who asked steps away for a moment (to text their friend)', async () => {
+  it('keeps a request to play on the server until it is answered, whatever the asking game does meanwhile', async () => {
     const sam = await connect(A);
     const pippin = await connect(B);
     sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
     await flush();
     const id = pippin.last('challenge')!.id;
-    sam.drop();                                   // the phone put the game in the background
+    sam.drop();                                   // the app closed
     await flush();
-    vi.advanceTimersByTime(20_000);
+    vi.advanceTimersByTime(CHALLENGE_MS - 30_000);
     expect(pippin.last('challenge-ended')).toBeUndefined();
+    // Reopened, not connected yet: "I'm here" says the request is still waiting, and for how long.
+    expect(hub.here(A).sent).toEqual([{ id, to: B, left: 30_000 }]);
     const back = await connect(A);
-    expect(back.last('welcome')!.sent).toEqual([id]);
+    expect(back.last('welcome')!.sent).toEqual([{ id, to: B, left: 30_000 }]);
     pippin.send({ t: 'accept', id, deck: OTHER, lives: 9 });
     await flush();
     expect(back.last('match')).toBeDefined();
     expect(pippin.last('match')).toBeDefined();
   });
 
-  it('starts the game when the friend says yes while the one who asked is away, and waits for them to come back', async () => {
+  it('starts the game when the friend says yes while the asking game is closed, and waits for it to come back', async () => {
     const sam = await connect(A);
     const pippin = await connect(B);
     sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
@@ -233,34 +235,35 @@ describe('presence and challenges', () => {
     await flush();
     expect(pippin.last('match')).toBeDefined();
     expect(pippin.last('away')).toMatchObject({ seat: 0 });
+    expect(hub.here(A).match).toBe(pippin.match);
     const back = await connect(A);
     expect(back.last('welcome')!.match).toBe(pippin.match);
   });
 
-  it('withdraws the challenge of someone who stays away, and tells them when they come back', async () => {
-    const sam = await connect(A);
-    const pippin = await connect(B);
-    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
-    await flush();
-    sam.drop();
-    await flush();
-    vi.advanceTimersByTime(CHALLENGE_AWAY_MS + 1);
-    expect(pippin.last('challenge-ended')!.why).toBe('offline');
-    const back = await connect(A);
-    expect(back.last('welcome')!.sent).toEqual([]);
-  });
-
-  it('keeps a challenge while the friend being asked steps away, and brings it back to them', async () => {
+  it('keeps a request while the friend being asked closes the game, and brings it back to them', async () => {
     const sam = await connect(A);
     const pippin = await connect(B);
     sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
     await flush();
     pippin.drop();
     await flush();
-    vi.advanceTimersByTime(20_000);
+    vi.advanceTimersByTime(60_000);
     expect(sam.last('challenge-ended')).toBeUndefined();
+    expect(hub.here(B).challenges).toEqual([expect.objectContaining({ from: expect.objectContaining({ id: A }) })]);
     const back = await connect(B);
-    expect(back.last('challenge')).toMatchObject({ from: { id: A } });
+    expect(back.last('welcome')!.incoming).toEqual([expect.objectContaining({ from: expect.objectContaining({ id: A }) })]);
+  });
+
+  it('ends a request only when it runs out, and says so to the game that comes back', async () => {
+    const sam = await connect(A);
+    await connect(B);
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    sam.drop();
+    await flush();
+    vi.advanceTimersByTime(CHALLENGE_MS + 1);
+    const back = await connect(A);
+    expect(back.last('welcome')!.sent).toEqual([]);
   });
 
   it('starts the game when two friends ask each other at the same time', async () => {
@@ -275,12 +278,13 @@ describe('presence and challenges', () => {
     expect(pippin.last('match')!.info.id).toBe(sam.match);
   });
 
-  it('holds a starters-only game to starter decks', async () => {
+  it('lets each player pick any deck: "starter decks only" from an older game is ignored', async () => {
     const sam = await connect(A);
-    await connect(B);
+    const pippin = await connect(B);
     sam.send({ t: 'challenge', to: B, deck: { ...STARTER, name: 'My tuned deck' }, options: { ...RELAXED, startersOnly: true }, lives: 9 });
     await flush();
-    expect(sam.last('error')!.message).toMatch(/starter decks only/);
+    expect(sam.last('error')).toBeUndefined();
+    expect(pippin.last('challenge')!.options.startersOnly).toBe(false);
   });
 });
 
@@ -558,7 +562,7 @@ describe('room for a fixed number of players', () => {
 describe('"I’m here", without a connection', () => {
   it('shows a friend online, and brings them a challenge, keeping them a place', async () => {
     maxPlayers = 2;
-    expect(hub.here(B)).toEqual({ open: true, challenges: [], match: null });   // Pippin's game is open, not connected
+    expect(hub.here(B)).toEqual({ open: true, challenges: [], sent: [], match: null });   // Pippin's game is open, not connected
     const sam = await connect(A);
     expect(sam.last('welcome')!.friends[0]).toMatchObject({ id: B, status: 'online' });
     sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
@@ -569,7 +573,7 @@ describe('"I’m here", without a connection', () => {
     // A place was kept for Pippin: online play is now full for anyone else.
     expect((await hub.enter(C)).status).toBe('waiting');
     const pippin = await connect(B);
-    expect(pippin.last('challenge')!.id).toBe(note.id);
+    expect(pippin.last('welcome')!.incoming.map((c) => c.id)).toEqual([note.id]);
     pippin.send({ t: 'accept', id: note.id, deck: OTHER, lives: 9 });
     await flush();
     expect(pippin.last('match')).toBeDefined();

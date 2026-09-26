@@ -22,7 +22,7 @@ Last updated 2026-09-25.
 | **A fixed ceiling on cost** | No autoscaling. Online play has room for a fixed number of connected players (`LIVE_MAX_PLAYERS`, 300 by default). When it's full, players wait in line (`/v1/live/enter`), and **players who have bought cards go first**. The bill can't grow by itself: the worst case is a waiting line. `LIVE=off` switches online play off. The Terms of Use (section 7) say buying doesn't buy online play or a waiting time. |
 | **Where friends live** | Inside the Friend game mode, not in a place of their own. The Home screen keeps its six tiles: the **Friend** tile opens **Play a friend**, where you pick who to play from your friends, or add one. Settings → Account → Friends is gone. |
 | **Adding a friend** | A code, never a link. Together: one phone shows its code as a QR code, the other scans it inside the game, sees whose code it is and taps **Add**. Or type the code. Codes are viamochi-id's: 6 characters, 15 minutes, one use. |
-| **Challenges** | Only to friends who are online now (connected, or said "I'm here" in the last 50 seconds). A challenge keeps a place for the friend, so answering never puts them in the waiting line. Nobody answering: withdrawn after 2 minutes. |
+| **Challenges** | Only to friends who are online now (connected, or said "I'm here" in the last 50 seconds). A challenge keeps a place for the friend, so answering never puts them in the waiting line. It's kept on the server from the moment it's sent until the friend joins or says no, the one who asked cancels, or 5 minutes pass: never because a connection dropped or a game was closed. Two friends asking each other: the game starts. |
 | **Friendly, not cutthroat** | In a Friend game, running out of time never makes a move for you: the other player decides (give more time, nudge, or, after a while, take the win or call it off). Ranked is the strict one. |
 | **Teaching games** | One switch when challenging, for a friend who is new: no timer, hints, take-backs, open hands, slower replays, a kinder end, and it doesn't count. |
 | **Handicap** | Each player may choose to start with fewer Lives (9 down to 3), for themselves only. Both players see it. |
@@ -106,7 +106,14 @@ Tapping a friend opens the challenge:
 
 Joining ("Play with Sam") shows whether it's a teaching game and their handicap, the deck carousel, **Your Lives**, and
 **Play**. Someone who has never finished a game is told they can ask for a teaching game instead. (The server still
-understands "starter decks only" and "decline" from older builds of the game; the game no longer offers either.)
+understands "decline" from older builds of the game; the game no longer offers it. "Starter decks only" is ignored:
+each player picks any deck of theirs.)
+
+**Closing the game doesn't lose a request.** Whoever reopens the game finds it where it was: the one who asked sees
+"Waiting for Sam" on the Friend tile and the waiting ring when they open Play a friend; the friend sees "Join". If the
+friend joins while the asker's game is closed, the game starts and waits for them (like any dropped connection), and
+their game opens it by itself from Home or Play a friend. (First playtest, 2026-09-26: the hub withdrew a request the
+moment the asker's connection dropped, which happens whenever a phone puts the game in the background.)
 
 ### Versus
 
@@ -186,7 +193,7 @@ waits for both players to come back.
 | Socket, sign-in on it, reconnecting (`socket.ts`, `live.ts`) | ✓ | | |
 | Presence (`hub.ts`) | ✓ | shown to friends | |
 | Finding the other player | | challenges (`hub.ts`) | the queue |
-| Deck check: finished, every card owned by that account (`server.ts`) | ✓ | starter decks only, if asked | |
+| Deck check: finished, every card owned by that account (`server.ts`) | ✓ | | |
 | The match: engine, views, clock, drops, concede, emotes, rematch (`match.ts`) | ✓ | | |
 | The record: seed, decks, moves, result (`records.ts`) | ✓ | | |
 | After the game | | the record between you | the rating |
@@ -283,7 +290,7 @@ In the API's memory:
 - **A game going**: until it ends. Nobody moving for **24 hours**, whoever is still connected, calls it off; both
   players gone for **30 minutes** calls it off.
 - **A finished game**: until both players leave its result, or **10 minutes** after it ended.
-- **A challenge**: 2 minutes. **A friend code on a screen**: until the code is used, replaced, or its phone disconnects.
+- **A challenge**: 5 minutes, whatever the players' games do meanwhile. **A friend code on a screen**: until the code is used, replaced, or its phone disconnects.
 - **A connection**: until its socket closes, stops answering pings (25 s), or, outside a game, does nothing for 10
   minutes.
 - **"I'm here"**: 50 seconds after the last one. **A place in the waiting line**: 30 seconds after it was last asked

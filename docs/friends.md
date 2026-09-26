@@ -36,7 +36,7 @@ On a computer, **Copy the code** copies the message, ready to paste.
 <div class="steps">
 <figure><img src="guide/friends/play-1-list.webp" alt="Play a friend: Pippin, online, with a Play button" loading="lazy"><figcaption><b>1</b> Tap <b>Friend</b>. Friends who are online have a <b>Play</b> button: tap one.</figcaption></figure>
 <figure><img src="guide/friends/play-2-challenge.webp" alt="Play with Pippin: choose a deck, Teaching game, Pace, Your Lives" loading="lazy"><figcaption><b>2</b> Pick your deck and how to play (see below), then <b>Ask Pippin to play</b>.</figcaption></figure>
-<figure><img src="guide/friends/play-3-waiting.webp" alt="Waiting for Pippin, with a countdown" loading="lazy"><figcaption><b>3</b> Wait for your friend to answer (up to 2 minutes).</figcaption></figure>
+<figure><img src="guide/friends/play-3-waiting.webp" alt="Waiting for Pippin, with a countdown" loading="lazy"><figcaption><b>3</b> Wait for your friend to answer (up to 5 minutes). Closing the game meanwhile is fine: your request stays until they answer.</figcaption></figure>
 <figure><img src="guide/friends/play-4-banner.webp" alt="Sam wants to play, with a Join button, on the Home screen" loading="lazy"><figcaption><b>4</b> Your friend sees <b>"Sam wants to play"</b> wherever they are in the game, and taps <b>Join</b>.</figcaption></figure>
 <figure><img src="guide/friends/play-5-answer.webp" alt="Play with Sam: pick a deck, then Play" loading="lazy"><figcaption><b>5</b> They pick their deck and tap <b>Play</b>.</figcaption></figure>
 <figure><img src="guide/friends/play-6-versus.webp" alt="You vs Sam, with both Hero Cats" loading="lazy"><figcaption><b>6</b> The game starts.</figcaption></figure>

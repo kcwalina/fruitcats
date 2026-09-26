@@ -22,15 +22,27 @@ export const HERE_MS = 50_000;
 /** While waiting in line, ask again this often. A place is kept only while it's asked for. */
 export const ENTER_EVERY_MS = 10_000;
 /** Bumped when a message changes shape: an older game is asked to reload before it can play online. */
-export const PROTOCOL = 2;
+export const PROTOCOL = 3;
+
+/**
+ * How long a request to play waits for an answer. It's kept on the server from the moment it's sent: it ends when the
+ * friend joins or says no, when the one who asked cancels, or after this long. Never because a connection dropped or
+ * the game was closed: whoever opens the game again finds it where it was.
+ */
+export const CHALLENGE_MS = 5 * 60_000;
 
 /** A challenge waiting for you, as "I'm here" or the connection brings it. */
 export interface ChallengeNote { id: string; from: Person; options: ChallengeOptions; lives: number }
+
+/** Your own request to play, still waiting for an answer: who it's to, and how long it has left (ms). */
+export interface SentNote { id: string; to: string; left: number }
 
 export interface HereAnswer {
   /** Online play is on (the kill switch: LIVE=off on the API turns it off). */
   open: boolean;
   challenges: ChallengeNote[];
+  /** Your own request still waiting (older APIs: missing). */
+  sent?: SentNote[];
   /** A game you're in that's still going. */
   match: string | null;
 }
@@ -147,7 +159,9 @@ export function rankedRules(): MatchRules {
 export function cleanOptions(o: unknown): ChallengeOptions | null {
   const x = o as Partial<ChallengeOptions> | null;
   if (!x || typeof x !== 'object' || !(typeof x.pace === 'string' && x.pace in PACES)) return null;
-  return { pace: x.pace as Pace, teaching: x.teaching === true, startersOnly: x.startersOnly === true };
+  // "Starter decks only" is gone: each player picks any deck of theirs (a starter deck is one of them). An older game
+  // may still ask for it, and is ignored.
+  return { pace: x.pace as Pace, teaching: x.teaching === true, startersOnly: false };
 }
 
 /** Lives a player may choose to start with: all 9, or fewer as a handicap. */
@@ -259,7 +273,7 @@ export type ClientMessage =
   | { t: 'leave'; match: string };
 
 export type ServerMessage =
-  | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null; /** Your challenges still open (older APIs: missing). */ sent?: string[] }
+  | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null; /** Your own requests still waiting. */ sent: SentNote[]; /** Friends' requests waiting for you. */ incoming: ChallengeNote[] }
   /** This game is older than the server: reload to play online. */
   | { t: 'update' }
   /** Online play is full (ask to be let in first), or switched off. The connection is closed after this. */
@@ -273,7 +287,7 @@ export type ServerMessage =
   | { t: 'looked'; code: string; person: Person | null; yours: boolean }
   /** Someone added you as a friend: look at your friends again. */
   | { t: 'added'; by: Person }
-  | { t: 'sent'; id: string; to: string }
+  | { t: 'sent'; id: string; to: string; left: number }
   | { t: 'challenge'; id: string; from: Person; options: ChallengeOptions; lives: number }
   | { t: 'challenge-ended'; id: string; why: 'declined' | 'cancelled' | 'expired' | 'offline' | 'busy' | 'started' }
   /** A match you're in: its players and rules, and where it stands. Sent at the start and when you rejoin. */

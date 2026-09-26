@@ -14,7 +14,7 @@
 import { RULES_VERSION } from '@fruitcats/engine';
 import {
   ENTER_EVERY_MS, ENTER_PATH, HERE_EVERY_MS, HERE_PATH, LIVE_PATH, PROTOCOL,
-  type ChallengeNote, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person, type ServerMessage,
+  type ChallengeNote, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person, type SentNote, type ServerMessage,
 } from '@fruitcats/match';
 import { API } from './api';
 import { authedFetch, refreshAccount, session, token } from './auth';
@@ -41,9 +41,20 @@ export const live = {
   friends: new Map<string, FriendStatus>(),
   /** Challenges for you, newest last. */
   incoming: [] as Challenge[],
+  /** Your own request to play, still waiting for an answer (kept by the server, so it's here after a reopen too). */
+  outgoing: null as { id: string; to: string; until: number } | null,
   /** A game you're in that's still going, if any. */
   match: null as string | null,
 };
+
+const outgoingFrom = (sent: SentNote[] | undefined) => {
+  const s = sent?.[0];
+  return s ? { id: s.id, to: s.to, until: Date.now() + s.left } : null;
+};
+
+/** Called when "I'm here" finds a game that started while this one wasn't connected (a friend said yes meanwhile). */
+let gameFound: () => void = () => {};
+export function onGameFound(fn: () => void) { gameFound = fn; }
 
 type Listener = (msg: ServerMessage) => void;
 const listeners: Listener[] = [];
@@ -84,6 +95,7 @@ export function stopLive() {
   wantConnection(false);
   live.friends.clear();
   live.incoming = [];
+  live.outgoing = null;
   live.match = null;
   live.waiting = null;
 }
@@ -97,9 +109,12 @@ async function sayHere() {
     const answer = await post<HereAnswer>(HERE_PATH, { avatar: s?.avatar ?? 'cat', name: s?.displayName });
     if (answer) {
       const changed = answer.open !== live.open || answer.match !== live.match
-        || answer.challenges.map((c) => c.id).join() !== live.incoming.map((c) => c.id).join();
+        || answer.challenges.map((c) => c.id).join() !== live.incoming.map((c) => c.id).join()
+        || (answer.sent?.[0]?.id ?? null) !== (live.outgoing?.id ?? null);
+      const found = !!answer.match && answer.match !== live.match;
       live.open = answer.open;
-      if (!live.connected) { live.incoming = answer.challenges; live.match = answer.match; }
+      if (!live.connected) { live.incoming = answer.challenges; live.outgoing = outgoingFrom(answer.sent); live.match = answer.match; }
+      if (found && !live.connected) gameFound();
       if (changed) render();
     }
   }
@@ -246,7 +261,8 @@ function received(msg: ServerMessage) {
       live.you = msg.you;
       live.friends = new Map(msg.friends.map((f) => [f.id, f]));
       live.match = msg.match;
-      live.incoming = [];   // the server sends the challenges still open right after this
+      live.outgoing = outgoingFrom(msg.sent);
+      live.incoming = msg.incoming;
       // A game still going: back into it.
       if (msg.match) send({ t: 'rejoin', match: msg.match });
       break;
@@ -270,8 +286,12 @@ function received(msg: ServerMessage) {
     case 'challenge':
       live.incoming = [...live.incoming.filter((c) => c.id !== msg.id), { id: msg.id, from: msg.from, options: msg.options, lives: msg.lives }];
       break;
-    case 'challenge-ended': live.incoming = live.incoming.filter((c) => c.id !== msg.id); break;
-    case 'match': live.match = msg.end ? null : msg.info.id; break;
+    case 'sent': live.outgoing = { id: msg.id, to: msg.to, until: Date.now() + msg.left }; break;
+    case 'challenge-ended':
+      live.incoming = live.incoming.filter((c) => c.id !== msg.id);
+      if (live.outgoing?.id === msg.id) live.outgoing = null;
+      break;
+    case 'match': live.match = msg.end ? null : msg.info.id; live.outgoing = null; break;
     case 'end': if (live.match === msg.match) live.match = null; break;
   }
   for (const fn of listeners) fn(msg);

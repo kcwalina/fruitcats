@@ -8,7 +8,7 @@
 // Fruitcats API (live.ts) only says whose code it is, and tells the other phone once it's used.
 
 import type { DeckList } from '@fruitcats/engine';
-import { MIN_LIVES, PACES, type ChallengeOptions, type Pace, type Person } from '@fruitcats/match';
+import { CHALLENGE_MS, MIN_LIVES, PACES, type ChallengeOptions, type Pace, type Person } from '@fruitcats/match';
 import { pawtrait } from './account';
 import { AuthError, listFriends, newFriendCode, redeemFriendCode, removeFriend, session, type Friend } from './auth';
 import { live, onLive, reconnect, send } from './live';
@@ -17,10 +17,10 @@ import { backButton, esc, settingsButton } from './ui';
 
 export interface FriendsHost {
   render(): void;
-  /** The deck carousel (Solo's), with only the starter decks when a game is for starter decks only. */
-  deckPicker(startersOnly: boolean): string;
+  /** The deck carousel (Solo's): every deck, the starters and your own. */
+  deckPicker(): string;
   /** The deck in the middle of the carousel, when it can be played. */
-  chosenDeck(startersOnly: boolean): DeckList | null;
+  chosenDeck(): DeckList | null;
   /** Whether this device has finished a game before (a first-timer is offered a teaching game). */
   hasPlayed(): boolean;
 }
@@ -28,7 +28,7 @@ export interface FriendsHost {
 type View =
   | { kind: 'list' }
   | { kind: 'setup'; friend: string }
-  | { kind: 'waiting'; friend: string; id: string | null; since: number }
+  | { kind: 'waiting'; friend: string; id: string | null; until: number }
   | { kind: 'accept'; id: string };
 
 /** The Add a friend sheet: its menu, showing your code, scanning theirs, confirming whose it is, and done. */
@@ -39,8 +39,9 @@ type AddStep =
   | { kind: 'confirm'; code: string; person: Person | null }
   | { kind: 'done'; person: { id: string; name: string; avatar: string } };
 
-/** How long a challenge waits for an answer (the API's CHALLENGE_MS): the waiting ring counts it down. */
-const WAIT_S = 120;
+/** How long a challenge waits for an answer: the waiting ring counts it down. */
+const WAIT_S = CHALLENGE_MS / 1000;
+const secondsLeft = (until: number) => Math.max(0, Math.ceil((until - Date.now()) / 1000));
 
 let host: FriendsHost | null = null;
 /** Whether the Add a friend sheet is open. */
@@ -71,7 +72,9 @@ export function openFriends(h: FriendsHost, answer?: string) {
   shown = true;
   reloadFailures = 0;
   if (!loaded) savedFriends();
-  view = answer ? { kind: 'accept', id: answer } : { kind: 'list' };
+  // Your own request still waiting (the game was closed or in the background meanwhile): back to waiting for it.
+  const out = live.outgoing;
+  view = answer ? { kind: 'accept', id: answer } : out ? { kind: 'waiting', friend: out.to, id: out.id, until: out.until } : { kind: 'list' };
   note = ''; managing = null; confirming = null;
   if (answer) myLives = 9;
   void loadFriends();
@@ -81,13 +84,15 @@ export function openFriends(h: FriendsHost, answer?: string) {
 // is "here" without a connection, so their coming and going isn't announced.)
 window.setInterval(() => { if (host && view.kind === 'list' && live.connected && document.visibilityState === 'visible') send({ t: 'friends' }); }, 30_000);
 
-/** Leaving the screen: stop the camera and the code, and withdraw a challenge still waiting. */
+/**
+ * Leaving the screen: stop the camera and the code. A request to play still waiting stays (only Cancel or Back withdraw
+ * it): the Friend tile says who you're waiting for, and the game opens by itself if they join.
+ */
 export function closeFriends() {
   shown = false;
   window.clearTimeout(reloadTimer);
   stopShowing();
   scanner?.stop(); scanner = null;
-  if (view.kind === 'waiting' && view.id) send({ t: 'cancel', id: view.id });
   view = { kind: 'list' };
 }
 
@@ -150,6 +155,12 @@ function rows(): Row[] {
 }
 
 const nameOf = (id: string) => rows().find((r) => r.id === id)?.name ?? 'your friend';
+/** A friend's name for the Home screen's Friend tile: short enough for the narrowest phone. */
+export function friendName(id: string): string {
+  if (!loaded) savedFriends();
+  const name = nameOf(id);
+  return name.length > 12 ? `${name.slice(0, 11)}…` : name;
+}
 const personOf = (id: string): { name: string; avatar: string } => {
   const r = rows().find((x) => x.id === id);
   return { name: r?.name ?? 'Your friend', avatar: r?.avatar ?? 'cat' };
@@ -171,7 +182,7 @@ const recordText = (r?: Row['record']) =>
 
 export function renderFriends(): string {
   const body = view.kind === 'setup' ? renderSetup(view.friend)
-    : view.kind === 'waiting' ? renderWaiting(view.friend, view.since)
+    : view.kind === 'waiting' ? renderWaiting(view.friend, view.until)
     : view.kind === 'accept' ? renderAccept(view.id)
     : renderList();
   const title = view.kind === 'setup' ? `Play with ${esc(nameOf(view.friend))}` : view.kind === 'accept' ? acceptTitle(view.id) : 'Play with a friend';
@@ -290,7 +301,6 @@ function renderList(): string {
 function challengeLine(o: ChallengeOptions, lives: number): string {
   // Only what changes the game for the friend joining. The pace isn't: it was chosen, it needn't be repeated.
   const parts = o.teaching ? ['Teaching game'] : [];
-  if (o.startersOnly) parts.push('Starter decks');
   if (lives < 9) parts.push(`they start with ${lives} Lives`);
   return parts.length ? `<small>${esc(parts.join(' · '))}</small>` : '';
 }
@@ -309,7 +319,7 @@ function livesStepper(): string {
 
 function renderSetup(friend: string): string {
   const pace = (p: Pace) => `<button class="${options.pace === p ? 'chosen' : ''}" data-click="pf:pace:${p}" aria-pressed="${options.pace === p}">${PACES[p].label}</button>`;
-  const deck = host!.chosenDeck(options.startersOnly);
+  const deck = host!.chosenDeck();
   const toggle = (key: 'teaching', name: string, small: string) => `
     <label class="pf-option pf-toggle">
       <span class="pf-option-name">${name}<small>${small}</small></span>
@@ -317,7 +327,7 @@ function renderSetup(friend: string): string {
     </label>`;
   return `
   <div class="setup-body pf-body pf-setup">
-    ${host!.deckPicker(options.startersOnly)}
+    ${host!.deckPicker()}
     <section class="pf-options">
       ${toggle('teaching', 'Teaching game', `For a friend who’s new: no timer, hints, take-backs and open hands. It won’t count toward your record.`)}
       ${options.teaching ? '' : `<div class="pf-option"><span class="pf-option-name">Pace<small>${PACES[options.pace].blurb}</small></span>
@@ -331,10 +341,10 @@ function renderSetup(friend: string): string {
   </div>`;
 }
 
-function renderWaiting(friend: string, since: number): string {
+function renderWaiting(friend: string, until: number): string {
   const me = live.you;
   const them = personOf(friend);
-  const left = Math.max(0, WAIT_S - Math.floor((Date.now() - since) / 1000));
+  const left = secondsLeft(until);
   return `
   <div class="setup-body pf-body pf-waiting">
     <div class="pf-versus">
@@ -343,7 +353,7 @@ function renderWaiting(friend: string, since: number): string {
       ${pawtrait(them.avatar, 'pf-big-face')}
     </div>
     <p class="pf-waiting-text">Waiting for ${esc(them.name)}…</p>
-    <div class="pf-ring" style="--p:${left / WAIT_S}" data-pf-countdown="${since}"><span>${left}</span></div>
+    <div class="pf-ring" style="--p:${left / WAIT_S}" data-pf-countdown="${until}"><span>${left}</span></div>
     <button data-click="pf:cancel">Cancel</button>
   </div>`;
 }
@@ -357,12 +367,12 @@ function acceptTitle(id: string): string {
 function renderAccept(id: string): string {
   const c = live.incoming.find((x) => x.id === id);
   if (!c) return `<div class="setup-body pf-body"><p class="pf-note">That game isn’t open any more.</p><button data-click="pf:back">Back</button></div>`;
-  const deck = host!.chosenDeck(c.options.startersOnly);
+  const deck = host!.chosenDeck();
   return `
   <div class="setup-body pf-body pf-setup">
     <div class="pf-from">${pawtrait(c.from.avatar, 'pf-face')}<span class="pf-who"><b>${esc(c.from.name)} wants to play</b>${challengeLine(c.options, c.lives)}</span></div>
     ${!host!.hasPlayed() && !c.options.teaching ? `<p class="pf-tip">New to Fruitcats? Ask ${esc(c.from.name)} for a <b>Teaching game</b> instead: no timer, hints, and take-backs.</p>` : ''}
-    ${host!.deckPicker(c.options.startersOnly)}
+    ${host!.deckPicker()}
     <section class="pf-options">${livesStepper()}</section>
     <div class="setup-footer">
       <button class="play-button" data-click="pf:accept:${c.id}" ${deck && !busy ? '' : 'disabled'}>Play</button>
@@ -464,7 +474,7 @@ let scannerVideo: HTMLVideoElement | null = null;
 window.setInterval(() => {
   const ring = document.querySelector<HTMLElement>('[data-pf-countdown]');
   if (!ring) return;
-  const left = Math.max(0, WAIT_S - Math.floor((Date.now() - Number(ring.dataset.pfCountdown)) / 1000));
+  const left = secondsLeft(Number(ring.dataset.pfCountdown));
   ring.style.setProperty('--p', String(left / WAIT_S));
   ring.firstElementChild!.textContent = String(left);
 }, 1000);
@@ -571,16 +581,21 @@ async function addFriend(code: string) {
 
 onLive((msg) => {
   switch (msg.t) {
-    case 'welcome':
-      // Connected again (the game was in the background, the network dropped): is the friend still being asked? The
-      // challenge may have ended while this game couldn't hear it.
-      if (view.kind === 'waiting' && view.id && msg.sent && !msg.sent.includes(view.id)) {
-        note = `Your game with ${nameOf(view.friend)} didn’t start. Ask again?`;
+    case 'welcome': {
+      // Connected again: the server says which of your requests are still waiting. One may have ended (answered, run
+      // out) while this game couldn't hear it; one may be waiting that this screen doesn't know of (the game reopened).
+      const out = msg.sent[0];
+      const waitingFor = view.kind === 'waiting' ? view.id : null;
+      if (view.kind === 'waiting' && waitingFor && !msg.sent.some((s) => s.id === waitingFor)) {
+        if (!msg.match) note = `Your game with ${nameOf(view.friend)} didn’t start. Ask again?`;
         view = { kind: 'setup', friend: view.friend };
+      } else if (out && (view.kind === 'list' || view.kind === 'waiting')) {
+        view = { kind: 'waiting', friend: out.to, id: out.id, until: Date.now() + out.left };
       }
       return;
+    }
     case 'sent':
-      if (view.kind === 'waiting' && view.friend === msg.to) view.id = msg.id;
+      if (view.kind === 'waiting' && view.friend === msg.to) { view.id = msg.id; view.until = Date.now() + msg.left; }
       return;
     case 'challenge-ended':
       if (view.kind === 'waiting' && view.id === msg.id && msg.why !== 'started') {
@@ -674,10 +689,10 @@ export function friendsClick(action: string, h: FriendsHost): void {
     case 'lives': myLives = Math.max(MIN_LIVES, Math.min(9, myLives + Number(arg))); break;
     case 'challenge': {
       if (view.kind !== 'setup') return;
-      const deck = h.chosenDeck(options.startersOnly);
+      const deck = h.chosenDeck();
       if (!deck) return;
       if (!send({ t: 'challenge', to: view.friend, deck, options, lives: myLives })) { note = 'Not connected. Try again in a moment.'; break; }
-      view = { kind: 'waiting', friend: view.friend, id: null, since: Date.now() };
+      view = { kind: 'waiting', friend: view.friend, id: null, until: Date.now() + CHALLENGE_MS };
       note = '';
       break;
     }
@@ -688,7 +703,7 @@ export function friendsClick(action: string, h: FriendsHost): void {
     case 'see': case 'answer': view = { kind: 'accept', id: arg }; note = ''; myLives = 9; break;
     case 'accept': {
       const c = live.incoming.find((x) => x.id === arg);
-      const deck = c ? h.chosenDeck(c.options.startersOnly) : null;
+      const deck = c ? h.chosenDeck() : null;
       if (!c || !deck) return;
       if (!send({ t: 'accept', id: c.id, deck, lives: myLives })) { note = 'Not connected. Try again in a moment.'; break; }
       busy = true;

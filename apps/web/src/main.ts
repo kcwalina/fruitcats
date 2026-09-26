@@ -43,7 +43,7 @@ const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Bal
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 // The shell's backdrop is Folkborn's neutral grove (grove-tall on portrait screens), so every deck's art style fits on it.
 for (const [name, file] of [['--img-menu-bg', 'grove.webp'], ['--img-menu-bg-tall', 'grove-tall.webp'], ['--img-playmat', 'table.webp'], ['--img-cardback', 'cardback.webp'],
-  ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'mode-store.webp']])
+  ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'tile-store.webp']])
   document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}`, location.href).href}")`);
 // --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible
 // area (it ignores the toolbars), which made the page scroll; the layout uses this instead.
@@ -99,9 +99,10 @@ const hasPlayed = () => { try { return localStorage.getItem(PLAYED_KEY) === 'yes
 const markPlayed = () => { try { localStorage.setItem(PLAYED_KEY, 'yes'); } catch { /* private mode: not remembered */ } };
 
 const DIFFICULTY = {
-  kitten: { label: 'Kitten', blurb: 'Gentle, for learning', skill: 0.55 },
-  cat: { label: 'Cat', blurb: 'A fair match', skill: 0.85 },
-  tiger: { label: 'Tiger', blurb: 'Plays its best', skill: 1 },
+  // The keys stay kitten/cat/tiger (saved settings use them); players see young, wise and ancient trees.
+  kitten: { label: 'Young', blurb: 'Gentle, for learning', skill: 0.55, img: 'diff-young' },
+  cat: { label: 'Wise', blurb: 'A fair match', skill: 0.85, img: 'diff-wise' },
+  tiger: { label: 'Ancient', blurb: 'Plays its best', skill: 1, img: 'diff-ancient' },
 };
 type Difficulty = keyof typeof DIFFICULTY;
 
@@ -974,7 +975,7 @@ function renderSolo(): string {
         <div class="difficulty-choices">
           ${Object.entries(DIFFICULTY).map(([key, d]) => `
             <button class="difficulty-choice ${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}" aria-pressed="${key === difficulty}">
-              <img src="${BASE}ui/diff-${key}.webp" alt="">
+              <img src="${BASE}ui/${d.img}.webp" alt="">
               <span class="diff-name">${d.label}</span>
               <span class="diff-sub">${d.blurb}</span>
             </button>`).join('')}

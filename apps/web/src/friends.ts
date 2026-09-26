@@ -10,7 +10,7 @@
 import type { DeckList } from '@fruitcats/engine';
 import { MIN_LIVES, PACES, type ChallengeOptions, type Pace, type Person } from '@fruitcats/match';
 import { pawtrait } from './account';
-import { AuthError, listFriends, newFriendCode, redeemFriendCode, removeFriend, type Friend } from './auth';
+import { AuthError, listFriends, newFriendCode, redeemFriendCode, removeFriend, session, type Friend } from './auth';
 import { live, onLive, reconnect, send } from './live';
 import { canScan, codeFromQr, qrSvg, scan } from './qr';
 import { backButton, esc, settingsButton } from './ui';
@@ -69,6 +69,7 @@ export function openFriends(h: FriendsHost, answer?: string) {
   host = h;
   shown = true;
   reloadFailures = 0;
+  if (!loaded) savedFriends();
   view = answer ? { kind: 'accept', id: answer } : { kind: 'list' };
   note = ''; managing = null; confirming = null;
   if (answer) myLives = 9;
@@ -89,24 +90,40 @@ export function closeFriends() {
   view = { kind: 'list' };
 }
 
+/**
+ * The friends list as viamochi-id last gave it, kept on this device for the account: shown at once, and all that shows
+ * while the account service can't be reached. Only this account's copy is kept; another account's is dropped.
+ */
+const FRIENDS_KEY = 'fruitcats-friends';
+function keepFriends() {
+  try { localStorage.setItem(FRIENDS_KEY, JSON.stringify({ user: session()?.userId, friends: [...people.values()] })); } catch { /* shown when it loads */ }
+}
+function savedFriends() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FRIENDS_KEY) ?? 'null') as { user?: string; friends?: Friend[] } | null;
+    if (!saved) return;
+    if (saved.user !== session()?.userId || !Array.isArray(saved.friends)) { localStorage.removeItem(FRIENDS_KEY); return; }
+    people = new Map(saved.friends.map((f) => [f.id, f]));
+    loaded = true;
+  } catch { /* nothing kept */ }
+}
+
 /** Whether Play a friend is on screen, and the next try at loading the friends after one failed. */
 let shown = false;
 let reloadTimer: number | undefined;
 let reloadFailures = 0;
-let loadNote = '';
 
 async function loadFriends() {
   window.clearTimeout(reloadTimer);
   try {
     people = new Map((await listFriends()).map((f) => [f.id, f]));
     loaded = true;
+    keepFriends();
     reloadFailures = 0;
-    if (note === loadNote) note = '';
-  } catch (e) {
+  } catch {
     // Offline from viamochi-id (or a local API with fake sign-in): friends who are online still show, from presence.
     // Tried again by itself while the screen is open, so a service that was restarting doesn't leave the list empty.
-    loaded = true;
-    if (!live.friends.size && (!note || note === loadNote)) note = loadNote = e instanceof AuthError ? e.message : 'Couldn’t load your friends.';
+    // The list isn't known then: never "you have no friends yet" (the copy kept on this device shows, if there is one).
     if (shown) reloadTimer = window.setTimeout(() => void loadFriends(), [5_000, 15_000, 30_000][Math.min(reloadFailures++, 2)]);
   }
   host?.render();
@@ -252,7 +269,7 @@ function renderList(): string {
         <img class="pf-head-art" src="${FRIEND_ART()}" alt="">
         <div class="pf-head-text">
           <h3>Your friends</h3>
-          <p class="pf-presence" role="status">${list.length ? presence : 'Loading your friends…'}</p>
+          <p class="pf-presence" role="status">${list.length ? presence : reloadFailures ? 'Couldn’t load your friends yet. Trying again…' : 'Loading your friends…'}</p>
         </div>
       </div>
       <ul class="pf-list">
@@ -538,6 +555,7 @@ async function addFriend(code: string) {
   try {
     const f = await redeemFriendCode(code);
     people.set(f.id, f);
+    keepFriends();
     send({ t: 'added', friend: f.id });
     add = { kind: 'done', person: { id: f.id, name: f.displayName || 'your friend', avatar: f.avatar } };
     typed = '';
@@ -579,6 +597,7 @@ onLive((msg) => {
       // Someone used your code. Look again at who your friends are (viamochi-id's list is the one we believe).
       void listFriends().then((list) => {
         people = new Map(list.map((f) => [f.id, f]));
+        keepFriends();
         const f = people.get(msg.by.id);
         if (f && add.kind === 'show') {
           stopShowing();
@@ -696,6 +715,7 @@ async function removeOrBlock(id: string, block: boolean) {
   try {
     await removeFriend(id, block);
     people.delete(id);
+    keepFriends();
     live.friends.delete(id);
     note = block ? 'Blocked.' : 'Removed.';
     send({ t: 'friends', again: true });

@@ -16,7 +16,8 @@ import {
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
-import { ONLINE } from './flags';
+import { ONLINE, STORE } from './flags';
+import { refreshStore } from './shop';
 import { BASE, esc } from './ui';
 
 type Step = 'email' | 'invite' | 'details' | 'code' | 'terms' | 'welcome';
@@ -663,6 +664,8 @@ export async function accountClick(host: Host, action: string) {
       if (pending?.flow === 'signUp') agreeToTerms(Number(birthYear) || undefined);   // saved in the background, not waited for
       step = needsTerms() ? 'terms' : 'welcome';
       startSync(host);
+      // Whether the Store is open to this account: Home's Store tile shows it as soon as it's known.
+      if (STORE) void refreshStore().then(() => host.render());
     });
   } else if (action === 'terms') {
     // An account made elsewhere (the Artist Studio) has no birth year yet: the game asks for it here.

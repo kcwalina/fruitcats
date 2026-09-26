@@ -1589,11 +1589,13 @@ if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); voi
 if (ACCOUNTS && takeInviteFromLink()) openAccount({ render }, 'You’re invited! Type your email to create your account.');
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.
 // Refreshed again whenever the game comes back to the front or back online (at most once a minute), so cards the
-// account no longer has (a refund; later, a trade) don't linger on this device.
-if (STORE && signedIn()) {
+// account no longer has (a refund; later, a trade) don't linger on this device. Set up signed out too: signing in
+// later asks at once (account.ts), and coming back to the front keeps asking (2026-09-26, the tile stayed "Coming
+// soon" on a phone that signed in after the game started).
+if (STORE) {
   let last = 0;
   const refresh = () => {
-    if (Date.now() - last < 60_000) return;
+    if (!signedIn() || Date.now() - last < 60_000) return;
     last = Date.now();
     void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });
   };

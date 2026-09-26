@@ -726,3 +726,18 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 body.menu-screen .icon-button img { filter: grayscale(1) brightness(1.9); }
+
+/* ── Setup choices on the grove: the deck and difficulty choices in the tiles' dark glass; the pick keeps its green ring ── */
+.deck-choice, .difficulty-choice {
+  background: linear-gradient(180deg, rgba(70, 70, 74, 0.82), rgba(44, 44, 48, 0.9)); border: 2px solid rgba(190, 240, 230, 0.22);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), 0 8px 20px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.deck-name, .diff-name { color: #eef2f0; }
+.deck-blurb, .diff-sub { color: rgba(230, 238, 235, 0.75); }
+.difficulty-choice img { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35)); }
+.difficulty-choice.chosen { border-color: var(--pick); background: linear-gradient(180deg, rgba(58, 96, 70, 0.85), rgba(38, 64, 48, 0.92));
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85), 0 0 0 6px var(--pick), 0 8px 18px rgba(0, 0, 0, 0.4); }
+.picker h2, .new-name span, .setup-bar h2 { color: #f4f7f5; text-shadow: 0 2px 0 #2b2d31, 0 3px 10px rgba(0, 0, 0, 0.55); }
+.deck-choice.chosen { background: linear-gradient(180deg, rgba(58, 96, 70, 0.85), rgba(38, 64, 48, 0.92));
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85), 0 0 0 7px var(--pick), 0 10px 24px rgba(0, 0, 0, 0.45); }

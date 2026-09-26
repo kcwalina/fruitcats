@@ -33,7 +33,7 @@ TERMS = json.loads((ROOT / "packages" / "engine" / "src" / "terms.json").read_te
 W, H = 750, 1050
 ART_BOX = (42, 138, 708, 582)          # 666 x 444 = the 3:2 art the model draws
 TEXT_BOX = (42, 660, 708, 912)
-FOOTER = "Fruitcats · Starter Box · © 2026"
+FOOTER = "Folkborn · © 2026"
 
 FAMILIES = {                            # main, dark, tint
     "Citrus":   ("#F29F05", "#A86400", "#FFF1CC"),
@@ -152,11 +152,11 @@ CHIP_TOP = 930                     # the chips sit in the card's bottom strip, c
 
 
 def stat_chip(img: Image.Image, kind: str, value: int, colors: tuple, right: bool) -> None:
-    """A stat as a small chip in the family's tint: an icon (paw = Power, heart = Health) and the number.
+    """A stat as a small chip in the family's tint: an icon (lightning = Power, heart = Health) and the number.
 
     Quiet on purpose, so it never competes with the art: the chip matches the type line above the rules
     text. Power sits at the text box's left edge, Health at its right edge. The icons are Phosphor's
-    (art/ui/stat-paw.svg, stat-heart.svg), kept as white masks and tinted here.
+    (art/ui/stat-power.svg, stat-heart.svg), kept as white masks and tinted here.
     """
     main, dark, tint = colors
     f = font("seguibl.ttf", CHIP_FONT)
@@ -456,8 +456,9 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
         kind = " · ".join(w for w in (TERMS["types"]["Hero Cat"], TERMS["sides"]["kitten" if side == "kitten" else "bigCat"]) if w).upper()
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
     d.text((62, 622), f'{kind} · {card["family"].upper()}',font=font("segoeuib.ttf", 25), fill=dark, anchor="lm")
-    # The collector line: rarity mark, card number, and on a finished copy its finish code (F, G or P).
-    key = card["id"] + (f"-{side}" if side else "")
+    # The collector line: rarity mark, card number (a Hero's two sides share it), and on a finished copy its finish
+    # code (F, G or P).
+    key = card["id"]
     key_font = font("segoeui.ttf", 20)
     right = W - 62
     if finish != "standard":
@@ -510,7 +511,7 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
 
     # Stats
     if power is not None:
-        stat_chip(img, "paw", power, (main, dark, tint), right=False)
+        stat_chip(img, "power", power, (main, dark, tint), right=False)
     if health is not None:
         stat_chip(img, "heart", health, (main, dark, tint), right=True)
     centered(d, (W / 2, 1000), FOOTER, font("segoeui.ttf", 17), MUTED)
@@ -583,7 +584,7 @@ def main() -> int:
         FAMILIES[family] = tuple(info["colors"])
     if data.get("mechanics"):
         KEYWORDS = KEYWORDS[:-3] + "|" + "|".join(data["mechanics"]) + r")\b"
-    FOOTER = f'Fruitcats · {data["name"]} · © 2026'
+    FOOTER = f'{TERMS["game"]} · {data["name"]} · © 2026'
     art_dir = set_path.parent / "art" / "illustrations"
     out_dir = set_path.parent / "art" / "cards"
     if args.frames:

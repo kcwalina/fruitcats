@@ -25,11 +25,11 @@ const FINISH_CODES: Record<Exclude<Finish, 'standard'>, [string, string]> = {
 };
 const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C';
 /** The card's footer line, as compose_cards.py prints it: the game, the card's set, the copyright. */
-const footer = (card: CardDef) => `Fruitcats · ${SETS[card.set ?? '']?.name ?? 'Starter Box'} · © 2026`;
+const footer = (card: CardDef) => `${TERMS.game} · ${SETS[card.set ?? '']?.name ?? 'Domowiki'} · © 2026`;
 const FONT = 'Nunito, "Segoe UI", sans-serif';
 
 /** The stat chips' icons (Phosphor's paw and heart, white masks) and the heart's own colour (compose_cards.py's stat_chip). */
-const STAT_ICONS = { paw: 'stat-paw', heart: 'stat-heart' } as const;
+const STAT_ICONS = { paw: 'stat-power', heart: 'stat-heart' } as const;
 const HEART_COLOR = '#D9486C';
 
 /** Keywords printed bold: the core ones and every loaded set's mechanics (Zest, Ripen, Heat…). */

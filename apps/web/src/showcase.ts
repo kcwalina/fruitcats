@@ -8,7 +8,7 @@
 // A Hero Cat's two sides are two cards here: its Kitten and its Big Cat. So the screens deal in card
 // faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
 
-import { familiesOf, featuredHero } from './sets';
+import { isStarterSet } from '@fruitcats/store';
 import './showcase.css';
 import { CARDS, RARITIES, TERMS, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
@@ -16,25 +16,39 @@ import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUr
 import { BASE, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
-/** A new player's Showcase: the featured Hero Cat (Tango), as a Kitten and as a Big Cat. */
-const DEFAULT_SHOWCASE = () => [`${featuredHero()}-kitten`, `${featuredHero()}-bigcat`];
+/** A new player's Showcase is empty: they pick what to show off (the owner's call, 2026-09-26). */
+const DEFAULT_SHOWCASE = (): string[] => [];
 const SHOWCASE_KEY = 'fruitcats-showcase';
 /** When the Showcase last changed on this device (ms), so sync keeps the newest. */
 const SHOWCASE_AT_KEY = 'fruitcats-showcase-at';
-const FAMILIES = () => ['all', ...familiesOf(SET)];
+/** The family chips, in the order the families appear in your cards (the starter set's first). */
+const FAMILIES = () => ['all', ...new Set(collectable().filter((id) => !CARDS[id].preview).map((id) => CARDS[id].family))];
 
+/** A set's collectable cards, in its own order. Tokens (summoned, never collected) aren't cards to collect. */
+const cardsOf = (set: string) => Object.keys(CARDS).filter((id) => CARDS[id].set === set && !CARDS[id].token);
 /**
- * Every collectable card of the loaded sets, in collector-number order (the order of the set lists).
- * Tokens (summoned, never collected) and the engine's own stand-in card (in no set) aren't cards to collect.
+ * The cards to collect: every card of the sets you have cards from, the starter set first and then the others in
+ * the order they loaded, each set in its own order. A set you own nothing of (the old Starter Box, before you take
+ * its decks from the Store) isn't here at all: its cards are in the Store, not in your collection. Worked out on
+ * each render, because what you own changes (a deck taken from the Store) and so can the loaded sets (a card pack).
  */
-const SET = Object.keys(CARDS).filter((id) => CARDS[id].set && !CARDS[id].token);
+function collectable(): string[] {
+  const sets = [...new Set(Object.keys(CARDS).map((id) => CARDS[id].set).filter((s): s is string => !!s))]
+    .filter((set) => cardsOf(set).some((id) => owned(id) > 0))
+    .sort((a, b) => Number(isStarterSet(b)) - Number(isStarterSet(a)));
+  return sets.flatMap(cardsOf);
+}
 const isHero = (id: string) => CARDS[id]?.type === 'Hero Cat';
 /** A card's faces: a Hero Cat has two. */
 const facesOf = (id: string) => (isHero(id) ? [`${id}-kitten`, `${id}-bigcat`] : [id]);
 const idOf = (face: string) => face.replace(/-(kitten|bigcat)$/, '');
 const sideOf = (face: string) => (face.endsWith('-kitten') ? 'kitten' : face.endsWith('-bigcat') ? 'bigcat' : null);
 const sideLabel = (face: string) => (sideOf(face) === 'kitten' ? 'Hero' : sideOf(face) === 'bigcat' ? 'Awakened Hero' : '');
-const number = (face: string) => `${String(SET.indexOf(idOf(face)) + 1).padStart(3, '0')}/${String(SET.length).padStart(3, '0')}`;
+/** A card's number in its set ("003/022"); the wallpaper puts the set's code in front of it. */
+const number = (face: string) => {
+  const id = idOf(face), inSet = cardsOf(CARDS[id]?.set ?? '');
+  return `${String(inSet.indexOf(id) + 1).padStart(3, '0')}/${String(inSet.length).padStart(3, '0')}`;
+};
 /** The name on this face: a Kitten and its Big Cat are named differently ("Tango, Sunbeam Kit"). */
 const faceName = (face: string) => {
   const card = CARDS[idOf(face)], side = sideOf(face);
@@ -176,7 +190,7 @@ function undoRemove() {
 /** Whether a card passes All cards' filters: its family and its rarity. */
 const shownByFilters = (id: string) =>
   (familyFilter === 'all' || CARDS[id].family === familyFilter) && (rarityFilter === 'all' || rarity(id) === rarityFilter);
-const ownedFaces = () => SET.filter((id) => owned(id) > 0 && shownByFilters(id)).flatMap(facesOf);
+const ownedFaces = () => collectable().filter((id) => owned(id) > 0 && shownByFilters(id)).flatMap(facesOf);
 
 function closeWallpaper() {
   if (wallpaper?.url) URL.revokeObjectURL(wallpaper.url);
@@ -430,6 +444,7 @@ const MINUS_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 const PHONE_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg>`;
 
 function renderGrid(): string {
+  const SET = collectable();
   const have = SET.filter((id) => owned(id) > 0).length;
   const shown = SET.filter(shownByFilters).flatMap(facesOf);
   // Two rows of the game's own chip buttons: Rarity (each with its mark, and how many of it you have)
@@ -449,7 +464,7 @@ function renderGrid(): string {
     <div class="collection-grid" data-keep-scroll="grid">
       <div class="grid-head">
         <div class="collect-progress">
-          <span class="cp-title">Every card</span>
+          <span class="cp-title">Your cards</span>
           <span class="cp-count"><b>${have}</b> of ${SET.length} collected</span>
           <span class="cp-bar" aria-hidden="true"><i style="width:${(have / SET.length) * 100}%"></i></span>
         </div>

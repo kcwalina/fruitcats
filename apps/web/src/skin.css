@@ -107,27 +107,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .difficulty-choice img { filter: drop-shadow(0 1px 1px rgba(80, 40, 10, 0.25)); }
 .coming { color: #fff4dc; text-shadow: 0 1px 3px rgba(40, 15, 0, 0.85); }
 
-/* Home mode tiles: cards on the grove. An ivory linen face with a thin inked border inside and a little thickness
-   under it, so each tile reads as a card lying on the table. Each tile's creature comes from a different folk tale, in
-   its own art style (docs/folk-creatures.md, Home screen tiles), cut out so it sits straight on the card.
-   The ones not built yet are faded, with a tag. */
-.mode-card {
-  background: var(--card-face); border: none; border-radius: 16px;
-  box-shadow: inset 0 0 0 4px var(--linen), inset 0 0 0 5px var(--card-line), 0 1px 0 #cdb892, 0 3px 0 #a88b5e,
-    0 10px 22px rgba(0, 0, 0, 0.45);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.mode-card:hover { transform: translateY(-3px) rotate(-0.4deg); }
-.mode-card img { object-fit: contain; border-radius: 0; filter: drop-shadow(0 3px 5px rgba(60, 40, 20, 0.3)); }
-.mode-card.mini { color: inherit; font: inherit; }
-.mode-name { color: var(--card-ink); }
-.mode-sub { color: var(--card-muted); }
-.mode-card.soon img { filter: saturate(0.4) drop-shadow(0 3px 5px rgba(60, 40, 20, 0.3)); opacity: 0.7; }
-/* The line under a tile's name: "Coming soon" quietly, a game to continue in moss green. */
-.mode-sub.soon-line { font-style: italic; }
-.mode-sub.continue-line { color: var(--moss); font-weight: 800; }
-/* Signed out, with accounts on: the tile says what to do, and tapping it opens sign-in. */
-.mode-sub.signin-line { color: var(--terracotta); font-weight: 800; }
 .home-note { color: #eef2f0; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 .setup-bar h2 { color: #fff; text-shadow: 0 2px 0 #8e3b12, 0 3px 10px rgba(60, 20, 0, 0.5); }
 
@@ -720,77 +699,116 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 }
 @keyframes fx-fade { 0% { opacity: 0; } 15%, 75% { opacity: 1; } 100% { opacity: 0; } }
 
-/* ══ Lantern light on natural things ═════════════════════════════════════════════════════════════
-   The shell's backdrop is the graphite grove; everything placed on it is made of warm natural things: ivory linen
-   cards, honey amber for actions, old walnut and stone, moss green for what you picked. The cards themselves keep
-   their own frames: they carry each deck's art style. */
+/* ══ Crafted things by lantern light ═══════════════════════════════════════════════════════════════
+   The shell's backdrop is the graphite grove. What sits on it is made of crafted materials, not flat panels: the
+   home tiles are illustrated cards in an engraved bronze-and-walnut frame (art/ui/frame.png), the panels are dark
+   walnut plaques with cream lettering and a thin brass line, actions are honey amber, picks moss green. The game's
+   own cards keep their frames: they carry each deck's art style. */
 :root {
-  --linen: #f6efe0; --linen-2: #e7dac0; --card-line: rgba(150, 112, 58, 0.55); --card-ink: #3b2e22; --card-muted: #7a6650;
-  --moss: #4d7a3c; --terracotta: #a8512f; --honey: #e2ad4e; --honey-dark: #9c6a22; --walnut: #5e4129; --walnut-dark: #36251a;
-  --card-face: linear-gradient(180deg, var(--linen), var(--linen-2));
-  --card-edge: inset 0 0 0 3px var(--linen), inset 0 0 0 4px var(--card-line), 0 1px 0 #cdb892, 0 3px 0 #a88b5e, 0 8px 18px rgba(0, 0, 0, 0.35);
+  --plaque: linear-gradient(180deg, #45342a, #2c211a); --plaque-line: rgba(214, 174, 106, 0.6);
+  --plaque-ink: #f3e7cf; --plaque-muted: rgba(243, 231, 207, 0.72);
+  --plaque-edge: inset 0 1px 0 rgba(255, 230, 190, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 8px 18px rgba(0, 0, 0, 0.45);
+  --moss: #9fd07a; --moss-deep: #4d7a3c; --honey: #e2ad4e; --honey-dark: #9c6a22; --walnut: #5e4129; --walnut-dark: #36251a;
+  --linen: #f6efe0; --linen-2: #e7dac0; --card-face: linear-gradient(180deg, var(--linen), var(--linen-2));
 }
 
-/* Round buttons and the account chip: small linen cards too. */
-.home .corner-account, body.menu-screen .icon-button { color: var(--card-ink); background: var(--card-face); box-shadow: var(--card-edge); }
+/* Home tiles: an illustrated card. The picture fills the card, the name sits on a dark band at the bottom, and the
+   engraved frame lies over everything. Each creature comes from a different folk tale, in its own art style
+   (docs/folk-creatures.md, Home screen tiles). */
+.modes .mode-card {
+  padding: 0; overflow: hidden; justify-content: flex-end; border: none; border-radius: 12px; background: #2a211a;
+  box-shadow: 0 2px 0 #140e0a, 0 12px 24px rgba(0, 0, 0, 0.55); transition: transform 0.15s, box-shadow 0.15s;
+}
+.modes .mode-card:not(.mini) { aspect-ratio: 4 / 5; }
+.modes .mode-card.mini { min-height: max(76px, calc(var(--tile) * 0.62)); gap: 0; }
+.modes .mode-card.mini img { object-position: center 35%; }
+.modes .mode-card::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border: 11px solid transparent; border-image: var(--img-frame) 44 stretch;
+}
+.modes .mode-card:hover { transform: translateY(-3px); box-shadow: 0 2px 0 #140e0a, 0 16px 28px rgba(0, 0, 0, 0.6); }
+.modes .mode-card img, .modes .mode-card.mini img {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; aspect-ratio: auto;
+  object-fit: cover; border-radius: 0; box-shadow: none; filter: none;
+}
+.modes .mode-text, .modes .mode-card.mini .mode-name {
+  position: relative; z-index: 1; width: 100%; box-sizing: border-box; padding: 28px 12px 13px;
+  background: linear-gradient(180deg, transparent, rgba(20, 13, 8, 0.78) 45%, rgba(20, 13, 8, 0.9));
+}
+.modes .mode-card.mini .mode-name { padding: 18px 8px 12px; }
+.modes .mode-name { color: var(--plaque-ink); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.modes .mode-sub { color: var(--plaque-muted); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.modes .mode-card.soon img { filter: saturate(0.45) brightness(0.75); opacity: 1; }
+.mode-badge { z-index: 3; }
+/* The line under a tile's name: "Coming soon" quietly, a game to continue in moss green. */
+.mode-sub.soon-line { font-style: italic; }
+.mode-sub.continue-line { color: var(--moss); font-weight: 800; }
+/* Signed out, with accounts on: the tile says what to do, and tapping it opens sign-in. */
+.mode-sub.signin-line { color: #f3c27a; font-weight: 800; }
+
+/* Round buttons and the account chip: small walnut plaques. */
+.home .corner-account, body.menu-screen .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
 
 /* Buttons that act: honey amber, like lantern light (they were orange). */
 button.primary, .play-button {
   color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
   background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e);
-  box-shadow: 0 3px 0 var(--honey-dark), 0 6px 12px rgba(60, 35, 5, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: 0 3px 0 var(--honey-dark), 0 6px 12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-button.primary:hover:not(:disabled), .play-button:hover { box-shadow: 0 4px 0 var(--honey-dark), 0 8px 14px rgba(60, 35, 5, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
-button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 var(--honey-dark), 0 2px 4px rgba(60, 35, 5, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+button.primary:hover:not(:disabled), .play-button:hover { box-shadow: 0 4px 0 var(--honey-dark), 0 8px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 var(--honey-dark), 0 2px 4px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
 .play-button small, button.primary small { color: rgba(59, 38, 16, 0.8); }
 
-/* Setup choices (deck, difficulty): linen cards like the home tiles. The trees sit in a small dark window, as they
-   were drawn on the grove. The pick keeps its moss-green ring. */
-.deck-choice, .difficulty-choice { background: var(--card-face); border: none; box-shadow: var(--card-edge); }
-.deck-name, .diff-name { color: var(--card-ink); }
-.deck-blurb, .diff-sub { color: var(--card-muted); }
-.difficulty-choice img { border-radius: 50%; background: radial-gradient(circle, #4a4a50, #2e2d31 70%); filter: none; }
-.difficulty-choice.chosen, .deck-choice.chosen { background: linear-gradient(#f2f7ea, #dde9cf);
-  box-shadow: inset 0 0 0 3px #f2f7ea, inset 0 0 0 4px rgba(77, 122, 60, 0.5), 0 0 0 3px var(--pick), 0 8px 18px rgba(0, 0, 0, 0.4); }
-.picker h2, .new-name span, .setup-bar h2 { color: #f6efe0; text-shadow: 0 2px 0 #2b2d31, 0 3px 10px rgba(0, 0, 0, 0.55); }
+/* Setup choices (deck, difficulty): walnut plaques. The pick keeps its green ring. */
+.deck-choice, .difficulty-choice { background: var(--plaque); border: none; box-shadow: var(--plaque-edge); }
+.deck-name, .diff-name { color: var(--plaque-ink); }
+.deck-blurb, .diff-sub { color: var(--plaque-muted); }
+.difficulty-choice img { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)); }
+.difficulty-choice.chosen, .deck-choice.chosen { background: linear-gradient(180deg, #3f4a2e, #2a3320);
+  box-shadow: inset 0 0 0 1px rgba(159, 208, 122, 0.55), 0 0 0 3px var(--pick), 0 8px 18px rgba(0, 0, 0, 0.45); }
+.picker h2, .new-name span, .setup-bar h2 { color: var(--plaque-ink); text-shadow: 0 2px 0 #1a130e, 0 3px 10px rgba(0, 0, 0, 0.6); }
 
-/* The board: a linen cloth spread on a stone slab in the moss, in an old walnut frame with a thin honey inlay. */
+/* The board: a green embroidered cloth on an old walnut table, in a walnut frame with a thin honey inlay. */
 .board {
-  background: var(--img-playmat) center / cover, #d8ccb4;
-  box-shadow: inset 0 0 0 2px rgba(255, 240, 210, 0.5), inset 0 0 50px rgba(60, 40, 20, 0.3),
-    0 0 0 6px var(--walnut), 0 0 0 7px var(--honey), 0 0 0 10px var(--walnut-dark), 0 20px 40px rgba(0, 0, 0, 0.5);
+  background: var(--img-playmat) center / cover, #22351f;
+  box-shadow: inset 0 0 0 2px rgba(214, 174, 106, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.45),
+    0 0 0 6px var(--walnut), 0 0 0 7px var(--honey), 0 0 0 10px var(--walnut-dark), 0 20px 40px rgba(0, 0, 0, 0.55);
 }
 .player, .midbar, .log-panel {
-  --ink: var(--card-ink); --muted: var(--card-muted);
-  color: var(--ink); background: var(--card-face); border: none; box-shadow: var(--card-edge);
+  --ink: var(--plaque-ink); --muted: var(--plaque-muted);
+  color: var(--ink); background: var(--plaque); border: none; box-shadow: var(--plaque-edge);
 }
-.player.thinking { box-shadow: 0 0 0 3px var(--honey), 0 0 18px 4px rgba(240, 190, 90, 0.55), var(--card-edge); }
-.counters span { background: rgba(255, 255, 255, 0.55); box-shadow: inset 0 0 0 1px rgba(150, 112, 58, 0.3); }
-.hero { border-color: var(--honey); box-shadow: 0 0 0 2px var(--linen), 0 5px 12px rgba(40, 25, 10, 0.4); }
-.hero.grown { border-color: #f3cd7a; box-shadow: 0 0 0 2px var(--linen), 0 0 16px 4px rgba(240, 200, 100, 0.75); }
-.card-back, .treat { border-color: var(--linen); background-color: #2e2d31; }
-.empty-yard { color: rgba(80, 58, 32, 0.55); border-color: rgba(120, 86, 44, 0.3); }
+.player.thinking { box-shadow: 0 0 0 2px var(--honey), 0 0 18px 4px rgba(240, 190, 90, 0.5), var(--plaque-edge); }
+.ability b { text-decoration-color: rgba(243, 231, 207, 0.4); }
+.counters span { background: rgba(255, 240, 210, 0.08); box-shadow: inset 0 0 0 1px rgba(214, 174, 106, 0.3); }
+.hero { border-color: var(--honey); box-shadow: 0 0 0 2px #1a130e, 0 5px 12px rgba(0, 0, 0, 0.45); }
+.hero.grown { border-color: #f3cd7a; box-shadow: 0 0 0 2px #1a130e, 0 0 16px 4px rgba(240, 200, 100, 0.7); }
+.card-back, .treat { border-color: rgba(243, 231, 207, 0.75); background-color: #2e2d31; }
+.empty-yard { color: rgba(243, 231, 207, 0.5); border-color: rgba(243, 231, 207, 0.22); }
 /* The round: an amber wax seal. */
 .round {
   background: radial-gradient(circle at 35% 30%, #f6d58e, var(--honey) 60%, #a8741f); color: #3b2610;
-  box-shadow: 0 0 0 3px var(--linen), 0 0 0 4px var(--card-line), 0 4px 10px rgba(40, 25, 10, 0.4);
+  box-shadow: 0 0 0 2px #1a130e, 0 0 0 3px var(--plaque-line), 0 4px 10px rgba(0, 0, 0, 0.45);
 }
 /* The Treats tray: a carved wooden bowl seen from above (it was a cat's food bowl with a paw print). */
 .treats {
-  background: radial-gradient(circle closest-side, #b98a58 0 56%, #9c6f43 63%, #7d5530 76%, #5e3f22 81%,
-    #c79a66 84%, #a57645 92%, #5e3f22 98%, transparent 100%);
-  filter: drop-shadow(0 4px 5px rgba(40, 25, 10, 0.45));
+  background: radial-gradient(circle closest-side, #9c7043 0 56%, #835a33 63%, #6a4626 76%, #4c311a 81%,
+    #b08554 84%, #8e6438 92%, #4c311a 98%, transparent 100%);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
 }
 .treats::before {
-  box-shadow: inset 0 calc(var(--bowl-d) * 0.05) calc(var(--bowl-d) * 0.06) rgba(50, 30, 10, 0.4);
-  background: repeating-radial-gradient(circle, rgba(90, 60, 30, 0.12) 0 2px, transparent 2px 7px);
+  box-shadow: inset 0 calc(var(--bowl-d) * 0.05) calc(var(--bowl-d) * 0.06) rgba(30, 18, 8, 0.5);
+  background: repeating-radial-gradient(circle, rgba(60, 38, 18, 0.18) 0 2px, transparent 2px 7px);
 }
-.pantry-label { color: var(--card-ink); background: var(--card-face); box-shadow: 0 0 0 1px var(--card-line), 0 1px 3px rgba(40, 25, 10, 0.35); }
+.pantry-label { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
 .pantry-label b { color: var(--moss); }
-.inspector img { box-shadow: 0 0 0 3px var(--honey), 0 10px 24px rgba(0, 0, 0, 0.45); }
-.log-panel h3 { color: var(--walnut); border-bottom-color: var(--card-line); }
+.inspector img { box-shadow: 0 0 0 3px var(--honey), 0 10px 24px rgba(0, 0, 0, 0.5); }
+.log-panel h3 { color: #f3cd7a; border-bottom-color: rgba(214, 174, 106, 0.35); }
+.log li.me { color: #a9d4ff; }
+.log li.foe { color: #ffb4a3; }
+.log li.sys { color: var(--plaque-muted); }
 
-/* Pop-ups (settings, rules, game over) and the tutorial: linen pages in a walnut and honey frame. */
+/* Pop-ups (settings, rules, game over) and the tutorial: light pages to read, in a walnut and honey frame. */
 .game-over, .rules, .settings {
   background: var(--card-face); border: 3px solid var(--walnut);
   box-shadow: 0 0 0 1px var(--honey), 0 0 0 5px var(--walnut-dark), 0 20px 50px rgba(0, 0, 0, 0.55);
@@ -800,5 +818,7 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 .tut-arrow { background: var(--linen-2); border-color: var(--walnut); }
 .tut-balloon.above .tut-arrow { border-top-color: transparent; border-left-color: transparent; }
 .tut-balloon.below .tut-arrow { background: var(--linen); border-color: var(--walnut); border-bottom-color: transparent; border-right-color: transparent; }
-#zoom-overlay { background: rgba(25, 20, 15, 0.78); }
+#zoom-overlay { background: rgba(25, 20, 15, 0.8); }
 #zoom-overlay img { box-shadow: 0 0 0 3px var(--honey), 0 24px 60px rgba(0, 0, 0, 0.6); }
+/* Rules, Settings and Home beside the board: walnut plaques like the panels. */
+body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }

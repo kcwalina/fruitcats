@@ -286,3 +286,28 @@ undone until dawn chased them off, and that is how people learned to make fishin
 - **Abatwa** (Zulu): shoot you with poisoned arrows if you admit they're small; a folk "shrinking" of real peoples.
 - **Yumboes** (Wolof): lovely, but the only source is one secondhand Victorian anecdote.
 - **Khyah** (Newar, Nepal): charming attic spirits guarding Lakshmi's coins, but Nepal, not India.
+
+## Home screen tiles
+
+The owner chose a neutral shell for the home screen (2026-09-26): a calm grove in soft, rounded 3D, warm graphite
+and slate with a little soft glow, and no creatures in the background. Each menu tile shows one creature from this
+list, so the home screen says that Folkborn is a world where folk creatures from around the world meet. Each
+creature does the tile's action in a way that fits its lore. This is a mockup so far (made by the Retheme session),
+not in the game.
+
+| Tile | Creature | What it shows |
+|---|---|---|
+| Solo | [Kodama](#kodama) | At the roots of its old tree with a small lantern: you call out alone, and the echo answers. |
+| Friend | [Hedgehog Immortals](#hedgehog-immortals) | Two household hedgehogs passing a card. |
+| Ranked | [Pari](#pari) | Lifting a little golden cup, like the Persian painting above. |
+| Collection | [Yech](#yech) | In its white cap in the snow, a bowl of khichri beside it, hugging a stack of cards. |
+| Store | [Veli](#veli) | Behind a small stall with wild bananas and a kava bowl, wearing tapa cloth. |
+| Deck builder | [Nuno sa punso](#nuno-sa-punso) | On top of his mound in a salakot hat, fanning out cards. |
+| Tutorial | [Domowiki](#domowiki) | Waving you in at a small door with warm light. |
+| Documentation | [Mmoatia](#mmoatia) | Under a banana leaf, reading a big book of herbs (they teach healing). |
+
+- Left out on purpose: Mimi (only with a community partner) and Alux (shown as small Maya people; wait for a
+  reviewer). Momoyes has no tile yet.
+- All eight are drawn as small spirit creatures, never as caricatures of real peoples. The Care notes above still
+  apply to the final tile art.
+- The mockups are described in words only, like everything else in this document.

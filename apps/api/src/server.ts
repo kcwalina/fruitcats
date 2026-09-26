@@ -20,15 +20,17 @@
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { CARDS, DECKS, deckProblems, registerSet, type DeckList } from '@fruitcats/engine';
 import { ENTER_PATH, HERE_PATH } from '@fruitcats/match';
 import { collectionOf, isStarterSet } from '@fruitcats/store';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createLocalJWKSet, createRemoteJWKSet, jwksCache, jwtVerify, type JSONWebKeySet, type JWTPayload } from 'jose';
 import { loadContent } from '../../../content';
 import { log } from './logs';
 import { createHub } from './live/hub';
@@ -55,7 +57,50 @@ const ORIGINS = new Set((process.env.ALLOWED_ORIGINS ??
 const MAX_DECKS = 200;
 const MAX_BODY = 512 * 1024;
 
-const jwks = createRemoteJWKSet(new URL(`${ID_SERVICE}/.well-known/jwks.json`));
+// viamochi-id's public keys. They're fetched again every 10 minutes (so a key it withdraws stops working soon), but a
+// restart or outage of viamochi-id must not sign anyone out: when the keys can't be fetched, the last ones it gave us
+// still check tokens, for up to a week. They're kept on disk too ($HOME persists on App Service), so a restart of this
+// API while viamochi-id is down doesn't lose them.
+const KEYS_FILE = join(process.env.HOME ?? tmpdir(), 'viamochi-id-keys.json');
+const KEYS_KEPT_FOR = 7 * 86_400_000;
+const lastKeys: { jwks?: JSONWebKeySet; uat?: number } = (() => {
+  try { return JSON.parse(readFileSync(KEYS_FILE, 'utf8')); } catch { return {}; }
+})();
+let keysSavedAt = lastKeys.uat;
+const jwks = createRemoteJWKSet(new URL(`${ID_SERVICE}/.well-known/jwks.json`), { [jwksCache]: lastKeys } as never);
+
+/** Thrown when a token can't be checked right now (viamochi-id's keys can't be had): the game should try again, not sign out. */
+class CantCheckTokens extends Error {}
+/** jose's answers that mean the token itself is no good. Anything else (a timeout, a failed fetch) means "can't tell now". */
+const BAD_TOKEN = new Set(['ERR_JWT_EXPIRED', 'ERR_JWT_CLAIM_VALIDATION_FAILED', 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED', 'ERR_JWT_INVALID',
+  'ERR_JWS_INVALID', 'ERR_JOSE_NOT_SUPPORTED', 'ERR_JOSE_ALG_NOT_ALLOWED', 'ERR_JWK_INVALID', 'ERR_JWKS_NO_MATCHING_KEY', 'ERR_JWKS_MULTIPLE_MATCHING_KEYS']);
+const badToken = (e: unknown) => BAD_TOKEN.has((e as { code?: string }).code ?? '');
+
+/** A viamochi-id token's claims, or null if it isn't a valid token for `audience`. Throws CantCheckTokens if it can't tell now. */
+async function verifyToken(token: string, audience: string): Promise<JWTPayload | null> {
+  const expect = { issuer: ID_SERVICE, audience };
+  try {
+    const { payload } = await jwtVerify(token, jwks, expect);
+    if (lastKeys.uat !== keysSavedAt) {
+      keysSavedAt = lastKeys.uat;
+      try { writeFileSync(KEYS_FILE, JSON.stringify(lastKeys)); } catch { /* kept in memory still */ }
+    }
+    return payload;
+  } catch (e) {
+    if (badToken(e)) return null;
+    // viamochi-id didn't answer for its keys: check the token with the last ones it gave.
+    if (lastKeys.jwks && Date.now() - (lastKeys.uat ?? 0) < KEYS_KEPT_FOR) {
+      try {
+        return (await jwtVerify(token, createLocalJWKSet(lastKeys.jwks), expect)).payload;
+      } catch (e2) {
+        // A key we don't have may be a new one viamochi-id made while we couldn't ask it.
+        if (badToken(e2) && (e2 as { code?: string }).code !== 'ERR_JWKS_NO_MATCHING_KEY') return null;
+      }
+    }
+    log('ops', 'auth.keys_unavailable', { message: (e as Error).message }, 'warning');
+    throw new CantCheckTokens('viamochi-id keys unavailable');
+  }
+}
 const decksTable = table('decks');
 const showcaseTable = table('showcase');
 const live = tableStore(table('matches'), table('rivals'), table('seen'));
@@ -88,16 +133,13 @@ async function whoOf(req: IncomingMessage): Promise<{ id: string; name: string }
   if (!auth.startsWith('Bearer ')) return null;
   const known = checked.get(auth);
   if (known && known.exp > Date.now()) return { id: known.sub, name: known.name };
-  try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-    if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
-    const name = typeof payload.name === 'string' ? payload.name.slice(0, 40) : '';
-    if (checked.size > 50_000) checked.clear();
-    checked.set(auth, { sub: payload.sub, name, exp: (payload.exp ?? 0) * 1000 });
-    return { id: payload.sub, name };
-  } catch {
-    return null;
-  }
+  // Can't check it right now: CantCheckTokens goes up to the request, which answers 503 ("try again"), not 401.
+  const payload = await verifyToken(auth.slice(7), 'viamochi');
+  if (!payload || typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+  const name = typeof payload.name === 'string' ? payload.name.slice(0, 40) : '';
+  if (checked.size > 50_000) checked.clear();
+  checked.set(auth, { sub: payload.sub, name, exp: (payload.exp ?? 0) * 1000 });
+  return { id: payload.sub, name };
 }
 
 async function accountOf(req: IncomingMessage): Promise<string | null> {
@@ -108,13 +150,9 @@ async function accountOf(req: IncomingMessage): Promise<string | null> {
 async function userOf(req: IncomingMessage): Promise<{ id: string; name: string } | null> {
   const auth = req.headers.authorization ?? '';
   if (!auth.startsWith('Bearer ')) return null;
-  try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-    if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
-    return { id: payload.sub, name: typeof payload.name === 'string' && payload.name ? payload.name.slice(0, 40) : 'Artist' };
-  } catch {
-    return null;
-  }
+  const payload = await verifyToken(auth.slice(7), 'viamochi');
+  if (!payload || typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+  return { id: payload.sub, name: typeof payload.name === 'string' && payload.name ? payload.name.slice(0, 40) : 'Artist' };
 }
 
 // The Artist Studio. Owners are Via Mochi account ids; agents are "Name:sha256-of-key" pairs (tools/studio.ts).
@@ -143,12 +181,8 @@ const serveStudio = studio({
 async function serviceCall(req: IncomingMessage, userId: string, purpose: string): Promise<boolean> {
   const auth = req.headers.authorization ?? '';
   if (!auth.startsWith('Bearer ')) return false;
-  try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'fruitcats-api' });
-    return payload.sub === userId && payload.purpose === purpose;
-  } catch {
-    return false;
-  }
+  const payload = await verifyToken(auth.slice(7), 'fruitcats-api');
+  return !!payload && payload.sub === userId && payload.purpose === purpose;
 }
 
 // ── Keeping the data honest ───────────────────────────────────────────────────────────────────────
@@ -312,6 +346,8 @@ const server = createServer(async (req, res) => {
     }
     send(res, 404, { error: 'not_found' });
   } catch (e) {
+    // A token that can't be checked right now is "try again", never "signed out".
+    if (e instanceof CantCheckTokens) { res.setHeader('Retry-After', '5'); return send(res, 503, { error: 'try_again' }); }
     log('ops', 'error', { url: req.url, message: (e as Error).message }, 'error');
     send(res, 500, { error: 'server' });
   }
@@ -337,11 +373,11 @@ const hub = createHub({
       return { id, name: name?.trim().slice(0, 40) || `Player ${id.slice(0, 4)}` };
     }
     try {
-      const { payload } = await jwtVerify(token, jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-      if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+      const payload = await verifyToken(token, 'viamochi');
+      if (!payload || typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
       return { id: payload.sub, name: typeof payload.name === 'string' ? payload.name : '' };
     } catch {
-      return null;
+      return null;   // can't check it now: the game reconnects and tries again
     }
   },
   // viamochi-id knows who is friends with whom; we ask it with the player's own token.

@@ -18,7 +18,7 @@ Big Cat.
   them. On a computer, use the arrow keys or the ‹ › buttons.
 - The card's art, softly blurred, fills the screen behind it.
 - The Showcase is just for looking: you choose its cards in [All cards](#all-cards).
-- Your Showcase is kept on this device.
+- Signed in, your Showcase is kept in your Via Mochi account, so it's the same on all your devices.
 
 ## All cards
 

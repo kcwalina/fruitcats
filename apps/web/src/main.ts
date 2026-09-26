@@ -11,7 +11,7 @@ import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderH
 import { ACCOUNTS, ONLINE, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
-import { startSync } from './sync';
+import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
@@ -501,7 +501,7 @@ function onClick(key: string) {
       }
     }
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
-    else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
+    else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; if (ACCOUNTS) void syncNow(); }
     else if (raw === 'store' && storeOpen()) { openStore(storeHost); screen = 'store'; }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
     else if (raw === 'tutorial') { startGame(true); return; }

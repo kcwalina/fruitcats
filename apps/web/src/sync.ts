@@ -3,10 +3,12 @@
 // each deck wins; deletions are remembered) and sends back the result, which replaces what's here.
 //
 // It syncs when you sign in (which also uploads the decks this device already had), when the game starts, when you
-// come back to it, when the connection returns, and two seconds after each change. Offline, changes simply wait.
+// come back to it, when the connection returns, when you open the Collection, and two seconds after each change.
+// A sync that fails (offline, or a service restarting) is tried again by itself, sooner at first, then every minute,
+// until it goes through: a change made on one device must never be stuck there.
 
 import { API } from './api';
-import { session, signOut, token } from './auth';
+import { refreshAccount, session, signOut, token } from './auth';
 import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type DeckOrigin, type MyDeck } from './mydecks';
 import { applySyncedShowcase, forgetShowcase, onShowcaseChanged, savedShowcase } from './showcase';
 import { forgetStore } from './shop';
@@ -20,6 +22,10 @@ let started = false;
 let timer = 0;
 let running: Promise<boolean> | null = null;
 let again = false;
+/** The next try after a failed sync, and how many have failed in a row. */
+let retry = 0;
+let failures = 0;
+const RETRY_AFTER = [3_000, 10_000, 30_000, 60_000];
 /** When this device and the account last agreed (ms since epoch): anything changed after it isn't in the account yet. */
 const SYNCED_KEY = 'fruitcats-synced-at';
 const SYNC_RETRY = { ...SAFE_RETRY, attemptMs: 20_000, delaysMs: [1000], budgetMs: 30_000 };
@@ -50,11 +56,14 @@ export async function syncNow(): Promise<boolean> {
   running = run().finally(() => { running = null; });
   const ok = await running;
   if (again) { again = false; return syncNow(); }
+  window.clearTimeout(retry);
+  if (ok) failures = 0;
+  else if (session()) retry = window.setTimeout(() => void syncNow(), RETRY_AFTER[Math.min(failures++, RETRY_AFTER.length - 1)]);
   return ok;
 }
 
 async function run(): Promise<boolean> {
-  const t = await token();
+  let t = await token();
   if (!t) return false;
   const decks: SyncDeck[] = [
     ...listDecks().map((d) => ({ id: d.id, updatedAt: d.updatedAt ?? Date.now(), deck: { name: d.name, hero: d.hero, cards: d.cards, from: d.from } })),
@@ -62,17 +71,20 @@ async function run(): Promise<boolean> {
   ];
   let merged: { decks: SyncDeck[]; showcase: { faces: string[]; updatedAt: number } | null };
   const sentAt = Date.now();
+  const body = JSON.stringify({ decks, showcase: savedShowcase() ?? undefined });
+  // A sync can safely happen twice (the account merges, the newest edit wins): one more try after a dropped
+  // connection, so signing out doesn't stop over a blip.
+  const send = (bearer: string) => fetchRetry(`${API}/v1/sync`, {
+    method: 'POST', headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' }, body,
+  }, SYNC_RETRY);
   try {
-    // A sync can safely happen twice (the account merges, the newest edit wins): one more try after a dropped
-    // connection, so signing out doesn't stop over a blip.
-    const r = await fetchRetry(`${API}/v1/sync`, {
-      method: 'POST', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decks, showcase: savedShowcase() ?? undefined }),
-    }, SYNC_RETRY);
-    if (!r.ok) return false;
+    let r = await send(t);
+    // Turned away: this device's token may be older than it thinks. Get a fresh one and ask once more.
+    if (r.status === 401 && await refreshAccount() && (t = await token())) r = await send(t);
+    if (!r.ok) return false;   // tried again soon (syncNow)
     merged = await r.json();
   } catch {
-    return false;   // offline: try again later
+    return false;   // offline, or the service is restarting: tried again soon (syncNow)
   }
   if (!session()) return false;   // signed out while this was running
   const before = JSON.stringify(listDecks());

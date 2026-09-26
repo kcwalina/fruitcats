@@ -10,6 +10,7 @@ import { session, signOut, token } from './auth';
 import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type DeckOrigin, type MyDeck } from './mydecks';
 import { applySyncedShowcase, forgetShowcase, onShowcaseChanged, savedShowcase } from './showcase';
 import { forgetStore } from './shop';
+import { SAFE_RETRY, fetchRetry } from './net';
 
 interface Host { render(): void }
 interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number>; from?: DeckOrigin } }
@@ -19,6 +20,9 @@ let started = false;
 let timer = 0;
 let running: Promise<boolean> | null = null;
 let again = false;
+/** When this device and the account last agreed (ms since epoch): anything changed after it isn't in the account yet. */
+const SYNCED_KEY = 'fruitcats-synced-at';
+const SYNC_RETRY = { ...SAFE_RETRY, attemptMs: 20_000, delaysMs: [1000], budgetMs: 30_000 };
 
 /** Start keeping this device in step with the account. Safe to call more than once. */
 export function startSync(h: Host) {
@@ -57,12 +61,14 @@ async function run(): Promise<boolean> {
     ...deletedDecks().map((d) => ({ id: d.id, updatedAt: d.updatedAt, deleted: true })),
   ];
   let merged: { decks: SyncDeck[]; showcase: { faces: string[]; updatedAt: number } | null };
+  const sentAt = Date.now();
   try {
-    const r = await fetch(`${API}/v1/sync`, {
-      signal: AbortSignal.timeout(20_000),
+    // A sync can safely happen twice (the account merges, the newest edit wins): one more try after a dropped
+    // connection, so signing out doesn't stop over a blip.
+    const r = await fetchRetry(`${API}/v1/sync`, {
       method: 'POST', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ decks, showcase: savedShowcase() ?? undefined }),
-    });
+    }, SYNC_RETRY);
     if (!r.ok) return false;
     merged = await r.json();
   } catch {
@@ -84,17 +90,36 @@ async function run(): Promise<boolean> {
   const saved = savedShowcase();
   if (merged.showcase && (!saved || saved.updatedAt < merged.showcase.updatedAt)) applySyncedShowcase(merged.showcase.faces, merged.showcase.updatedAt);
   if (JSON.stringify(listDecks()) !== before || merged.showcase) host?.render();
+  // The newest time in what the account sent counts too: another device's clock running ahead mustn't make its
+  // decks look unsaved here. A deck the account left out (kept above) isn't saved in it, so the mark doesn't move.
+  const newest = Math.max(sentAt, ...merged.decks.map((d) => d.updatedAt), merged.showcase?.updatedAt ?? 0);
+  if (!kept.length) try { localStorage.setItem(SYNCED_KEY, String(newest)); } catch { /* private mode */ }
   return true;
+}
+
+/** Has this device got changes the account doesn't have yet? */
+function unsaved(): boolean {
+  let at = 0;
+  try { at = Number(localStorage.getItem(SYNCED_KEY) ?? 0) || 0; } catch { /* private mode: never synced */ }
+  return listDecks().some((d) => (d.updatedAt ?? Infinity) > at)
+    || deletedDecks().some((d) => d.updatedAt > at)
+    || (savedShowcase()?.updatedAt ?? 0) > at;
 }
 
 /**
  * Sign out: send anything unsynced first, then this device forgets the account's decks, Showcase and Store copy, so
  * the next person to sign in here doesn't see them. They stay safe in the account.
+ *
+ * Offline, the latest changes can't be sent, and forgetting them would lose them for good: then this doesn't sign
+ * out and returns false, unless `anyway` (the player was told, and chose to).
  */
-export async function signOutAndForget() {
-  await syncNow();
+export async function signOutAndForget(anyway = false): Promise<boolean> {
+  const ok = await syncNow();
+  if (!ok && !anyway && session() && unsaved()) return false;
   forgetStore();
   signOut();
   forgetDecks();
   forgetShowcase();
+  try { localStorage.removeItem(SYNCED_KEY); } catch { /* private mode */ }
+  return true;
 }

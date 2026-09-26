@@ -6,6 +6,7 @@
 // token, which is what our APIs accept.
 
 import { API } from './api';
+import { NO_RETRY, NetError, SAFE_RETRY, fetchRetry, requestId } from './net';
 
 // viamochi-id accepts calls from the game's sites and from a dev server on port 5173 only. A dev server on another port
 // (a second checkout running side by side) goes through its own /__id proxy instead (vite.config.ts).
@@ -15,8 +16,6 @@ const SCOPE = `openid offline_access api://${CLIENT_ID}/play`;
 const BIRTH_YEAR = 'extension_6758f33d2f4d4c119a640bcbadfe8dc5_BirthYear';
 const SESSION_KEY = 'viamochi-session';
 /** The Terms of Use version a new account accepts (docs/legal/terms-of-use.md). */
-/** How long any call to the account service may take before the game gives up and says so. */
-const REQUEST_TIMEOUT_MS = 15_000;
 export const TERMS_VERSION = '2026-09-draft-1';
 
 export interface Session {
@@ -41,7 +40,11 @@ export interface Session {
   birthYear?: number | null;
 }
 
-/** Where a sign-in stands between the email and the code. Kept only in memory. */
+/**
+ * Where a sign-in stands between the email and the code. Kept only in memory. Each step that has worked is kept here,
+ * so a tap that fails part-way (the network drops) tries only what's left the next time, and never sends a used
+ * code to Entra again.
+ */
 export interface Pending {
   flow: 'signIn' | 'signUp';
   email: string;
@@ -49,6 +52,15 @@ export interface Pending {
   /** "k•••@m•••.com": where the code went, as Entra shows it. */
   sentTo: string;
   codeLength: number;
+  /** A new account (it stays one if its sign-in has to start again as an ordinary sign-in). */
+  newAccount: boolean;
+  /** A new account's details, to start its sign-up again if Entra forgets it (its continuation token expires). */
+  displayName?: string;
+  birthYear?: number;
+  /** Sign-up: the email is confirmed and the account made; only signing in to it is left. */
+  confirmed?: string;
+  /** Entra accepted the code; only the exchange for our own token is left. */
+  entra?: Record<string, any>;
 }
 
 export class AuthError extends Error {
@@ -87,6 +99,10 @@ export async function token(): Promise<string | null> {
 async function refresh(s: Session): Promise<string | null> {
   try {
     const entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: s.refreshToken, scope: SCOPE });
+    // Entra hands out a new refresh token each time: kept at once, so an exchange that fails below doesn't leave this
+    // device holding only the old one.
+    const now = session();
+    if (now && entra.refresh_token) saveSession({ ...now, refreshToken: entra.refresh_token });
     return (await finish(entra, s.email)).token;
   } catch (e) {
     // Only Entra rejecting the refresh token signs the player out. Being offline, or our service being down or slow,
@@ -135,11 +151,19 @@ export async function accountExists(email: string): Promise<boolean> {
 let initiated: { email: string; token: string; at: number } | null = null;
 
 /** Existing account: email the code. */
-export async function startSignIn(email: string): Promise<Pending> {
-  const fresh = initiated?.email === email && Date.now() - initiated.at < 5 * 60_000 ? initiated.token : null;
+export async function startSignIn(email: string, newAccount = false): Promise<Pending> {
+  const cached = initiated?.email === email && Date.now() - initiated.at < 5 * 60_000 ? initiated.token : null;
   initiated = null;
-  const token = fresh ?? (await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' })).continuation_token;
-  return challenge('signIn', email, 'oauth2/v2.0/challenge', token);
+  const base = { flow: 'signIn', email, newAccount } as const;
+  if (cached) {
+    try { return await challenge(base, 'oauth2/v2.0/challenge', cached); } catch (e) {
+      // Entra forgot the sign-in accountExists started (the player took a while): start another, rather than say a
+      // code has expired before any was sent.
+      if (!(e instanceof AuthError && e.code === 'expired')) throw e;
+    }
+  }
+  const token = (await entraPost('oauth2/v2.0/initiate', { username: email, challenge_type: 'oob redirect' })).continuation_token;
+  return challenge(base, 'oauth2/v2.0/challenge', token);
 }
 
 // ── Invite codes (playtest) ─────────────────────────────────────────────────────────────────────
@@ -154,7 +178,8 @@ let inviteCode = '';
 export async function invitesRequired(): Promise<boolean> {
   const r = await request(`${ID_SERVICE}/invites/check`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: '' }),
-  });
+  }, true);
+  if (r.status !== 403 && !r.ok) throw await failed(r, 'Something went wrong. Please try again.');
   return r.status === 403;
 }
 
@@ -162,7 +187,7 @@ export async function invitesRequired(): Promise<boolean> {
 export async function useInvite(code: string): Promise<void> {
   const r = await request(`${ID_SERVICE}/invites/check`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
-  });
+  }, true);
   const json = await r.json().catch(() => ({}));
   if (!r.ok) throw toError(r.status, json);
   inviteCode = code.trim();
@@ -176,10 +201,9 @@ export async function startSignUp(email: string, displayName: string, birthYear?
     // the birth year at sign-up, or at its Terms step for an account made elsewhere).
     attributes: JSON.stringify({ displayName, ...(birthYear ? { [BIRTH_YEAR]: String(birthYear) } : {}) }),
   });
-  return challenge('signUp', email, 'signup/v1.0/challenge', started.continuation_token);
+  return challenge({ flow: 'signUp', email, newAccount: true, displayName, birthYear }, 'signup/v1.0/challenge', started.continuation_token);
 }
 
-/** Send the code again. */
 /**
  * The code out of whatever landed in the box: iPhone Mail turns an 8-digit code into a phone link, and "Copy link"
  * pastes "tel:12345678" (2026-09-26), so everything but digits goes. A longer run keeps its last digits (a "+1" a
@@ -190,36 +214,83 @@ export function codeDigits(text: string, length: number): string {
   return length > 0 && digits.length > length ? digits.slice(-length) : digits;
 }
 
-export function resend(p: Pending): Promise<Pending> {
-  return challenge(p.flow, p.email, p.flow === 'signIn' ? 'oauth2/v2.0/challenge' : 'signup/v1.0/challenge', p.continuationToken);
-}
-
-/** Check the code; on success this device is signed in. */
-export async function submitCode(p: Pending, code: string): Promise<Session> {
-  if (p.flow === 'signIn') {
-    const entra = await entraPost('oauth2/v2.0/token', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code, scope: SCOPE });
-    return finish(entra, p.email);
+/** Send the code again. If Entra has forgotten this sign-in (it keeps one for minutes), start it again. */
+export async function resend(p: Pending): Promise<Pending> {
+  const base = { flow: p.flow, email: p.email, newAccount: p.newAccount, displayName: p.displayName, birthYear: p.birthYear };
+  try {
+    return await challenge(base, p.flow === 'signIn' ? 'oauth2/v2.0/challenge' : 'signup/v1.0/challenge', p.continuationToken);
+  } catch (e) {
+    if (!(e instanceof AuthError && e.code === 'expired')) throw e;
   }
-  const confirmed = await entraPost('signup/v1.0/continue', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code });
-  const entra = await entraPost('oauth2/v2.0/token', {
-    continuation_token: confirmed.continuation_token, grant_type: 'continuation_token', username: p.email, scope: SCOPE,
-  });
-  return finish(entra, p.email);
+  // "Send a new code" used to fail for good once the continuation token expired: the only way out was to start over.
+  if (p.flow === 'signIn') return startSignIn(p.email, p.newAccount);
+  try { return await startSignUp(p.email, p.displayName ?? '', p.birthYear); } catch (e) {
+    // The account was made before the sign-up was lost: sign in to it instead.
+    if (e instanceof AuthError && e.code === 'user_already_exists') return startSignIn(p.email, true);
+    throw e;
+  }
 }
 
-async function challenge(flow: Pending['flow'], email: string, path: string, continuationToken: string): Promise<Pending> {
+/**
+ * Check the code; on success this device is signed in. Each step that worked is kept on `p`, so after a failure the
+ * next tap does only what's left. When a new code had to be sent, `p` is updated to it and the error says so
+ * (code 'code_resent').
+ */
+export async function submitCode(p: Pending, code: string): Promise<Session> {
+  if (!p.entra && p.flow === 'signIn') {
+    p.entra = await usingCode(p, () => entraPost('oauth2/v2.0/token', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code, scope: SCOPE }));
+  } else if (!p.entra) {
+    p.confirmed ??= (await usingCode(p, () => entraPost('signup/v1.0/continue', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code }))).continuation_token;
+    try {
+      p.entra = await entraPost('oauth2/v2.0/token', {
+        continuation_token: p.confirmed!, grant_type: 'continuation_token', username: p.email, scope: SCOPE,
+      });
+    } catch (e) {
+      if (!(e instanceof AuthError) || e.code === 'network' || e.code === 'timeout' || OUR_WORDS.has(e.code)) throw e;
+      // The account is made but Entra won't sign in with that continuation token any more: sign in the ordinary way.
+      replace(p, await startSignIn(p.email, true));
+      throw new AuthError('code_resent', 'Your account is ready. We’ve emailed you a new code to sign in.');
+    }
+  }
+  try { return await finish(p.entra!, p.email); } catch (e) {
+    if (e instanceof AuthError && e.code === 'entra_expired' && p.entra?.refresh_token) {
+      // Left for an hour after the code worked: Entra's token has run out, but its refresh token gets a new one.
+      p.entra = await entraPost('oauth2/v2.0/token', { grant_type: 'refresh_token', refresh_token: p.entra.refresh_token, scope: SCOPE });
+      return finish(p.entra, p.email);
+    }
+    if (e instanceof AuthError && (e.code === 'invite_required' || OUR_WORDS.has(e.code))) throw e;
+    throw new AuthError('exchange', 'Signed in, but we couldn’t reach your Via Mochi account. Tap Try again.');
+  }
+}
+
+/** A step that uses the code. An expired code gets a new one sent at once, rather than asking the player to. */
+async function usingCode<T>(p: Pending, run: () => Promise<T>): Promise<T> {
+  try { return await run(); } catch (e) {
+    if (!(e instanceof AuthError && e.code === 'expired')) throw e;
+  }
+  replace(p, await resend(p));
+  throw new AuthError('code_resent', 'That code has expired. We’ve sent you a new one.');
+}
+
+/** Swap a pending sign-in for a new one in place: the screens hold on to the same object. */
+function replace(p: Pending, next: Pending) {
+  Object.assign(p, { confirmed: undefined, entra: undefined }, next);
+}
+
+async function challenge(base: Pick<Pending, 'flow' | 'email' | 'newAccount' | 'displayName' | 'birthYear'>, path: string, continuationToken: string): Promise<Pending> {
   const r = await entraPost(path, { continuation_token: continuationToken, challenge_type: 'oob redirect' });
   if (r.challenge_type !== 'oob') throw new AuthError('redirect', 'This account can’t sign in here yet.');
-  return { flow, email, continuationToken: r.continuation_token, sentTo: r.challenge_target_label ?? email, codeLength: r.code_length ?? 8 };
+  return { ...base, continuationToken: r.continuation_token, sentTo: r.challenge_target_label ?? base.email, codeLength: r.code_length ?? 8 };
 }
 
 /** Swap Entra's token for ours and remember the session. */
 async function finish(entra: Record<string, any>, email: string): Promise<Session> {
   const r = await request(`${ID_SERVICE}/token`, {
     method: 'POST', headers: { Authorization: `Bearer ${entra.access_token}`, ...(inviteCode ? { 'X-Invite-Code': inviteCode } : {}) },
-  });
+  }, true);
+  if (r.status === 401) throw new AuthError('entra_expired', 'Please sign in again.');
   if (r.status === 403) throw toError(403, await r.json().catch(() => ({})));
-  if (!r.ok) throw new AuthError('exchange', 'Signed in, but Via Mochi couldn’t open your account. Please try again.');
+  if (!r.ok) throw await failed(r, 'Signed in, but Via Mochi couldn’t open your account. Please try again.', 'exchange');
   const ours = await r.json();
   restoredOnSignIn = !!ours.restored;
   // An agreement made on this device and not yet saved in the account survives a refresh: dropping it here made the
@@ -250,8 +321,8 @@ export async function exportData(): Promise<string> {
   const t = await token();
   if (!t) throw noToken();
   const get = async (url: string) => {
-    const r = await request(url, { headers: { Authorization: `Bearer ${t}` } });
-    if (!r.ok) throw new AuthError('export', 'Couldn’t gather your data. Please try again.');
+    const r = await request(url, { headers: { Authorization: `Bearer ${t}` } }, true);
+    if (!r.ok) throw await failed(r, 'Couldn’t gather your data. Please try again.');
     return r.json();
   };
   const [account, fruitcats] = await Promise.all([get(`${ID_SERVICE}/me/export`), get(`${API}/v1/export`)]);
@@ -262,8 +333,8 @@ export async function exportData(): Promise<string> {
 export async function deleteAccount(): Promise<Date> {
   const t = await token();
   if (!t) throw noToken();
-  const r = await request(`${ID_SERVICE}/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
-  if (!r.ok) throw new AuthError('delete', 'Couldn’t delete your account. Please try again.');
+  const r = await request(`${ID_SERVICE}/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } }, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t delete your account. Please try again.');
   return new Date((await r.json()).deleteAfter);
 }
 
@@ -271,37 +342,38 @@ export async function deleteAccount(): Promise<Date> {
 
 export interface Friend { id: string; displayName: string | null; avatar: string; since: string }
 
-async function withToken(path: string, init: RequestInit = {}): Promise<Response> {
+async function withToken(path: string, init: RequestInit, retry: boolean): Promise<Response> {
   const t = await token();
   if (!t) throw noToken();
-  return request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` } });
+  return request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` } }, retry);
 }
 
 export async function listFriends(): Promise<Friend[]> {
-  const r = await withToken('/friends');
-  if (!r.ok) throw new AuthError('friends', 'Couldn’t load your friends. Please try again.');
+  const r = await withToken('/friends', {}, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t load your friends. Please try again.');
   return (await r.json()).friends;
 }
 
 /** A new friend code to give someone: "K7M-4Q2", good for 15 minutes and one use. */
 export async function newFriendCode(): Promise<{ code: string; expires: string }> {
-  const r = await withToken('/friends/code', { method: 'POST' });
-  if (!r.ok) throw new AuthError('friends', 'Couldn’t make a code. Please try again.');
+  // Safe to repeat: a code nobody saw is simply never used.
+  const r = await withToken('/friends/code', { method: 'POST' }, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t make a code. Please try again.');
   return r.json();
 }
 
 export async function redeemFriendCode(code: string): Promise<Friend> {
   const r = await withToken('/friends/redeem', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
-  });
+  }, false);   // one use: a second try would find it used
   const json = await r.json().catch(() => ({}));
-  if (!r.ok) throw new AuthError('friend_code', json.message ?? 'That code didn’t work.');
+  if (!r.ok) throw json.message ? new AuthError('friend_code', json.message) : failedWith(r.status, json, 'That code didn’t work.');
   return json.friend;
 }
 
 export async function removeFriend(id: string, block = false): Promise<void> {
-  const r = await withToken(block ? `/friends/${id}/block` : `/friends/${id}`, { method: block ? 'POST' : 'DELETE' });
-  if (!r.ok) throw new AuthError('friends', 'Couldn’t do that. Please try again.');
+  const r = await withToken(block ? `/friends/${id}/block` : `/friends/${id}`, { method: block ? 'POST' : 'DELETE' }, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t do that. Please try again.');
 }
 
 // ── Avatars ("Pawtraits") ────────────────────────────────────────────────────────────────────────
@@ -316,8 +388,8 @@ let catalog: Avatar[] | null = null;
 /** Every avatar there is. Cached for the session. */
 export async function avatarCatalog(): Promise<Avatar[]> {
   if (catalog) return catalog;
-  const r = await request(`${ID_SERVICE}/avatars`, {});
-  if (!r.ok) throw new AuthError('avatars', 'Couldn’t load the Pawtraits. Please try again.');
+  const r = await request(`${ID_SERVICE}/avatars`, {}, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t load the Pawtraits. Please try again.');
   return (catalog = await r.json());
 }
 
@@ -325,8 +397,8 @@ export async function avatarCatalog(): Promise<Avatar[]> {
 export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> }> {
   const t = await token();
   if (!t) throw noToken();
-  const r = await request(`${ID_SERVICE}/me`, { headers: { Authorization: `Bearer ${t}` } });
-  if (!r.ok) throw new AuthError('me', 'Couldn’t load your account. Please try again.');
+  const r = await request(`${ID_SERVICE}/me`, { headers: { Authorization: `Bearer ${t}` } }, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t load your account. Please try again.');
   const me = await r.json();
   const s = session();
   if (s && s.avatar !== me.avatar) saveSession({ ...s, avatar: me.avatar });
@@ -342,7 +414,7 @@ export async function requestSupportCode(email: string): Promise<number> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
-  });
+  }, false);   // it emails a code
   if (!r.ok) throw await supportError(r, 'We couldn’t email you a code. Please try again.');
   return (await r.json()).codeLength ?? 8;
 }
@@ -350,11 +422,13 @@ export async function requestSupportCode(email: string): Promise<number> {
 /** "Contact us": emailed to the team, answered by email (the account's, or `email`, confirmed by `code`, when signed out). */
 export async function sendSupport(message: string, email: string, code?: string): Promise<void> {
   const t = session() ? await token() : null;
+  // One id for the message, whichever attempt gets through: the service drops a copy it has already had, so trying
+  // again never sends the team the same message twice.
   const r = await request(`${ID_SERVICE}/support`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': requestId(), ...(t ? { Authorization: `Bearer ${t}` } : {}) },
     body: JSON.stringify({ message, email, code, app: 'Fruitcats', device: navigator.userAgent }),
-  });
+  }, true);
   if (!r.ok) throw await supportError(r, 'Your message couldn’t be sent. Please try again.');
 }
 
@@ -362,8 +436,9 @@ export async function sendSupport(message: string, email: string, code?: string)
 async function supportError(r: Response, fallback: string): Promise<AuthError> {
   const json = await r.json().catch(() => ({}));
   if (json.message) return new AuthError(json.error ?? 'support', json.message);
+  if (json.error_description && OUR_WORDS.has(json.error)) return new AuthError(json.error, json.error_description);
   if (r.status === 429) return new AuthError('too_many', 'You’ve sent a few messages already. Please wait an hour, or reply to our email.');
-  return new AuthError('support', fallback);
+  return failedWith(r.status, json, fallback);
 }
 
 /** Has this account still to agree to the current Terms of Use and Privacy Policy? */
@@ -397,8 +472,8 @@ export async function acceptTerms(): Promise<void> {
   const r = await request(`${ID_SERVICE}/me/terms`, {
     method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ version: TERMS_VERSION, ...(session()?.birthYear ? { birthYear: session()!.birthYear } : {}) }),
-  });
-  if (!r.ok) throw new AuthError('terms', 'Couldn’t save that. Please try again.');
+  }, true);
+  if (!r.ok) throw await failed(r, 'Couldn’t save that. Please try again.');
   const s = session();
   if (s) saveSession({ ...s, terms: TERMS_VERSION, termsPending: undefined });
 }
@@ -408,7 +483,7 @@ export async function chooseAvatar(id: string): Promise<void> {
   if (!t) throw noToken();
   const r = await request(`${ID_SERVICE}/me/avatar`, {
     method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
-  });
+  }, true);
   if (!r.ok) throw new AuthError('avatar', (await r.json().catch(() => ({}))).message ?? 'Couldn’t change your Pawtrait.');
   const s = session();
   if (s) saveSession({ ...s, avatar: id });
@@ -416,23 +491,67 @@ export async function chooseAvatar(id: string): Promise<void> {
 
 // ── Talking to Entra through the pass-through ────────────────────────────────────────────────────
 
+/**
+ * Entra calls that can safely happen twice: starting a sign-in or sign-up (nothing is sent until the challenge) and
+ * refreshing a token. A challenge emails a code, and a code or continuation token is used up, so those never are.
+ */
+function safeToRepeat(path: string, fields: Record<string, string>): boolean {
+  return path === 'oauth2/v2.0/initiate' || path === 'signup/v1.0/start'
+    || (path === 'oauth2/v2.0/token' && fields.grant_type === 'refresh_token');
+}
+
 async function entraPost(path: string, fields: Record<string, string>): Promise<Record<string, any>> {
   const body = new URLSearchParams({ client_id: CLIENT_ID, ...fields });
   const r = await request(`${ID_SERVICE}/auth/${path}`, {
     method: 'POST', body, headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
+  }, safeToRepeat(path, fields));
   const json = await r.json().catch(() => ({}));
   if (r.ok && json.challenge_type !== 'redirect') return json;
   throw toError(r.status, json);
 }
 
-async function request(url: string, init: RequestInit): Promise<Response> {
-  // Never wait for ever: a stuck request leaves a greyed-out button and "Loading…" with no way out.
-  try { return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }); } catch (e) {
-    if (e instanceof DOMException && e.name === 'TimeoutError')
+/**
+ * When the current tap in a sign-in window must be done by (ms since epoch; 0: no tap). Signing up makes three or
+ * four calls in a row; each has its own limit, but together they could keep the button busy for a minute.
+ */
+let tapDeadline = 0;
+const TAP_MS = 28_000;
+
+/** Run one tap's calls (a sign-in window's button) within TAP_MS in all. */
+export async function oneTap<T>(run: () => Promise<T>): Promise<T> {
+  tapDeadline = Date.now() + TAP_MS;
+  try { return await run(); } finally { tapDeadline = 0; }
+}
+
+/**
+ * Every call to the account service. Never waits for ever (a stuck request left a greyed-out button and "Loading…"
+ * with no way out), and a call that's safe to repeat (`retry`) is tried again after a dropped connection or a busy
+ * service (net.ts).
+ */
+async function request(url: string, init: RequestInit, retry: boolean): Promise<Response> {
+  try { return await fetchRetry(url, init, retry ? SAFE_RETRY : NO_RETRY, tapDeadline); } catch (e) {
+    if (e instanceof NetError && e.kind === 'timeout')
       throw new AuthError('timeout', 'Via Mochi isn’t answering right now. Please try again in a minute.');
     throw new AuthError('network', 'You seem to be offline. Check your connection and try again.');
   }
+}
+
+/**
+ * The account service's own errors whose description is written for players (2026-09-26): "We've sent several codes
+ * to this address…" (429), and Entra or the service being down for a while (503).
+ */
+const OUR_WORDS = new Set(['too_many_codes', 'entra_unavailable', 'unavailable']);
+
+/** A failed answer from the account service, in the service's own words when it has them. */
+async function failed(r: Response, fallback: string, code = 'failed'): Promise<AuthError> {
+  return failedWith(r.status, await r.json().catch(() => ({})), fallback, code);
+}
+
+function failedWith(status: number, json: Record<string, any>, fallback: string, code = 'failed'): AuthError {
+  if (json.error_description && OUR_WORDS.has(json.error)) return new AuthError(json.error, json.error_description);
+  if (status === 429) return new AuthError('too_many', 'Too many tries. Wait a few minutes, then try again.');
+  if (status >= 500) return new AuthError('down', 'Via Mochi isn’t answering right now. Please try again in a minute.');
+  return new AuthError(code, fallback);
 }
 
 /** Entra's errors, in words a player understands. */
@@ -441,7 +560,10 @@ function toError(status: number, json: Record<string, any>): AuthError {
   const sub: string = json.suberror ?? '';
   if (json.challenge_type === 'redirect') return new AuthError('redirect', 'This account can’t sign in here yet.');
   if (error === 'invite_required') return new AuthError('invite_required', json.error_description ?? 'Please enter your invite code.');
+  if (json.error_description && OUR_WORDS.has(error)) return new AuthError(error, json.error_description);
   if (status === 429) return new AuthError('too_many', 'Too many tries. Wait a few minutes, then try again.');
+  if (status === 502 || status === 503 || status === 504)
+    return new AuthError('down', 'Via Mochi isn’t answering right now. Please try again in a minute.');
   if (sub === 'invalid_oob_value') return new AuthError('wrong_code', 'That code doesn’t match. Check the latest email and try again.');
   if (error === 'expired_token') return new AuthError('expired', 'That code has expired. Send a new one.');
   if (error === 'user_not_found') return new AuthError('user_not_found', 'There’s no account with that email.');

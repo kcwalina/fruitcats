@@ -1,7 +1,7 @@
 // Signing in to the Studio with a Via Mochi account: the same account players have, by email and a code, no
 // password (src/auth.ts). A new artist creates their account here. In development (?dev), pick a pretend account.
 
-import { AuthError, accountExists, codeDigits, invitesRequired, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
+import { AuthError, accountExists, codeDigits, invitesRequired, oneTap, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
 import { esc, BASE } from '../ui';
 import { DEV, DEV_ACCOUNTS, setDevUser } from './api';
 
@@ -13,6 +13,9 @@ let displayName = '';
 let code = '';
 let pending: Pending | null = null;
 let busy = false;
+/** Busy for more than a few seconds: the button says it's still going, so a weak connection doesn't look stuck. */
+let slow = false;
+const working = (text: string) => (slow ? 'Still working…' : text);
 let error = '';
 /** Via Mochi's own invite code (new accounts need one while sign-up is by invitation), from the Studio's invite link. */
 const linkCode = new URLSearchParams(location.search).get('account') ?? '';
@@ -32,25 +35,25 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
   } else if (step === 'email') {
     body = `<label class="field">Your email
         <input data-in="email" type="email" autocomplete="email" value="${esc(email)}" placeholder="you@example.com" ${busy ? 'disabled' : ''}></label>
-      <button class="btn primary wide" data-click="si:email" ${busy ? 'disabled' : ''}>${busy ? 'One moment…' : 'Continue'}</button>
+      <button class="btn primary wide" data-click="si:email" ${busy ? 'disabled' : ''}>${busy ? working('One moment…') : 'Continue'}</button>
       <p class="si-small">No password: we email you a code. It’s the same Via Mochi account the game uses.</p>`;
   } else if (step === 'invite') {
     body = `<p class="si-small">New to Via Mochi: <b>${esc(email)}</b>. <button class="link" data-click="si:back">Use a different email</button></p>
       <label class="field">Invite code <small>It came with your invitation to the Studio</small>
         <input data-in="invite" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" value="${esc(invite)}" ${busy ? 'disabled' : ''}></label>
-      <button class="btn primary wide" data-click="si:invite" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Continue'}</button>`;
+      <button class="btn primary wide" data-click="si:invite" ${busy ? 'disabled' : ''}>${busy ? working('Checking…') : 'Continue'}</button>`;
   } else if (step === 'details') {
     body = `<p class="si-small">New to Via Mochi: <b>${esc(email)}</b>. <button class="link" data-click="si:back">Use a different email</button></p>
       <label class="field">Your name <small>What we’ll see on your comments and images</small>
         <input data-in="name" maxlength="40" autocomplete="name" value="${esc(displayName)}" ${busy ? 'disabled' : ''}></label>
-      <button class="btn primary wide" data-click="si:details" ${busy ? 'disabled' : ''}>${busy ? 'Sending your code…' : 'Email me a code'}</button>`;
+      <button class="btn primary wide" data-click="si:details" ${busy ? 'disabled' : ''}>${busy ? working('Sending your code…') : 'Email me a code'}</button>`;
   } else {
     const length = pending?.codeLength ?? 8;
     body = `<p class="si-small">We sent a ${length}-digit code to <b>${esc(pending?.sentTo ?? email)}</b>.</p>
       <label class="field">Code
         <input data-in="code" class="si-code" inputmode="numeric" autocomplete="one-time-code" value="${esc(code)}" ${busy ? 'disabled' : ''}></label>
-      <button class="btn primary wide" data-click="si:code" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Sign in'}</button>
-      <p class="si-small">Nothing there? Check spam, or <button class="link" data-click="si:resend">send a new code</button>.
+      <button class="btn primary wide" data-click="si:code" ${busy ? 'disabled' : ''}>${busy ? working('Checking…') : pending?.entra || pending?.confirmed ? 'Try again' : 'Sign in'}</button>
+      <p class="si-small">Nothing there? Check spam, or <button class="link" data-click="si:resend" ${busy ? 'disabled' : ''}>send a new code</button>.
         <button class="link" data-click="si:back">Change the email</button>.</p>`;
   }
   return `<main class="si">
@@ -87,12 +90,17 @@ export async function signInClick(action: string, done: () => void, render: () =
   if (busy) return;
   error = '';
   const work = async (run: () => Promise<void>) => {
-    busy = true; render();
-    try { await run(); } catch (e) {
+    busy = true; slow = false; render();
+    const slowly = window.setTimeout(() => { if (busy) { slow = true; render(); } }, 5000);
+    // One tap's calls end within half a minute in all (auth.ts, oneTap), however many it takes.
+    try { await oneTap(run); } catch (e) {
       error = e instanceof AuthError ? e.message : 'Something went wrong. Please try again.';
       if (e instanceof AuthError && e.code === 'expired') step = pending ? 'code' : 'email';
+      // A new code went out by itself (the old one had expired): the box is cleared for it.
+      if (e instanceof AuthError && e.code === 'code_resent') { code = ''; step = 'code'; }
     }
-    busy = false; render();
+    window.clearTimeout(slowly);
+    busy = false; slow = false; render();
     requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.si input:not([type=checkbox]):not(:disabled)')?.focus());
   };
   if (action === 'email') {
@@ -103,7 +111,12 @@ export async function signInClick(action: string, done: () => void, render: () =
       if (!(await invitesRequired())) { step = 'details'; return; }
       // The Studio's invite link carries the code: use it without asking.
       if (invite.trim()) {
-        try { await useInvite(invite); step = 'details'; return; } catch { invite = ''; }
+        try { await useInvite(invite); step = 'details'; return; } catch (e) {
+          // Only a code the service turned down is cleared. Offline or a busy service, the link's code is still
+          // good: say what went wrong and keep it for the next tap.
+          if (!(e instanceof AuthError && e.code === 'invite_required')) throw e;
+          invite = ''; error = e.message;
+        }
       }
       step = 'invite';
     });

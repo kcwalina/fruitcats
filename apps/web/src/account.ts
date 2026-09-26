@@ -12,7 +12,7 @@
 
 import {
   AuthError, agreeToTerms, accountExists, needsTerms, refreshAccount, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
-  codeDigits, resend, restoredOnSignIn, session,
+  codeDigits, oneTap, resend, restoredOnSignIn, session,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
@@ -27,6 +27,8 @@ interface Host { render(): void }
 let open = false;
 let step: Step = 'email';
 let busy = false;
+/** Busy for more than a few seconds: the button says it's still going, so a weak connection doesn't look stuck. */
+let slow = false;
 let error = '';
 let reason = '';
 let email = '';
@@ -44,6 +46,16 @@ let pending: Pending | null = null;
 let then: (() => void) | null = null;
 
 const MIN_AGE = 13;
+
+/** A busy button's words: "Still working…" once it has taken a while. */
+const working = (text: string) => (slow ? 'Still working…' : text);
+
+/**
+ * Signing out stopped because the latest decks aren't in the account yet (offline): the next Sign out goes anyway.
+ * Shared by the Account panel and the Terms step.
+ */
+let signOutHeld = false;
+const SIGN_OUT_HELD = 'Your latest decks aren’t saved to your account yet. Connect to the internet and try again.';
 
 export const accountOpen = () => open;
 export const signedIn = () => session() !== null;
@@ -127,7 +139,7 @@ function emailStep(): string {
       <input data-acct="email" type="email" inputmode="email" autocomplete="email" enterkeyhint="next"
         value="${esc(email)}" placeholder="you@example.com" ${busy ? 'disabled' : ''}>
     </label>
-    <button class="primary account-go" data-click="acct:email" ${busy ? 'disabled' : ''}>${busy ? 'One moment…' : 'Continue'}</button>
+    <button class="primary account-go" data-click="acct:email" ${busy ? 'disabled' : ''}>${busy ? working('One moment…') : 'Continue'}</button>
     <p class="account-small">No password. We email you a code each time you sign in on a new device.
       Trouble signing in? <button class="link-button" data-click="acct:contact">Contact us</button></p>`;
 }
@@ -143,7 +155,7 @@ function inviteStep(): string {
       <input data-acct="invite" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next"
         maxlength="40" value="${esc(invite)}" ${busy ? 'disabled' : ''}>
     </label>
-    <button class="primary account-go" data-click="acct:invite" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Continue'}</button>
+    <button class="primary account-go" data-click="acct:invite" ${busy ? 'disabled' : ''}>${busy ? working('Checking…') : 'Continue'}</button>
     <p class="account-small">No code yet? You can still play Solo.
       <button class="link-button" data-click="acct:back">Use a different email</button></p>`;
 }
@@ -164,7 +176,7 @@ function detailsStep(): string {
       <span>I agree to the <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a> and have read the
         <a href="${BASE}privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
     </label>
-    <button class="primary account-go" data-click="acct:details" ${busy ? 'disabled' : ''}>${busy ? 'Sending your code…' : 'Email me a code'}</button>`;
+    <button class="primary account-go" data-click="acct:details" ${busy ? 'disabled' : ''}>${busy ? working('Sending your code…') : 'Email me a code'}</button>`;
 }
 
 function codeStep(): string {
@@ -179,7 +191,7 @@ function codeStep(): string {
       <input data-acct="code" class="account-code" inputmode="numeric" autocomplete="one-time-code"
         enterkeyhint="done" value="${esc(code)}" ${busy ? 'disabled' : ''}>
     </label>
-    <button class="primary account-go" data-click="acct:code" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : pending?.flow === 'signUp' ? 'Create account' : 'Sign in'}</button>
+    <button class="primary account-go" data-click="acct:code" ${busy ? 'disabled' : ''}>${busy ? working('Checking…') : pending?.entra || pending?.confirmed ? 'Try again' : pending?.flow === 'signUp' ? 'Create account' : 'Sign in'}</button>
     <p class="account-small">Still nothing after a minute? <button class="link-button" data-click="acct:resend" ${busy ? 'disabled' : ''}>Send a new code</button>.
       Wrong email? <button class="link-button" data-click="acct:back">Change it</button>.</p>`;
 }
@@ -202,8 +214,8 @@ function termsStep(): string {
       <input type="checkbox" data-acct="agree" ${agreed ? 'checked' : ''} ${busy ? 'disabled' : ''}>
       <span>I agree to the Terms of Use and have read the Privacy Policy</span>
     </label>
-    <button class="primary account-go" data-click="acct:terms" ${busy ? 'disabled' : ''}>${busy ? 'Saving…' : 'Continue'}</button>
-    <p class="account-small">Don’t agree? <button class="link-button" data-click="acct:termsno" ${busy ? 'disabled' : ''}>Sign out</button>
+    <button class="primary account-go" data-click="acct:terms" ${busy ? 'disabled' : ''}>${busy ? working('Saving…') : 'Continue'}</button>
+    <p class="account-small">Don’t agree? <button class="link-button" data-click="acct:termsno" ${busy ? 'disabled' : ''}>${signOutHeld ? 'Sign out anyway' : 'Sign out'}</button>
       and keep playing Solo.</p>`;
 }
 
@@ -289,7 +301,7 @@ export const accountPanelOpen = () => panel;
 /** "Contact us" is showing: its Send is the main button, so the panel's Done steps back. */
 export const contactPanelOpen = () => panel && contactOpen;
 export function closeAccountPanel() {
-  panel = false; confirmingSignOut = false; confirmingDelete = false; picking = false; panelNote = '';
+  panel = false; confirmingSignOut = false; signOutHeld = false; confirmingDelete = false; picking = false; panelNote = '';
   contactOpen = false; contactNote = ''; contactCodeLength = 0; contactCode = '';
 }
 
@@ -468,10 +480,11 @@ export function renderAccountPanel(): string {
     ? new Date(s.signedInAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
   const signOut = confirmingSignOut ? `
       <div class="account-confirm" role="alertdialog" aria-label="Sign out?">
-        <p><b>Sign out on this device?</b> Your account and collection stay safe; sign in again any time with your email.</p>
+        <p>${signOutHeld ? `<b>${esc(SIGN_OUT_HELD)}</b> Signing out now loses them.`
+          : '<b>Sign out on this device?</b> Your account and collection stay safe; sign in again any time with your email.'}</p>
         <div class="account-confirm-buttons">
-          <button data-click="acct:signoutcancel">Stay signed in</button>
-          <button class="danger" data-click="acct:signout">Sign out</button>
+          <button data-click="acct:signoutcancel" ${panelBusy ? 'disabled' : ''}>Stay signed in</button>
+          <button class="danger" data-click="acct:signout" ${panelBusy ? 'disabled' : ''}>${panelBusy ? 'Signing out…' : signOutHeld ? 'Sign out anyway' : 'Sign out'}</button>
         </div>
       </div>` : '<button class="account-section-button" data-click="acct:signoutask">Sign out</button>';
   const deletion = confirmingDelete ? `
@@ -583,8 +596,8 @@ export async function accountClick(host: Host, action: string) {
   if (action.startsWith('filter:')) { filter = action.slice(7) as Filter; host.render(); return; }
   if (action.startsWith('wear:')) { void wear(host, action.slice(5)); return; }
   if (action === 'panelback') { closeAccountPanel(); host.render(); return; }
-  if (action === 'signoutask') { confirmingSignOut = true; host.render(); return; }
-  if (action === 'signoutcancel') { confirmingSignOut = false; host.render(); return; }
+  if (action === 'signoutask') { confirmingSignOut = true; signOutHeld = false; host.render(); return; }
+  if (action === 'signoutcancel') { confirmingSignOut = false; signOutHeld = false; host.render(); return; }
   if (action === 'deleteask') { confirmingDelete = true; confirmingSignOut = false; host.render(); return; }
   if (action === 'deletecancel') { confirmingDelete = false; host.render(); return; }
   if (action === 'export') {
@@ -602,14 +615,22 @@ export async function accountClick(host: Host, action: string) {
     panelBusy = true; host.render();
     try {
       const when = await deleteAccount();
-      await signOutAndForget();
+      await signOutAndForget(true);   // the account and its decks are going: nothing to keep
       confirmingDelete = false;
       panelNote = `Your account will be deleted on ${when.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}. `
         + 'Sign in again before then to keep it.';
     } catch (e) { panelNote = e instanceof AuthError ? e.message : 'Couldn’t delete your account.'; }
     panelBusy = false; host.render(); return;
   }
-  if (action === 'signout') { await signOutAndForget(); confirmingSignOut = false; host.render(); return; }
+  if (action === 'signout') {
+    if (panelBusy) return;
+    panelBusy = true; host.render();
+    // Offline with decks the account hasn't got yet: say so, and the next tap signs out anyway.
+    const out = await signOutAndForget(signOutHeld);
+    panelBusy = false;
+    if (out) { confirmingSignOut = false; signOutHeld = false; } else signOutHeld = true;
+    host.render(); return;
+  }
   if (action === 'back') { step = 'email'; error = ''; code = ''; pending = null; host.render(); focusFirst(); return; }
   if (action === 'done') { const next = then; open = false; then = null; if (next) next(); host.render(); return; }
   if (busy) return;
@@ -661,7 +682,7 @@ export async function accountClick(host: Host, action: string) {
         throw e;
       }
       // A new account ticked the Terms before its code; an existing one may not have agreed to these Terms yet.
-      if (pending?.flow === 'signUp') agreeToTerms(Number(birthYear) || undefined);   // saved in the background, not waited for
+      if (pending?.newAccount) agreeToTerms(Number(birthYear) || undefined);   // saved in the background, not waited for
       step = needsTerms() ? 'terms' : 'welcome';
       startSync(host);
       // Whether the Store is open to this account: Home's Store tile shows it as soon as it's known.
@@ -680,7 +701,11 @@ export async function accountClick(host: Host, action: string) {
     if (!pending) open = false;
     host.render();
   } else if (action === 'termsno') {
-    await signOutAndForget();
+    busy = true; host.render();
+    const out = await signOutAndForget(signOutHeld);
+    busy = false;
+    if (!out) { signOutHeld = true; error = SIGN_OUT_HELD; host.render(); return; }
+    signOutHeld = false;
     open = false; then = null; step = 'email'; host.render();
   } else if (action === 'resend') {
     if (!pending) return;
@@ -689,15 +714,20 @@ export async function accountClick(host: Host, action: string) {
 }
 
 async function work(host: Host, run: () => Promise<void>) {
-  busy = true;
+  busy = true; slow = false;
   host.render();
-  try { await run(); } catch (e) {
+  const slowly = window.setTimeout(() => { if (busy) { slow = true; host.render(); } }, 5000);
+  // One tap's calls end within half a minute in all (auth.ts, oneTap), however many it takes.
+  try { await oneTap(run); } catch (e) {
     error = e instanceof AuthError ? e.message : 'Something went wrong. Please try again.';
+    // A new code went out by itself (the old one had expired): the box is cleared for it.
+    if (e instanceof AuthError && e.code === 'code_resent') { code = ''; step = 'code'; }
     if (e instanceof AuthError && e.code === 'expired') { step = pending ? 'code' : 'email'; }
     if (e instanceof AuthError && e.code === 'user_already_exists') step = 'email';
     if (e instanceof AuthError && e.code === 'invite_required') step = 'invite';
   }
-  busy = false;
+  window.clearTimeout(slowly);
+  busy = false; slow = false;
   host.render();
   focusFirst();
 }

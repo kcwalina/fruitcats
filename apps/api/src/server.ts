@@ -3,6 +3,7 @@
 // account's data is keyed by the account id in those tokens. Hosted on App Service ("fruitcats-api").
 //
 //   GET  /healthz
+//   GET  /version                    →  the commit this build is from (deploy.ps1 checks it before replacing it)
 //   POST /v1/sync   { decks: SyncDeck[], showcase?: SyncShowcase }  →  the merged state, the same shape
 //   GET  /v1/export                  →  everything stored for the signed-in account ("Export my data")
 //   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
@@ -19,6 +20,7 @@
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
 
+import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
@@ -36,6 +38,9 @@ import { eraseOrders, exportOrders, paddleWebhook, purchasedCards, reconcile, st
 import { azureStore } from './studio/store';
 import { studio } from './studio/studio';
 import { LOCAL_DATA, table } from './tables';
+
+/** Written next to server.mjs by deploy.ps1. */
+const COMMIT = (() => { try { return readFileSync(new URL('./commit.txt', import.meta.url), 'utf8').trim(); } catch { return 'unknown'; } })();
 
 // The engine has no cards of its own: without the sets, every synced deck failed validation and was dropped. Every set,
 // prototypes too: a deck may hold cards from a set the Store sells before it's released, and it's kept as well.
@@ -247,7 +252,7 @@ const server = createServer(async (req, res) => {
   const started = performance.now();
   res.on('finish', () => {
     const path = (req.url ?? '').split('?')[0];
-    if (req.method === 'OPTIONS' || path === '/healthz') return;
+    if (req.method === 'OPTIONS' || path === '/healthz' || path === '/version') return;
     log('ops', 'http.request', { method: req.method, path: path.replace(/\/[0-9a-f]{32}(?=\/|$)/g, '/{id}'), status: res.statusCode, ms: Math.round(performance.now() - started) });
   });
   const origin = req.headers.origin;
@@ -260,6 +265,7 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   try {
     if (req.url === '/healthz') return send(res, 200, 'ok');
+    if (req.url === '/version') return send(res, 200, { commit: COMMIT });
     if (req.url?.startsWith('/v1/studio/')) return await serveStudio(req, res);
     if (req.url === '/v1/webhooks/paddle' && req.method === 'POST') {
       // Signed by Paddle over the exact bytes, so the body is read raw. Answered 200 only once the event is saved.

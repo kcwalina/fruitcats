@@ -1,6 +1,6 @@
-// The Collection: a gallery for looking at cards. Showcase is your favourite cards, one at a time and as
-// big as the screen allows, swiped through with the phone's own scrolling; the card's art, blurred, fills
-// the screen behind it. All cards is the whole set as a grid (cards you don't have yet are shadows), and
+// The Collection: a gallery for looking at cards. Showcase is your favourite cards, one at a time and
+// large, on a plain espresso ground that sets each one off like a mat, with nothing else on screen but
+// Home and All cards; pressing and holding a card offers Make wallpaper and Take out of Showcase. All cards is the whole set as a grid (cards you don't have yet are shadows), and
 // tapping one opens the same full-screen view through the cards you're looking at, which is where cards
 // are added to and taken out of the Showcase. Any card can become a wallpaper. What you own comes from collection.ts;
 // every card shows its rarity mark, and your copies are shown in their finish (rarity.ts).
@@ -13,7 +13,7 @@ import './showcase.css';
 import { CARDS, RARITIES, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
-import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase: the featured Hero Cat (Tango), as a Kitten and as a Big Cat. */
@@ -61,6 +61,12 @@ let wallpaper: { device: Device; blob: Blob | null; url: string; note: string } 
 let drawing = 0;
 /** The card just taken out of the Showcase, for the Undo bar. */
 let undo: { face: string; at: number; timer: number } | null = null;
+/** The menu a press and hold on a Showcase card opens. */
+let menu = false;
+/** The first few times the Showcase opens, a passing hint says what holding a card does: until when (ms). */
+let hintUntil = 0;
+const HINT_KEY = 'fruitcats-showcase-hint';
+const HINT_MS = 5500;
 
 export function openShowcase(h: ShowcaseHost): void {
   host = h;
@@ -70,7 +76,13 @@ export function openShowcase(h: ShowcaseHost): void {
   showcase = loadShowcase();
   showcaseIndex = 0;
   browsing = null;
+  menu = false;
   closeWallpaper();
+  // The hint shows on the first two visits that have cards to hold.
+  try {
+    const seen = Number(localStorage.getItem(HINT_KEY) ?? 0) || 0;
+    if (seen < 2 && showcase.length) { localStorage.setItem(HINT_KEY, String(seen + 1)); hintUntil = Date.now() + HINT_MS; }
+  } catch { /* private mode: no hint */ }
 }
 
 /** The cards being looked at one by one, if any: the one opened from All cards, or the Showcase. */
@@ -229,7 +241,12 @@ function step(delta: number) {
 /** Clicks on `col:<action>:<arg>`. */
 export function showcaseClick(action: string, arg: string, h: ShowcaseHost): void {
   host = h;
+  // The finger that held a card up lets go on it: that tap isn't a choice, the menu stays.
+  if (menu && action === 'go') return;
+  if (action !== 'menu') menu = false;
   switch (action) {
+    case 'menu': if (!browsing && tab === 'showcase' && current()) menu = true; break;
+    case 'unmenu': break;
     case 'tab': if (arg === 'showcase' || arg === 'all') tab = arg; break;
     case 'filter': if (FAMILIES().includes(arg)) familyFilter = arg; break;
     case 'clear': familyFilter = 'all'; rarityFilter = 'all'; break;
@@ -275,10 +292,11 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
   host.render();
 }
 
-/** Escape closes the wallpaper sheet, then a card opened from All cards. */
+/** Escape closes the hold menu, then the wallpaper sheet, then a card opened from All cards. */
 export function showcaseEscape(h: ShowcaseHost): boolean {
   host = h;
-  if (wallpaper) closeWallpaper();
+  if (menu) menu = false;
+  else if (wallpaper) closeWallpaper();
   else if (browsing) browsing = null;
   else return false;
   host.render();
@@ -296,28 +314,54 @@ export function showcaseArrow(key: string, h: ShowcaseHost): boolean {
 // ── Screens ──────────────────────────────────────────────────────────────────────────────────────
 
 export function renderShowcase(): string {
-  const backdrop = tab === 'showcase' && showcase.length ? showcase[showcaseIndex] : `${featuredHero()}-bigcat`;
-  return `
-  <div class="collection-screen">
-    ${renderAmbient(backdrop)}
-    <div class="collection-top">
+  // The Showcase is only the card: Home and All cards in the corners, nothing else. All cards keeps the
+  // Showcase / All cards switch and Settings at the top.
+  const top = tab === 'showcase'
+    ? `<div class="showcase-top">
+      ${backButton()}
+      <button class="icon-button grid-button" data-click="col:tab:all" title="All cards" aria-label="All cards">${GRID_ICON}</button>
+    </div>`
+    : `<div class="collection-top">
       ${backButton()}
       <div class="seg" role="tablist" aria-label="Collection">
         ${(['showcase', 'all'] as Tab[]).map((t) => `<button class="seg-btn ${tab === t ? 'on' : ''}" role="tab" aria-selected="${tab === t}"
           data-click="col:tab:${t}">${t === 'showcase' ? 'Showcase' : 'All cards'}</button>`).join('')}
       </div>
       ${settingsButton()}
-    </div>
-    ${tab === 'all' ? renderGrid() : showcase.length ? renderViewer(showcase, showcaseIndex) : renderEmptyShowcase()}
+    </div>`;
+  return `
+  <div class="collection-screen ${tab === 'showcase' ? 'on-showcase' : ''} ${menu ? 'menu-open' : ''}">
+    ${top}
+    ${tab === 'all' ? renderGrid() : showcase.length ? renderViewer(showcase, showcaseIndex, false) : renderEmptyShowcase()}
+    ${menu ? renderMenu() : ''}
+    ${tab === 'showcase' && showcase.length ? renderHint() : ''}
   </div>
   ${browsing ? `
   <div class="viewer-overlay" role="dialog" aria-label="Cards">
-    ${renderAmbient(browsing.list[browsing.index])}
     <button class="viewer-close" data-click="col:close" aria-label="Close" title="Close">✕</button>
     ${renderViewer(browsing.list, browsing.index)}
   </div>` : ''}
   ${renderUndo()}
   ${renderWallpaperSheet()}`;
+}
+
+/** Press and hold (or right-click) a Showcase card: what can be done with it. */
+function renderMenu(): string {
+  const face = current();
+  if (!face) return '';
+  return `<div class="hold-scrim" data-click="col:unmenu" aria-hidden="true"></div>
+    <div class="hold-menu" role="menu" aria-label="${esc(faceName(face))}">
+      <button role="menuitem" data-click="col:wallpaper">Make wallpaper ${PHONE_ICON}</button>
+      <button role="menuitem" data-click="col:remove">Take out of Showcase ${MINUS_ICON}</button>
+    </div>`;
+}
+
+/** The passing hint, picked up where it was if the screen is redrawn meanwhile. */
+function renderHint(): string {
+  const left = hintUntil - Date.now();
+  if (left <= 0) return '';
+  const how = matchMedia('(hover: hover) and (pointer: fine)').matches ? 'Right-click' : 'Hold';
+  return `<div class="hold-hint" role="status" style="animation-delay:${left - HINT_MS}ms">${how} a card to make a wallpaper</div>`;
 }
 
 /** After a card is taken out of the Showcase: what happened, and a way to take it back. */
@@ -329,24 +373,20 @@ function renderUndo(): string {
     </div>`;
 }
 
-/** The current card's art, blurred to a glow of its colours, filling the screen. Two layers, to crossfade. */
-function renderAmbient(face: string): string {
-  return `<div class="ambient" aria-hidden="true">
-      <div class="ambient-layer show" style="background-image:url(${artUrl(face)})"></div><div class="ambient-layer"></div>
-    </div>`;
-}
-
-function renderViewer(list: string[], index: number): string {
+/** Cards one at a time, swiped: with their name and buttons under them (a card opened from All cards), or alone (the Showcase). */
+function renderViewer(list: string[], index: number, info = true): string {
+  // With the hint, the card in the middle lifts a little once, picked up where it was on a redraw.
+  const nudge = !info && hintUntil > Date.now() ? ` nudge" style="animation-delay:${hintUntil - Date.now() - HINT_MS}ms` : '';
   return `
     <div class="viewer">
       <div class="viewer-track" data-track>
         ${list.map((face, i) => `
-          <div class="viewer-slide">
-            <button class="viewer-card ${finishClasses(idOf(face))}" data-click="col:go:${i}" aria-label="${esc(faceName(face))}">
+          <div class="viewer-slide ${i === index ? 'on' : ''}">
+            <button class="viewer-card ${finishClasses(idOf(face))}${i === index ? nudge : ''}" data-click="col:go:${i}" aria-label="${esc(faceName(face))}">
               <img src="${yourCardUrl(face)}" alt="" draggable="false" ${Math.abs(i - index) > 2 ? 'loading="lazy"' : ''}>${finishSparks(idOf(face))}</button>
           </div>`).join('')}
       </div>
-      ${renderInfo(list, index)}
+      ${info ? renderInfo(list, index) : ''}
     </div>`;
 }
 
@@ -385,6 +425,8 @@ function renderEmptyShowcase(): string {
     </div>`;
 }
 
+const GRID_ICON = `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>`;
+const MINUS_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>`;
 const PHONE_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg>`;
 
 function renderGrid(): string {
@@ -504,7 +546,6 @@ export function showcaseMounted(): void {
       setIndex(nearest);
       const info = container.querySelector('.viewer-info');
       if (info) info.outerHTML = renderInfo(now.list, nearest);
-      fadeAmbient(container, now.list[nearest]);
     }
   };
   track.addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(update); }, { passive: true });
@@ -523,20 +564,32 @@ function followDrags(track: HTMLElement) {
   const centre = (s: HTMLElement) => s.offsetLeft + s.offsetWidth / 2 - track.scrollLeft - track.clientWidth / 2;
   /** The card nearest the middle right now (the viewer's index only catches up on the next frame). */
   const nearest = () => slides.reduce((best, s, i) => (Math.abs(centre(s)) < Math.abs(centre(slides[best])) ? i : best), 0);
-  let drag: { id: number; x0: number; left0: number; from: number; x: number; t: number; vx: number; moved: boolean } | null = null;
+  let drag: { id: number; x0: number; y0: number; left0: number; from: number; x: number; t: number; vx: number; moved: boolean } | null = null;
   let dragged = false;
+  // In the Showcase, a finger held still on the card in the middle opens its menu; so does a right-click.
+  const holds = !browsing && tab === 'showcase';
+  let hold = 0;
+  const openMenu = () => { hold = 0; drag = null; showcaseClick('menu', '', host); };
   track.addEventListener('pointerdown', (e) => {
     swipeLog(e, track);
     if (e.button !== 0) return;
-    drag = { id: e.pointerId, x0: e.clientX, left0: track.scrollLeft, from: nearest(), x: e.clientX, t: e.timeStamp, vx: 0, moved: false };
+    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, left0: track.scrollLeft, from: nearest(), x: e.clientX, t: e.timeStamp, vx: 0, moved: false };
     dragged = false;
+    window.clearTimeout(hold);
+    const slide = (e.target as HTMLElement).closest?.<HTMLElement>('.viewer-slide');
+    if (holds && slide && slides.indexOf(slide) === nearest()) hold = window.setTimeout(openMenu, 450);
+  });
+  if (holds) track.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if ((e.target as HTMLElement).closest?.('.viewer-slide')) { window.clearTimeout(hold); openMenu(); }
   });
   track.addEventListener('pointermove', (e) => {
     swipeLog(e, track);
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x0;
     if (!drag.moved) {
-      if (Math.abs(dx) < 8) return;
+      if (Math.abs(dx) < 8 && Math.abs(e.clientY - drag.y0) < 8) return;
+      window.clearTimeout(hold);
       drag.moved = true;
       gliding++;   // stop any glide under way
       track.classList.add('dragging');
@@ -548,6 +601,7 @@ function followDrags(track: HTMLElement) {
   });
   const end = (e: PointerEvent) => {
     swipeLog(e, track);
+    window.clearTimeout(hold);
     if (!drag || e.pointerId !== drag.id) return;
     const d = drag;
     drag = null;
@@ -603,15 +657,6 @@ function swipeLog(e: PointerEvent, track: HTMLElement) {
     `touch-action ${getComputedStyle(track).touchAction} · overflow-x ${getComputedStyle(track).overflowX}`,
     `under finger: ${under ? `${under.tagName.toLowerCase()}.${[...under.classList].join('.')}` : 'nothing'}`,
   ].join('\n');
-}
-
-function fadeAmbient(container: Element, face: string) {
-  const [a, b] = [...container.querySelectorAll<HTMLElement>(':scope > .ambient > .ambient-layer')];
-  if (!a || !b) return;
-  const [shown, hidden] = a.classList.contains('show') ? [a, b] : [b, a];
-  hidden.style.backgroundImage = `url(${artUrl(face)})`;
-  hidden.classList.add('show');
-  shown.classList.remove('show');
 }
 
 // Finishes' sheens follow a mouse or pen. Not a finger: on a touch screen a finger on a card is swiping

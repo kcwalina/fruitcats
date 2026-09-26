@@ -1,10 +1,10 @@
 # Collection
 
 The Collection is where you look at your cards, even when you're not playing. Open it from the home
-screen. It has two tabs at the top: **Showcase** and **All cards**.
+screen. It opens on your **Showcase**; the grid button at the top right goes to **All cards**.
 
 <div class="steps shots">
-<figure><img src="guide/collection/showcase.webp" alt="The Showcase: Tango in a Prismatic print, big in the middle of the screen" loading="lazy"><figcaption>The <b>Showcase</b>: your favourite cards, one at a time.</figcaption></figure>
+<figure><img src="guide/collection/showcase.webp" alt="The Showcase: Tango in a Prismatic print, large on a dark brown background, with Home and All cards in the top corners" loading="lazy"><figcaption>The <b>Showcase</b>: your favourite cards, one at a time.</figcaption></figure>
 <figure><img src="guide/collection/all-cards.webp" alt="All cards: 53 of 53 collected, rarity and family filters, and the cards in a grid" loading="lazy"><figcaption><b>All cards</b>: every card in the set, and how many you have.</figcaption></figure>
 <figure><img src="guide/collection/card-open.webp" alt="Tangerine Chick open full screen, with Make wallpaper and Add to Showcase" loading="lazy"><figcaption>Tap a card to see it big, add it to your Showcase, or make it your wallpaper.</figcaption></figure>
 </div>
@@ -14,10 +14,16 @@ screen. It has two tabs at the top: **Showcase** and **All cards**.
 Your Showcase holds the cards you're proudest of. Everyone starts with Tango, as a Kitten and as a
 Big Cat.
 
-- Cards appear one at a time, as big as your screen allows. **Swipe** left and right to go through
-  them. On a computer, use the arrow keys or the ‹ › buttons.
-- The card's art, softly blurred, fills the screen behind it.
-- The Showcase is just for looking: you choose its cards in [All cards](#all-cards).
+- Cards appear one at a time, large, on a plain dark brown background, with nothing else on screen
+  but **Home** (top left) and **All cards** (top right). **Swipe** left and right to go through them.
+  On a computer, use the arrow keys or swipe on the trackpad.
+- **Press and hold** a card (right-click on a computer) for **Make wallpaper** and **Take out of
+  Showcase**. Taken out a card by mistake? Tap **Undo**.
+- You add cards to your Showcase in [All cards](#all-cards).
+
+<div class="steps shots">
+<figure><img src="guide/collection/showcase-hold.webp" alt="Tango held in the Showcase: the screen dims and a menu offers Make wallpaper and Take out of Showcase" loading="lazy"><figcaption>Press and hold a card for <b>Make wallpaper</b>.</figcaption></figure>
+</div>
 - Signed in, your Showcase is kept in your Via Mochi account, so it's the same on all your devices.
 
 ## All cards
@@ -79,5 +85,6 @@ in a game, and on [wallpapers](wallpapers.md). For now the three starter Hero Ca
 
 ## Wallpapers
 
-Any card can become a wallpaper for your phone, tablet or computer: open it and tap **Make wallpaper**.
+Any card can become a wallpaper for your phone, tablet or computer: press and hold it in your Showcase,
+or open it in All cards, and tap **Make wallpaper**.
 See [Wallpapers](wallpapers.md) for how to make one and set it.

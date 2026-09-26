@@ -11,14 +11,15 @@ makes the picture, then you set it as your wallpaper.
 
 ## Make a wallpaper
 
-1. Open the **Collection** and tap a card: in your Showcase, or any card in **All cards**.
+1. Open the **Collection**. Press and hold a card in your Showcase (right-click on a computer), or
+   tap any card in **All cards**.
 2. Tap **Make wallpaper**.
 3. Choose **Phone**, **Tablet** or **Computer**. Fruitcats picks the one you're using, sized exactly
    for your screen.
 4. Tap **Save picture**.
 
 <div class="steps">
-<figure><img src="guide/collection/showcase.webp" alt="Tango in the Showcase, with a Make wallpaper button under the card" loading="lazy"><figcaption><b>1</b> Open a card and tap <b>Make wallpaper</b>.</figcaption></figure>
+<figure><img src="guide/collection/showcase-hold.webp" alt="Tango held in the Showcase, with a menu offering Make wallpaper" loading="lazy"><figcaption><b>1</b> Hold a card and tap <b>Make wallpaper</b>.</figcaption></figure>
 <figure><img src="guide/wallpapers/make-2-sheet.webp" alt="The Wallpaper window: Phone, Tablet or Computer, a preview of the wallpaper, and Save picture" loading="lazy"><figcaption><b>2</b> Check the preview, and tap <b>Save picture</b>.</figcaption></figure>
 </div>
 

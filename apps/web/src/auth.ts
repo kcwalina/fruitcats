@@ -108,6 +108,23 @@ export async function refreshAccount(): Promise<boolean> {
   return (await refreshing) !== null;
 }
 
+/**
+ * A call to one of our services with this account's token, given up after `timeoutMs`. Null when there's no token
+ * (signed out, or the account service can't be reached right now). A 401 means the token was turned away, though this
+ * device thought it still good (a clock that's off, keys changed): a fresh token is fetched and the call made once
+ * more, before the answer is believed. Throws when the call itself fails (offline, timed out): the caller tries later.
+ */
+export async function authedFetch(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response | null> {
+  const send = (t: string) => fetch(url, {
+    ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` }, signal: AbortSignal.timeout(timeoutMs),
+  });
+  let t = await token();
+  if (!t) return null;
+  const r = await send(t);
+  if (r.status !== 401 || !await refreshAccount() || !(t = await token())) return r;
+  return send(t);
+}
+
 /** Why there's no token: signed out, or the service can't be reached right now. */
 function noToken(): AuthError {
   return session() ? new AuthError('timeout', 'Via Mochi isn’t answering right now. Please try again in a minute.')
@@ -260,9 +277,7 @@ export async function exportData(): Promise<string> {
 
 /** Schedule this account's deletion (30 days; signing in again before then cancels it). Returns the date. */
 export async function deleteAccount(): Promise<Date> {
-  const t = await token();
-  if (!t) throw noToken();
-  const r = await request(`${ID_SERVICE}/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+  const r = await withToken('/me', { method: 'DELETE' });
   if (!r.ok) throw new AuthError('delete', 'Couldn’t delete your account. Please try again.');
   return new Date((await r.json()).deleteAfter);
 }
@@ -272,9 +287,14 @@ export async function deleteAccount(): Promise<Date> {
 export interface Friend { id: string; displayName: string | null; avatar: string; since: string }
 
 async function withToken(path: string, init: RequestInit = {}): Promise<Response> {
-  const t = await token();
-  if (!t) throw noToken();
-  return request(`${ID_SERVICE}${path}`, { ...init, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}` } });
+  let r: Response | null;
+  try { r = await authedFetch(`${ID_SERVICE}${path}`, init); } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError')
+      throw new AuthError('timeout', 'Via Mochi isn’t answering right now. Please try again in a minute.');
+    throw new AuthError('network', 'You seem to be offline. Check your connection and try again.');
+  }
+  if (!r) throw noToken();
+  return r;
 }
 
 export async function listFriends(): Promise<Friend[]> {
@@ -323,9 +343,7 @@ export async function avatarCatalog(): Promise<Avatar[]> {
 
 /** The avatars this account may wear, and the one it wears. Also refreshes the session's copy. */
 export async function myAvatars(): Promise<{ avatar: string; owned: Set<string> }> {
-  const t = await token();
-  if (!t) throw noToken();
-  const r = await request(`${ID_SERVICE}/me`, { headers: { Authorization: `Bearer ${t}` } });
+  const r = await withToken('/me');
   if (!r.ok) throw new AuthError('me', 'Couldn’t load your account. Please try again.');
   const me = await r.json();
   const s = session();
@@ -392,10 +410,8 @@ export async function saveAgreedTerms(): Promise<void> {
 
 /** Record the agreement in the account now (a new account, at sign-up; and saveAgreedTerms). */
 export async function acceptTerms(): Promise<void> {
-  const t = await token();
-  if (!t) throw noToken();
-  const r = await request(`${ID_SERVICE}/me/terms`, {
-    method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+  const r = await withToken('/me/terms', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ version: TERMS_VERSION, ...(session()?.birthYear ? { birthYear: session()!.birthYear } : {}) }),
   });
   if (!r.ok) throw new AuthError('terms', 'Couldn’t save that. Please try again.');
@@ -404,10 +420,8 @@ export async function acceptTerms(): Promise<void> {
 }
 
 export async function chooseAvatar(id: string): Promise<void> {
-  const t = await token();
-  if (!t) throw noToken();
-  const r = await request(`${ID_SERVICE}/me/avatar`, {
-    method: 'PUT', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+  const r = await withToken('/me/avatar', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
   });
   if (!r.ok) throw new AuthError('avatar', (await r.json().catch(() => ({}))).message ?? 'Couldn’t change your Pawtrait.');
   const s = session();

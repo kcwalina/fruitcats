@@ -14,7 +14,7 @@ import {
 } from '@fruitcats/store';
 import { CONTENT } from '../../../content';
 import { API } from './api';
-import { session, token } from './auth';
+import { authedFetch, session } from './auth';
 import { STORE } from './flags';
 
 /** open: this account may use the Store. private: it's in a test that this account isn't part of. */
@@ -92,26 +92,29 @@ export const purchased = (id: string): number => load().saved.owned[id] ?? 0;
 /** What the account owns, starter decks included, as the Store counts it. */
 export const ownedNow = () => collectionOf(load().saved.owned);
 
+/**
+ * Null when the API couldn't be asked or didn't really answer: offline, too slow, or restarting (a 5xx). Callers treat
+ * that as "try again", never as the Store's answer: what's saved stays, and an order keeps its id for the retry.
+ */
 async function call(method: string, path: string, body?: unknown): Promise<{ status: number; data: Record<string, unknown> } | null> {
-  const t = await token();
-  if (!t) return null;
   try {
-    const r = await fetch(`${API}${path}`, {
-      method, headers: { Authorization: `Bearer ${t}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    const r = await authedFetch(`${API}${path}`, {
+      method, headers: body ? { 'Content-Type': 'application/json' } : {},
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
+    if (!r || r.status >= 500) return null;
     return { status: r.status, data: await r.json().catch(() => ({})) };
   } catch {
-    return null;   // offline
+    return null;   // offline, or no answer in time
   }
 }
 
-/** Ask the API what this account may see and owns. Offline, what's saved stays. */
-export async function refreshStore(): Promise<Access> {
-  if (!STORE || !session()) return 'unknown';
+/** Ask the API what this account may see and owns. Offline, what's saved stays. True when the API answered. */
+export async function refreshStore(): Promise<boolean> {
+  if (!STORE || !session()) return false;
   const r = await call('GET', '/v1/store');
-  const c = load() as NonNullable<typeof cache>;
-  if (!r || !cache || cache.user !== session()?.userId) return c.saved.access;
+  load();
+  if (!r || !cache || cache.user !== session()?.userId) return false;
   if (r.status === 403) cache.saved = { ...EMPTY, access: 'private' };
   else if (r.status === 200) {
     const d = r.data as unknown as Omit<Saved, 'access' | 'awaiting'>;
@@ -122,7 +125,7 @@ export async function refreshStore(): Promise<Access> {
     ensureSets(d.catalog?.sets ?? []);
   }
   save();
-  return cache.saved.access;
+  return true;
 }
 
 // ── The cart ─────────────────────────────────────────────────────────────────────────────────────
@@ -198,7 +201,7 @@ export type OrderResult =
  */
 export async function placeTestOrder(total: number, orderId: string = newOrderId()): Promise<OrderResult> {
   const r = await call('POST', '/v1/store/test-checkout', { orderId, cart: cartLines(), total });
-  if (!r) return { ok: false, why: 'offline', message: 'You seem to be offline. Nothing was ordered; try again when you’re connected.' };
+  if (!r) return { ok: false, why: 'offline', message: 'The Store didn’t answer. Please try again in a minute: it picks up this same order, so nothing is ordered twice.' };
   if (r.status === 409 && r.data.quote) return { ok: false, why: 'changed', quote: r.data.quote as Quote };
   if (r.status !== 200) return { ok: false, why: 'refused', message: REFUSALS[String(r.data.error)] ?? 'The Store couldn’t take this order. Nothing was ordered.' };
   const order = r.data.order as Order;
@@ -236,7 +239,7 @@ export type CheckoutResult =
  */
 export async function startCheckout(total: number, orderId: string): Promise<CheckoutResult> {
   const r = await call('POST', '/v1/store/checkout', { orderId, cart: cartLines(), total });
-  if (!r) return { ok: false, why: 'offline', message: 'You seem to be offline. Nothing was ordered; try again when you’re connected.' };
+  if (!r) return { ok: false, why: 'offline', message: 'The Store didn’t answer. Please try again in a minute: it picks up this same order, so nothing is ordered twice.' };
   if (r.status === 409 && r.data.quote) return { ok: false, why: 'changed', quote: r.data.quote as Quote };
   if (r.status !== 200) return { ok: false, why: 'refused', message: REFUSALS[String(r.data.error)] ?? 'The Store couldn’t start this order. Nothing was ordered.' };
   const order = r.data.order as Order;

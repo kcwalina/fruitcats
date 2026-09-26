@@ -67,6 +67,8 @@ export const friendsView = () => view.kind;
 
 export function openFriends(h: FriendsHost, answer?: string) {
   host = h;
+  shown = true;
+  reloadFailures = 0;
   view = answer ? { kind: 'accept', id: answer } : { kind: 'list' };
   note = ''; managing = null; confirming = null;
   if (answer) myLives = 9;
@@ -79,20 +81,33 @@ window.setInterval(() => { if (host && view.kind === 'list' && live.connected &&
 
 /** Leaving the screen: stop the camera and the code, and withdraw a challenge still waiting. */
 export function closeFriends() {
+  shown = false;
+  window.clearTimeout(reloadTimer);
   stopShowing();
   scanner?.stop(); scanner = null;
   if (view.kind === 'waiting' && view.id) send({ t: 'cancel', id: view.id });
   view = { kind: 'list' };
 }
 
+/** Whether Play a friend is on screen, and the next try at loading the friends after one failed. */
+let shown = false;
+let reloadTimer: number | undefined;
+let reloadFailures = 0;
+let loadNote = '';
+
 async function loadFriends() {
+  window.clearTimeout(reloadTimer);
   try {
     people = new Map((await listFriends()).map((f) => [f.id, f]));
     loaded = true;
+    reloadFailures = 0;
+    if (note === loadNote) note = '';
   } catch (e) {
     // Offline from viamochi-id (or a local API with fake sign-in): friends who are online still show, from presence.
+    // Tried again by itself while the screen is open, so a service that was restarting doesn't leave the list empty.
     loaded = true;
-    if (!live.friends.size) note = e instanceof AuthError ? e.message : 'Couldn’t load your friends.';
+    if (!live.friends.size && (!note || note === loadNote)) note = loadNote = e instanceof AuthError ? e.message : 'Couldn’t load your friends.';
+    if (shown) reloadTimer = window.setTimeout(() => void loadFriends(), [5_000, 15_000, 30_000][Math.min(reloadFailures++, 2)]);
   }
   host?.render();
 }

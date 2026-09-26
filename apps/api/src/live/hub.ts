@@ -58,6 +58,8 @@ interface Conn {
   person: Person;
   token: string;
   friends: Set<string>;
+  /** viamochi-id couldn't be asked for the friends when this connected: asked again at the next presence check. */
+  friendsStale?: boolean;
   send(msg: ServerMessage): void;
   close(): void;
   /** Code lookups in the last minute, so codes can't be guessed by trying them all. */
@@ -105,6 +107,23 @@ export function createHub(deps: HubDeps) {
   /** The waiting line: account → when they joined, whether they've bought anything, and when they last asked. */
   const waiting = new Map<string, { since: number; paid: boolean; asked: number }>();
   const paidCache = new Map<string, { paid: boolean; at: number }>();
+  /** Each account's friends as viamochi-id last told us: used while it can't be asked (restarting, down). */
+  const knownFriends = new Map<string, Set<string>>();
+
+  /**
+   * Ask viamochi-id who this connection's friends are. When it can't answer, the last list it gave stays (a restart
+   * of viamochi-id must not make everyone's friends vanish), and the connection asks again at its next presence check.
+   */
+  async function loadFriends(c: Conn, account: string, token: string): Promise<void> {
+    try {
+      c.friends = new Set(await deps.friendsOf(account, token));
+      knownFriends.set(account, c.friends);
+      c.friendsStale = false;
+    } catch {
+      c.friends = knownFriends.get(account) ?? c.friends;
+      c.friendsStale = true;
+    }
+  }
 
   const sendTo = (account: string, msg: ServerMessage) => conns.get(account)?.send(msg);
 
@@ -208,7 +227,10 @@ export function createHub(deps: HubDeps) {
   function statuses(c: Conn): Promise<FriendStatus[]> {
     return Promise.all([...c.friends].map(async (f) => {
       const status = statusOf(f);
-      const [seen, record] = await Promise.all([status === 'offline' ? lastSeen(f) : undefined, tally(c.account!, f)]);
+      // The records and last-seen are extras: storage not answering leaves them out rather than the whole list.
+      const [seen, record] = await Promise.all([
+        status === 'offline' ? lastSeen(f).catch(() => undefined) : undefined, tally(c.account!, f).catch(() => undefined),
+      ]);
       return { id: f, status, lastSeen: seen, person: conns.get(f)?.person ?? (status === 'online' ? here.get(f)?.person : undefined), record };
     }));
   }
@@ -322,7 +344,7 @@ export function createHub(deps: HubDeps) {
     for (const ch of challenges.values())
       if ((ch.from === me && ch.to === msg.to) || (ch.from === msg.to && ch.to === me)) return error('One of you has already asked the other to play.');
     const deck = cleanDeck(msg.deck);
-    const problem = deck ? await deps.checkDeck(me, deck, options.startersOnly) : 'That deck isn’t one you can play.';
+    const problem = deck ? await checkDeck(me, deck, options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
     // Keep a place for the friend, so answering never puts them in the waiting line. No place: say so now.
     if (!them && !letIn.has(msg.to)) {
@@ -337,6 +359,14 @@ export function createHub(deps: HubDeps) {
     deps.log('live.challenge', { from: me, to: msg.to, pace: options.pace, teaching: options.teaching });
   }
 
+  /** A deck's problem, if any. Its cards couldn't be checked (storage not answering): say so, rather than nothing at all. */
+  async function checkDeck(account: string, deck: DeckList, startersOnly: boolean): Promise<string | null> {
+    try { return await deps.checkDeck(account, deck, startersOnly); } catch (e) {
+      deps.log('live.check_deck_failed', { message: (e as Error).message });
+      return 'Couldn’t check your deck just now. Please try again in a moment.';
+    }
+  }
+
   async function accept(c: Conn, msg: Extract<ClientMessage, { t: 'accept' }>) {
     const ch = challenges.get(msg.id);
     const error = (message: string) => c.send({ t: 'error', message });
@@ -344,7 +374,7 @@ export function createHub(deps: HubDeps) {
     const lives = cleanLives(msg.lives);
     const deck = cleanDeck(msg.deck);
     if (lives === null) return error('That handicap didn’t make sense.');
-    const problem = deck ? await deps.checkDeck(c.account, deck, ch.options.startersOnly) : 'That deck isn’t one you can play.';
+    const problem = deck ? await checkDeck(c.account, deck, ch.options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
     const from = conns.get(ch.from);
     if (!challenges.has(ch.id)) return error('That game isn’t open any more.');
@@ -368,7 +398,7 @@ export function createHub(deps: HubDeps) {
     c.account = who.id;
     c.token = msg.token;
     c.person = { id: who.id, name: who.name.slice(0, 40) || 'A friend', avatar };
-    try { c.friends = new Set(await deps.friendsOf(who.id, msg.token)); } catch { c.friends = new Set(); }
+    await loadFriends(c, who.id, msg.token);
     // The newest connection wins: the same account on a second device, or a reload.
     const older = conns.get(who.id);
     conns.set(who.id, c);
@@ -395,8 +425,8 @@ export function createHub(deps: HubDeps) {
     if (msg.t !== 'friends') c.active = Date.now();
     switch (msg.t) {
       case 'friends':
-        if (msg.again) {
-          try { c.friends = new Set(await deps.friendsOf(me, c.token)); } catch { /* keep the list we had */ }
+        if (msg.again || c.friendsStale) {
+          await loadFriends(c, me, c.token);
           announce(me);
         }
         c.send({ t: 'friends', friends: await statuses(c) });
@@ -420,7 +450,7 @@ export function createHub(deps: HubDeps) {
       case 'added': {
         // Only a nudge to look again: the friend's game asks viamochi-id who its friends are, and believes that.
         if (typeof msg.friend !== 'string') return;
-        try { c.friends = new Set(await deps.friendsOf(me, c.token)); } catch { /* keep the list we had */ }
+        await loadFriends(c, me, c.token);
         if (!c.friends.has(msg.friend)) return;
         sendTo(msg.friend, { t: 'added', by: c.person });
         for (const [code, v] of codes) if (v.account === msg.friend) codes.delete(code);   // used up

@@ -34,6 +34,9 @@ const FRIENDS: Record<string, string[]> = { [A]: [B], [B]: [A], [C]: [], [D]: []
 const PAID = new Set([D]);
 let maxPlayers = 100;
 let open = true;
+/** viamochi-id, or the storage behind the deck check, not answering (restarting). */
+let idDown = false;
+let storageDown = false;
 const STARTER = DECKS['zest-rush'];
 const OTHER = DECKS['orchard-guard'];
 const RELAXED: ChallengeOptions = { pace: 'relaxed', teaching: false, startersOnly: false };
@@ -53,8 +56,9 @@ function makeHub() {
     open: () => open,
     store,
     async verify(token) { const id = token.slice(4); return NAMES[id] ? { id, name: NAMES[id] } : null; },
-    async friendsOf(account) { return FRIENDS[account] ?? []; },
+    async friendsOf(account) { if (idDown) throw new Error('friends: 503'); return FRIENDS[account] ?? []; },
     async checkDeck(_account, deck, startersOnly) {
+      if (storageDown) throw new Error('storage: 503');
       if (deck.hero === 'nobody') return 'not yours';
       if (startersOnly && deck.name === 'My tuned deck') return 'This game is for starter decks only.';
       return null;
@@ -134,6 +138,8 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
   maxPlayers = 100;
   open = true;
+  idDown = false;
+  storageDown = false;
   makeHub();
 });
 afterEach(() => { vi.useRealTimers(); });
@@ -195,6 +201,43 @@ describe('presence and challenges', () => {
     sam.send({ t: 'challenge', to: B, deck: { ...STARTER, name: 'My tuned deck' }, options: { ...RELAXED, startersOnly: true }, lives: 9 });
     await flush();
     expect(sam.last('error')!.message).toMatch(/starter decks only/);
+  });
+});
+
+describe('a service restarting', () => {
+  it('keeps the friends viamochi-id last gave while it can’t be asked, and asks again at the next presence check', async () => {
+    const sam = await connect(A);
+    sam.drop();
+    await flush();
+    idDown = true;
+    const again = await connect(A);
+    expect(again.last('welcome')!.friends.map((f) => f.id)).toEqual([B]);
+    idDown = false;
+    FRIENDS[A] = [B, D];
+    try {
+      again.send({ t: 'friends' });
+      await flush();
+      expect(again.last('friends')!.friends.map((f) => f.id)).toEqual([B, D]);
+    } finally { FRIENDS[A] = [B]; }
+  });
+
+  it('asks again for friends it never had, rather than showing none', async () => {
+    idDown = true;
+    const sam = await connect(A);
+    expect(sam.last('welcome')!.friends).toEqual([]);
+    idDown = false;
+    sam.send({ t: 'friends' });
+    await flush();
+    expect(sam.last('friends')!.friends.map((f) => f.id)).toEqual([B]);
+  });
+
+  it('says so when a deck can’t be checked right now, instead of saying nothing', async () => {
+    const sam = await connect(A);
+    await connect(B);
+    storageDown = true;
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    expect(sam.last('error')!.message).toMatch(/Couldn’t check your deck/);
   });
 });
 

@@ -693,6 +693,9 @@ function resumeSavedGame(): boolean {
 /** The connection's news redraws the screen, but never in the middle of an animation (it redraws after). */
 function renderUnlessAnimating() { if (!isAnimating()) render(); }
 
+let drawnBackdrop = '';   // the screen (without its dialogs) as last drawn, and how many nodes it made in #app
+let drawnBackdropNodes = 0;
+
 function render() {
   document.body.className = screen === 'game' ? 'game-screen' : 'menu-screen';
   // Scrolling lists (the deck builder's cards) keep their place when the screen is redrawn.
@@ -706,16 +709,27 @@ function render() {
   } else if (ONLINE) stopLive();
   // Settings pops in when it opens, not again each time it is redrawn (picking a section) while it is showing.
   const settingsWasOpen = !!app.querySelector('.settings-dialog');
-  app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'friends' && ONLINE ? renderFriends()
+  const backdrop = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'friends' && ONLINE ? renderFriends()
     : screen === 'decks' ? renderDeckBuilder()
     : screen === 'collection' ? renderShowcase() : screen === 'store' && STORE ? renderStore() : renderGame())
-    + (ONLINE ? renderChallengeBanner(screen === 'friends', screen === 'game' && !!ol && !ol.end) : '')
-    + (showSettings ? renderSettings(settingsWasOpen) : '') + (ACCOUNTS ? renderAccount() : '');
-  for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
-    [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
-  if (screen === 'collection') showcaseMounted();
-  if (screen === 'solo' || screen === 'friends') deckCarouselMounted(!scrolled.has('decks'));
-  if (screen === 'friends') friendsMounted();
+    + (ONLINE ? renderChallengeBanner(screen === 'friends', screen === 'game' && !!ol && !ol.end) : '');
+  const overlays = (showSettings ? renderSettings(settingsWasOpen) : '') + (ACCOUNTS ? renderAccount() : '');
+  // Picking a section redraws only the dialog: the screen behind it is left alone, so it doesn't flicker.
+  const backdropKept = settingsWasOpen && showSettings && backdrop === drawnBackdrop;
+  if (backdropKept) {
+    while (app.childNodes.length > drawnBackdropNodes) app.lastChild!.remove();
+    app.insertAdjacentHTML('beforeend', overlays);
+  } else {
+    app.innerHTML = backdrop;
+    drawnBackdrop = backdrop;
+    drawnBackdropNodes = app.childNodes.length;
+    app.insertAdjacentHTML('beforeend', overlays);
+    for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
+      [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
+    if (screen === 'collection') showcaseMounted();
+    if (screen === 'solo' || screen === 'friends') deckCarouselMounted(!scrolled.has('decks'));
+    if (screen === 'friends') friendsMounted();
+  }
   renderedFoeUnits = new Set(game?.players[theirSeat].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, mySeat); } else stopTutorial();

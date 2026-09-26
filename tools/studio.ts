@@ -38,14 +38,33 @@ function agentKey(): string {
   throw new Error(`No agent key. Make one with "npm run studio -- key Claude" and give its line to the API (STUDIO_AGENTS).`);
 }
 
+/**
+ * One call to the Studio, tried again when the server doesn't answer or answers 5xx (restarting: about two minutes).
+ * A write carries one request id for all its tries, so the Studio adds a comment once however often it's sent.
+ */
 async function call(path: string, init: { method?: string; json?: unknown } = {}): Promise<Response> {
-  const res = await fetch(`${API}/v1/studio/${path}`, {
-    method: init.method ?? (init.json ? 'POST' : 'GET'),
-    headers: { Authorization: `Studio-Agent ${agentKey()}`, ...(init.json ? { 'Content-Type': 'application/json' } : {}) },
-    body: init.json ? JSON.stringify(init.json) : undefined,
-  });
-  if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 200)}`);
-  return res;
+  const json = init.json && typeof init.json === 'object' ? { ...init.json, requestId: randomBytes(16).toString('hex') } : init.json;
+  const waits = [2_000, 5_000, 15_000, 30_000, 60_000];
+  for (let attempt = 0; ; attempt++) {
+    let res: Response | null = null;
+    try {
+      res = await fetch(`${API}/v1/studio/${path}`, {
+        method: init.method ?? (json ? 'POST' : 'GET'),
+        headers: { Authorization: `Studio-Agent ${agentKey()}`, ...(json ? { 'Content-Type': 'application/json' } : {}) },
+        body: json ? JSON.stringify(json) : undefined,
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (e) {
+      if (attempt >= waits.length) throw e;
+    }
+    if (res && res.status < 500) {
+      if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 200)}`);
+      return res;
+    }
+    if (attempt >= waits.length) throw new Error(`${res?.status ?? 'no answer'}: the Studio isn’t answering`);
+    console.error(`The Studio didn’t answer (${res?.status ?? 'no answer'}); trying again in ${waits[attempt] / 1000} s…`);
+    await new Promise((r) => setTimeout(r, waits[attempt]));
+  }
 }
 const json = async <T>(path: string, init?: { method?: string; json?: unknown }) => (await call(path, init)).json() as Promise<T>;
 

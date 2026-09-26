@@ -115,6 +115,7 @@ export function applySyncedShowcase(faces: string[], updatedAt: number) {
     localStorage.setItem(SHOWCASE_AT_KEY, String(updatedAt));
   } catch { /* private mode */ }
   showcase = loadShowcase();
+  showcaseIndex = Math.min(showcaseIndex, Math.max(0, showcase.length - 1));
 }
 
 /** Signing out: this device forgets the account's Showcase. */

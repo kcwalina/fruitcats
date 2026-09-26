@@ -17,7 +17,8 @@ import {
   type ChallengeNote, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person, type ServerMessage,
 } from '@fruitcats/match';
 import { API } from './api';
-import { session, token } from './auth';
+import { authedFetch, refreshAccount, session, token } from './auth';
+import { NO_RETRY } from './net';
 
 export type Challenge = ChallengeNote;
 
@@ -57,7 +58,13 @@ let socket: WebSocket | null = null;
 let wanted = false;
 let retry = 0;
 let retryTimer: number | undefined;
+/** Asking to be let in right now: a second connect() (the network coming back, the tab shown) waits for it. */
+let entering = false;
 const WELCOME_WITHIN_MS = 6000;
+/** Times in a row the server said "signed out" at the door. */
+let turnedAway = 0;
+/** "I'm here" and asking to be let in are tiny: an answer slower than this won't come, so ask again instead. */
+const POST_WITHIN_MS = 8000;
 
 // ── "I'm here" ───────────────────────────────────────────────────────────────────────────────────
 
@@ -99,15 +106,16 @@ async function sayHere() {
   hereTimer = window.setTimeout(() => void sayHere(), HERE_EVERY_MS);
 }
 
+/** Null when there was no answer (offline, too slow, the API restarting): the caller asks again later. */
 async function post<T>(path: string, body?: unknown): Promise<T | null> {
-  const t = await token();
-  if (!t) return null;
   try {
-    const r = await fetch(API + path, {
-      method: 'POST', headers: { Authorization: `Bearer ${t}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    // Without a limit, a request lost on a dropped connection could leave "Connecting…" up for minutes. Not retried
+    // here: the callers ask again on their own schedule.
+    const r = await authedFetch(API + path, {
+      method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
-    });
-    return r.ok ? (await r.json()) as T : null;
+    }, { ...NO_RETRY, attemptMs: POST_WITHIN_MS, budgetMs: POST_WITHIN_MS });
+    return r?.ok ? (await r.json()) as T : null;
   } catch {
     return null;
   }
@@ -146,6 +154,7 @@ export function reconnect() {
   live.idle = false;
   live.elsewhere = false;
   wanted = false;
+  turnedAway = 0;
   wantConnection(true);
   render();
 }
@@ -158,10 +167,14 @@ export function send(msg: ClientMessage): boolean {
 
 /** Ask to be let in; when full, wait in line (asking again every few seconds); then connect. */
 async function connect() {
-  if (!wanted || socket) return;
+  if (!wanted || socket || entering) return;
   live.connecting = true;
-  const answer = await post<EnterAnswer>(ENTER_PATH);
-  if (!wanted || socket) return;
+  entering = true;
+  let answer: EnterAnswer | null;
+  try { answer = await post<EnterAnswer>(ENTER_PATH); } finally { entering = false; }
+  // No longer wanted (the player left the screen) or connected meanwhile: "connecting" must not stay on.
+  if (!wanted) { live.connecting = false; return; }
+  if (socket) return;
   if (!answer) { live.connecting = false; later(); render(); return; }
   if (answer.status === 'closed') { live.open = false; live.connecting = false; live.waiting = null; wanted = false; render(); return; }
   if (answer.status === 'waiting') {
@@ -178,11 +191,13 @@ async function connect() {
 /**
  * Try again after a failure: 1 s, 2 s, then every 3 s. The connection is only wanted while the player is looking at a
  * friends screen or a game, waiting for it, so a long back-off only makes them wait (a deploy restarting the API once
- * kept a player on "Connecting…" for 20 seconds). Asking to be let in costs the API next to nothing.
+ * kept a player on "Connecting…" for 20 seconds). Asking to be let in costs the API next to nothing. Each wait is
+ * moved by up to 30% either way, so every player dropped by the same restart doesn't come back in the same instant.
  */
 function later() {
   if (!wanted || live.outdated) return;
-  retryTimer = window.setTimeout(() => void connect(), Math.min(3000, 1000 * 2 ** retry++));
+  window.clearTimeout(retryTimer);
+  retryTimer = window.setTimeout(() => void connect(), Math.min(3000, 1000 * 2 ** retry++) * (0.7 + 0.6 * Math.random()));
 }
 
 /** The network came back: try now rather than at the next retry. */
@@ -192,7 +207,9 @@ window.addEventListener('online', () => {
 
 async function open() {
   const t = await token();
-  if (!t || !wanted) { live.connecting = false; return; }
+  if (!wanted) { live.connecting = false; return; }
+  // No token (the account service unreachable): try again later rather than stop at "Connecting…".
+  if (!t) { live.connecting = false; later(); render(); return; }
   const ws = new WebSocket(API.replace(/^http/, 'ws') + LIVE_PATH);
   socket = ws;
   // Normally welcomed in well under a second. A socket stuck half-open (the API restarting) is given up on and tried
@@ -225,6 +242,7 @@ function received(msg: ServerMessage) {
       live.connected = true;
       live.connecting = false;
       retry = 0;
+      turnedAway = 0;
       live.you = msg.you;
       live.friends = new Map(msg.friends.map((f) => [f.id, f]));
       live.match = msg.match;
@@ -240,7 +258,12 @@ function received(msg: ServerMessage) {
       // This account connected on another device or tab, or the sign-in wasn't accepted: stop until the player asks,
       // so two tabs never take the connection from each other back and forth.
       if (msg.message === 'replaced') { live.elsewhere = true; wanted = false; }
-      if (msg.message === 'signed_out') { live.idle = true; wanted = false; }
+      // Turned away at the door: most often a token the API couldn't check just then (viamochi-id restarting), or one
+      // older than this device thought. Get a fresh token and try again (onclose); a player who is really signed out
+      // has no token then, and the tries stop there.
+      // Turned away every time even so: stop and let the player ask, rather than knock for ever.
+      if (msg.message === 'signed_out' && ++turnedAway >= 5) { live.idle = true; wanted = false; }
+      else if (msg.message === 'signed_out') void refreshAccount();
       break;
     case 'friends': live.friends = new Map(msg.friends.map((f) => [f.id, f])); break;
     case 'presence': live.friends.set(msg.friend.id, { ...live.friends.get(msg.friend.id), ...msg.friend }); break;

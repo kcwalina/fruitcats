@@ -10,6 +10,7 @@
 import '../content';
 import { registerSet, type SetData } from '@fruitcats/engine';
 import { session, signOut } from '../auth';
+import { apiPolicy, fetchRetry } from '../net';
 import { BASE, esc } from '../ui';
 import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
@@ -112,11 +113,18 @@ function go(hash: string) {
   location.hash = hash;
 }
 
+/** One of the Studio's own files. Tried once more after a dropped connection, and never waited on for ever. */
+async function staticJson<T>(url: string): Promise<T> {
+  const r = await fetchRetry(url, { cache: 'no-cache' }, apiPolicy('GET'));
+  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  return r.json() as Promise<T>;
+}
+
 async function boot() {
   S.booting = true;
   render();
   try {
-    const index = await fetch(`${BASE}studio/index.json`, { cache: 'no-cache' }).then((r) => r.json()) as { sets: SetEntry[] };
+    const index = await staticJson<{ sets: SetEntry[] }>(`${BASE}studio/index.json`);
     S.sets = index.sets;
   } catch {
     S.fatal = 'The Studio couldn’t load. Please reload the page.';
@@ -181,8 +189,8 @@ async function loadSet(code: string) {
   if (!S.briefs.has(code)) {
     try {
       const [brief, data] = await Promise.all([
-        fetch(`${BASE}studio/${code}/brief.json`, { cache: 'no-cache' }).then((r) => r.json()) as Promise<Brief>,
-        fetch(`${BASE}packs/${code}/set.json`, { cache: 'no-cache' }).then((r) => r.json()) as Promise<SetData>,
+        staticJson<Brief>(`${BASE}studio/${code}/brief.json`),
+        staticJson<SetData>(`${BASE}packs/${code}/set.json`),
       ]);
       try { registerSet(data); } catch { /* the previews that need card data are skipped */ }
       for (const c of [...data.cards, ...(data.tokens ?? [])]) setCards.set(c.id, c as unknown as CardWords);
@@ -283,11 +291,18 @@ function shown(code: string, key: string): { url: string | null; version: Versio
   return { ...image(code, key, version.id), version, local: null };
 }
 
+const imageTries = new Map<string, number>();
 function image(code: string, key: string, version: string): { url: string | null; loading: boolean } {
   const id = `${code}/${key}/${version}`;
   const url = S.images.get(id);
   if (url) return { url, loading: false };
-  api.imageUrl(code, key, version).then((u) => { S.images.set(id, u); render(); }).catch(() => {});
+  // A picture that didn't come (the server restarting) is asked for again a little later, a few times, rather than
+  // left spinning until something else redraws the page.
+  api.imageUrl(code, key, version).then((u) => { S.images.set(id, u); render(); }).catch(() => {
+    const tries = imageTries.get(id) ?? 0;
+    imageTries.set(id, tries + 1);
+    if (tries < 5) window.setTimeout(render, 5_000 * (tries + 1));
+  });
   return { url: null, loading: true };
 }
 
@@ -439,6 +454,12 @@ function pictureTitle(code: string, key: string): string {
   return p ? `${title(p)}${sideLabel(p) ? ` (${sideLabel(p)})` : ''}` : key;
 }
 
+/**
+ * Whether this project's pictures and comments have arrived. Signed in without them (the server didn't answer), the
+ * pages would show a project with nothing uploaded; "didn't load" is the truth, and the 20-second check fills it in.
+ */
+const loaded = (code: string) => !S.me || S.views.has(code);
+
 /** A project that couldn't load: say so, and offer to try again, rather than spin. */
 function notLoaded(): string {
   return `<main class="empty"><h1>This project didn’t load</h1><p>The Studio couldn’t fetch it just now. Nothing you uploaded is affected.</p>
@@ -481,7 +502,7 @@ function termsPage(): string {
 /** A project's home for a reviewer. (An artist's home is the wizard.) */
 function homePage(code: string): string {
   const brief = S.briefs.get(code);
-  return brief ? reviewerHome(code, brief, S.views.get(code) ?? null) : notLoaded();
+  return brief && loaded(code) ? reviewerHome(code, brief, S.views.get(code) ?? null) : notLoaded();
 }
 
 // ── The artist's wizard: one thing to do at a time ──────────────────────────────────────────────
@@ -492,7 +513,7 @@ function welcomed(code: string): boolean { try { return localStorage.getItem(wel
 /** What an artist sees when they open their project: a welcome the first time, then always the one picture to do now. */
 function wizardPage(code: string, chosen?: string): string {
   const brief = S.briefs.get(code);
-  if (!brief) return notLoaded();
+  if (!brief || !loaded(code)) return notLoaded();
   const view = S.views.get(code) ?? null;
   const { approved, total } = overall(brief, view);
   const started = brief.pictures.some((x) => versionsOf(view, keyOf(x)).length);
@@ -594,7 +615,7 @@ function openComments(code: string): Comment[] {
 /** One comment at a time, across all pictures: the picture with the comment's pin, Reply, Resolve, Previous and Next. */
 function commentsWalk(code: string): string {
   const brief = S.briefs.get(code);
-  if (!brief) return notLoaded();
+  if (!brief || !loaded(code)) return notLoaded();
   const view = S.views.get(code) ?? null;
   const list = openComments(code);
   const next = nextPicture(brief, view);
@@ -745,7 +766,7 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
 
 function picturePage(code: string, key: string): string {
   const brief = S.briefs.get(code);
-  if (!brief) return notLoaded();
+  if (!brief || !loaded(code)) return notLoaded();
   const p = brief.pictures.find((x) => keyOf(x) === key);
   if (!p) return `<main class="empty"><h1>No such image</h1><p><a href="#/${code}">Back to ${esc(brief.name)}</a></p></main>`;
   const view = S.views.get(code) ?? null;
@@ -1046,6 +1067,13 @@ async function send(key: string) {
     });
     // The stored picture is what the previews show from now on; it's the same file, so keep its address.
     S.images.set(`${code}/${key}/${v.id}`, local.url);
+    // And it's in the project at once, as the server described it: if the refresh below doesn't get through, the
+    // picture mustn't look lost.
+    const view = S.views.get(code);
+    if (view) {
+      const pic = (view.pictures[key] ??= { state: 'waiting', versions: [] });
+      if (!pic.versions.some((x) => x.id === v.id)) pic.versions.push(v);
+    }
     S.local.delete(key);
     S.chosen.delete(key);
     S.uploadNote = '';

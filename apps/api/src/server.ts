@@ -3,6 +3,7 @@
 // account's data is keyed by the account id in those tokens. Hosted on App Service ("fruitcats-api").
 //
 //   GET  /healthz
+//   GET  /version                    →  the commit this build is from (deploy.ps1 checks it before replacing it)
 //   POST /v1/sync   { decks: SyncDeck[], showcase?: SyncShowcase }  →  the merged state, the same shape
 //   GET  /v1/export                  →  everything stored for the signed-in account ("Export my data")
 //   DELETE /v1/accounts/{id}         →  erase an account's data; only viamochi-id may call it (a service token)
@@ -21,14 +22,17 @@
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
 
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { CARDS, DECKS, deckProblems, registerSet, type DeckList } from '@fruitcats/engine';
 import { ENTER_PATH, HERE_PATH } from '@fruitcats/match';
 import { collectionOf, isStarterSet } from '@fruitcats/store';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createLocalJWKSet, createRemoteJWKSet, jwksCache, jwtVerify, type JSONWebKeySet, type JWTPayload } from 'jose';
 import { loadContent } from '../../../content';
 import { log } from './logs';
 import { createHub } from './live/hub';
@@ -40,7 +44,10 @@ import { azureDocs, folderDocs } from './playtests/docs';
 import { startOpsSnapshots } from './playtests/ops';
 import { playtests, type Caller } from './playtests/playtests';
 import { studio } from './studio/studio';
-import { LOCAL_DATA, table } from './tables';
+import { LOCAL_DATA, table, writeIf } from './tables';
+
+/** Written next to server.mjs by deploy.ps1. */
+const COMMIT = (() => { try { return readFileSync(new URL('./commit.txt', import.meta.url), 'utf8').trim(); } catch { return 'unknown'; } })();
 
 // The engine has no cards of its own: without the sets, every synced deck failed validation and was dropped. Every set,
 // prototypes too: a deck may hold cards from a set the Store sells before it's released, and it's kept as well.
@@ -55,7 +62,50 @@ const ORIGINS = new Set((process.env.ALLOWED_ORIGINS ??
 const MAX_DECKS = 200;
 const MAX_BODY = 512 * 1024;
 
-const jwks = createRemoteJWKSet(new URL(`${ID_SERVICE}/.well-known/jwks.json`));
+// viamochi-id's public keys. They're fetched again every 10 minutes (so a key it withdraws stops working soon), but a
+// restart or outage of viamochi-id must not sign anyone out: when the keys can't be fetched, the last ones it gave us
+// still check tokens, for up to a week. They're kept on disk too ($HOME persists on App Service), so a restart of this
+// API while viamochi-id is down doesn't lose them.
+const KEYS_FILE = join(process.env.HOME ?? tmpdir(), 'viamochi-id-keys.json');
+const KEYS_KEPT_FOR = 7 * 86_400_000;
+const lastKeys: { jwks?: JSONWebKeySet; uat?: number } = (() => {
+  try { return JSON.parse(readFileSync(KEYS_FILE, 'utf8')); } catch { return {}; }
+})();
+let keysSavedAt = lastKeys.uat;
+const jwks = createRemoteJWKSet(new URL(`${ID_SERVICE}/.well-known/jwks.json`), { [jwksCache]: lastKeys } as never);
+
+/** Thrown when a token can't be checked right now (viamochi-id's keys can't be had): the game should try again, not sign out. */
+class CantCheckTokens extends Error { readonly statusCode = 503; }   // 503: "try again" wherever it lands (the Studio too)
+/** jose's answers that mean the token itself is no good. Anything else (a timeout, a failed fetch) means "can't tell now". */
+const BAD_TOKEN = new Set(['ERR_JWT_EXPIRED', 'ERR_JWT_CLAIM_VALIDATION_FAILED', 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED', 'ERR_JWT_INVALID',
+  'ERR_JWS_INVALID', 'ERR_JOSE_NOT_SUPPORTED', 'ERR_JOSE_ALG_NOT_ALLOWED', 'ERR_JWK_INVALID', 'ERR_JWKS_NO_MATCHING_KEY', 'ERR_JWKS_MULTIPLE_MATCHING_KEYS']);
+const badToken = (e: unknown) => BAD_TOKEN.has((e as { code?: string }).code ?? '');
+
+/** A viamochi-id token's claims, or null if it isn't a valid token for `audience`. Throws CantCheckTokens if it can't tell now. */
+async function verifyToken(token: string, audience: string): Promise<JWTPayload | null> {
+  const expect = { issuer: ID_SERVICE, audience };
+  try {
+    const { payload } = await jwtVerify(token, jwks, expect);
+    if (lastKeys.uat !== keysSavedAt) {
+      keysSavedAt = lastKeys.uat;
+      try { writeFileSync(KEYS_FILE, JSON.stringify(lastKeys)); } catch { /* kept in memory still */ }
+    }
+    return payload;
+  } catch (e) {
+    if (badToken(e)) return null;
+    // viamochi-id didn't answer for its keys: check the token with the last ones it gave.
+    if (lastKeys.jwks && Date.now() - (lastKeys.uat ?? 0) < KEYS_KEPT_FOR) {
+      try {
+        return (await jwtVerify(token, createLocalJWKSet(lastKeys.jwks), expect)).payload;
+      } catch (e2) {
+        // A key we don't have may be a new one viamochi-id made while we couldn't ask it.
+        if (badToken(e2) && (e2 as { code?: string }).code !== 'ERR_JWKS_NO_MATCHING_KEY') return null;
+      }
+    }
+    log('ops', 'auth.keys_unavailable', { message: (e as Error).message }, 'warning');
+    throw new CantCheckTokens('viamochi-id keys unavailable');
+  }
+}
 const decksTable = table('decks');
 const showcaseTable = table('showcase');
 const live = tableStore(table('matches'), table('rivals'), table('seen'));
@@ -88,16 +138,13 @@ async function whoOf(req: IncomingMessage): Promise<{ id: string; name: string }
   if (!auth.startsWith('Bearer ')) return null;
   const known = checked.get(auth);
   if (known && known.exp > Date.now()) return { id: known.sub, name: known.name };
-  try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-    if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
-    const name = typeof payload.name === 'string' ? payload.name.slice(0, 40) : '';
-    if (checked.size > 50_000) checked.clear();
-    checked.set(auth, { sub: payload.sub, name, exp: (payload.exp ?? 0) * 1000 });
-    return { id: payload.sub, name };
-  } catch {
-    return null;
-  }
+  // Can't check it right now: CantCheckTokens goes up to the request, which answers 503 ("try again"), not 401.
+  const payload = await verifyToken(auth.slice(7), 'viamochi');
+  if (!payload || typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+  const name = typeof payload.name === 'string' ? payload.name.slice(0, 40) : '';
+  if (checked.size > 50_000) checked.clear();
+  checked.set(auth, { sub: payload.sub, name, exp: (payload.exp ?? 0) * 1000 });
+  return { id: payload.sub, name };
 }
 
 async function accountOf(req: IncomingMessage): Promise<string | null> {
@@ -108,13 +155,9 @@ async function accountOf(req: IncomingMessage): Promise<string | null> {
 async function userOf(req: IncomingMessage): Promise<{ id: string; name: string } | null> {
   const auth = req.headers.authorization ?? '';
   if (!auth.startsWith('Bearer ')) return null;
-  try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-    if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
-    return { id: payload.sub, name: typeof payload.name === 'string' && payload.name ? payload.name.slice(0, 40) : 'Artist' };
-  } catch {
-    return null;
-  }
+  const payload = await verifyToken(auth.slice(7), 'viamochi');
+  if (!payload || typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+  return { id: payload.sub, name: typeof payload.name === 'string' && payload.name ? payload.name.slice(0, 40) : 'Artist' };
 }
 
 // The Artist Studio. Owners are Via Mochi account ids; agents are "Name:sha256-of-key" pairs (tools/studio.ts).
@@ -123,9 +166,12 @@ const serveStudio = studio({
   account: userOf,
   // viamochi-id checks that the caller is a reviewer too (ViaMochi:Reviewers), and returns only the one account.
   async findByEmail(req, email) {
-    const res = await fetch(`${ID_SERVICE}/accounts/by-email?email=${encodeURIComponent(email)}`, { headers: { Authorization: req.headers.authorization ?? '' } });
+    // Never waits long for viamochi-id; its failing is a status the Studio turns into "try again" (a 5xx).
+    const res = await fetch(`${ID_SERVICE}/accounts/by-email?email=${encodeURIComponent(email)}`, {
+      headers: { Authorization: req.headers.authorization ?? '' }, signal: AbortSignal.timeout(10_000),
+    });
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`account lookup: ${res.status}`);
+    if (!res.ok) throw Object.assign(new Error(`account lookup: ${res.status}`), { statusCode: res.status });
     const a = (await res.json()) as { id: string; displayName?: string; email?: string };
     return { id: a.id, name: a.displayName || 'Artist', email: a.email ?? email };
   },
@@ -172,12 +218,8 @@ async function playtestCaller(req: IncomingMessage): Promise<Caller | 'stranger'
 async function serviceCall(req: IncomingMessage, userId: string, purpose: string): Promise<boolean> {
   const auth = req.headers.authorization ?? '';
   if (!auth.startsWith('Bearer ')) return false;
-  try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: ID_SERVICE, audience: 'fruitcats-api' });
-    return payload.sub === userId && payload.purpose === purpose;
-  } catch {
-    return false;
-  }
+  const payload = await verifyToken(auth.slice(7), 'fruitcats-api');
+  return !!payload && payload.sub === userId && payload.purpose === purpose;
 }
 
 // ── Keeping the data honest ───────────────────────────────────────────────────────────────────────
@@ -210,32 +252,34 @@ function cleanShowcase(s: unknown): SyncShowcase | null {
 // ── Sync ─────────────────────────────────────────────────────────────────────────────────────────
 
 async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown }) {
+  type DeckRow = { partitionKey: string; rowKey: string; updatedAt: number; deleted?: boolean; data?: string; etag?: string };
+  const deckOf = (row: DeckRow): SyncDeck => row.deleted ? { id: row.rowKey, updatedAt: row.updatedAt, deleted: true }
+    : { id: row.rowKey, updatedAt: row.updatedAt, deck: JSON.parse(row.data ?? '{}') };
   // What the account has.
-  const stored = new Map<string, SyncDeck>();
-  for (const row of await decksTable.list<{ partitionKey: string; rowKey: string; updatedAt: number; deleted?: boolean; data?: string }>(user)) {
-    stored.set(row.rowKey, row.deleted ? { id: row.rowKey, updatedAt: row.updatedAt, deleted: true }
-      : { id: row.rowKey, updatedAt: row.updatedAt, deck: JSON.parse(row.data ?? '{}') });
-  }
-  // What the game sent: the newer version of each deck wins, and is written back.
+  const rows = new Map((await decksTable.list<DeckRow>(user)).map((row) => [row.rowKey, row]));
+  const stored = new Map([...rows.values()].map((row) => [row.rowKey, deckOf(row)]));
+  // What the game sent: the newer version of each deck wins, and is written back. Each write only happens if the
+  // stored deck is still older (writeIf): another device syncing at the same moment can't have its newer deck undone.
   for (const incoming of (body.decks ?? []).slice(0, MAX_DECKS).map(cleanDeck)) {
     if (!incoming) continue;
     const have = stored.get(incoming.id);
     if (have && have.updatedAt >= incoming.updatedAt) continue;
     if (!incoming.deleted && [...stored.values()].filter((d) => !d.deleted).length >= MAX_DECKS && !have) continue;
-    stored.set(incoming.id, incoming);
-    await decksTable.put({
+    const now = await writeIf<DeckRow>(decksTable, {
       partitionKey: user, rowKey: incoming.id, updatedAt: incoming.updatedAt, deleted: !!incoming.deleted,
       data: incoming.deleted ? '' : JSON.stringify(incoming.deck),
-    });
+    }, (s) => !s || s.updatedAt < incoming.updatedAt, rows.get(incoming.id) ?? null);
+    if (now) stored.set(incoming.id, deckOf(now as DeckRow));
   }
 
-  let showcase: SyncShowcase | null = null;
-  const row = await showcaseTable.get<{ partitionKey: string; rowKey: string; faces: string; updatedAt: number }>(user, 'main');
-  if (row) showcase = { faces: JSON.parse(row.faces), updatedAt: row.updatedAt };
+  type ShowcaseRow = { partitionKey: string; rowKey: string; faces: string; updatedAt: number; etag?: string };
+  const row = await showcaseTable.get<ShowcaseRow>(user, 'main');
+  let showcase: SyncShowcase | null = row ? { faces: JSON.parse(row.faces), updatedAt: row.updatedAt } : null;
   const sent = cleanShowcase(body.showcase);
   if (sent && (!showcase || sent.updatedAt > showcase.updatedAt)) {
-    showcase = sent;
-    await showcaseTable.put({ partitionKey: user, rowKey: 'main', faces: JSON.stringify(sent.faces), updatedAt: sent.updatedAt });
+    const now = await writeIf<ShowcaseRow>(showcaseTable, { partitionKey: user, rowKey: 'main', faces: JSON.stringify(sent.faces), updatedAt: sent.updatedAt },
+      (s) => !s || s.updatedAt < sent.updatedAt, row);
+    if (now) showcase = { faces: JSON.parse(String(now.faces)), updatedAt: Number(now.updatedAt) };
   }
   return { decks: [...stored.values()], showcase };
 }
@@ -281,7 +325,7 @@ const server = createServer(async (req, res) => {
   const started = performance.now();
   res.on('finish', () => {
     const path = (req.url ?? '').split('?')[0];
-    if (req.method === 'OPTIONS' || path === '/healthz') return;
+    if (req.method === 'OPTIONS' || path === '/healthz' || path === '/version') return;
     log('ops', 'http.request', { method: req.method, path: path.replace(/\/[0-9a-f]{32}(?=\/|$)/g, '/{id}'), status: res.statusCode, ms: Math.round(performance.now() - started) });
   });
   const origin = req.headers.origin;
@@ -294,6 +338,7 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   try {
     if (req.url === '/healthz') return send(res, 200, 'ok');
+    if (req.url === '/version') return send(res, 200, { commit: COMMIT });
     if (req.url?.startsWith('/v1/studio/')) return await serveStudio(req, res);
     // The deck library every playtest runner reads (playtest/decks/library.ts, LIBRARY_URL): public, decks aren't secret.
     if (req.url === '/v1/playtests/library' && req.method === 'GET') return send(res, 200, await dashboard.library());
@@ -348,6 +393,8 @@ const server = createServer(async (req, res) => {
     }
     send(res, 404, { error: 'not_found' });
   } catch (e) {
+    // A token that can't be checked right now is "try again", never "signed out".
+    if (e instanceof CantCheckTokens) { res.setHeader('Retry-After', '5'); return send(res, 503, { error: 'try_again' }); }
     log('ops', 'error', { url: req.url, message: (e as Error).message }, 'error');
     send(res, 500, { error: 'server' });
   }
@@ -373,17 +420,18 @@ const hub = createHub({
       return { id, name: name?.trim().slice(0, 40) || `Player ${id.slice(0, 4)}` };
     }
     try {
-      const { payload } = await jwtVerify(token, jwks, { issuer: ID_SERVICE, audience: 'viamochi' });
-      if (typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
+      const payload = await verifyToken(token, 'viamochi');
+      if (!payload || typeof payload.sub !== 'string' || !/^[0-9a-f]{32}$/.test(payload.sub)) return null;
       return { id: payload.sub, name: typeof payload.name === 'string' ? payload.name : '' };
     } catch {
-      return null;
+      return null;   // can't check it now: the game reconnects and tries again
     }
   },
   // viamochi-id knows who is friends with whom; we ask it with the player's own token.
   async friendsOf(account, token) {
     if (FAKE_SIGN_IN && token.startsWith('dev-')) return [...fakeAccounts].filter((a) => a !== account);
-    const res = await fetch(`${ID_SERVICE}/friends`, { headers: { Authorization: `Bearer ${token}` } });
+    // Not answering in time is a failure like any other: the hub keeps the friends it last had (live/hub.ts).
+    const res = await fetch(`${ID_SERVICE}/friends`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5_000) });
     if (!res.ok) throw new Error(`friends: ${res.status}`);
     const json = (await res.json()) as { friends?: { id?: unknown }[] };
     return (json.friends ?? []).map((f) => f.id).filter((id): id is string => typeof id === 'string');
@@ -406,7 +454,13 @@ const hub = createHub({
   log: (event, fields) => log('ops', event, fields),
 });
 attachLive(server, hub, originAllowed);
-void hub.restore().catch((e) => log('ops', 'live.restore_failed', { message: (e as Error).message }, 'error'));
+// Storage not answering at start-up (both restarting at once) mustn't lose the games that were going: try again until
+// it answers, sooner at first. Nothing is picked up twice: a failure here means no game was read.
+const restore = (tries = 0): void => void hub.restore().catch((e) => {
+  log('ops', 'live.restore_failed', { message: (e as Error).message, tries }, tries < 3 ? 'warning' : 'error');
+  setTimeout(() => restore(tries + 1), Math.min(60_000, 5_000 * 2 ** tries));
+});
+restore();
 
 // Listen first: App Service gives up on a container that doesn't answer soon after starting. The tables are made in
 // the background (tables.ts), so a fresh storage account needs no setup.

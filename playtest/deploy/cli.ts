@@ -3,8 +3,8 @@
 // The one way to put the game live (fruitcats.viamochi.com, an Azure Static Web App). Each step guards
 // against something that has actually shipped broken:
 //
-//   0. this checkout has everything on origin/main and no uncommitted changes (a session deploying from an
-//      older copy once silently replaced another session's live build); checked again just before the upload
+//   0. one deploy at a time; origin/main merged in, and no merge dropped work another session put on main (sessions
+//      kept losing each other's features, and could lose a security fix, to conflicts resolved as "take mine")
 //   1. type-check and tests
 //   2. the balance check: a starter deck outside the limits stops the deploy (Zest Rush shipped at 14%
 //      against Orchard Guard while the simulator already knew)
@@ -12,15 +12,16 @@
 //      images with the main checkout's old card stats)
 //   4. build the site, and the playtest runner bundle PC2024 downloads
 //   5. the built bundle carries every card's current cost, Power and Health
-//   6. upload
+//   6. push to main, then upload exactly origin/main, and only if it contains the commit the live site runs (deploying
+//      before pushing let a second session, without those commits, deploy right over them)
 //   7. the live site serves this build
 //
 // --force-balance deploys despite a blocking balance problem (say why in the commit); --dry-run stops
-// before the upload.
+// before the push and upload.
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,6 +30,8 @@ import { flag } from '../lib/args';
 import { CARDS } from '../lib/engine';
 import { runMain } from '../lib/pool';
 import { buildRunner } from './runner-bundle';
+import { fetchMain, requireClean, requireLiveInHead, requireOnMain, takeLock } from '../../scripts/git/deploy-guard.mjs';
+import { HOW_TO_FIX, describe, lostInRange } from '../../scripts/git/lost-work.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DIST = join(ROOT, 'apps/web/dist');
@@ -60,22 +63,54 @@ function run(cmd: string, args: string[], opts: { capture?: boolean } = {}): str
   return r.stdout ?? '';
 }
 
+/** origin/main is an ancestor of HEAD. */
+const hasMain = () => spawnSync('git', ['merge-base', '--is-ancestor', 'origin/main', 'HEAD'], { cwd: ROOT }).status === 0;
+
 /**
- * The build must contain everything already on origin/main, or it would take live features off the site, and must
- * be a commit, so what's live can always be found in git.
+ * Brings origin/main in (a merge, which the lost-work check can read, not a rebase), and refuses if any merge not on
+ * main yet dropped work that's already there.
  */
-function checkIntegrated(): void {
-  run('git', ['fetch', '--quiet', 'origin', 'main']);
-  const dirty = run('git', ['status', '--porcelain', '--untracked-files=no'], { capture: true }).trim();
-  if (dirty) throw new Error(`Uncommitted changes:\n${dirty}\nCommit them first, so the live site is a commit.`);
-  const r = spawnSync('git', ['merge-base', '--is-ancestor', 'origin/main', 'HEAD'], { cwd: ROOT });
-  if (r.status !== 0) {
-    const missing = run('git', ['log', '--oneline', 'HEAD..origin/main'], { capture: true }).trim().split('\n');
-    throw new Error(`origin/main has ${missing.length} commit(s) this checkout doesn't, for example:\n   ${missing.slice(0, 5).join('\n   ')}\n`
-      + 'Deploying now would take them off the live site. Merge or rebase onto origin/main, then deploy again.');
+function integrate(): void {
+  // The pre-push hook runs the same check on every push to main, deploy or not.
+  run('git', ['config', 'core.hooksPath', '.githooks']);
+  fetchMain(ROOT);
+  requireClean(ROOT);
+  if (!hasMain()) {
+    const merged = spawnSync('git', ['merge', '--no-edit', 'origin/main'], { cwd: ROOT, encoding: 'utf8' });
+    if (merged.status !== 0) {
+      spawnSync('git', ['merge', '--abort'], { cwd: ROOT });
+      throw new Error('Merging origin/main has conflicts. Run git merge origin/main yourself and resolve them keeping BOTH '
+        + "sides' changes (the other side is work already on main), commit, then deploy again.");
+    }
+    console.log('   merged origin/main');
   }
+  checkNothingLost();
+}
+
+function checkNothingLost(): void {
+  const { merges, findings } = lostInRange('origin/main..HEAD', ROOT);
+  if (findings.length) throw new Error(`${describe(findings, ROOT)}\n\n${HOW_TO_FIX}`);
   const ahead = run('git', ['rev-list', '--count', 'origin/main..HEAD'], { capture: true }).trim();
-  console.log(`   up to date with origin/main${ahead !== '0' ? ` (and ${ahead} commit(s) ahead: push them to main after the deploy)` : ''}`);
+  console.log(`   has all of origin/main, ${ahead} commit(s) to add; ${merges} merge(s) checked, none dropped work from main`);
+}
+
+/** Just before the push: if main moved during the checks, what was checked and built isn't what would go live. */
+function stopIfMainMoved(): void {
+  fetchMain(ROOT);
+  requireClean(ROOT);
+  if (!hasMain()) throw new Error('origin/main moved while the checks ran (another session pushed). Nothing was pushed or uploaded: run npm run deploy again.');
+  checkNothingLost();
+}
+
+/** The commit the live site was built from (`/version.json`, written by every deploy since 2026-09-25). */
+async function liveCommit(): Promise<string | null> {
+  try {
+    const r = await fetch(`${SITE}/version.json?v=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    return ((await r.json()) as { commit?: string }).commit ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** `@fruitcats/engine` as the web app resolves it must be this checkout's packages/engine. */
@@ -138,7 +173,14 @@ async function fetchText(url: string): Promise<string> {
 
 runMain(async () => {
   step(0, 'Up to date with main');
-  checkIntegrated();
+  // Every session's worktree is on this machine: one deploy at a time, or two could each pass the checks below
+  // against the same main and the slower one would take the faster one's work off the site.
+  const unlock = await takeLock('site');
+  try { return await deploy(); } finally { unlock(); }
+});
+
+async function deploy(): Promise<number> {
+  integrate();
 
   step(1, 'Type-check and tests');
   run('npm', ['run', 'typecheck']);
@@ -164,11 +206,16 @@ runMain(async () => {
   step(5, 'Bundle check');
   const main = checkBundle();
 
-  if (flag('dry-run')) { console.log('\n--dry-run: stopping before the upload.'); return 0; }
+  if (flag('dry-run')) { console.log('\n--dry-run: stopping before the push and upload.'); return 0; }
 
-  step(6, 'Upload');
-  // The checks above take minutes; main may have moved meanwhile.
-  checkIntegrated();
+  step(6, 'Push to main, then upload');
+  // Pushed first: a deploy of commits main doesn't have yet is overwritten by the next session's deploy from main.
+  // The checks above take minutes, so main may have moved meanwhile. The pre-push hook checks the merges once more.
+  stopIfMainMoved();
+  run('git', ['push', 'origin', 'HEAD:main']);
+  const commit = requireOnMain(ROOT);
+  requireLiveInHead(await liveCommit(), SITE, ROOT);
+  writeFileSync(join(DIST, 'version.json'), JSON.stringify({ commit, time: new Date().toISOString() }));
   const token = deploymentToken();
   run('npx', ['-y', '@azure/static-web-apps-cli@latest', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
 
@@ -177,12 +224,11 @@ runMain(async () => {
     const html = await fetchText(`${SITE}/?v=${Date.now()}`);
     const live = /main-[A-Za-z0-9_-]+\.js/.exec(html)?.[0];
     const liveRunner = createHash('sha256').update(await fetchText(`${SITE}/playtest/runner.mjs?v=${Date.now()}`)).digest('hex');
-    if (live === main && liveRunner === runner.sha256) { console.log(`   ${SITE} serves ${main} and the new runner.`); break; }
-    if (attempt >= 6) throw new Error(`The live site serves ${live} (expected ${main}) and runner ${liveRunner.slice(0, 12)} (expected ${runner.sha256.slice(0, 12)}).`);
+    const built = await liveCommit();
+    if (live === main && liveRunner === runner.sha256 && built === commit) { console.log(`   ${SITE} serves ${main}, the new runner, and commit ${commit.slice(0, 9)}.`); break; }
+    if (attempt >= 6) throw new Error(`The live site serves ${live} (expected ${main}), runner ${liveRunner.slice(0, 12)} (expected ${runner.sha256.slice(0, 12)}) and commit ${built?.slice(0, 9)} (expected ${commit.slice(0, 9)}).`);
     await new Promise((r) => setTimeout(r, 5000));
   }
-  const unpushed = run('git', ['rev-list', '--count', 'origin/main..HEAD'], { capture: true }).trim();
-  if (unpushed !== '0') console.log(`\n⚠ ${unpushed} commit(s) are live but not on main yet. Push them now (git push origin HEAD:main), or the next deploy from main takes them off the site.`);
-  console.log('\nDeployed. The iOS home-screen app keeps the old build until it is swiped away and reopened.');
+  console.log('\nDeployed and on main. The iOS home-screen app keeps the old build until it is swiped away and reopened.');
   return 0;
-});
+}

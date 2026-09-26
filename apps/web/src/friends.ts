@@ -10,7 +10,7 @@
 import type { DeckList } from '@fruitcats/engine';
 import { MIN_LIVES, PACES, type ChallengeOptions, type Pace, type Person } from '@fruitcats/match';
 import { pawtrait } from './account';
-import { AuthError, listFriends, newFriendCode, redeemFriendCode, removeFriend, type Friend } from './auth';
+import { AuthError, listFriends, newFriendCode, redeemFriendCode, removeFriend, session, type Friend } from './auth';
 import { live, onLive, reconnect, send } from './live';
 import { canScan, codeFromQr, qrSvg, scan } from './qr';
 import { backButton, esc, settingsButton } from './ui';
@@ -52,6 +52,7 @@ let people = new Map<string, Friend>();
 let loaded = false;
 let note = '';
 let busy = false;
+let acceptTimer: number | undefined;
 let managing: string | null = null;
 let confirming: 'remove' | 'block' | null = null;
 let typed = '';
@@ -67,6 +68,9 @@ export const friendsView = () => view.kind;
 
 export function openFriends(h: FriendsHost, answer?: string) {
   host = h;
+  shown = true;
+  reloadFailures = 0;
+  if (!loaded) savedFriends();
   view = answer ? { kind: 'accept', id: answer } : { kind: 'list' };
   note = ''; managing = null; confirming = null;
   if (answer) myLives = 9;
@@ -79,20 +83,49 @@ window.setInterval(() => { if (host && view.kind === 'list' && live.connected &&
 
 /** Leaving the screen: stop the camera and the code, and withdraw a challenge still waiting. */
 export function closeFriends() {
+  shown = false;
+  window.clearTimeout(reloadTimer);
   stopShowing();
   scanner?.stop(); scanner = null;
   if (view.kind === 'waiting' && view.id) send({ t: 'cancel', id: view.id });
   view = { kind: 'list' };
 }
 
+/**
+ * The friends list as viamochi-id last gave it, kept on this device for the account: shown at once, and all that shows
+ * while the account service can't be reached. Only this account's copy is kept; another account's is dropped.
+ */
+const FRIENDS_KEY = 'fruitcats-friends';
+function keepFriends() {
+  try { localStorage.setItem(FRIENDS_KEY, JSON.stringify({ user: session()?.userId, friends: [...people.values()] })); } catch { /* shown when it loads */ }
+}
+function savedFriends() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FRIENDS_KEY) ?? 'null') as { user?: string; friends?: Friend[] } | null;
+    if (!saved) return;
+    if (saved.user !== session()?.userId || !Array.isArray(saved.friends)) { localStorage.removeItem(FRIENDS_KEY); return; }
+    people = new Map(saved.friends.map((f) => [f.id, f]));
+    loaded = true;
+  } catch { /* nothing kept */ }
+}
+
+/** Whether Play a friend is on screen, and the next try at loading the friends after one failed. */
+let shown = false;
+let reloadTimer: number | undefined;
+let reloadFailures = 0;
+
 async function loadFriends() {
+  window.clearTimeout(reloadTimer);
   try {
     people = new Map((await listFriends()).map((f) => [f.id, f]));
     loaded = true;
-  } catch (e) {
+    keepFriends();
+    reloadFailures = 0;
+  } catch {
     // Offline from viamochi-id (or a local API with fake sign-in): friends who are online still show, from presence.
-    loaded = true;
-    if (!live.friends.size) note = e instanceof AuthError ? e.message : 'Couldn’t load your friends.';
+    // Tried again by itself while the screen is open, so a service that was restarting doesn't leave the list empty.
+    // The list isn't known then: never "you have no friends yet" (the copy kept on this device shows, if there is one).
+    if (shown) reloadTimer = window.setTimeout(() => void loadFriends(), [5_000, 15_000, 30_000][Math.min(reloadFailures++, 2)]);
   }
   host?.render();
 }
@@ -237,7 +270,7 @@ function renderList(): string {
         <img class="pf-head-art" src="${FRIEND_ART()}" alt="">
         <div class="pf-head-text">
           <h3>Your friends</h3>
-          <p class="pf-presence" role="status">${list.length ? presence : 'Loading your friends…'}</p>
+          <p class="pf-presence" role="status">${list.length ? presence : reloadFailures ? 'Couldn’t load your friends yet. Trying again…' : 'Loading your friends…'}</p>
         </div>
       </div>
       <ul class="pf-list">
@@ -523,6 +556,7 @@ async function addFriend(code: string) {
   try {
     const f = await redeemFriendCode(code);
     people.set(f.id, f);
+    keepFriends();
     send({ t: 'added', friend: f.id });
     add = { kind: 'done', person: { id: f.id, name: f.displayName || 'your friend', avatar: f.avatar } };
     typed = '';
@@ -564,6 +598,7 @@ onLive((msg) => {
       // Someone used your code. Look again at who your friends are (viamochi-id's list is the one we believe).
       void listFriends().then((list) => {
         people = new Map(list.map((f) => [f.id, f]));
+        keepFriends();
         const f = people.get(msg.by.id);
         if (f && add.kind === 'show') {
           stopShowing();
@@ -647,8 +682,14 @@ export function friendsClick(action: string, h: FriendsHost): void {
       const c = live.incoming.find((x) => x.id === arg);
       const deck = c ? h.chosenDeck(c.options.startersOnly) : null;
       if (!c || !deck) return;
+      if (!send({ t: 'accept', id: c.id, deck, lives: myLives })) { note = 'Not connected. Try again in a moment.'; break; }
       busy = true;
-      send({ t: 'accept', id: c.id, deck, lives: myLives });
+      // The game starts over the connection. If it drops before then, Play mustn't stay greyed out for good.
+      window.clearTimeout(acceptTimer);
+      acceptTimer = window.setTimeout(() => {
+        if (!busy || view.kind !== 'accept' || view.id !== c.id) return;
+        busy = false; note = 'No answer yet. Please try again.'; host?.render();
+      }, 15_000);
       break;
     }
     case 'rejoin': if (live.match) send({ t: 'rejoin', match: live.match }); return;
@@ -681,6 +722,7 @@ async function removeOrBlock(id: string, block: boolean) {
   try {
     await removeFriend(id, block);
     people.delete(id);
+    keepFriends();
     live.friends.delete(id);
     note = block ? 'Blocked.' : 'Removed.';
     send({ t: 'friends', again: true });

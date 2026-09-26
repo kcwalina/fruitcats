@@ -11,7 +11,7 @@ import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderH
 import { ACCOUNTS, ONLINE, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
-import { startSync } from './sync';
+import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
@@ -501,7 +501,7 @@ function onClick(key: string) {
       }
     }
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
-    else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; }
+    else if (raw === 'collection') { openShowcase({ render }); screen = 'collection'; if (ACCOUNTS) void syncNow(); }
     else if (raw === 'store' && storeOpen()) { openStore(storeHost); screen = 'store'; }
     else if (raw === 'continue') { if (resumeSavedGame()) { render(); scheduleAi(); return; } }
     else if (raw === 'tutorial') { startGame(true); return; }
@@ -1593,11 +1593,18 @@ if (ACCOUNTS && takeInviteFromLink()) openAccount({ render }, 'You’re invited!
 // later asks at once (account.ts), and coming back to the front keeps asking (2026-09-26, the tile stayed "Coming
 // soon" on a phone that signed in after the game started).
 if (STORE) {
-  let last = 0;
+  let last = 0, failures = 0, retry = 0;
   const refresh = () => {
     if (!signedIn() || Date.now() - last < 60_000) return;
     last = Date.now();
-    void refreshStore().then(() => { if (screen === 'home' || screen === 'decks') render(); });
+    window.clearTimeout(retry);
+    void refreshStore().then((answered) => {
+      if (screen === 'home' || screen === 'decks') render();
+      // No answer (offline, or the API restarting): ask again by itself, soon at first, rather than leaving the tile
+      // on "Coming soon" until the player happens to leave and come back.
+      if (answered) { failures = 0; return; }
+      retry = window.setTimeout(() => { last = 0; refresh(); }, [5_000, 15_000, 30_000, 60_000][Math.min(failures++, 3)]);
+    });
   };
   refresh();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });

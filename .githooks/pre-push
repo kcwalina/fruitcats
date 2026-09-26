@@ -1,0 +1,3 @@
+#!/bin/sh
+# Pushes to main must keep everything already on main: see scripts/git/pre-push.mjs.
+exec node "$(git rev-parse --show-toplevel)/scripts/git/pre-push.mjs" "$@"

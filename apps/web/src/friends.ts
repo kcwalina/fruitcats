@@ -52,6 +52,7 @@ let people = new Map<string, Friend>();
 let loaded = false;
 let note = '';
 let busy = false;
+let acceptTimer: number | undefined;
 let managing: string | null = null;
 let confirming: 'remove' | 'block' | null = null;
 let typed = '';
@@ -647,8 +648,14 @@ export function friendsClick(action: string, h: FriendsHost): void {
       const c = live.incoming.find((x) => x.id === arg);
       const deck = c ? h.chosenDeck(c.options.startersOnly) : null;
       if (!c || !deck) return;
+      if (!send({ t: 'accept', id: c.id, deck, lives: myLives })) { note = 'Not connected. Try again in a moment.'; break; }
       busy = true;
-      send({ t: 'accept', id: c.id, deck, lives: myLives });
+      // The game starts over the connection. If it drops before then, Play mustn't stay greyed out for good.
+      window.clearTimeout(acceptTimer);
+      acceptTimer = window.setTimeout(() => {
+        if (!busy || view.kind !== 'accept' || view.id !== c.id) return;
+        busy = false; note = 'No answer yet. Please try again.'; host?.render();
+      }, 15_000);
       break;
     }
     case 'rejoin': if (live.match) send({ t: 'rejoin', match: live.match }); return;

@@ -132,7 +132,7 @@ export function renderAccount(): string {
 
 function emailStep(): string {
   return `
-    <img class="account-cat" src="${BASE}ui/cat-jam-kitten.webp" alt="">
+    <img class="account-cat" src="${BASE}ui/tile-solo.webp" alt="">
     <h2 id="account-title">Sign in or create account</h2>
     ${reason ? `<p class="account-why">${esc(reason)}</p>` : ''}
     ${benefits()}
@@ -147,7 +147,7 @@ function emailStep(): string {
 
 function inviteStep(): string {
   return `
-    <img class="account-cat" src="${BASE}ui/cat-jam-kitten.webp" alt="">
+    <img class="account-cat" src="${BASE}ui/tile-solo.webp" alt="">
     <h2 id="account-title">Got an invite code?</h2>
     <p class="account-why">Fruitcats accounts are open to playtesters for now.
       Type the invite code you were sent.</p>
@@ -199,7 +199,7 @@ function codeStep(): string {
 
 function termsStep(): string {
   return `
-    <img class="account-cat" src="${BASE}ui/cat-jam-kitten.webp" alt="">
+    <img class="account-cat" src="${BASE}ui/tile-solo.webp" alt="">
     <h2 id="account-title">Before you continue</h2>
     <p class="account-why">Please read the Terms of Use and the Privacy Policy for your Via Mochi account.
       They say what you can do with the game and your cards, and how we look after your data.</p>
@@ -223,7 +223,7 @@ function termsStep(): string {
 function welcomeStep(): string {
   const s = session();
   return `
-    <img class="account-cat" src="${BASE}ui/cat-jam.webp" alt="">
+    <img class="account-cat" src="${BASE}ui/tile-solo.webp" alt="">
     <h2 id="account-title">${pending?.flow === 'signUp' ? 'Welcome to Via Mochi' : 'Welcome back'}${s?.displayName ? `, ${esc(s.displayName)}` : ''}!</h2>
     <p class="account-why">${restoredOnSignIn ? 'Your account was going to be deleted: signing in has kept it, with everything in it.'
       : 'You’re signed in on this device. Your collection is kept in your account.'}</p>

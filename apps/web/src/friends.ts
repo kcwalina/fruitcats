@@ -196,7 +196,7 @@ export function renderFriends(): string {
   </div>`;
 }
 
-const FRIEND_ART = () => esc(`${import.meta.env.BASE_URL}ui/mode-friend.webp`);
+const FRIEND_ART = () => esc(`${import.meta.env.BASE_URL}ui/tile-friend.webp`);
 
 /** Why online play isn't open to this player right now (in line, paused, …), as the whole screen; null otherwise. */
 function notConnected(): string | null {

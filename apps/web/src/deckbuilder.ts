@@ -379,7 +379,7 @@ function renderDeckList(): string {
               <span class="deck-tile-sub">Paste a code someone shared</span></span>
           </button>
           <a class="deck-tile new-deck rules-tile" href="${BASE}rules.html#11-1-deckbuilding">
-            <img class="new-plus rules-plus" src="${BASE}ui/icon-rules.webp" alt="">
+            <img class="new-plus rules-plus" src="${BASE}ui/tile-docs.webp" alt="">
             <span class="deck-tile-text"><span class="deck-name">Deck building rules</span>
               <span class="deck-tile-sub">What a deck can hold</span></span>
           </a>

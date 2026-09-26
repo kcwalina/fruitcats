@@ -277,23 +277,30 @@ undone until dawn chased them off, and that is how people learned to make fishin
 
 The owner chose a neutral shell for the home screen (2026-09-26): a calm grove in soft, rounded 3D, warm graphite
 and slate with a little soft glow, and no creatures in the background. Each menu tile shows one creature from this
-list, so the home screen says that Folkborn is a world where folk creatures from around the world meet. Each
-creature does the tile's action in a way that fits its lore. This is a mockup so far (made by the Retheme session),
-not in the game.
+list, so the home screen says that Folkborn is a world where folk creatures from around the world meet. This is a
+mockup so far (made by the Retheme session), not in the game.
 
-| Tile | Creature | What it shows |
-|---|---|---|
-| Solo | [Domowiki](#domowiki) | Waving you in at a small door with warm light: come in and play by the stove. |
-| Friend | [Hedgehog Immortals](#hedgehog-immortals) | Two household hedgehogs passing a card. |
-| Ranked | [Pari](#pari) | Lifting a little golden cup, like the Persian painting above. |
-| Collection | [Yech](#yech) | In its white cap in the snow, a bowl of khichri beside it, hugging a stack of cards. |
-| Store | [Veli](#veli) | Behind a small stall with wild bananas and a kava bowl, wearing tapa cloth. |
-| Deck builder | [Nuno sa punso](#nuno-sa-punso) | On top of his mound in a salakot hat, fanning out cards. |
-| Tutorial | [Kodama](#kodama) | At the roots of its old tree with a small lantern, lighting the way for a new player. |
-| Documentation | [Mmoatia](#mmoatia) | Under a banana leaf, reading a big book of herbs (they teach healing). |
+Each tile's creature is picked by its lore: something in its story matches what the tile does. For example, a
+domowik is the spirit of the home, so it stands for playing alone at home, not going out to play with friends.
 
-- Left out on purpose: Alux (shown as small Maya people; wait for a
-  reviewer). Momoyes has no tile yet.
+Because the shell is neutral, each creature is drawn in a strong style of its own, as if it came from its own deck.
+This shows that decks in very different styles all fit in the game.
+
+| Tile | Creature | Why this creature | Style |
+|---|---|---|---|
+| Solo | [Domowiki](#domowiki) | The spirit of the home: you stay in and play alone by the stove. Shown sitting on the warm stove with a hand of cards. | Painted acrylic, like the Domowiki cards |
+| Friend | [Pari](#pari) | So many tales are about a pari and a mortal who become close: a bond between two from different worlds. Shown raising a cup to a friend. | Persian miniature painting |
+| Ranked | [Nuno sa punso](#nuno-sa-punso) | The old man sits on top of his mound, and everyone passing must show respect ("tabi tabi po"): climb to the top and earn respect. Shown on his mound fanning cards. | Storybook watercolour |
+| Collection | [Hedgehog Immortals](#hedgehog-immortals) | Household spirits that settle in and keep the family prosperous: building up what you keep. Shown as two hedgehogs trading a card. | Needle-felted plush |
+| Store | [Yech](#yech) | You bargain with a yech: snatch its white cap and it grants your wishes. Shown holding out its cap with a little pile of treasures. | Claymation |
+| Deck builder | [Veli](#veli) | Master makers: they grow their own kava and make tapa finer than anything people make. Shown laying out cards on a mat like a craftsman. | Flat graphics with tapa patterns |
+| Tutorial | [Mmoatia](#mmoatia) | They take a person into the forest, and that person comes back a skilled healer: they teach. Shown reading a book of herbs. | Cut-paper collage |
+| Documentation | [Kodama](#kodama) | Call out in the mountains and the kodama answers: you ask, and you get an answer. Shown with a lantern at the roots of its tree. | Japanese woodblock print |
+
+- Left out on purpose: Alux (shown as small Maya people; wait for a reviewer). Momoyes has no tile yet; their St.
+  John's night drum party would suit Friend if Pari moves.
+- The Kodama mockup came out looking like the kodama in the film *Princess Mononoke* (a white round head with dark
+  hole eyes). That design belongs to Studio Ghibli, not to folklore, so the final art must look different.
 - All eight are drawn as small spirit creatures, never as caricatures of real peoples. The Care notes above still
   apply to the final tile art.
 - The mockups are described in words only, like everything else in this document.

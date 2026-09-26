@@ -571,6 +571,14 @@ async function addFriend(code: string) {
 
 onLive((msg) => {
   switch (msg.t) {
+    case 'welcome':
+      // Connected again (the game was in the background, the network dropped): is the friend still being asked? The
+      // challenge may have ended while this game couldn't hear it.
+      if (view.kind === 'waiting' && view.id && msg.sent && !msg.sent.includes(view.id)) {
+        note = `Your game with ${nameOf(view.friend)} didn’t start. Ask again?`;
+        view = { kind: 'setup', friend: view.friend };
+      }
+      return;
     case 'sent':
       if (view.kind === 'waiting' && view.friend === msg.to) view.id = msg.id;
       return;

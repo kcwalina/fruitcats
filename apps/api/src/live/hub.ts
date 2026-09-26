@@ -71,15 +71,25 @@ interface Conn {
 interface Challenge {
   id: string;
   from: string;
+  /** Who asked, as their friend sees them: kept here, since they may step away for a moment while it's open. */
+  fromPerson: Person;
   to: string;
   deck: DeckList;
   options: ChallengeOptions;
   lives: number;
   timer: ReturnType<typeof setTimeout>;
+  /** One of the two lost their connection: the challenge ends unless they're back before this runs. */
+  away?: ReturnType<typeof setTimeout>;
 }
 
 /** A challenge nobody answers is withdrawn after this long. (A friend who isn't connected hears of it within HERE_EVERY_MS.) */
 export const CHALLENGE_MS = 120_000;
+/**
+ * A player whose connection drops while a challenge is open keeps it this long. A phone closes the connection as soon
+ * as the game goes to the background, and the first thing someone does after asking is often to text their friend
+ * "I sent it": that mustn't withdraw the challenge.
+ */
+export const CHALLENGE_AWAY_MS = 60_000;
 /** Once let in, this long to connect before the place goes to someone else. */
 export const LET_IN_MS = 60_000;
 /** A place in the waiting line is kept this long after it was last asked for. */
@@ -175,8 +185,7 @@ export function createHub(deps: HubDeps) {
     const notes: ChallengeNote[] = [];
     for (const ch of challenges.values()) {
       if (ch.to !== account) continue;
-      const from = conns.get(ch.from);
-      if (from) notes.push({ id: ch.id, from: from.person, options: ch.options, lives: ch.lives });
+      notes.push({ id: ch.id, from: ch.fromPerson, options: ch.options, lives: ch.lives });
     }
     return { open: deps.open(), challenges: notes, match: m && !m.end ? m.id : null };
   }
@@ -321,10 +330,12 @@ export function createHub(deps: HubDeps) {
   function endChallenge(ch: Challenge, why: 'declined' | 'cancelled' | 'expired' | 'offline' | 'busy' | 'started') {
     if (!challenges.delete(ch.id)) return;
     clearTimeout(ch.timer);
+    clearTimeout(ch.away);
     // The place kept for a friend who never connected goes back.
     if (!conns.has(ch.to) && why !== 'started') letIn.delete(ch.to);
     sendTo(ch.from, { t: 'challenge-ended', id: ch.id, why });
     sendTo(ch.to, { t: 'challenge-ended', id: ch.id, why });
+    if (why !== 'started') deps.log('live.challenge_ended', { from: ch.from, to: ch.to, why });
   }
 
   const inGame = (account: string) => { const m = matches.get(matchOf.get(account) ?? ''); return !!m && !m.end; };
@@ -338,11 +349,15 @@ export function createHub(deps: HubDeps) {
     // A friend may be connected, or only "here" (the game open, not playing online): the challenge reaches them either way.
     const them = conns.get(msg.to);
     if (!c.friends.has(msg.to) || (them && !them.friends.has(me))) return error('You can only play with a friend.');
+    // Before anything else: they may have stepped away for a moment since asking.
+    for (const ch of challenges.values()) {
+      if (ch.from === me && ch.to === msg.to) return error('You’ve already asked them to play.');
+      // They asked first, and now you ask them: you both want to play, so this is a yes to theirs.
+      if (ch.from === msg.to && ch.to === me) return accept(c, { t: 'accept', id: ch.id, deck: msg.deck, lives: msg.lives });
+    }
     if (statusOf(msg.to) === 'offline') return error('They aren’t online right now.');
     if (inGame(me)) return error('Finish your game first.');
     if (inGame(msg.to)) return error('They’re in a game.');
-    for (const ch of challenges.values())
-      if ((ch.from === me && ch.to === msg.to) || (ch.from === msg.to && ch.to === me)) return error('One of you has already asked the other to play.');
     const deck = cleanDeck(msg.deck);
     const problem = deck ? await checkDeck(me, deck, options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
@@ -352,7 +367,7 @@ export function createHub(deps: HubDeps) {
       letIn.set(msg.to, Date.now() + CHALLENGE_MS + LET_IN_MS);
     }
     const id = newMatchId();
-    const ch: Challenge = { id, from: me, to: msg.to, deck: deck!, options, lives, timer: setTimeout(() => endChallenge(ch, 'expired'), CHALLENGE_MS) };
+    const ch: Challenge = { id, from: me, fromPerson: c.person, to: msg.to, deck: deck!, options, lives, timer: setTimeout(() => endChallenge(ch, 'expired'), CHALLENGE_MS) };
     challenges.set(id, ch);
     c.send({ t: 'sent', id, to: msg.to });
     them?.send({ t: 'challenge', id, from: c.person, options, lives });
@@ -376,11 +391,12 @@ export function createHub(deps: HubDeps) {
     if (lives === null) return error('That handicap didn’t make sense.');
     const problem = deck ? await checkDeck(c.account, deck, ch.options.startersOnly) : 'That deck isn’t one you can play.';
     if (problem) return error(problem);
-    const from = conns.get(ch.from);
     if (!challenges.has(ch.id)) return error('That game isn’t open any more.');
-    if (!from) { endChallenge(ch, 'offline'); return; }
     endChallenge(ch, 'started');
-    startMatch([{ person: from.person, deck: ch.deck, lives: ch.lives }, { person: c.person, deck: deck!, lives }], ch.options);
+    const m = startMatch([{ person: ch.fromPerson, deck: ch.deck, lives: ch.lives }, { person: c.person, deck: deck!, lives }], ch.options);
+    // The one who asked stepped away for a moment (another app): the game waits for them like any dropped connection,
+    // and they're taken into it when they come back (welcome's match).
+    if (!conns.has(ch.from)) m.dropped(0);
   }
 
   // ── Messages ──────────────────────────────────────────────────────────────────────────────────
@@ -404,12 +420,13 @@ export function createHub(deps: HubDeps) {
     conns.set(who.id, c);
     if (older && older !== c) { older.send({ t: 'error', message: 'replaced' }); older.close(); }
     const m = matches.get(matchOf.get(who.id) ?? '');
-    c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m && !m.end ? m.id : null });
-    // Challenges sent while this game was only "here".
-    for (const ch of challenges.values()) {
-      const from = conns.get(ch.from);
-      if (ch.to === who.id && from) c.send({ t: 'challenge', id: ch.id, from: from.person, options: ch.options, lives: ch.lives });
-    }
+    // Back within CHALLENGE_AWAY_MS: the challenges this player is part of carry on.
+    for (const ch of challenges.values()) if (ch.from === who.id || ch.to === who.id) { clearTimeout(ch.away); ch.away = undefined; }
+    const sent = [...challenges.values()].filter((ch) => ch.from === who.id).map((ch) => ch.id);
+    c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m && !m.end ? m.id : null, sent });
+    // Challenges sent while this game was only "here", or away for a moment.
+    for (const ch of challenges.values())
+      if (ch.to === who.id) c.send({ t: 'challenge', id: ch.id, from: ch.fromPerson, options: ch.options, lives: ch.lives });
     if (m) m.connected(m.seatOf(who.id)!);
     announce(who.id);
   }
@@ -483,7 +500,12 @@ export function createHub(deps: HubDeps) {
     const me = c.account!;
     void deps.store.seen(me, new Date().toISOString()).catch(() => {});
     seenCache.delete(me);
-    for (const ch of [...challenges.values()]) if (ch.from === me || ch.to === me) endChallenge(ch, 'offline');
+    // A challenge waits a moment for a player who stepped away (see CHALLENGE_AWAY_MS).
+    for (const ch of challenges.values()) {
+      if (ch.from !== me && ch.to !== me) continue;
+      clearTimeout(ch.away);
+      ch.away = setTimeout(() => { if (!conns.has(me)) endChallenge(ch, 'offline'); }, CHALLENGE_AWAY_MS);
+    }
     // A code shown stays known for its 15 minutes: it may have been sent by text, to a friend who types it later.
     const m = matches.get(matchOf.get(me) ?? '');
     if (m) m.dropped(m.seatOf(me)!);

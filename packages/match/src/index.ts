@@ -259,7 +259,7 @@ export type ClientMessage =
   | { t: 'leave'; match: string };
 
 export type ServerMessage =
-  | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null }
+  | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null; /** Your challenges still open (older APIs: missing). */ sent?: string[] }
   /** This game is older than the server: reload to play online. */
   | { t: 'update' }
   /** Online play is full (ask to be let in first), or switched off. The connection is closed after this. */

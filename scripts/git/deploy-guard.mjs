@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const LOCKS = join(homedir(), '.fruitcats-deploy');
+const STALE_MINUTES = 30;
 
 function git(args, opts = {}) {
   const r = spawnSync('git', args, { cwd: opts.cwd, encoding: 'utf8' });
@@ -98,7 +99,10 @@ export async function takeLock(name, { pid = process.pid, waitMinutes = 20 } = {
     }
     let holder = null;
     try { holder = JSON.parse(readFileSync(file, 'utf8')); } catch { /* being written, or unreadable */ }
-    if (holder && !alive(holder.pid)) { rmSync(file, { force: true }); continue; }
+    // Gone, or held far longer than any deploy takes (a script run inside a long-lived shell that died without
+    // giving it back keeps a live pid).
+    const abandoned = holder && (!alive(holder.pid) || Date.now() - Date.parse(holder.since) > STALE_MINUTES * 60_000);
+    if (abandoned) { rmSync(file, { force: true }); continue; }
     if (Date.now() > until) throw new Error(`Another ${name} deploy is still running (${holder?.checkout ?? 'unknown checkout'}, since ${holder?.since ?? '?'}). Try again when it's done.`);
     if (!told) { console.log(`   waiting for another ${name} deploy to finish (${holder?.checkout ?? '?'}, since ${holder?.since ?? '?'})`); told = true; }
     await new Promise((r) => setTimeout(r, 5000));

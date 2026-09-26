@@ -85,12 +85,18 @@ export function tableStore(matches: Table, rivals: Table, seenTable: Table): Liv
       return row ? { wins: row.wins ?? 0, losses: row.losses ?? 0, draws: row.draws ?? 0 } : empty();
     },
     async addResult(account, friend, result) {
-      const t = await this.tally(account, friend);
-      if (result === 'win') t.wins++;
-      else if (result === 'loss') t.losses++;
-      else t.draws++;
-      await rivals.put({ partitionKey: account, rowKey: friend, ...t });
-      return t;
+      // One more on the count read, written only if the row hasn't changed since (its etag): two results landing at
+      // once (a retry, a second game ending) each count, rather than one overwriting the other.
+      for (let i = 0; i < 5; i++) {
+        const row = await rivals.get<TallyRow>(account, friend);
+        const t = row ? { wins: row.wins ?? 0, losses: row.losses ?? 0, draws: row.draws ?? 0 } : empty();
+        if (result === 'win') t.wins++;
+        else if (result === 'loss') t.losses++;
+        else t.draws++;
+        const next = { partitionKey: account, rowKey: friend, ...t };
+        if (await rivals.batch([row ? { op: 'replace', row: next, etag: String(row.etag ?? '') } : { op: 'create', row: next }])) return t;
+      }
+      throw new Error(`rivals ${account}/${friend}: too many writes at once`);
     },
     async lastSeen(account) {
       const row = await seenTable.get<Row & { at: string }>(account, 'seen');

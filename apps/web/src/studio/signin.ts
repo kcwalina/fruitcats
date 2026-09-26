@@ -103,7 +103,11 @@ export async function signInClick(action: string, done: () => void, render: () =
       if (!(await invitesRequired())) { step = 'details'; return; }
       // The Studio's invite link carries the code: use it without asking.
       if (invite.trim()) {
-        try { await useInvite(invite); step = 'details'; return; } catch { invite = ''; }
+        // Only a code the service turned down is dropped. Offline or a service restarting keeps it, and says so.
+        try { await useInvite(invite); step = 'details'; return; } catch (e) {
+          if (e instanceof AuthError && (e.code === 'timeout' || e.code === 'network')) throw e;
+          invite = '';
+        }
       }
       step = 'invite';
     });

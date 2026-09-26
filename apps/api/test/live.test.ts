@@ -14,6 +14,7 @@ import type { Row, Table } from '../src/tables';
 
 function memoryTable(): Table {
   const rows = new Map<string, Row>();
+  let tag = 0;
   const key = (p: string, r: string) => `${p}|${r}`;
   return {
     async list<T extends Row>(p: string) { return [...rows.values()].filter((r) => r.partitionKey === p).map((r) => structuredClone(r) as T); },
@@ -21,7 +22,15 @@ function memoryTable(): Table {
     async put(row) { rows.set(key(row.partitionKey, row.rowKey), structuredClone(row)); },
     async add(row) { if (rows.has(key(row.partitionKey, row.rowKey))) return false; rows.set(key(row.partitionKey, row.rowKey), structuredClone(row)); return true; },
     async remove(p, r) { rows.delete(key(p, r)); },
-    async batch() { throw new Error('not used here'); },
+    async batch(steps) {
+      for (const s of steps) {
+        const have = rows.get(key(s.row.partitionKey, s.row.rowKey));
+        if (s.op === 'create' && have) return false;
+        if (s.op === 'replace' && have?.etag !== s.etag) return false;
+      }
+      for (const s of steps) rows.set(key(s.row.partitionKey, s.row.rowKey), { ...structuredClone(s.row), etag: String(++tag) });
+      return true;
+    },
     async where() { throw new Error('not used here'); },
   };
 }

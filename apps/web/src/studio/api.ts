@@ -1,7 +1,7 @@
 // Talking to the Studio's API (apps/api/src/studio/studio.ts). Signed in with the Via Mochi account (src/auth.ts);
 // in development with `?dev`, with a pretend account against the local API (npm run studio:dev -w @fruitcats/api).
 
-import { token } from '../auth';
+import { refreshAccount, session, token } from '../auth';
 
 export const DEV = import.meta.env.DEV && new URLSearchParams(location.search).has('dev');
 const API = DEV ? 'http://localhost:8787' : 'https://api.fruitcats.viamochi.com';
@@ -81,21 +81,31 @@ async function authorization(): Promise<string | null> {
     return id ? `Dev ${id}:${name}` : null;
   }
   const t = await token();
-  return t ? `Bearer ${t}` : null;
+  if (t) return `Bearer ${t}`;
+  // Still signed in, but no fresh token could be had: the account service is down or restarting. That's "can't reach
+  // it right now", never "signed out" (which sent artists back to the sign-in page mid-work).
+  if (session()) throw new ApiError(0, 'offline');
+  return null;
 }
 
 async function call<T>(path: string, init: { method?: string; json?: unknown } = {}): Promise<T> {
-  const auth = await authorization();
+  let auth = await authorization();
   if (!auth) throw new ApiError(401, 'signed_out');
+  // Never waits for ever: a request stuck while the API restarts would leave every button waiting behind it.
+  const send = (authorization: string) => fetch(`${API}/v1/studio/${path}`, {
+    method: init.method ?? (init.json !== undefined ? 'POST' : 'GET'),
+    headers: { Authorization: authorization, ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+    body: init.json !== undefined ? JSON.stringify(init.json) : undefined,
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+  });
   let res: Response;
   try {
-    res = await fetch(`${API}/v1/studio/${path}`, {
-      method: init.method ?? (init.json !== undefined ? 'POST' : 'GET'),
-      headers: { Authorization: auth, ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}) },
-      body: init.json !== undefined ? JSON.stringify(init.json) : undefined,
-      cache: 'no-store',
-    });
-  } catch {
+    res = await send(auth);
+    // Turned away: the token may be older than this device thought. A fresh one, and one more try.
+    if (res.status === 401 && !DEV && await refreshAccount() && (auth = await authorization())) res = await send(auth);
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
     throw new ApiError(0, 'offline');
   }
   const body = await res.json().catch(() => ({}));
@@ -107,14 +117,28 @@ export const me = () => call<Me>('me');
 export const acceptTerms = (version: string) => call<{ terms: string }>('terms', { json: { version, adult: true } });
 export const acceptInvite = (code: string) => call<{ set: string }>(`invites/${encodeURIComponent(code)}`, { json: {} });
 export const setView = (set: string) => call<SetView>(set);
+/**
+ * A comment or suggestion sent again after it failed (no answer in time, the server restarting) carries the same request
+ * id as the first try, so the server adds it once however many times it arrives. A new one gets a new id.
+ */
+const requestIds = new Map<string, string>();
+async function sendOnce<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  const what = JSON.stringify([path, body]);
+  const requestId = requestIds.get(what) ?? [...crypto.getRandomValues(new Uint8Array(16))].map((x) => x.toString(16).padStart(2, '0')).join('');
+  requestIds.set(what, requestId);
+  const answer = await call<T>(path, { json: { ...body, requestId } });
+  requestIds.delete(what);
+  return answer;
+}
+
 export const comment = (set: string, key: string, body: { text: string; version?: string; pin?: { x: number; y: number }; replyTo?: string }) =>
-  call<Comment>(`${set}/pictures/${key}/comments`, { json: body });
+  sendOnce<Comment>(`${set}/pictures/${key}/comments`, body);
 export const markDone = (set: string, id: string, done: boolean) => call<Comment>(`${set}/comments/${id}`, { json: { done } });
 export const setFrame = (set: string, key: string, palette: string) => call<{ palette: string }>(`${set}/pictures/${key}/frame`, { json: { palette } });
 export const review = (set: string, key: string, state: string) => call(`${set}/pictures/${key}/review`, { json: { state } });
 export const openStep = (set: string, id: string, open: boolean) => call(`${set}/milestones/${id}`, { json: { open } });
 export const suggest = (set: string, body: { picture: string; field: string; value: string; why: string }) =>
-  call<Suggestion>(`${set}/suggestions`, { json: body });
+  sendOnce<Suggestion>(`${set}/suggestions`, body);
 export const decide = (set: string, id: string, state: string, reply = '') => call<Suggestion>(`${set}/suggestions/${id}`, { json: { state, reply } });
 export const artists = (set: string) => call<{
   artists: { id: string; name: string; email?: string; joined: string }[];
@@ -134,7 +158,13 @@ export async function upload(set: string, key: string, file: File, kind: 'sketch
     xhr.open('POST', `${API}/v1/studio/${set}/pictures/${key}?kind=${kind}&note=${encodeURIComponent(note)}`);
     xhr.setRequestHeader('Authorization', auth);
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) progress(e.loaded / e.total); };
+    // An upload that stops moving for a minute (the connection dropped, the API restarting) is given up on and said
+    // so, rather than left at the same percentage for ever. The file is still on the artist's computer.
+    let stalled = window.setTimeout(() => xhr.abort(), 60_000);
+    const moved = () => { window.clearTimeout(stalled); stalled = window.setTimeout(() => xhr.abort(), 60_000); };
+    xhr.upload.onprogress = (e) => { moved(); if (e.lengthComputable) progress(e.loaded / e.total); };
+    xhr.onloadend = () => window.clearTimeout(stalled);
+    xhr.onabort = () => reject(new ApiError(0, 'offline'));
     xhr.onload = () => {
       let body: { error?: string } = {};
       try { body = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
@@ -154,7 +184,9 @@ export function imageUrl(set: string, key: string, version: string): Promise<str
   if (!url) {
     url = (async () => {
       const auth = await authorization();
-      const res = await fetch(`${API}/v1/studio/${set}/pictures/${key}/${version}`, { headers: auth ? { Authorization: auth } : {} });
+      const res = await fetch(`${API}/v1/studio/${set}/pictures/${key}/${version}`, {
+        headers: auth ? { Authorization: auth } : {}, signal: AbortSignal.timeout(60_000),
+      });
       if (!res.ok) throw new ApiError(res.status, 'image');
       return URL.createObjectURL(await res.blob());
     })();
@@ -169,6 +201,7 @@ export function explain(e: unknown): string {
   const code = e instanceof ApiError ? e.code : '';
   const words: Record<string, string> = {
     offline: 'Can’t reach the Studio. Check your connection and try again.',
+    try_again: 'The Studio’s server isn’t answering right now (it may be restarting). Please try again in a minute: nothing was lost.',
     signed_out: 'You’re signed out. Please sign in again.',
     not_invited: 'This account isn’t invited to this set yet.',
     invite_not_found: 'That invite link has expired or doesn’t exist. Please ask us for a new one.',
@@ -183,5 +216,7 @@ export function explain(e: unknown): string {
     no_account: 'No game account uses that email. Check the spelling, or ask them to create an account in the game first.',
     bad_email: 'That doesn’t look like an email address.',
   };
+  // Any other 5xx is the server having a moment, not the artist doing something wrong.
+  if (!words[code] && e instanceof ApiError && e.status >= 500) return words.try_again;
   return words[code] ?? 'Something went wrong. Please try again.';
 }

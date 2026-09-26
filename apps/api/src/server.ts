@@ -37,7 +37,7 @@ import { attachLive } from './live/socket';
 import { eraseOrders, exportOrders, paddleWebhook, purchasedCards, reconcile, storeRequest } from './store';
 import { azureStore } from './studio/store';
 import { studio } from './studio/studio';
-import { LOCAL_DATA, table } from './tables';
+import { LOCAL_DATA, table, writeIf } from './tables';
 
 /** Written next to server.mjs by deploy.ps1. */
 const COMMIT = (() => { try { return readFileSync(new URL('./commit.txt', import.meta.url), 'utf8').trim(); } catch { return 'unknown'; } })();
@@ -123,9 +123,12 @@ const serveStudio = studio({
   account: userOf,
   // viamochi-id checks that the caller is a reviewer too (ViaMochi:Reviewers), and returns only the one account.
   async findByEmail(req, email) {
-    const res = await fetch(`${ID_SERVICE}/accounts/by-email?email=${encodeURIComponent(email)}`, { headers: { Authorization: req.headers.authorization ?? '' } });
+    // Never waits long for viamochi-id; its failing is a status the Studio turns into "try again" (a 5xx).
+    const res = await fetch(`${ID_SERVICE}/accounts/by-email?email=${encodeURIComponent(email)}`, {
+      headers: { Authorization: req.headers.authorization ?? '' }, signal: AbortSignal.timeout(10_000),
+    });
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`account lookup: ${res.status}`);
+    if (!res.ok) throw Object.assign(new Error(`account lookup: ${res.status}`), { statusCode: res.status });
     const a = (await res.json()) as { id: string; displayName?: string; email?: string };
     return { id: a.id, name: a.displayName || 'Artist', email: a.email ?? email };
   },
@@ -181,32 +184,34 @@ function cleanShowcase(s: unknown): SyncShowcase | null {
 // ── Sync ─────────────────────────────────────────────────────────────────────────────────────────
 
 async function sync(user: string, body: { decks?: unknown[]; showcase?: unknown }) {
+  type DeckRow = { partitionKey: string; rowKey: string; updatedAt: number; deleted?: boolean; data?: string; etag?: string };
+  const deckOf = (row: DeckRow): SyncDeck => row.deleted ? { id: row.rowKey, updatedAt: row.updatedAt, deleted: true }
+    : { id: row.rowKey, updatedAt: row.updatedAt, deck: JSON.parse(row.data ?? '{}') };
   // What the account has.
-  const stored = new Map<string, SyncDeck>();
-  for (const row of await decksTable.list<{ partitionKey: string; rowKey: string; updatedAt: number; deleted?: boolean; data?: string }>(user)) {
-    stored.set(row.rowKey, row.deleted ? { id: row.rowKey, updatedAt: row.updatedAt, deleted: true }
-      : { id: row.rowKey, updatedAt: row.updatedAt, deck: JSON.parse(row.data ?? '{}') });
-  }
-  // What the game sent: the newer version of each deck wins, and is written back.
+  const rows = new Map((await decksTable.list<DeckRow>(user)).map((row) => [row.rowKey, row]));
+  const stored = new Map([...rows.values()].map((row) => [row.rowKey, deckOf(row)]));
+  // What the game sent: the newer version of each deck wins, and is written back. Each write only happens if the
+  // stored deck is still older (writeIf): another device syncing at the same moment can't have its newer deck undone.
   for (const incoming of (body.decks ?? []).slice(0, MAX_DECKS).map(cleanDeck)) {
     if (!incoming) continue;
     const have = stored.get(incoming.id);
     if (have && have.updatedAt >= incoming.updatedAt) continue;
     if (!incoming.deleted && [...stored.values()].filter((d) => !d.deleted).length >= MAX_DECKS && !have) continue;
-    stored.set(incoming.id, incoming);
-    await decksTable.put({
+    const now = await writeIf<DeckRow>(decksTable, {
       partitionKey: user, rowKey: incoming.id, updatedAt: incoming.updatedAt, deleted: !!incoming.deleted,
       data: incoming.deleted ? '' : JSON.stringify(incoming.deck),
-    });
+    }, (s) => !s || s.updatedAt < incoming.updatedAt, rows.get(incoming.id) ?? null);
+    if (now) stored.set(incoming.id, deckOf(now as DeckRow));
   }
 
-  let showcase: SyncShowcase | null = null;
-  const row = await showcaseTable.get<{ partitionKey: string; rowKey: string; faces: string; updatedAt: number }>(user, 'main');
-  if (row) showcase = { faces: JSON.parse(row.faces), updatedAt: row.updatedAt };
+  type ShowcaseRow = { partitionKey: string; rowKey: string; faces: string; updatedAt: number; etag?: string };
+  const row = await showcaseTable.get<ShowcaseRow>(user, 'main');
+  let showcase: SyncShowcase | null = row ? { faces: JSON.parse(row.faces), updatedAt: row.updatedAt } : null;
   const sent = cleanShowcase(body.showcase);
   if (sent && (!showcase || sent.updatedAt > showcase.updatedAt)) {
-    showcase = sent;
-    await showcaseTable.put({ partitionKey: user, rowKey: 'main', faces: JSON.stringify(sent.faces), updatedAt: sent.updatedAt });
+    const now = await writeIf<ShowcaseRow>(showcaseTable, { partitionKey: user, rowKey: 'main', faces: JSON.stringify(sent.faces), updatedAt: sent.updatedAt },
+      (s) => !s || s.updatedAt < sent.updatedAt, row);
+    if (now) showcase = { faces: JSON.parse(String(now.faces)), updatedAt: Number(now.updatedAt) };
   }
   return { decks: [...stored.values()], showcase };
 }
@@ -347,7 +352,8 @@ const hub = createHub({
   // viamochi-id knows who is friends with whom; we ask it with the player's own token.
   async friendsOf(account, token) {
     if (FAKE_SIGN_IN && token.startsWith('dev-')) return [...fakeAccounts].filter((a) => a !== account);
-    const res = await fetch(`${ID_SERVICE}/friends`, { headers: { Authorization: `Bearer ${token}` } });
+    // Not answering in time is a failure like any other: the hub keeps the friends it last had (live/hub.ts).
+    const res = await fetch(`${ID_SERVICE}/friends`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5_000) });
     if (!res.ok) throw new Error(`friends: ${res.status}`);
     const json = (await res.json()) as { friends?: { id?: unknown }[] };
     return (json.friends ?? []).map((f) => f.id).filter((id): id is string => typeof id === 'string');
@@ -370,7 +376,13 @@ const hub = createHub({
   log: (event, fields) => log('ops', event, fields),
 });
 attachLive(server, hub, originAllowed);
-void hub.restore().catch((e) => log('ops', 'live.restore_failed', { message: (e as Error).message }, 'error'));
+// Storage not answering at start-up (both restarting at once) mustn't lose the games that were going: try again until
+// it answers, sooner at first. Nothing is picked up twice: a failure here means no game was read.
+const restore = (tries = 0): void => void hub.restore().catch((e) => {
+  log('ops', 'live.restore_failed', { message: (e as Error).message, tries }, tries < 3 ? 'warning' : 'error');
+  setTimeout(() => restore(tries + 1), Math.min(60_000, 5_000 * 2 ** tries));
+});
+restore();
 
 // Listen first: App Service gives up on a container that doesn't answer soon after starting. The tables are made in
 // the background (tables.ts), so a fresh storage account needs no setup.

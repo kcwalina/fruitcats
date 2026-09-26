@@ -704,11 +704,13 @@ function render() {
     startLive({ render: renderUnlessAnimating });
     wantConnection(screen === 'friends' || (!!ol && (!ol.end || screen === 'game')));
   } else if (ONLINE) stopLive();
+  // Settings pops in when it opens, not again each time it is redrawn (picking a section) while it is showing.
+  const settingsWasOpen = !!app.querySelector('.settings-dialog');
   app.innerHTML = (screen === 'home' ? renderHome() : screen === 'solo' ? renderSolo() : screen === 'friends' && ONLINE ? renderFriends()
     : screen === 'decks' ? renderDeckBuilder()
     : screen === 'collection' ? renderShowcase() : screen === 'store' && STORE ? renderStore() : renderGame())
     + (ONLINE ? renderChallengeBanner(screen === 'friends', screen === 'game' && !!ol && !ol.end) : '')
-    + (showSettings ? renderSettings() : '') + (ACCOUNTS ? renderAccount() : '');
+    + (showSettings ? renderSettings(settingsWasOpen) : '') + (ACCOUNTS ? renderAccount() : '');
   for (const el of app.querySelectorAll<HTMLElement>('[data-keep-scroll]'))
     [el.scrollTop, el.scrollLeft] = scrolled.get(el.dataset.keepScroll) ?? [0, 0];
   if (screen === 'collection') showcaseMounted();
@@ -1307,7 +1309,7 @@ function renderGameOver(s: GameState): string {
   </div>`;
 }
 
-function renderSettings(): string {
+function renderSettings(alreadyOpen: boolean): string {
   const choice = (setting: string, value: string, label: string, chosen: boolean) =>
     `<button class="${chosen ? 'chosen' : ''}" data-click="set:${setting}:${value}" aria-pressed="${chosen}">${label}</button>`;
   const row = (name: string, note: string, buttons: string) =>
@@ -1333,7 +1335,7 @@ function renderSettings(): string {
   // The Pawtrait picker brings its own title and back button.
   const title = current === 'account' && ACCOUNTS && pickingPawtrait() ? '' : `<h3>${labels[current]}</h3>`;
   return `<div class="overlay">
-    <div class="settings settings-dialog ${settingsSection ? 'has-section' : ''}" role="dialog" aria-label="Settings">
+    <div class="settings settings-dialog ${settingsSection ? 'has-section' : ''} ${alreadyOpen ? 'no-pop' : ''}" role="dialog" aria-label="Settings">
       <div class="settings-head">
         <button class="icon-button settings-back" data-click="ui:settingsback" aria-label="Back to Settings" title="Back to Settings">‹</button>
         <h2>Settings</h2>

@@ -136,6 +136,7 @@ button.corner-signin { height: 44px; padding: 0 18px; border-radius: 999px; font
   width: min(820px, 100%); max-width: none; height: min(600px, calc(var(--vh, 1vh) * 94)); padding: 0; overflow: hidden;
   display: flex; flex-direction: column;
 }
+.overlay .settings.settings-dialog.no-pop { animation: none; }   /* redrawn with a section picked: no pop, no flicker */
 .settings-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 14px 16px 12px 28px; border-bottom: 1px solid rgba(120, 70, 20, 0.18); }
 .settings-head h2 { flex: 1; margin: 0; text-align: left; font-size: 26px; }
 .settings-back { display: none; font-size: 28px; line-height: 1; font-weight: 700; }
@@ -155,7 +156,6 @@ button.settings-tab {
 .settings-pane .setting-name small { font-size: 13.5px; }
 .settings-pane .segmented button { width: 92px; min-height: 44px; font-size: 16px; }
 @media (max-width: 600px) {
-  .overlay .settings.settings-dialog { height: auto; max-height: calc(var(--vh, 1vh) * 94); }
   .settings-head { padding-left: 16px; }
   .settings-nav { width: 100%; border-right: 0; }
   .settings-tab-contact { margin-top: 16px; }

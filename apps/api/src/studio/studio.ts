@@ -144,6 +144,14 @@ export function studio(opt: StudioOptions) {
     if (picture.width > MAX_SIDE || picture.height > MAX_SIDE || picture.width < 16 || picture.height < 16)
       throw new HttpError(422, 'bad_size');
     const hash = sha256(bytes);
+    // The same picture sent again, as the newest version it already is: an upload whose answer was lost and was sent
+    // once more. The version already stored is the answer; a second copy would only clutter the history.
+    const latest = (await store.list(`versions|${set}`)).filter((v) => v.rk.startsWith(`${key}|`)).at(-1);
+    const wanted = kind === 'sketch' ? 'sketch' : kind === 'frame' ? 'frame' : 'final';
+    if (latest && latest.sha256 === hash && latest.kind === wanted && latest.by === c.id) {
+      const { rk, ...row } = latest;
+      return { ...row, id: rk.slice(key.length + 1) };
+    }
     const version = `${stamp()}-${hash.slice(0, 8)}`;
     const blob = `${set}/${key}/${version}.${picture.format}`;
     await store.putBlob(blob, bytes, CONTENT_TYPES[picture.format]);
@@ -162,6 +170,25 @@ export function studio(opt: StudioOptions) {
     if (row.kind !== 'frame') await store.upsert(`states|${set}`, key, { state: 'waiting', at: row.at as string, by: c.id, byName: c.name });
     log('studio.uploaded', { set, key, version, userId: c.id, bytes: bytes.length });
     return { ...row, id: version };
+  }
+
+  /**
+   * Add a row that a request may ask for twice: the game gives up on an answer that doesn't come in time, and the
+   * person taps again. With the request's id (made once per comment by the Studio page), the second request finds the
+   * row the first one made instead of adding it again. Without one (older pages, agents), it's simply added.
+   */
+  async function once(pk: string, id: string, row: Row, set: string, c: Caller, requestId: unknown): Promise<{ row: Row & { id: string }; fresh: boolean }> {
+    if (typeof requestId === 'string' && /^[0-9a-f-]{16,64}$/.test(requestId)) {
+      const marker = `${c.kind === 'account' ? c.id : `agent:${c.name}`}|${requestId}`;
+      if (!await store.insert(`requests|${set}`, marker, { id, at: new Date().toISOString() })) {
+        id = String((await store.get(`requests|${set}`, marker))?.id ?? id);
+        // The first request may have stopped between the two writes: then this one finishes it, under the same id.
+        const had = await store.get(pk, id);
+        if (had) return { row: { ...had, id }, fresh: false };
+      }
+    }
+    if (!await store.insert(pk, id, row)) return { row: { ...((await store.get(pk, id)) ?? row), id }, fresh: false };
+    return { row: { ...row, id }, fresh: true };
   }
 
   // ── Requests ───────────────────────────────────────────────────────────────────────────────────
@@ -265,9 +292,9 @@ export function studio(opt: StudioOptions) {
         const x = Number(body.pin?.x), y = Number(body.pin?.y);
         if (body.pin && x >= 0 && x <= 1 && y >= 0 && y <= 1) { row.pinX = x; row.pinY = y; }
         if (typeof body.replyTo === 'string' && body.replyTo.length < 60) row.replyTo = body.replyTo;
-        await store.insert(`comments|${set}`, id, row);
-        log('studio.commented', { set, key: b, author: row.author });
-        return send(res, 201, { ...row, id });
+        const made = await once(`comments|${set}`, id, row, set, c, (body as { requestId?: unknown }).requestId);
+        if (made.fresh) log('studio.commented', { set, key: b, author: row.author });
+        return send(res, 201, made.row);
       }
       if (cc === 'frame' && rest.length === 3 && method === 'POST') {
         if (c.kind !== 'account') throw new HttpError(403, 'people_only');
@@ -315,8 +342,7 @@ export function studio(opt: StudioOptions) {
       const at = new Date().toISOString();
       const id = `${stamp()}-${randomId()}`;
       const row: Row = { picture: body.picture, field: body.field, value, why: String(body.why ?? '').slice(0, 1000), state: 'open', at, by: c.id, byName: c.name };
-      await store.insert(`suggestions|${set}`, id, row);
-      return send(res, 201, { ...row, id });
+      return send(res, 201, (await once(`suggestions|${set}`, id, row, set, c, (body as { requestId?: unknown }).requestId)).row);
     }
 
     if (a === 'suggestions' && b && rest.length === 2 && method === 'POST') {
@@ -385,9 +411,19 @@ export function studio(opt: StudioOptions) {
       if ((e as { statusCode?: number }).statusCode === 409 || (e as { code?: string }).code === 'EEXIST')
         return send(res, 409, { error: 'exists' });
       log('studio.error', { url: req.url, message: (e as Error).message });
+      // Storage or viamochi-id not answering (restarting, down): "try again", so the Studio says that, not "broken".
+      if (passing(e)) return send(res, 503, { error: 'try_again' });
       send(res, 500, { error: 'server' });
     }
   };
+}
+
+/** A failure that passes: a service behind the Studio didn't answer, or answered 5xx, or a token couldn't be checked. */
+function passing(e: unknown): boolean {
+  const x = e as { statusCode?: number; code?: string; name?: string; message?: string };
+  return (x.statusCode ?? 0) >= 500 || x.name === 'TimeoutError' || x.name === 'AbortError'
+    || ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'REQUEST_SEND_ERROR'].includes(x.code ?? '')
+    || (e instanceof TypeError && x.message === 'fetch failed');
 }
 
 function send(res: ServerResponse, status: number, body: unknown) {

@@ -65,7 +65,11 @@ export function azureStore(tables: string, blobs: string, credential: TokenCrede
       for await (const e of table.listEntities({ queryOptions: { filter } })) rows.push({ ...clean(e), rk: e.rowKey! });
       return rows.sort((a, b) => (a.rk < b.rk ? -1 : a.rk > b.rk ? 1 : 0));
     },
-    async remove(pk, rk) { await ready; await table.deleteEntity(pk, rk).catch(() => {}); },
+    async remove(pk, rk) {
+      await ready;
+      // Already gone is fine; storage failing isn't: "removed" must mean removed (an artist's access, for one).
+      await table.deleteEntity(pk, rk).catch((e) => { if ((e as { statusCode?: number }).statusCode !== 404) throw e; });
+    },
     async putBlob(blobName, bytes, contentType) {
       await ready;
       await container.getBlockBlobClient(blobName).uploadData(bytes, {

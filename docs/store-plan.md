@@ -175,9 +175,11 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 - **The rules, in one place:** `packages/store` (`@fruitcats/store`) works out the catalog, every price, what a
   cart comes to, and which cards a deck is missing. The API and the game both use it; the API's answer is the one
   that counts. Money is whole cents. It has its own tests.
-- **What's for sale:** every card and deck of the sets on sale. The Starter Box is marked `"starter": true` in its
-  `set.json`: its decks are the free starter decks and its cards are never sold. Cards marked `exclusive` are never
-  sold either (see below).
+- **What's for sale:** every card and deck of the sets on sale. The starter set (Domowiki since 2026-09-26, before
+  that the Starter Box) is marked `"starter": true` in its `set.json`: its decks are the free starter decks and its
+  cards are never sold. Cards marked `exclusive` are never sold either (see below). A deck can name its own price
+  (`"price"`, cents); the Starter Box's three decks are `0`: the Store shows them with **Get · Free**, which grants
+  them without a cart or checkout (`POST /v1/store/get`, order status `free`), even while buying is off.
 - **The API** (`apps/api/src/store.ts`): `GET /v1/store` (catalog, what you own, your orders), `POST
   /v1/store/quote`, `POST /v1/store/test-checkout` and `POST /v1/store/test-reset`.
   - A test order brings the cards without payment. It's refused unless the total the player saw is still the total,
@@ -216,8 +218,8 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 ### On the live site: a preview for every playtester
 
 Since 2026-09-25 (the owner's call, after trying the whole test flow), the live API runs `STORE=preview`,
-`STORE_TEST_CHECKOUT=off`, `STORE_SETS=HW1`: every signed-in player can open the Store and see every deck, card and
-price, but **Add to cart** says "Coming soon", and there's no cart. The owner sees the same. Test orders placed during
+`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,HW1` (SB1 since 2026-09-26: the old Starter Box decks, free): every signed-in player can open the Store and see every deck, card and
+price, but **Add to cart** says "Coming soon", and there's no cart. The free decks' **Get** works in preview too. The owner sees the same. Test orders placed during
 the tester test are kept but count for nothing (no cards, not listed).
 
 To go back to the full test flow for someone (cart, test checkout, reveal, "Remove my test purchases"): `STORE=testers`,

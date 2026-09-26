@@ -188,6 +188,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .fam-berry { --fam: #d6336c; --fam-dark: #8f1d46; --fam-tint: #fbdde7; }
 .fam-melon { --fam: #3fa66b; --fam-dark: #25714a; --fam-tint: #ddf3e6; }
 .fam-pepper { --fam: #d7261e; --fam-dark: #5a0e0a; --fam-tint: #ffd6c2; }
+.fam-domowiki { --fam: #5b3f9e; --fam-dark: #2e1f5c; --fam-tint: #eee8fb; }
 .unit {
   border: 3px solid var(--fam, #fff); background: var(--parchment);
   box-shadow: 0 0 0 1.5px var(--fam-dark, #999), 0 6px 12px rgba(40, 20, 5, 0.4);
@@ -598,7 +599,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   color: #fff; text-shadow: 0 1px 0 rgba(0, 60, 15, 0.45);
   background: linear-gradient(#6cc47c, var(--pick)); box-shadow: 0 2px 0 var(--pick-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
-.chip.chosen:is(.fam-citrus, .fam-orchard, .fam-tropical, .fam-garden) {
+.chip.chosen:is(.fam-citrus, .fam-orchard, .fam-tropical, .fam-garden, .fam-domowiki) {
   background: linear-gradient(var(--fam), var(--fam-dark)); box-shadow: 0 2px 0 var(--fam-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 .build-head { background: rgba(255, 250, 240, 0.85); border-radius: 14px; padding: 6px 14px; box-shadow: 0 0 0 1px rgba(120, 70, 20, 0.12); }

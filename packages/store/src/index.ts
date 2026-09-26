@@ -13,7 +13,7 @@ import { CARDS, SETS, copyLimit, type DeckList, type Rarity } from '@fruitcats/e
 export const CURRENCY = 'USD';
 /** A single card's price by rarity, in cents (store-plan.md, Pricing: starting points). */
 export const CARD_PRICES: Record<Rarity, number> = { Common: 49, Uncommon: 99, Rare: 149, Legendary: 499 };
-/** A whole deck, Hero Cat included. Bought card by card it costs about three times as much. */
+/** A whole deck, Hero Cat included, unless the deck names its own price. Bought card by card it costs about three times as much. */
 export const DECK_PRICE = 999;
 /** A Signature card (a set's top card, printed only as its Signature print; store-plan.md, Pricing), in cents. */
 export const SIGNATURE_PRICE = 1999;
@@ -79,7 +79,7 @@ export function buildCatalog(sets: string[]): Catalog {
     for (const [key, deck] of Object.entries(SETS[set].decks ?? {})) {
       const blurb = (deck as DeckList & { blurb?: string }).blurb;
       products[deckProduct(key)] = {
-        id: deckProduct(key), kind: 'deck', set, price: DECK_PRICE,
+        id: deckProduct(key), kind: 'deck', set, price: deck.price ?? DECK_PRICE,
         deck: key, name: deck.name, hero: deck.hero, cards: { ...deck.cards }, ...(blurb ? { blurb } : {}),
       };
     }

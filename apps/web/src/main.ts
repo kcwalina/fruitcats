@@ -19,7 +19,7 @@ import {
   boardFace, renderAccountPanel, renderHomeAccount, signedIn, warmOwner, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
-import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
+import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck, firstDeck, ownedDeckKeys } from './mydecks';
 import { addOpen, closeAddSheet, closeFriends, friendName, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
 import { live, onGameFound, onLive, send, startLive, stopLive, wantConnection } from './live';
 import {
@@ -379,8 +379,8 @@ function startGame(tutorial = false) {
   setOnlineAside();
   // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
   // with you going first, so its balloons can talk about specific cards.
-  // Against your own deck, it leads a starter with a different Hero Cat.
-  const mine = deckForKey(myDeck) ?? Object.values(DECKS)[0];
+  // Against your own deck, it leads a ready-made deck with a different Hero Cat (any of them, owned or not).
+  const mine = deckForKey(myDeck) ?? DECKS[firstDeck()];
   const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
   const theirDeck = tutorial ? 'orchard-guard'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
@@ -854,12 +854,13 @@ function renderHome(): string {
 function renderDeckPicker(): string {
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
-  if (!chosen || !isReady(chosen)) myDeck = Object.keys(DECKS)[0];
+  if (!chosen || !isReady(chosen)) myDeck = firstDeck();
   if (!deckForKey(deckInView)) deckInView = myDeck;
-  // Every deck is the same card in one carousel: the starters, then your own. The one in the middle is
-  // your deck; one of yours still short of 50 cards can sit there, but you can't play it yet.
+  // Every deck is the same card in one carousel: the ready-made decks you have (the starters, and any taken from the
+  // Store), then your own. The one in the middle is your deck; one of yours still short of 50 cards can sit there,
+  // but you can't play it yet.
   const decks = [
-    ...Object.entries(DECKS).map(([key, deck]) => ({ key, deck, ready: true, blurb: deckBlurb(key) })),
+    ...ownedDeckKeys().map((key) => ({ key, deck: DECKS[key], ready: true, blurb: deckBlurb(key) })),
     ...listDecks().map((d) => {
       const ready = isReady(d);
       return { key: customKey(d.id), deck: d, ready,

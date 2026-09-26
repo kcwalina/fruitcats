@@ -9,6 +9,8 @@ export interface DeckList {
   name: string;
   hero: string;
   cards: Record<string, number>;
+  /** What the Store asks for the whole deck, in cents, when it isn't the usual deck price (0: free to get). */
+  price?: number;
 }
 
 export interface FamilyDef {

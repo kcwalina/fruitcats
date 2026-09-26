@@ -7,6 +7,7 @@
 //   POST /v1/store/checkout           { orderId, cart, total }  →  a pending order and Paddle's transaction to pay it
 //   POST /v1/store/confirm            { orderId }  →  the order, after asking Paddle (back from the payment window)
 //   POST /v1/store/test-checkout      { orderId, cart, total }  →  a test order; grants the cards, charges nothing
+//   POST /v1/store/get                { orderId, product }  →  takes a free ($0) deck: grants its cards, no checkout
 //   POST /v1/store/test-reset         forget your test orders, and the cards they brought
 //   POST /v1/webhooks/paddle          Paddle's signed events (paddleWebhook, not signed in)
 //
@@ -172,6 +173,20 @@ export async function purchasedCards(user: string): Promise<Record<string, numbe
   return row ? JSON.parse(row.grants) : {};
 }
 
+/** Has this account ever paid for something? (Free decks and test orders don't count.) */
+export async function hasPaid(user: string): Promise<boolean> {
+  return (await partition(user)).list.some((r) => !!stateOf(r).paidAt);
+}
+
+/** The owned total's row as it becomes with these orders, or no step when it doesn't change. */
+function ownedStep(user: string, owned: OwnedRow | null, states: OrderState[]): BatchStep[] {
+  const grants = JSON.stringify(sortKeys(total(states)));
+  // The owned total's version changes only when what's owned does (the game refreshes on a new version).
+  if (owned ? owned.grants === grants : grants === '{}') return [];
+  const row: OwnedRow = { partitionKey: user, rowKey: OWNED, kind: 'owned', grants, version: (owned?.version ?? 0) + 1, updatedAt: new Date().toISOString() };
+  return [owned ? { op: 'replace', row, etag: owned.etag! } : { op: 'create', row }];
+}
+
 /**
  * Apply one event to one order: read it, ask the ledger, and write the order with the account's owned total in one
  * batch. If another write got there first (two webhooks for the same account at once), read again and retry.
@@ -186,13 +201,7 @@ async function apply(user: string, orderId: string, event: Event, context: Recor
     if (!outcome.changed) return { order: toOrder(row), changed: false };
     const next = withState(row, outcome.next);
     const states = list.map((r) => (r.rowKey === orderId ? outcome.next : stateOf(r)));
-    const grants = JSON.stringify(sortKeys(total(states)));
-    // The owned total's version changes only when what's owned does (the game refreshes on a new version).
-    const ownedStep: BatchStep[] = (owned ? owned.grants === grants : grants === '{}') ? [] : [(() => {
-      const row: OwnedRow = { partitionKey: user, rowKey: OWNED, kind: 'owned', grants, version: (owned?.version ?? 0) + 1, updatedAt: new Date().toISOString() };
-      return owned ? { op: 'replace' as const, row, etag: owned.etag! } : { op: 'create' as const, row };
-    })()];
-    const ok = await orders.batch([{ op: 'replace', row: next, etag: row.etag! }, ...ownedStep]);
+    const ok = await orders.batch([{ op: 'replace', row: next, etag: row.etag! }, ...ownedStep(user, owned, states)]);
     if (!ok) continue;
     if (row.status !== next.status) {
       // The permanent record of what was granted and taken back.
@@ -441,7 +450,7 @@ export async function storeRequest(user: string, method: string, path: string, b
         // The same order again (a retry, or the payment window opened a second time): the same transaction, never a
         // second order. An order already paid is just answered.
         const s = stateOf(existing);
-        if (s.paidAt || existing.status === 'test' || existing.status === 'granted') return [200, { order: toOrder(existing), owned: await purchasedCards(user) }];
+        if (s.paidAt || existing.status === 'test' || existing.status === 'granted' || existing.status === 'free') return [200, { order: toOrder(existing), owned: await purchasedCards(user) }];
         if (existing.total !== sent.total) return [409, { error: 'order_exists' }];
         try {
           const txn = s.txn ?? await startPayment(user, existing);
@@ -511,6 +520,33 @@ export async function storeRequest(user: string, method: string, path: string, b
       if (!await orders.add(row)) return [409, { error: 'order_exists' }];
       log('ops', 'store.test_order', { userId: user, orderId, total: priced.total, copies: Object.values(priced.grants).reduce((a, b) => a + b, 0) });
       return [200, { order: toOrder(row), owned: await purchasedCards(user) }];
+    });
+  }
+
+  if (path === '/v1/store/get' && method === 'POST') {
+    // A free deck (one the Store lists at $0): no cart, no checkout, no money. Only a deck whose price is 0 for
+    // everyone; a deck that's free only because you own its cards already brings nothing, and is refused.
+    const sent = await body() as { orderId?: unknown; product?: unknown };
+    const orderId = typeof sent?.orderId === 'string' && ORDER_ID.test(sent.orderId) ? sent.orderId : null;
+    if (!orderId) return [400, { error: 'bad_order_id' }];
+    const product = typeof sent?.product === 'string' ? catalog().products[sent.product] : undefined;
+    if (product?.kind !== 'deck' || product.price !== 0) return [400, { error: 'not_free' }];
+    return oneAtATime(user, async (): Promise<Reply> => {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const { list, owned } = await partition(user);
+        // The same request again (a double tap, a retry after a lost reply) is answered, not granted twice.
+        const existing = list.find((r) => r.rowKey === orderId);
+        if (existing) return [200, { order: toOrder(existing), owned: await purchasedCards(user), repeated: true }];
+        const quote = priceCart([{ product: product.id, qty: 1 }], catalog(), collectionOf(await purchasedCards(user)));
+        if (quote.total !== 0) return [400, { error: 'not_free' }];
+        if (!Object.keys(quote.grants).length) return [400, { error: 'nothing_to_buy', quote }];
+        const row = newRow(user, orderId, 'free', quote);
+        const ok = await orders.batch([{ op: 'create', row }, ...ownedStep(user, owned, [...list.map(stateOf), stateOf(row)])]);
+        if (!ok) continue;
+        log('security', 'purchase.free', { userId: user, orderId, product: product.id, copies: Object.values(quote.grants).reduce((a, b) => a + b, 0) });
+        return [200, { order: toOrder(row), owned: await purchasedCards(user) }];
+      }
+      return [409, { error: 'busy' }];
     });
   }
 

@@ -38,7 +38,7 @@ import { log } from './logs';
 import { createHub } from './live/hub';
 import { tableStore } from './live/records';
 import { attachLive } from './live/socket';
-import { eraseOrders, exportOrders, paddleWebhook, purchasedCards, reconcile, storeRequest } from './store';
+import { eraseOrders, exportOrders, hasPaid, paddleWebhook, purchasedCards, reconcile, storeRequest } from './store';
 import { azureStore } from './studio/store';
 import { azureDocs, folderDocs } from './playtests/docs';
 import { startOpsSnapshots } from './playtests/ops';
@@ -451,7 +451,7 @@ const hub = createHub({
     const problems = deckProblems(deck, owned);
     return problems.length ? `That deck can’t be played: ${problems[0]}` : null;
   },
-  async paid(account) { return Object.keys(await purchasedCards(account)).length > 0; },
+  paid: (account) => hasPaid(account),
   maxPlayers: Number(process.env.LIVE_MAX_PLAYERS) || 300,
   open: () => process.env.LIVE !== 'off',
   log: (event, fields) => log('ops', event, fields),

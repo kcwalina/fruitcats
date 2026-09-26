@@ -180,6 +180,16 @@ export async function startSignUp(email: string, displayName: string, birthYear?
 }
 
 /** Send the code again. */
+/**
+ * The code out of whatever landed in the box: iPhone Mail turns an 8-digit code into a phone link, and "Copy link"
+ * pastes "tel:12345678" (2026-09-26), so everything but digits goes. A longer run keeps its last digits (a "+1" a
+ * phone app added in front).
+ */
+export function codeDigits(text: string, length: number): string {
+  const digits = text.replace(/\D/g, '');
+  return length > 0 && digits.length > length ? digits.slice(-length) : digits;
+}
+
 export function resend(p: Pending): Promise<Pending> {
   return challenge(p.flow, p.email, p.flow === 'signIn' ? 'oauth2/v2.0/challenge' : 'signup/v1.0/challenge', p.continuationToken);
 }

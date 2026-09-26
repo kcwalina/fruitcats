@@ -12,7 +12,7 @@
 
 import {
   AuthError, agreeToTerms, accountExists, needsTerms, refreshAccount, requestSupportCode, sendSupport, invitesRequired, useInvite, avatarCatalog, avatarUrl, chooseAvatar, deleteAccount, exportData, myAvatars,
-  resend, restoredOnSignIn, session,
+  codeDigits, resend, restoredOnSignIn, session,
   startSignIn, startSignUp, submitCode, type Avatar, type Pending,
 } from './auth';
 import { signOutAndForget, startSync } from './sync';
@@ -175,7 +175,7 @@ function codeStep(): string {
       often lands there. It comes from <span class="nowrap">no-reply@mail.viamochi.com</span>. Marking it
       <b>Not spam</b> helps the next one reach your inbox.</p>
     <label class="account-field">Code
-      <input data-acct="code" class="account-code" inputmode="numeric" autocomplete="one-time-code" maxlength="${length}"
+      <input data-acct="code" class="account-code" inputmode="numeric" autocomplete="one-time-code"
         enterkeyhint="done" value="${esc(code)}" ${busy ? 'disabled' : ''}>
     </label>
     <button class="primary account-go" data-click="acct:code" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : pending?.flow === 'signUp' ? 'Create account' : 'Sign in'}</button>
@@ -263,7 +263,7 @@ function renderContact(): string {
     <p class="account-why">We emailed a code to <b>${esc(contactEmail)}</b>. Type it here to send your message.</p>
     <label class="account-field">Code
       <input data-acct="contactcode" class="account-code" inputmode="numeric" autocomplete="one-time-code" enterkeyhint="send"
-        maxlength="${contactCodeLength}" value="${esc(contactCode)}" ${contactBusy ? 'disabled' : ''}>
+        value="${esc(contactCode)}" ${contactBusy ? 'disabled' : ''}>
     </label>
     <button class="primary account-go" data-click="acct:contactverify" ${contactBusy ? 'disabled' : ''}>${contactBusy ? 'Sending…' : 'Send message'}</button>
     <p class="account-error" role="alert">${esc(contactNote)}</p>
@@ -510,12 +510,14 @@ export function accountInput(input: HTMLInputElement) {
   else if (field === 'contactemail') contactEmail = input.value;
   else if (field === 'contactmessage') contactMessage = input.value;
   else if (field === 'contactcode') {
-    contactCode = input.value.replace(/\D/g, '');
+    contactCode = codeDigits(input.value, contactCodeLength);
+    if (input.value !== contactCode) input.value = contactCode;
     // A pasted or autofilled code sends straight away, as when signing in.
     if (contactCodeLength && contactCode.length === contactCodeLength && !contactBusy) void accountClick(hostRef!, 'contactverify');
   }
   else if (field === 'code') {
-    code = input.value.replace(/\D/g, '');
+    code = codeDigits(input.value, pending?.codeLength ?? 0);
+    if (input.value !== code) input.value = code;
     // A pasted or autofilled code signs in straight away.
     if (pending && code.length === pending.codeLength && !busy) void accountClick(hostRef!, 'code');
   }

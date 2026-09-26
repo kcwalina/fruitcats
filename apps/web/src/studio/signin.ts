@@ -1,7 +1,7 @@
 // Signing in to the Studio with a Via Mochi account: the same account players have, by email and a code, no
 // password (src/auth.ts). A new artist creates their account here. In development (?dev), pick a pretend account.
 
-import { AuthError, accountExists, invitesRequired, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
+import { AuthError, accountExists, codeDigits, invitesRequired, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
 import { esc, BASE } from '../ui';
 import { DEV, DEV_ACCOUNTS, setDevUser } from './api';
 
@@ -48,7 +48,7 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
     const length = pending?.codeLength ?? 8;
     body = `<p class="si-small">We sent a ${length}-digit code to <b>${esc(pending?.sentTo ?? email)}</b>.</p>
       <label class="field">Code
-        <input data-in="code" class="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="${length}" value="${esc(code)}" ${busy ? 'disabled' : ''}></label>
+        <input data-in="code" class="si-code" inputmode="numeric" autocomplete="one-time-code" value="${esc(code)}" ${busy ? 'disabled' : ''}></label>
       <button class="btn primary wide" data-click="si:code" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Sign in'}</button>
       <p class="si-small">Nothing there? Check spam, or <button class="link" data-click="si:resend">send a new code</button>.
         <button class="link" data-click="si:back">Change the email</button>.</p>`;
@@ -75,7 +75,8 @@ export function signInInput(el: HTMLInputElement, done: () => void, render: () =
   else if (f === 'name') displayName = el.value;
   else if (f === 'invite') invite = el.value;
   else if (f === 'code') {
-    code = el.value.replace(/\D/g, '');
+    code = codeDigits(el.value, pending?.codeLength ?? 0);
+    if (el.value !== code) el.value = code;
     if (pending && code.length === pending.codeLength && !busy) void signInClick('code', done, render);
   }
 }

@@ -51,6 +51,18 @@ the card, not a halo: Legendary (the crown mark) and the only gold frame in the 
 The engine still calls the leader a Hero Cat, with Kitten and Big Cat sides; renaming those is part of the wider
 re-theme (docs/retheme-proposal.md).
 
+## Lore in the cards
+
+The deck isn't only Domowiki: it's the whole household of Slavic spirits, and every card is a real belief (the owner's
+rule, 2026-09-26: lore-based variety, like *Domowik in a Cat's Shape*).
+
+- **Babunia, Lady of the Cellar**: the Domowik's wife, the Domovikha, who lives in the cellar. Some say she came first.
+- **Ovinnik of the Drying Barn**: keeps the fire in the grain-drying barn; won't help until he's been given his due.
+- **Kłobuk, the Soggy Chick**: a Polish spirit like a drenched chick on a fence; take it in and it brings things home.
+- **The House Snake**: the Domowik in a snake's shape under the threshold; harm it and the family's luck goes.
+- **Domowik in a Cat's Shape**, **Kikimora**, **Dvorovoi**, **Bannik**, **Moving-Day Domowik** (the old boot and the
+  embers), **Mane-Braiding Domowik**, **Warm Hand in the Night**, **Knotted Mane**, **Bread-and-Salt Greeter**.
+
 ## The deck (50 cards)
 
 | ID | Name | Type | Cost | P/H | Text | Qty | Was |
@@ -59,7 +71,7 @@ re-theme (docs/retheme-proposal.md).
 | DW1-D02 | Moving-Day Domowik | Critter | 1 | 1/1 | Hello: Sprout 1. | 3 | Kiwi Bird |
 | DW1-D03 | Mane-Braiding Domowik | Critter | 2 | 2/2 | Zoomies. | 3 | Passionfruit Parrot |
 | DW1-D04 | Keeper of the Door | Critter | 3 | 2/5 | Guardian. | 3 | Pineapple Armadillo |
-| DW1-D05 | Sleepy Stove-Napper | Critter | 2 | 2/3 | Can't attack unless you're Well-Fed. | 3 | Lychee Sloth |
+| DW1-D05 | Ovinnik of the Drying Barn | Critter | 2 | 2/3 | Can't attack unless you're Well-Fed. | 3 | Lychee Sloth |
 | DW1-D06 | Bread-and-Salt Greeter | Critter | 4 | 3/5 | Hello: Heal 2 from each unit you control. | 3 | Guava Capybara |
 | DW1-D07 | Kikimora, the Night Spinner | Critter | 5 | 5/5 | Hello: If you're Well-Fed, draw 2 cards. | 3 | Mangosteen Tapir |
 | DW1-D08 | Dvorovoi, Lord of the Yard | Critter | 8 | 7/8 | Guardian. Fierce. | 2 | Jackfruit Elephant |
@@ -68,11 +80,11 @@ re-theme (docs/retheme-proposal.md).
 | DW1-D11 | Saucer of Milk | Trick | 1 | – | Pounce. A unit you control gets +2 Power this round. Ready one of your Treats. | 3 | Mango Smoothie |
 | DW1-D12 | Old Bast Shoe | Toy | 2 | – | Attached unit gets +2 Power and +2 Health. | 2 | Sun Hat |
 | DW1-D13 | Domowik in a Cat's Shape | Cat | 3 | 2/4 | Hello: Sprout 1. | 1 | Papaya, Beach Bum |
-| DW1-D14 | Founder of the House | Cat | 5 | 4/5 | Guardian. Hello: Ready two of your Treats. | 1 | Coconut, Island Guardian |
+| DW1-D14 | Babunia, Lady of the Cellar | Cat | 5 | 4/5 | Guardian. Hello: Ready two of your Treats. | 1 | Coconut, Island Guardian |
 | DW1-D15 | Bannik of the Bathhouse | Cat | 8 | 8/8 | Fierce. Sneaky. | 1 | Durian, the Mighty Stink |
 | DW1-D16 | Hearth Cricket | Critter | 1 | 2/1 |  | 3 | Pocket Hamster |
-| DW1-D17 | Threshold Hedgehog | Critter | 2 | 1/4 | Guardian. Lucky. | 3 | Garden Snail |
-| DW1-D18 | Whispering Domowik | Critter | 3 | 2/3 | Hello: Draw a card. | 3 | Mail Duck |
+| DW1-D17 | The House Snake | Critter | 2 | 1/4 | Guardian. Lucky. | 3 | Garden Snail |
+| DW1-D18 | Kłobuk, the Soggy Chick | Critter | 3 | 2/3 | Hello: Draw a card. | 3 | Mail Duck |
 | DW1-D19 | Warm Hand in the Night | Trick | 1 | – | Pounce. A unit you control gets +2 Power this round. | 3 | Catnip |
 | DW1-D20 | Knotted Mane | Trick | 1 | – | Lucky. Exhaust an enemy unit. | 2 | Nap Time |
 

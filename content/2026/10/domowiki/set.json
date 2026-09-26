@@ -51,11 +51,18 @@
       "A warm, furry hand touching you at night was a sign of good times ahead; a cold one, of trouble.",
       "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha.",
       "Folklorists describe the Domowik as the household's own piece of Rod, the Slavic god of kin and ancestors: each family's first forefather, still looking after his descendants.",
-      "Families often called him 'grandfather' (Polish dziadek, or fondly dziadziuś), never by name, out of respect."
+      "Families often called him 'grandfather' (Polish dziadek, or fondly dziadziuś), never by name, out of respect.",
+      "He had a wife, the Domovikha (also Domania), who liked to live in the cellar. Some writers say she was the original house spirit, and he came later.",
+      "The Domowik could take the shape of a snake living under the threshold or behind the stove. Whoever harmed that house snake harmed the family's luck.",
+      "The Ovinnik kept the drying barn, where the grain was dried over a fire. He had to be given offerings, or he might burn the barn down.",
+      "In Polish lore the Kłobuk looks like a soaked, bedraggled chick sitting on a fence. Take it home and feed it, and it brings grain and riches into the house."
     ],
     "sources": [
       "https://en.wikipedia.org/wiki/Domovoy",
-      "https://en.wikipedia.org/wiki/Slavic_Native_Faith%27s_theology_and_cosmology"
+      "https://en.wikipedia.org/wiki/Slavic_Native_Faith%27s_theology_and_cosmology",
+      "https://en.wikipedia.org/wiki/Skrzak",
+      "https://www.bestiary.us/klobuk/en",
+      "https://godsandmonsters.info/domovoi/"
     ]
   },
   "cards": [
@@ -186,12 +193,12 @@
       "rarity": "Common",
       "family": "Domowiki",
       "type": "Critter",
-      "name": "Sleepy Stove-Napper",
+      "name": "Ovinnik of the Drying Barn",
       "cost": 2,
       "power": 2,
       "health": 3,
       "text": "Can't attack unless you're Well-Fed.",
-      "flavor": "He won't stir for an empty bowl.",
+      "flavor": "Keeps the fire that dries the grain. Feed him first, or no one gets bread.",
       "abilities": [
         {
           "static": {
@@ -392,12 +399,12 @@
       "rarity": "Rare",
       "family": "Domowiki",
       "type": "Cat",
-      "name": "Founder of the House",
+      "name": "Babunia, Lady of the Cellar",
       "cost": 5,
       "power": 4,
       "health": 5,
       "text": "Guardian. Hello: Ready two of your Treats.",
-      "flavor": "The one who built the house never really left.",
+      "flavor": "Some say she was the first spirit of the house. He only moved in later.",
       "keywords": [
         "Guardian"
       ],
@@ -445,12 +452,12 @@
       "rarity": "Common",
       "type": "Critter",
       "family": "Domowiki",
-      "name": "Threshold Hedgehog",
+      "name": "The House Snake",
       "cost": 2,
       "power": 1,
       "health": 4,
       "text": "Guardian. Lucky.",
-      "flavor": "Under the doorstep, where house spirits live.",
+      "flavor": "Lives under the doorstep. Harm it, and the family's luck goes with it.",
       "keywords": [
         "Guardian",
         "Lucky"
@@ -461,12 +468,12 @@
       "rarity": "Common",
       "type": "Critter",
       "family": "Domowiki",
-      "name": "Whispering Domowik",
+      "name": "Kłobuk, the Soggy Chick",
       "cost": 3,
       "power": 2,
       "health": 3,
       "text": "Hello: Draw a card.",
-      "flavor": "Listen at night. He warns before trouble comes.",
+      "flavor": "Found shivering on the fence in the rain. Take it in, and it brings things home.",
       "abilities": [
         {
           "when": "hello",

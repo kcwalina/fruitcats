@@ -49,22 +49,24 @@
       "Moving house, families carried embers from the old stove, or an old shoe, and asked him along: 'Grandfather, come with us to the new home.'",
       "He braids the manes of the horses he likes and tires out the ones he doesn't.",
       "A warm, furry hand touching you at night was a sign of good times ahead; a cold one, of trouble.",
-      "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha."
+      "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha.",
+      "Folklorists describe the Domowik as the household's own piece of Rod, the Slavic god of kin and ancestors. The Polish word praszczur means 'the first forefather', and shares its root with Chur, the ancestor god who guarded the hearth: the leader every Domowik descends from."
     ],
     "sources": [
-      "https://en.wikipedia.org/wiki/Domovoy"
+      "https://en.wikipedia.org/wiki/Domovoy",
+      "https://en.wikipedia.org/wiki/Slavic_Native_Faith%27s_theology_and_cosmology"
     ]
   },
   "cards": [
     {
       "id": "DW1-H01",
-      "rarity": "Rare",
+      "rarity": "Legendary",
       "type": "Hero Cat",
       "family": "Domowiki",
-      "name": "Dziadek, the House Grandfather",
-      "flavor": "Every family has one. The lucky ones feed him.",
+      "name": "Praszczur, the First Forefather",
+      "flavor": "Every Domowik in every house is a small part of him.",
       "kitten": {
-        "name": "Dziadek, New to the House",
+        "name": "Praszczur, the First Forefather",
         "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats.",
         "abilities": [
           {
@@ -85,7 +87,7 @@
         }
       },
       "bigCat": {
-        "name": "Dziadek, Master of the House",
+        "name": "Praszczur, Father of All Houses",
         "power": 4,
         "text": "Fierce. Exhaust: Ready two of your Treats.",
         "keywords": [
@@ -101,7 +103,8 @@
             ]
           }
         ]
-      }
+      },
+      "frame": "gold"
     },
     {
       "id": "DW1-D01",

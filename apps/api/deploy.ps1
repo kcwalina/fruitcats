@@ -1,6 +1,24 @@
 # Deploys fruitcats-api to its App Service, signed in as the deploy-only identity (deploy-viamochi) in its own CLI
 # folder. The owner's own `az` login is never used. No CI: run it from this machine (npm run deploy -w @fruitcats/api).
 $ErrorActionPreference = 'Stop'
+
+# Only ever origin/main, pushed first, one deploy at a time, and only over a build this one contains: a deploy from an
+# unpushed or older checkout takes other sessions' changes (security fixes too) off the live service.
+# scripts/git/deploy-guard.mjs; the lock belongs to this PowerShell process, so it frees itself if the script dies.
+$repo = (Resolve-Path "$PSScriptRoot\..\..").Path
+$guard = "$repo\scripts\git\deploy-guard.mjs"
+node $guard lock api $PID
+if ($LASTEXITCODE) { throw 'Another fruitcats-api deploy is running.' }
+Push-Location $repo
+try {
+  node $guard on-main
+  if ($LASTEXITCODE) { throw 'fruitcats-api deploys only origin/main: see the message above.' }
+  $commit = (git rev-parse HEAD).Trim()
+  $live = try { (Invoke-RestMethod 'https://api.fruitcats.viamochi.com/version' -TimeoutSec 10).commit } catch { '' }
+  node $guard live "$live" fruitcats-api
+  if ($LASTEXITCODE) { throw 'The live fruitcats-api has changes this checkout lacks: see the message above.' }
+} finally { Pop-Location }
+
 $dir = "$HOME\.azure-viamochi-deploy"
 $cfg = Get-Content "$dir\deploy.json" | ConvertFrom-Json
 $env:AZURE_CONFIG_DIR = $dir
@@ -25,6 +43,10 @@ Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::Open($zip, 'Create')
 try {
   [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, "$PSScriptRoot\dist\server.mjs", 'server.mjs') | Out-Null
+  # Served at /version, so the next deploy can check it has everything that's live.
+  $entry = $archive.CreateEntry('commit.txt')
+  $writer = New-Object System.IO.StreamWriter($entry.Open())
+  try { $writer.Write($commit) } finally { $writer.Dispose() }
 } finally { $archive.Dispose() }
 
 az webapp deploy --subscription 32564bc0-941d-4aa9-9b15-5b3a85c57693 -g rg-viamochi-apps -n fruitcats-api --src-path $zip --type zip -o none
@@ -46,4 +68,7 @@ if (-not (Wait-Healthy 120)) {
   if (-not (Wait-Healthy 120)) { throw 'fruitcats-api is DOWN after the deploy and a restart. Check it now: docs/emergency-stop.md.' }
 }
 if ($deployFailed) { throw 'The deploy reported a failure (fruitcats-api is answering, but may be running the old version).' }
-Write-Host "Deployed. Health: https://fruitcats-api.azurewebsites.net/healthz"
+$running = try { (Invoke-RestMethod 'https://api.fruitcats.viamochi.com/version' -TimeoutSec 10).commit } catch { '' }
+node $guard unlock api
+if ($running -ne $commit) { Write-Warning "fruitcats-api says it runs '$running', not $commit." }
+Write-Host "Deployed $($commit.Substring(0, 9)). Health: https://fruitcats-api.azurewebsites.net/healthz"

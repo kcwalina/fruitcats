@@ -1,0 +1,2 @@
+# Git hooks are shell scripts: sh on Windows fails on CRLF line ends.
+.githooks/* text eol=lf

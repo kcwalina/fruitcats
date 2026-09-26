@@ -9,6 +9,7 @@
 //   /v1/store…                       →  the Store (store.ts)
 //   POST /v1/webhooks/paddle         →  Paddle's signed payment events (store.ts, paddle.ts)
 //   /v1/studio/...                   →  the Artist Studio (studio/studio.ts, docs/artist-studio-plan.md)
+//   /v1/playtests...                 →  the playtest dashboard: the owner's page and PC2024's playtester (playtests/, docs/playtests.md)
 //   /v1/live  (WebSocket)            →  online play: presence, friend codes, challenges, matches (live/, docs/pvp-plan.md)
 //   POST /v1/live/here               →  "I'm here": challenges waiting, a game going (the game isn't playing online)
 //   POST /v1/live/enter              →  "let me in": in, a place in the waiting line, or closed
@@ -19,6 +20,7 @@
 // One call does everything: the game sends what it has, the newest version of each item wins, and the merged state
 // comes back for the game to keep. Decks are small, so sending them all is simpler and safer than tracking changes.
 
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
@@ -34,6 +36,9 @@ import { tableStore } from './live/records';
 import { attachLive } from './live/socket';
 import { eraseOrders, exportOrders, paddleWebhook, purchasedCards, reconcile, storeRequest } from './store';
 import { azureStore } from './studio/store';
+import { azureDocs, folderDocs } from './playtests/docs';
+import { startOpsSnapshots } from './playtests/ops';
+import { playtests, type Caller } from './playtests/playtests';
 import { studio } from './studio/studio';
 import { LOCAL_DATA, table } from './tables';
 
@@ -133,6 +138,35 @@ const serveStudio = studio({
   studioUrl: process.env.STUDIO_URL ?? 'https://fruitcats.viamochi.com/studio.html',
   accountInvite: process.env.STUDIO_ACCOUNT_INVITE,
 });
+
+// The playtest dashboard (playtests/, docs/playtests.md). The owner signs in with a Via Mochi account; PC2024's
+// playtester sends "Bearer runner-<key>", checked against PLAYTEST_RUNNERS ("PC2024:<sha256 of the key>", comma-separated).
+const PLAYTEST_OWNERS = (process.env.PLAYTEST_OWNERS ?? process.env.STUDIO_OWNERS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+const PLAYTEST_RUNNERS = (process.env.PLAYTEST_RUNNERS ?? '').split(',').filter(Boolean).map((pair) => {
+  const [name, hash] = pair.split(':');
+  return { name: name.trim(), hash: (hash ?? '').trim().toLowerCase() };
+});
+const playtestDocs = LOCAL_DATA ? folderDocs(`${LOCAL_DATA}/playtests`) : azureDocs(BLOBS, credential);
+const dashboard = playtests({
+  docs: playtestDocs,
+  // Until PC2024's first library night: the copy published next to the card packs (public).
+  libraryFallback: async () => (await fetch('https://fruitcatspacks.blob.core.windows.net/packs/playtest/decks.json', { signal: AbortSignal.timeout(8000) })).json(),
+  keys: (): Record<string, string> => (process.env.FIREWORKS_API_KEY ? { FIREWORKS_API_KEY: process.env.FIREWORKS_API_KEY } : {}),
+  log: (event, fields) => log('ops', event, fields),
+});
+
+/** The playtest dashboard's caller: a runner with its key, the owner, or 'stranger' for anyone else signed in. */
+async function playtestCaller(req: IncomingMessage): Promise<Caller | 'stranger'> {
+  const auth = req.headers.authorization ?? '';
+  if (auth.startsWith('Bearer runner-')) {
+    const hash = createHash('sha256').update(auth.slice('Bearer runner-'.length).trim()).digest();
+    const runner = PLAYTEST_RUNNERS.find((r) => r.hash.length === 64 && timingSafeEqual(Buffer.from(r.hash, 'hex'), hash));
+    return runner ? { kind: 'runner', name: runner.name } : null;
+  }
+  const who = await whoOf(req);
+  if (!who) return null;
+  return PLAYTEST_OWNERS.includes(who.id) || (!!LOCAL_DATA && PLAYTEST_OWNERS.includes('*')) ? { kind: 'owner' } : 'stranger';
+}
 
 /** A service token from viamochi-id about one account and one purpose (e.g. deleting it). */
 async function serviceCall(req: IncomingMessage, userId: string, purpose: string): Promise<boolean> {
@@ -255,12 +289,20 @@ const server = createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   }
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   try {
     if (req.url === '/healthz') return send(res, 200, 'ok');
     if (req.url?.startsWith('/v1/studio/')) return await serveStudio(req, res);
+    // The deck library every playtest runner reads (playtest/decks/library.ts, LIBRARY_URL): public, decks aren't secret.
+    if (req.url === '/v1/playtests/library' && req.method === 'GET') return send(res, 200, await dashboard.library());
+    if (req.url === '/v1/playtests' || req.url?.startsWith('/v1/playtests/')) {
+      const caller = await playtestCaller(req);
+      if (caller === 'stranger') return send(res, 403, { error: 'not_owner' });
+      const [status, body] = await dashboard.request(caller, req.method ?? 'GET', req.url, () => readJson(req));
+      return send(res, status, body);
+    }
     if (req.url === '/v1/webhooks/paddle' && req.method === 'POST') {
       // Signed by Paddle over the exact bytes, so the body is read raw. Answered 200 only once the event is saved.
       const sig = req.headers['paddle-signature'];
@@ -372,7 +414,7 @@ const port = Number(process.env.PORT) || 8080;
 server.listen(port, () => console.log(`fruitcats-api listening on ${port}${LOCAL_DATA ? ` (local data in ${LOCAL_DATA})` : ''}`));
 
 // Every 15 minutes, the totals for the owner's dashboard (the Accounts tab of the playtest dashboard):
-// logs/stats/fruitcats-api.json, read by `node tools/ops.mjs snapshot`. Counts only, no ids or deck contents.
+// logs/stats/fruitcats-api.json, read by the Accounts tab's snapshot (playtests/ops.ts). Counts only, no ids or deck contents.
 async function writeStats() {
   try {
     let decks = 0, deleted = 0, showcases = 0;
@@ -394,6 +436,9 @@ const statsBlob = new BlobServiceClient(process.env.BLOB_ENDPOINT ?? 'https://fr
   .getContainerClient('logs').getBlockBlobClient('stats/fruitcats-api.json');
 // Not for the API run locally (LOCAL_DATA): its rows aren't in Azure.
 if (!LOCAL_DATA) setTimeout(() => { void writeStats(); setInterval(() => void writeStats(), 15 * 60_000); }, 3 * 60_000);
+
+// The Accounts tab of the playtest dashboard: health, totals and 14 days of the services' logs, every 10 minutes.
+if (!LOCAL_DATA) startOpsSnapshots({ credential, save: dashboard.saveOps, log: (event, fields, level) => log('ops', event, fields, level) });
 
 // The Store's regular check against Paddle (store.ts, reconcile): every hour, and once a day also every account's owned
 // total. Does nothing without Paddle keys.

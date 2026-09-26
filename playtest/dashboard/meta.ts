@@ -2,7 +2,8 @@
 // a list written into the page: every deck (a new starter shows up by itself), its family's color and the LLM
 // playtester personas, the deck library (custom decks, each with its deck code: a run started from the page is
 // given the code, which PC2024 can play before the library reaches it at the next deploy) and the Hero Cats a
-// deck can be built around. The relay uploads it as the dashboard's meta/dashboard document.
+// deck can be built around. PC2024's playtester runs `node runner.mjs dashboard-meta` once an hour and sends it to the
+// Fruitcats API (docs/playtests.md).
 //
 // Interim: docs/card-data-architecture.md moves cards, decks and families (with their frame colors) into set
 // folders read through packages/content. When that lands, build this from the loaded sets and delete
@@ -50,4 +51,10 @@ export function dashboardMeta(): DashboardMeta {
     })),
     heroes: playableHeroes().map((id) => ({ id, name: cardName(id), family: CARDS[id].family })),
   };
+}
+
+/** `node runner.mjs dashboard-meta`: prints the document, one line of JSON, for PC2024's playtester to send the API. */
+export async function metaCommand(): Promise<number> {
+  console.log(JSON.stringify(dashboardMeta()));
+  return 0;
 }

@@ -29,7 +29,7 @@ export interface RunSummary {
   details: Record<string, unknown>;
   /** The dashboard request that started this run (`--request <id>`), if one did. */
   request?: string;
-  /** The name it was started with, from the dashboard's form or `reports start --name`; the relay adds it. */
+  /** The name it was started with, from the dashboard's form; the API adds it from the run's request. */
   name?: string;
 }
 

@@ -51,8 +51,9 @@ export interface LibraryFile {
 }
 
 const FILE = () => fileURLToPath(new URL('./library.json', import.meta.url));
-/** The published copy PC2024's runner reads (refreshLibrary), next to the card packs. */
-export const LIBRARY_URL = 'https://fruitcatspacks.blob.core.windows.net/packs/playtest/decks.json';
+/** The published copy every runner reads (refreshLibrary): the Fruitcats API keeps it, as PC2024 last sent it after
+ * its library night (docs/playtests.md). */
+export const LIBRARY_URL = 'https://api.fruitcats.viamochi.com/v1/playtests/library';
 let remote: LibraryFile | null = null;
 
 /** The whole library file: the file on disk in a checkout, else the published copy if fetched, else the bundled one. */
@@ -61,6 +62,16 @@ export function readLibrary(): LibraryFile {
     if (existsSync(FILE())) return JSON.parse(readFileSync(FILE(), 'utf8')) as LibraryFile;
   } catch { /* the copies below */ }
   return remote ?? (library as unknown as LibraryFile);
+}
+
+/**
+ * Away from a checkout (PC2024's library night): the published library becomes a file next to the runner, so
+ * tonight's changes can be made to it; PC2024's playtester sends that file to the API afterwards, which keeps it as the
+ * published copy, and deletes it. Returns the file.
+ */
+export function adoptPublishedLibrary(): string {
+  if (!canSaveLibrary()) writeFileSync(FILE(), `${JSON.stringify(readLibrary(), null, 2)}\n`);
+  return FILE();
 }
 
 export function writeLibrary(file: LibraryFile): void {

@@ -321,15 +321,15 @@ Your personal-project users never move.
   `logs/<category>/<service>/yyyy/mm/dd/hh-<instance>.jsonl`, flushed every ~10 seconds.
 - **Reading:** `tools/ops.mjs`, a CLI for people and agents (`events`, `tail`, with filters).
 - **The owner's dashboard:** the **Accounts** tab of the playtest dashboard
-  ([Fruitcats Playtests](https://claude.ai/artifact/JhFnXFgWz3UA3PQDGUytvG), `playtest/dashboard/playtests.html`):
+  ([fruitcats.viamochi.com/playtests.html](https://fruitcats.viamochi.com/playtests.html), docs/playtests.md):
   both services' health, accounts, new accounts, active players, sign-ins, code emails, syncs, Contact us messages
   and errors over 14 days, invite codes used, and the last day's errors. Each service writes its totals (counts
-  only) to `logs/stats/<service>.json` every 15 minutes; `node tools/ops.mjs snapshot` combines them with the logs,
-  and the dashboard relay (`playtest/dashboard/RELAY.md`, step 2b) uploads the result every 10 minutes.
+  only) to `logs/stats/<service>.json` every 15 minutes; fruitcats-api combines them with the logs every 10 minutes
+  (`apps/api/src/playtests/ops.ts`), reading with its own identity.
 - **Who read the logs:** Azure's own read log (StorageRead) for both storage accounts goes to each account's
   `insights-logs-storageread` container, kept 90 days (`scripts/setup/log-access-audit.ps1`, run once as Claude's
   agent). The Accounts tab counts every read of `logs` and `security` by identity: reads, refused reads, data, the
-  addresses they came from and the last read, with any identity not named in `tools/ops.mjs` in red. No password for
+  addresses they came from and the last read, with any identity not named in `apps/api/src/playtests/ops.ts` in red. No password for
   the logs is kept in the cloud: everything that reads them runs on the owner's laptop as Claude's agent.
 - **Alerts:** see "Alerts when something breaks" under What's set up. A scheduled Claude task ("Via Mochi health
   watch", every 20 minutes while the Claude app is open) also checks both services, restarts one that's hung, and

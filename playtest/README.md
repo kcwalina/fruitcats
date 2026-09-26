@@ -16,7 +16,6 @@ than the starter decks, and LLM players look for what the bots can't.
 | `npm run deck-build -- --goal …` | An LLM builds a deck for a goal ("an aggressive Pepper deck", "beat Orchard Guard", "a fun deck for a beginner"): candidates, bot games, better versions, then its pick. `--hero`, `--vs`, `--save`. | ~2 min |
 | `npm run decks -- list` / `show` / `add` / `import` | The deck library: custom decks playtests can name by key. | — |
 | `npm run nightly` | All of it, unattended: full gauntlet (with the library decks), deck hunt, LLM games with custom decks and then the starters until the time is up, and what changed since the last run. | a night |
-| `npm run reports -- pending` / `mark` | Gets finished runs ready for the dashboard, then marks them uploaded. | — |
 
 Every run writes `reports/<kind>-<date>/summary.json` and `report.md` (git-ignored) and ends **pass**,
 **warn** or **block**. The limits are in `balance.config.json`: a starter deck outside 40–60% overall, or
@@ -42,12 +41,12 @@ each, shows the model the results and asks for better versions, then lets it pic
 The model names the Hero Cat and the cards it wants; the builder makes that a legal 50-card deck (unknown cards
 out, one partner family, copies capped, trimmed or topped up) and the report says what it changed. A deck the
 model chose fewer than 30 of its cards for is turned down. PC2024's gpt-oss is free but poor at this; for a
-deck worth keeping use Kimi K3: `npm run deck-build -- --provider fireworks-k3 --goal "…" --save`, run from
-the laptop (the key is there). It stops at `--max-usd` (default $1). The nightly and the dashboard never use
-a paid model.
+deck worth keeping use Kimi K3: the dashboard's "Build a deck" runs it on PC2024 with the Fireworks key the API
+hands that run, or run `npm run deck-build -- --provider fireworks-k3 --goal "…" --save` in a checkout that has
+the key. It stops at `--max-usd` (default $1). The nightly run itself never uses a paid model.
 
-**One new deck a night, and a library that stays playable.** `npm run decks -- nightly` (the relay runs it on
-the laptop each evening) has Kimi K3 build one deck (about $0.10, never over $0.50), for a goal that rotates
+**One new deck a night, and a library that stays playable.** `decks nightly --here` (PC2024 runs it each
+evening at 22:00, docs/playtests.md) has Kimi K3 build one deck (about $0.10, never over $0.50), for a goal that rotates
 around the Hero Cat the library has fewest decks for; measures every library deck against the starters in bot
 games with that night's cards; and applies the retention policy (`decks/retention.ts`, numbers in
 `playtest.config.json` under `library`):
@@ -107,9 +106,9 @@ publishes next to the game (`/playtest/runner.mjs`, so it always tests the live 
 
 ## The dashboard
 
-[Fruitcats Playtests](https://claude.ai/artifact/JhFnXFgWz3UA3PQDGUytvG) (private; source in
-`dashboard/playtests.html`) shows every uploaded run: the latest starter win rates against the target band,
+[fruitcats.viamochi.com/playtests.html](https://fruitcats.viamochi.com/playtests.html) (the owner's account only;
+source in `apps/web/playtests.html`, data in the Fruitcats API, docs/playtests.md) shows every run: the latest starter win rates against the target band,
 issues flagged more than once, the win rates over time, runs in progress, each run's report, and the custom
 decks (the library and what recent deck hunts and deck builds found). Its "Start a run" form queues custom runs,
-including LLM playtests and bot gauntlets with custom decks and "Build a deck". The page can't reach PC2024 and only its owner's Claude session writes to it, so
-a scheduled Claude Code task on the laptop relays both ways every 10 minutes, following `dashboard/RELAY.md`.
+including LLM playtests and bot gauntlets with custom decks and "Build a deck". PC2024's playtester sends its runs
+to the API and takes queued runs from it every 30 seconds; the API never calls PC2024, so the page works when it's off.

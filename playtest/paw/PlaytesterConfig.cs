@@ -26,6 +26,10 @@ sealed class PlaytesterConfig
     public int StartHour { get; set; } = 0;
     public double Hours { get; set; } = 6.5;
 
+    /// <summary>The deck library's night (<c>decks nightly --here</c>: one Kimi K3 deck at most $0.50, every library deck
+    /// measured, retention): the local hour it starts, before the nightly run. -1 turns it off.</summary>
+    public int LibraryNightHour { get; set; } = 22;
+
     /// <summary>Arguments for the nightly command (the runner reads provider and model defaults from its own config).</summary>
     public string NightlyArgs { get; set; } = "--provider pc2024 --hours 6";
 
@@ -42,6 +46,12 @@ sealed class PlaytesterConfig
     /// long game's can pass 6k (one did on 2026-09-24); 8 x 12k fits beside gpt-oss-20b in 16 GB.</summary>
     public int Slots { get; set; } = 8;
     public int ContextPerSlot { get; set; } = 12288;
+
+    /// <summary>The Fruitcats API, where the dashboard's runs and requests live (docs/playtests.md); this playtester
+    /// only ever calls out to it. Empty turns the dashboard off.</summary>
+    public string ApiUrl { get; set; } = "https://api.fruitcats.viamochi.com";
+    /// <summary>How often runs are sent and queued runs asked for.</summary>
+    public int DashboardSeconds { get; set; } = 30;
 
     /// <summary>How many run folders to keep; older ones are deleted after each run.</summary>
     public int KeepRuns { get; set; } = 200;

@@ -2,7 +2,7 @@
 // or as the single-file bundle PC2024 downloads: `node runner.mjs <command> [options]`.
 
 import { balanceCommand } from './balance/command';
-import { reportsCommand } from './dashboard/sync';
+import { metaCommand } from './dashboard/meta';
 import { runMain } from './lib/pool';
 import { llmCompareCommand, llmPlaytestCommand } from './llm/command';
 import { deckBuildCommand } from './llm/builder';
@@ -23,7 +23,7 @@ const COMMANDS: Record<string, () => Promise<number>> = {
   nightly: nightlyCommand,
   // The name of the first paw build (2026-09-24), kept until every PC2024 paw asks for 'nightly'.
   weekly: nightlyCommand,
-  reports: reportsCommand,
+  'dashboard-meta': metaCommand,
 };
 
 runMain(async () => {

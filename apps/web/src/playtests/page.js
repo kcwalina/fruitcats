@@ -1,279 +1,8 @@
-<title>Fruitcats Playtests</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
-<style>
-:root {
-  --ground: #eef1ec;
-  --surface: #ffffff;
-  --sunk: #e3e8e1;
-  --ink: #1c2420;
-  --muted: #5d6a62;
-  --line: #d3dbd3;
-  --accent: #0f6e63;
-  --accent-soft: #d6ece7;
-  --pass: #2f7d4f;
-  --pass-soft: #dcefe2;
-  --warn: #a8660a;
-  --warn-soft: #f8e9cf;
-  --block: #b3362b;
-  --block-soft: #f6dcd8;
-  --band: rgba(15, 110, 99, 0.10);
-  --on-accent: #ffffff;
-  --display: "Fredoka", "Nunito", system-ui, sans-serif;
-  --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --ground: #121614; --surface: #1a201d; --sunk: #232a26; --ink: #e5ece7; --muted: #9aa8a0; --line: #2f3833;
-    --accent: #5cc2b3; --accent-soft: #1d3a35; --pass: #6cc38d; --pass-soft: #1c3526; --warn: #e6ad4f; --warn-soft: #3b2d14;
-    --block: #ef7d70; --block-soft: #3d201c; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --ground: #121614; --surface: #1a201d; --sunk: #232a26; --ink: #e5ece7; --muted: #9aa8a0; --line: #2f3833;
-  --accent: #5cc2b3; --accent-soft: #1d3a35; --pass: #6cc38d; --pass-soft: #1c3526; --warn: #e6ad4f; --warn-soft: #3b2d14;
-  --block: #ef7d70; --block-soft: #3d201c; --band: rgba(92, 194, 179, 0.12); --on-accent: #0c1a17;
-}
-* { box-sizing: border-box; }
-body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 20px 48px; }
-.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
-h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
-h1 { font-size: 30px; letter-spacing: 0.2px; }
-h2 { font-size: 18px; }
-.eyebrow { font: 700 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
-.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
-header p { margin: 4px 0 0; color: var(--muted); }
-.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font: 800 12px/1.4 var(--body); letter-spacing: 0.4px; text-transform: uppercase; }
-.pill.pass { background: var(--pass-soft); color: var(--pass); }
-.pill.warn { background: var(--warn-soft); color: var(--warn); }
-.pill.block { background: var(--block-soft); color: var(--block); }
-.pill.running { background: var(--accent-soft); color: var(--accent); }
-.pill.abandoned, .pill.queued, .pill.busy { background: var(--sunk); color: var(--muted); }
-.pill.started { background: var(--accent-soft); color: var(--accent); }
-.pill.failed { background: var(--block-soft); color: var(--block); }
-.pill.cancelled, .pill.unknown { background: var(--sunk); color: var(--muted); }
-.runfilter { width: 100%; margin: 10px 0 2px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--ground); color: var(--ink); }
-.run .name { font-weight: 800; overflow-wrap: anywhere; }
-.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
-.status { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr); gap: 20px; }
-.decks { display: grid; gap: 12px; margin-top: 12px; }
-.deck { display: grid; grid-template-columns: 118px 1fr 52px; align-items: center; gap: 10px; }
-.deck .name { font-weight: 800; }
-.bar { position: relative; height: 14px; border-radius: 7px; background: var(--sunk); overflow: hidden; }
-.bar .target { position: absolute; top: 0; bottom: 0; left: 45%; width: 10%; background: var(--band); border-left: 1px dashed var(--accent); border-right: 1px dashed var(--accent); }
-.bar .fill { position: absolute; top: 3px; bottom: 3px; left: 0; border-radius: 4px; }
-.bar .mid { position: absolute; top: -2px; bottom: -2px; left: 50%; width: 2px; background: var(--ink); opacity: 0.35; }
-.legend { color: var(--muted); font-size: 12px; margin-top: 10px; }
-.issues { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
-.issues li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.issues li > span:last-child { overflow-wrap: anywhere; }
-.issues .times { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; }
-.chart svg { width: 100%; height: auto; display: block; margin-top: 10px; }
-.chart text { fill: var(--muted); font: 11px var(--mono); }
-.main { display: grid; grid-template-columns: minmax(250px, 330px) minmax(0, 1fr); gap: 20px; align-items: start; }
-.runs { display: grid; gap: 14px; max-height: 76vh; overflow: auto; padding-right: 4px; }
-.day h3 { font: 700 12px var(--body); letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
-.run { width: 100%; text-align: left; display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 10px; border: 1px solid transparent; background: none; color: inherit; font: inherit; cursor: pointer; }
-.run:hover { background: var(--sunk); }
-.run:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.run[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); }
-.dot { width: 10px; height: 10px; border-radius: 50%; }
-.dot.running { background: var(--accent); } .dot.abandoned { background: var(--muted); }
-.progress { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; margin-top: 6px; }
-.progress span { display: block; height: 100%; background: var(--accent); }
-.start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
-.runform { display: grid; gap: 12px; margin-top: 12px; }
-#opts { display: grid; gap: 12px; }
-.field { display: grid; gap: 4px; }
-.field label { font-weight: 700; font-size: 13px; }
-.field input, .field select { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; }
-.field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.row { display: flex; flex-wrap: wrap; gap: 12px; }
-.row .field { flex: 1 1 130px; }
-button.go { justify-self: start; font: 800 14px var(--body); padding: 9px 18px; border-radius: 10px; border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; }
-button.go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-button.link { font: inherit; font-weight: 700; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.dot.pass { background: var(--pass); } .dot.warn { background: var(--warn); } .dot.block { background: var(--block); }
-.run .kind { font-weight: 800; }
-.run .meta { color: var(--muted); font-size: 12px; }
-.run .time { font: 12px var(--mono); color: var(--muted); }
-.detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.main > *, .status > *, .detail > * { min-width: 0; }
-.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; color: var(--muted); font-size: 13px; }
-.facts b { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
-.report { border-top: 1px solid var(--line); padding-top: 14px; overflow-wrap: anywhere; }
-.report h1 { font-size: 22px; margin: 4px 0 10px; }
-.report h2 { font-size: 17px; margin: 22px 0 8px; }
-.report h3 { font-size: 15px; margin: 16px 0 6px; }
-.report p, .report ul { margin: 0 0 10px; max-width: 75ch; }
-.report blockquote { margin: 0 0 10px; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted); }
-.table { overflow-x: auto; margin: 0 0 12px; }
-.report table { border-collapse: collapse; font-size: 13px; min-width: 100%; }
-.report th, .report td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.report th { color: var(--muted); font-weight: 700; }
-.report code { font: 12px var(--mono); background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
-.empty { color: var(--muted); padding: 24px 4px; }
-.customs { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-.customs li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--ground); }
-.customs .name { font-weight: 800; overflow-wrap: anywhere; }
-.customs .rate { font: 600 13px var(--mono); }
-.customs .sub, .customs .about { grid-column: 2 / 4; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
-.customs .about { color: var(--ink); }
-.field textarea { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; resize: vertical; }
-.field textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.field .hint { color: var(--muted); font-size: 12px; }
-.note { color: var(--muted); font-size: 13px; }
-/* Tabs: Playtests and Accounts (the Via Mochi services, from ops/accounts). */
-.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
-.tabs button { font: 700 14px var(--body); color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; cursor: pointer; margin-bottom: -1px; }
-.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
-.tabpanel { display: contents; }
-.tabpanel[hidden] { display: none; }
-.acct-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
-.svc { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.svc b { font: 600 17px var(--display); }
-.svc .pill { white-space: nowrap; flex: none; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
-.kpi { background: var(--sunk); border-radius: 12px; padding: 12px 14px; }
-.kpi .num { display: block; font-size: 28px; font-weight: 600; line-height: 1.2; }
-.kpi small { color: var(--muted); font-size: 12px; }
-.daily { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
-.daily th, .daily td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.daily th:first-child, .daily td:first-child { text-align: left; }
-.daily td.barcell { width: 40%; text-align: left; }
-.daily .minibar { height: 8px; border-radius: 4px; background: var(--accent); }
-.daily td.zero { color: var(--muted); }
-.daily td.bad { color: var(--block); font-weight: 800; }
-.slow { color: var(--block); font-weight: 800; }
-.invite { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; }
-.invite .track { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
-.invite .track span { display: block; height: 100%; background: var(--accent); }
-.synced { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-.synced.stale { color: var(--warn); font-weight: 700; }
-@media (max-width: 860px) {
-  .status, .main, .start { grid-template-columns: minmax(0, 1fr); }
-  .runs { max-height: none; }
-  .deck { grid-template-columns: 112px 1fr 44px; font-size: 14px; }
-}
-@media (prefers-reduced-motion: no-preference) { .bar .fill { transition: width 0.4s ease; } }
-</style>
+// The playtest dashboard (docs/playtests.md): everything comes from the Fruitcats API, which PC2024's playtester keeps up
+// to date (data.ts). Only the owner's Via Mochi account may read it.
+import { DashboardError, cancelRequest, loadDashboard, queueRun, runWithReport } from './data';
 
-<div class="wrap">
-  <header>
-    <div>
-      <div class="eyebrow" id="eyebrow">Fruitcats · automated playtesting</div>
-      <h1 id="title">Playtests</h1>
-      <p id="subtitle">Bot gauntlets, deploy checks and LLM playtesters, newest first.</p>
-      <p id="synced" class="synced" role="status"></p>
-    </div>
-    <span id="latest-pill" class="pill pass" hidden></span>
-  </header>
-
-  <nav class="tabs" role="tablist" aria-label="Dashboard">
-    <button role="tab" id="tabbtn-playtests" data-tab="playtests" aria-controls="tab-playtests" aria-selected="true">Playtests</button>
-    <button role="tab" id="tabbtn-accounts" data-tab="accounts" aria-controls="tab-accounts" aria-selected="false">Accounts</button>
-  </nav>
-
-  <div id="tab-playtests" class="tabpanel" role="tabpanel" aria-labelledby="tabbtn-playtests">
-
-  <section class="status">
-    <div class="panel">
-      <div class="eyebrow">Starter decks, latest bot run</div>
-      <div id="decks" class="decks"><div class="empty">Loading runs…</div></div>
-      <div class="legend">Overall win rate. The shaded band is the 45–55% target; outside 40–60% blocks a deploy.</div>
-    </div>
-    <div class="panel">
-      <div class="eyebrow">Open issues: flagged in more than one run</div>
-      <ul id="issues" class="issues"><li class="note">Loading…</li></ul>
-    </div>
-  </section>
-
-  <section class="panel start">
-    <div>
-      <div class="eyebrow">Start a run on PC2024</div>
-      <form id="runform" class="runform">
-        <div class="field">
-          <label for="kind">Run</label>
-          <select id="kind">
-            <option value="llm-playtest">LLM playtest: gpt-oss plays the bot and reports</option>
-            <option value="balance">Bot gauntlet: starters, random and changed decks</option>
-            <option value="deck-hunt">Deck hunt: Kimi K3 designs decks to break the game (a few cents)</option>
-            <option value="deck-build">Build a deck: Kimi K3 builds one for a goal (up to $1)</option>
-            <option value="nightly">Nightly run, now</option>
-          </select>
-        </div>
-        <div id="opts"></div>
-        <div class="field"><label for="runname">Name (optional)</label><input id="runname" type="text" maxlength="60" placeholder="e.g. Five Alarm after the Heat buff" autocomplete="off"></div>
-        <button class="go" type="submit">Queue the run</button>
-        <div id="formnote" class="note" role="status"></div>
-      </form>
-    </div>
-    <div>
-      <div class="eyebrow">Requests</div>
-      <ul id="requests" class="issues"><li class="note">Loading…</li></ul>
-      <div class="legend">A queued run starts at the relay's next sync, within about 10 minutes, and shows under Runs as soon as it starts. PC2024 plays one run at a time; a request waits while another run is going. Finished requests leave this list after 3 days; their runs stay under Runs, with their names.</div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="eyebrow">Custom decks</div>
-    <ul id="customs" class="customs"><li class="note">Loading…</li></ul>
-    <div class="legend">The deck library (playtest/decks/library.json) and the best decks recent deck hunts and deck builds found. Any of them can be played in a run above. Win rates are the recent average of nightly bot games against the starter decks. The library keeps at most 40: decks that keep losing go, decks that win 60% or more stay.</div>
-  </section>
-
-  <section class="panel chart">
-    <div class="eyebrow">Win rate over time</div>
-    <div id="trend"><div class="empty">Loading…</div></div>
-  </section>
-
-  <section class="main">
-    <nav class="panel" aria-label="Runs">
-      <div class="eyebrow">Runs</div>
-      <input id="runfilter" class="runfilter" type="search" placeholder="Find a run by name, kind, deck or date" aria-label="Find a run">
-      <div id="runs" class="runs"><div class="empty">Loading runs…</div></div>
-    </nav>
-    <article id="detail" class="panel detail"><div class="empty">Pick a run to read its report.</div></article>
-  </section>
-  </div>
-
-  <div id="tab-accounts" class="tabpanel" role="tabpanel" aria-labelledby="tabbtn-accounts" hidden>
-    <section class="acct-status" id="acct-health"><div class="panel"><div class="empty">Loading…</div></div></section>
-    <section class="panel">
-      <div class="eyebrow">Players</div>
-      <div id="acct-kpis" class="kpis"></div>
-    </section>
-    <section class="status">
-      <div class="panel">
-        <div class="eyebrow">Last 14 days (UTC)</div>
-        <div class="table"><table class="daily" id="acct-days"></table></div>
-        <div class="legend">Sign-ins are completed sign-ins, with the number of people in brackets. Syncs are deck and Showcase saves from the game. Slow counts requests to either service that took over 2 seconds. New accounts come from the account service's own records.</div>
-      </div>
-      <div class="panel">
-        <div class="eyebrow">Invite codes</div>
-        <div id="acct-invites"></div>
-        <div class="legend">While sign-up is for playtesters, each new account uses up one invite. A new code is an App Service setting on viamochi-id (docs/accounts.md).</div>
-        <div class="eyebrow" style="margin-top:20px">Errors, last 24 hours</div>
-        <ul id="acct-errors" class="issues"></ul>
-        <div class="eyebrow" style="margin-top:20px">Slowest requests, last 24 hours</div>
-        <ul id="acct-slowest" class="issues"></ul>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="eyebrow">Who read the logs, last 14 days</div>
-      <div class="table"><table class="daily" id="acct-access"></table></div>
-      <div class="legend">Every read of the services' logs and security logs, by the identity that made it, from Azure's own read log. Claude's agent reads them for this page and the health watch. Red means an identity nobody named, or reads Azure refused.</div>
-    </section>
-  </div>
-</div>
-
-<script>
-// Decks, family colors and personas come from the document the relay uploads (meta/dashboard), built from the card
+// Decks, family colors and personas come from the meta document PC2024's runner sends, built from the card
 // data, so a new deck appears here by itself. Until it loads, or for a deck it doesn't know, the key stands in.
 let meta = { decks: [], personas: [], library: [], heroes: [] };
 function decks() {
@@ -287,7 +16,11 @@ function decks() {
 const KIND = { 'balance-check': 'Deploy check', balance: 'Bot gauntlet', 'llm-playtest': 'LLM playtest', 'deck-hunt': 'Deck hunt', 'deck-build': 'Deck build', 'llm-compare': 'LLM player comparison', nightly: 'Nightly run', weekly: 'Weekly run' };
 let runs = [];
 let requests = [];
-let db = null;
+let online = false;
+/** PC2024's playtester: when it last asked the API for work, and whether it was busy. */
+let runner = null;
+/** Reports, fetched when a run is opened (the list comes without them). */
+const reports = new Map();
 let selected = null;
 try { selected = location.hash.slice(1) || localStorage.getItem('fc-playtest-run'); } catch { /* storage may be blocked */ }
 
@@ -392,7 +125,7 @@ function renderTrend() {
   $('trend').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Starter deck win rates over time">${band}${grid}${lines}${labels}</svg><div class="legend">${key}</div>`;
 }
 
-// A run's name: the one given when it was started (the relay copies it onto the run), or its request's.
+// A run's name: the one given when it was started (the API copies it onto the run), or its request's.
 const requestOf = (r) => requests.find((q) => q.id === r.request || q.run === r.id);
 const runName = (r) => r.name || requestOf(r)?.name || '';
 const runTitle = (r) => runName(r) || KIND[r.kind] || r.kind;
@@ -417,23 +150,22 @@ const progressText = (r) => {
   return `${p.total ? `${p.phase}: ${p.done} of ${p.total}` : p.phase}${r.result === 'running' && p.updatedAt ? ` · as of ${timeOf(p.updatedAt)}` : ''}`;
 };
 
-// How fresh the page is: the relay stamps meta/dashboard on every sync with PC2024. Say so plainly, and say
-// when it has stopped, so the page never looks current when it isn't.
-const SYNC_EVERY_MIN = 10;
+// How fresh the page is: PC2024's playtester asks the API for work every minute. Say plainly when it hasn't: the page
+// still works, and queued runs wait until it's back.
 function renderSynced() {
   const el = $('synced');
-  if (!meta.updatedAt) { el.textContent = ''; return; }
-  const ago = Math.max(0, Math.round((Date.now() - when(meta.updatedAt).getTime()) / 60000));
-  const stale = ago > SYNC_EVERY_MIN + 5;
+  if (!runner?.lastSeen) { el.className = 'synced stale'; el.textContent = online ? 'PC2024 hasn’t checked in since the API last started. Queued runs wait until it does.' : ''; return; }
+  const ago = Math.max(0, Math.round((Date.now() - when(runner.lastSeen).getTime()) / 60000));
+  const stale = ago > 5;
   el.className = `synced${stale ? ' stale' : ''}`;
   el.textContent = stale
-    ? `Last synced with PC2024 ${ago >= 120 ? `${Math.round(ago / 60)} h` : `${ago} min`} ago, at ${timeOf(meta.updatedAt)}. The relay on the laptop isn't syncing (is the laptop asleep or the Claude app closed?): runs and progress since then are missing.`
-    : `Synced with PC2024 ${ago ? `${ago} min ago` : 'just now'} (${timeOf(meta.updatedAt)}). Progress updates every ${SYNC_EVERY_MIN} minutes; a run appears the moment it starts.`;
+    ? `PC2024 last checked in ${ago >= 120 ? `${Math.round(ago / 60)} h` : `${ago} min`} ago, at ${timeOf(runner.lastSeen)}. Is it off? Everything here still works; queued runs wait until it's back.`
+    : `PC2024 checked in ${ago ? `${ago} min ago` : 'just now'}${runner.busy ? ', busy with a run' : ', free'}. Runs and their progress show up within a minute.`;
 }
 setInterval(renderSynced, 30_000);
 const progressBar = (r) => `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${r.progress.total}" aria-valuenow="${r.progress.done}"><span style="width:${r.progress.total ? Math.min(100, (100 * r.progress.done) / r.progress.total).toFixed(1) : 0}%"></span></div>`;
 
-// ── Starting runs: the form writes a request; the relay on the laptop sends it to PC2024 ───────────────
+// ── Starting runs: the form queues a request with the API; PC2024 takes it when it's free ───────────────
 const starterOptions = () => meta.decks.map((d) => [d.key, d.name]);
 // Custom decks: the library's (from meta/dashboard) and the ones recent runs found (deck hunts that beat the
 // starters, deck builds' picks), newest first. A run is given a custom deck as its deck code, which PC2024 can
@@ -516,26 +248,27 @@ $('kind').addEventListener('change', renderOptions);
 renderOptions();
 $('runform').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!db) return;
+  if (!online) return;
   const { args, label, invalid } = buildRequest();
   if (invalid) { $('formnote').textContent = invalid; return; }
   const name = $('runname').value.trim().slice(0, 60);
-  const id = `req-${Date.now()}`;
   $('formnote').textContent = 'Queuing…';
   try {
-    await db.collection('requests').doc(id).set({ id, command: $('kind').value, args, label, ...(name ? { name } : {}), status: 'queued', createdAt: new Date().toISOString() });
+    await queueRun({ command: $('kind').value, args, label, ...(name ? { name } : {}) });
     $('formnote').textContent = `Queued: ${name || label}.`;
     $('runname').value = '';
+    void refresh();
   } catch (err) {
-    $('formnote').textContent = err?.code === 'invalid_argument' ? "Only the dashboard's owner can start runs." : 'The request could not be saved. Try again in a moment.';
+    $('formnote').textContent = err instanceof DashboardError && err.code === 'refused' ? err.message : 'The request could not be saved. Try again in a moment.';
   }
 });
 // A request's state comes from its run once there is one: "started" alone would go stale the moment the
-// run finishes. Finished requests drop out after 3 days (the relay deletes them after 14); runs stay.
+// run finishes. Finished requests drop out after 3 days (the API deletes them after 14); runs stay.
 const REQUEST_DAYS = 3;
 function requestState(q) {
   const run = runs.find((r) => r.request === q.id || r.id === q.run);
   if (q.status === 'queued' || q.status === 'failed') return { run, status: q.status, text: q.status };
+  if (q.status === 'starting' && !run) return { run, status: 'queued', text: 'starting' };
   if (run?.result === 'running') return { run, status: 'running', text: 'running' };
   if (run?.result === 'abandoned') return { run, status: 'abandoned', text: 'stopped' };
   if (run) return { run, status: run.result, text: `done · ${run.result}` };
@@ -561,7 +294,7 @@ $('requests').addEventListener('click', async (e) => {
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.run) { selected = b.dataset.run; renderRuns(); renderDetail(); $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  if (b.dataset.cancel && db) { try { await db.doc(`requests/${b.dataset.cancel}`).delete(); } catch { /* the list shows it is still there */ } }
+  if (b.dataset.cancel && online) { try { await cancelRequest(b.dataset.cancel); void refresh(); } catch { /* the list shows it is still there */ } }
 });
 
 function renderDetail() {
@@ -581,9 +314,21 @@ function renderDetail() {
     </div>
     <div class="facts">${facts.map(([k, v]) => `<span>${esc(k)} <b>${esc(v)}</b></span>`).join('')}</div>
     ${r.progress ? `<div><div class="note">${esc(progressText(r))} · updated ${esc(timeOf(r.progress.updatedAt))}${r.result === 'abandoned' ? ' · the runner stopped before finishing' : ''}</div>${progressBar(r)}</div>` : ''}
-    <div class="report">${r.report ? markdown(r.report) : r.progress ? '<p class="note">The report appears here when the run finishes.</p>' : ''}</div>
+    <div class="report">${reportHtml(r)}</div>
     <div class="note mono">${esc(r.id)}</div>`;
   for (const b of document.querySelectorAll('.run')) b.setAttribute('aria-current', String(b.dataset.id === selected));
+}
+
+/** The run's report, fetched the first time the run is opened. */
+function reportHtml(r) {
+  if (r.result === 'running') return '<p class="note">The report appears here when the run finishes.</p>';
+  const got = reports.get(r.id);
+  if (got === null) return '<p class="note">Loading the report…</p>';
+  if (got !== undefined) return got ? markdown(got) : '';
+  reports.set(r.id, null);
+  runWithReport(r.id).then((full) => { reports.set(r.id, full.report ?? ''); if (selected === r.id) renderDetail(); })
+    .catch(() => { reports.delete(r.id); });
+  return '<p class="note">Loading the report…</p>';
 }
 
 function renderCustoms() {
@@ -611,7 +356,7 @@ function renderAll() {
   renderDecks(); renderIssues(); renderTrend(); renderRuns(); renderDetail(); renderRequests(); renderSynced(); renderCustoms();
 }
 
-// ── Accounts tab: the Via Mochi services (ops/accounts, written by the relay from `node tools/ops.mjs snapshot`) ──
+// ── Accounts tab: the Via Mochi services (worked out by the API every 10 minutes, apps/api/src/playtests/ops.ts) ──
 let ops = null;
 const fmtNum = (n) => (n == null ? '—' : Number(n).toLocaleString());
 /** Today's request times for one service: typical (median), 95% under, and how many took over 2 seconds. */
@@ -628,6 +373,7 @@ function renderAccounts() {
       <div><b>${esc(names[h.service]?.[0] ?? h.service)}</b><div class="note">${esc(names[h.service]?.[1] ?? '')}</div>${speedToday(h.service)}</div>
       <span class="pill ${h.ok ? 'pass' : 'block'}">${h.ok ? `Up · ${h.ms} ms` : 'Down'}</span>
     </div>`).join('') + `<div class="panel svc"><div><b>Checked</b><div class="note">${esc(dayOf(ops.updatedAt))} at ${esc(timeOf(ops.updatedAt))}</div></div><span class="pill ${Date.now() - Date.parse(ops.updatedAt) > 30 * 60000 ? 'warn' : 'pass'}">${esc(ago(ops.updatedAt))}</span></div>`;
+  if (ops.unreadable?.length) $('acct-health').innerHTML += `<div class="panel"><div class="note">Some logs couldn’t be read, so their numbers are missing: ${esc(ops.unreadable.join('; '))}</div></div>`;
   const week = ops.days.slice(-7);
   const sum = (k) => week.reduce((t, d) => t + (d[k] ?? 0), 0);
   const a = ops.accounts;
@@ -702,44 +448,52 @@ $('runs').addEventListener('click', (e) => {
   if (matchMedia('(max-width: 860px)').matches) $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-(async () => {
-  db = await window.claude?.use?.('db');
-  if (!db) {
+// Every 20 seconds while the page is open and showing; at once when it comes back into view.
+function showProblem(err) {
+  const signIn = err instanceof DashboardError && err.code === 'signed_out';
+  const text = err instanceof DashboardError ? err.message : 'Something went wrong loading the playtests.';
+  const html = `<div class="empty">${esc(text)}${signIn ? ' <a href="/account.html">Sign in on your Account page</a>, then come back.' : ''}</div>`;
+  if (!online) {
     $('runform').querySelector('button').disabled = true;
-    $('formnote').textContent = "Starting runs isn't available in this view.";
+    $('formnote').textContent = signIn ? 'Sign in to start runs.' : '';
+    for (const id of ['decks', 'runs']) $(id).innerHTML = html;
     $('requests').innerHTML = '<li class="note">—</li>';
-    for (const id of ['decks', 'runs']) $(id).innerHTML = '<div class="empty">Run data isn\'t available in this view.</div>';
     $('issues').innerHTML = '<li class="note">—</li>';
     $('trend').innerHTML = '';
-    $('acct-health').innerHTML = '<div class="panel"><div class="empty">Account data isn\'t available in this view.</div></div>';
-    return;
+    $('acct-health').innerHTML = `<div class="panel">${html}</div>`;
+  } else {
+    $('synced').className = 'synced stale';
+    $('synced').textContent = `${text} Showing what was loaded at ${timeOf(new Date().toISOString())}.`;
   }
-  db.doc('ops/accounts').onSnapshot((snap) => {
-    if (!snap.exists) { $('acct-health').innerHTML = '<div class="panel"><div class="empty">No account data yet: it arrives with the relay\'s next sync.</div></div>'; return; }
-    ops = snap.data();
-    renderAccounts();
-  }, () => { /* keeps what it has */ });
-  db.collection('runs').orderBy('startedAt', 'desc').limit(300).onSnapshot(
-    (snap) => {
-      // The form's custom decks include what runs found: fill them in once the runs first arrive.
-      const first = !runs.length;
-      runs = snap.docs.map((doc) => doc.data());
-      if (first) renderOptions();
-      renderAll();
-    },
-    () => { $('runs').innerHTML = '<div class="empty">The run data stopped updating. Reload the page to try again.</div>'; },
-  );
-  db.doc('meta/dashboard').onSnapshot((snap) => {
-    if (!snap.exists) return;
-    meta = snap.data();
-    const kind = $('kind').value;
-    renderOptions();
-    $('kind').value = kind;
+}
+let loading = false;
+async function refresh() {
+  if (loading) return;
+  loading = true;
+  try {
+    const data = await loadDashboard();
+    online = true;
+    $('runform').querySelector('button').disabled = false;
+    if ($('formnote').textContent === 'Sign in to start runs.') $('formnote').textContent = '';
+    runner = data.runner;
+    requests = data.requests ?? [];
+    const firstRuns = !runs.length;
+    runs = data.runs ?? [];
+    if (data.meta) {
+      meta = data.meta;
+      const kind = $('kind').value;
+      renderOptions();
+      $('kind').value = kind;
+    } else if (firstRuns) renderOptions();
     renderAll();
-  }, () => { /* the page keeps the deck keys it has */ });
-  db.collection('requests').orderBy('createdAt', 'desc').limit(40).onSnapshot(
-    (snap) => { requests = snap.docs.map((doc) => doc.data()); renderRequests(); renderRuns(); renderDetail(); },
-    () => { $('requests').innerHTML = '<li class="note">Requests stopped updating. Reload the page to try again.</li>'; },
-  );
-})();
-</script>
+    if (data.ops) { ops = data.ops; renderAccounts(); }
+    else $('acct-health').innerHTML = '<div class="panel"><div class="empty">No account data yet: the API works it out every 10 minutes.</div></div>';
+  } catch (err) {
+    showProblem(err);
+  } finally {
+    loading = false;
+  }
+}
+void refresh();
+setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 20_000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void refresh(); });

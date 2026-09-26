@@ -2,8 +2,8 @@ using mochi.playtester;
 using Mochi.Paws;
 
 // mochi-playtester runs Fruitcats playtests on PC2024 overnight: bot games on the CPU, LLM games through the
-// local model node. It holds no secrets and talks to no cloud service except the public game site, where it
-// downloads the current playtest runner.
+// local model node. It downloads the current playtest runner from the public game site, and keeps the playtest
+// dashboard up to date through the Fruitcats API with a key of its own (DashboardSync.cs).
 
 string configDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".mochi");
 string configFile = Path.Combine(configDir, "playtester.json");

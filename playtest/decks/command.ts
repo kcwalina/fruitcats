@@ -11,53 +11,17 @@
 // from this checkout's reports and, with --pc2024, the runs on PC2024. Commit library.json and deploy to
 // send the library to PC2024; until then a deck travels as its code.
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { arg, flag, numArg, textArg } from '../lib/args';
 import { CARDS, cardName, deckCode, parseDeckCode, type DeckList } from '../lib/engine';
-import { pct, reportsRoot, type RunSummary } from '../lib/runs';
-import { pc2024Summaries } from '../dashboard/sync';
-import { brokenLibraryDecks, deckFamilies, findInLibrary, libraryDecks, readLibrary, removeFromLibrary, saveToLibrary, writeLibrary, type LibraryDeck } from './library';
+import { readFileSync } from 'node:fs';
+import { pct } from '../lib/runs';
+import { localSummaries, pc2024Summaries } from '../lib/pc2024';
+import { brokenLibraryDecks, deckFamilies, findInLibrary, libraryDecks, readLibrary, removeFromLibrary, saveToLibrary, writeLibrary } from './library';
 import { decksNightly, decksPrune } from './nightly';
 import { averageRate } from './retention';
+import { worthKeeping, type Found } from './found';
 
 const cardsText = (d: DeckList) => Object.entries(d.cards).sort(([a], [b]) => a.localeCompare(b)).map(([id, q]) => `${q}× ${cardName(id)}`).join(', ');
-
-function localSummaries(kinds: string[]): RunSummary[] {
-  const root = reportsRoot();
-  if (!existsSync(root)) return [];
-  return readdirSync(root).filter((id) => kinds.some((k) => id.startsWith(`${k}-`))).flatMap((id) => {
-    const f = join(root, id, 'summary.json');
-    return existsSync(f) ? [JSON.parse(readFileSync(f, 'utf8')) as RunSummary] : [];
-  });
-}
-
-type Found = Omit<LibraryDeck, 'addedAt'>;
-
-/** The decks worth keeping from deck hunts (those that beat the starters often enough) and deck builds (the pick). */
-export function worthKeeping(runs: RunSummary[], min: number): Found[] {
-  const found: Found[] = [];
-  // A run with the fake provider (random answers, for trying the pipeline) never made a deck worth keeping.
-  for (const r of runs.filter((x) => x.details.provider !== 'fake')) {
-    if (r.kind === 'deck-hunt') {
-      for (const d of (r.details.decks ?? []) as { name: string; idea: string; hero: string; cards: Record<string, number>; vsStarters: number }[]) {
-        if (d.vsStarters < min) continue;
-        found.push({ name: d.name.replace(/^hunt: /, ''), hero: d.hero, cards: d.cards, source: 'hunt', about: d.idea, vsStarters: d.vsStarters, from: r.id });
-      }
-    }
-    if (r.kind === 'deck-build') {
-      const p = r.details.pick as { name: string; idea: string; code: string; vsStarters?: number } | null;
-      const deck = p ? parseDeckCode(p.code) : null;
-      if (p && deck) {
-        found.push({
-          name: p.name, hero: deck.hero, cards: deck.cards, source: 'built', about: p.idea, goal: String(r.details.goal ?? ''),
-          ...(p.vsStarters !== undefined ? { vsStarters: p.vsStarters } : {}), from: `${r.id} (${r.details.model})`,
-        });
-      }
-    }
-  }
-  return found;
-}
 
 const line = (f: Found) => `${f.name} (${f.source}${f.vsStarters !== undefined ? `, ${pct(f.vsStarters)} vs starters` : ''}) from ${f.from}`;
 

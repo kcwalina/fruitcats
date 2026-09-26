@@ -26,6 +26,10 @@ process.env.STORE_TEST_CHECKOUT ??= FAKE_PADDLE ? 'off' : 'on';
 // Heat Wave only: Berry Picnic's art isn't drawn yet, and the Store never sells a card you can't see.
 process.env.STORE_SETS ??= 'HW1';
 if (process.argv.includes('--fake-sign-in')) process.env.FAKE_SIGN_IN = 'on';
+// The playtest dashboard: any signed-in account is its owner here, and a runner may use the key "local-runner".
+process.env.PLAYTEST_OWNERS ??= '*';
+process.env.PLAYTEST_RUNNERS ??= 'local:65e8b2271188ce8bb781d5246627e2e0b24a984e1ec571b60bc5dc6dc40d156e';
+
 
 await import('./server');
 

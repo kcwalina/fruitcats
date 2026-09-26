@@ -12,7 +12,8 @@ namespace mochi.playtester;
 /// Runs Fruitcats playtests on PC2024 while nobody is using it: every night (from midnight by default) it
 /// downloads the current playtest runner from the live site and starts <c>node runner.mjs nightly</c>, which
 /// plays the bot gauntlet on the CPU and LLM games through the local model node on the GPU. Reports stay on
-/// this machine and are served by <c>/runs</c>; the laptop's sync task copies them to the dashboard.
+/// this machine and are served by <c>/runs</c>; <see cref="SyncDashboardAsync"/> sends them to the Fruitcats API for
+/// the dashboard, and takes the runs queued there.
 ///
 /// <para>Like mochi-jarvis, a failure here never ends the paw: a paw that exits early is read by catsitter as
 /// a bad build and quarantined. A failed download or a crashed run is recorded, reported through
@@ -32,6 +33,9 @@ sealed partial class PlaytesterServer : UdsPaw
     string _runCommand = "";
     DateTime _runStarted;
     JsonObject? _lastRun;
+    /// <summary>When the last nightly run started, and the local day the deck library's night last ran.</summary>
+    string? _lastNightlyAt;
+    string? _lastLibraryDay;
     string _lastError = "";
     string? _node;
     LlamaServer? _llm;
@@ -54,10 +58,18 @@ sealed partial class PlaytesterServer : UdsPaw
         Directory.CreateDirectory(LogDir);
         if (File.Exists(StateFile))
         {
-            try { _lastRun = JsonNode.Parse(File.ReadAllText(StateFile))?["lastRun"]?.AsObject(); }
+            try
+            {
+                JsonNode? state = JsonNode.Parse(File.ReadAllText(StateFile));
+                _lastRun = state?["lastRun"]?.AsObject();
+                _lastNightlyAt = state?["lastNightlyAt"]?.GetValue<string>()
+                    ?? (_lastRun?["command"]?.GetValue<string>() is "nightly" or "weekly" ? _lastRun?["startedAt"]?.GetValue<string>() : null);
+                _lastLibraryDay = state?["lastLibraryDay"]?.GetValue<string>();
+            }
             catch (Exception ex) { TraceWarning($"Unreadable {StateFile}: {ex.Message}"); }
         }
         _llm = new LlamaServer(_config, Trace, TraceWarning);
+        InitializeDashboard();
         _node = FindNode();
         if (_node is null)
         {
@@ -80,8 +92,8 @@ sealed partial class PlaytesterServer : UdsPaw
         if (now.Hour < _config.StartHour) return false;
         DateTime windowStart = now.Date.AddHours(_config.StartHour);
         if (now > windowStart.AddHours(Math.Max(1, _config.Hours - 0.5))) return false;
-        string? last = _lastRun?["command"]?.GetValue<string>() is "nightly" or "weekly" ? _lastRun?["startedAt"]?.GetValue<string>() : null;
-        return last is null || DateTime.Parse(last).ToLocalTime() < windowStart;
+        // Its own record, not the last run's: a dashboard run finishing after midnight must not start a second nightly.
+        return _lastNightlyAt is null || DateTime.Parse(_lastNightlyAt).ToLocalTime() < windowStart;
     }
 
     protected override async Task RunBackgroundAsync(CancellationToken ct)
@@ -90,11 +102,14 @@ sealed partial class PlaytesterServer : UdsPaw
         {
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMinutes(1), ct);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(_config.DashboardSeconds, 10, 600)), ct);
                 bool idle;
                 lock (_gate) idle = !_busy;
                 if (idle && NightlyDue(DateTime.Now))
                     await StartRunAsync("nightly", _config.NightlyArgs, ct);
+                else if (idle && LibraryNightDue(DateTime.Now))
+                    await StartLibraryNightAsync(ct);
+                await SyncDashboardAsync(ct);
             }
         }
         catch (OperationCanceledException)
@@ -107,8 +122,9 @@ sealed partial class PlaytesterServer : UdsPaw
         }
     }
 
-    /// <summary>Downloads the runner, then starts it; returns why not if it couldn't.</summary>
-    async Task<string?> StartRunAsync(string command, string args, CancellationToken ct)
+    /// <summary>Downloads the runner, then starts it; returns why not if it couldn't. <paramref name="env"/>: extra
+    /// environment for this run only (a deck build's provider key).</summary>
+    async Task<string?> StartRunAsync(string command, string args, CancellationToken ct, Dictionary<string, string>? env = null)
     {
         lock (_gate)
         {
@@ -138,6 +154,7 @@ sealed partial class PlaytesterServer : UdsPaw
             psi.ArgumentList.Add(command);
             foreach (string a in args.Split(' ', StringSplitOptions.RemoveEmptyEntries)) psi.ArgumentList.Add(a);
             psi.Environment["PLAYTEST_REPORTS"] = _config.ReportsDir;
+            foreach ((string name, string value) in env ?? []) psi.Environment[name] = value;
             // Runs that play LLM games get the paw's own server when it starts; otherwise they use Ollama.
             if (_config.InferenceServer && command is ("nightly" or "llm-playtest" or "deck-hunt" or "llm-compare"))
             {
@@ -203,6 +220,7 @@ sealed partial class PlaytesterServer : UdsPaw
 
     void Record(string command, DateTime startedUtc, int? exitCode, string? error)
     {
+        if (command is "nightly") _lastNightlyAt = startedUtc.ToString("o");
         _lastRun = new JsonObject
         {
             ["command"] = command,
@@ -211,10 +229,18 @@ sealed partial class PlaytesterServer : UdsPaw
             ["exitCode"] = exitCode,
             ["error"] = error,
         };
+        SaveState();
+    }
+
+    void SaveState()
+    {
         try
         {
             string tmp = StateFile + ".tmp";
-            File.WriteAllText(tmp, new JsonObject { ["lastRun"] = _lastRun.DeepClone() }.ToJsonString());
+            File.WriteAllText(tmp, new JsonObject
+            {
+                ["lastRun"] = _lastRun?.DeepClone(), ["lastNightlyAt"] = _lastNightlyAt, ["lastLibraryDay"] = _lastLibraryDay,
+            }.ToJsonString());
             File.Move(tmp, StateFile, overwrite: true);
         }
         catch (Exception ex) { TraceWarning($"Could not save {StateFile}: {ex.Message}"); }
@@ -305,6 +331,7 @@ sealed partial class PlaytesterServer : UdsPaw
                 ["inferenceServer"] = _config.InferenceServer ? _llm?.Status : "off (runs use Ollama)",
                 ["runnerUrl"] = _config.RunnerUrl,
                 ["error"] = _lastError.Length == 0 ? null : _lastError,
+                ["dashboard"] = DashboardHealth(),
             };
         }
         return Task.FromResult(result);
@@ -315,7 +342,7 @@ sealed partial class PlaytesterServer : UdsPaw
     public async Task<JsonObject> RunAsync(string? command = null, string? args = null)
     {
         command ??= "nightly";
-        if (command is not ("nightly" or "balance" or "llm-playtest" or "deck-hunt" or "deck-build" or "llm-compare"))
+        if (!IsCommand(command))
             return new JsonObject { ["started"] = false, ["error"] = $"unknown command {command}" };
         if (args is not null && !SafeArgs().IsMatch(args))
             return new JsonObject { ["started"] = false, ["error"] = "arguments may only contain letters, digits, spaces, dots, commas and dashes" };
@@ -391,6 +418,8 @@ sealed partial class PlaytesterServer : UdsPaw
             ["report"] = File.Exists(report) ? File.ReadAllText(report) : null,
         });
     }
+
+    static bool IsCommand(string command) => command is "nightly" or "balance" or "llm-playtest" or "deck-hunt" or "deck-build" or "llm-compare";
 
     [GeneratedRegex(@"^[a-z-]+-\d{8}-\d{6}$")]
     private static partial Regex RunId();

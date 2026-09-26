@@ -14,6 +14,7 @@ import berryPicnic from './2026/12/berry-picnic/set.json';
 import berryPicnicPlugin from './2026/12/berry-picnic/plugin';
 import mochi from './2026/12/mochi/set.json';
 import domowiki from './2026/10/domowiki/set.json';
+import aluxes from './2026/11/aluxes/set.json';
 
 export interface ContentSet {
   data: SetData;
@@ -26,6 +27,7 @@ export const CONTENT: ContentSet[] = [
   { data: starterBox as unknown as SetData, plugin: starterBoxPlugin, folder: '2026/09/starter-box' },
   { data: heatWave as unknown as SetData, folder: '2026/09/heat-wave' },
   { data: domowiki as unknown as SetData, folder: '2026/10/domowiki' },
+  { data: aluxes as unknown as SetData, folder: '2026/11/aluxes' },
   { data: berryPicnic as unknown as SetData, plugin: berryPicnicPlugin, folder: '2026/12/berry-picnic' },
   { data: mochi as unknown as SetData, folder: '2026/12/mochi' },
 ];

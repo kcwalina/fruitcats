@@ -1,0 +1,200 @@
+{
+  "set": "AL1",
+  "name": "Aluxes",
+  "version": "0.1.0",
+  "status": "prototype",
+  "released": "2026-11",
+  "requires": [
+    "SB1"
+  ],
+  "families": {
+    "Aluxes": {
+      "colors": [
+        "#2E8FA3",
+        "#1A4D5C",
+        "#DCF1F5"
+      ],
+      "personality": "Tiny, invisible, mischievous, loyal for seven years",
+      "playsLike": "Guard the milpa, call the rain, and let the corn grow tall",
+      "mechanic": "Rain-Fed",
+      "hint": "units grow +1/+1 every round"
+    }
+  },
+  "mechanics": {
+    "Rain-Fed": {
+      "family": "Aluxes",
+      "kind": "keyword",
+      "reminder": "At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2.",
+      "counter": {
+        "name": "rain",
+        "power": 1,
+        "health": 1,
+        "log": "{name} grows in the rain (+{n}/+{n})."
+      },
+      "abilities": [
+        {
+          "when": "roundStart",
+          "inline": true,
+          "target": "self",
+          "do": [
+            {
+              "counter": {
+                "name": "rain",
+                "add": 1,
+                "max": 2
+              }
+            }
+          ]
+        }
+      ],
+      "icon": "🌽"
+    }
+  },
+  "lore": {
+    "creature": "Alux (plural aluxo'ob, or aluxes)",
+    "from": "Yucatec Maya folklore: Yucatán, Quintana Roo and Campeche (Mexico), Belize and Guatemala",
+    "facts": [
+      "An alux is knee-high and looks like a tiny Maya farmer: white cotton clothes, a straw hat and huarache sandals.",
+      "A farmer builds a doll-sized stone house, the kahtal alux, at the edge of his cornfield, and an alux comes to live in it.",
+      "For seven years the alux helps the corn grow, calls the rain, and walks the field at night, whistling to scare off thieves and animals.",
+      "After the seven years the farmer must seal the little house's door, or the alux runs wild and turns to tricks.",
+      "The j-meen, the Maya healer, shapes an alux from clay and prays over it until it comes to life.",
+      "Aluxes are usually invisible. People know one is near from a shadow, a gentle breeze, or footprints the size of a bird's.",
+      "They love offerings: saká (sweet corn drink), honey, tortillas, fruit and sweets, left in the little house.",
+      "Their tricks are small: putting out fires, tossing pots and pans, hiding tools, tossing pebbles at your feet, and leading walkers in circles in the jungle.",
+      "Don't say their name out loud: it calls them.",
+      "Builders in Yucatán still hold a ceremony for the aluxes before breaking ground, and hotels keep alux houses on their grounds."
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/Alux",
+      "https://yucatantoday.com/en/blog/a-house-for-an-alux",
+      "https://mayan.org/myths/aluxes/",
+      "https://www.ancient-origins.net/myths-legends-americas/aluxes-0016592",
+      "https://naatikmexico.org/blog/maya-aluxes-mysterious-elven-guardians-of-the-yucatn-jungle"
+    ]
+  },
+  "cards": [
+    {
+      "id": "AL1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Aluxes",
+      "name": "Aluxito, Keeper of the Milpa",
+      "flavor": "Knee-high and invisible. Every corn stalk in the field is his.",
+      "kitten": {
+        "name": "Aluxito, Keeper of the Milpa",
+        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Lives.",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "heal": 2
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "lives": {
+              "atMost": 6
+            }
+          }
+        }
+      },
+      "bigCat": {
+        "name": "Aluxito, Caller of the Rain",
+        "power": 3,
+        "text": "Exhaust: Heal 3 from a unit you control. It gains Guardian this round.",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "heal": 3
+              },
+              {
+                "buff": {
+                  "keywords": [
+                    "Guardian"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "frame": "gold"
+    },
+    {
+      "id": "AL1-D04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Clay Alux, Fresh from the J-meen",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "text": "Rain-Fed.",
+      "flavor": "Shaped from clay by the healer. Seven weeks of prayers, and it stands up.",
+      "keywords": [
+        "Rain-Fed"
+      ]
+    },
+    {
+      "id": "AL1-D09",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Aluxes",
+      "name": "A Whistle in the Dark",
+      "cost": 1,
+      "text": "Pounce. Cancel an attack. (The attacker stays exhausted.)",
+      "flavor": "He walks the field at night and whistles. Thieves and animals turn back.",
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "pounceOnly": "attack",
+          "target": "attack",
+          "do": [
+            {
+              "cancelAttack": true
+            }
+          ],
+          "note": "The attacker stays exhausted."
+        }
+      ]
+    },
+    {
+      "id": "AL1-D12",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Aluxes",
+      "name": "Kahtal Alux, the Little House",
+      "cost": 2,
+      "text": "Attached unit gets +3 Health and Guardian.",
+      "flavor": "A doll-sized house at the edge of the field. Whoever lives in it guards the corn for seven years.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "health": 3,
+              "keywords": [
+                "Guardian"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,9 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 [retheme-proposal.md](retheme-proposal.md)). This is the list of creatures for the first decks: one from every
 inhabited continent, plus backups.
 
+**In the game now: the Domowiki.** Since 2026-09-26 they are the game's starter deck, the one every player has
+(content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)). The other creatures below are planned decks.
+
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
 from a research pass (about 170 articles, one agent per continent), and the owner approved them, with Veli for
 Oceania.
@@ -27,7 +30,7 @@ generators were left out.
 
 | | Creature | From | Lore in one line |
 |---|---|---|---|
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Domovoi.jpg/330px-Domovoi.jpg" width="80"> | [Domowiki](#domowiki) | Poland, Slavic | Every home has its own little old house spirit living behind the stove; keep the home kind and he keeps it lucky. [More](https://en.wikipedia.org/wiki/Domovoy) |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Domovoi.jpg/330px-Domovoi.jpg" width="80"> | [Domowiki](#domowiki) | Poland, Slavic | **In the game (the starter deck).** Every home has its own little old house spirit living behind the stove; keep the home kind and he keeps it lucky. [More](https://en.wikipedia.org/wiki/Domovoy) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/SekienKodama.jpg/330px-SekienKodama.jpg" width="80"> | [Kodama](#kodama) | Japan | Spirits living in old trees; the echo in the mountains is a kodama answering you. [More](https://en.wikipedia.org/wiki/Kodama_(spirit)) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg/330px-An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg" width="80"> | [Pari](#pari) | Persia (Iran) | Winged beings of Persian poetry and fairy tales, once harmful spirits, later the very picture of beauty and goodness. [More](https://en.wikipedia.org/wiki/Par%C4%AB) |
 | <img src="https://www.rappler.com/tachyon/2025/10/Tabi-tabi-po.jpg" width="80"> | [Nuno sa punso](#nuno-sa-punso) | Philippines | The old man of the mound: step past an anthill without saying "tabi tabi po" (excuse me) and he'll make you pay. [More](https://en.wikipedia.org/wiki/Nuno_sa_punso) |
@@ -53,7 +56,10 @@ generators were left out.
 
 ### Domowiki
 
-**From:** Poland and the Slavic world. The first deck, already released: see [domowiki-set.md](domowiki-set.md).
+**From:** Poland and the Slavic world.
+
+**In the game.** The first folklore deck and, since 2026-09-26, the starter deck every player has. Its hero is
+Dziadziuś, the cutest Domowik. Cards, art and lore: [domowiki-set.md](domowiki-set.md).
 
 Every home had its own Domowik, a small old man with a grey beard and a coat of soft fur who lives behind the stove.
 Feed him bread and salt and keep the home free of quarrels, and he looks after the family, the children and the

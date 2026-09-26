@@ -27,7 +27,8 @@ merge that drops lines the other side added, or brings back lines the other side
 ## fruitcats-api
 
 `npm run deploy -w @fruitcats/api` deploys only origin/main (push first), one deploy at a time, and refuses if the
-live API runs a commit this checkout lacks (`/version`). Tell the accounts session before deploying it.
+live API runs a commit this checkout lacks (`/version`). Deploy finished API work right away, like the site: a fix
+is not done until it is live.
 
 ## Security fixes
 

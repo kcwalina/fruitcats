@@ -31,10 +31,14 @@ function load(): Promise<PaddleJs> {
     s.src = SCRIPT;
     s.async = true;
     s.onload = () => {
+      window.clearTimeout(slow);
       const p = (window as unknown as { Paddle?: PaddleJs }).Paddle;
       if (p) resolve(p); else reject(new Error('Paddle.js loaded without Paddle'));
     };
-    s.onerror = () => { loading = null; reject(new Error('Paddle.js didn’t load')); };
+    const failed = () => { window.clearTimeout(slow); s.remove(); loading = null; reject(new Error('Paddle.js didn’t load')); };
+    s.onerror = failed;
+    // A script request lost on a dropped connection never ends by itself: "Opening payment…" would stay up for ever.
+    const slow = window.setTimeout(() => { if (!(window as unknown as { Paddle?: PaddleJs }).Paddle) failed(); }, 20_000);
     document.head.appendChild(s);
   }));
 }

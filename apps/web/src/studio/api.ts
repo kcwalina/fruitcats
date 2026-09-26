@@ -2,6 +2,7 @@
 // in development with `?dev`, with a pretend account against the local API (npm run studio:dev -w @fruitcats/api).
 
 import { token } from '../auth';
+import { apiPolicy, fetchRetry } from '../net';
 
 export const DEV = import.meta.env.DEV && new URLSearchParams(location.search).has('dev');
 const API = DEV ? 'http://localhost:8787' : 'https://api.fruitcats.viamochi.com';
@@ -88,13 +89,14 @@ async function call<T>(path: string, init: { method?: string; json?: unknown } =
   const auth = await authorization();
   if (!auth) throw new ApiError(401, 'signed_out');
   let res: Response;
+  const method = init.method ?? (init.json !== undefined ? 'POST' : 'GET');
   try {
-    res = await fetch(`${API}/v1/studio/${path}`, {
-      method: init.method ?? (init.json !== undefined ? 'POST' : 'GET'),
+    res = await fetchRetry(`${API}/v1/studio/${path}`, {
+      method,
       headers: { Authorization: auth, ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}) },
       body: init.json !== undefined ? JSON.stringify(init.json) : undefined,
       cache: 'no-store',
-    });
+    }, apiPolicy(method));
   } catch {
     throw new ApiError(0, 'offline');
   }
@@ -124,6 +126,8 @@ export const addArtist = (set: string, email: string) => call<{ id: string; name
 export const invite = (set: string, note: string) => call<{ code: string; url: string; expires: string }>(`${set}/invites`, { json: { note } });
 export const removeArtist = (set: string, id: string) => call(`${set}/artists/${id}`, { method: 'DELETE' });
 
+const UPLOAD_STALL_MS = 45_000;
+
 /** Upload a picture, reporting progress from 0 to 1. Resolves once the server has stored and checked it. */
 export async function upload(set: string, key: string, file: File, kind: 'sketch' | 'final' | 'frame', note: string,
   progress: (fraction: number) => void): Promise<Version> {
@@ -134,7 +138,17 @@ export async function upload(set: string, key: string, file: File, kind: 'sketch
     xhr.open('POST', `${API}/v1/studio/${set}/pictures/${key}?kind=${kind}&note=${encodeURIComponent(note)}`);
     xhr.setRequestHeader('Authorization', auth);
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) progress(e.loaded / e.total); };
+    // A connection that dies mid-upload can leave the bar still for ever: with nothing sent for 45 seconds (and no
+    // answer), it's given up on and the artist can try again.
+    let stalled = 0;
+    const watch = () => {
+      window.clearTimeout(stalled);
+      stalled = window.setTimeout(() => { xhr.abort(); reject(new ApiError(0, 'stalled')); }, UPLOAD_STALL_MS);
+    };
+    xhr.upload.onprogress = (e) => { watch(); if (e.lengthComputable) progress(e.loaded / e.total); };
+    // All sent, now the server stores and checks it: that's quick, but still not waited on for ever.
+    xhr.upload.onload = watch;
+    xhr.onloadend = () => window.clearTimeout(stalled);
     xhr.onload = () => {
       let body: { error?: string } = {};
       try { body = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
@@ -143,8 +157,12 @@ export async function upload(set: string, key: string, file: File, kind: 'sketch
     };
     xhr.onerror = () => reject(new ApiError(0, 'offline'));
     xhr.send(file);
+    watch();
   });
 }
+
+/** A final can be 30 MB: on a slow connection that takes minutes, so each attempt gets three. */
+const IMAGE_POLICY = { ...apiPolicy('GET'), attemptMs: 180_000, budgetMs: 370_000 };
 
 /** A stored version as a local address for <img>. Versions never change, so each is fetched once. */
 const images = new Map<string, Promise<string>>();
@@ -154,7 +172,7 @@ export function imageUrl(set: string, key: string, version: string): Promise<str
   if (!url) {
     url = (async () => {
       const auth = await authorization();
-      const res = await fetch(`${API}/v1/studio/${set}/pictures/${key}/${version}`, { headers: auth ? { Authorization: auth } : {} });
+      const res = await fetchRetry(`${API}/v1/studio/${set}/pictures/${key}/${version}`, { headers: auth ? { Authorization: auth } : {} }, IMAGE_POLICY);
       if (!res.ok) throw new ApiError(res.status, 'image');
       return URL.createObjectURL(await res.blob());
     })();
@@ -169,6 +187,7 @@ export function explain(e: unknown): string {
   const code = e instanceof ApiError ? e.code : '';
   const words: Record<string, string> = {
     offline: 'Can’t reach the Studio. Check your connection and try again.',
+    stalled: 'Upload stalled: try again.',
     signed_out: 'You’re signed out. Please sign in again.',
     not_invited: 'This account isn’t invited to this set yet.',
     invite_not_found: 'That invite link has expired or doesn’t exist. Please ask us for a new one.',

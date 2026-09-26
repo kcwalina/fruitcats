@@ -10,6 +10,7 @@
 import '../content';
 import { registerSet, type SetData } from '@fruitcats/engine';
 import { session, signOut } from '../auth';
+import { apiPolicy, fetchRetry } from '../net';
 import { BASE, esc } from '../ui';
 import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
@@ -112,11 +113,18 @@ function go(hash: string) {
   location.hash = hash;
 }
 
+/** One of the Studio's own files. Tried once more after a dropped connection, and never waited on for ever. */
+async function staticJson<T>(url: string): Promise<T> {
+  const r = await fetchRetry(url, { cache: 'no-cache' }, apiPolicy('GET'));
+  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  return r.json() as Promise<T>;
+}
+
 async function boot() {
   S.booting = true;
   render();
   try {
-    const index = await fetch(`${BASE}studio/index.json`, { cache: 'no-cache' }).then((r) => r.json()) as { sets: SetEntry[] };
+    const index = await staticJson<{ sets: SetEntry[] }>(`${BASE}studio/index.json`);
     S.sets = index.sets;
   } catch {
     S.fatal = 'The Studio couldn’t load. Please reload the page.';
@@ -181,8 +189,8 @@ async function loadSet(code: string) {
   if (!S.briefs.has(code)) {
     try {
       const [brief, data] = await Promise.all([
-        fetch(`${BASE}studio/${code}/brief.json`, { cache: 'no-cache' }).then((r) => r.json()) as Promise<Brief>,
-        fetch(`${BASE}packs/${code}/set.json`, { cache: 'no-cache' }).then((r) => r.json()) as Promise<SetData>,
+        staticJson<Brief>(`${BASE}studio/${code}/brief.json`),
+        staticJson<SetData>(`${BASE}packs/${code}/set.json`),
       ]);
       try { registerSet(data); } catch { /* the previews that need card data are skipped */ }
       for (const c of [...data.cards, ...(data.tokens ?? [])]) setCards.set(c.id, c as unknown as CardWords);

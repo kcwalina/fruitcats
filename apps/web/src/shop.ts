@@ -16,6 +16,7 @@ import { CONTENT } from '../../../content';
 import { API } from './api';
 import { session, token } from './auth';
 import { STORE } from './flags';
+import { apiPolicy, fetchRetry } from './net';
 
 /** open: this account may use the Store. private: it's in a test that this account isn't part of. */
 export type Access = 'open' | 'private' | 'unknown';
@@ -96,10 +97,12 @@ async function call(method: string, path: string, body?: unknown): Promise<{ sta
   const t = await token();
   if (!t) return null;
   try {
-    const r = await fetch(`${API}${path}`, {
+    // Never waits for ever (net.ts). An order is safe even if its answer is lost: the same order id again never
+    // buys twice.
+    const r = await fetchRetry(`${API}${path}`, {
       method, headers: { Authorization: `Bearer ${t}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}),
-    });
+    }, apiPolicy(method));
     return { status: r.status, data: await r.json().catch(() => ({})) };
   } catch {
     return null;   // offline

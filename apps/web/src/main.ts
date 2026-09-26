@@ -43,7 +43,7 @@ const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Bal
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 // The shell's backdrop is Folkborn's neutral grove (grove-tall on portrait screens), so every deck's art style fits on it.
 for (const [name, file] of [['--img-menu-bg', 'grove.webp'], ['--img-menu-bg-tall', 'grove-tall.webp'], ['--img-playmat', 'table.webp'], ['--img-cardback', 'cardback.webp'],
-  ['--img-paw', 'stat-paw.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'tile-store.webp']])
+  ['--img-paw', 'stat-power.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'tile-store.webp']])
   document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}`, location.href).href}")`);
 // --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible
 // area (it ignores the toolbars), which made the page scroll; the layout uses this instead.

@@ -15,7 +15,7 @@ import { startSync } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
-  boardFace, renderAccountPanel, renderAccountRow, signedIn, warmPawtraits,
+  boardFace, renderAccountPanel, renderAccountRow, renderHomeAccount, signedIn, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
@@ -545,6 +545,8 @@ function onClick(key: string) {
   if (ACCOUNTS && kind === 'acct') {
     if (raw === 'open') showSettings = false;
     if (raw === 'contact') showSettings = true;
+    // Home's Pawtrait opens the Account panel inside Settings, as its row in Settings does.
+    if (raw === 'home') { showSettings = true; warmPawtraits(); void accountClick({ render }, 'panel'); return; }
     void accountClick({ render }, key.slice('acct:'.length));
     return;
   }
@@ -782,6 +784,7 @@ function renderHome(): string {
   const saved = savedGameLabel();
   return `
   <div class="menu home">
+    ${ACCOUNTS ? renderHomeAccount() : ''}
     ${settingsButton('corner-settings')}
     <div class="hero-parade">
       ${heroes.map((k, i) => `<div class="parade-cat c${i}" style="background-image:url(${k})"></div>`).join('')}

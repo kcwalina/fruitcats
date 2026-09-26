@@ -434,6 +434,17 @@ export function renderAccountRow(): string {
     </button>`;
 }
 
+/**
+ * Home's top-left corner, so it's plain at a glance whether you're signed in: your Pawtrait (it opens the Account
+ * panel), or a Sign in button (it opens the window that signs you in, or creates the account for a new email).
+ */
+export function renderHomeAccount(): string {
+  const s = session();
+  if (!s) return '<button class="corner-account corner-signin" data-click="acct:open">Sign in</button>';
+  const name = s.displayName || s.email;
+  return `<button class="corner-account corner-face" data-click="acct:home" aria-label="Account: ${esc(name)}" title="${esc(name)}">${face('small')}</button>`;
+}
+
 /** The Account panel, shown in place of the other settings. */
 export function renderAccountPanel(): string {
   if (contactOpen) return renderContact();

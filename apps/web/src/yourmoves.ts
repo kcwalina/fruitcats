@@ -9,7 +9,7 @@ export function otherMoves(legal: Action[]): string[] {
   const moves: string[] = [];
   if (legal.some((a) => a.t === 'play')) moves.push('play a glowing card');
   if (legal.some((a) => a.t === 'attack')) moves.push('attack with a glowing unit');
-  if (legal.some((a) => a.t === 'ability')) moves.push('use your Hero Cat’s ability');
+  if (legal.some((a) => a.t === 'ability')) moves.push('use your Hero’s ability');
   return moves;
 }
 

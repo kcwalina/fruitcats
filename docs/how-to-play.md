@@ -1,6 +1,6 @@
 # How to play
 
-Fruitcats is a card game for two. You lead a **Hero Cat**, play cats and critters, and attack the other Hero Cat.
+Fruitcats is a card game for two. You lead a **Hero**, play cats and critters, and attack the other Hero.
 A game takes about 10 minutes. This page shows the basics in pictures: enough for your first game. The full rules
 are in the [Rulebook](rulebook.md).
 
@@ -11,7 +11,7 @@ against the computer.
 
 <div class="steps">
 <figure><img src="guide/play/1-home.webp" alt="The Home screen: Solo, Friend, Collection, and Tutorial at the bottom" loading="lazy"><figcaption><b>1</b> New to the game? Tap <b>Tutorial</b>. It plays a real game with you and explains each step as it happens.</figcaption></figure>
-<figure><img src="guide/play/2-goal.webp" alt="How you win: the opponent's 9 hearts" loading="lazy"><figcaption><b>2</b> <b>How you win:</b> each Hero Cat has <b>9 hearts</b> (Lives). Knock out all 9 of your opponent's hearts.</figcaption></figure>
+<figure><img src="guide/play/2-goal.webp" alt="How you win: the opponent's 9 hearts" loading="lazy"><figcaption><b>2</b> <b>How you win:</b> each Hero has <b>9 hearts</b> (Lives). Knock out all 9 of your opponent's hearts.</figcaption></figure>
 </div>
 
 After the tutorial, tap **Solo** to play the computer.
@@ -39,8 +39,8 @@ means is in [Card anatomy](card-anatomy.md).
 
 <div class="steps">
 <figure><img src="guide/play/9-attack.webp" alt="Your cat with a Ready! tag" loading="lazy"><figcaption><b>1</b> A cat with a <b>Ready!</b> tag can attack. Tap it.</figcaption></figure>
-<figure><img src="guide/play/10-target.webp" alt="Pink targets on the opponent's side" loading="lazy"><figcaption><b>2</b> Tap a <b>pink target</b>: one of their cats, or their <b>Hero Cat</b>.</figcaption></figure>
-<figure><img src="guide/play/11-hit.webp" alt="The opponent is down to 8 hearts" loading="lazy"><figcaption><b>3</b> Hit their Hero Cat and they lose a heart. Hit a cat and both cats take damage.</figcaption></figure>
+<figure><img src="guide/play/10-target.webp" alt="Pink targets on the opponent's side" loading="lazy"><figcaption><b>2</b> Tap a <b>pink target</b>: one of their cats, or their <b>Hero</b>.</figcaption></figure>
+<figure><img src="guide/play/11-hit.webp" alt="The opponent is down to 8 hearts" loading="lazy"><figcaption><b>3</b> Hit their Hero and they lose a heart. Hit a cat and both cats take damage.</figcaption></figure>
 <figure><img src="guide/play/12-lost-life.webp" alt="You lost a Life: 8 hearts left" loading="lazy"><figcaption><b>4</b> Each heart is a face-down card. When you lose one, that card goes into your <b>hand</b>. Being behind gives you more cards to play.</figcaption></figure>
 </div>
 
@@ -51,8 +51,8 @@ means is in [Card anatomy](card-anatomy.md).
 <figure><img src="guide/play/14-yarn.webp" alt="The Yarn Ball and the Take the Yarn button" loading="lazy"><figcaption><b>2</b> Whoever holds the <b>Yarn Ball</b> goes first each round. <b>Take the Yarn</b> keeps it for next round, but then you can only pass.</figcaption></figure>
 </div>
 
-- **Your Hero Cat** never leaves the table. Tap **Use ability** once a round to use its power. Later in the game
-  it **Grows Up** into a stronger Big Cat.
+- **Your Hero** never leaves the table. Tap **Use ability** once a round to use its power. Later in the game
+  it **Awakens** and grows stronger.
 - **Stuck?** Tap **Rules** during a game for a short reminder.
 - The words in **bold** on cards (Zoomies, Guardian, Sneaky, Lucky and others) are explained in
   [Keywords](rulebook.md#10-keywords).

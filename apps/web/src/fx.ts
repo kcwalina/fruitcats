@@ -90,12 +90,12 @@ const Whose = (p: PlayerId) => (p === ctx.human ? 'Your' : 'Their');
 const b = (text: string) => `<b>${esc(text)}</b>`;
 const unitName = (uid: number) => cardName(ids.get(uid) ?? '') || 'a unit';
 function targetName(t: Target): string {
-  if (t.kind === 'hero') return `${whose(t.player)} ${b('Hero Cat')}`;
+  if (t.kind === 'hero') return `${whose(t.player)} ${b('Hero')}`;
   const owner = owners.get(t.uid);
   return `${owner === undefined ? '' : `${whose(owner)} `}${b(unitName(t.uid))}`;
 }
 const attackerName = (t: Target) =>
-  t.kind === 'hero' ? `${Whose(t.player)} ${b('Big Cat')}` : targetName(t).replace(/^(your|their)/, (w) => w[0].toUpperCase() + w.slice(1));
+  t.kind === 'hero' ? `${Whose(t.player)} ${b('Awakened Hero')}` : targetName(t).replace(/^(your|their)/, (w) => w[0].toUpperCase() + w.slice(1));
 
 function say(html: string) {
   caption.innerHTML = html;
@@ -408,9 +408,9 @@ async function beat(e: GameEvent) {
     }
     case 'growUp': {
       const hero = heroEl(e.p);
-      say(`${Whose(e.p)} Kitten Grows Up into a ${b('Big Cat')}!`);
+      say(`${Whose(e.p)} ${b('Hero Awakens')}!`);
       playSound('ability');
-      float(hero, 'Grown up!', 'buff');
+      float(hero, 'Awakened!', 'buff');
       await animate(hero, [
         { scale: '1', filter: 'brightness(1)' },
         { scale: '1.25', filter: 'brightness(1.8) drop-shadow(0 0 18px gold)', offset: 0.45 },

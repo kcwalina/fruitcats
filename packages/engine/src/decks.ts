@@ -52,7 +52,7 @@ const copies = (n: number) => `${n} ${n === 1 ? 'copy' : 'copies'}`;
 export function deckProblems(deck: DeckList, owned?: (id: string) => number): string[] {
   const problems: string[] = [];
   const hero = CARDS[deck.hero];
-  if (!hero || hero.type !== 'Hero Cat') problems.push('Choose a Hero Cat to lead the deck.');
+  if (!hero || hero.type !== 'Hero Cat') problems.push('Choose a Hero to lead the deck.');
   else if (owned && owned(deck.hero) < 1) problems.push(`You don't have ${cardName(deck.hero)} yet.`);
 
   const size = deckSize(deck);
@@ -64,17 +64,17 @@ export function deckProblems(deck: DeckList, owned?: (id: string) => number): st
     problems.push(`Besides ${hero.family}, a deck can use one other family, not ${others.length} (${others.join(', ')}).`);
   }
   const cats = catCount(deck);
-  if (cats > DECK_RULES.maxCats) problems.push(`Too many Cats (${cats} of ${DECK_RULES.maxCats}).`);
+  if (cats > DECK_RULES.maxCats) problems.push(`Too many Fabled (${cats} of ${DECK_RULES.maxCats}).`);
 
   for (const [id, qty] of Object.entries(deck.cards)) {
     if (qty <= 0) continue;
     const card = CARDS[id];
     if (!card) { problems.push(`Unknown card ${id}.`); continue; }
     const name = cardName(id);
-    if (card.type === 'Hero Cat') problems.push(`${name} is a Hero Cat: Hero Cats lead a deck, they don't go in it.`);
+    if (card.type === 'Hero Cat') problems.push(`${name} is a Hero: Heroes lead a deck, they don't go in it.`);
     else if (card.token) problems.push(`${name} comes into play from another card: it can't be put in a deck.`);
     else if (qty > copyLimit(id)) {
-      problems.push(card.type === 'Cat' ? `${name} is a Cat, and Cats are one of a kind.` : `At most ${DECK_RULES.copies} copies of ${name}.`);
+      problems.push(card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `At most ${DECK_RULES.copies} copies of ${name}.`);
     } else if (owned && qty > owned(id)) problems.push(`You have only ${copies(owned(id))} of ${name}.`);
   }
   return problems;
@@ -89,7 +89,7 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   const hero = CARDS[deck.hero];
   if (!card || !hero) return 'That card is not available.';
   const name = cardName(id);
-  if (card.type === 'Hero Cat') return `${name} is a Hero Cat: Hero Cats lead a deck, they don't go in it.`;
+  if (card.type === 'Hero Cat') return `${name} is a Hero: Heroes lead a deck, they don't go in it.`;
   if (card.token) return `${name} comes into play from another card: it can't be put in a deck.`;
   if (card.family !== hero.family && !isNeutralFamily(card.family)) {
     const other = otherFamilies(deck).find((f) => f !== card.family);
@@ -97,10 +97,10 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   }
   const have = deck.cards[id] ?? 0;
   if (have >= copyLimit(id)) {
-    return card.type === 'Cat' ? `${name} is a Cat, and Cats are one of a kind.` : `A deck can have at most ${DECK_RULES.copies} copies of ${name}.`;
+    return card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `A deck can have at most ${DECK_RULES.copies} copies of ${name}.`;
   }
   if (owned && have >= owned(id)) return owned(id) ? `You have only ${copies(owned(id))} of ${name}.` : `You don't have ${name} yet.`;
-  if (card.type === 'Cat' && catCount(deck) >= DECK_RULES.maxCats) return `A deck can have at most ${DECK_RULES.maxCats} Cats.`;
+  if (card.type === 'Cat' && catCount(deck) >= DECK_RULES.maxCats) return `A deck can have at most ${DECK_RULES.maxCats} Fabled.`;
   if (!ignoreSize && deckSize(deck) >= DECK_RULES.size) return `Your deck already has ${DECK_RULES.size} cards.`;
   return null;
 }

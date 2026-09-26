@@ -108,7 +108,7 @@
             }
           }
         },
-        "text": "Exhaust: Put a Crumb on an exhausted unit you control.\nGrow Up: You control 5 or more units."
+        "text": "Exhaust: Put a Crumb on an exhausted unit you control.\nAwaken: You control 5 or more units."
       },
       "bigCat": {
         "name": "Jam, Club President",
@@ -660,7 +660,7 @@
             }
           }
         },
-        "text": "Exhaust: Put a Crumb on a unit you control that has a Crumb.\nGrow Up: A unit you control is Full."
+        "text": "Exhaust: Put a Crumb on a unit you control that has a Crumb.\nAwaken: A unit you control is Full."
       },
       "bigCat": {
         "name": "Noelle, Snow Day",

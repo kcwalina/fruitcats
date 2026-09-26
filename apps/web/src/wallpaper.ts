@@ -4,6 +4,7 @@
 // No website can set the wallpaper itself: the player saves the picture (the share sheet's Save Image
 // on iPhone) and chooses it in Photos.
 
+import TERMS from '../../../packages/engine/src/terms.json';
 import { CARDS, MECHANICS, SETS, type CardDef, type Rarity } from '@fruitcats/engine';
 import type { Finish } from './collection';
 import { drawRarityMark } from './rarity';
@@ -54,7 +55,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: nu
   ctx.roundRect(x0, y0, x1 - x0, y1 - y0, r);
 }
 
-/** Rules text as styled runs: labels ("Grow Up:") and keywords bold, reminders in brackets italic. */
+/** Rules text as styled runs: labels ("Awaken:") and keywords bold, reminders in brackets italic. */
 function runs(text: string): [string, Style][] {
   const marks: Style[] = Array.from(text, () => 'regular');
   for (const pattern of [keywordPattern(), LABEL])
@@ -316,7 +317,8 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   ctx.lineWidth = (p.chrome ? 4 : 3) * s;
   ctx.strokeStyle = p.chrome ?? main;
   ctx.stroke();
-  const kind = side ? `HERO CAT · ${side === 'kitten' ? 'KITTEN' : 'BIG CAT'}` : card.type.toUpperCase();
+  const kind = (side ? [TERMS.types['Hero Cat'], TERMS.sides[side === 'kitten' ? 'kitten' : 'bigCat']].filter(Boolean).join(' · ')
+    : TERMS.types[card.type] ?? card.type).toUpperCase();
   // The type on the left, the collector number on the right: the type shrinks to fit beside it, and in
   // a narrow line the number gives way.
   const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `${card.set ?? 'SB1'} · ${p.number}`;

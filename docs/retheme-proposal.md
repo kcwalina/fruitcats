@@ -2,14 +2,18 @@
 
 The game is moving from fruit-hooded cats to creatures of folk mythology from around the world, one family per deck
 (Domowiki first, docs/domowiki-set.md). Many rules words and screens are still about cats. This is a proposal for
-what each one becomes. Nothing here is built yet.
+what each one becomes. Part of it is built (below); the rest waits for the owner.
 
 Written 2026-09-26. For the owner to decide.
+
+**Built (2026-09-26):** Hero Cat → **Hero**, Cat → **Fabled**, and the Hero's two sides: it starts on its first side
+and **Awakens** (Kitten / Big Cat / Grow Up are gone; no "young" and "elder" either). The words live in
+`packages/engine/src/terms.json`, which the cards, the rules text and the game read.
 
 ## The picture behind the words
 
 Each player is a household in a folk tale, and the creatures of their culture come to help. You set out
-**Offerings** for them, a **Patron** spirit leads them, the one holding the **Lantern** acts first, and you lose when
+**Offerings** for them, a **Hero** leads them, the one holding the **Lantern** acts first, and you lose when
 your last **Candle** goes out. Offerings, lanterns and candles appear in folk belief almost everywhere, so they fit
 any culture a later deck comes from.
 
@@ -24,7 +28,7 @@ any culture a later deck comes from.
 | Pantry | **Offerings** (the row) | No separate zone name needed. |
 | Lives (9, drawn as hearts) | **Candles** (still 9) | Each hit blows out a candle; the last one out loses. Keeps the rule, drops the "nine lives" cat pun. |
 | Yard | Yard (keep) | Not cat-specific, and yard spirits are folklore too. |
-| Den (where the Hero Cat sits) | **Hearth** | Where a patron spirit lives. |
+| Den (where the Hero sits) | **Hearth** | Where the house spirit lives. |
 | Compost (discard) | **the Mist** | Creatures fade into the mist; gentle for kids. |
 
 **Who acts first**
@@ -37,10 +41,10 @@ any culture a later deck comes from.
 
 | Now | Proposed | Why |
 |---|---|---|
-| Hero Cat | **Patron** | The spirit who leads your deck (Dziadek for the Domowiki). |
-| Kitten side / Big Cat side | **Young** / **Elder** | Folk spirits grow old and wise. |
-| Grow Up | **Come of Age** | Same rule, new words. |
-| Cat (the unique, strongest units) | **Hero** | The named figures of a folk tale: Kikimora, the Bannik. |
+| Hero Cat | **Hero** (built) | The one who leads your deck (Dziadziuś for the Domowiki). |
+| Kitten side / Big Cat side | no name / **Awakened** (built) | A spirit shows its full self; no baby and adult versions. |
+| Grow Up | **Awaken** (built) | Same rule, new word. |
+| Cat (the unique, strongest units) | **Fabled** (built) | The named figures of a folk tale: Kikimora, the Bannik. |
 | Critter | **Creature** | |
 | Trick | **Charm** | Folk magic, in one word. |
 | Toy | **Talisman** | Something a creature carries: an old bast shoe, an amulet. |

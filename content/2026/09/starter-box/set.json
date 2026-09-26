@@ -125,7 +125,7 @@
       "flavor": "Bright, impatient, and already halfway across the yard.",
       "kitten": {
         "name": "Sunny, Zesty Kit",
-        "text": "Exhaust: A unit you control gets +1 Power this round.\nGrow Up: Your opponent has 5 or fewer Lives.",
+        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: Your opponent has 5 or fewer Lives.",
         "abilities": [
           {
             "when": "exhaust",
@@ -182,7 +182,7 @@
       "flavor": "Flops over anywhere. Gets back up every time.",
       "kitten": {
         "name": "Pippin, Windfall Kit",
-        "text": "Exhaust: Heal 2 from a unit you control.\nGrow Up: You have 6 or fewer Lives.",
+        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Lives.",
         "abilities": [
           {
             "when": "exhaust",
@@ -239,7 +239,7 @@
       "flavor": "Lazes all morning. Rules all afternoon.",
       "kitten": {
         "name": "Tango, Sunbeam Kit",
-        "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats.",
+        "text": "Exhaust: Ready one of your Treats.\nAwaken: You have 8 or more Treats.",
         "abilities": [
           {
             "when": "exhaust",

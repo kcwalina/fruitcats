@@ -40,7 +40,7 @@ fantasy: offerings (Treats) now, and the big spirits wake once the house is **We
 
 | Side | Name | Power | Text |
 |---|---|---|---|
-| Kitten | Dziadziuś, Heart of the House | – | Exhaust: Ready one of your Treats. Grow Up: You have 8 or more Treats. |
+| Kitten | Dziadziuś, Heart of the House | – | Exhaust: Ready one of your Treats. Awaken: You have 8 or more Treats. |
 | Big Cat | Dziadziuś, Master of the House | 4 | Fierce. Exhaust: Ready two of your Treats. |
 
 *Dziadziuś* is the affectionate Polish word for grandpa: families called their house spirit "grandfather". The hero
@@ -58,17 +58,17 @@ re-theme (docs/retheme-proposal.md).
 | DW1-D01 | Stove Keeper | Critter | 1 | 1/2 | Hello: Ready one of your Treats. | 3 | Banana Monkey |
 | DW1-D02 | Moving-Day Domowik | Critter | 1 | 1/1 | Hello: Sprout 1. | 3 | Kiwi Bird |
 | DW1-D03 | Mane-Braiding Domowik | Critter | 2 | 2/2 | Zoomies. | 3 | Passionfruit Parrot |
-| DW1-D04 | Grandfather Domowik | Critter | 3 | 2/5 | Guardian. | 3 | Pineapple Armadillo |
+| DW1-D04 | Keeper of the Door | Critter | 3 | 2/5 | Guardian. | 3 | Pineapple Armadillo |
 | DW1-D05 | Sleepy Stove-Napper | Critter | 2 | 2/3 | Can't attack unless you're Well-Fed. | 3 | Lychee Sloth |
 | DW1-D06 | Bread-and-Salt Greeter | Critter | 4 | 3/5 | Hello: Heal 2 from each unit you control. | 3 | Guava Capybara |
 | DW1-D07 | Kikimora, the Night Spinner | Critter | 5 | 5/5 | Hello: If you're Well-Fed, draw 2 cards. | 3 | Mangosteen Tapir |
 | DW1-D08 | Dvorovoi, Lord of the Yard | Critter | 8 | 7/8 | Guardian. Fierce. | 2 | Jackfruit Elephant |
-| DW1-D09 | Kasha for Grandfather | Trick | 3 | – | Sprout 2. | 3 | Tropical Rain |
-| DW1-D10 | Grandfather's Temper | Trick | 4 | – | Lucky. Deal 5 damage to a unit. | 2 | Coconut Drop |
+| DW1-D09 | Bowl of Kasha | Trick | 3 | – | Sprout 2. | 3 | Tropical Rain |
+| DW1-D10 | A Domowik's Temper | Trick | 4 | – | Lucky. Deal 5 damage to a unit. | 2 | Coconut Drop |
 | DW1-D11 | Saucer of Milk | Trick | 1 | – | Pounce. A unit you control gets +2 Power this round. Ready one of your Treats. | 3 | Mango Smoothie |
 | DW1-D12 | Old Bast Shoe | Toy | 2 | – | Attached unit gets +2 Power and +2 Health. | 2 | Sun Hat |
 | DW1-D13 | Domowik in a Cat's Shape | Cat | 3 | 2/4 | Hello: Sprout 1. | 1 | Papaya, Beach Bum |
-| DW1-D14 | First Master of the House | Cat | 5 | 4/5 | Guardian. Hello: Ready two of your Treats. | 1 | Coconut, Island Guardian |
+| DW1-D14 | Founder of the House | Cat | 5 | 4/5 | Guardian. Hello: Ready two of your Treats. | 1 | Coconut, Island Guardian |
 | DW1-D15 | Bannik of the Bathhouse | Cat | 8 | 8/8 | Fierce. Sneaky. | 1 | Durian, the Mighty Stink |
 | DW1-D16 | Hearth Cricket | Critter | 1 | 2/1 |  | 3 | Pocket Hamster |
 | DW1-D17 | Threshold Hedgehog | Critter | 2 | 1/4 | Guardian. Lucky. | 3 | Garden Snail |

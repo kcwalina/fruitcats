@@ -1,0 +1,23 @@
+{
+  "note": "What players read for the game's own words, in one place (the folklore re-theme, 2026-09-26). The code keeps its own names ('Hero Cat', 'Cat', kitten, bigCat, growUp): they're in saved games, the online protocol and art file names. Change a word here, then run npm run write-text and python tools/compose_cards.py.",
+  "types": {
+    "Hero Cat": "Hero",
+    "Cat": "Fabled",
+    "Critter": "Critter",
+    "Trick": "Trick",
+    "Toy": "Toy"
+  },
+  "typesPlural": {
+    "Hero Cat": "Heroes",
+    "Cat": "Fabled",
+    "Critter": "Critters",
+    "Trick": "Tricks",
+    "Toy": "Toys"
+  },
+  "sides": {
+    "kitten": "",
+    "bigCat": "Awakened"
+  },
+  "growUp": "Awaken",
+  "grewUp": "Awakened"
+}

@@ -23,8 +23,9 @@ process.env.STORE ??= 'testers';
 process.env.STORE_TESTERS ??= '*';
 const FAKE_PADDLE = process.argv.includes('--fake-paddle');
 process.env.STORE_TEST_CHECKOUT ??= FAKE_PADDLE ? 'off' : 'on';
-// Heat Wave only: Berry Picnic's art isn't drawn yet, and the Store never sells a card you can't see.
-process.env.STORE_SETS ??= 'HW1';
+// The old Starter Box decks (free) and Heat Wave: Berry Picnic's art isn't drawn yet, and the Store never sells a card
+// you can't see.
+process.env.STORE_SETS ??= 'SB1,HW1';
 if (process.argv.includes('--fake-sign-in')) process.env.FAKE_SIGN_IN = 'on';
 // The playtest dashboard: any signed-in account is its owner here, and a runner may use the key "local-runner".
 process.env.PLAYTEST_OWNERS ??= '*';

@@ -9,14 +9,16 @@ import { DECK_PRICE, cardProduct, deckProduct, type Quote } from '@fruitcats/sto
 
 const ALICE = 'a'.repeat(32);   // a tester
 const BOB = 'b'.repeat(32);     // not a tester
+const CAROL = 'c'.repeat(32);   // a tester who takes the free decks
 let storeRequest: typeof import('../src/store').storeRequest;
+let hasPaid: typeof import('../src/store').hasPaid;
 
 beforeAll(async () => {
   process.env.LOCAL_DATA = mkdtempSync(join(tmpdir(), 'fruitcats-store-'));
   process.env.STORE = 'testers';
-  process.env.STORE_TESTERS = ALICE;
+  process.env.STORE_TESTERS = `${ALICE},${CAROL}`;
   process.env.STORE_TEST_CHECKOUT = 'on';
-  ({ storeRequest } = await import('../src/store'));
+  ({ storeRequest, hasPaid } = await import('../src/store'));
 });
 
 const call = (user: string, method: string, path: string, body: unknown = {}) => storeRequest(user, method, path, async () => body);
@@ -97,5 +99,38 @@ describe('test checkout', () => {
     const q = await quote(ALICE, [{ product: 'card:HW1-P01', qty: '3' }, { product: { a: 1 }, qty: 1 }, 'x', null]);
     expect(q.total).toBe(0);
     expect(await quote(ALICE, 'not a list')).toMatchObject({ total: 0, lines: [] });
+  });
+});
+
+describe('free decks (the old Starter Box decks, at $0)', () => {
+  const get = (user: string, product: string, id = orderId()) => call(user, 'POST', '/v1/store/get', { orderId: id, product });
+
+  it('never gives away a deck that costs money', async () => {
+    expect(await get(CAROL, deckProduct('five-alarm'))).toEqual([400, { error: 'not_free' }]);
+    expect(await get(CAROL, cardProduct('HW1-X01'))).toEqual([400, { error: 'not_free' }]);
+    expect(await get(CAROL, 'deck:nope')).toEqual([400, { error: 'not_free' }]);
+    expect((await call(CAROL, 'GET', '/v1/store'))[1]).toMatchObject({ owned: {} });
+  });
+
+  it('is only for accounts the Store is open to', async () => {
+    expect(await get(BOB, deckProduct('zest-rush'))).toEqual([403, { error: 'store_private' }]);
+  });
+
+  it('gives the deck’s cards once, however often it’s asked, and they stay after a test reset', async () => {
+    const id = orderId();
+    const first = await get(CAROL, deckProduct('zest-rush'), id);
+    const again = await get(CAROL, deckProduct('zest-rush'), id);
+    expect(first).toMatchObject([200, { order: { status: 'free', total: 0 } }]);
+    expect(again).toMatchObject([200, { repeated: true }]);
+    expect(await get(CAROL, deckProduct('zest-rush'))).toMatchObject([400, { error: 'nothing_to_buy' }]);
+    await call(CAROL, 'POST', '/v1/store/test-reset');
+    const [, store] = await call(CAROL, 'GET', '/v1/store') as [number, { owned: Record<string, number>; orders: unknown[] }];
+    expect(store.orders).toHaveLength(1);
+    expect(store.owned['SB1-H01']).toBe(1);
+    expect(store.owned['SB1-C01']).toBe(3);
+  });
+
+  it('doesn’t make the account a paying one', async () => {
+    expect(await hasPaid(CAROL)).toBe(false);
   });
 });

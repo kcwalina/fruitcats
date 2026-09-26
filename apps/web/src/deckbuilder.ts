@@ -12,7 +12,7 @@ import { missingForDeck } from '@fruitcats/store';
 import { owned, ownedCards, ownedHeroes } from './collection';
 import { STORE } from './flags';
 import { catalog, storeAccess } from './shop';
-import { copyDeck, customKey, deleteDeck, getDeck, isReady, listDecks, newDeck, problems, saveDeck, type MyDeck } from './mydecks';
+import { copyDeck, customKey, deleteDeck, getDeck, isReady, listDecks, newDeck, ownedDeckKeys, problems, saveDeck, type MyDeck } from './mydecks';
 import { BASE, artUrl, backButton, esc, famClass, settingsButton } from './ui';
 import { familyInfo } from './sets';
 import { finishFrame, yourCardUrl } from './rarity';
@@ -388,7 +388,7 @@ function renderDeckList(): string {
       <section class="deck-group">
         <h3>Start from a deck</h3>
         <div class="deck-tiles">
-          ${Object.entries(DECKS).map(([key, d]) => deckTile(`deck:copy:${key}`, d, '<span class="starter-tag">Ready-made</span>', '', true)).join('')}
+          ${ownedDeckKeys().map((key) => [key, DECKS[key]] as const).map(([key, d]) => deckTile(`deck:copy:${key}`, d, '<span class="starter-tag">Ready-made</span>', '', true)).join('')}
           ${mine.filter((d) => deckSize(d) > 0).map((d) => deckTile(`deck:copy:${customKey(d.id)}`, d, '<span class="mine-tag">Your deck</span>', '', true)).join('')}
         </div>
       </section>

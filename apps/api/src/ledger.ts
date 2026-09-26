@@ -9,6 +9,7 @@
 //   refunded    every line refunded (by Paddle, or taken back by hand): its cards are gone
 //   charged_back  the same, after a chargeback
 //   granted     given by hand, for support (the permanent log says who and why)
+//   free        a free deck the player took from the Store (a $0 deck): cards, no money
 //
 // Rules the tests hold it to:
 //   - One Paddle transaction marks one order paid, once. The same payment again changes nothing; a second payment for
@@ -18,7 +19,7 @@
 //     nothing (webhooks can come in any order).
 //   - A refund of part of an amount (not whole lines) takes no cards and raises an alert: the owner decides.
 
-export type Status = 'test' | 'pending' | 'abandoned' | 'paid' | 'refunded' | 'charged_back' | 'granted';
+export type Status = 'test' | 'pending' | 'abandoned' | 'paid' | 'refunded' | 'charged_back' | 'granted' | 'free';
 
 /** What an order holds, as store.ts keeps it. */
 export interface OrderState {
@@ -68,7 +69,7 @@ export function transition(s: OrderState, e: Event): Outcome {
       return { next: { ...s, txn: e.txn }, changed: true };
 
     case 'paid': {
-      if (s.status === 'test' || s.status === 'granted') return { ...same(s), alert: `payment ${e.txn} names a ${s.status} order` };
+      if (s.status === 'test' || s.status === 'granted' || s.status === 'free') return { ...same(s), alert: `payment ${e.txn} names a ${s.status} order` };
       if (s.txn && s.txn !== e.txn && s.paidAt) return { ...same(s), alert: `order paid twice: ${s.txn} and ${e.txn}; refund ${e.txn}` };
       if (s.paidAt) return same(s);   // paid, refunded or charged back already: the same payment again
       return {
@@ -108,7 +109,7 @@ export function transition(s: OrderState, e: Event): Outcome {
 
 /** Card id → copies this order gives its account now. */
 export function held(s: OrderState, countTests = false): Record<string, number> {
-  if (!(s.status === 'paid' || s.status === 'granted' || (s.status === 'test' && countTests))) return {};
+  if (!(s.status === 'paid' || s.status === 'granted' || s.status === 'free' || (s.status === 'test' && countTests))) return {};
   const have: Record<string, number> = {};
   for (const [id, n] of Object.entries(s.grants)) {
     const left = n - (s.revoked?.[id] ?? 0);

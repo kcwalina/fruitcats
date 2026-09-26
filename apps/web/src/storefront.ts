@@ -16,7 +16,7 @@ import { rarity, rarityMark } from './rarity';
 import {
   addLinesToCart, addToCart, planForDeck, cartCount, cartLines, catalog, clearCart, inCart, localQuote, ownedNow, placeTestOrder,
   newOrderId, refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, testCheckout, type Order,
-  awaitOrder, confirmOrder, payments, startCheckout, takeArrived,
+  awaitOrder, confirmOrder, getFreeDeck, payments, startCheckout, takeArrived,
 } from './shop';
 import { BUYING } from './flags';
 import { payWithPaddle } from './paddle';
@@ -129,6 +129,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
       notice = p ? `${p.kind === 'deck' ? p.name : cardName(p.card)} is in your cart.` : '';
       break;
     }
+    case 'get': void getFree(arg, host); return;
     case 'more': setLineQty(arg, inCart(arg) + 1); break;
     case 'less': setLineQty(arg, inCart(arg) - 1); break;
     case 'remove': removeLine(arg); break;
@@ -273,6 +274,19 @@ async function pay(host: StoreHost, agreed: number, orderId: string) {
   }
 }
 
+/** "Get" on a free deck: its cards join the collection, then they're revealed like an order's. */
+let getting: string | null = null;
+async function getFree(product: string, host: StoreHost) {
+  if (getting) return;
+  getting = product;
+  host.render();
+  const result = await getFreeDeck(product);
+  getting = null;
+  if (result.ok) startReveal(result.order);
+  else notice = 'message' in result ? result.message : '';
+  host.render();
+}
+
 function startReveal(order: Order) {
   // Commons first, the rarest last (a Hero Cat last of all): the reveal ends on the best card.
   const cards = Object.keys(order.grants).sort((a, b) =>
@@ -402,8 +416,15 @@ const CART_ICON = `<svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke
  */
 function tileAction(p: DeckProduct | CardProduct, name: string, full: number, now: number, done: string | null): string {
   if (done) return `<span class="buy done">${done}</span>`;
+  if (p.kind === 'deck' && p.price === 0) return getButton(p, name, 'buy');
   if (canBuy() && inCart(p.id)) return `<button class="buy in-cart" data-click="store:cart" aria-label="${esc(name)} is in your cart. View cart">✓ In cart</button>`;
   return `<button class="buy" data-click="store:add:${p.id}" aria-label="Add ${esc(name)} to cart, ${price(now)}">${CART_ICON}<span class="add-word">Add</span>${priceChip(full, now)}</button>`;
+}
+
+/** A free deck: "Get" adds it to your collection straight away (no cart: there's nothing to pay). */
+function getButton(p: DeckProduct, name: string, cls: string): string {
+  const busy = getting === p.id;
+  return `<button class="${cls} get" data-click="store:get:${p.id}" ${busy ? 'disabled' : ''} aria-label="Get ${esc(name)}, free">${busy ? 'Getting…' : '<span class="add-word">Get</span><span class="price-chip">Free</span>'}</button>`;
 }
 
 /** A tile: the picture and name open the item's page; the button under them adds it to the cart. */
@@ -440,6 +461,7 @@ function renderCardOffer(p: CardProduct, have: number): string {
 /** Add to cart, where the eye already is: right under the item's name (and again after a deck's cards). */
 function buyButton(p: DeckProduct | CardProduct, full: number, now: number, complete: boolean, where = ''): string {
   const action = complete ? '<span class="owned-pill big">✓ You have it all</span>'
+    : p.kind === 'deck' && p.price === 0 ? getButton(p, p.name, 'store-btn buy big')
     : canBuy() && inCart(p.id) ? '<button class="store-btn ghost big" data-click="store:cart">✓ In your cart · View cart</button>'
     : `<button class="store-btn buy big" data-click="store:add:${p.id}">${CART_ICON}Add to cart ${priceChip(full, now)}</button>`;
   return `<div class="product-buy ${where}">${action}</div>`;

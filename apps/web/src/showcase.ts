@@ -449,7 +449,7 @@ function renderGrid(): string {
     <div class="collection-grid" data-keep-scroll="grid">
       <div class="grid-head">
         <div class="collect-progress">
-          <span class="cp-title">Starter Box</span>
+          <span class="cp-title">Every card</span>
           <span class="cp-count"><b>${have}</b> of ${SET.length} collected</span>
           <span class="cp-bar" aria-hidden="true"><i style="width:${(have / SET.length) * 100}%"></i></span>
         </div>
@@ -458,7 +458,7 @@ function renderGrid(): string {
       </div>
       ${shown.length ? `<div class="grid">${shown.map(renderTile).join('')}</div>` : `
       <div class="grid-empty">
-        <p>No ${rarityFilter === 'all' ? '' : `${rarityFilter} `}${familyFilter === 'all' ? '' : `${familyFilter} `}cards in the Starter Box.</p>
+        <p>No ${rarityFilter === 'all' ? '' : `${rarityFilter} `}${familyFilter === 'all' ? '' : `${familyFilter} `}cards here.</p>
         <button class="chip fchip" data-click="col:clear">Show all cards</button>
       </div>`}
     </div>`;

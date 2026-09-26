@@ -1,0 +1,561 @@
+{
+  "set": "DW1",
+  "name": "Domowiki",
+  "version": "0.1.0",
+  "status": "released",
+  "released": "2026-10",
+  "starter": true,
+  "requires": [
+    "SB1"
+  ],
+  "families": {
+    "Domowiki": {
+      "colors": [
+        "#5B3F9E",
+        "#2E1F5C",
+        "#EEE8FB"
+      ],
+      "personality": "Grumpy, loyal, fond of porridge",
+      "playsLike": "Feed the house with extra Treats, then wake the big spirits",
+      "mechanic": "Well-Fed",
+      "hint": "extra Treats now, Well-Fed payoffs at 7+"
+    }
+  },
+  "mechanics": {
+    "Well-Fed": {
+      "family": "Domowiki",
+      "kind": "condition",
+      "reminder": "This bonus is on while you have 7 or more Treats.",
+      "if": {
+        "treats": {
+          "atLeast": 7
+        }
+      },
+      "badge": {
+        "icon": "🍞",
+        "title": "Well-Fed: 7 or more Treats — Well-Fed bonuses are on"
+      }
+    }
+  },
+  "lore": {
+    "creature": "Domowik (plural Domowiki)",
+    "from": "Slavic folklore: Poland (domowik), Russia (domovoi), Ukraine (domovyk), Belarus (damavik), Czechia (děd), Slovakia (škriatok), Bulgaria (stopan)",
+    "facts": [
+      "The name means 'the one of the house'. Every home had its own Domowik, often thought to be the family's first ancestor.",
+      "He usually looks like a small old man with a grey beard and a coat of soft fur. Some said he could look like the head of the family, or take the shape of a cat.",
+      "He lives behind or under the stove, or under the threshold, and looks after the family, the children and the animals.",
+      "Families left him bread and salt, porridge or milk, and good behaviour: he hates quarrels, swearing and a messy home.",
+      "An angry Domowik bangs pots, hides tools, pinches sleepers and tangles hair. A very unhappy one leaves, and the house loses its luck.",
+      "Moving house, families carried embers from the old stove, or an old shoe, and asked him along: 'Grandfather, come with us to the new home.'",
+      "He braids the manes of the horses he likes and tires out the ones he doesn't.",
+      "A warm, furry hand touching you at night was a sign of good times ahead; a cold one, of trouble.",
+      "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha."
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/Domovoy"
+    ]
+  },
+  "cards": [
+    {
+      "id": "DW1-H01",
+      "rarity": "Rare",
+      "type": "Hero Cat",
+      "family": "Domowiki",
+      "name": "Dziadek, the House Grandfather",
+      "flavor": "Every family has one. The lucky ones feed him.",
+      "kitten": {
+        "name": "Dziadek, New to the House",
+        "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats.",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "do": [
+              {
+                "readyTreats": 1
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "treats": {
+              "atLeast": 8
+            }
+          }
+        }
+      },
+      "bigCat": {
+        "name": "Dziadek, Master of the House",
+        "power": 4,
+        "text": "Fierce. Exhaust: Ready two of your Treats.",
+        "keywords": [
+          "Fierce"
+        ],
+        "abilities": [
+          {
+            "when": "exhaust",
+            "do": [
+              {
+                "readyTreats": 2
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "DW1-D01",
+      "rarity": "Common",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Stove Keeper",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "text": "Hello: Ready one of your Treats.",
+      "flavor": "Keeps the embers warm until morning.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "readyTreats": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D02",
+      "rarity": "Common",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Moving-Day Domowik",
+      "cost": 1,
+      "power": 1,
+      "health": 1,
+      "text": "Hello: Sprout 1.",
+      "flavor": "Carry the old fire, and the home comes with you.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "sprout": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D03",
+      "rarity": "Common",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Mane-Braiding Domowik",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "text": "Zoomies.",
+      "flavor": "The horse he favours wakes with braids in its mane.",
+      "keywords": [
+        "Zoomies"
+      ]
+    },
+    {
+      "id": "DW1-D04",
+      "rarity": "Common",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Grandfather Domowik",
+      "cost": 3,
+      "power": 2,
+      "health": 5,
+      "text": "Guardian.",
+      "flavor": "Nothing crosses the threshold without his nod.",
+      "keywords": [
+        "Guardian"
+      ]
+    },
+    {
+      "id": "DW1-D05",
+      "rarity": "Common",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Sleepy Stove-Napper",
+      "cost": 2,
+      "power": 2,
+      "health": 3,
+      "text": "Can't attack unless you're Well-Fed.",
+      "flavor": "He won't stir for an empty bowl.",
+      "abilities": [
+        {
+          "static": {
+            "cantAttack": true,
+            "while": {
+              "not": "Well-Fed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "DW1-D06",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Bread-and-Salt Greeter",
+      "cost": 4,
+      "power": 3,
+      "health": 5,
+      "text": "Hello: Heal 2 from each unit you control.",
+      "flavor": "Every guest is welcome. Every crumb is counted.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D07",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Kikimora, the Night Spinner",
+      "cost": 5,
+      "power": 5,
+      "health": 5,
+      "text": "Hello: If you're Well-Fed, draw 2 cards.",
+      "flavor": "Spins by the stove all night. The yarn tells tomorrow.",
+      "abilities": [
+        {
+          "when": "hello",
+          "if": "Well-Fed",
+          "do": [
+            {
+              "draw": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D08",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Critter",
+      "name": "Dvorovoi, Lord of the Yard",
+      "cost": 8,
+      "power": 7,
+      "health": 8,
+      "text": "Guardian. Fierce.",
+      "flavor": "The house belongs to his cousin. Everything outside is his.",
+      "keywords": [
+        "Guardian",
+        "Fierce"
+      ]
+    },
+    {
+      "id": "DW1-D09",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Trick",
+      "name": "Kasha for Grandfather",
+      "cost": 3,
+      "text": "Sprout 2.",
+      "flavor": "A bowl by the stove, the first spoonful for him.",
+      "abilities": [
+        {
+          "when": "play",
+          "do": [
+            {
+              "sprout": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D10",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Trick",
+      "name": "Grandfather's Temper",
+      "cost": 4,
+      "text": "Lucky. Deal 5 damage to a unit.",
+      "flavor": "Slam a door in his house and he slams back.",
+      "keywords": [
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "any"
+          },
+          "do": [
+            {
+              "damage": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D11",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Trick",
+      "name": "Saucer of Milk",
+      "cost": 1,
+      "text": "Pounce. A unit you control gets +2 Power this round. Ready one of your Treats.",
+      "flavor": "Warm milk in the stable keeps the whole barn happy.",
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            },
+            {
+              "readyTreats": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D12",
+      "rarity": "Uncommon",
+      "family": "Domowiki",
+      "type": "Toy",
+      "name": "Old Bast Shoe",
+      "cost": 2,
+      "text": "Attached unit gets +2 Power and +2 Health.",
+      "flavor": "His ride to every new home.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 2,
+              "health": 2
+            },
+            "to": "attached"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DW1-D13",
+      "rarity": "Rare",
+      "family": "Domowiki",
+      "type": "Cat",
+      "name": "Domowik in a Cat's Shape",
+      "cost": 3,
+      "power": 2,
+      "health": 4,
+      "text": "Hello: Sprout 1.",
+      "flavor": "The family cat sleeps in the stove corner. Or does it?",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "sprout": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D14",
+      "rarity": "Rare",
+      "family": "Domowiki",
+      "type": "Cat",
+      "name": "First Master of the House",
+      "cost": 5,
+      "power": 4,
+      "health": 5,
+      "text": "Guardian. Hello: Ready two of your Treats.",
+      "flavor": "The one who built the house never really left.",
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "readyTreats": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D15",
+      "rarity": "Rare",
+      "family": "Domowiki",
+      "type": "Cat",
+      "name": "Bannik of the Bathhouse",
+      "cost": 8,
+      "power": 8,
+      "health": 8,
+      "text": "Fierce. Sneaky.",
+      "flavor": "Always leave the last steam for him.",
+      "keywords": [
+        "Fierce",
+        "Sneaky"
+      ]
+    },
+    {
+      "id": "DW1-D16",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Domowiki",
+      "name": "Hearth Cricket",
+      "cost": 1,
+      "power": 2,
+      "health": 1,
+      "text": "",
+      "flavor": "Sings behind the stove, where the Domowik sleeps."
+    },
+    {
+      "id": "DW1-D17",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Domowiki",
+      "name": "Threshold Hedgehog",
+      "cost": 2,
+      "power": 1,
+      "health": 4,
+      "text": "Guardian. Lucky.",
+      "flavor": "Under the doorstep, where house spirits live.",
+      "keywords": [
+        "Guardian",
+        "Lucky"
+      ]
+    },
+    {
+      "id": "DW1-D18",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Domowiki",
+      "name": "Whispering Domowik",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "text": "Hello: Draw a card.",
+      "flavor": "Listen at night. He warns before trouble comes.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D19",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Domowiki",
+      "name": "Warm Hand in the Night",
+      "cost": 1,
+      "text": "Pounce. A unit you control gets +2 Power this round.",
+      "flavor": "A soft, warm, furry hand on your cheek means good luck.",
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DW1-D20",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Domowiki",
+      "name": "Knotted Mane",
+      "cost": 1,
+      "text": "Lucky. Exhaust an enemy unit.",
+      "flavor": "Anger the Domowik and wake up with tangled hair.",
+      "keywords": [
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "decks": {
+    "domowiki": {
+      "name": "Domowiki",
+      "hero": "DW1-H01",
+      "cards": {
+        "DW1-D01": 3,
+        "DW1-D02": 3,
+        "DW1-D03": 3,
+        "DW1-D04": 3,
+        "DW1-D05": 3,
+        "DW1-D06": 3,
+        "DW1-D07": 3,
+        "DW1-D08": 2,
+        "DW1-D09": 3,
+        "DW1-D10": 2,
+        "DW1-D11": 3,
+        "DW1-D12": 2,
+        "DW1-D13": 1,
+        "DW1-D14": 1,
+        "DW1-D15": 1,
+        "DW1-D16": 3,
+        "DW1-D17": 3,
+        "DW1-D18": 3,
+        "DW1-D19": 3,
+        "DW1-D20": 2
+      },
+      "blurb": "Feed the house spirits, then wake the giants. Gather extra Treats; at 7 or more, the Domowiki are Well-Fed."
+    }
+  }
+}

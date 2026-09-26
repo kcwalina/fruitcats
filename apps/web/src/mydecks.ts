@@ -3,6 +3,7 @@
 // every device: each deck carries when it last changed, and a deleted deck is remembered until the account knows.
 
 import { CARDS, DECKS, deckProblems, type DeckList } from '@fruitcats/engine';
+import { isStarterSet } from '@fruitcats/store';
 import { owned } from './collection';
 
 const DECKS_KEY = 'fruitcats-decks';
@@ -119,6 +120,18 @@ export const isReady = (deck: DeckList) => problems(deck).length === 0;
 
 export const customKey = (id: string) => `${CUSTOM}${id}`;
 
+/**
+ * The ready-made decks the player has every card of: the starter decks, and those taken from the Store (the old
+ * Starter Box decks are there, free). Starter decks first.
+ */
+export function ownedDeckKeys(): string[] {
+  const starter = (key: string) => (isStarterSet(CARDS[DECKS[key].hero]?.set ?? '') ? 0 : 1);
+  return Object.keys(DECKS).filter((key) => isReady(DECKS[key])).sort((a, b) => starter(a) - starter(b));
+}
+
+/** The deck to fall back on: the first ready-made deck the player has. */
+export const firstDeck = () => ownedDeckKeys()[0] ?? Object.keys(DECKS)[0];
+
 /** A starter deck or one of the player's own, by key; undefined if it's gone. */
 export function deckForKey(key: string): DeckList | undefined {
   return key.startsWith(CUSTOM) ? getDeck(key.slice(CUSTOM.length)) : DECKS[key];
@@ -129,7 +142,7 @@ export function loadChosenDeck(): string {
   let key: string | null = null;
   try { key = localStorage.getItem(CHOSEN_KEY); } catch { /* private mode */ }
   const deck = key ? deckForKey(key) : undefined;
-  return key && deck && isReady(deck) ? key : Object.keys(DECKS)[0];
+  return key && deck && isReady(deck) ? key : firstDeck();
 }
 
 export function saveChosenDeck(key: string): void {

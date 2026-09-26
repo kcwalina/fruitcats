@@ -217,7 +217,25 @@ export async function placeTestOrder(total: number, orderId: string = newOrderId
   return { ok: true, order };
 }
 
+/**
+ * Take a free deck (one the Store lists at $0): no cart and no checkout, so it works while buying is off. The API grants
+ * its cards; the same order id again is answered, not granted twice.
+ */
+export async function getFreeDeck(product: string, orderId: string = newOrderId()): Promise<OrderResult> {
+  const r = await call('POST', '/v1/store/get', { orderId, product });
+  if (!r) return { ok: false, why: 'offline', message: 'The Store didn’t answer. Please try again in a minute.' };
+  if (r.status !== 200) return { ok: false, why: 'refused', message: REFUSALS[String(r.data.error)] ?? 'The Store couldn’t give you this deck. Please try again later.' };
+  const order = r.data.order as Order;
+  if (cache) {
+    cache.saved.owned = r.data.owned as Record<string, number>;
+    if (!cache.saved.orders.some((o) => o.id === order.id)) cache.saved.orders.push(order);
+    save();
+  }
+  return { ok: true, order };
+}
+
 const REFUSALS: Record<string, string> = {
+  not_free: 'This deck isn’t free any more.',
   below_minimum: 'This order is under the minimum. Nothing was ordered.',
   nothing_to_buy: 'You already have everything in this cart. Nothing was ordered.',
   no_test_checkout: 'Test orders are switched off. Nothing was ordered.',

@@ -50,7 +50,8 @@
       "He braids the manes of the horses he likes and tires out the ones he doesn't.",
       "A warm, furry hand touching you at night was a sign of good times ahead; a cold one, of trouble.",
       "He has relatives: the Dvorovoi of the yard, the Bannik of the bathhouse, the Ovinnik of the barn, and in some tales a wife, the Kikimora or Domowicha.",
-      "Folklorists describe the Domowik as the household's own piece of Rod, the Slavic god of kin and ancestors. The Polish word praszczur means 'the first forefather', and shares its root with Chur, the ancestor god who guarded the hearth: the leader every Domowik descends from."
+      "Folklorists describe the Domowik as the household's own piece of Rod, the Slavic god of kin and ancestors: each family's first forefather, still looking after his descendants.",
+      "Families often called him 'grandfather' (Polish dziadek, or fondly dziadziuś), never by name, out of respect."
     ],
     "sources": [
       "https://en.wikipedia.org/wiki/Domovoy",
@@ -63,10 +64,10 @@
       "rarity": "Legendary",
       "type": "Hero Cat",
       "family": "Domowiki",
-      "name": "Praszczur, the First Forefather",
-      "flavor": "Every Domowik in every house is a small part of him.",
+      "name": "Dziadziuś, Heart of the House",
+      "flavor": "The smallest Domowik in the house. Everyone listens to him anyway.",
       "kitten": {
-        "name": "Praszczur, the First Forefather",
+        "name": "Dziadziuś, Heart of the House",
         "text": "Exhaust: Ready one of your Treats.\nGrow Up: You have 8 or more Treats.",
         "abilities": [
           {
@@ -87,7 +88,7 @@
         }
       },
       "bigCat": {
-        "name": "Praszczur, Father of All Houses",
+        "name": "Dziadziuś, Master of the House",
         "power": 4,
         "text": "Fierce. Exhaust: Ready two of your Treats.",
         "keywords": [

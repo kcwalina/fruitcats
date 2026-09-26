@@ -36,19 +36,17 @@ fantasy: offerings (Treats) now, and the big spirits wake once the house is **We
 - Gameplay that follows the folklore more closely (angry Domowiki, moving house, the warm or cold hand) can come
   later, as the deck is tuned; nothing here needs engine code.
 
-## Hero: Praszczur, the First Forefather (DW1-H01, Legendary)
+## Hero: Dziadziuś, Heart of the House (DW1-H01, Legendary)
 
 | Side | Name | Power | Text |
 |---|---|---|---|
-| Kitten | Praszczur, the First Forefather | – | Exhaust: Ready one of your Treats. Grow Up: You have 8 or more Treats. |
-| Big Cat | Praszczur, Father of All Houses | 4 | Fierce. Exhaust: Ready two of your Treats. |
+| Kitten | Dziadziuś, Heart of the House | – | Exhaust: Ready one of your Treats. Grow Up: You have 8 or more Treats. |
+| Big Cat | Dziadziuś, Master of the House | 4 | Fierce. Exhaust: Ready two of your Treats. |
 
-A deck's hero must read as more exalted than every other card in it (the owner's rule, 2026-09-26). Folklore has no
-king of the Domowiki, but it has something higher: folklorists describe each Domowik as the household's own piece of
-**Rod**, the god of kin and ancestors, and the Polish **praszczur** ("the first forefather") shares its root with
-**Chur**, the ancestor god who guarded the hearth. So the hero is the forefather every Domowik descends from:
-enthroned and crowned with wheat as the Kitten, and as the Big Cat a radiant spirit over a whole village, blessing
-every house's hearth. It is Legendary (the crown mark) and the only card in the deck with a gold frame.
+*Dziadziuś* is the affectionate Polish word for grandpa: families called their house spirit "grandfather". The hero
+is the cutest Domowik of all, painted like the rest of the deck (the owner's call, 2026-09-26: a grand, glowing
+"forefather god" looked like a Santa Claus and lost what makes the deck captivating). What marks him as the leader is
+the card, not a halo: Legendary (the crown mark) and the only gold frame in the deck.
 
 The engine still calls the leader a Hero Cat, with Kitten and Big Cat sides; renaming those is part of the wider
 re-theme (docs/retheme-proposal.md).

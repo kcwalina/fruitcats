@@ -142,23 +142,7 @@ export function builtInTwin(deck: DeckList): string | null {
   return Object.keys(DECKS).find((key) => sameCards(deck, DECKS[key])) ?? null;
 }
 
-/**
- * The starter deck this deck was made from, or null: the starter with the same Hero Cat that shares the most
- * cards with it, when at least half of the deck is still that starter's. It's worked out from the cards, not
- * stored, so it holds on every device and for a deck from a code too.
- */
-export function starterBase(deck: DeckList): string | null {
-  let best: string | null = null;
-  let bestShared = Math.ceil(DECK_RULES.size / 2) - 1;
-  for (const [key, starter] of Object.entries(DECKS)) {
-    if (starter.hero !== deck.hero) continue;
-    const shared = Object.entries(starter.cards).reduce((n, [id, qty]) => n + Math.min(qty, deck.cards[id] ?? 0), 0);
-    if (shared > bestShared) { best = key; bestShared = shared; }
-  }
-  return best;
-}
-
-/** What changed from `base` to `deck`: copies put in (card id → how many more) and copies taken out. */
+/** What changed from `base` (the deck it was copied from) to `deck`: copies put in (card id → how many more) and copies taken out. */
 export function deckChanges(deck: DeckList, base: DeckList): { added: Record<string, number>; removed: Record<string, number> } {
   const added: Record<string, number> = {};
   const removed: Record<string, number> = {};

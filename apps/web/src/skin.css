@@ -584,7 +584,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* ── Deck builder ────────────────────────────────────────────────────── */
 
-.deck-tile, .deck-panel, .rules-link, .build-bar {
+.deck-tile, .deck-panel, .build-bar {
   background: linear-gradient(var(--parchment), var(--parchment-2)); border: 3px solid var(--parchment-edge);
   box-shadow: var(--panel-shadow); color: var(--ink);
 }

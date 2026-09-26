@@ -14,7 +14,16 @@ export interface MyDeck extends DeckList {
   id: string;
   /** When it last changed (ms since epoch), so the newest edit wins across devices. */
   updatedAt?: number;
+  /** The deck this one was copied from (a starter or one of your decks), as it was then. */
+  from?: DeckOrigin;
 }
+
+/**
+ * Where a copied deck came from: that deck's name, key (a starter's, or `custom:<id>`) and cards when it was copied.
+ * The cards are kept so the builder can mark what changed even after the original is changed or deleted. A copy of a
+ * copy points at the copy, so decks form a chain.
+ */
+export interface DeckOrigin { name: string; key: string; cards: Record<string, number> }
 
 /** A deck deleted on this device and not yet known to the account. */
 export interface DeletedDeck { id: string; updatedAt: number }
@@ -59,6 +68,24 @@ export function saveDeck(deck: MyDeck): void {
 /** A new, empty deck. The builder stores it on its first change. */
 export function newDeck(hero: string): MyDeck {
   return { id: Date.now().toString(36), name: `${CARDS[hero].name.split(',')[0]}'s deck`, hero, cards: {} };
+}
+
+/**
+ * A new deck with the cards of a starter or one of your decks (by key), remembering where it came from. Like any new
+ * deck, the builder stores it on its first change. Its name is "My <starter>", or "<your deck> 2" (3, 4…).
+ */
+export function copyDeck(key: string): MyDeck | undefined {
+  const source = deckForKey(key);
+  if (!source) return undefined;
+  const deck = newDeck(source.hero);
+  const names = new Set(listDecks().map((d) => d.name));
+  const stem = (key.startsWith(CUSTOM) ? source.name : `My ${source.name}`).slice(0, 36);
+  let name = stem;
+  for (let n = 2; names.has(name); n++) name = `${stem} ${n}`;
+  deck.name = name;
+  deck.cards = { ...source.cards };
+  deck.from = { name: source.name, key, cards: { ...source.cards } };
+  return deck;
 }
 
 export function deleteDeck(id: string): void {

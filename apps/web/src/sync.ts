@@ -7,12 +7,12 @@
 
 import { API } from './api';
 import { session, signOut, token } from './auth';
-import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type MyDeck } from './mydecks';
+import { applySyncedDecks, deletedDecks, forgetDecks, listDecks, onDecksChanged, type DeckOrigin, type MyDeck } from './mydecks';
 import { applySyncedShowcase, forgetShowcase, onShowcaseChanged, savedShowcase } from './showcase';
 import { forgetStore } from './shop';
 
 interface Host { render(): void }
-interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
+interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number>; from?: DeckOrigin } }
 
 let host: Host | null = null;
 let started = false;
@@ -53,7 +53,7 @@ async function run(): Promise<boolean> {
   const t = await token();
   if (!t) return false;
   const decks: SyncDeck[] = [
-    ...listDecks().map((d) => ({ id: d.id, updatedAt: d.updatedAt ?? Date.now(), deck: { name: d.name, hero: d.hero, cards: d.cards } })),
+    ...listDecks().map((d) => ({ id: d.id, updatedAt: d.updatedAt ?? Date.now(), deck: { name: d.name, hero: d.hero, cards: d.cards, from: d.from } })),
     ...deletedDecks().map((d) => ({ id: d.id, updatedAt: d.updatedAt, deleted: true })),
   ];
   let merged: { decks: SyncDeck[]; showcase: { faces: string[]; updatedAt: number } | null };
@@ -74,9 +74,11 @@ async function run(): Promise<boolean> {
   // a server that rejects decks it shouldn't (it once couldn't read the card sets and dropped every deck) must not
   // be able to wipe them from the device. Such a deck stays here and is sent again at the next sync.
   const answered = new Set(merged.decks.map((d) => d.id));
+  // Where a copied deck came from: an account server that doesn't keep it yet mustn't make this device forget it.
+  const from = new Map(listDecks().filter((d) => d.from).map((d) => [d.id, d.from]));
   const kept = listDecks().filter((d) => !answered.has(d.id));
   applySyncedDecks(
-    [...merged.decks.filter((d) => !d.deleted && d.deck).map((d): MyDeck => ({ id: d.id, updatedAt: d.updatedAt, ...d.deck! })), ...kept],
+    [...merged.decks.filter((d) => !d.deleted && d.deck).map((d): MyDeck => ({ id: d.id, updatedAt: d.updatedAt, ...d.deck!, from: d.deck!.from ?? from.get(d.id) })), ...kept],
     merged.decks.filter((d) => d.deleted).map((d) => d.id),
   );
   const saved = savedShowcase();

@@ -56,7 +56,11 @@ const showcaseTable = table('showcase');
 const live = tableStore(table('matches'), table('rivals'), table('seen'));
 
 /** A deck as the game stores it, with when it last changed. A deleted deck stays as a marker, so it doesn't come back. */
-interface SyncDeck { id: string; updatedAt: number; deleted?: boolean; deck?: { name: string; hero: string; cards: Record<string, number> } }
+interface SyncDeck {
+  id: string; updatedAt: number; deleted?: boolean;
+  /** `from`: the deck it was copied from (name, key and cards then), so the game can show what changed. */
+  deck?: { name: string; hero: string; cards: Record<string, number>; from?: { name: string; key: string; cards: Record<string, number> } };
+}
 interface SyncShowcase { faces: string[]; updatedAt: number }
 
 /** Local only (npm run api:local -- --fake-sign-in): "Bearer dev-<account id>" is that account, no email code needed. */
@@ -147,15 +151,20 @@ async function serviceCall(req: IncomingMessage, userId: string, purpose: string
 const validId = (id: unknown): id is string => typeof id === 'string' && /^[a-z0-9]{1,24}$/i.test(id);
 const validTime = (t: unknown): t is number => typeof t === 'number' && Number.isFinite(t) && t > 0 && t < Date.now() + 86_400_000;
 
+const cleanCards = (cards: Record<string, unknown>) => Object.fromEntries(Object.entries(cards)
+  .filter(([id, n]) => CARDS[id] && Number.isInteger(n) && (n as number) > 0 && (n as number) <= 9)) as Record<string, number>;
+
 function cleanDeck(d: unknown): SyncDeck | null {
   const x = d as SyncDeck;
   if (!x || !validId(x.id) || !validTime(x.updatedAt)) return null;
   if (x.deleted) return { id: x.id, updatedAt: x.updatedAt, deleted: true };
   const deck = x.deck;
   if (!deck || typeof deck.name !== 'string' || !CARDS[deck.hero] || typeof deck.cards !== 'object') return null;
-  const cards = Object.fromEntries(Object.entries(deck.cards)
-    .filter(([id, n]) => CARDS[id] && Number.isInteger(n) && n > 0 && n <= 9));
-  return { id: x.id, updatedAt: x.updatedAt, deck: { name: deck.name.slice(0, 40), hero: deck.hero, cards } };
+  const cards = cleanCards(deck.cards);
+  const f = deck.from;
+  const from = f && typeof f.name === 'string' && typeof f.key === 'string' && f.key.length <= 64 && f.cards && typeof f.cards === 'object'
+    ? { name: f.name.slice(0, 40), key: f.key, cards: cleanCards(f.cards) } : undefined;
+  return { id: x.id, updatedAt: x.updatedAt, deck: { name: deck.name.slice(0, 40), hero: deck.hero, cards, ...(from ? { from } : {}) } };
 }
 
 function cleanShowcase(s: unknown): SyncShowcase | null {

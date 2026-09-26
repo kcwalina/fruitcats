@@ -61,6 +61,7 @@ Still to do is listed at the end.
 | Starter Box (SB1) | `content/2026/09/starter-box/` | released; its decks are free in the Store | yes: the bot's Zest heuristic |
 | Heat Wave (HW1) | `content/2026/09/heat-wave/` | prototype | none needed |
 | Domowiki (DW1) | `content/2026/10/domowiki/` | released, the starter (docs/domowiki-set.md) | none needed |
+| Pari (PR1) | `content/2026/10/pari/` | prototype, the second folklore deck (docs/pari-set.md) | none needed |
 
 ## Cards as data: abilities
 

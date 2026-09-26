@@ -1,7 +1,8 @@
 // The Via Mochi account window: "Sign in or create account", and the Account row in Settings. Only shown when the
 // ACCOUNTS flag is on (src/flags.ts). One window for both signing in and signing up, so there's nothing to get wrong:
 //   1. your email;
-//   1b. if it's new and accounts are still for playtesters only: the invite code they were sent;
+//   1b. if it's new and accounts are still for playtesters only: the invite code they were sent (skipped when they
+//       came from an invite link, fruitcats.viamochi.com/?invite=CODE, unless that code doesn't work);
 //   2. if it's new: your name, birth year and the Terms (asked before the code, so there's only one code to type);
 //   3. the code from the email;
 //   4. if the account hasn't agreed to the current Terms of Use yet (made before they existed, or they've changed):
@@ -33,6 +34,8 @@ let birthYear = '';
 let agreed = false;
 let code = '';
 let invite = '';
+/** The code came from an invite link: used by itself after the email, without asking. */
+let invitedByLink = false;
 /** The email already has a sign-in but no account yet (made before invites): after the invite, sign in. */
 let inviteThenSignIn = false;
 let pending: Pending | null = null;
@@ -56,6 +59,22 @@ export function openAccount(host: Host, why = '', after: (() => void) | null = n
 export function closeAccount(host: Host) {
   if (step === 'terms' && needsTerms()) return;   // agree or sign out
   open = false; then = null; host.render();
+}
+
+/**
+ * An invite link (?invite=CODE): remember the code and take it out of the address. Returns true when the link should
+ * open the account window (nobody is signed in on this device yet).
+ */
+export function takeInviteFromLink(): boolean {
+  const params = new URLSearchParams(location.search);
+  const fromLink = params.get('invite')?.trim();
+  if (!fromLink) return false;
+  params.delete('invite');
+  const rest = params.toString();
+  history.replaceState(history.state, '', `${location.pathname}${rest ? `?${rest}` : ''}${location.hash}`);
+  if (session()) return false;
+  invite = fromLink; invitedByLink = true;
+  return true;
 }
 
 /** A signed-in device whose account hasn't agreed to the current Terms: ask now, before anything else. */
@@ -587,7 +606,13 @@ export async function accountClick(host: Host, action: string) {
     await work(host, async () => {
       inviteThenSignIn = false;
       if (await accountExists(email)) { pending = await startSignIn(email); code = ''; step = 'code'; }
-      else step = (await invitesRequired()) ? 'invite' : 'details';
+      else if (!(await invitesRequired())) step = 'details';
+      else if (invitedByLink) {
+        // Came from an invite link: use its code now. If it doesn't work, ask for one as usual, with the reason.
+        invitedByLink = false;
+        try { await useInvite(invite); step = 'details'; }
+        catch (e) { step = 'invite'; throw e; }
+      } else step = 'invite';
     });
   } else if (action === 'invite') {
     if (!invite.trim()) { error = 'Please type your invite code.'; host.render(); return; }

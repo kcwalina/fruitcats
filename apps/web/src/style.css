@@ -112,6 +112,11 @@ h1, h2, .round, .deck-name, .hero-name, .uname { font-family: Fredoka, Nunito, s
 .icon-button { width: 44px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; flex: none; }
 .icon-button img { width: 30px; height: 30px; object-fit: contain; }
 .corner-settings { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); z-index: 5; }
+/* Home's top-left corner (src/account.ts): your Pawtrait when signed in, a Sign in button when not. */
+.corner-account { position: fixed; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); z-index: 5; }
+button.corner-face { width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; background: none; border: 0; box-shadow: none; }
+.corner-face .account-avatar.small { width: 44px; height: 44px; box-shadow: 0 0 0 3px #fff, var(--shadow); }
+button.corner-signin { height: 44px; padding: 0 18px; border-radius: 999px; font-weight: 700; }
 .overlay .settings { width: min(420px, 100%); text-align: left; }   /* not centred like the other overlays */
 .settings h2 { margin: 0 0 12px; text-align: center; }
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }

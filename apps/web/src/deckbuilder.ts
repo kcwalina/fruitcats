@@ -18,7 +18,7 @@ import { familyInfo } from './sets';
 import { finishFrame, yourCardUrl } from './rarity';
 
 type Page = 'list' | 'new' | 'edit';
-const TYPES = [['all', 'All'], ['Cat', 'Cats'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
+const TYPES = [['all', 'All'], ['Cat', 'Fabled'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
 type TypeFilter = (typeof TYPES)[number][0];
 
 let page: Page = 'list';
@@ -237,7 +237,7 @@ function copyText(text: string): Promise<boolean> {
 function importDeck(): void {
   const parsed = parseDeckCode(importText.replace(/\s+/g, ''));
   if (!parsed) { importError = 'That isn’t a deck code. Copy the whole code and paste it here.'; return; }
-  if (CARDS[parsed.hero]?.type !== 'Hero Cat') { importError = 'This deck’s Hero Cat isn’t in the game yet.'; return; }
+  if (CARDS[parsed.hero]?.type !== 'Hero Cat') { importError = 'This deck’s Hero isn’t in the game yet.'; return; }
   const twin = builtInTwin(parsed);
   if (twin) { importError = `That’s ${DECKS[twin].name}, a ready-made deck. It’s already in the game: find it under Start from a deck.`; return; }
   const deck = newDeck(parsed.hero);
@@ -371,7 +371,7 @@ function renderDeckList(): string {
           <button class="deck-tile new-deck" data-click="deck:new">
             <span class="new-plus" aria-hidden="true">+</span>
             <span class="deck-tile-text"><span class="deck-name">New deck</span>
-              <span class="deck-tile-sub">Pick a Hero Cat, then ${DECK_RULES.size} cards</span></span>
+              <span class="deck-tile-sub">Pick a Hero, then ${DECK_RULES.size} cards</span></span>
           </button>
           <button class="deck-tile new-deck" data-click="deck:import">
             <span class="new-plus code-plus" aria-hidden="true">${CODE}</span>
@@ -412,7 +412,7 @@ function renderNewDeck(): string {
         <input data-newname value="${esc(newName)}" maxlength="40" placeholder="e.g. Citrus Rush" enterkeyhint="done" autocomplete="off">
       </label>
       <section class="picker">
-        <h2>Choose its Hero Cat</h2>
+        <h2>Choose its Hero</h2>
         <div class="deck-choices">
           ${ownedHeroes().map((id) => {
             const hero = CARDS[id];
@@ -481,7 +481,7 @@ function renderBuilder(deck: MyDeck): string {
       <div class="build-lead">
         <span><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].join(' + '))}</span>
       </div>
-      <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Cats <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
+      <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Fabled <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
     </div>
     ${base ? renderChanges(deck, base) : ''}
@@ -573,7 +573,7 @@ function renderDeckPanel(deck: MyDeck, order: string[], ready: boolean, base: De
   return `
       <aside class="deck-panel">
         <button class="deck-toggle" data-click="deck:sheet" aria-expanded="${sheetOpen}">
-          <span class="toggle-count"><span>Deck <b>${size}</b> / ${DECK_RULES.size}</span><small>Cats ${catCount(deck)} / ${DECK_RULES.maxCats}</small></span>
+          <span class="toggle-count"><span>Deck <b>${size}</b> / ${DECK_RULES.size}</span><small>Fabled ${catCount(deck)} / ${DECK_RULES.maxCats}</small></span>
           <span class="toggle-status ${ready ? 'ready' : ''}">${ready ? 'Ready to play ✓' : size < DECK_RULES.size ? `${DECK_RULES.size - size} to go` : 'Needs a fix'}</span>
           <span class="toggle-arrow" aria-hidden="true">${sheetOpen ? '▼' : '▲'}</span>
         </button>
@@ -587,7 +587,7 @@ function renderDeckPanel(deck: MyDeck, order: string[], ready: boolean, base: De
             ${ids.length ? ids.map((id) => `
               <li class="${famClass(id)} ${owned(id) < deck.cards[id] ? 'short' : ''} ${isAdded(id) ? 'added' : ''}" data-zoom="${yourCardUrl(id)}" data-zoom-card="${id}">
                 <span class="line-cost">${CARDS[id].cost ?? ''}</span>
-                <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Cat</small>' : ''}${isAdded(id)
+                <span class="line-name">${esc(cardName(id))}${CARDS[id].type === 'Cat' ? ' <small>Fabled</small>' : ''}${isAdded(id)
                   ? ` <small class="line-new">${newLabel(deck.cards[id], base!.cards[id] ?? 0)}</small>` : ''}${owned(id) < deck.cards[id]
                   ? ` <small class="line-short">${owned(id) ? `you have ${owned(id)}` : 'not yours yet'}</small>` : ''}</span>
                 <button class="line-btn" data-click="deck:remove:${id}" aria-label="Remove one ${esc(cardName(id))}">−</button>

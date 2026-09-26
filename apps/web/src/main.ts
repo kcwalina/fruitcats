@@ -173,12 +173,12 @@ function describeWindow(s: GameState): string {
   if (!w) return '';
   const tgt = (t?: Target) => {
     if (!t) return '';
-    if (t.kind === 'hero') return t.player === mySeat ? 'your Hero Cat' : 'their Hero Cat';
+    if (t.kind === 'hero') return t.player === mySeat ? 'your Hero' : 'their Hero';
     const u = s.players.flatMap((pl) => pl.yard).find((x) => x.uid === t.uid);
     return u ? cardName(u.id) : 'a unit';
   };
   if (w.kind === 'play') return `${esc(foeName())} plays <b>${esc(cardName(w.card.id))}</b>${w.target ? ` targeting <b>${tgt(w.target)}</b>` : ''}.`;
-  const attacker = w.attacker.kind === 'hero' ? 'their Big Cat' : tgt(w.attacker);
+  const attacker = w.attacker.kind === 'hero' ? 'their Awakened Hero' : tgt(w.attacker);
   return `${esc(foeName())} attacks <b>${tgt(w.target)}</b> with <b>${attacker}</b>.`;
 }
 
@@ -428,16 +428,16 @@ function startGame(tutorial = false) {
 /** Set mechanics (Zest, Ripen, Heat…) explain themselves from their set's data; the core keywords are here. */
 const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
-  { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero Cat.' },
+  { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero.' },
   { name: 'Sneaky', test: /\bSneaky\b/, text: 'Can attack straight past enemy Guardians.' },
-  { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero Cat, that player loses 2 Lives instead of 1.' },
+  { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero, that player loses 2 Lives instead of 1.' },
   { name: 'Zoomies', test: /\bZoomies\b/, text: 'Can attack the round it arrives, instead of starting tired.' },
   { name: 'Tough', test: /\bTough\b/, text: 'Takes that much less damage from every hit.' },
   { name: 'Lucky', test: /\bLucky\b/, text: 'If this card turns up as a Life you lost, you may play it for free.' },
   { name: 'Pounce', test: /\bPounce\b/, text: 'Play this out of turn, right after your opponent plays a card or attacks.' },
   { name: 'Hello', test: /\bHello\b/, text: 'Happens as soon as this card arrives.' },
   { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens when this unit is defeated.' },
-  { name: 'Grow Up', test: /\bGrow Up\b/, text: 'Once this is true, your Kitten becomes a Big Cat: stronger, and able to attack.' },
+  { name: 'Awaken', test: /\b(Awaken|Grow Up)\b/, text: 'Once this is true, your Hero Awakens: stronger, and able to attack.' },
   // "Exhaust:" is the cost of a Hero Cat's ability; "Exhaust an enemy unit" is an effect. One line covers both.
   { name: 'Exhaust', test: /\bExhaust\b/, text: 'Spend a card for the rest of the round: it tips sideways and cannot attack or be spent again until everything readies next round.' },
 ];
@@ -463,7 +463,7 @@ function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Treats — you have ${ready} ready. Spent Treats come back at the start of next round.`;
   const yard = s.players[mySeat].yard;
   if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
-  if (def.type === 'Cat' && yard.some((u) => u.id === id)) return `${name} is already in your Yard, and Cats are one of a kind.`;
+  if (def.type === 'Cat' && yard.some((u) => u.id === id)) return `${name} is already in your Yard, and Fabled cards are one of a kind.`;
   if (def.type === 'Toy') return `${name} needs one of your units without a Toy to attach to.`;
   return `${name} has no legal target right now.`;
 }
@@ -614,9 +614,9 @@ function onClick(key: string) {
         if (prompt.kind === 'discard') return act({ t: 'discard', uids: [...picks] });
         if (prompt.kind === 'plant' && picks.size === 1) return act({ t: 'plant', uid: [...picks][0] });
         return;
-      case 'ability': return select('your Hero Cat ability', legal.filter((a) => a.t === 'ability'));
+      case 'ability': return select('your Hero’s ability', legal.filter((a) => a.t === 'ability'));
       case 'heroattack':
-        return select('your Big Cat’s attack', legal.filter((a) => a.t === 'attack' && a.attacker.kind === 'hero'));
+        return select('your Hero’s attack', legal.filter((a) => a.t === 'attack' && a.attacker.kind === 'hero'));
     }
     return;
   }
@@ -1086,10 +1086,10 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
         </div>
       </div>
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
-           data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+           data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
       ${p === mySeat && (canAbility || canAttack) ? `<div class="hero-actions">
         ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
-        ${canAttack ? '<button class="primary" data-click="btn:heroattack">Big Cat attack</button>' : ''}
+        ${canAttack ? '<button class="primary" data-click="btn:heroattack">Hero attack</button>' : ''}
       </div>` : ''}
     </div>
     ${p === theirSeat ? shownHand(s) ?? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
@@ -1374,10 +1374,10 @@ function renderRules(): string {
   return `<div class="overlay">
     <div class="rules">
       <h2>Quick rules</h2>
-      <p><b>Goal:</b> knock out all 9 of the rival Hero Cat’s Lives.</p>
+      <p><b>Goal:</b> knock out all 9 of the rival Hero’s Lives.</p>
       <p><b>Each round:</b> ready everything, draw 2, and you may plant 1 card face-down as a <b>Treat</b>. Treats pay for cards — any card can be a Treat.</p>
-      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero Cat’s ability, <b>Take the Yarn</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
-      <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero Cat takes a Life — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Zoomies</b>.</p>
+      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Yarn</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
+      <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Life — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Zoomies</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
@@ -1385,7 +1385,7 @@ function renderRules(): string {
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(m.family!)} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
       <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
       <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
-      <p><b>Grow Up:</b> when its condition is met, your Kitten becomes a Big Cat — stronger ability, and it can attack.</p>
+      <p><b>Awaken:</b> when its condition is met, your Hero Awakens — stronger ability, and it can attack.</p>
       <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>
       ${summary() ? `<p class="progress-note">On this device: ${summary()}.</p>` : ''}
       <button class="primary" data-click="ui:rules">Got it</button>

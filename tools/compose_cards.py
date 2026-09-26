@@ -28,6 +28,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
+# The game's words for players (card types, the Hero's sides), shared with the game.
+TERMS = json.loads((ROOT / "packages" / "engine" / "src" / "terms.json").read_text(encoding="utf-8"))
 W, H = 750, 1050
 ART_BOX = (42, 138, 708, 582)          # 666 x 444 = the 3:2 art the model draws
 TEXT_BOX = (42, 660, 708, 912)
@@ -447,11 +449,11 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
         clover(d, x1 - 44, y0 + 44)
 
     # Type line
-    kind = card["type"].upper()
+    kind = TERMS["types"].get(card["type"], card["type"]).upper()
     if card.get("token"):
         kind = f"TOKEN {kind}"
     if side:
-        kind = f'HERO CAT · {"KITTEN" if side == "kitten" else "BIG CAT"}'
+        kind = " · ".join(w for w in (TERMS["types"]["Hero Cat"], TERMS["sides"]["kitten" if side == "kitten" else "bigCat"]) if w).upper()
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
     d.text((62, 622), f'{kind} · {card["family"].upper()}',font=font("segoeuib.ttf", 25), fill=dark, anchor="lm")
     # The collector line: rarity mark, card number, and on a finished copy its finish code (F, G or P).
@@ -642,12 +644,12 @@ def main() -> int:
         others = [h for h in heroes if h is not mightiest]
         note = " *(preview — not in the Starter Box yet)*" if mightiest.get("preview") else ""
         sections.append(
-            f'## {mightiest["name"]} — the mightiest Hero Cat{note}\n\n'
-            f'The only Big Cat with {mightiest["bigCat"]["power"]} Power and Fierce.\n\n'
+            f'## {mightiest["name"]} — the mightiest Hero{note}\n\n'
+            f'The only Awakened Hero with {mightiest["bigCat"]["power"]} Power and Fierce.\n\n'
             f'<table>\n<tr><td align="center">{cell(mightiest["id"] + "-kitten", width=300)}</td>'
             f'<td align="center">{cell(mightiest["id"] + "-bigcat", width=300)}</td></tr>\n</table>\n')
         hero_entries = [cell(f'{h["id"]}-{side}') for h in others for side in ("kitten", "bigcat")]
-        sections.append("## All Hero Cats\n\nEach Hero Cat starts as a Kitten and Grows Up into a Big Cat. "
+        sections.append("## All Heroes\n\nEach Hero starts on its first side and Awakens into its second. "
                         + ", ".join(h["name"] + (" (preview)" if h.get("preview") else "") for h in others)
                         + f".\n\n<table>\n{grid(hero_entries)}\n</table>\n")
 

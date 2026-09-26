@@ -89,14 +89,14 @@ export function gamePreview(p: BriefPicture, art: string | null, code: string, k
         <div class="pv-uname">${esc(name)}</div>
         ${power !== undefined ? `<div class="pv-pow">${power}</div>` : ''}${health !== undefined ? `<div class="pv-hp">${health}</div>` : ''}</div>`;
   const hand = (w: number) => `<div class="pv-hand">${cardPreview(code, key, p.tier === 'signature' ? 'signature' : 'standard', art, w)}</div>`;
-  const shapeName = shape === 'hero' ? 'the Hero Cat’s tile' : 'a unit on the board';
+  const shapeName = shape === 'hero' ? 'the Hero’s tile' : 'a unit on the board';
   return `<div class="pv-game">
     <figure><div class="pv-stage">${hand(92)}</div><figcaption>In a player’s hand, on a phone</figcaption></figure>
     ${shape ? `<figure><div class="pv-stage pv-yard">${tile(shape === 'hero' ? 56 : 104)}</div><figcaption>As ${shapeName}, on a phone</figcaption></figure>
     <figure><div class="pv-stage pv-yard">${tile(shape === 'hero' ? 96 : 160)}</div><figcaption>As ${shapeName}, on a computer</figcaption></figure>` : ''}
   </div>
   ${shape ? `<p class="pv-note">${shape === 'hero'
-    ? 'The Hero Cat’s tile is a little wider than tall, so the top and bottom of your image are trimmed.'
+    ? 'The Hero’s tile is a little wider than tall, so the top and bottom of your image are trimmed.'
     : 'A unit’s tile is taller than wide, so the left and right of your image are cut off. The character in the middle stays.'}</p>` : ''}`;
 }
 

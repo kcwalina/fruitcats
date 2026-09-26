@@ -241,7 +241,7 @@ export function hintText(s: GameState, a: Action): string {
   const card = (uid: number) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? me.yard.find((u) => u.uid === uid)?.id ?? '');
   const unit = (uid: number) => cardName(s.players.flatMap((p) => p.yard).find((u) => u.uid === uid)?.id ?? '');
   const target = (t?: { kind: 'unit'; uid: number } | { kind: 'hero'; player: PlayerId }) =>
-    !t ? '' : t.kind === 'hero' ? (t.player === mySeat() ? ' on your Hero Cat' : ' on their Hero Cat') : ` on ${unit(t.uid)}`;
+    !t ? '' : t.kind === 'hero' ? (t.player === mySeat() ? ' on your Hero' : ' on their Hero') : ` on ${unit(t.uid)}`;
   switch (a.t) {
     case 'mulligan': return a.uids.length ? `Swap ${a.uids.map(card).join(', ')}.` : 'Keep this hand.';
     case 'setupPlant': return `Plant ${a.uids.map(card).join(' and ')} as Treats.`;
@@ -249,8 +249,8 @@ export function hintText(s: GameState, a: Action): string {
     case 'plant': return `Bury ${card(a.uid)} as a Treat.`;
     case 'skipPlant': return 'Skip planting this round.';
     case 'play': return `Play ${card(a.uid)}${target(a.target)}.`;
-    case 'attack': return `Attack${target(a.target).replace(' on', '')} with ${a.attacker.kind === 'hero' ? 'your Big Cat' : unit(a.attacker.uid)}.`;
-    case 'ability': return `Use your Hero Cat’s ability${target(a.target)}.`;
+    case 'attack': return `Attack${target(a.target).replace(' on', '')} with ${a.attacker.kind === 'hero' ? 'your Hero' : unit(a.attacker.uid)}.`;
+    case 'ability': return `Use your Hero’s ability${target(a.target)}.`;
     case 'takeYarn': return 'Take the Yarn Ball.';
     case 'pass': return 'Pass: nothing here is worth doing right now.';
     case 'pounce': return `Pounce with ${card(a.uid)}${target(a.target)}!`;

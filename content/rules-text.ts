@@ -8,6 +8,7 @@
 //   "Hello:", "Goodbye:" and "Exhaust:" as labels; a unit already named is "it" after that;
 //   a mechanic written as a label ("Zest: …") or as a condition ("If you're Lush, …").
 
+import TERMS from '../packages/engine/src/terms.json';
 import type { Ability, Act, CardDef, Condition, HeroSide, TargetSel, UnitFilter } from '../packages/engine/src/types';
 import { CONTENT } from './index';
 
@@ -230,7 +231,7 @@ function faceText(keywords: string[] | undefined, abilities: Ability[] | undefin
   const lines = (abilities ?? []).map((a) => abilityText(a, card));
   const kw = (keywords ?? []).map((k) => `${k}.`).join(' ');
   if (kw) lines[0] = lines.length ? `${kw} ${lines[0]}` : kw;
-  if (growUp) lines.push(`Grow Up: ${cap(clause(growUp.if))}.`);
+  if (growUp) lines.push(`${TERMS.growUp}: ${cap(clause(growUp.if))}.`);
   return lines.join('\n');
 }
 

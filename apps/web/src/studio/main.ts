@@ -8,7 +8,7 @@
 // data-click and data-in attributes, as in the game.
 
 import '../content';
-import { registerSet, type SetData } from '@fruitcats/engine';
+import { registerSet, TERMS, type SetData } from '@fruitcats/engine';
 import { session, signOut } from '../auth';
 import { apiPolicy, fetchRetry } from '../net';
 import { BASE, esc } from '../ui';
@@ -254,7 +254,7 @@ interface CardWords { name: string; type: string; text?: string; flavor?: string
 const setCards = new Map<string, CardWords>();
 const cardData = (p: BriefPicture) => (p.card ? (setCards.get(p.card) ?? null) : null);
 
-const sideLabel = (p: BriefPicture) => (p.side === 'kitten' ? 'Kitten' : p.side === 'bigcat' ? 'Big Cat' : '');
+const sideLabel = (p: BriefPicture) => (p.side === 'kitten' ? 'Hero' : p.side === 'bigcat' ? 'Awakened' : '');
 
 function stateChip(state: State): string {
   return `<span class="chip state-${state}">${STATE_NAMES[state]}</span>`;
@@ -874,7 +874,7 @@ function cardText(p: BriefPicture): string {
   if (!card) return '';
   const face = p.side === 'kitten' ? card.kitten : p.side === 'bigcat' ? card.bigCat : card;
   const text = face?.text ?? '';
-  return `<section><h3>On the card</h3><p><b>${esc(face?.name ?? card.name)}</b> · ${esc(card.type)}</p>
+  return `<section><h3>On the card</h3><p><b>${esc(face?.name ?? card.name)}</b> · ${esc(TERMS.types[card.type as keyof typeof TERMS.types] ?? card.type)}</p>
     ${text ? `<p class="rules">${esc(text).replace(/\n/g, '<br>')}</p>` : ''}${card.flavor && p.side !== 'bigcat' ? `<p class="flavor">${esc(card.flavor)}</p>` : ''}</section>`;
 }
 

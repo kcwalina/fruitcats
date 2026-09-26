@@ -98,7 +98,7 @@
             }
           }
         },
-        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nGrow Up: 4 or more Cats and Critters are in the Composts."
+        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nAwaken: 4 or more Cats and Critters are in the Composts."
       },
       "bigCat": {
         "name": "Blaze, Wildfire",
@@ -570,7 +570,7 @@
             }
           }
         },
-        "text": "Exhaust: Deal 1 damage to a damaged unit.\nGrow Up: A unit you control has +3 Heat."
+        "text": "Exhaust: Deal 1 damage to a damaged unit.\nAwaken: A unit you control has +3 Heat."
       },
       "bigCat": {
         "name": "Reaper, Final Heat",

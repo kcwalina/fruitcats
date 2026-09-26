@@ -82,7 +82,7 @@ const STEPS: Balloon[] = [
     text: (s) => {
       if (canPlay(s)) return 'A card with a bright ring is one you can afford. <b>Click one</b> to play it — it comes down on your side of the table.';
       const can = (t: Action['t']) => legalActions(s).some((a) => a.t === t);
-      if (can('ability')) return 'Nothing you can afford yet — but your Hero Cat’s <b>ability</b> is free. <b>Press Use ability</b>; that’s your go.';
+      if (can('ability')) return 'Nothing you can afford yet — but your Hero’s <b>ability</b> is free. <b>Press Use ability</b>; that’s your go.';
       if (can('takeYarn')) return 'Nothing you can afford yet, and that’s fine. <b>Press Take the Yarn</b> — you’ll get the first move next round.';
       return 'Nothing you can afford yet. <b>Press Pass</b> — next round you draw 2 cards and make another Treat.';
     },
@@ -123,8 +123,8 @@ const STEPS: Balloon[] = [
       const sel = picked();
       if (sel?.attack)
         return document.querySelector('.player.foe .hero.targetable')
-          ? 'Now click a <b>pink target</b>: their cat, or their <b>Hero Cat</b> to knock out a heart.'
-          : 'Now click the <b>pink target</b>. Their <b>Guardian</b> has to be dealt with before their Hero Cat.';
+          ? 'Now click a <b>pink target</b>: their cat, or their <b>Hero</b> to knock out a heart.'
+          : 'Now click the <b>pink target</b>. Their <b>Guardian</b> has to be dealt with before their Hero.';
       if (sel)
         return `<b>${sel.label}</b> is a card in your hand — cards are <b>played</b>, not used to attack. `
           + 'Press <b>Cancel</b>, then click a cat with a <b>Ready!</b> tag.';
@@ -157,10 +157,10 @@ const TIPS: Balloon[] = [
       + '<b>Take the Yarn</b> grabs it for next round, but then you can only pass for the rest of this one.',
   },
   {
-    id: 'ability', title: 'Your Hero Cat', anchor: '.player.me .hero', also: ['[data-click="btn:ability"]'],
+    id: 'ability', title: 'Your Hero', anchor: '.player.me .hero', also: ['[data-click="btn:ability"]'],
     when: (s) => myPrompt(s, 'action') && legalActions(s).some((a) => a.t === 'ability'),
-    text: 'Your Hero Cat never leaves the table. Once a round you can <b>use its ability</b> for free — and later it '
-      + '<b>Grows Up</b> into something stronger.',
+    text: 'Your Hero never leaves the table. Once a round you can <b>use its ability</b> for free — and later it '
+      + '<b>Awakens</b> into something stronger.',
   },
   {
     id: 'zest', title: 'Zest! 🍋', anchor: '.hand-card.zest-on',
@@ -207,8 +207,8 @@ const TIPS: Balloon[] = [
     text: `Your opponent <b>took the Yarn Ball</b> ${YARN_ICON}: they will act first next round, but must pass for the rest of this one.`,
   },
   {
-    id: 'grown', title: 'Grown up!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,
-    text: 'Sunny <b>Grew Up</b> into a Big Cat! She now has Power, can attack with the <b>Big Cat attack</b> button, '
+    id: 'grown', title: 'Awakened!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,
+    text: 'Sunny <b>Awakened</b>! She now has Power, can attack with the <b>Hero attack</b> button, '
       + 'and her ability is stronger.',
   },
 ];

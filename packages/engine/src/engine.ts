@@ -1144,7 +1144,7 @@ function stateCheck(s: GameState): void {
     const grow = CARDS[hero.id]?.kitten?.growUp;
     if (!hero.grown && grow && evaluateCondition(s, owner, grow.if)) {
       hero.grown = true;
-      log(s, `${s.players[owner].name}'s ${cardName(hero.id)} Grows Up into ${CARDS[hero.id].bigCat!.name}!`, owner);
+      log(s, `${s.players[owner].name}'s ${cardName(hero.id)} Awakens as ${CARDS[hero.id].bigCat!.name}!`, owner);
       emit(s, { t: 'growUp', p: owner });
     }
   }

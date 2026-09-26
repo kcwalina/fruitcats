@@ -39,8 +39,8 @@ describe('Take the Yarn confirmation', () => {
 
   it('counts the Hero Cat ability, and says so, when it is the only other thing left', () => {
     const abilityOnly: Action[] = [{ t: 'ability' }, { t: 'takeYarn' }, { t: 'pass' }];
-    expect(otherMoves(abilityOnly)).toEqual(['use your Hero Cat’s ability']);
-    expect(yarnConfirmText(abilityOnly)).toContain('can’t use your Hero Cat’s ability');
+    expect(otherMoves(abilityOnly)).toEqual(['use your Hero’s ability']);
+    expect(yarnConfirmText(abilityOnly)).toContain('can’t use your Hero’s ability');
   });
 
   it('lists moves in plain words', () => {

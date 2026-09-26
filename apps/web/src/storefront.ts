@@ -7,7 +7,7 @@
 // (paddle.ts), opened from the confirmation step; a tester's test order takes no money, and every screen says so.
 
 import './store.css';
-import { CARDS, SETS, cardName, type DeckList } from '@fruitcats/engine';
+import { CARDS, SETS, TERMS, cardName, type DeckList } from '@fruitcats/engine';
 import {
   deckPrice, deckWith, formatPrice, maxCopies, missingForDeck,
   type CardProduct, type DeckProduct, type NotSold, type Quote,
@@ -349,8 +349,8 @@ export function renderStore(): string {
 const cardUrl = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.signature ? finishUrl(key, 'signature') : standardUrl(key));
 /** "♛ Legendary", or "✦ Signature". */
 const cardGrade = (id: string) => (CARDS[id]?.signature ? '✦ Signature' : `${rarityMark(rarity(id))} ${rarity(id)}`);
-/** "♛ Legendary Hero Cat", or "Signature Hero Cat" for a Signature card. */
-const cardKind = (id: string) => `${cardGrade(id)} ${esc(CARDS[id].type)}`;
+/** "♛ Legendary Hero", or "Signature Hero" for a Signature card. */
+const cardKind = (id: string) => `${cardGrade(id)} ${esc(TERMS.types[CARDS[id].type as keyof typeof TERMS.types] ?? CARDS[id].type)}`;
 const faceOf = (id: string) => (CARDS[id]?.type === 'Hero Cat' ? `${id}-kitten` : id);
 
 function renderMessage(title: string, text: string, action = ''): string {
@@ -584,7 +584,7 @@ function renderMissingCards(v: Extract<View, { kind: 'missing' }>): string {
         }).join('')}
       </div>
       ${heroLeftOut(v)
-        ? `<p class="store-warning">Without ${esc(cardName(deck.hero))}, its Hero Cat, this deck can’t be played.</p>` : ''}
+        ? `<p class="store-warning">Without ${esc(cardName(deck.hero))}, its Hero, this deck can’t be played.</p>` : ''}
       ${plan.unavailable.length ? `
       <h3 class="section-title">Can’t be bought <span>The deck plays once you have them</span></h3>
       <div class="inside">

@@ -11,25 +11,26 @@ import { behaviour, CARDS, keywords, MECHANICS } from './cards';
 import { HAND_LIMIT, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 import { viewFor, type PlayerView } from './view';
+import TERMS from './terms.json';
 
 /** The core rules, before the keyword list: the same whatever sets are loaded. */
 const CORE_RULES = `FRUITCATS: RULES IN BRIEF
-Two players, 50-card decks, each led by a Hero Cat. Win by taking the opponent's ninth and last Life.
+Two players, 50-card decks, each led by a Hero. Win by taking the opponent's ninth and last Life.
 - Lives: each player starts with 9 face-down Life cards. When you lose a Life, that card goes into your hand. If it is Lucky you may play it for free right away.
 - Treats pay for cards. Each Treat is a card you planted face-down; a card costing N exhausts N ready Treats. Treats ready again each round. Plant at most one card per round (at the start of the round); planting is permanent, so plant what you need least.
 - Round: Start (everything readies, draw 2, may plant 1; skipped in round 1), then Actions, then End (hand limit ${HAND_LIMIT}; "this round" effects end).
-- Actions: starting with the Yarn Ball holder, players alternate ONE action at a time until both pass in a row. An action is: play a card, attack, use your Hero Cat's ability, take the Yarn, or pass. Passing is not final: if the opponent acts again, you may act again.
+- Actions: starting with the Yarn Ball holder, players alternate ONE action at a time until both pass in a row. An action is: play a card, attack, use your Hero's ability, take the Yarn, or pass. Passing is not final: if the opponent acts again, you may act again.
 - Take the Yarn: you act first next round, but for the rest of this round you may only pass. Only one player may take it per round; if nobody does, the Yarn Ball goes to the other player.
-- Units (Critters and Cats) enter the Yard exhausted, so they can't attack the round they arrive (unless Zoomies). A Yard holds at most 6 units. Toys attach to a unit you control. Tricks do their effect and go to the Compost.
-- Attack: exhaust a ready unit (or your Big Cat) and pick a target: an enemy unit, or the enemy Hero Cat. If the enemy has a Guardian you must attack a Guardian, unless your attacker is Sneaky.
+- Units (Critters and Fabled cards) enter the Yard exhausted, so they can't attack the round they arrive (unless Zoomies). A Yard holds at most 6 units. Toys attach to a unit you control. Tricks do their effect and go to the Compost.
+- Attack: exhaust a ready unit (or your Awakened Hero) and pick a target: an enemy unit, or the enemy Hero. If the enemy has a Guardian you must attack a Guardian, unless your attacker is Sneaky.
   Unit vs unit: both deal their Power to each other at once; damage stays between rounds; a unit with damage >= Health is defeated.
-  Unit vs Hero Cat: a hit. The defender loses 1 Life (2 if the attacker is Fierce) and the attacker takes no damage.
+  Unit vs Hero: a hit. The defender loses 1 Life (2 if the attacker is Fierce) and the attacker takes no damage.
 - Pounce: when your opponent plays a card or declares an attack, you may answer with ONE Pounce card (paying its cost). It resolves first. No Pouncing on a Pounce. Ready Treats you keep are a threat the opponent must respect.
-- Hero Cat: starts as a Kitten, which cannot attack. Its "Exhaust:" ability can be used once a round (exhausting the Hero Cat). When its Grow Up condition becomes true it flips to its Big Cat side for good: stronger ability, and it can attack (it takes no damage attacking).
+- Hero: starts on its first side, which cannot attack. Its "Exhaust:" ability can be used once a round (exhausting the Hero). When its Awaken condition becomes true it flips to its Awakened side for good: stronger ability, and it can attack (it takes no damage attacking).
 - If you must draw from an empty deck, you lose a Life instead.`;
 
 /** Keywords of the core rules; the mechanics each set brings (Zest, Ripen, Heat, …) are listed after them. */
-const CORE_KEYWORDS = `Zoomies: enters ready. Guardian: enemies must attack Guardians first. Sneaky: ignores Guardians. Fierce: a hit on a Hero Cat takes 2 Lives. Tough X: takes X less damage from each hit. Lucky: playable for free when it turns up as a lost Life. Pounce: playable in the opponent's Pounce window (also as a normal action). Hello: happens when the unit arrives. Goodbye: happens when it is defeated.`;
+const CORE_KEYWORDS = `Zoomies: enters ready. Guardian: enemies must attack Guardians first. Sneaky: ignores Guardians. Fierce: a hit on a Hero takes 2 Lives. Tough X: takes X less damage from each hit. Lucky: playable for free when it turns up as a lost Life. Pounce: playable in the opponent's Pounce window (also as a normal action). Hello: happens when the unit arrives. Goodbye: happens when it is defeated.`;
 
 /**
  * The rules a text player needs, in about a thousand tokens: the core rules, then every mechanic the loaded
@@ -54,7 +55,7 @@ export const STRATEGY_PRIMER = `BASIC STRATEGY
 - Plant the card you're least likely to want soon: something too expensive to afford for a while, or a spare copy. Don't plant a cheap unit you could play next round.
 - Units arrive exhausted (Zoomies excepted), so play them early: a unit played now can attack next round.
 - Take the Yarn Ball only as your LAST action of a round, when there is nothing useful left to do. Taking it means you may only pass for the rest of the round.
-- Before attacking, read the predicted result next to each attack: trade when you come out ahead (their unit dies, or yours survives), and hit the Hero Cat when there's no good trade. Each hit costs them a Life, but the Life card goes to their hand.
+- Before attacking, read the predicted result next to each attack: trade when you come out ahead (their unit dies, or yours survives), and hit the Hero when there's no good trade. Each hit costs them a Life, but the Life card goes to their hand.
 - Guardians must be attacked first unless your attacker is Sneaky. A Guardian with high Health can absorb a whole turn: remove it with damage Tricks, or go around it with Sneaky units.
 - Pass only when you have nothing worth doing. If your opponent then acts, you get to act again.`;
 
@@ -87,7 +88,7 @@ const unitName = (view: GameState, seat: PlayerId, uid: number): string => {
 
 function targetName(s: GameState, seat: PlayerId, t: Target | undefined): string {
   if (!t) return '';
-  if (t.kind === 'hero') return t.player === seat ? 'your Hero Cat' : 'the enemy Hero Cat';
+  if (t.kind === 'hero') return t.player === seat ? 'your Hero' : 'the enemy Hero';
   return unitName(s, seat, t.uid);
 }
 
@@ -112,13 +113,13 @@ function unitLine(u: Unit, label: string, s?: GameState): string {
 function cardLine(id: string, label: string): string {
   const c = CARDS[id];
   const stats = c.power !== undefined ? ` ${c.power}/${c.health}` : '';
-  return `  ${label} ${cardName(id)} (cost ${c.cost ?? 0}, ${c.type}${stats})${c.text ? ` — ${c.text}` : ''}`;
+  return `  ${label} ${cardName(id)} (cost ${c.cost ?? 0}, ${TERMS.types[c.type as keyof typeof TERMS.types] ?? c.type}${stats})${c.text ? ` — ${c.text}` : ''}`;
 }
 
 function heroLine(s: GameState, p: PlayerId): string {
   const hero = s.players[p].hero;
   const side = heroSide(s, p);
-  const state = [hero.grown ? `Big Cat, Power ${side.power ?? 0}` : 'Kitten', hero.exhausted ? 'exhausted' : 'ready'].join(', ');
+  const state = [hero.grown ? `${TERMS.sides.bigCat}, Power ${side.power ?? 0}` : 'not yet Awakened', hero.exhausted ? 'exhausted' : 'ready'].join(', ');
   return `${cardName(hero.id)} (${state}): ${side.text.replace(/\n/g, ' | ')}`;
 }
 
@@ -158,7 +159,7 @@ export function describe(s: GameState, seat: PlayerId, recent = 8): string {
     const w = v.window;
     lines.push('', w.kind === 'play'
       ? `YOUR OPPONENT IS PLAYING ${cardName(w.card.id)}${w.target ? ` on ${targetName(v, seat, w.target)}` : ''} — ${CARDS[w.card.id].text ?? ''}`
-      : `YOUR OPPONENT IS ATTACKING ${targetName(v, seat, w.target)} with ${w.attacker.kind === 'hero' ? 'their Big Cat' : targetName(v, seat, w.attacker)}.`);
+      : `YOUR OPPONENT IS ATTACKING ${targetName(v, seat, w.target)} with ${w.attacker.kind === 'hero' ? 'their Awakened Hero' : targetName(v, seat, w.attacker)}.`);
   }
   const log = v.log.slice(-recent).map((e) => `  ${secondPerson(e.text, me.name, foe.name)}`);
   if (log.length) lines.push('', 'RECENTLY:', ...log);
@@ -176,7 +177,7 @@ function attackPreview(s: GameState, seat: PlayerId, a: Extract<Action, { t: 'at
   const dealt = Math.max(0, power - unitKeywords(target, s).tough);
   const left = unitHealth(target, s) - target.damage - dealt;
   const theirs = left <= 0 ? `their ${cardName(target.id)} is defeated` : `their ${cardName(target.id)} survives with ${left} Health`;
-  if (a.attacker.kind === 'hero') return `${theirs}; your Big Cat takes no damage`;
+  if (a.attacker.kind === 'hero') return `${theirs}; your Hero takes no damage`;
   const mine = findUnit(s, a.attacker.uid)!.unit;
   const back = Math.max(0, unitPower(target, s) - unitKeywords(mine, s).tough);
   const myLeft = unitHealth(mine, s) - mine.damage - back;
@@ -193,7 +194,7 @@ function detailed(s: GameState, seat: PlayerId, a: Action, base: string): string
       const unit = c.type === 'Critter' || c.type === 'Cat';
       const arrives = unit ? (keywords(c.id).zoomies ? 'arrives ready (Zoomies): can attack this round' : 'arrives exhausted: can attack next round') : '';
       const target = a.target?.kind === 'unit' && findUnit(s, a.target.uid) ? ` (${stats(findUnit(s, a.target.uid)!.unit)})` : '';
-      return `${base}${target} — ${[unit ? `${c.power}/${c.health}` : c.type, c.text?.replace(/\.$/, ''), arrives].filter(Boolean).join('. ')}. Leaves ${ready - (c.cost ?? 0)} ready Treat(s).`;
+      return `${base}${target} — ${[unit ? `${c.power}/${c.health}` : TERMS.types[c.type as keyof typeof TERMS.types] ?? c.type, c.text?.replace(/\.$/, ''), arrives].filter(Boolean).join('. ')}. Leaves ${ready - (c.cost ?? 0)} ready Treat(s).`;
     }
     case 'attack': return `${base} — ${attackPreview(s, seat, a)}`;
     case 'takeYarn': {
@@ -218,11 +219,11 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
   switch (a.t) {
     case 'play': { const c = card(a.uid)!; return `Play ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}`; }
     case 'pounce': { const c = card(a.uid)!; return `POUNCE with ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}`; }
-    case 'attack': return `Attack with ${a.attacker.kind === 'hero' ? 'your Big Cat' : targetName(s, seat, a.attacker)}${on(a.target)}`;
+    case 'attack': return `Attack with ${a.attacker.kind === 'hero' ? 'your Awakened Hero' : targetName(s, seat, a.attacker)}${on(a.target)}`;
     case 'ability': {
       const ability = me.hero.grown ? behaviour(me.hero.id).bigCat : behaviour(me.hero.id).kitten;
       const text = heroSide(s, seat).text.split('\n').find((l) => /Exhaust/.test(l)) ?? ability?.effect ?? '';
-      return `Use your Hero Cat's ability (${text.trim()})${on(a.target)}`;
+      return `Use your Hero's ability (${text.trim()})${on(a.target)}`;
     }
     case 'takeYarn': return 'Take the Yarn Ball (act first next round; you may only pass for the rest of this round)';
     case 'pass': return 'Pass';

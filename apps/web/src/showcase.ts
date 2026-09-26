@@ -10,7 +10,7 @@
 
 import { familiesOf, featuredHero } from './sets';
 import './showcase.css';
-import { CARDS, RARITIES, type Rarity } from '@fruitcats/engine';
+import { CARDS, RARITIES, TERMS, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
 import { BASE, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
@@ -33,7 +33,7 @@ const isHero = (id: string) => CARDS[id]?.type === 'Hero Cat';
 const facesOf = (id: string) => (isHero(id) ? [`${id}-kitten`, `${id}-bigcat`] : [id]);
 const idOf = (face: string) => face.replace(/-(kitten|bigcat)$/, '');
 const sideOf = (face: string) => (face.endsWith('-kitten') ? 'kitten' : face.endsWith('-bigcat') ? 'bigcat' : null);
-const sideLabel = (face: string) => (sideOf(face) === 'kitten' ? 'Kitten' : sideOf(face) === 'bigcat' ? 'Big Cat' : '');
+const sideLabel = (face: string) => (sideOf(face) === 'kitten' ? 'Hero' : sideOf(face) === 'bigcat' ? 'Awakened Hero' : '');
 const number = (face: string) => `${String(SET.indexOf(idOf(face)) + 1).padStart(3, '0')}/${String(SET.length).padStart(3, '0')}`;
 /** The name on this face: a Kitten and its Big Cat are named differently ("Tango, Sunbeam Kit"). */
 const faceName = (face: string) => {
@@ -392,7 +392,7 @@ function renderViewer(list: string[], index: number, info = true): string {
 
 function renderInfo(list: string[], index: number): string {
   const face = list[index], card = CARDS[idOf(face)], f = finishOf(face);
-  const kind = sideOf(face) ? sideLabel(face) : card.type;
+  const kind = sideOf(face) ? sideLabel(face) : TERMS.types[card.type as keyof typeof TERMS.types] ?? card.type;
   // The Showcase is only for looking. Adding and taking out cards happens in All cards, on a card opened there.
   const editing = !!browsing, inShowcase = showcase.includes(face);
   const position = list.length <= 12

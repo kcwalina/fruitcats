@@ -106,7 +106,7 @@ describe('deckbuilding (rulebook 11.1)', () => {
   });
 
   it('keeps Hero Cats out of the deck', () => {
-    expect(addProblem(withCards({}), 'SB1-H02')).toMatch(/Hero Cat/);
+    expect(addProblem(withCards({}), 'SB1-H02')).toMatch(/is a Hero:/);
   });
 
   it('starts a game with a deck list', () => {

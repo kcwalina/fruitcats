@@ -1,4 +1,4 @@
-// The Via Mochi account window: "Sign in or create account", and the Account row in Settings. Only shown when the
+// The Via Mochi account window: "Sign in or create account", and the Account section in Settings. Only shown when the
 // ACCOUNTS flag is on (src/flags.ts). One window for both signing in and signing up, so there's nothing to get wrong:
 //   1. your email;
 //   1b. if it's new and accounts are still for playtesters only: the invite code they were sent (skipped when they
@@ -229,8 +229,7 @@ function welcomeStep(): string {
     <button class="primary account-go" data-click="acct:done">Continue</button>`;
 }
 
-/** Settings' Account panel: opened from its row, so Sign out is never next to the everyday settings. */
-let panel = false;
+/** Settings' Account section: Sign out lives here, apart from the everyday settings. */
 let confirmingSignOut = false;
 let confirmingDelete = false;
 let panelNote = '';
@@ -240,9 +239,8 @@ let panelBusy = false;
 //
 // A message to the team, answered by email. Signed-in players are answered at their account's email; anyone else
 // types one and confirms it with a code emailed to it, like signing in, before the message goes. It's a view in the
-// Settings panel, like Account, and the sign-in window links to it.
+// Settings section, like Account, and the sign-in window links to it.
 
-let contactOpen = false;
 let contactEmail = '';
 let contactMessage = '';
 let contactNote = '';
@@ -252,26 +250,14 @@ let contactBusy = false;
 let contactCodeLength = 0;
 let contactCode = '';
 
-/** The Settings row that opens "Contact us". */
-export function renderContactRow(): string {
-  return `<button class="account-row" data-click="acct:contact" aria-label="Contact us">
-      <span class="account-who"><b>Contact us</b><small>Questions, problems or ideas: we read every message</small></span>
-      <span class="account-chevron" aria-hidden="true">›</span>
-    </button>`;
-}
-
-function renderContact(): string {
+/** Settings' "Contact us" section (Settings supplies its title). */
+export function renderContactPanel(): string {
   const s = session();
-  const head = `<div class="account-panel-head">
-      <button class="icon-button account-back" data-click="acct:panelback" aria-label="Back to Settings" title="Back to Settings">‹</button>
-      <h2>Contact us</h2>
-      <span class="account-back-balance" aria-hidden="true"></span>
-    </div>`;
-  if (contactSent) return `${head}
+  if (contactSent) return `
     <p class="account-why"><b>Thanks, your message is on its way.</b> We’ll answer by email${s ? ', at your account’s address' : ''},
       usually within a couple of days. The answer may land in Spam or Junk.</p>
     <button data-click="acct:contactagain">Send another message</button>`;
-  return `${head}
+  return `
     ${!s && contactCodeLength ? `
     <p class="account-why">We emailed a code to <b>${esc(contactEmail)}</b>. Type it here to send your message.</p>
     <label class="account-field">Code
@@ -297,12 +283,12 @@ function renderContact(): string {
     <p class="account-error" role="alert">${esc(contactNote)}</p>`}`;
 }
 
-export const accountPanelOpen = () => panel;
-/** "Contact us" is showing: its Send is the main button, so the panel's Done steps back. */
-export const contactPanelOpen = () => panel && contactOpen;
+/** The Pawtrait picker is showing in Settings' Account section; it brings its own title and back button. */
+export const pickingPawtrait = () => picking;
+/** Settings closed: the sections start fresh next time. */
 export function closeAccountPanel() {
-  panel = false; confirmingSignOut = false; signOutHeld = false; confirmingDelete = false; picking = false; panelNote = '';
-  contactOpen = false; contactNote = ''; contactCodeLength = 0; contactCode = '';
+  confirmingSignOut = false; signOutHeld = false; confirmingDelete = false; picking = false; panelNote = '';
+  contactNote = ''; contactCodeLength = 0; contactCode = '';
 }
 
 const initial = (name: string) => esc(name.trim().charAt(0).toUpperCase() || '?');
@@ -436,17 +422,6 @@ async function wear(host: Host, id: string) {
   host.render();
 }
 
-/** The Account row at the top of Settings: who's signed in, and the way into the Account panel. */
-export function renderAccountRow(): string {
-  const s = session();
-  const name = s ? s.displayName || s.email : '';
-  return `<button class="account-row" data-click="acct:panel" aria-label="Account">
-      ${face('small')}
-      <span class="account-who"><b>${s ? esc(name) : 'Account'}</b><small>${s ? 'Signed in' : 'Not signed in'}</small></span>
-      <span class="account-chevron" aria-hidden="true">›</span>
-    </button>`;
-}
-
 /**
  * Home's top-left corner, so it's plain at a glance whether you're signed in: your Pawtrait (it opens the Account
  * panel), or a Sign in button (it opens the window that signs you in, or creates the account for a new email).
@@ -458,18 +433,12 @@ export function renderHomeAccount(): string {
   return `<button class="corner-account corner-face" data-click="acct:home" aria-label="Account: ${esc(name)}" title="${esc(name)}">${face('small')}</button>`;
 }
 
-/** The Account panel, shown in place of the other settings. */
+/** Settings' Account section (Settings supplies its title). */
 export function renderAccountPanel(): string {
-  if (contactOpen) return renderContact();
   if (picking) return renderPicker();
   const s = session();
-  const head = `<div class="account-panel-head">
-      <button class="icon-button account-back" data-click="acct:panelback" aria-label="Back to Settings" title="Back to Settings">‹</button>
-      <h2>Account</h2>
-      <span class="account-back-balance" aria-hidden="true"></span>
-    </div>`;
   if (!s) {
-    return `${head}
+    return `
       <p class="account-section-note">You’re not signed in. Solo play works without an account; a free Via Mochi account adds:</p>
       ${benefits()}
       <button class="primary account-section-button" data-click="acct:open">Sign in or create account</button>
@@ -496,7 +465,7 @@ export function renderAccountPanel(): string {
           <button class="danger" data-click="acct:delete" ${panelBusy ? 'disabled' : ''}>Delete account</button>
         </div>
       </div>` : '';
-  return `${head}
+  return `
       <div class="account-card">
         <button class="account-face-button" data-click="acct:picker" aria-label="Change your Pawtrait">${face()}<span class="account-face-edit">Change</span></button>
         <span class="account-who"><b>${esc(name)}</b><small>${esc(s.email)}</small></span>
@@ -556,7 +525,7 @@ export async function accountClick(host: Host, action: string) {
   if (action === 'close') { closeAccount(host); return; }
   if (action === 'contact') {
     // Also reached from the sign-in window ("Trouble signing in?"), which closes for it.
-    open = false; panel = true; contactOpen = true; contactNote = ''; host.render(); return;
+    open = false; contactNote = ''; host.render(); return;
   }
   if (action === 'contactagain') { contactSent = false; contactMessage = ''; host.render(); return; }
   if (action === 'contactedit') { contactCodeLength = 0; contactCode = ''; contactNote = ''; host.render(); return; }
@@ -590,12 +559,10 @@ export async function accountClick(host: Host, action: string) {
     document.querySelector<HTMLInputElement>('[data-acct="contactcode"]')?.select();
     return;
   }
-  if (action === 'panel') { panel = true; confirmingSignOut = false; picking = false; host.render(); return; }
   if (action === 'picker') { void openPicker(host); return; }
   if (action === 'pickerback') { picking = false; host.render(); return; }
   if (action.startsWith('filter:')) { filter = action.slice(7) as Filter; host.render(); return; }
   if (action.startsWith('wear:')) { void wear(host, action.slice(5)); return; }
-  if (action === 'panelback') { closeAccountPanel(); host.render(); return; }
   if (action === 'signoutask') { confirmingSignOut = true; signOutHeld = false; host.render(); return; }
   if (action === 'signoutcancel') { confirmingSignOut = false; signOutHeld = false; host.render(); return; }
   if (action === 'deleteask') { confirmingDelete = true; confirmingSignOut = false; host.render(); return; }

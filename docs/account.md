@@ -29,7 +29,7 @@ are all there.
 
 ## Manage your account
 
-Tap the **gear** on the Home screen, then **Account** at the top of Settings. There you can:
+Tap the **gear** on the Home screen, then **Account** in the list of Settings sections. There you can:
 
 - **Change your Pawtrait**, the picture your friends see.
 - **Sign out** on this device. Your account and Collection stay safe.

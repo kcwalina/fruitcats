@@ -251,6 +251,6 @@ Copyright Act with **Contact us** in the game, or at **fruitcats.viamochi.com** 
 
 ## 19. Contact
 
-**To reach us, use Contact us in the game:** open Settings and choose **Contact us** (or, in the sign-in window,
+**To reach us, use Contact us in the game:** open Settings and choose **Contact us** (at the bottom of the list) (or, in the sign-in window,
 **Trouble signing in?**). You don't need an account, and we answer by email. If you don't have the game, open
 **fruitcats.viamochi.com** in any web browser: it's free, with nothing to download, and Contact us is there too.

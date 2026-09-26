@@ -134,14 +134,42 @@ button.corner-signin { height: 44px; padding: 0 18px; border-radius: 999px; font
 .setting-name small { font-weight: 600; font-size: 12.5px; color: var(--muted); }
 .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 16px; flex: none; }
 .segmented button { width: 80px; min-height: 40px; padding: 0; }   /* both controls line up */
-.settings-done { display: block; width: 100%; margin-top: 16px; min-height: 44px; }
-/* Settings > Account (src/account.ts): a row at the top of Settings opens the Account panel. */
-button.account-row {
-  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; margin: 0 0 6px; text-align: left;
-  border-radius: 16px; min-height: 64px;
+/* Settings: a title bar with Close, sections down the left (Contact us at the bottom) and the picked section on the right.
+   On a phone the sections are a list, and picking one shows it with a back button, like the iPhone's Settings. */
+.overlay .settings.settings-dialog {
+  width: min(820px, 100%); max-width: none; height: min(600px, calc(var(--vh, 1vh) * 94)); padding: 0; overflow: hidden;
+  display: flex; flex-direction: column;
 }
-.account-row .account-who { flex: 1; }
-.account-chevron { font-size: 28px; line-height: 1; color: var(--muted); font-weight: 700; }
+.settings-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 14px 16px 12px 28px; border-bottom: 1px solid rgba(120, 70, 20, 0.18); }
+.settings-head h2 { flex: 1; margin: 0; text-align: left; font-size: 26px; }
+.settings-back { display: none; font-size: 28px; line-height: 1; font-weight: 700; }
+.settings-close { font-size: 28px; line-height: 1; }
+.settings-body { flex: 1; min-height: 0; display: flex; }
+.settings-nav { flex: none; width: 230px; box-sizing: border-box; padding: 14px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; border-right: 1px solid rgba(120, 70, 20, 0.18); }
+button.settings-tab {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; padding: 0 16px; border-radius: 14px;
+  border-color: transparent; background: transparent; font-size: 17px; text-align: left;
+}
+.settings-nav button.settings-tab:not(.chosen) { background: transparent; border-color: transparent; box-shadow: none; }
+.settings-nav button.settings-tab:hover:not(:disabled, .chosen) { transform: none; box-shadow: none; background: rgba(120, 70, 20, 0.08); }
+.settings-tab-contact { margin-top: auto; }
+.settings-pane { flex: 1; min-width: 0; overflow-y: auto; padding: 20px 28px 28px; }
+.settings-pane h3 { margin: 0 0 8px; font-size: 24px; }
+.settings-pane .setting-name { font-size: 17px; }
+.settings-pane .setting-name small { font-size: 13.5px; }
+.settings-pane .segmented button { width: 92px; min-height: 44px; font-size: 16px; }
+@media (max-width: 600px) {
+  .overlay .settings.settings-dialog { height: auto; max-height: calc(var(--vh, 1vh) * 94); }
+  .settings-head { padding-left: 16px; }
+  .settings-nav { width: 100%; border-right: 0; }
+  .settings-tab-contact { margin-top: 16px; }
+  .settings-tab::after { content: '›'; font-size: 28px; line-height: 1; color: var(--muted); }
+  .settings-pane { display: none; padding: 16px; }
+  .settings-dialog.has-section .settings-nav { display: none; }
+  .settings-dialog.has-section .settings-pane { display: block; }
+  .settings-dialog.has-section .settings-back { display: inline-flex; }
+  .settings-pane .setting { flex-wrap: wrap; }
+}
 .account-card { display: flex; align-items: center; gap: 12px; }
 .account-avatar {
   flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;

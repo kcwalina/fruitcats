@@ -15,8 +15,8 @@ import { refreshStore, storeAccess } from './shop';
 import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
-  accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, contactPanelOpen, renderContactRow, accountInput, accountOpen, accountPanelOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
-  boardFace, renderAccountPanel, renderAccountRow, renderHomeAccount, signedIn, warmPawtraits,
+  accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, renderContactPanel, pickingPawtrait, accountInput, accountOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
+  boardFace, renderAccountPanel, renderHomeAccount, signedIn, warmPawtraits,
 } from './account';
 import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEscape, showcaseMounted } from './showcase';
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck } from './mydecks';
@@ -126,6 +126,9 @@ let aiTimer: number | undefined;
 let confirming: 'yarn' | null = null;
 let showRules = false;
 let showSettings = false;
+/** Settings' sections (Gameplay, Sound, Account, Contact us). Null: none picked yet; a wide screen shows the first, a phone shows the list. */
+type SettingsSection = 'gameplay' | 'sound' | 'account' | 'contact';
+let settingsSection: SettingsSection | null = null;
 let flash = '';
 /** Settings > Speed: Fast shortens the AI's thinking pause and the animations. Remembered in this browser. */
 const SPEED_KEY = 'fruitcats-speed';
@@ -545,9 +548,9 @@ function onClick(key: string) {
   }
   if (ACCOUNTS && kind === 'acct') {
     if (raw === 'open') showSettings = false;
-    if (raw === 'contact') showSettings = true;
-    // Home's Pawtrait opens the Account panel inside Settings, as its row in Settings does.
-    if (raw === 'home') { showSettings = true; warmPawtraits(); void accountClick({ render }, 'panel'); return; }
+    if (raw === 'contact') { showSettings = true; settingsSection = 'contact'; }
+    // Home's Pawtrait opens Settings on its Account section.
+    if (raw === 'home') { showSettings = true; settingsSection = 'account'; warmPawtraits(); render(); return; }
     void accountClick({ render }, key.slice('acct:'.length));
     return;
   }
@@ -565,8 +568,10 @@ function onClick(key: string) {
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
-    // Closing Settings also leaves the Account panel, so Settings opens on its main page next time.
-    if (raw === 'settings') { showSettings = !showSettings; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) warmPawtraits(); } }
+    // Settings closes, and opens fresh on its first section next time.
+    if (raw === 'settings') { showSettings = !showSettings; settingsSection = null; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) warmPawtraits(); } }
+    if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
+    if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
     if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
     if (raw === 'again') { startGame(); return; }
@@ -1304,27 +1309,45 @@ function renderGameOver(s: GameState): string {
 function renderSettings(): string {
   const choice = (setting: string, value: string, label: string, chosen: boolean) =>
     `<button class="${chosen ? 'chosen' : ''}" data-click="set:${setting}:${value}" aria-pressed="${chosen}">${label}</button>`;
-  if (ACCOUNTS && accountPanelOpen()) {
-    return `<div class="overlay"><div class="settings account-panel" role="dialog" aria-label="Account">${renderAccountPanel()}
-      <button class="${contactPanelOpen() ? '' : 'primary '}settings-done" data-click="ui:settings">Done</button></div></div>`;
-  }
+  const row = (name: string, note: string, buttons: string) =>
+    `<div class="setting">
+        <span class="setting-name">${name}${note ? `<small>${note}</small>` : ''}</span>
+        <div class="segmented">${buttons}</div>
+      </div>`;
+  const labels: Record<SettingsSection, string> = { gameplay: 'Gameplay', sound: 'Sound', account: 'Account', contact: 'Contact us' };
+  const ids: SettingsSection[] = ACCOUNTS ? ['gameplay', 'sound', 'account'] : ['gameplay', 'sound'];
+  // A wide screen always shows a section (the first, until one is picked); a phone shows the list until one is.
+  const current = settingsSection ?? 'gameplay';
+  const tab = (id: SettingsSection, cls = '') =>
+    `<button class="settings-tab ${cls} ${id === current ? 'chosen' : ''}" data-click="ui:settab:${id}"
+      aria-current="${id === current ? 'page' : 'false'}">${labels[id]}</button>`;
+  const body: Record<SettingsSection, () => string> = {
+    gameplay: () => `
+      ${row('Animations', 'Show attacks, damage and played cards as they happen', choice('anim', 'on', 'On', animationsEnabled()) + choice('anim', 'off', 'Off', !animationsEnabled()))}
+      ${row('Speed', 'How long the computer pauses, and how fast animations play', choice('speed', 'normal', 'Normal', speed === 'normal') + choice('speed', 'fast', 'Fast', speed === 'fast'))}`,
+    sound: () => row('Sound', '', choice('sound', 'on', 'On', soundEnabled()) + choice('sound', 'off', 'Off', !soundEnabled())),
+    account: () => (ACCOUNTS ? `<div class="account-panel">${renderAccountPanel()}</div>` : ''),
+    contact: () => (ACCOUNTS ? `<div class="account-panel">${renderContactPanel()}</div>` : ''),
+  };
+  // The Pawtrait picker brings its own title and back button.
+  const title = current === 'account' && ACCOUNTS && pickingPawtrait() ? '' : `<h3>${labels[current]}</h3>`;
   return `<div class="overlay">
-    <div class="settings" role="dialog" aria-label="Settings">
-      <h2>Settings</h2>
-      ${ACCOUNTS ? renderAccountRow() + renderContactRow() : ''}
-      <div class="setting">
-        <span class="setting-name">Sound</span>
-        <div class="segmented">${choice('sound', 'on', 'On', soundEnabled())}${choice('sound', 'off', 'Off', !soundEnabled())}</div>
+    <div class="settings settings-dialog ${settingsSection ? 'has-section' : ''}" role="dialog" aria-label="Settings">
+      <div class="settings-head">
+        <button class="icon-button settings-back" data-click="ui:settingsback" aria-label="Back to Settings" title="Back to Settings">‹</button>
+        <h2>Settings</h2>
+        <button class="icon-button settings-close" data-click="ui:settings" aria-label="Close" title="Close">×</button>
       </div>
-      <div class="setting">
-        <span class="setting-name">Animations<small>Show attacks, damage and played cards as they happen</small></span>
-        <div class="segmented">${choice('anim', 'on', 'On', animationsEnabled())}${choice('anim', 'off', 'Off', !animationsEnabled())}</div>
+      <div class="settings-body">
+        <nav class="settings-nav" aria-label="Settings sections">
+          ${ids.map((id) => tab(id)).join('')}
+          ${ACCOUNTS ? tab('contact', 'settings-tab-contact') : ''}
+        </nav>
+        <section class="settings-pane" aria-label="${labels[current]}">
+          ${title}
+          ${body[current]()}
+        </section>
       </div>
-      <div class="setting">
-        <span class="setting-name">Speed<small>How long the computer pauses, and how fast animations play</small></span>
-        <div class="segmented">${choice('speed', 'normal', 'Normal', speed === 'normal')}${choice('speed', 'fast', 'Fast', speed === 'fast')}</div>
-      </div>
-      <button class="primary settings-done" data-click="ui:settings">Done</button>
     </div>
   </div>`;
 }
@@ -1555,8 +1578,7 @@ app.addEventListener('contextmenu', (event) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && ACCOUNTS && accountOpen()) { closeAccount({ render }); return; }
-  if (event.key === 'Escape' && ACCOUNTS && showSettings && accountPanelOpen()) { closeAccountPanel(); render(); return; }
-  if (event.key === 'Escape' && showSettings) { showSettings = false; render(); return; }
+  if (event.key === 'Escape' && showSettings) { showSettings = false; settingsSection = null; if (ACCOUNTS) closeAccountPanel(); render(); return; }
   if (event.key === 'Escape' && ONLINE && screen === 'friends' && addOpen()) { closeAddSheet(); return; }
   if (screen === 'collection' && !showSettings && showcaseArrow(event.key, { render })) return;
   if (event.key === 'Escape') {

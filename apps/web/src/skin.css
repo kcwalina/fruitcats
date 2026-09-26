@@ -529,12 +529,15 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .side-buttons .icon-button { flex: 0 0 44px; width: 44px; max-width: none; padding: 0; }
 /* Settings panel: parchment like the rules, with the choices as a gold segmented control. */
 .settings { border-radius: 24px; padding: 22px 24px; }
-.settings h2 { font-family: Fredoka, Nunito, sans-serif; color: var(--ink); }
+.settings h2, .settings h3 { font-family: Fredoka, Nunito, sans-serif; color: var(--ink); }
 .setting-name { color: var(--ink); }
 .segmented { background: rgba(255, 248, 230, 0.9); box-shadow: inset 0 0 0 1px rgba(120, 70, 20, 0.15); }
-.segmented .chosen {   /* the same green as a chosen deck or difficulty */
+.segmented .chosen, .settings-tab.chosen {   /* the same green as a chosen deck or difficulty */
   color: #fff; text-shadow: 0 1px 0 rgba(0, 60, 15, 0.45);
   background: linear-gradient(#6cc47c, var(--pick)); box-shadow: 0 3px 0 var(--pick-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+@media (max-width: 600px) {   /* a phone's list has nothing picked yet */
+  .settings-dialog:not(.has-section) .settings-tab.chosen { color: var(--ink); text-shadow: none; background: transparent; box-shadow: none; }
 }
 
 /* Enlarged card: what its keywords mean, because iOS has no hover for tooltips and long press is

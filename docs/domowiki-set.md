@@ -5,7 +5,8 @@ comes with a little about the creature and the culture it's from. Domowiki are t
 everyone has. The Starter Box's three fruit-cat decks stay in the game data, but are no longer in anyone's
 collection: they're in the Store, free, for anyone who wants them.
 
-Status: released (2026-10), data in `content/2026/10/domowiki/set.json`. Last updated 2026-09-26.
+Status: released (2026-10), data in `content/2026/10/domowiki/set.json`. Last updated 2026-09-26. How to make the
+next deck like this one: [designing-good-deck.md](designing-good-deck.md).
 
 ## The creature
 

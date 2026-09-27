@@ -377,7 +377,7 @@ button.undo-btn {
 /* ── Collection home: the Showcase, then each deck you have, as covers (the Store's .slot, store.css) ── */
 .col-title { margin: 0; justify-self: center; font: 600 20px/1 Fredoka, Nunito, sans-serif; color: #fff; letter-spacing: 0.3px; text-align: center; }
 .decks-page { flex: 1; min-height: 0; overflow-y: auto; padding: 10px var(--corner-right, 16px) 40px var(--corner-left, 16px); }
-.deck-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 14px; max-width: 1040px; margin: 0 auto; }
+.deck-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 14px; max-width: 880px; margin: 0 auto; }   /* five to a row on a computer */
 .collection-screen button.deck-cover {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px 12px;
   background: none; border: none; box-shadow: none; border-radius: 16px; color: #fff;

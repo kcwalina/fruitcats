@@ -74,6 +74,14 @@ describe('codeDigits', () => {
     expect(codeDigits('123', 8)).toBe('123');
     expect(codeDigits('123456789', 0)).toBe('123456789');
   });
+
+  it('ignores spaces around a code and picks the code out of a longer paste', async () => {
+    const { codeDigits } = await load();
+    expect(codeDigits(' 12345678 \n', 8)).toBe('12345678');
+    expect(codeDigits(' 12345678 ', 8)).toBe('12345678');
+    expect(codeDigits('Your code is 12345678. Sent 2026-09-27 at 10:04.', 8)).toBe('12345678');
+    expect(codeDigits('+1 12345678', 8)).toBe('12345678');
+  });
 });
 
 describe('signing in', () => {

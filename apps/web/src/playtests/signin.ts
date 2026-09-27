@@ -14,13 +14,15 @@ export function showSignIn(box: HTMLElement, done: () => void): void {
   let pending: Pending | null = null;
   let busy = false;
   let error = '';
+  /** What's in the code box, kept when the form is drawn again (after a code that didn't match). */
+  let typed = '';
 
   const draw = () => {
     box.innerHTML = pending
       ? `<form class="signin" data-step="code">
           <p>We sent a code to <b>${esc(pending.sentTo || pending.email)}</b>. Type it here.</p>
           <div class="field"><label for="si-code">Code</label>
-            <input id="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required></div>
+            <input id="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="40" required value="${esc(typed)}"></div>
           ${error ? `<p class="si-error" role="alert">${esc(error)}</p>` : ''}
           <div class="si-buttons"><button class="go" type="submit" ${busy ? 'disabled' : ''}>${busy ? 'Signing in…' : 'Sign in'}</button>
             <button class="link" type="button" data-si="back">Use another email</button></div>
@@ -39,6 +41,7 @@ export function showSignIn(box: HTMLElement, done: () => void): void {
     e.preventDefault();
     if (busy) return;
     busy = true; error = '';
+    let code = '';
     const input = box.querySelector<HTMLInputElement>('input')!;
     try {
       if (!pending) {
@@ -46,7 +49,8 @@ export function showSignIn(box: HTMLElement, done: () => void): void {
         busy = true; draw();
         pending = await startSignIn(email);
       } else {
-        const code = codeDigits(input.value, pending.codeLength);
+        typed = input.value;
+        code = codeDigits(typed, pending.codeLength);
         busy = true; draw();
         await submitCode(pending, code);
         busy = false;
@@ -54,13 +58,14 @@ export function showSignIn(box: HTMLElement, done: () => void): void {
         return;
       }
     } catch (err) {
-      error = message(err);
+      // Say which digits went, so a paste that picked up the wrong ones is plain to see.
+      error = err instanceof AuthError && err.code === 'wrong_code' ? `${message(err)} (We sent ${code}.)` : message(err);
     }
     busy = false;
     draw();
   };
   box.onclick = (e) => {
-    if ((e.target as HTMLElement).closest('[data-si="back"]')) { pending = null; error = ''; draw(); }
+    if ((e.target as HTMLElement).closest('[data-si="back"]')) { pending = null; error = ''; typed = ''; draw(); }
   };
   draw();
 }

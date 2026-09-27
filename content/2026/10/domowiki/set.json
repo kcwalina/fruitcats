@@ -1,7 +1,7 @@
 {
   "set": "DW1",
   "name": "Domowiki",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "status": "released",
   "released": "2026-10",
   "starter": true,
@@ -189,7 +189,7 @@
       "name": "Keeper of the Door",
       "cost": 3,
       "power": 2,
-      "health": 5,
+      "health": 6,
       "text": "Guardian.",
       "flavor": "Nothing crosses the threshold without his nod.",
       "keywords": [
@@ -273,8 +273,8 @@
       "type": "Critter",
       "name": "Dvorovoi, Lord of the Yard",
       "cost": 8,
-      "power": 7,
-      "health": 8,
+      "power": 6,
+      "health": 7,
       "text": "Guardian. Fierce.",
       "flavor": "The house belongs to his cousin. Everything outside is his.",
       "keywords": [
@@ -411,7 +411,7 @@
       "cost": 5,
       "power": 4,
       "health": 5,
-      "text": "Guardian. Hello: Ready two of your Offerings.",
+      "text": "Guardian. Hello: Ready one of your Offerings.",
       "flavor": "Some say she was the first spirit of the house. He only moved in later.",
       "keywords": [
         "Guardian"
@@ -421,7 +421,7 @@
           "when": "hello",
           "do": [
             {
-              "readyTreats": 2
+              "readyTreats": 1
             }
           ]
         }

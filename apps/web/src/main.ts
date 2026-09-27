@@ -979,11 +979,13 @@ function renderSoloFooter(): string {
 function renderSolo(): string {
   return `
   <div class="menu solo">
+    <div class="scene-bg scene-solo" aria-hidden="true"></div>
     <div class="setup-bar">
       ${backButton()}
-      <h2>Solo game</h2>
+      <span></span>
       ${settingsButton()}
     </div>
+    <header class="scene-title"><h1>Solo game</h1></header>
     <div class="setup-body">
       ${renderDeckPicker()}
       <section class="picker difficulty-picker">

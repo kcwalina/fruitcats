@@ -410,3 +410,16 @@
 .offer-buy .add-word { margin-right: 2px; }
 .offer-buy .price-chip { padding: 4px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.22); }
 @media (max-width: 380px) { .offer-buy .buy .price-chip s { display: none; } }
+
+/* Folkborn (2026-09-26): the same parchment layout, in the game's new accents (honey and terracotta, not orange), and
+   the Store's own painting (the Yech of the home screen's Store card) instead of the old cut-out washed into the paper. */
+.store-screen { --accent: #c98f2e; --accent-deep: #8f5a1c; --accent-soft: #f6e6c6; }
+.sb-art {
+  background: url('/ui/card-store.webp') center / cover no-repeat; mix-blend-mode: normal; border-radius: 14px;
+  height: calc(100% - clamp(58px, 6vw, 56px) - env(safe-area-inset-top) - 18px); bottom: 12px;
+  box-shadow: 0 0 0 1px #0d0a08, 0 0 0 4px #1d1712, 0 0 0 5px rgba(255, 236, 205, 0.2), 0 12px 24px rgba(0, 0, 0, 0.35);
+  -webkit-mask: none; mask: none;
+}
+.sb-ground { display: none; }
+.store-screen button.store-btn.buy { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, #e2ad4e 55%, #c98f2e); box-shadow: 0 3px 0 #9c6a22, 0 8px 18px -8px rgba(var(--shade), 0.5); }
+.offer-buy .buy { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, #e2ad4e 55%, #c98f2e); box-shadow: 0 3px 0 #9c6a22, 0 8px 18px -8px rgba(var(--shade), 0.5); }

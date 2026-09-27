@@ -1,115 +1,25 @@
 {
   "note": "Interface art (backgrounds, card back, icons): tools/generate_art.py --ui. Each card set keeps its own art direction in content/<year>/<month>/<set>/art/prompts.json.",
   "ui": {
-    "menu-bg": {
-      "size": "1536x1024",
-      "prompt": "A dreamy painted landscape for the title screen of a cute card game, in a polished storybook cartoon style with soft cel shading: rolling hills covered in orchards of lemon, apple and mango trees under a warm golden-hour sky, fluffy peach-coloured clouds, soft glowing light and gentle bokeh, a calm open meadow in the centre with lots of empty space. No animals, no characters, no text, no letters, no logos, no borders."
-    },
-    "playmat": {
-      "size": "1536x1024",
-      "prompt": "Seen from directly above: a cosy wooden garden table used as a card game play mat, in a polished storybook cartoon style. Smooth pale honey-coloured wood planks with soft grain, warm dappled sunlight and gentle leaf shadows, a few blossom petals and small leaves scattered only near the edges. Very calm and low in contrast, with a large empty centre so that cards placed on it stand out. No objects in the centre, no characters, no text, no letters, no borders."
-    },
     "cardback": {
       "size": "1024x1536",
-      "prompt": "The back of a collectible card for a cute cat trading card game, in a polished storybook illustration style. A symmetrical ornate design: a large golden cat paw print in the centre inside a circular wreath of tiny fruits (lemon, red apple, mango, strawberry, watermelon slice) and leaves, on a rich warm orange and cream geometric pattern, framed by a thin decorative gold border with rounded corners. No text, no letters, no numbers, no logos."
-    },
-    "yarn": {
-      "size": "1024x1024",
-      "transparent": true,
-      "resize": 256,
-      "prompt": "A game icon of a single round ball of yarn, in a polished chibi storybook cartoon style with bold clean outlines and soft cel shading: a plump, fluffy ball of warm coral-pink wool with clearly visible wound strands crossing over it in several directions, a little shine highlight, and one loose strand of yarn curling out from the ball in a playful loop. Centred and fully in frame, filling most of the image, on a fully transparent background. No shadow on the ground, no knitting needles, no cat, no text, no letters, no borders."
+      "prompt": "The back of a collectible card for a card game about gentle folk creatures from around the world, in a soft stylised 3D look: a deep warm graphite field with a softly glowing pale-aqua medallion in the centre that blends folk motifs from many cultures (a papercut star flower, a Celtic knot ring, arabesque leaves, a small glowing tree of life at its heart), fine aqua and warm-white line ornament around it, a subtle rounded inner border with small corner flourishes. No text, no letters, no numbers, no logos."
     },
     "app-icon": {
       "size": "1024x1024",
-      "prompt": "A square app icon for a cute card game, in a simple flat kawaii sticker style with bold clean black outlines, flat colours and no shading. Subject: the head and shoulders of a plush toy cat mascot with a soft cream-white face and grey-tipped cat ears poking out of a golden-orange mango fruit hood with a small green leaf on top. The face is minimal and sewn-on looking: two tiny black dot eyes set wide apart, a small soft smile, two round pink blush ovals on the cheeks, three short grey stripes on the forehead, three long straight black whiskers on each side. The head is centred and large, filling most of the square with a comfortable margin of empty space all around it, on a plain warm golden-orange background. No text, no letters, no numbers, no logos, no borders, no frames, no watermarks, nothing else in the picture."
-    },
-    "mode-solo": {
-      "prompt": "A cute scene for a menu tile in a card game, in a simple flat kawaii sticker style: bold clean black outlines, completely flat colours, no gradients and almost no shading. The characters are chunky rounded plush toy cats with stubby legs and short tails, minimal sewn-on faces (two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short stripes on the forehead, three long straight whiskers on each side), each wearing a soft fruit-shaped hood with its two cat ears poking through. Toy-like and huggable, never realistic, no fur texture, no 3D render. Scene: one plush cat in a bright lemon-yellow hood sits at a small wooden table playing cards against a friendly little wind-up toy robot cat with a key on its back and round glowing eyes. A few cards lie face-down between them. Background: a plain pale sky-blue backdrop with a few simple doodled sparkles. Centred and fully in frame with room around it. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks; any cards shown are blank or show only simple patterns.",
-      "size": "1024x1024",
-      "resize": 512
-    },
-    "mode-friend": {
-      "prompt": "A cute scene for a menu tile in a card game, in a simple flat kawaii sticker style: bold clean black outlines, completely flat colours, no gradients and almost no shading. The characters are chunky rounded plush toy cats with stubby legs and short tails, minimal sewn-on faces (two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short stripes on the forehead, three long straight whiskers on each side), each wearing a soft fruit-shaped hood with its two cat ears poking through. Toy-like and huggable, never realistic, no fur texture, no 3D render. Scene: two plush cats, one in a red apple hood and one in an orange mango hood, sit facing each other across a small garden table, each holding a fan of cards and smiling at each other. Background: a plain pale mint backdrop with a few simple doodled leaves and hearts. Centred and fully in frame with room around it. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks; any cards shown are blank or show only simple patterns.",
-      "size": "1024x1024",
-      "resize": 512
-    },
-    "mode-ranked": {
-      "prompt": "A cute scene for a menu tile in a card game, in a simple flat kawaii sticker style: bold clean black outlines, completely flat colours, no gradients and almost no shading. The characters are chunky rounded plush toy cats with stubby legs and short tails, minimal sewn-on faces (two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short stripes on the forehead, three long straight whiskers on each side), each wearing a soft fruit-shaped hood with its two cat ears poking through. Toy-like and huggable, never realistic, no fur texture, no 3D render. Scene: three plush cats in lemon, apple and mango hoods stand on a three-step winners' podium; the one on the tallest middle step proudly holds up a big shiny golden trophy cup, with a little ribbon rosette beside it. Background: a plain pale lilac backdrop with a few simple doodled stars and confetti. Centred and fully in frame with room around it. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks; any cards shown are blank or show only simple patterns.",
-      "size": "1024x1024",
-      "resize": 512
-    },
-    "mode-store": {
-      "prompt": "A cute scene for a menu tile in a card game, in a simple flat kawaii sticker style: bold clean black outlines, completely flat colours, no gradients and almost no shading. The characters are chunky rounded plush toy cats with stubby legs and short tails, minimal sewn-on faces (two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short stripes on the forehead, three long straight whiskers on each side), each wearing a soft fruit-shaped hood with its two cat ears poking through. Toy-like and huggable, never realistic, no fur texture, no 3D render. Scene: a cosy little market stall with a red-and-cream striped awning, its counter stacked with colourful gift-wrapped card boxes tied with ribbons and small crates of fruit, and one plush cat in a strawberry hood happily waving from behind the counter. Background: a plain pale peach backdrop with a few simple doodled sparkles. Centred and fully in frame with room around it. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks; any cards shown are blank or show only simple patterns.",
-      "size": "1024x1024",
-      "resize": 512
-    },
-    "mode-collection": {
-      "prompt": "A cute scene for a menu tile in a card game, in a simple flat kawaii sticker style: bold clean black outlines, completely flat colours, no gradients and almost no shading. The characters are chunky rounded plush toy cats with stubby legs and short tails, minimal sewn-on faces (two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short stripes on the forehead, three long straight whiskers on each side), each wearing a soft fruit-shaped hood with its two cat ears poking through. Toy-like and huggable, never realistic, no fur texture, no 3D render. Scene: a cosy wooden display cabinet with glass doors and three little shelves, each shelf showing a few upright trading cards with shiny rainbow foil edges and tiny gold stands, and one plush cat in an orange hood proudly standing beside it holding up a single sparkling card. Background: a plain pale peach backdrop with a few simple doodled sparkles. Centred and fully in frame with room around it. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks; any cards shown are blank or show only simple patterns.",
-      "size": "1024x1024",
-      "resize": 512
-    },
-    "mode-decks": {
-      "prompt": "A cute scene for a menu tile in a card game, in a simple flat kawaii sticker style: bold clean black outlines, completely flat colours, no gradients and almost no shading. The characters are chunky rounded plush toy cats with stubby legs and short tails, minimal sewn-on faces (two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short stripes on the forehead, three long straight whiskers on each side), each wearing a soft fruit-shaped hood with its two cat ears poking through. Toy-like and huggable, never realistic, no fur texture, no 3D render. Scene: one plush cat in a green watermelon hood sits at a table sorting cards into neat little piles and a fanned-out row, holding one card up thoughtfully, with a pencil beside it. Background: a plain pale butter-yellow backdrop with a few simple doodled sparkles. Centred and fully in frame with room around it. Absolutely no text, letters, numbers, symbols, logos, borders, card frames or watermarks; any cards shown are blank or show only simple patterns.",
-      "size": "1024x1024",
-      "resize": 512
-    },
-    "icon-tutorial": {
-      "prompt": "A tiny whimsical game icon in the same style as a cute plush-cat card game's art: a simple flat kawaii sticker style with bold clean dark-brown outlines, soft flat pastel colours with one gentle highlight, chunky rounded toy-like shapes, no sharp corners, no pixel art, no blocky shapes. Plush cats have minimal sewn-on faces: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short whiskers on each side, and wear a soft fruit-shaped hood with their two ears poking through. Subject: the round head of a plush cat in a bright lemon-yellow fruit hood with a little green leaf, wearing a tiny chocolate-brown graduation cap perched on top with a golden tassel, looking proud and cheerful. One single subject, big and centred, filling the frame with a small even margin, readable even when very small, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
-      "size": "1024x1024",
-      "resize": 256,
-      "transparent": true
-    },
-    "icon-rules": {
-      "prompt": "A tiny whimsical game icon in the same style as a cute plush-cat card game's art: a simple flat kawaii sticker style with bold clean dark-brown outlines, soft flat pastel colours with one gentle highlight, chunky rounded toy-like shapes, no sharp corners, no pixel art, no blocky shapes. Plush cats have minimal sewn-on faces: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short whiskers on each side, and wear a soft fruit-shaped hood with their two ears poking through. Subject: a plush cat in a red apple fruit hood peeking happily over the top of a small open storybook it holds with both stubby paws; the book has a soft teal cover and cream pages. One single subject, big and centred, filling the frame with a small even margin, readable even when very small, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
-      "size": "1024x1024",
-      "resize": 256,
-      "transparent": true
+      "prompt": "A square app icon for a card game about gentle folk creatures from around the world, in a soft stylised 3D look: a small magical tree with a soft round canopy and a glowing pale-aqua trunk, a single warm glowing lantern hanging from it, on a smooth warm graphite background with a soft glow behind the tree. Bold, simple, readable at tiny sizes. Full bleed, no rounded corners, no border, no text."
     },
     "icon-settings": {
-      "prompt": "A single round cog wheel (settings gear) with eight chunky rounded teeth and a round hole in the middle, in warm caramel orange. Perfectly symmetrical. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
+      "prompt": "A single round cog wheel (settings gear) with eight chunky rounded teeth and a round hole in the middle, in warm caramel orange. Perfectly symmetrical. A single game icon drawn in a flat kawaii sticker style for a card game of folk creatures: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
       "size": "1024x1024",
       "resize": 256,
       "transparent": true
     },
     "icon-home": {
-      "prompt": "A tiny whimsical game icon in the same style as a cute plush-cat card game's art: a simple flat kawaii sticker style with bold clean dark-brown outlines, soft flat pastel colours with one gentle highlight, chunky rounded toy-like shapes, no sharp corners, no pixel art, no blocky shapes. Plush cats have minimal sewn-on faces: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three short whiskers on each side, and wear a soft fruit-shaped hood with their two ears poking through. Subject: a small round cosy cottage whose peach-coloured roof has two cat ears on top and a little orange fruit with a leaf as its chimney, cream walls, a round-topped door and one round window glowing warm yellow. One single subject, big and centred, filling the frame with a small even margin, readable even when very small, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
+      "prompt": "A single house icon (home button): a small cosy house with a pitched roof, a door and one round window, in warm caramel orange. Perfectly symmetrical. Flat game icon: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no animals, no faces, no extra objects.",
       "size": "1024x1024",
       "resize": 256,
       "transparent": true
-    },
-    "diff-kitten": {
-      "prompt": "Only ONE character and only its head: no body, no paws, no second cat. The head of a chunky rounded plush toy cat seen from the front, with a minimal sewn-on face: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three long straight whiskers on each side. A small round kitten head in soft pastel peach, rounder and softer than a grown cat, with big round ears, eyes gently closed in a happy curve, a small pink bow on one ear. Gentle and harmless. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
-      "size": "1024x1024",
-      "resize": 256,
-      "transparent": true
-    },
-    "diff-cat": {
-      "prompt": "Only ONE character and only its head: no body, no paws, no second cat. The head of a chunky rounded plush toy cat seen from the front, with a minimal sewn-on face: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three long straight whiskers on each side. A grown cat in warm ginger orange with pointy ears and a confident little grin. Friendly but ready to play. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
-      "size": "1024x1024",
-      "resize": 256,
-      "transparent": true
-    },
-    "diff-tiger": {
-      "prompt": "The head of a chunky rounded plush toy cat seen from the front, with a minimal sewn-on face: two tiny black dot eyes set wide apart, a small soft smile, round pink blush ovals, three long straight whiskers on each side. A fierce little tiger cub in bright orange with bold black tiger stripes on the forehead and cheeks, pointy ears, eyebrows tilted in a determined look and one tiny fang showing. Cute, not scary. A single game icon drawn in a flat kawaii sticker style to match a cute plush-cat card game: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",
-      "size": "1024x1024",
-      "resize": 256,
-      "transparent": true
-    },
-    "cat-jam-kitten": {
-      "size": "1024x1024",
-      "prompt": "A small plush kitten mascot with a soft pink body and a few simple red stripes on its back, wearing a bright red strawberry fruit hood with tiny yellow seed dots and a green leafy top. It sits happily with both stubby paws up, cheeks sticky with a little jam smudge. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
-    },
-    "cat-jam": {
-      "size": "1024x1024",
-      "prompt": "A bigger, proud plush cat mascot with a soft pink body and simple red stripes, wearing a bright red strawberry fruit hood with yellow seed dots and a green leaf crown on top. It stands tall on its stubby legs with its chest out and one paw raised, leading the way with a bright smile. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
-    },
-    "cat-duchess-kitten": {
-      "size": "1024x1024",
-      "prompt": "A small plush kitten mascot with a fluffy pale pink body, wearing a watermelon hood: bright pink flesh with a few scattered black seeds and a thick green-and-pale-green striped rind band running all around the face opening (clearly a watermelon, never a strawberry, no leafy top). It lounges elegantly on its side with its chin up, looking pampered and slightly haughty, eyes two calm curved lines. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
-    },
-    "cat-duchess": {
-      "size": "1024x1024",
-      "prompt": "A bigger, grand plush cat mascot with a fluffy pale pink body, wearing a watermelon hood: bright pink flesh with a few scattered black seeds and a thick green-and-pale-green striped rind band running all around the face opening (clearly a watermelon, never a strawberry, no leafy top), plus a tiny gold tiara on top and a small green cape. It sits regally upright with its tail curled around its stubby paws, looking noble and serene. In the game's polished storybook cartoon style with soft cel shading, on a soft plain background. No text, no letters, no logos, no borders."
     }
   }
 }

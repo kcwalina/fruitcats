@@ -5,7 +5,7 @@
 // lookahead can't peek at draws, Lucky cards or the opponent's Pounces.
 
 import { BLANK_CARD, CARDS, PLUGINS, behaviour, isUnitCard, keywords, usesCondition } from './cards';
-import { apply, isGuardian, legalActions, other, playOptions, unitHealth, unitKeywords, unitPower } from './engine';
+import { MULLIGAN_MAX, apply, isGuardian, legalActions, other, playOptions, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, CardInst, GameState, PlayerId } from './types';
 
 export interface AiOptions {
@@ -178,7 +178,8 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   switch (prompt.kind) {
     case 'mulligan': {
       const cheap = me.hand.some((c) => (CARDS[c.id].cost ?? 0) <= 2);
-      const aside = me.hand.filter((c) => (CARDS[c.id].cost ?? 0) >= (cheap ? 5 : 4));
+      const aside = me.hand.filter((c) => (CARDS[c.id].cost ?? 0) >= (cheap ? 5 : 4))
+        .sort((a, b) => (CARDS[b.id].cost ?? 0) - (CARDS[a.id].cost ?? 0)).slice(0, MULLIGAN_MAX);
       return { t: 'mulligan', uids: aside.map((c) => c.uid) };
     }
     case 'setupPlant':

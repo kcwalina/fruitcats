@@ -1,11 +1,11 @@
 // The Store's money rules. Every number a player pays comes from here, on the server, so each rule has a test.
 
 import { describe, expect, it } from 'vitest';
-import { CARDS, SETS } from '@fruitcats/engine';
+import { CARDS, DECKS, SETS } from '@fruitcats/engine';
 import {
   SIGNATURE_PRICE,
   CARD_PRICES, DECK_PRICE, MINIMUM_ORDER, buildCatalog, cardProduct, cartForDeck, collectionOf, deckPrice, deckProduct,
-  deckWith, formatPrice, isLegacySet, maxCopies, missingForDeck, priceCart, starterCollection, whyNotSold, type DeckProduct,
+  deckWith, formatPrice, isLegacySet, maxCopies, missingForDeck, priceCart, soloFoeDecks, starterCollection, whyNotSold, type DeckProduct,
 } from '../src/index';
 
 const catalog = buildCatalog(['DW1', 'SB1', 'BP1']);
@@ -67,6 +67,17 @@ describe('catalog', () => {
     expect(isLegacySet('SB1')).toBe(true);
     expect(isLegacySet('BP1')).toBe(false);
     expect(isLegacySet('DW1')).toBe(false);
+  });
+
+  it('never gives the Solo opponent a Legacy deck', () => {
+    const legacy = Object.keys(DECKS).filter((key) => isLegacySet(CARDS[DECKS[key].hero]?.set ?? ''));
+    expect(legacy.length).toBeGreaterThan(0);
+    for (const deck of Object.values(DECKS)) {
+      const foes = soloFoeDecks(deck.hero);
+      expect(foes.length).toBeGreaterThan(0);
+      expect(foes.filter((key) => legacy.includes(key))).toEqual([]);
+      expect(foes.filter((key) => DECKS[key].hero === deck.hero)).toEqual([]);
+    }
   });
 
   it('is plain data, so the server can send it as JSON', () => {

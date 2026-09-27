@@ -13,6 +13,7 @@ import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderH
 import { ACCOUNTS, ONLINE, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeCodeEnter, storeCodeInput, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
+import { soloFoeDecks } from '@fruitcats/store';
 import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
 import {
@@ -33,7 +34,7 @@ import {
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, MECHANICS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
-  legalActions, other, readyTreats, unitHealth, unitPower,
+  legalActions, other, readyTreats, unitHealth, unitPower, MULLIGAN_MAX,
   type Action, type DeckList, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
 
@@ -387,9 +388,9 @@ function startGame(tutorial = false) {
   setOnlineAside();
   // The opponent leads one of the other decks, at random. The tutorial is always the Domowiki against the Pari (the
   // two folk starter decks), with you going first.
-  // Against your own deck, it leads a ready-made deck with a different Hero Cat (any of them, owned or not).
+  // Against your own deck, it leads a ready-made deck with a different Hero Cat (owned or not), never a Legacy one.
   const mine = deckForKey(myDeck) ?? DECKS[firstDeck()];
-  const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
+  const others = soloFoeDecks(mine.hero);
   const theirDeck = tutorial ? 'pari'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   inspected = null;
@@ -640,7 +641,7 @@ function onClick(key: string) {
   if (kind === 'hand') {
     if (prompt.kind === 'mulligan' || prompt.kind === 'setupPlant' || prompt.kind === 'discard') {
       if (picks.has(value)) picks.delete(value);
-      else if (prompt.kind === 'mulligan' || picks.size < prompt.count) picks.add(value);
+      else if (picks.size < (prompt.kind === 'mulligan' ? MULLIGAN_MAX : prompt.count)) picks.add(value);
       render();
       return;
     }
@@ -1218,7 +1219,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   } else {
     switch (prompt.kind) {
       case 'mulligan':
-        text = `<b>Mulligan.</b> Swap any cards you don't like — you get the same number back, so your hand stays `
+        text = `<b>Mulligan.</b> Swap up to <b>${MULLIGAN_MAX}</b> cards you don't like — you get the same number back, so your hand stays `
           + `at 6. You'll offer <b>2</b> of them as Offerings next, and keep the other <b>4</b>. `
           + `(${picks.size} selected.)`;
         buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;

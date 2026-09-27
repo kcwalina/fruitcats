@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -5,6 +6,7 @@ import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
 import { CONTENT as GAME_SETS } from '../../content/index';
+import { isShellFile, precacheProblems } from './src/sw-rules';
 
 // Interface art lives in the repo's art/ folder and is served as-is. Each card set's art lives in its own
 // folder, content/<year>/<month>/<set>/, and is published at stable addresses (contentAssets below):
@@ -63,7 +65,7 @@ export default defineConfig(({ mode, command }) => ({
       '@fruitcats/match': fileURLToPath(new URL('../../packages/match/src/index.ts', import.meta.url)),
     },
   },
-  plugins: [docsPages(), contentAssets(), idPassThrough()],
+  plugins: [docsPages(), contentAssets(), idPassThrough(), offlineWorker()],
   build: {
     outDir: mode === 'playtest' ? 'dist-playtest' : 'dist',
     rollupOptions: {
@@ -358,6 +360,78 @@ function idPassThrough(): Plugin {
           res.end(String(e));
         }
       });
+    },
+  };
+}
+
+// ── The offline worker ───────────────────────────────────────────────────────────────────────────
+//
+// At the end of a build: list the files the game needs to start (index.html, the scripts and styles it loads, and the
+// site files src/sw-rules.ts isShellFile names: interface art, sounds, icons, the manifest, the card packs), make a
+// version from their contents, write that version into index.html, and build src/sw.ts into dist/sw.js with both
+// written in. Also dist/sw-precache.json, the same list, for the deploy's bundle check. The build fails when the list
+// lacks the page, its entry script or the pack list, or grows past PRECACHE_LIMIT (every player downloads all of it).
+// docs/offline.md explains the whole thing.
+
+/** The most the game's stored copy may weigh. It was 3.6 MB on 2026-09-27. */
+const PRECACHE_LIMIT = 15 * 1024 * 1024;
+
+function offlineWorker(): Plugin {
+  let outDir = '';
+  const built = new Set<string>();
+  return {
+    name: 'fruitcats-offline-worker',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    writeBundle(_options, bundle) {
+      // The scripts and styles index.html loads, and everything they load in turn (chunks loaded later included).
+      const html = bundle['index.html'];
+      if (!html || html.type !== 'asset') return;
+      const visit = (file: string) => {
+        if (built.has(file) || !bundle[file]) return;
+        built.add(file);
+        const out = bundle[file];
+        if (out.type !== 'chunk') return;
+        const meta = out.viteMetadata;
+        for (const next of [...out.imports, ...out.dynamicImports, ...(meta?.importedCss ?? []), ...(meta?.importedAssets ?? [])]) visit(next);
+      };
+      for (const m of String(html.source).matchAll(/(?:src|href)="\.\/(assets\/[^"]+)"/g)) visit(m[1]);
+    },
+    async closeBundle() {
+      if (!built.size) return;
+      const site = (readdirSync(outDir, { recursive: true }) as string[]).map((f) => f.replace(/\\/g, '/'));
+      const files = [...new Set([...built, ...site.filter(isShellFile)])].filter((f) => existsSync(join(outDir, f))).sort();
+      const hash = createHash('sha256');
+      let bytes = 0;
+      for (const f of files) {
+        const data = readFileSync(join(outDir, f));
+        bytes += data.length;
+        hash.update(f).update('\0').update(data).update('\0');
+      }
+      const version = hash.digest('hex').slice(0, 12);
+      const indexFile = join(outDir, 'index.html');
+      const indexHtml = readFileSync(indexFile, 'utf8');
+      const problems = precacheProblems(files, indexHtml);
+      if (bytes > PRECACHE_LIMIT) problems.push(`the game's stored copy is ${(bytes / 1024 / 1024).toFixed(1)} MB, over ${PRECACHE_LIMIT / 1024 / 1024} MB`);
+      if (!indexHtml.includes('<meta charset="UTF-8" />')) problems.push('index.html has no <meta charset="UTF-8" /> to put the version after');
+      if (problems.length) throw new Error(`Offline worker: ${problems.join('; ')}. See docs/offline.md.`);
+      // The page's version, for its reports to the worker (src/offline.ts).
+      writeFileSync(indexFile, indexHtml.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta name="folkborn-version" content="${version}" />`));
+      const { build } = await import('esbuild');
+      await build({
+        entryPoints: [fileURLToPath(new URL('src/sw.ts', import.meta.url))],
+        outfile: join(outDir, 'sw.js'),
+        bundle: true, format: 'iife', target: 'es2020', minify: true, legalComments: 'none', logLevel: 'warning',
+        define: {
+          __SW_VERSION__: JSON.stringify(version),
+          __SW_PRECACHE__: JSON.stringify(files),
+          __SW_PACKS_ORIGIN__: JSON.stringify(new URL(PACKS).origin),
+        },
+      });
+      writeFileSync(join(outDir, 'sw-precache.json'), JSON.stringify({ version, bytes, files }, null, 1));
+      console.log(`offline worker: ${files.length} files, ${(bytes / 1024 / 1024).toFixed(2)} MB, version ${version}`);
     },
   };
 }

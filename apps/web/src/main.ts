@@ -5,6 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
+import { keepPictures } from './offline';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
@@ -397,6 +398,13 @@ function startGame(tutorial = false) {
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
   aiRandom = devSeed === undefined || tutorial ? undefined : mulberry(devSeed);
   tutorialGame = tutorial;
+  // Both decks' pictures, kept by the offline worker, so a later game with them shows every card with no connection.
+  keepPictures(game.players.flatMap((pl, p) => {
+    const face = p === mySeat ? yourCardUrl : cardUrl;
+    const ids = [...new Set([...pl.deck, ...pl.hand].map((c) => c.id))];
+    const hero = [`${pl.hero.id}-kitten`, `${pl.hero.id}-bigcat`];
+    return [...ids.flatMap((id) => [face(id), artUrl(id)]), ...hero.flatMap((k) => [face(k), artUrl(k)])];
+  }));
   resetLogSounds(game);
   unitArrivals.clear();
   if (tutorial) startTutorial({

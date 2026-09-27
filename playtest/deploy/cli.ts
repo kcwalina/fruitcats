@@ -12,7 +12,8 @@
 //      images with the main checkout's old card stats)
 //   4. build the site, and the playtest runner bundle PC2024 downloads
 //   5. the built bundle carries every card's current cost, Power and Health, and the site is small enough to upload in
-//      Azure's 2-minute window (deploys failed for hours with only "exit code 1" when card art made it 115 MB)
+//      Azure's 2-minute window (deploys failed for hours with only "exit code 1" when card art made it 115 MB), and the
+//      offline worker's stored files include the page, its entry script and the pack list (docs/offline.md)
 //   6. push to main, then upload exactly origin/main, and only if it contains the commit the live site runs (deploying
 //      before pushing let a second session, without those commits, deploy right over them)
 //   7. the live site serves this build
@@ -30,6 +31,7 @@ import { runBalance } from '../balance/gauntlet';
 import { flag } from '../lib/args';
 import { CARDS } from '../lib/engine';
 import { runMain } from '../lib/pool';
+import { precacheProblems } from '../../apps/web/src/sw-rules';
 import { buildRunner } from './runner-bundle';
 import { siteSize, sizeProblem } from './size-guard';
 import { fetchMain, requireClean, requireLiveInHead, requireOnMain, takeLock } from '../../scripts/git/deploy-guard.mjs';
@@ -164,7 +166,21 @@ function checkBundle(): string {
   }
   if (wrong.length) throw new Error(`The build does not carry the current stats of ${wrong.length} card(s): ${wrong.slice(0, 5).join('; ')}`);
   console.log(`   ${scripts.length} script(s) and ${packFiles.length} card pack(s): all ${checked} cards carry their current stats`);
+  checkOfflineWorker();
   return main;
+}
+
+/**
+ * The offline worker was built, and its list of stored files has the page, the game's entry script and the pack list:
+ * without them the game doesn't start offline (docs/offline.md). The build checks this too; this is the deploy's own look.
+ */
+function checkOfflineWorker(): void {
+  const listFile = join(DIST, 'sw-precache.json');
+  if (!existsSync(join(DIST, 'sw.js')) || !existsSync(listFile)) throw new Error('The build has no offline worker (dist/sw.js, dist/sw-precache.json).');
+  const list = JSON.parse(readFileSync(listFile, 'utf8')) as { version: string; bytes: number; files: string[] };
+  const problems = precacheProblems(list.files, readFileSync(join(DIST, 'index.html'), 'utf8'));
+  if (problems.length) throw new Error(`Offline worker: ${problems.join('; ')}.`);
+  console.log(`   offline worker ${list.version}: ${list.files.length} files, ${(list.bytes / 1024 / 1024).toFixed(1)} MB stored on each device`);
 }
 
 async function fetchText(url: string): Promise<string> {

@@ -109,11 +109,17 @@ Every card is a real belief from the sources above:
 
 ## Art
 
-Not the Domowiki's painted night. The owner gave a style reference (2026-09-26): a stylized digital render of a carved
-green-stone Maya figure in a misty jungle. The aluxes are drawn as small carved jade figures come to life, with
-incised spiral patterns and one red bead, in a misty emerald cornfield in soft daylight; animals and objects are carved
-figures too, so every card sits in one style. The reference shows a Maya god; the prompts say so and use only its style.
-No gods, idols or temples are drawn.
+**Since 2026-09-27: an ancient Maya wall painting.** The owner restyled the deck after two references of real Maya
+murals (a feast scene, and a procession of figures in dotted, fringed robes): old art rather than game art, like the
+Jiaoren and the Pari. Every card looks like a photograph of a thousand-year-old mural: flat mineral colours (red-orange,
+terracotta, ochre, cream, black, touches of Maya blue and jade) on weathered lime plaster, bold red-brown outlines,
+figures in profile with the classic Maya face, dotted and fringed cloth, faded and flaking paint. An alux is a stocky,
+child-sized figure in a round straw hat, a short white cotton tunic with a dotted sash, and sandals. The references show
+Maya nobles; the prompts use only their style, never their figures, and no gods, rulers, idols or temples are drawn.
+The first four cards were a prototype the owner approved (Draft 2 of two) before the whole deck was redrawn.
+
+The first look (2026-09-26 to 2026-09-27), carved jade-green figures in a misty jungle after a stylized digital render,
+was retired: it read like a video game, and the owner wants the decks to look like their culture's own old art.
 
 Direction and one subject per card in `art/prompts.json`; drawn with
 `python tools/generate_art.py --set al1 --model gpt-image-2 --quality high --jobs 1 --reference <the owner's image>`

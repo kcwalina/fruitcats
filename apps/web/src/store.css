@@ -575,3 +575,5 @@
 .code-panel input.store-code:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(242, 154, 82, 0.3); }
 .code-panel input.store-code::placeholder { color: #c9b8a2; letter-spacing: 0.12em; }
 .code-panel p.code-problem { margin: -4px 0 14px; color: #e0685e; }
+/* An iPad held upright: three to a row, so each tile is big enough to enjoy (four made them small). */
+@media (min-width: 1000px) and (orientation: portrait) { .offers { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

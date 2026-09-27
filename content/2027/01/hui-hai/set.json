@@ -1,0 +1,165 @@
+{
+  "set": "HH1",
+  "name": "Hui Hai",
+  "version": "0.1.0",
+  "status": "prototype",
+  "families": {
+    "Hui Hai": {
+      "colors": [
+        "#4E9A3A",
+        "#24501A",
+        "#E9F5E1"
+      ],
+      "personality": "Tiny, invisible, very strong keepers of the forest and its streams",
+      "playsLike": "Pebbles from nowhere: small, sudden damage to anyone who misbehaves"
+    }
+  },
+  "lore": {
+    "creature": "Hui Hai and Yă Hui Hai, the little forest folk",
+    "from": "Ba Na (Bahnar) folk belief, Central Highlands of Vietnam (Gia Lai, Kon Tum)",
+    "title": "The Hui Hai",
+    "eyebrow": "Ba Na folk belief · the Highland forest",
+    "facts": [
+      "The Ba Na of Vietnam's Central Highlands tell of the Hui Hai, invisible people of miniature size.",
+      "The men are called Hui Hai and the women Yă Hui Hai.",
+      "They live in the forests and the streams.",
+      "They are very small, but very strong.",
+      "They throw stones at people who behave badly in the forest. Nobody sees who threw it."
+    ],
+    "sources": [
+      "https://pmc.ncbi.nlm.nih.gov/articles/PMC13513994/"
+    ]
+  },
+  "cards": [
+    {
+      "id": "HH1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Hui Hai",
+      "name": "Pebble, the Littlest Hui Hai",
+      "flavor": "Nobody has ever seen her. Plenty of people have met her pebbles.",
+      "kitten": {
+        "name": "Pebble, the Littlest Hui Hai",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "enemy"
+            },
+            "do": [
+              {
+                "damage": 1
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "treats": {
+              "atLeast": 7
+            }
+          }
+        },
+        "text": "Exhaust: Deal 1 damage to an enemy unit.\nAwaken: You have 7 or more Offerings."
+      },
+      "bigCat": {
+        "name": "Pebble, Keeper of the Stream",
+        "power": 2,
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "enemy"
+            },
+            "do": [
+              {
+                "damage": 2
+              }
+            ]
+          }
+        ],
+        "text": "Exhaust: Deal 2 damage to an enemy unit."
+      },
+      "frame": "gold"
+    },
+    {
+      "id": "HH1-D01",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Hui Hai of the Stream",
+      "cost": 2,
+      "power": 1,
+      "health": 2,
+      "flavor": "A ripple where there is no fish. A splash where there is no stone.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Deal 1 damage to an enemy unit."
+    },
+    {
+      "id": "HH1-D02",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Hui Hai",
+      "name": "Yă Hui Hai, Lady of the Ferns",
+      "cost": 4,
+      "power": 3,
+      "health": 4,
+      "keywords": [
+        "Guardian"
+      ],
+      "flavor": "Small enough to sleep in a fern. Strong enough to move the rock beside it.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Hello: Deal 2 damage to an enemy unit."
+    },
+    {
+      "id": "HH1-D03",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Hui Hai",
+      "name": "A Pebble at Your Feet",
+      "cost": 1,
+      "keywords": [
+        "Pounce"
+      ],
+      "flavor": "Behave badly in the forest, and a stone lands beside you. Nobody threw it.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "text": "Ambush. Deal 2 damage to an enemy unit."
+    }
+  ]
+}

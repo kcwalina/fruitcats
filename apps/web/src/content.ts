@@ -9,7 +9,7 @@
 // A pack whose cards need plugin code the game doesn't have is skipped: code only arrives with a build.
 import { SETS, missingPieces, registerSet, type SetData } from '@fruitcats/engine';
 import { loadContent } from '../../../content';
-import { ART_BASES, BASE, PACKS } from './ui';
+import { ART_BASES, ART_STAMPS, BASE, PACKS } from './ui';
 
 loadContent(registerSet);
 
@@ -22,7 +22,7 @@ export const PACK_INDEXES = [
   `${BASE}packs/index.json`,
 ];
 
-interface PackEntry { set: string; name: string; version?: string; status?: string; data: string; art?: string; cards?: string }
+interface PackEntry { set: string; name: string; version?: string; status?: string; data: string; art?: string; cards?: string; published?: string }
 
 /**
  * `?prototypes` also takes prototype packs: a playtester's way to try a set that isn't released, on the real
@@ -47,6 +47,9 @@ export async function loadPacks(timeoutMs = 1500): Promise<string[]> {
   for (const { url, index } of indexes) {
     for (const pack of index?.packs ?? []) {
       if (pack.status !== 'released' && !wantPrototypes) continue;
+      // When its art was last published, even for a set this build has: redrawn art gets new addresses (ui.ts).
+      // The pack storage's list comes first and wins.
+      if (pack.published) ART_STAMPS[pack.set.toLowerCase()] ??= pack.published;
       const have = SETS[pack.set];
       if (have && !newer(pack.version, have.version)) continue;
       const at = (path: string) => new URL(path, new URL(url, location.href)).href;

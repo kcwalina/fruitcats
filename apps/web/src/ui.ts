@@ -19,14 +19,21 @@ const SITE_ART = new Set<string>(import.meta.env.VITE_SITE_ART_SETS ?? []);
 export const artBases = (code: string) => ART_BASES[code] ?? (LOCAL_ART || SITE_ART.has(code)
   ? { art: `${BASE}${code}/`, cards: `${BASE}cards/${code}/` }
   : { art: `${PACKS}${code}/art/illustrations/`, cards: `${PACKS}${code}/art/cards/` });
+/**
+ * When each set's art was last published, by set code (content.ts reads it from the pack list). It's added to the set's
+ * picture addresses, so redrawn art reaches every device at once: the offline worker and the browser keep a picture by
+ * its address (for a day or more), and a republished set has new addresses.
+ */
+export const ART_STAMPS: Record<string, string> = {};
 const setCode = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.set ?? 'SB1').toLowerCase();
 const bases = (key: string) => artBases(setCode(key));
+const stamp = (key: string) => { const v = ART_STAMPS[setCode(key)]; return v ? `?v=${encodeURIComponent(v)}` : ''; };
 /** A card's illustration. `key` is a card id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`. */
-export const artUrl = (key: string) => `${bases(key).art}${key}.webp`;
+export const artUrl = (key: string) => `${bases(key).art}${key}.webp${stamp(key)}`;
 /** A card's finished picture, standard print. */
-export const cardUrl = (key: string) => `${bases(key).cards}${key}.webp`;
+export const cardUrl = (key: string) => `${bases(key).cards}${key}.webp${stamp(key)}`;
 /** A card's finished picture in a special finish (foil, gold, prismatic, signature). */
-export const finishUrl = (key: string, finish: string) => `${bases(key).cards}${finish}/${key}.webp`;
+export const finishUrl = (key: string, finish: string) => `${bases(key).cards}${finish}/${key}.webp${stamp(key)}`;
 
 export const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 

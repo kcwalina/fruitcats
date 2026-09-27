@@ -412,12 +412,15 @@ const deckCover = (key: string, eager: boolean) => {
 
 /** The Collection's first screen: the Showcase, then each ready-made deck you have, as covers. */
 function renderDecks(): string {
-  const first = showcase[0];
   // The Showcase: your first favourite's painting in the same frame. Empty, a lighter mat with a honey star and a line
   // saying what goes there, so it reads as waiting for you, not as a picture that didn't load.
-  const showcaseCover = first
-    ? framedPainting({ art: artUrl(first), name: faceName(first), eager: true, cls: 'showcase-slot' })
-    : `<span class="slot deck-slot showcase-slot" aria-hidden="true"><span class="frame"><span class="sight"><span class="painting empty">${EMPTY_STAR}<small>Add cards you love</small></span></span></span></span>`;
+  // The Showcase is your cards themselves, fanned out on a velvet mat: never a painting in a frame, so it can't be
+  // mistaken for a deck (the first favourite is often a deck's hero, whose painting is that deck's cover).
+  const fan = showcase.slice(0, 3);
+  const showcaseCover = fan.length
+    ? `<span class="slot deck-slot showcase-slot showcase-fan n${fan.length}" aria-hidden="true"><span class="fan-mat">${fan
+        .map((face, i) => `<img class="fan-card f${i}" src="${yourCardUrl(face)}" alt="" loading="eager" draggable="false">`).reverse().join('')}</span></span>`
+    : `<span class="slot deck-slot showcase-slot showcase-fan" aria-hidden="true"><span class="fan-mat"><span class="painting empty">${EMPTY_STAR}<small>Add cards you love</small></span></span></span>`;
   const n = showcase.length;
   return `
     <div class="decks-page" data-keep-scroll="decks">

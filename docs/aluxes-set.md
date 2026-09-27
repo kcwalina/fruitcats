@@ -113,10 +113,16 @@ Every card is a real belief from the sources above:
 murals (a feast scene, and a procession of figures in dotted, fringed robes): old art rather than game art, like the
 Jiaoren and the Pari. Every card looks like a photograph of a thousand-year-old mural: flat mineral colours (red-orange,
 terracotta, ochre, cream, black, touches of Maya blue and jade) on weathered lime plaster, bold red-brown outlines,
-figures in profile with the classic Maya face, dotted and fringed cloth, faded and flaking paint. An alux is a stocky,
-child-sized figure in a round straw hat, a short white cotton tunic with a dotted sash, and sandals. The references show
-Maya nobles; the prompts use only their style, never their figures, and no gods, rulers, idols or temples are drawn.
-The first four cards were a prototype the owner approved (Draft 2 of two) before the whole deck was redrawn.
+dotted and fringed cloth, faded and flaking paint. The references show Maya nobles; the prompts use only their style,
+never their figures, and no gods, rulers, idols or temples are drawn.
+
+**An alux is never drawn as a person.** The first mural drafts drew aluxes as small Maya villagers in straw hats and
+white cotton, and the owner stopped it: that shows real Mexican people and calls them spirits. Now every alux is a tiny
+living clay figure, as the lore says the healer makes them: knee-high, with the corn towering over him, smooth terracotta
+clay with fingerprints and fine cracks, a big round head, stubby limbs, a doll-like clay face with round hollow eyes
+that each hold a spark of light, no hair, a hat and wrap folded from corn husks, and an outline painted a little faint,
+because aluxes are usually invisible. People appear only where a card needs one (the healer on Clay Alux), full-size.
+The description is written once in `art/prompts.json` and used in every subject, so each card shows the same creature.
 
 The first look (2026-09-26 to 2026-09-27), carved jade-green figures in a misty jungle after a stylized digital render,
 was retired: it read like a video game, and the owner wants the decks to look like their culture's own old art.

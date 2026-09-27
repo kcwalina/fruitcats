@@ -319,7 +319,7 @@ undone until dawn chased them off, and that is how people learned to make fishin
 Researched 2026-09-27 at the owner's request: a Vietnamese deck that does not look like a slightly different take
 on the [Jiaoren](#jiaoren). Two research passes: one on the folklore of the Việt (Kinh) majority, one on the Central
 Highlands peoples (Ba Na, Jarai, Ê Đê and others), the northern peoples (Tày, Nùng, Thái, Mường, H'Mông) and the
-Cham. Nothing is picked yet.
+Cham. On 2026-09-27 the owner liked two of them in the style of two old paintings, and each has four prototype cards: the [Flower-Souls](vietnam-prototypes.md) in a red Dao ritual-painting style and the [Hui Hai](vietnam-prototypes.md) in the style of a Hàng Trống folk painting.
 
 To stay clear of the Jiaoren, these leave out the sea, pearls, silk and weaving, and anything that is a Chinese
 figure with a Vietnamese name (dragons, the lân, the phoenix, fox spirits, the Jade Emperor's court, Chang'e). They

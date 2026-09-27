@@ -177,6 +177,8 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .fam-pari { --fam: #2e5c9e; --fam-dark: #16305a; --fam-tint: #e3ecf8; }
 .fam-aluxes { --fam: #2e8fa3; --fam-dark: #1a4d5c; --fam-tint: #dcf1f5; }
 .fam-jiaoren { --fam: #d9735f; --fam-dark: #7a2e2a; --fam-tint: #fce9e3; }
+.fam-flower-souls { --fam: #c8412b; --fam-dark: #6b1e14; --fam-tint: #fbe6dc; }
+.fam-hui-hai { --fam: #4e9a3a; --fam-dark: #24501a; --fam-tint: #e9f5e1; }
 .unit {
   border: 3px solid var(--fam, #fff); background: var(--parchment);
   box-shadow: 0 0 0 1.5px var(--fam-dark, #999), 0 6px 12px rgba(40, 20, 5, 0.4);

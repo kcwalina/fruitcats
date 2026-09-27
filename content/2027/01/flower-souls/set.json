@@ -1,0 +1,175 @@
+{
+  "set": "MB1",
+  "name": "Flower-Souls",
+  "version": "0.1.0",
+  "status": "prototype",
+  "families": {
+    "Flower-Souls": {
+      "colors": [
+        "#C8412B",
+        "#6B1E14",
+        "#FBE6DC"
+      ],
+      "personality": "Children's souls growing as flowers in Mother Flower's garden in the sky",
+      "playsLike": "Tend the garden: heal your units and let them grow"
+    }
+  },
+  "lore": {
+    "creature": "Mẻ Bjoóc (Mother Flower) and her flower-souls",
+    "from": "Tày and Nùng folk belief, northeastern Vietnam (Cao Bằng, Lạng Sơn)",
+    "title": "The Flower-Souls",
+    "eyebrow": "Tày folk belief · the garden in the sky",
+    "facts": [
+      "The Tày and Nùng of northern Vietnam say that Mẻ Bjoóc, Mother Flower, keeps a flower garden in the sky.",
+      "Every child's soul grows in her garden as a flower: gold flowers for boys, silver flowers for girls.",
+      "Mother Flower hands the flowers down to the families who will have children.",
+      "When a child's soul wanders off, a Then singer journeys up to the sky garden to tend the roots of the child's flower.",
+      "Families keep a small altar for Mother Flower, with a paper flower on it."
+    ],
+    "sources": [
+      "https://baocaobang.vn/-45416.html",
+      "https://scov.gov.vn/ban-sac-van-hoa/gioi-thieu-ban-sac-van-hoa/le-hoi-nang-hai-tin-nguong-dac-sac-cua-nguoi-tay-o-cao-bang.html"
+    ]
+  },
+  "cards": [
+    {
+      "id": "MB1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Flower-Souls",
+      "name": "Silver Bud, the Littlest Flower-Soul",
+      "flavor": "The newest flower in the garden. She hasn't opened yet, but she is already peeking.",
+      "kitten": {
+        "name": "Silver Bud, the Littlest Flower-Soul",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "heal": 2
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "treats": {
+              "atLeast": 7
+            }
+          }
+        },
+        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 7 or more Offerings."
+      },
+      "bigCat": {
+        "name": "Silver Bud, in Full Bloom",
+        "power": 2,
+        "abilities": [
+          {
+            "static": {
+              "grant": {
+                "health": 1
+              },
+              "to": {
+                "each": "own"
+              }
+            }
+          },
+          {
+            "when": "exhaust",
+            "target": {
+              "each": "own"
+            },
+            "do": [
+              {
+                "heal": 2
+              }
+            ]
+          }
+        ],
+        "text": "Your units get +1 Health.\nExhaust: Heal 2 from each unit you control."
+      },
+      "frame": "gold"
+    },
+    {
+      "id": "MB1-D01",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Flower-Souls",
+      "name": "Mẻ Bjoóc, Mother Flower",
+      "cost": 5,
+      "power": 3,
+      "health": 6,
+      "keywords": [
+        "Guardian"
+      ],
+      "flavor": "She knows every flower in her garden, and every child it belongs to.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Hello: Heal 2 from each unit you control."
+    },
+    {
+      "id": "MB1-D02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Flower-Souls",
+      "name": "Golden Flower-Soul",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "flavor": "A gold flower for a boy. This one can't wait to be handed down.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Draw a card."
+    },
+    {
+      "id": "MB1-D03",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Flower-Souls",
+      "name": "Tending the Roots",
+      "cost": 1,
+      "flavor": "When a child's soul wanders, the Then singer climbs to the sky garden and tends its flower.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "heal": 3
+            },
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Heal 3 from a unit you control. It gets +2 Power this round."
+    }
+  ]
+}

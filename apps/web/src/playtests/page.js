@@ -8,6 +8,8 @@ import { showSignIn, showWrongAccount } from './signin';
 let meta = { decks: [], personas: [], library: [], heroes: [] };
 function decks() {
   const known = meta.decks.map((d) => ({ key: d.key, name: d.name, color: d.color }));
+  // Once PC2024 has sent the decks in play, those are the starters: a retired deck in an old run isn't shown again.
+  if (known.length) return known;
   const seen = new Set(known.map((d) => d.key));
   for (const r of runs) for (const key of Object.keys(starters(r) ?? {})) {
     if (!seen.has(key)) { seen.add(key); known.push({ key, name: key, color: 'var(--muted)' }); }
@@ -172,14 +174,18 @@ const starterOptions = () => meta.decks.map((d) => [d.key, d.name]);
 // starters, deck builds' picks), newest first. A run is given a custom deck as its deck code, which PC2024 can
 // play whether or not the deck has reached its copy of the library yet.
 const SOURCE = { hunt: 'deck hunt', built: 'built by the LLM', imported: 'imported', generated: 'generated', found: 'found in a run' };
+// Only decks that can still be played: led by a Hero of the sets in play (the Heroes PC2024's runner sends with the deck
+// list). A retired set's decks (Heat Wave, the Starter Box) stay in old runs' reports but aren't offered or listed.
+const inPlay = (hero) => !meta.heroes?.length || meta.heroes.some((h) => h.id === hero);
 function customDecks() {
-  const out = (meta.library ?? []).map((d) => ({ ...d, inLibrary: true }));
+  const out = (meta.library ?? []).filter((d) => inPlay(d.hero)).map((d) => ({ ...d, inLibrary: true }));
   const seen = new Set(out.map((d) => d.code.split('.').slice(2).join('.')));
   for (const r of runs) {
     const d = r.details ?? {};
     const found = r.kind === 'deck-hunt' ? (d.decks ?? []).filter((x) => x.code && x.vsStarters >= 0.5)
       : r.kind === 'deck-build' && d.pick?.code ? [{ ...d.pick, vsStarters: d.pick.vsStarters }] : [];
     for (const x of found) {
+      if (!inPlay(x.hero)) continue;
       const body = x.code.split('.').slice(2).join('.');
       if (seen.has(body)) continue;
       seen.add(body);

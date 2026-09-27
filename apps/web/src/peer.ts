@@ -428,7 +428,7 @@ document.addEventListener('visibilitychange', () => {
   const r = run;
   if (!r || r.stopped) return;
   if (document.visibilityState === 'hidden') { r.host?.away(); return; }
-  if (r.host && r.attached) r.host.open();
+  r.host?.back();
   void poll(r);
 });
 

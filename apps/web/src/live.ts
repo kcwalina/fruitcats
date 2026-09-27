@@ -52,6 +52,8 @@ export const live = {
   match: null as string | null,
   /** That game is played directly with the other device (peer.ts), not through the connection. */
   peer: null as PeerNote | null,
+  /** Whether the Fruitcats API answered the last time it was asked (null: not asked yet). Shown in Settings. */
+  answering: null as boolean | null,
 };
 
 const outgoingFrom = (sent: SentNote[] | undefined) => {
@@ -118,6 +120,7 @@ async function sayHere() {
   if (!live.connected && document.visibilityState === 'visible') {
     const s = session();
     const answer = await post<HereAnswer>(HERE_PATH, { avatar: s?.avatar ?? 'cat', name: s?.displayName, peer: PEER_ABLE });
+    live.answering = !!answer;
     if (answer) {
       const changed = answer.open !== live.open || answer.match !== live.match
         || answer.challenges.map((c) => c.id).join() !== live.incoming.map((c) => c.id).join()
@@ -268,6 +271,7 @@ async function open() {
 function received(msg: ServerMessage) {
   switch (msg.t) {
     case 'welcome':
+      live.answering = true;
       live.connected = true;
       live.connecting = false;
       retry = 0;

@@ -71,6 +71,9 @@ export class PeerHost {
   /** This device's player went away (the game in the background): the clock stops for both, as when a connection drops. */
   away() { this.match.dropped(0); }
 
+  /** Back from the background: the clock carries on. (The screen kept every message meanwhile: nothing to send again.) */
+  back() { this.match.connected(0); }
+
   /** A move or anything else from this device's own player. */
   fromHere(msg: ClientMessage) {
     if (!('match' in msg) || msg.match !== this.id || !FROM_GUEST.has(msg.t)) return;

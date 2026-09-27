@@ -193,7 +193,7 @@ export function onlineBar(s: GameState, mine: boolean): { text: string | null; b
     const joining = s.actions === 0;
     text = gone
       ? `<b>${name} hasn’t come back.</b> Keep waiting, or end the game.`
-      : joining ? `<b>Waiting for ${name} to join…</b>`
+      : joining ? `<b>Waiting for ${name} to join.</b>`
       : `<b>${name}’s connection dropped.</b> Waiting <span data-away>${fmt(ol.away.until - now)}</span> for them to come back.`;
     if (gone) buttons.push(
       ...(ol.info.rules.kind === 'friend' ? ['<button data-click="ol:end:call-off">Call it off</button>'] : []),

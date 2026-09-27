@@ -1346,7 +1346,8 @@ function renderSettings(alreadyOpen: boolean): string {
   const body: Record<SettingsSection, () => string> = {
     gameplay: () => `
       ${row('Animations', 'Show attacks, damage and played cards as they happen', choice('anim', 'on', 'On', animationsEnabled()) + choice('anim', 'off', 'Off', !animationsEnabled()))}
-      ${row('Speed', 'How long the computer pauses, and how fast animations play', choice('speed', 'normal', 'Normal', speed === 'normal') + choice('speed', 'fast', 'Fast', speed === 'fast'))}`,
+      ${row('Speed', 'How long the computer pauses, and how fast animations play', choice('speed', 'normal', 'Normal', speed === 'normal') + choice('speed', 'fast', 'Fast', speed === 'fast'))}
+      ${ONLINE && signedIn() ? `<p class="setting-note">${esc(onlineStatus())}</p>` : ''}`,
     sound: () => row('Sound', '', choice('sound', 'on', 'On', soundEnabled()) + choice('sound', 'off', 'Off', !soundEnabled())),
     account: () => (ACCOUNTS ? `<div class="account-panel">${renderAccountPanel()}</div>` : ''),
     contact: () => (ACCOUNTS ? `<div class="account-panel">${renderContactPanel()}</div>` : ''),
@@ -1372,6 +1373,19 @@ function renderSettings(alreadyOpen: boolean): string {
       </div>
     </div>
   </div>`;
+}
+
+/**
+ * How online play stands, in a sentence, for Settings. The game never depends on our servers to play: this only says
+ * what works while they don't answer, so nobody has to wonder whether something is broken.
+ */
+function onlineStatus(): string {
+  if (!navigator.onLine) return 'You’re offline. Solo, your decks and the Collection work as usual.';
+  if (live.answering === false) {
+    return 'Our servers aren’t answering right now. Solo, your decks and the Collection work as usual, and a game with a '
+      + 'friend that’s already going carries on. New games with friends can start when they’re back.';
+  }
+  return live.answering ? 'Online play is working.' : 'Checking online play…';
 }
 
 function renderRules(): string {

@@ -11,7 +11,8 @@ replaced another's. The scripts below enforce the rules that prevent it. Follow 
    always exactly origin/main.
 3. If it stops, fix what it says and run it again. An upload failure is a real error, not a glitch: find the cause
    (the message says how) before retrying. The site must stay small (under 40 MB, checked before the push): card art is
-   served from the card-pack storage (`npm run publish-pack`), never copied into `apps/web/dist`. Never deploy by hand (swa-cli, `az`), and never
+   served from the card-pack storage (`npm run publish-pack -- <set>` after changing a set's art; the build refuses art the
+   storage doesn't have), never copied into `apps/web/dist`. Never deploy by hand (swa-cli, `az`), and never
    `--no-verify`, force-push, or reset main.
 
 ## Merging origin/main

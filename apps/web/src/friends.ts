@@ -215,7 +215,7 @@ function notConnected(): string | null {
   if (live.waiting) {
     const w = live.waiting;
     return panel(`You’re number ${w.position} in line`,
-      'Lots of cats are playing online right now. Keep this screen open and you’ll be let in as soon as there’s room.'
+      'Lots of players are online right now. Keep this screen open and you’ll be let in as soon as there’s room.'
       + (w.paid ? '<small>Players who have bought cards go first, and that includes you.</small>'
         : '<small>Players who have bought cards go first.</small>'),
       '<div class="pf-line-dots" aria-hidden="true"><i></i><i></i><i></i></div>');
@@ -301,18 +301,18 @@ function renderList(): string {
 function challengeLine(o: ChallengeOptions, lives: number): string {
   // Only what changes the game for the friend joining. The pace isn't: it was chosen, it needn't be repeated.
   const parts = o.teaching ? ['Teaching game'] : [];
-  if (lives < 9) parts.push(`they start with ${lives} Lives`);
+  if (lives < 9) parts.push(`they start with ${lives} Candles`);
   return parts.length ? `<small>${esc(parts.join(' · '))}</small>` : '';
 }
 
 function livesStepper(): string {
   return `
     <div class="pf-option">
-      <span class="pf-option-name">Your Lives<small>${myLives === 9 ? 'All 9' : `A handicap: you start with ${myLives}`}</small></span>
+      <span class="pf-option-name">Your Candles<small>${myLives === 9 ? 'All 9' : `A handicap: you start with ${myLives}`}</small></span>
       <div class="pf-stepper">
-        <button class="icon-button" data-click="pf:lives:-1" ${myLives <= MIN_LIVES ? 'disabled' : ''} aria-label="One Life fewer">−</button>
+        <button class="icon-button" data-click="pf:lives:-1" ${myLives <= MIN_LIVES ? 'disabled' : ''} aria-label="One Candle fewer">−</button>
         <b aria-live="polite">${myLives}</b>
-        <button class="icon-button" data-click="pf:lives:1" ${myLives >= 9 ? 'disabled' : ''} aria-label="One Life more">+</button>
+        <button class="icon-button" data-click="pf:lives:1" ${myLives >= 9 ? 'disabled' : ''} aria-label="One Candle more">+</button>
       </div>
     </div>`;
 }
@@ -371,7 +371,7 @@ function renderAccept(id: string): string {
   return `
   <div class="setup-body pf-body pf-setup">
     <div class="pf-from">${pawtrait(c.from.avatar, 'pf-face')}<span class="pf-who"><b>${esc(c.from.name)} wants to play</b>${challengeLine(c.options, c.lives)}</span></div>
-    ${!host!.hasPlayed() && !c.options.teaching ? `<p class="pf-tip">New to Fruitcats? Ask ${esc(c.from.name)} for a <b>Teaching game</b> instead: no timer, hints, and take-backs.</p>` : ''}
+    ${!host!.hasPlayed() && !c.options.teaching ? `<p class="pf-tip">New to Folkborn? Ask ${esc(c.from.name)} for a <b>Teaching game</b> instead: no timer, hints, and take-backs.</p>` : ''}
     ${host!.deckPicker()}
     <section class="pf-options">${livesStepper()}</section>
     <div class="setup-footer">
@@ -505,8 +505,8 @@ const canShare = () => typeof navigator.share === 'function';
 
 /** What's sent: the code and where to type it. No link: the code is the whole invitation. */
 const shareText = (code: string) =>
-  `Add me as a friend in Fruitcats! My friend code is ${code.slice(0, 3)}-${code.slice(3)}. `
-  + 'In the game: Friend → Add a friend → type the code. It works for 15 minutes. (Fruitcats: fruitcats.viamochi.com)';
+  `Add me as a friend in Folkborn! My friend code is ${code.slice(0, 3)}-${code.slice(3)}. `
+  + 'In the game: Friend → Add a friend → type the code. It works for 15 minutes. (Folkborn: fruitcats.viamochi.com)';
 
 async function shareCode(how: 'share' | 'copy') {
   if (add.kind !== 'show') return;

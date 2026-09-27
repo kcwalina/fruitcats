@@ -6,7 +6,7 @@ Foil, Gold and Prismatic cards keep their [finish](collection.md#finishes).
 
 <figure class="hero"><img src="guide/wallpapers/lock-screens.webp" alt="Two iPhone Lock Screens: Grapefruit Ferret, and Pippin in a Gold print, each filling the whole screen with the clock over the card's art" loading="lazy"><figcaption>The card fills the whole Lock Screen, right into the corners. Here: Grapefruit Ferret, and Pippin in Gold.</figcaption></figure>
 
-No website or web game is allowed to change your wallpaper by itself, so it takes two steps: Fruitcats
+No website or web game is allowed to change your wallpaper by itself, so it takes two steps: Folkborn
 makes the picture, then you set it as your wallpaper.
 
 ## Make a wallpaper
@@ -14,7 +14,7 @@ makes the picture, then you set it as your wallpaper.
 1. Open the **Collection**. Press and hold a card in your Showcase (right-click on a computer), or
    tap any card in **All cards**.
 2. Tap **Make wallpaper**.
-3. Choose **Phone**, **Tablet** or **Computer**. Fruitcats picks the one you're using, sized exactly
+3. Choose **Phone**, **Tablet** or **Computer**. Folkborn picks the one you're using, sized exactly
    for your screen.
 4. Tap **Save picture**.
 
@@ -55,14 +55,14 @@ the shortcut in Apple's **Shortcuts** app, which comes with every iPhone and iPa
 4. Tap the small arrow at the right of the action to see its options. Turn off **Show Preview**, so it
    doesn't ask you to confirm each time, and turn off **Crop to Subject**.
 5. Tap the **ⓘ** button to open **Details**, turn on **Show in Share Sheet**, then tap **Done**.
-6. Now name it: tap **New Shortcut** at the top, tap **Rename**, type **Fruitcats Wallpaper**, and tap
+6. Now name it: tap **New Shortcut** at the top, tap **Rename**, type **Folkborn Wallpaper**, and tap
    **Done**.
 7. Tap **Done** to save the shortcut.
 
 **Every time after that**
 
-1. In Fruitcats, tap **Make wallpaper**, then **Save picture**.
-2. In the share sheet, scroll down and tap **Fruitcats Wallpaper**. That's it.
+1. In Folkborn, tap **Make wallpaper**, then **Save picture**.
+2. In the share sheet, scroll down and tap **Folkborn Wallpaper**. That's it.
 
 The first time, your iPhone asks whether the shortcut may change your wallpaper: tap **Allow**.
 

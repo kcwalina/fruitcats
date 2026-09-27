@@ -30,7 +30,7 @@
         "#FFE6CC"
       ],
       "mechanic": "Sprout",
-      "hint": "extra Treats now, Lush payoffs at 7+"
+      "hint": "extra Offerings now, Lush payoffs at 7+"
     },
     "Garden": {
       "colors": [
@@ -98,7 +98,7 @@
     "Lush": {
       "family": "Tropical",
       "kind": "condition",
-      "reminder": "This bonus is on while you have 7 or more Treats.",
+      "reminder": "This bonus is on while you have 7 or more Offerings.",
       "if": {
         "treats": {
           "atLeast": 7
@@ -106,13 +106,13 @@
       },
       "badge": {
         "icon": "🌴",
-        "title": "Lush: 7 or more Treats — Lush bonuses are on"
+        "title": "Lush: 7 or more Offerings — Lush bonuses are on"
       }
     },
     "Sprout": {
       "family": "Tropical",
       "kind": "action",
-      "reminder": "Put that many cards from the top of your deck into your Treats."
+      "reminder": "Put that many cards from the top of your deck into your Offerings."
     }
   },
   "cards": [
@@ -125,7 +125,7 @@
       "flavor": "Bright, impatient, and already halfway across the yard.",
       "kitten": {
         "name": "Sunny, Zesty Kit",
-        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: Your opponent has 5 or fewer Lives.",
+        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: Your opponent has 5 or fewer Candles.",
         "abilities": [
           {
             "when": "exhaust",
@@ -182,7 +182,7 @@
       "flavor": "Flops over anywhere. Gets back up every time.",
       "kitten": {
         "name": "Pippin, Windfall Kit",
-        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Lives.",
+        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Candles.",
         "abilities": [
           {
             "when": "exhaust",
@@ -239,7 +239,7 @@
       "flavor": "Lazes all morning. Rules all afternoon.",
       "kitten": {
         "name": "Tango, Sunbeam Kit",
-        "text": "Exhaust: Ready one of your Treats.\nAwaken: You have 8 or more Treats.",
+        "text": "Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.",
         "abilities": [
           {
             "when": "exhaust",
@@ -261,7 +261,7 @@
       "bigCat": {
         "name": "Tango, Jungle Monarch",
         "power": 4,
-        "text": "Fierce. Exhaust: Ready two of your Treats.",
+        "text": "Fierce. Exhaust: Ready two of your Offerings.",
         "keywords": [
           "Fierce"
         ],
@@ -286,7 +286,7 @@
       "cost": 1,
       "power": 1,
       "health": 1,
-      "text": "Zoomies. Zest: gets +1 Power this round.",
+      "text": "Swift. Zest: gets +1 Power this round.",
       "flavor": "Blink and it's already nibbled your rind.",
       "keywords": [
         "Zoomies"
@@ -393,7 +393,7 @@
       "cost": 3,
       "power": 3,
       "health": 2,
-      "text": "Zoomies. Sneaky. Zest: gets +1 Power this round.",
+      "text": "Swift. Sneaky. Zest: gets +1 Power this round.",
       "flavor": "Sproing! Sproing! Sproing!",
       "keywords": [
         "Zoomies",
@@ -471,7 +471,7 @@
       "cost": 5,
       "power": 4,
       "health": 4,
-      "text": "Zoomies. Sneaky.",
+      "text": "Swift. Sneaky.",
       "flavor": "It saw your Guardian. It didn't care.",
       "keywords": [
         "Zoomies",
@@ -485,7 +485,7 @@
       "family": "Citrus",
       "name": "Sour Spray",
       "cost": 1,
-      "text": "Pounce. Lucky. Deal 2 damage to a unit.",
+      "text": "Ambush. Lucky. Deal 2 damage to a unit.",
       "flavor": "Right in the eye. Every time.",
       "keywords": [
         "Pounce",
@@ -588,7 +588,7 @@
       "cost": 3,
       "power": 3,
       "health": 3,
-      "text": "Zoomies. Hello: Ready another unit you control.",
+      "text": "Swift. Hello: Ready another unit you control.",
       "flavor": "\"Keep up, slowpokes!\"",
       "keywords": [
         "Zoomies"
@@ -826,7 +826,7 @@
       "family": "Orchard",
       "name": "Hiss!",
       "cost": 1,
-      "text": "Pounce. Cancel an attack. (The attacker stays exhausted.)",
+      "text": "Ambush. Cancel an attack. (The attacker stays exhausted.)",
       "flavor": "The universal language of \"no.\"",
       "keywords": [
         "Pounce"
@@ -1049,7 +1049,7 @@
       "family": "Garden",
       "name": "Catnip",
       "cost": 1,
-      "text": "Pounce. A unit you control gets +2 Power this round.",
+      "text": "Ambush. A unit you control gets +2 Power this round.",
       "flavor": "One sniff and anything is possible.",
       "keywords": [
         "Pounce"
@@ -1105,7 +1105,7 @@
       "cost": 1,
       "power": 1,
       "health": 2,
-      "text": "Hello: Ready one of your Treats.",
+      "text": "Hello: Ready one of your Offerings.",
       "flavor": "Always has a snack to share.",
       "abilities": [
         {
@@ -1149,7 +1149,7 @@
       "cost": 2,
       "power": 2,
       "health": 2,
-      "text": "Zoomies.",
+      "text": "Swift.",
       "flavor": "Arrives mid-sentence. Leaves mid-sentence.",
       "keywords": [
         "Zoomies"
@@ -1309,7 +1309,7 @@
       "type": "Trick",
       "name": "Mango Smoothie",
       "cost": 1,
-      "text": "Pounce. A unit you control gets +2 Power this round. Ready one of your Treats.",
+      "text": "Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings.",
       "flavor": "Refreshing, and a little bit dangerous.",
       "keywords": [
         "Pounce"
@@ -1385,7 +1385,7 @@
       "cost": 5,
       "power": 4,
       "health": 5,
-      "text": "Guardian. Hello: Ready two of your Treats.",
+      "text": "Guardian. Hello: Ready two of your Offerings.",
       "flavor": "Hard shell. Soft heart.",
       "keywords": [
         "Guardian"
@@ -1499,7 +1499,7 @@
         "SB1-G04": 3,
         "SB1-G05": 2
       },
-      "blurb": "Laid-back, then enormous. Gather extra Treats, then drop giants. Led by Tango, the mightiest Hero Cat.",
+      "blurb": "Laid-back, then enormous. Gather extra Offerings, then drop giants. Led by Tango, the mightiest Hero.",
       "price": 0
     }
   }

@@ -249,14 +249,14 @@ async function beat(e: GameEvent) {
       const mine = e.p === ctx.human;
       const name = b(cardName(e.cardId));
       const on = e.target ? ` on ${targetName(e.target)}` : '';
-      say(e.how === 'pounce' ? `${who(e.p)} ${mine ? 'POUNCE' : 'POUNCES'} with ${name}${on}!`
+      say(e.how === 'pounce' ? `${who(e.p)} ${mine ? 'AMBUSH' : 'AMBUSHES'} with ${name}${on}!`
         : e.how === 'lucky' ? `Lucky! ${who(e.p)} ${mine ? 'play' : 'plays'} ${name} for free${on}.`
         : `${who(e.p)} ${mine ? 'play' : 'plays'} ${name}${on}.`);
       playSound('card');
       const hand = mine ? $(`.hand [data-click="hand:${e.uid}"]`) : $('.foe-hand .card-back:last-child');
       const img = (mine && hand?.dataset.zoom) || ctx.cardImage(e.p, e.cardId);
       if (e.target) targetEl(e.target)?.classList.add('fx-targeted');
-      await reveal(img, hand, mine, e.how === 'pounce' ? 'Pounce!' : e.how === 'lucky' ? 'Lucky!' : '');
+      await reveal(img, hand, mine, e.how === 'pounce' ? 'Ambush!' : e.how === 'lucky' ? 'Lucky!' : '');
       return;
     }
     case 'ability': {
@@ -300,14 +300,14 @@ async function beat(e: GameEvent) {
     case 'heroHit': {
       const a = targetEl(e.attacker);
       const hero = heroEl(e.p);
-      say(`Hit! ${e.p === ctx.human ? 'You lose' : 'Opponent loses'} ${e.lives} ${e.lives > 1 ? 'Lives' : 'Life'}.`);
+      say(`Hit! ${e.p === ctx.human ? 'You lose' : 'Opponent loses'} ${e.lives} ${e.lives > 1 ? 'Candles' : 'Candle'}.`);
       await lunge(a, hero);
       hero?.classList.remove('fx-targeted');
       a?.classList.remove('fx-attacker');
       playSound(e.p === ctx.human ? 'hitBad' : 'hitGood');
       void shake(hero, 10);
       flash(hero, 'rgba(255, 40, 40, .6)');
-      float(hero, e.lives > 1 ? `−${e.lives} Lives` : 'Hit!', 'big');
+      float(hero, e.lives > 1 ? `−${e.lives} Candles` : 'Hit!', 'big');
       if (e.attacker.kind === 'unit') a?.classList.add('exhausted');
       await wait(550);
       return;
@@ -389,7 +389,7 @@ async function beat(e: GameEvent) {
       const t = unitEl(e.uid);
       say(`${b(cardName(e.cardId))} is attached to ${b(unitName(e.uid))}.`);
       await bolt(parked, t, 'buff');
-      float(t, `🧸 ${cardName(e.cardId)}`, 'buff');
+      float(t, `🧿 ${cardName(e.cardId)}`, 'buff');
       await wait(400);
       return;
     }

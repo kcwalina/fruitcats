@@ -3,14 +3,14 @@
 //
 // Two kinds of balloon:
 //   • Steps — a fixed walkthrough in order. A step either has a Next button ("read this") or waits
-//     for you to do something ("plant two Treats") and moves on when you have.
-//   • Tips — shown once, the first time something new happens (a lost Life, a Pounce chance, ...).
+//     for you to do something ("make two Offerings") and moves on when you have.
+//   • Tips — shown once, the first time something new happens (a lost Candle, an Ambush chance, ...).
 // While a "read this" balloon is open the AI waits, so nothing happens behind your back.
 
 import { cardName, isGuardian, legalActions, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 import { count, note } from './progress';
 
-const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/yarn.webp" alt="Yarn Ball">`;
+const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/yarn.webp" alt="Lantern">`;
 
 type Text = string | ((s: GameState) => string);
 
@@ -57,7 +57,7 @@ const list = (names: string[]) => names.map((n) => `<b>${n}</b>`).join(names.len
 const STEPS: Balloon[] = [
   {
     id: 'goal', title: 'How you win', anchor: '.player.foe .lives', below: true,
-    text: 'Each cat has a row of <b>9 hearts</b>. Knock out all of the opponent’s hearts, up there, before they take yours.',
+    text: 'Each Hero has <b>9 Candles</b>. Put out all of the opponent’s Candles, up there, before they put out yours.',
   },
   {
     // Reading a card teaches the price, the paw and the heart in one go — and you cannot play without it.
@@ -67,36 +67,36 @@ const STEPS: Balloon[] = [
       + '<br><b>Try it now: hold a card until it opens.</b>',
   },
   {
-    id: 'treats', title: 'Treats are your money', anchor: '.hand', also: ['[data-click="btn:confirm"]'],
+    id: 'treats', title: 'Offerings are your money', anchor: '.hand', also: ['[data-click="btn:confirm"]'],
     when: (s) => myPrompt(s, 'setupPlant'),
-    text: 'Cards cost <b>Treats</b> — the number in a card’s top-left corner. Planting a card face down turns it into '
-      + '<b>1 Treat</b>, money rather than a cat, whatever it cost. '
-      + '<b>Click the 2 cards with the biggest corner number, then press Plant.</b>',
+    text: 'Cards cost <b>Offerings</b> — the number in a card’s top-left corner. Offering a card face down turns it into '
+      + '<b>1 Offering</b>, money rather than a creature, whatever it cost. '
+      + '<b>Click the 2 cards with the biggest corner number, then press Offer.</b>',
     doneWhen: (a) => a.t === 'setupPlant',
   },
   {
-    id: 'spend', title: 'Spend a Treat', anchor: '.hand', also: ['[data-click="btn:ability"]', '[data-click="btn:pass"]'],
+    id: 'spend', title: 'Spend an Offering', anchor: '.hand', also: ['[data-click="btn:ability"]', '[data-click="btn:pass"]'],
     when: (s) => myPrompt(s, 'action'),
     // Never teach "press Pass" as the first thing you do. If nothing is affordable there is always a
-    // real move: the Hero Cat's ability when it has a target, otherwise taking the Yarn Ball.
+    // real move: the Hero's ability when it has a target, otherwise taking the Lantern.
     text: (s) => {
       if (canPlay(s)) return 'A card with a bright ring is one you can afford. <b>Click one</b> to play it — it comes down on your side of the table.';
       const can = (t: Action['t']) => legalActions(s).some((a) => a.t === t);
       if (can('ability')) return 'Nothing you can afford yet — but your Hero’s <b>ability</b> is free. <b>Press Use ability</b>; that’s your go.';
-      if (can('takeYarn')) return 'Nothing you can afford yet, and that’s fine. <b>Press Take the Yarn</b> — you’ll get the first move next round.';
-      return 'Nothing you can afford yet. <b>Press Pass</b> — next round you draw 2 cards and make another Treat.';
+      if (can('takeYarn')) return 'Nothing you can afford yet, and that’s fine. <b>Press Take the Lantern</b> — you’ll get the first move next round.';
+      return 'Nothing you can afford yet. <b>Press Pass</b> — next round you draw 2 cards and make another Offering.';
     },
     doneWhen: (a) => a.t === 'play' || a.t === 'ability' || a.t === 'pass' || a.t === 'takeYarn',
   },
   {
-    id: 'rest', title: 'It’s having a nap', anchor: '.yard.me', below: true, optional: true, skipIf: (s) => s.round >= 4,
+    id: 'rest', title: 'It’s getting its bearings', anchor: '.yard.me', below: true, optional: true, skipIf: (s) => s.round >= 4,
     when: (s) => s.players[ME].yard.length > 0 && myPrompt(s),
     text: (s) => {
-      const napping = s.players[ME].yard.some((u) => u.exhausted);
-      return napping
-        ? 'A cat that just arrived is tilted and marked <b>new</b>: it naps this round and can attack from the next one. '
+      const settling = s.players[ME].yard.some((u) => u.exhausted);
+      return settling
+        ? 'A creature that just arrived is tilted and marked <b>new</b>: it gets its bearings this round and can attack from the next one. '
           + 'The paw is its power, the heart its health.'
-        : 'Most cats nap the round they arrive — this one has <b>Zoomies</b>, so it can attack straight away. '
+        : 'Most creatures get their bearings the round they arrive — this one is <b>Swift</b>, so it can attack straight away. '
           + 'The paw is its power, the heart its health.';
     },
   },
@@ -123,13 +123,13 @@ const STEPS: Balloon[] = [
       const sel = picked();
       if (sel?.attack)
         return document.querySelector('.player.foe .hero.targetable')
-          ? 'Now click a <b>pink target</b>: their cat, or their <b>Hero</b> to knock out a heart.'
+          ? 'Now click a <b>pink target</b>: their creature, or their <b>Hero</b> to put out a Candle.'
           : 'Now click the <b>pink target</b>. Their <b>Guardian</b> has to be dealt with before their Hero.';
       if (sel)
         return `<b>${sel.label}</b> is a card in your hand — cards are <b>played</b>, not used to attack. `
-          + 'Press <b>Cancel</b>, then click a cat with a <b>Ready!</b> tag.';
+          + 'Press <b>Cancel</b>, then click a creature with a <b>Ready!</b> tag.';
       const names = attackerNames(s);
-      return `A cat with a <b>Ready!</b> tag can attack${names.length ? ` — ${list(names)}` : ''}. `
+      return `A creature with a <b>Ready!</b> tag can attack${names.length ? ` — ${list(names)}` : ''}. `
         + 'Click it, then click what it should hit.';
     },
     doneWhen: (a) => a.t === 'attack',
@@ -137,24 +137,24 @@ const STEPS: Balloon[] = [
   {
     id: 'hit', title: 'You’ve got it! 🎉', anchor: '.player.foe .lives', below: true,
     when: (s) => myPrompt(s) && (doneIds.has('attack') || s.round >= 6),
-    text: 'A hit knocks out a heart — and that card goes into their <b>hand</b>, so whoever is behind gets more to play with. '
+    text: 'A hit puts out a Candle — and that card goes into their <b>hand</b>, so whoever is behind gets more to play with. '
       + 'That’s everything: I’ll pop up when something new happens.',
   },
 ];
 
 const TIPS: Balloon[] = [
   {
-    // Demoted from a step: a beginner does not need the Yarn Ball to take their first turn.
+    // Demoted from a step: a beginner does not need the Lantern to take their first turn.
     id: 'newRound', title: 'A new round', anchor: '.hand', also: ['[data-click="btn:skip"]'],
     when: (s) => myPrompt(s, 'plant'),
-    text: 'Everything woke up and you drew 2 cards. You may plant <b>one more Treat</b> — or press <b>Skip</b> and keep '
+    text: 'Everything woke up and you drew 2 cards. You may make <b>one more Offering</b> — or press <b>Skip</b> and keep '
       + 'the card to play instead.',
   },
   {
-    id: 'yarnBall', title: 'The Yarn Ball', anchor: '[data-click="btn:yarn"]', also: ['.yarn'],
+    id: 'yarnBall', title: 'The Lantern', anchor: '[data-click="btn:yarn"]', also: ['.yarn'],
     when: (s) => myPrompt(s, 'action') && s.round >= 2 && !!document.querySelector('[data-click="btn:yarn"]'),
-    text: `Whoever holds the <b>Yarn Ball</b> ${YARN_ICON} goes first each round, and it changes hands every round. `
-      + '<b>Take the Yarn</b> grabs it for next round, but then you can only pass for the rest of this one.',
+    text: `Whoever holds the <b>Lantern</b> ${YARN_ICON} goes first each round, and it changes hands every round. `
+      + '<b>Take the Lantern</b> grabs it for next round, but then you can only pass for the rest of this one.',
   },
   {
     id: 'ability', title: 'Your Hero', anchor: '.player.me .hero', also: ['[data-click="btn:ability"]'],
@@ -176,24 +176,24 @@ const TIPS: Balloon[] = [
       + 'up to +2/+2. Deal with them early, before they grow!',
   },
   {
-    id: 'lostLife', title: 'You lost a Life', anchor: '.player.me .lives', when: (s) => s.players[ME].lives.length < 9,
-    text: 'Ouch! But the lost Life card went into your <b>hand</b> — getting hit gives you more cards to fight back with. '
+    id: 'lostLife', title: 'You lost a Candle', anchor: '.player.me .lives', when: (s) => s.players[ME].lives.length < 9,
+    text: 'Ouch! But the lost Candle card went into your <b>hand</b> — getting hit gives you more cards to fight back with. '
       + 'If it’s <b>Lucky</b> 🍀, you may even play it for free.',
   },
   {
-    id: 'pounce', title: 'Pounce!', anchor: '.midbar', when: (s) => myPrompt(s, 'pounce'),
-    text: 'Your opponent is doing something and you hold a <b>Pounce</b> card, so you may react first: '
+    id: 'pounce', title: 'Ambush!', anchor: '.midbar', when: (s) => myPrompt(s, 'pounce'),
+    text: 'Your opponent is doing something and you hold an <b>Ambush</b> card, so you may react first: '
       + 'click the glowing card, or press <b>Let it happen</b>.',
   },
   {
-    id: 'foePounce', title: 'They Pounced!', anchor: '.midbar',
-    when: (s) => myPrompt(s) && s.log.some((e) => e.player === FOE && e.text.includes('POUNCES')),
-    text: 'Your opponent reacted with a <b>Pounce</b> card before your move finished. Players get one quick reaction '
-      + 'whenever the other plays a card or attacks — keep an eye on their unspent Treats!',
+    id: 'foePounce', title: 'They Ambushed you!', anchor: '.midbar',
+    when: (s) => myPrompt(s) && s.log.some((e) => e.player === FOE && (e.text.includes('AMBUSHES') || e.text.includes('POUNCES'))),
+    text: 'Your opponent reacted with an <b>Ambush</b> card before your move finished. Players get one quick reaction '
+      + 'whenever the other plays a card or attacks — keep an eye on their unspent Offerings!',
   },
   {
     id: 'lucky', title: 'Lucky! 🍀', anchor: '.midbar', when: (s) => myPrompt(s, 'lucky'),
-    text: 'The Life you just lost is a <b>Lucky</b> card, so you can play it for free right now.',
+    text: 'The Candle you just lost is a <b>Lucky</b> card, so you can play it for free right now.',
   },
   {
     id: 'guardian', title: 'Guardians',
@@ -203,8 +203,8 @@ const TIPS: Balloon[] = [
       + 'unless they are <b>Sneaky</b>.',
   },
   {
-    id: 'foeYarn', title: 'The Yarn Ball', anchor: '.player.foe .yarn', when: (s) => s.yarnTaken === FOE,
-    text: `Your opponent <b>took the Yarn Ball</b> ${YARN_ICON}: they will act first next round, but must pass for the rest of this one.`,
+    id: 'foeYarn', title: 'The Lantern', anchor: '.player.foe .yarn', when: (s) => s.yarnTaken === FOE,
+    text: `Your opponent <b>took the Lantern</b> ${YARN_ICON}: they will act first next round, but must pass for the rest of this one.`,
   },
   {
     id: 'grown', title: 'Awakened!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,
@@ -394,7 +394,7 @@ export function renderTutorial(hidden = false) {
   if (!target) return;
   const r = target.getBoundingClientRect();
 
-  // Spotlight the target and any button the step asks you to press (e.g. "Plant"), with one shade
+  // Spotlight the target and any button the step asks you to press (e.g. "Offer"), with one shade
   // that has a hole per highlight. Clicks go straight through the shade to the game.
   const also = typeof b.also === 'function' ? b.also(s) : b.also ?? [];
   const extras = also.flatMap((sel) => [...document.querySelectorAll<HTMLElement>(sel)]);
@@ -409,7 +409,7 @@ export function renderTutorial(hidden = false) {
     .map((x) => `<i style="left:${x.left - pad}px;top:${x.top - pad}px;width:${x.width + pad * 2}px;height:${x.height + pad * 2}px"></i>`).join('');
 
   // Place the balloon where it covers nothing you need: not the highlights, and not the prompt-bar
-  // buttons (a phone playtester couldn't press "Plant" because the balloon sat on top of it).
+  // buttons (a phone playtester couldn't press "Offer" because the balloon sat on top of it).
   const keepClear = [...holes, ...[...document.querySelectorAll<HTMLElement>(['.midbar button', '.hero-actions button', ...(b.avoid ?? [])].join(','))]
     .map((e) => e.getBoundingClientRect())];
   const bw = balloon.offsetWidth, bh = balloon.offsetHeight, gap = 16, margin = 8;

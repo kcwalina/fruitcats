@@ -430,7 +430,7 @@
           ]
         }
       ],
-      "text": "Pounce. Put a Crumb on a unit you control. It gets +1 Power this round.",
+      "text": "Ambush. Put a Crumb on a unit you control. It gets +1 Power this round.",
       "flavor": "Room for more? Always."
     },
     {
@@ -615,7 +615,7 @@
           ]
         }
       ],
-      "text": "Zoomies. Hello, Zest: Deal 2 damage to an enemy unit.",
+      "text": "Swift. Hello, Zest: Deal 2 damage to an enemy unit.",
       "flavor": "Three spins, one landing, zero regrets."
     },
     {

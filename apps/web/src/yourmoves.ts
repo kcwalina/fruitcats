@@ -1,8 +1,8 @@
 import type { Action } from '@fruitcats/engine';
 
 /**
- * What you could do on your action besides Pass and Take the Yarn, in words. The action bar hint and the
- * Take the Yarn confirmation both read this, so the bar never says "nothing left to do" while the
+ * What you could do on your action besides Pass and Take the Lantern, in words. The action bar hint and the
+ * Take the Lantern confirmation both read this, so the bar never says "nothing left to do" while the
  * confirmation warns you would give something up (the Hero Cat ability once made them disagree).
  */
 export function otherMoves(legal: Action[]): string[] {
@@ -19,7 +19,7 @@ export function orList(items: string[]): string {
 }
 
 /**
- * Whether Take the Yarn asks first. Taking it costs the rest of this round, which only matters when there
+ * Whether Take the Lantern asks first. Taking it costs the rest of this round, which only matters when there
  * is something besides Pass you could still do; with nothing else, taking it has no downside.
  */
 export function yarnNeedsConfirm(legal: Action[]): boolean {
@@ -29,6 +29,6 @@ export function yarnNeedsConfirm(legal: Action[]): boolean {
 /** The confirmation: says exactly what you would give up this round. */
 export function yarnConfirmText(legal: Action[]): string {
   const moves = otherMoves(legal).map((m) => m.replace(' glowing', ''));
-  return `Take the <b>Yarn Ball</b>? You’ll act first next round, but for the rest of this one you can’t `
+  return `Take the <b>Lantern</b>? You’ll act first next round, but for the rest of this one you can’t `
     + `${orList(moves)}.`;
 }

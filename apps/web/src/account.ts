@@ -149,7 +149,7 @@ function inviteStep(): string {
   return `
     <img class="account-cat" src="${BASE}ui/tile-solo.webp" alt="">
     <h2 id="account-title">Got an invite code?</h2>
-    <p class="account-why">Fruitcats accounts are open to playtesters for now.
+    <p class="account-why">Folkborn accounts are open to playtesters for now.
       Type the invite code you were sent.</p>
     <p class="account-small">New account for <b>${esc(email)}</b></p>
     <label class="account-field">Invite code
@@ -207,7 +207,7 @@ function termsStep(): string {
       <a href="${BASE}terms.html" target="_blank" rel="noopener">Terms of Use</a>
       <a href="${BASE}privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
     </p>
-    ${session()?.birthYear == null ? `<label class="account-field">Birth year <small>Fruitcats accounts are for ages ${MIN_AGE} and up</small>
+    ${session()?.birthYear == null ? `<label class="account-field">Birth year <small>Folkborn accounts are for ages ${MIN_AGE} and up</small>
       <input data-acct="year" inputmode="numeric" maxlength="4" autocomplete="bday-year" enterkeyhint="next"
         placeholder="e.g. 1990" value="${esc(birthYear)}" ${busy ? 'disabled' : ''}>
     </label>` : ''}
@@ -685,7 +685,7 @@ export async function accountClick(host: Host, action: string) {
     const askYear = session()?.birthYear == null;
     const year = Number(birthYear), thisYear = new Date().getFullYear();
     if (askYear && !(year >= 1900 && year <= thisYear)) { error = 'Please enter your birth year, like 1990.'; host.render(); return; }
-    if (askYear && thisYear - year < MIN_AGE) { error = `Sorry, Fruitcats accounts are for ages ${MIN_AGE} and up. Sign out to keep playing Solo.`; host.render(); return; }
+    if (askYear && thisYear - year < MIN_AGE) { error = `Sorry, Folkborn accounts are for ages ${MIN_AGE} and up. Sign out to keep playing Solo.`; host.render(); return; }
     if (!agreed) { error = 'Please tick the box to agree, or sign out.'; host.render(); return; }
     // No waiting on the service: the agreement is kept here and saved in the background (auth.ts, agreeToTerms).
     agreeToTerms(askYear ? year : undefined);

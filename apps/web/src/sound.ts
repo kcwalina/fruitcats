@@ -111,7 +111,7 @@ function soundFor(text: string, player: PlayerId | undefined, human: PlayerId): 
   if (/attack is cancelled|attack fizzles/.test(text)) return 'fail';
   if (/^Hit!/.test(text)) return player === human ? 'hitGood' : 'hitBad';
   if (/uses their ability/.test(text)) return 'ability';
-  if (/ plays? | POUNCES with /.test(text)) return 'card';
+  if (/ plays? | (POUNCES|AMBUSHES) with /.test(text)) return 'card';
   return null;
 }
 

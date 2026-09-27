@@ -48,7 +48,7 @@ export const keyOf = (p: BriefPicture) => p.file.replace(/\.[a-z]+$/i, '');
 
 export const TIER_NAMES: Record<Tier, string> = {
   deck: 'Deck card', token: 'Token', foil: 'Foil single', gold: 'Gold single', signature: 'Signature card',
-  legend: 'Pawtrait', announcement: 'Announcement',
+  legend: 'Portrait', announcement: 'Announcement',
 };
 
 export const FIELD_NAMES: Record<string, string> = {

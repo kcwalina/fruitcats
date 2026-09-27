@@ -11,6 +11,7 @@
 // actions: src/types.ts), never a particular card. Cards are data; what data can't express, a set's
 // plugin adds as named conditions and actions (src/cards.ts, Plugin).
 
+import TERMS from './terms.json';
 import {
   AURA_HEROES, AURA_SOURCES, CARDS, MECHANICS, PLUGINS, abilitiesOf, abilityAt, deckCardIds, findAbility, isUnitCard, keywords, keywordsFrom,
   resolveDeck, setConditionEvaluator, type DeckList, type Keywords, type PluginContext,
@@ -124,7 +125,7 @@ export function createGame(options: GameOptions): GameState {
   s.yarn = options.firstPlayer ?? (random(s) < 0.5 ? 0 : 1);
   s.startingYarn = s.yarn;
   s.active = s.yarn;
-  log(s, `${s.players[s.yarn].name} starts with the Yarn Ball.`);
+  log(s, `${s.players[s.yarn].name} starts with the ${TERMS.lantern}.`);
   s.queue.push(
     { t: 'mulliganPrompt', p: 0 }, { t: 'mulliganPrompt', p: 1 },
     { t: 'setupPlantPrompt', p: 0 }, { t: 'setupPlantPrompt', p: 1 },
@@ -579,7 +580,7 @@ export function apply(s: GameState, action: Action): GameState {
     case 'setupPlant': {
       validateSubset(s, p, action.uids, (prompt as { count: number }).count);
       for (const uid of action.uids) me.pantry.push({ card: takeFromHand(s, p, uid), exhausted: false });
-      log(s, `${me.name} plants ${action.uids.length} Treats.`, p);
+      log(s, `${me.name} makes ${action.uids.length} ${TERMS.offerings}.`, p);
       break;
     }
     case 'discard': {
@@ -590,7 +591,7 @@ export function apply(s: GameState, action: Action): GameState {
     }
     case 'plant':
       me.pantry.push({ card: takeFromHand(s, p, action.uid), exhausted: false });
-      log(s, `${me.name} plants a Treat (${me.pantry.length} total).`, p);
+      log(s, `${me.name} makes an ${TERMS.offering} (${me.pantry.length} total).`, p);
       break;
     case 'skipPlant':
       break;
@@ -627,7 +628,7 @@ export function apply(s: GameState, action: Action): GameState {
     case 'takeYarn':
       s.yarnTaken = p;
       s.passes = 0;
-      log(s, `${me.name} takes the Yarn Ball and will act first next round.`, p);
+      log(s, `${me.name} takes the ${TERMS.lantern} and will act first next round.`, p);
       s.queue.unshift({ t: 'afterAction' });
       break;
     case 'pass':
@@ -639,7 +640,7 @@ export function apply(s: GameState, action: Action): GameState {
       const card = takeFromHand(s, p, action.uid);
       pay(s, p, CARDS[card.id].cost ?? 0);
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
-      log(s, `${me.name} POUNCES with ${cardName(card.id)}${action.target ? ` on ${describeTargets(s, action)}` : ''}!`, p);
+      log(s, `${me.name} AMBUSHES with ${cardName(card.id)}${action.target ? ` on ${describeTargets(s, action)}` : ''}!`, p);
       emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, how: 'pounce', target: action.target });
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, target2: action.target2, closesWindow: false });
       break;
@@ -800,7 +801,7 @@ function exec(s: GameState, step: Step): void {
       const card = pl.lives.shift();
       if (!card) { s.winner = other(step.p); break; }
       pl.hand.push(card);
-      log(s, `${pl.name} loses a Life — ${pl.lives.length} left.`, step.p);
+      log(s, `${pl.name} loses a ${TERMS.candle} — ${pl.lives.length} left.`, step.p);
       emit(s, { t: 'lifeLost', p: step.p, left: pl.lives.length });
       if (!pl.lives.length) {
         s.winner = other(step.p);
@@ -1069,7 +1070,7 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
       // The top cards of the deck become exhausted Treats (running out of deck just stops).
       const pl = s.players[p];
       for (let i = 0; i < (value as number) && pl.deck.length; i++) pl.pantry.push({ card: pl.deck.shift()!, exhausted: true });
-      log(s, `${pl.name} now has ${pl.pantry.length} Treats.`, p);
+      log(s, `${pl.name} now has ${pl.pantry.length} ${TERMS.offerings}.`, p);
       return;
     }
     case 'summon': summon(s, p, value as string); return;

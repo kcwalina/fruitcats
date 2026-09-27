@@ -4,7 +4,7 @@
 // a card can never drift from what the card does.
 //
 // The house style, as the Starter Box set it:
-//   keywords first ("Guardian. Heat."), then each ability on its own line, a Kitten's Grow Up last;
+//   keywords first ("Guardian. Heat."), then each ability on its own line, the Hero's Awaken line last;
 //   "Hello:", "Goodbye:" and "Exhaust:" as labels; a unit already named is "it" after that;
 //   a mechanic written as a label ("Zest: …") or as a condition ("If you're Lush, …").
 
@@ -15,6 +15,8 @@ import { CONTENT } from './index';
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 const count = (n: number) => WORDS[n] ?? String(n);
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+/** A keyword as players read it: the data keeps the code's names (Zoomies, Pounce), cards show terms.json's (Swift, Ambush). */
+const kw = (k: string) => (TERMS.keywords as Record<string, string>)[k] ?? k;
 
 // What the text needs to know beyond the card: the sets' mechanics and tokens.
 interface MechanicInfo { counter?: { name: string; noun?: string; full?: { name: string; at: number } }; label?: boolean }
@@ -45,7 +47,7 @@ function filterWords(f: UnitFilter | undefined): { adj: string; tail: string } {
   if (!f) return { adj: '', tail: '' };
   const adj = f.exhausted ? 'exhausted ' : f.damaged ? 'damaged ' : '';
   if (f.counter) { const w = counterWords(f.counter); return { adj: adj + w.adj, tail: w.tail }; }
-  return { adj, tail: f.keyword ? ` with ${f.keyword}` : '' };
+  return { adj, tail: f.keyword ? ` with ${kw(f.keyword)}` : '' };
 }
 
 /** "a" or "an", by sound: an enemy, an exhausted unit, a unit, a 2/2 token ("an 8/8" is spelled out by its number). */
@@ -77,17 +79,17 @@ function auraSubject(to: { each: string; other?: boolean; filter?: UnitFilter })
 
 // ── Conditions ─────────────────────────────────────────────────────────────────────────────────────
 
-/** A condition as a clause: "you have 8 or more Treats", "you're Lush". */
+/** A condition as a clause: "you have 8 or more Offerings", "you're Lush". */
 function clause(c: Condition): string {
   if (typeof c === 'string') return c === 'targetIsYours' ? "it's yours" : `you're ${c}`;
   if ('not' in c) return typeof c.not === 'string' ? `you're not ${c.not}` : `not: ${clause(c.not)}`;
-  if ('treats' in c) return `you have ${c.treats.atLeast} or more Treats`;
-  if ('lives' in c) return `you have ${c.lives.atMost} or fewer Lives`;
-  if ('opponentLives' in c) return `your opponent has ${c.opponentLives.atMost} or fewer Lives`;
-  if ('yardHas' in c) return `you control ${article(c.yardHas.keyword)} ${c.yardHas.keyword}`;
-  if ('unitsInComposts' in c) return `${c.unitsInComposts.atLeast} or more Cats and Critters are in the Composts`;
+  if ('treats' in c) return `you have ${c.treats.atLeast} or more ${TERMS.offerings}`;
+  if ('lives' in c) return `you have ${c.lives.atMost} or fewer ${TERMS.candles}`;
+  if ('opponentLives' in c) return `your opponent has ${c.opponentLives.atMost} or fewer ${TERMS.candles}`;
+  if ('yardHas' in c) return `you control ${article(kw(c.yardHas.keyword))} ${kw(c.yardHas.keyword)}`;
+  if ('unitsInComposts' in c) return `${c.unitsInComposts.atLeast} or more ${TERMS.typesPlural.Cat} and ${TERMS.typesPlural.Critter} are in the ${TERMS.mist}`;
   if ('controlUnits' in c) return `you control ${c.controlUnits.atLeast} or more units`;
-  if ('compost' in c) return `you have ${c.compost.atLeast} or more cards in your Compost`;
+  if ('compost' in c) return `you have ${c.compost.atLeast} or more cards in your ${TERMS.mist}`;
   if ('unitHasCounter' in c) {
     const who = c.unitHasCounter.whose === 'enemy' ? 'an enemy unit' : c.unitHasCounter.whose === 'any' ? 'a unit' : 'a unit you control';
     const def = counterDef(c.unitHasCounter.name);
@@ -118,7 +120,8 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     case 'damage': return `deal ${n} damage to ${on}`;
     case 'heal': return `heal ${n} from ${on}`;
     case 'buff': {
-      const b = v as { power?: number; keywords?: string[] };
+      const b0 = v as { power?: number; keywords?: string[] };
+      const b = { ...b0, keywords: b0.keywords?.map(kw) };
       // Every unit of a side, as the subject: "your units get" (not "each unit you control gets").
       const each = typeof a.target === 'object' && 'each' in a.target && on !== 'it' ? auraSubject(a.target).toLowerCase() : '';
       const subject = subjectless ? '' : `${each || on} `;
@@ -134,13 +137,13 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     case 'draw': return n === 1 ? 'draw a card' : `draw ${n} cards`;
     case 'exhaust': return `exhaust ${on}`;
     case 'ready': return a.when === 'hello' && a.target === 'self' ? 'enters ready' : `ready ${on}`;
-    case 'readyTreats': return `ready ${count(n)} of your Treats`;
+    case 'readyTreats': return `ready ${count(n)} of your ${TERMS.offerings}`;
     case 'sprout': return `Sprout ${n}`;
     case 'summon': {
       const t = TOKENS[String(v)];
       if (!t) return `summon ${String(v)}`;
       if (t.brief) return `summon ${article(t.name)} ${t.name}`;
-      const kws = t.keywords?.length ? ` with ${t.keywords.join(' and ')}` : '';
+      const kws = t.keywords?.length ? ` with ${t.keywords.map(kw).join(' and ')}` : '';
       return `summon ${article(String(t.power))} ${t.power}/${t.health} ${t.name}${kws}`;
     }
     case 'cancelAttack': return 'cancel an attack';
@@ -185,7 +188,7 @@ export function abilityText(a: Ability, card: CardDef): string {
   if (a.static) {
     const st = a.static;
     const g = st.grant;
-    const grants = g ? [g.power && `+${g.power} Power`, g.health && `+${g.health} Health`, ...(g.keywords ?? [])].filter(Boolean).join(' and ') : '';
+    const grants = g ? [g.power && `+${g.power} Power`, g.health && `+${g.health} Health`, ...(g.keywords ?? []).map(kw)].filter(Boolean).join(' and ') : '';
     const onlyKeywords = !!g && !g.power && !g.health;
     if (st.cantAttack) return `Can't attack${st.while ? ` unless ${clause(typeof st.while === 'object' && 'not' in st.while ? st.while.not : st.while)}` : ''}.${note}`;
     if (st.to === 'attached') return `Attached unit gets ${grants}.${note}`;
@@ -234,8 +237,8 @@ export function abilityText(a: Ability, card: CardDef): string {
 /** The text of a card face: keywords, then its abilities one per line, then its Grow Up. */
 function faceText(keywords: string[] | undefined, abilities: Ability[] | undefined, card: CardDef, growUp?: HeroSide['growUp']): string {
   const lines = (abilities ?? []).map((a) => abilityText(a, card));
-  const kw = (keywords ?? []).map((k) => `${k}.`).join(' ');
-  if (kw) lines[0] = lines.length ? `${kw} ${lines[0]}` : kw;
+  const kws = (keywords ?? []).map((k) => `${kw(k)}.`).join(' ');
+  if (kws) lines[0] = lines.length ? `${kws} ${lines[0]}` : kws;
   if (growUp) lines.push(`${TERMS.growUp}: ${cap(clause(growUp.if))}.`);
   return lines.join('\n');
 }

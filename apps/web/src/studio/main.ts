@@ -1,6 +1,6 @@
-// The Artist Studio (docs/artist-studio-plan.md): where artists upload the pictures they make for Fruitcats. For each set it shows the steps
+// The Artist Studio (docs/artist-studio-plan.md): where artists upload the pictures they make for Folkborn. For each set it shows the steps
 // in order (the brief's milestones), what each picture needs, and the artist's pictures on their cards, in the game
-// and as wallpapers. Artists upload each version; nothing is ever overwritten. Comments from the Fruitcats team,
+// and as wallpapers. Artists upload each version; nothing is ever overwritten. Comments from the Folkborn team,
 // from AI agents and from the artist sit beside each picture, each labelled with who wrote it.
 //
 // Pages (in the address's #): a project's home (#/bp1; for a reviewer it also assigns the artist), a picture
@@ -236,7 +236,7 @@ const when = (iso: string) => {
 const kb = (bytes: number) => (bytes > 1e6 ? `${(bytes / 1e6).toFixed(1)} MB` : `${Math.round(bytes / 1e3)} KB`);
 
 function title(p: BriefPicture): string {
-  if (p.kind === 'pawtrait') return `Pawtrait: ${p.file.replace(/^legend-|\.webp$/g, '').replace(/^\w/, (c) => c.toUpperCase())}`;
+  if (p.kind === 'pawtrait') return `Portrait: ${p.file.replace(/^legend-|\.webp$/g, '').replace(/^\w/, (c) => c.toUpperCase())}`;
   if (p.kind === 'announcement') return 'Announcement key art';
   return faceName(p) ?? p.workingName ?? p.file;
 }
@@ -440,7 +440,7 @@ function topBar(): string {
       <button class="${S.asArtist ? 'on' : ''}" data-click="asartist:1" role="radio" aria-checked="${S.asArtist}">${view?.artist ? 'Artist' : 'As the artist'}</button>
       <button class="${S.asArtist ? '' : 'on'}" data-click="asartist:0" role="radio" aria-checked="${!S.asArtist}">Reviewer</button></div>` : '';
   return `<header class="top">
-    <a class="brand" href="#/"><img src="${BASE}icons/icon-192.png" alt=""><span>Fruitcats <b>Artist Studio</b></span></a>
+    <a class="brand" href="#/"><img src="${BASE}icons/icon-192.png" alt=""><span>Folkborn <b>Artist Studio</b></span></a>
     ${set ? `<nav class="crumbs"><a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : ''}</nav>` : '<span></span>'}
     <div class="me">${switcher}
       <a class="btn ghost small" href="${BASE}docs.html" target="_blank" rel="noopener">Guide</a>
@@ -523,8 +523,8 @@ function wizardPage(code: string, chosen?: string): string {
     return `<main class="wizard">${banner}<section class="wz-card wz-welcome">
       <small>${esc(brief.name)}</small>
       <h1>Welcome${S.me?.name ? `, ${esc(S.me.name)}` : ''}!</h1>
-      <p class="wz-lead">The art is the heart of Fruitcats, and ${esc(brief.name)} has <b>${total} images</b> to make, one at a time.</p>
-      <p class="wz-tools">Your images will appear on Fruitcats cards. For each card we share our draft: its name, its text and
+      <p class="wz-lead">The art is the heart of Folkborn, and ${esc(brief.name)} has <b>${total} images</b> to make, one at a time.</p>
+      <p class="wz-tools">Your images will appear on Folkborn cards. For each card we share our draft: its name, its text and
         what it does in the game. That’s about the card, not your image: how the image looks is up to you. If your image
         takes the card somewhere else, tell us and we’ll rewrite the card to match.</p>
       <p class="wz-tools"><b>Make your images with the tools of your choice</b>, as you always do. This site is only for
@@ -730,7 +730,7 @@ function reviewerHome(code: string, brief: Brief, view: SetView | null): string 
     return `<main class="home">${head}
       <section class="panel attention"><h2>Invite an artist</h2>
         <p>This is the only thing to do for now: copy this link and send it to the artist. When they open it, they sign
-          in, or create an account in a minute, and this project opens for them. If they already have a Fruitcats
+          in, or create an account in a minute, and this project opens for them. If they already have a Folkborn
           account, they simply sign in with it.</p>
         ${inviteBox}
         <details class="more" ${S.assignError ? 'open' : ''}><summary>Or assign someone who already has an account, by email</summary>${assign}</details>
@@ -837,7 +837,7 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
   const key = keyOf(p);
   const local = S.local.get(key);
   const up = S.uploading?.key === key ? S.uploading : null;
-  const where = p.kind === 'pawtrait' ? 'as a Pawtrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
+  const where = p.kind === 'pawtrait' ? 'as a Portrait' : p.kind === 'announcement' ? 'as the announcement' : 'on the card';
   if (local) {
     const list = S.uploadKind ? checks(p, local.width, local.height, local.format, S.uploadKind) : { notes: [`${local.width} × ${local.height} pixels.`], blocked: false, fix: '' };
     const code = S.route.page === 'sets' ? '' : S.route.code;
@@ -855,7 +855,7 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
           <button class="${S.uploadKind === 'final' ? 'on' : ''}" data-click="kind:final" role="radio" aria-checked="${S.uploadKind === 'final'}">The finished image</button></div>
         <label class="field">A note for us <small>optional</small><input data-in="note" value="${esc(S.uploadNote)}" placeholder="e.g. I tried a warmer background"></label>
         ${up ? `<div class="progress"><i style="width:${Math.round(up.fraction * 100)}%"></i></div><p class="small muted">Sending… ${Math.round(up.fraction * 100)}%</p>`
-          : `<button class="btn primary wide" data-click="upload:${key}" ${list.blocked || !S.uploadKind ? 'disabled' : ''}>Send to Fruitcats</button>
+          : `<button class="btn primary wide" data-click="upload:${key}" ${list.blocked || !S.uploadKind ? 'disabled' : ''}>Send to Folkborn</button>
             ${S.uploadKind ? '' : '<p class="small muted">Choose sketch or finished image to send it.</p>'}`}`}
       ${up ? '' : `<button class="link" data-click="discard:${key}">${S.guest ? 'Choose another image' : 'Don’t send it'}</button>`}
       ${S.uploadError ? `<p class="error">${esc(S.uploadError)}</p>` : ''}
@@ -923,7 +923,7 @@ function versionStrip(key: string, versions: Version[], pic: ReturnType<typeof s
 
 function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown>): string {
   const key = keyOf(p);
-  const tabs: [Tab, string][] = p.kind === 'pawtrait' ? [['card', 'Pawtrait'], ['picture', 'Image']]
+  const tabs: [Tab, string][] = p.kind === 'pawtrait' ? [['card', 'Portrait'], ['picture', 'Image']]
     : p.kind === 'announcement' ? [['card', 'Announcement'], ['picture', 'Image']]
       : [['card', 'On the card'], ['game', 'In the game'], ['wallpaper', 'Wallpapers'], ['picture', 'Image']];
   const tab = tabs.some(([t]) => t === S.tab) ? S.tab : 'card';

@@ -16,7 +16,7 @@ async function start(tries = 0): Promise<void> {
     try { reloaded = sessionStorage.getItem('fruitcats-boot-reload') === '1'; sessionStorage.setItem('fruitcats-boot-reload', '1'); } catch { reloaded = true; }
     if (!reloaded) { location.reload(); return; }
     document.body.insertAdjacentHTML('beforeend', `<div style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font:18px system-ui,sans-serif;background:#fff6ea;color:#5a3a1a">
-      <div><p>Fruitcats couldn’t load. Check your connection, then try again.</p>
+      <div><p>Folkborn couldn’t load. Check your connection, then try again.</p>
       <p><button onclick="location.reload()" style="font:inherit;padding:10px 22px;border-radius:999px;border:0;background:#f08a24;color:#fff">Try again</button></p></div></div>`);
     throw e;
   }

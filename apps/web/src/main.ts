@@ -4,7 +4,7 @@ import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
-import { BASE, artUrl, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
@@ -30,15 +30,15 @@ import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, DECK_RULES, MECHANICS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
+  CARDS, DECKS, DECK_RULES, MECHANICS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
   legalActions, other, readyTreats, unitHealth, unitPower,
   type Action, type DeckList, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
 
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
 
-/** The painted Yarn Ball (the 🧶 emoji looks like a small blue dot on some devices). */
-const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Yarn Ball">`;
+/** The painted Lantern (the file is still yarn.webp; an emoji looks like a small dot on some devices). */
+const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Lantern">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 // The shell's backdrop is Folkborn's neutral grove (grove-tall on portrait screens), so every deck's art style fits on it.
@@ -58,13 +58,14 @@ const heroKey = (s: GameState, p: PlayerId) => `${s.players[p].hero.id}-${s.play
 
 /** The engine logs in the third person; the human player is "You", so fix up the grammar. */
 const VERBS: Record<string, string> = {
-  plays: 'play', plants: 'plant', passes: 'pass', keeps: 'keep', mulligans: 'mulligan', takes: 'take', loses: 'lose',
-  discards: 'discard', wins: 'win', starts: 'start', POUNCES: 'POUNCE', attacks: 'attack', uses: 'use',
+  plays: 'play', plants: 'plant', makes: 'make', passes: 'pass', keeps: 'keep', mulligans: 'mulligan', takes: 'take', loses: 'lose',
+  discards: 'discard', wins: 'win', starts: 'start', POUNCES: 'POUNCE', AMBUSHES: 'AMBUSH', attacks: 'attack', uses: 'use',
 };
 const humanize = (text: string) =>
   youify(text).replace(/\bYou's\b/g, 'Your')
     .replace(/\bYou (\w+)\b/g, (m, verb: string) => (VERBS[verb] ? `You ${VERBS[verb]}` : m))
     .replace(/\bYou (\w+) their\b/g, 'You $1 your')
+    .replace(/\bYou now has\b/g, 'You now have')
     .replace(/(?<!^)(?<![.!] )\bYour\b/g, 'your');
 
 /** Online, the story names you by your display name: say "You" instead, as in Solo. */
@@ -208,7 +209,7 @@ function markHumanTurnDone() {
 /** What the opponent has done since your last action, for the recap line in the prompt bar. */
 function foeRecap(s: GameState): string[] {
   return s.log.slice(foeFrom)
-    .filter((e) => e.player === theirSeat && !/plants? |keeps their hand|mulligans/.test(e.text))
+    .filter((e) => e.player === theirSeat && !/plants? |makes? (an |\d+ )Offering|keeps their hand|mulligans/.test(e.text))
     .map((e) => humanize(e.text));
 }
 
@@ -244,7 +245,7 @@ async function act(action: Action) {
     markHumanTurnDone();
     flash = '';
     notice = plantedNames.length
-      ? `Planted ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'} — you have ${me.pantry.length}.`
+      ? `Offered ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Offerings' : 'an Offering'} — you have ${me.pantry.length}.`
       : '';
   } catch (error) {
     flash = (error as Error).message;
@@ -268,7 +269,7 @@ function actOnline(action: Action) {
   hintLine = '';
   markHumanTurnDone();
   flash = '';
-  notice = plantedNames.length ? `Planted ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Treats' : 'a Treat'}.` : '';
+  notice = plantedNames.length ? `Offered ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Offerings' : 'an Offering'}.` : '';
   selection = null;
   confirming = null;
   picks = new Set();
@@ -432,11 +433,11 @@ const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero.' },
   { name: 'Sneaky', test: /\bSneaky\b/, text: 'Can attack straight past enemy Guardians.' },
-  { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero, that player loses 2 Lives instead of 1.' },
-  { name: 'Zoomies', test: /\bZoomies\b/, text: 'Can attack the round it arrives, instead of starting tired.' },
+  { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero, that player loses 2 Candles instead of 1.' },
+  { name: TERMS.keywords.Zoomies, test: /\b(Swift|Zoomies)\b/, text: 'Can attack the round it arrives, instead of starting tired.' },
   { name: 'Tough', test: /\bTough\b/, text: 'Takes that much less damage from every hit.' },
-  { name: 'Lucky', test: /\bLucky\b/, text: 'If this card turns up as a Life you lost, you may play it for free.' },
-  { name: 'Pounce', test: /\bPounce\b/, text: 'Play this out of turn, right after your opponent plays a card or attacks.' },
+  { name: 'Lucky', test: /\bLucky\b/, text: 'If this card turns up as a Candle you lost, you may play it for free.' },
+  { name: TERMS.keywords.Pounce, test: /\b(Ambush|Pounce)\b/, text: 'Play this out of turn, right after your opponent plays a card or attacks.' },
   { name: 'Hello', test: /\bHello\b/, text: 'Happens as soon as this card arrives.' },
   { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens when this unit is defeated.' },
   { name: 'Awaken', test: /\b(Awaken|Grow Up)\b/, text: 'Once this is true, your Hero Awakens: stronger, and able to attack.' },
@@ -459,14 +460,14 @@ function whyUnplayable(s: GameState, id: string, promptKind: string): string {
   const name = cardName(id);
   const ready = readyTreats(s, mySeat);
   const k = keywords(id);
-  if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Pounce cards can be played while your opponent is acting — ${name} isn't one.`;
+  if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Ambush cards can be played while your opponent is acting — ${name} isn't one.`;
   if (promptKind !== 'action') return `You can't play cards right now.`;
-  if (abilitiesOf(id).some((a) => a.pounceOnly === 'attack')) return `${name} can only be played when your opponent attacks (it's a Pounce reaction).`;
-  if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Treats — you have ${ready} ready. Spent Treats come back at the start of next round.`;
+  if (abilitiesOf(id).some((a) => a.pounceOnly === 'attack')) return `${name} can only be played when your opponent attacks (it's an Ambush reaction).`;
+  if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Offerings — you have ${ready} ready. Spent Offerings come back at the start of next round.`;
   const yard = s.players[mySeat].yard;
   if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
   if (def.type === 'Cat' && yard.some((u) => u.id === id)) return `${name} is already in your Yard, and Fabled cards are one of a kind.`;
-  if (def.type === 'Toy') return `${name} needs one of your units without a Toy to attach to.`;
+  if (def.type === 'Toy') return `${name} needs one of your units without a Talisman to attach to.`;
   return `${name} has no legal target right now.`;
 }
 
@@ -874,7 +875,7 @@ function renderDeckPicker(): string {
               <button class="${deckChoiceClass(key, ready)}" data-click="solo:${key}" data-ready="${ready}">
                 <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
                 <span class="deck-name">${esc(deck.name)}</span>
-                <span class="deck-class ${famClass(deck.hero)}">${esc(CARDS[deck.hero].family)} · ${esc(familyInfo(CARDS[deck.hero].family)?.mechanic ?? '')}</span>
+                <span class="deck-class ${famClass(deck.hero)}">${esc(familyName(CARDS[deck.hero].family))} · ${esc(familyInfo(CARDS[deck.hero].family)?.mechanic ?? '')}</span>
                 <span class="deck-blurb">${blurb}</span>
               </button>`).join('')}
           </div>
@@ -1040,10 +1041,10 @@ function renderPantry(s: GameState, p: PlayerId): string {
     const zoom = mine ? ` data-zoom="${yourCardUrl(t.card.id)}" data-zoom-card="${t.card.id}"` : '';
     return `<div class="${cls}"${zoom} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
   }).join('');
-  const float = planted ? `+${planted} Treat${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
+  const float = planted ? `+${planted} Offering${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
   const ready = readyTreats(s, p);
-  return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Treats are face-down cards that pay for other cards. They all get ready again at the start of each round.">
-    <div class="pantry-label" title="Treats pay for your cards: a card costs the number in its top-left corner. Spent Treats ready again next round.">Treats <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
+  return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Offerings are face-down cards that pay for other cards. They all get ready again at the start of each round.">
+    <div class="pantry-label" title="Offerings pay for your cards: a card costs the number in its top-left corner. Spent Offerings ready again next round.">Offerings <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
     ${badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
       .map(([name, m]) => `<div class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</div>`).join('')}
     <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens}</div>
@@ -1056,8 +1057,8 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
   const side = heroSide(s, p);
   const key = `hero:${p}`;
   // The Yarn Ball sits on the corner of the Hero Cat portrait (next to the name it crowded the Lives).
-  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Yarn Ball: acts first">${YARN_ICON}${s.yarnTaken === p ? '<small>kept</small>' : ''}</span>` : '';
-  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Yarn Ball for next round">${YARN_ICON}<small>next</small></span>` : '';
+  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Lantern: acts first">${YARN_ICON}${s.yarnTaken === p ? '<small>kept</small>' : ''}</span>` : '';
+  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Lantern for next round">${YARN_ICON}<small>next</small></span>` : '';
   const canAbility = legal.some((a) => a.t === 'ability');
   const canAttack = legal.some((a) => a.t === 'attack' && a.attacker.kind === 'hero');
 
@@ -1074,15 +1075,15 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
     <div class="stats">
       <div class="who">${esc(ol && p === mySeat ? 'You' : pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
-        <div class="lives" title="${pl.lives.length} of ${9 - (pl.handicap ?? 0)} Lives left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives.length <= 3 ? 'low' : ''}"><b>${pl.lives.length}</b></span></div>
+        <div class="lives" title="${pl.lives.length} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives.length <= 3 ? 'low' : ''}"><b>${pl.lives.length}</b></span></div>
         <div class="counters">
           <span title="Cards in hand">✋ ${pl.hand.length}</span>
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
-          <span title="Compost (discard pile)">🍂 ${pl.compost.length}</span>
+          <span title="The Mist (discard pile)">🍂 ${pl.compost.length}</span>
         </div>
       </div>
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
-           data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:|Grow Up:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+           data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
       ${p === mySeat && (canAbility || canAttack) ? `<div class="hero-actions">
         ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
         ${canAttack ? '<button class="primary" data-click="btn:heroattack">Hero attack</button>' : ''}
@@ -1103,7 +1104,7 @@ function restingLabel(u: Unit): { tag: string; why: string } {
   const arrived = unitArrivals.get(u.uid) === game?.round;
   if (!u.exhausted)
     return arrived && keywords(u.id).zoomies
-      ? { tag: '', why: 'Zoomies: it can attack the very round it arrives, instead of resting first.' }
+      ? { tag: '', why: 'Swift: it can attack the very round it arrives, instead of resting first.' }
       : { tag: '', why: 'Ready: it can attack this round.' };
   return arrived
     ? { tag: 'new', why: 'Just arrived, so it is still settling in. It wakes up at the start of the next round and can attack then.' }
@@ -1136,7 +1137,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   const chips = [
     isGuardian(u, state) && 'Guardian', isSneaky(u, state) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
     ...counterChips(u, k.all),
-    u.toy && `🧸 ${cardName(u.toy.id)}`,
+    u.toy && `🧿 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;
   if (game && !unitArrivals.has(u.uid)) unitArrivals.set(u.uid, game.round);
@@ -1201,13 +1202,13 @@ function renderMidbar(s: GameState, legal: Action[]): string {
     switch (prompt.kind) {
       case 'mulligan':
         text = `<b>Mulligan.</b> Swap any cards you don't like — you get the same number back, so your hand stays `
-          + `at 6. You'll plant <b>2</b> of them as Treats next, and keep the other <b>4</b>. `
+          + `at 6. You'll offer <b>2</b> of them as Offerings next, and keep the other <b>4</b>. `
           + `(${picks.size} selected.)`;
         buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;
         break;
       case 'setupPlant':
-        text = `Pick <b>${prompt.count}</b> cards to plant face-down as <b>Treats</b>. Each planted card becomes <b>1 Treat</b>, whatever it costs, and is <b>not played</b> — so plant cards you need least right now.`;
-        buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Plant ${picks.size}/${prompt.count}</button>`;
+        text = `Pick <b>${prompt.count}</b> cards to offer face-down as <b>Offerings</b>. Each card you offer becomes <b>1 Offering</b>, whatever it costs, and is <b>not played</b> — so offer cards you need least right now.`;
+        buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Offer ${picks.size}/${prompt.count}</button>`;
         break;
       case 'discard':
         text = `Too many cards: discard <b>${prompt.count}</b>.`;
@@ -1216,8 +1217,8 @@ function renderMidbar(s: GameState, legal: Action[]): string {
       case 'plant': {
         const chosen = picks.size === 1 ? s.players[mySeat].hand.find((c) => c.uid === [...picks][0]) : undefined;
         text = chosen
-          ? `Bury <b>${esc(cardName(chosen.id))}</b> as a Treat? It pays for other cards and can’t be played.`
-          : '<b>New round!</b> You may bury one card face-down as <b>1 more Treat</b> (it won’t be played). Click a card, or Skip.';
+          ? `Bury <b>${esc(cardName(chosen.id))}</b> as an Offering? It pays for other cards and can’t be played.`
+          : '<b>New round!</b> You may bury one card face-down as <b>1 more Offering</b> (it won’t be played). Click a card, or Skip.';
         buttons = `${chosen ? '<button class="primary" data-click="btn:confirm">Bury it</button>'
           + '<button data-click="btn:cancel">Cancel</button>' : ''}
           <button data-click="btn:skip">Skip</button>`;
@@ -1242,8 +1243,8 @@ function renderMidbar(s: GameState, legal: Action[]): string {
           const treats = readyTreats(s, mySeat);
           if (costs.length && cheapest > treats)
             why = `<b>You can't afford anything yet:</b> your cheapest card costs <b>${cheapest}</b> and you have `
-              + `<b>${treats}</b> ready ${treats === 1 ? 'Treat' : 'Treats'}. Pass — next round you plant another `
-              + `Treat and draw 2 cards.`;
+              + `<b>${treats}</b> ready ${treats === 1 ? 'Offering' : 'Offerings'}. Pass — next round you make another `
+              + `Offering and draw 2 cards.`;
           else if (costs.length) {
             // Affordable but unplayable: say which card and why, e.g. a Toy with no unit to attach to.
             const blocked = s.players[mySeat].hand.find((c) => (CARDS[c.id].cost ?? 0) <= treats);
@@ -1252,15 +1253,15 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         }
         text = `<b>Your action.</b> ${hints.length ? `${orList(hints).replace(/^./, (c) => c.toUpperCase())}${legal.some((a) => a.t === 'play' || a.t === 'attack') ? ' (click or drag)' : ''}.` : why}`
           + ` <span class="turn-hint">One thing, then your opponent acts.</span>`;
-        buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Yarn ${YARN_ICON}</button>` : ''}
+        buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Lantern ${YARN_ICON}</button>` : ''}
           <button class="primary" data-click="btn:pass">Pass</button>`;
         break;
       }
       case 'pounce':
         // Online, you're asked every time (so a pause gives nothing away), even with no Pounce to play.
         text = legal.some((a) => a.t === 'pounce')
-          ? `${describeWindow(s)} <b>Pounce?</b> Click a glowing Pounce card, or let it happen.`
-          : `${describeWindow(s)} Nothing to Pounce with: it happens in a moment.`;
+          ? `${describeWindow(s)} <b>Ambush?</b> Click a glowing Ambush card, or let it happen.`
+          : `${describeWindow(s)} Nothing to Ambush with: it happens in a moment.`;
         buttons = '<button class="primary" data-click="btn:decline">Let it happen</button>';
         break;
       case 'lucky': {
@@ -1268,8 +1269,8 @@ function renderMidbar(s: GameState, legal: Action[]): string {
         const free = legal.some((a) => a.t === 'lucky' && !a.target);
         const targeted = legal.some((a) => a.t === 'lucky' && a.target);
         text = free || targeted
-          ? `🍀 <b>Lucky!</b> The Life you lost is <b>${esc(cardName(card.id))}</b> — play it for free${targeted ? ' by choosing a target' : ''}?`
-          : `The Life you lost is <b>${esc(cardName(card.id))}</b>. It goes to your hand.`;
+          ? `🍀 <b>Lucky!</b> The Candle you lost is <b>${esc(cardName(card.id))}</b> — play it for free${targeted ? ' by choosing a target' : ''}?`
+          : `The Candle you lost is <b>${esc(cardName(card.id))}</b>. It goes to your hand.`;
         buttons = `${free ? '<button class="primary" data-click="btn:free">Play for free</button>' : ''}<button data-click="btn:keep">Keep in hand</button>`;
         break;
       }
@@ -1311,7 +1312,7 @@ function renderGameOver(s: GameState): string {
     <div class="game-over ${won ? 'won' : 'lost'}">
       <img src="${artUrl(`${s.players[heroP].hero.id}-bigcat`)}" alt="">
       <h2>${s.winner === 'draw' ? 'A draw!' : won ? 'You win!' : 'You lose!'}</h2>
-      <p>${won ? 'Nine lives well spent.' : 'Every cat lands on its feet eventually.'} (${s.round} rounds)</p>
+      <p>${won ? 'The old tales will remember this one.' : 'Every legend stumbles before it soars.'} (${s.round} rounds)</p>
       <div class="buttons">
         <button class="primary" data-click="ui:again">Play again</button>
         <button data-click="ui:quit">Home</button>
@@ -1370,17 +1371,17 @@ function renderRules(): string {
   return `<div class="overlay">
     <div class="rules">
       <h2>Quick rules</h2>
-      <p><b>Goal:</b> knock out all 9 of the rival Hero’s Lives.</p>
-      <p><b>Each round:</b> ready everything, draw 2, and you may plant 1 card face-down as a <b>Treat</b>. Treats pay for cards — any card can be a Treat.</p>
-      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Yarn</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
-      <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Life — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Zoomies</b>.</p>
+      <p><b>Goal:</b> knock out all 9 of the rival Hero’s Candles.</p>
+      <p><b>Each round:</b> ready everything, draw 2, and you may offer 1 card face-down as an <b>Offering</b>. Offerings pay for cards — any card can be an Offering.</p>
+      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
+      <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each fruit family has a signature mechanic.
-        ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(m.family!)} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
-      <p><b>Pounce:</b> when your opponent plays a card or attacks, you may play one Pounce card first.</p>
-      <p><b>Lives:</b> a lost Life goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
+        ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
+      <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first.</p>
+      <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Awaken:</b> when its condition is met, your Hero Awakens — stronger ability, and it can attack.</p>
       <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>
       ${summary() ? `<p class="progress-note">On this device: ${summary()}.</p>` : ''}
@@ -1526,7 +1527,7 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   const price = cost === undefined ? '' : (() => {
     const ready = game ? readyTreats(game, mySeat) : 0;
     const enough = ready >= cost;
-    return `<p class="zoom-cost ${enough ? '' : 'short'}">Costs <b>${cost}</b> ${cost === 1 ? 'Treat' : 'Treats'}`
+    return `<p class="zoom-cost ${enough ? '' : 'short'}">Costs <b>${cost}</b> ${cost === 1 ? 'Offering' : 'Offerings'}`
       + `${game ? ` · you have <b>${ready}</b> ready${enough ? '' : ' — not enough yet'}` : ''}</p>`;
   })();
   const status = state ? `<p class="zoom-state">${esc(state)}</p>` : '';

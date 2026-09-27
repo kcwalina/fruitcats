@@ -20,7 +20,7 @@ import {
 } from './shop';
 import { BUYING } from './flags';
 import { payWithPaddle } from './paddle';
-import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, famClass, finishUrl } from './ui';
+import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, famClass, familyName, finishUrl } from './ui';
 
 export interface StoreHost {
   render(): void;
@@ -327,14 +327,14 @@ export function renderStore(): string {
   <div class="store-screen" data-keep-scroll="store-${view.kind}">
     <header class="store-banner ${view.kind === 'browse' ? '' : 'slim'}">
       <div class="sb-ground" aria-hidden="true"></div>
-      <div class="sb-art" role="img" aria-label="A cat at a market stall"></div>
+      <div class="sb-art" role="img" aria-label="A market stall"></div>
       <div class="sb-top">
         ${back}
         ${canBuy() ? `<button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
           ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>` : ''}
       </div>
       <div class="sb-inner">
-        <div class="sb-eyebrow">Fruitcats</div>
+        <div class="sb-eyebrow">Folkborn</div>
         <h1>${title}</h1>
         ${view.kind === 'browse' ? '<p class="sb-tagline">Decks and cards for your collection.</p>' : ''}
       </div>
@@ -384,7 +384,7 @@ function renderShop(): string {
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
   return `<main class="store-main">
       <div class="offers">${decks.map(renderDeckOffer).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
-      <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Fruitcats signed in to that account.</span></p>
+      <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</span></p>
       ${renderTesterTools()}
     </main>`;
 }
@@ -398,7 +398,7 @@ function deckSlot(p: DeckProduct, big = false): string {
       <span class="face back b1"></span><span class="face back b2"></span>
       <span class="face cover">
         <span class="cover-art" style="background-image:url(${artUrl(`${p.hero}-kitten`)})"></span>
-        <span class="plate"><b>${esc(p.name)}</b><small>${esc(CARDS[p.hero]?.family ?? '')} deck</small></span>
+        <span class="plate"><b>${esc(p.name)}</b><small>${esc(familyName(CARDS[p.hero]?.family))} deck</small></span>
       </span>
     </span>`;
 }

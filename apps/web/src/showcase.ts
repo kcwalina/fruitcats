@@ -13,7 +13,7 @@ import './showcase.css';
 import { CARDS, RARITIES, TERMS, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
-import { BASE, backButton, cardUrl, esc, famClass, settingsButton } from './ui';
+import { BASE, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase is empty: they pick what to show off (the owner's call, 2026-09-26). */
@@ -415,7 +415,7 @@ function renderInfo(list: string[], index: number): string {
   return `
       <div class="viewer-info" aria-live="polite">
         <h2 class="v-name">${esc(faceName(face))}</h2>
-        <p class="v-sub">${esc(card.family)} · ${esc(kind)} · ${number(face)}</p>
+        <p class="v-sub">${esc(familyName(card.family))} · ${esc(kind)} · ${number(face)}</p>
         <p class="v-rank">${rarityMark(rarity(idOf(face)))} ${rarity(idOf(face))}${f === 'standard' ? '' : `<em class="fin-${f}">${finishName(f)}</em>`}</p>
         ${position}
         <div class="v-actions">

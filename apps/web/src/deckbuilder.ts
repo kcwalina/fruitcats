@@ -13,12 +13,12 @@ import { owned, ownedCards, ownedHeroes } from './collection';
 import { STORE } from './flags';
 import { catalog, storeAccess } from './shop';
 import { copyDeck, customKey, deleteDeck, getDeck, isReady, listDecks, newDeck, ownedDeckKeys, problems, saveDeck, type MyDeck } from './mydecks';
-import { BASE, artUrl, backButton, esc, famClass, settingsButton } from './ui';
+import { BASE, artUrl, backButton, esc, famClass, familyName, settingsButton } from './ui';
 import { familyInfo } from './sets';
 import { finishFrame, yourCardUrl } from './rarity';
 
 type Page = 'list' | 'new' | 'edit';
-const TYPES = [['all', 'All'], ['Cat', 'Fabled'], ['Critter', 'Critters'], ['Trick', 'Tricks'], ['Toy', 'Toys']] as const;
+const TYPES = [['all', 'All'], ['Cat', 'Fabled'], ['Critter', 'Creatures'], ['Trick', 'Charms'], ['Toy', 'Talismans']] as const;
 type TypeFilter = (typeof TYPES)[number][0];
 
 let page: Page = 'list';
@@ -335,7 +335,7 @@ const BIN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" 
 /** A deck as a tile: tap it to open it (your decks) or, under Start from a deck, to copy it (`copy`). */
 function deckTile(click: string, deck: DeckList, tag: string, status = '', copy = false): string {
   const hero = CARDS[deck.hero];
-  const families = [hero.family, ...otherFamilies(deck)].join(' + ');
+  const families = [hero.family, ...otherFamilies(deck)].map(familyName).join(' + ');
   return `
     <button class="deck-tile ${famClass(deck.hero)}" data-click="${click}" ${copy ? `aria-label="Copy ${esc(deck.name)}"` : ''}>
       <img class="deck-tile-art" src="${artUrl(`${deck.hero}-kitten`)}" alt="">
@@ -421,7 +421,7 @@ function renderNewDeck(): string {
               <img src="${yourCardUrl(`${id}-kitten`)}" alt="${esc(hero.name)}">
               <img class="deck-art ${finishFrame(id)}" src="${artUrl(`${id}-kitten`)}" alt="">
               <span class="deck-name">${esc(cardName(id))}</span>
-              <span class="deck-class ${famClass(id)}">${esc(hero.family)} · ${esc(familyInfo(hero.family)?.mechanic ?? '')}</span>
+              <span class="deck-class ${famClass(id)}">${esc(familyName(hero.family))} · ${esc(familyInfo(hero.family)?.mechanic ?? '')}</span>
               <span class="deck-blurb">${esc(capitalize(familyInfo(hero.family)?.hint ?? ''))}.</span>
             </button>`;
           }).join('')}
@@ -479,7 +479,7 @@ function renderBuilder(deck: MyDeck): string {
     <div class="setup-bar build-bar">${bar}</div>
     <div class="build-head">
       <div class="build-lead">
-        <span><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].join(' + '))}</span>
+        <span><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].map(familyName).join(' + '))}</span>
       </div>
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Fabled <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
@@ -533,7 +533,7 @@ function renderFilters(order: string[]): string {
   return `
     <div class="filters">
       <div class="chip-row" role="group" aria-label="Family" style="--n:${order.length + 1}">${chip('fam', 'all', 'All', familyFilter === 'all')}${order.map((f) =>
-        chip('fam', f, f, familyFilter === f, `fam-${f.toLowerCase()}`)).join('')}</div>
+        chip('fam', f, familyName(f), familyFilter === f, `fam-${f.toLowerCase()}`)).join('')}</div>
       <div class="chip-row" role="group" aria-label="Card type" style="--n:${TYPES.length}">${TYPES.map(([t, label]) => chip('type', t, label, typeFilter === t)).join('')}</div>
     </div>`;
 }
@@ -578,7 +578,7 @@ function renderDeckPanel(deck: MyDeck, order: string[], ready: boolean, base: De
           <span class="toggle-arrow" aria-hidden="true">${sheetOpen ? '▼' : '▲'}</span>
         </button>
         <div class="deck-panel-body">
-          <p class="sheet-lead"><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].join(' + '))}</p>
+          <p class="sheet-lead"><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].map(familyName).join(' + '))}</p>
           <div class="curve" aria-label="Cards by cost">
             ${buckets.map((n, i) => `<div class="curve-col"><span class="curve-n">${n || ''}</span>
               <span class="curve-bar" style="height:${Math.round((n / tallest) * 100)}%"></span><span class="curve-cost">${i === 6 ? '7+' : i + 1}</span></div>`).join('')}

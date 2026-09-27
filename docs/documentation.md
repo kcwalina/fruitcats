@@ -1,11 +1,11 @@
 # Documentation
 
-Everything about Fruitcats, in one place. Every heading has a round **link button** 🔗 beside it: tap it to copy a
+Everything about Folkborn, in one place. Every heading has a round **link button** 🔗 beside it: tap it to copy a
 link straight to that section, ready to send to a friend.
 
 ## How to play
 
-New to Fruitcats? The basics in pictures, enough for your first game: [start a game](how-to-play.md#start-a-game),
+New to Folkborn? The basics in pictures, enough for your first game: [start a game](how-to-play.md#start-a-game),
 [your cards](how-to-play.md#your-cards), [your turn](how-to-play.md#your-turn) and [attack](how-to-play.md#attack).
 Also how to [put the game on your home screen](how-to-play.md#put-the-game-on-your-home-screen).
 
@@ -17,7 +17,7 @@ A free account keeps your Collection and decks on every device, and lets you pla
 
 - [Create an account](account.md#create-an-account)
 - [Sign in on another device](account.md#sign-in-on-another-device)
-- [Manage your account](account.md#manage-your-account): Pawtrait, sign out, export or delete
+- [Manage your account](account.md#manage-your-account): Portrait, sign out, export or delete
 
 **[Open Your account →](account.md)**
 
@@ -57,14 +57,14 @@ Every rule of the game, down to the exact wording judges use.
 
 - [The Game in 60 Seconds](rulebook.md#1-the-game-in-60-seconds): the whole game on one screen
 - [Building a deck](rulebook.md#11-1-deckbuilding): the rules the deck builder checks
-- [Keywords](rulebook.md#10-keywords): Zoomies, Guardian, Sneaky, Lucky and the rest
+- [Keywords](rulebook.md#10-keywords): Swift, Guardian, Sneaky, Lucky and the rest
 
 **[Open the Rulebook →](rulebook.md)**
 
 ## Card list
 
-Every card in the Starter Box, deck by deck: the three Hero Cats, Zest Rush, Orchard Guard, Mango
-Tango, and the Garden cards they share. Also what each card's [rarity mark](starter-box-cards.md#rarity) means.
+Every card in the Starter Box, deck by deck: the three Heroes, Zest Rush, Orchard Guard, Mango
+Tango, and the Wildfolk cards they share. Also what each card's [rarity mark](starter-box-cards.md#rarity) means.
 
 **[Open the Card list →](starter-box-cards.md)**
 

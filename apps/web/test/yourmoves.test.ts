@@ -16,7 +16,7 @@ function actionPrompts(): Action[][] {
   return seen;
 }
 
-describe('Take the Yarn confirmation', () => {
+describe('Take the Lantern confirmation', () => {
   const prompts = actionPrompts().filter((l) => l.some((a) => a.t === 'takeYarn'));
 
   it('takes the Yarn right away when Pass is the only other choice', () => {

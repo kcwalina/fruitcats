@@ -5,7 +5,7 @@
 //
 // The board is drawn from the view the server sends (viewFor): never the other player's hand or deck.
 
-import { CARDS, cardName, other, type Action, type GameState, type PlayerId, type PlayerView } from '@fruitcats/engine';
+import { CARDS, TERMS, cardName, other, type Action, type GameState, type PlayerId, type PlayerView } from '@fruitcats/engine';
 import {
   EMOTES,
   type ClockView, type Emote, type MatchEnd, type MatchInfo, type ServerMessage,
@@ -13,6 +13,9 @@ import {
 import { pawtrait } from './account';
 import { live, send } from './live';
 import { artUrl, cardUrl, esc } from './ui';
+
+/** What an emote says on screen (the ids and the protocol's texts stay; the words players read come from TERMS). */
+const emoteText = (e: Emote) => TERMS.emotes[EMOTES[e] as keyof typeof TERMS.emotes] ?? EMOTES[e];
 
 export interface Online {
   info: MatchInfo;
@@ -83,7 +86,7 @@ export function onlineMessage(msg: ServerMessage): boolean {
       if (msg.held !== undefined) ol.held = { seat: msg.held, at: Date.now() };
       break;
     case 'emote':
-      if (!ol.muted || msg.seat === mySeat()) ol.emotes.push({ seat: msg.seat, text: EMOTES[msg.emote], at: Date.now() });
+      if (!ol.muted || msg.seat === mySeat()) ol.emotes.push({ seat: msg.seat, text: emoteText(msg.emote), at: Date.now() });
       break;
     case 'away': ol.away = { seat: msg.seat, until: Date.now() + msg.left }; break;
     case 'back': ol.away = null; break;
@@ -131,7 +134,7 @@ export function clockChip(seat: PlayerId): string {
 
 /**
  * The Pawtrait on the board, in the same place and size as in Solo. Everything online adds sits on it and takes no room:
- * the clock under it, emote bubbles over it, and on yours a small 🐾 badge that opens the emotes.
+ * the clock under it, emote bubbles over it, and on yours a small 💬 badge that opens the emotes.
  */
 export function playerFace(seat: PlayerId): string {
   if (!ol) return '';
@@ -142,8 +145,8 @@ export function playerFace(seat: PlayerId): string {
   return `${pawtrait(ol.info.players[seat].avatar, 'board-pawtrait')}
     ${bubble ? `<span class="emote-bubble ${mine ? 'mine' : ''}">${esc(bubble.text)}</span>` : ''}
     ${clockChip(seat)}
-    ${mine && !ol.end ? `<button class="emote-open" data-click="ol:emotes" aria-expanded="${ol.emoting}" aria-label="Say something" title="Say something">🐾</button>` : ''}
-    ${mine && ol.emoting ? `<div class="emote-menu">${list.map((e) => `<button data-click="ol:emote:${e}">${esc(EMOTES[e])}</button>`).join('')}</div>` : ''}`;
+    ${mine && !ol.end ? `<button class="emote-open" data-click="ol:emotes" aria-expanded="${ol.emoting}" aria-label="Say something" title="Say something">💬</button>` : ''}
+    ${mine && ol.emoting ? `<div class="emote-menu">${list.map((e) => `<button data-click="ol:emote:${e}">${esc(emoteText(e))}</button>`).join('')}</div>` : ''}`;
 }
 
 // Once a second: the clock's numbers, redrawn in place (no full render, so a card being dragged isn't disturbed).
@@ -244,16 +247,16 @@ export function hintText(s: GameState, a: Action): string {
     !t ? '' : t.kind === 'hero' ? (t.player === mySeat() ? ' on your Hero' : ' on their Hero') : ` on ${unit(t.uid)}`;
   switch (a.t) {
     case 'mulligan': return a.uids.length ? `Swap ${a.uids.map(card).join(', ')}.` : 'Keep this hand.';
-    case 'setupPlant': return `Plant ${a.uids.map(card).join(' and ')} as Treats.`;
+    case 'setupPlant': return `Offer ${a.uids.map(card).join(' and ')} as Offerings.`;
     case 'discard': return `Discard ${a.uids.map(card).join(', ')}.`;
-    case 'plant': return `Bury ${card(a.uid)} as a Treat.`;
-    case 'skipPlant': return 'Skip planting this round.';
+    case 'plant': return `Bury ${card(a.uid)} as an Offering.`;
+    case 'skipPlant': return 'Skip making an Offering this round.';
     case 'play': return `Play ${card(a.uid)}${target(a.target)}.`;
     case 'attack': return `Attack${target(a.target).replace(' on', '')} with ${a.attacker.kind === 'hero' ? 'your Hero' : unit(a.attacker.uid)}.`;
     case 'ability': return `Use your Hero’s ability${target(a.target)}.`;
-    case 'takeYarn': return 'Take the Yarn Ball.';
+    case 'takeYarn': return 'Take the Lantern.';
     case 'pass': return 'Pass: nothing here is worth doing right now.';
-    case 'pounce': return `Pounce with ${card(a.uid)}${target(a.target)}!`;
+    case 'pounce': return `Ambush with ${card(a.uid)}${target(a.target)}!`;
     case 'decline': return 'Let it happen.';
     case 'lucky': return `Play it for free${target(a.target)}.`;
     case 'keepLucky': return 'Keep it in your hand.';
@@ -294,7 +297,7 @@ export function renderVersus(s: PlayerView): string {
       ${pawtrait(p.avatar, 'vs-face')}
       <b>${esc(seat === mySeat() ? 'You' : p.name)}</b>
       <img class="vs-hero" src="${artUrl(`${s.players[seat].hero.id}-kitten`)}" alt="">
-      <small>${esc(cardName(s.players[seat].hero.id))}${lives < 9 ? ` · starts with ${lives} Lives` : ''}</small>
+      <small>${esc(cardName(s.players[seat].hero.id))}${lives < 9 ? ` · starts with ${lives} Candles` : ''}</small>
     </div>`;
   };
   const r = ol.info.rules;
@@ -302,7 +305,7 @@ export function renderVersus(s: PlayerView): string {
   return `<div class="overlay versus" data-click="ol:versus">
     <div class="vs-card">
       <div class="vs-sides">${side(mySeat())}<span class="vs-word">vs</span>${side(theirSeat())}</div>
-      <p>${first} the Yarn Ball first${r.teaching ? ' · Teaching game' : ''}</p>
+      <p>${first} the Lantern first${r.teaching ? ' · Teaching game' : ''}</p>
     </div>
   </div>`;
 }
@@ -324,7 +327,7 @@ export function renderOnlineResult(s: GameState): string {
   const foe = s.players[theirSeat()];
   const took = 9 - (foe.handicap ?? 0) - foe.lives.length;
   const kind = teaching() && lost
-    ? `<p class="result-kind">You took <b>${took}</b> of ${esc(them().name)}’s Lives. Every game teaches you something: play again!</p>` : '';
+    ? `<p class="result-kind">You took <b>${took}</b> of ${esc(them().name)}’s Candles. Every game teaches you something: play again!</p>` : '';
   const record = e.record ? `<p class="result-record">You ${e.record.wins} – ${e.record.losses} ${name}${e.record.draws ? ` · ${e.record.draws} drawn` : ''}</p>` : '';
   const heroSeat = won || e.winner === 'draw' || e.winner === null ? mySeat() : theirSeat();
   const wantsMine = ol.rematch[mySeat()], wantsTheirs = ol.rematch[theirSeat()];

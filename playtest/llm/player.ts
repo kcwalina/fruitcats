@@ -75,7 +75,7 @@ const PLAN_FORMAT = 'Reply with one or two short sentences of reasoning, then a 
 
 function systemPrompt(persona: Persona, spec: PlayerSpec): string {
   const tools = spec.tools.length
-    ? `\n\nTOOLS\nBefore choosing you may look things up, up to ${spec.maxToolCalls} times a move:${spec.tools.includes('preview') ? '\n- preview(choice): exactly what happens after a choice, from the real rules (assuming your opponent doesn\'t Pounce; cards you would draw are random). Preview the moves you are unsure about, especially attacks and taking the Yarn.' : ''}${spec.tools.includes('card') ? '\n- card(name): a card\'s full text.' : ''}${spec.tools.includes('log') ? '\n- log(count): the last events of the game.' : ''}${spec.tools.includes('note') ? '\n- note(text): keep a short note (a plan, what the opponent holds back); your notes are shown to you on every later move.' : ''}\nThen call choose(choice, reason) with the number of your choice. For a pick-several choice (mulligan, planting), reply in text instead.`
+    ? `\n\nTOOLS\nBefore choosing you may look things up, up to ${spec.maxToolCalls} times a move:${spec.tools.includes('preview') ? '\n- preview(choice): exactly what happens after a choice, from the real rules (assuming your opponent doesn\'t Ambush; cards you would draw are random). Preview the moves you are unsure about, especially attacks and taking the Lantern.' : ''}${spec.tools.includes('card') ? '\n- card(name): a card\'s full text.' : ''}${spec.tools.includes('log') ? '\n- log(count): the last events of the game.' : ''}${spec.tools.includes('note') ? '\n- note(text): keep a short note (a plan, what the opponent holds back); your notes are shown to you on every later move.' : ''}\nThen call choose(choice, reason) with the number of your choice. For a pick-several choice (mulligan, offering), reply in text instead.`
     : '';
   return `${rulesPrimer()}${spec.tips ? `\n\n${STRATEGY_PRIMER}` : ''}\n\nYOU\n${persona.style}${tools}\n\n${spec.plan ? PLAN_FORMAT : ANSWER_FORMAT}`;
 }
@@ -95,7 +95,7 @@ function previewChoice(s: GameState, seat: PlayerId, action: Action, seed: numbe
   try { apply(w, action); } catch (e) { return `That choice can't be previewed: ${(e as Error).message}`; }
   for (let i = 0; i < 30 && w.winner === null && w.prompt && w.prompt.player !== seat && w.prompt.kind === 'pounce'; i++) apply(w, { t: 'decline' });
   const end = w.winner === null ? '' : w.winner === seat ? 'YOU WOULD WIN.\n' : 'YOU WOULD LOSE.\n';
-  return `IF YOU CHOOSE THIS (assuming your opponent doesn't Pounce; cards you would draw are random):\n${end}${describe(w, seat, Math.max(1, w.log.length - before))}`;
+  return `IF YOU CHOOSE THIS (assuming your opponent doesn't Ambush; cards you would draw are random):\n${end}${describe(w, seat, Math.max(1, w.log.length - before))}`;
 }
 
 function cardText(name: string): string {

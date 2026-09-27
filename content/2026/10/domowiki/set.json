@@ -16,16 +16,16 @@
         "#EEE8FB"
       ],
       "personality": "Grumpy, loyal, fond of porridge",
-      "playsLike": "Feed the house with extra Treats, then wake the big spirits",
+      "playsLike": "Feed the house with extra Offerings, then wake the big spirits",
       "mechanic": "Well-Fed",
-      "hint": "extra Treats now, Well-Fed payoffs at 7+"
+      "hint": "extra Offerings now, Well-Fed payoffs at 7+"
     }
   },
   "mechanics": {
     "Well-Fed": {
       "family": "Domowiki",
       "kind": "condition",
-      "reminder": "This bonus is on while you have 7 or more Treats.",
+      "reminder": "This bonus is on while you have 7 or more Offerings.",
       "if": {
         "treats": {
           "atLeast": 7
@@ -33,7 +33,7 @@
       },
       "badge": {
         "icon": "🍞",
-        "title": "Well-Fed: 7 or more Treats — Well-Fed bonuses are on"
+        "title": "Well-Fed: 7 or more Offerings — Well-Fed bonuses are on"
       }
     }
   },
@@ -75,7 +75,7 @@
       "flavor": "The smallest Domowik in the house. Everyone listens to him anyway.",
       "kitten": {
         "name": "Dziadziuś, Heart of the House",
-        "text": "Exhaust: Ready one of your Treats.\nAwaken: You have 8 or more Treats.",
+        "text": "Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.",
         "abilities": [
           {
             "when": "exhaust",
@@ -97,7 +97,7 @@
       "bigCat": {
         "name": "Dziadziuś, Master of the House",
         "power": 4,
-        "text": "Fierce. Exhaust: Ready two of your Treats.",
+        "text": "Fierce. Exhaust: Ready two of your Offerings.",
         "keywords": [
           "Fierce"
         ],
@@ -123,7 +123,7 @@
       "cost": 1,
       "power": 1,
       "health": 2,
-      "text": "Hello: Ready one of your Treats.",
+      "text": "Hello: Ready one of your Offerings.",
       "flavor": "Keeps the embers warm until morning.",
       "abilities": [
         {
@@ -167,7 +167,7 @@
       "cost": 2,
       "power": 2,
       "health": 2,
-      "text": "Zoomies.",
+      "text": "Swift.",
       "flavor": "The horse he favours wakes with braids in its mane.",
       "keywords": [
         "Zoomies"
@@ -327,7 +327,7 @@
       "type": "Trick",
       "name": "Saucer of Milk",
       "cost": 1,
-      "text": "Pounce. A unit you control gets +2 Power this round. Ready one of your Treats.",
+      "text": "Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings.",
       "flavor": "Warm milk in the stable keeps the whole barn happy.",
       "keywords": [
         "Pounce"
@@ -403,7 +403,7 @@
       "cost": 5,
       "power": 4,
       "health": 5,
-      "text": "Guardian. Hello: Ready two of your Treats.",
+      "text": "Guardian. Hello: Ready two of your Offerings.",
       "flavor": "Some say she was the first spirit of the house. He only moved in later.",
       "keywords": [
         "Guardian"
@@ -492,7 +492,7 @@
       "family": "Domowiki",
       "name": "Warm Hand in the Night",
       "cost": 1,
-      "text": "Pounce. A unit you control gets +2 Power this round.",
+      "text": "Ambush. A unit you control gets +2 Power this round.",
       "flavor": "A soft, warm, furry hand on your cheek means good luck.",
       "keywords": [
         "Pounce"
@@ -566,7 +566,7 @@
         "DW1-D19": 3,
         "DW1-D20": 2
       },
-      "blurb": "Feed the house spirits, then wake the giants. Gather extra Treats; at 7 or more, the Domowiki are Well-Fed."
+      "blurb": "Feed the house spirits, then wake the giants. Gather extra Offerings; at 7 or more, the Domowiki are Well-Fed."
     }
   }
 }

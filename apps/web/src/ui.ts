@@ -1,6 +1,6 @@
 // Small helpers shared by the screens: asset URLs, HTML escaping, family colours, the settings gear.
 
-import { CARDS } from '@fruitcats/engine';
+import { CARDS, TERMS } from '@fruitcats/engine';
 
 export const BASE = import.meta.env.BASE_URL;
 /**
@@ -21,6 +21,9 @@ export const cardUrl = (key: string) => `${bases(key).cards}${key}.webp`;
 export const finishUrl = (key: string, finish: string) => `${bases(key).cards}${finish}/${key}.webp`;
 
 export const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/** A family's name as players read it (the data keeps its own names, e.g. Garden is shown as Wildfolk). */
+export const familyName = (family?: string) => (family ? TERMS.families[family as keyof typeof TERMS.families] ?? family : '');
 
 /** Each fruit family is a class with its own signature mechanic. */
 export const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;

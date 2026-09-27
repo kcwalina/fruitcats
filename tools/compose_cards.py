@@ -79,7 +79,7 @@ def cover(image: Image.Image, size: tuple[int, int]) -> Image.Image:
 CREAM, INK, MUTED = "#FFF8EC", "#2B211B", "#7A6A5C"
 POWER_COLOR, HEALTH_COLOR = "#E4572E", "#E0457B"
 
-KEYWORDS = r"\b(Zoomies|Guardian|Sneaky|Fierce|Tough \d+|Lucky|Pounce)\b"
+KEYWORDS = r"\b(Swift|Guardian|Sneaky|Fierce|Tough \d+|Lucky|Ambush)\b"
 LABEL = r"(?:(?<=^)|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)"   # "Hello:", "Exhaust, pay 1:", "Grow Up:"
 
 
@@ -455,7 +455,7 @@ def compose(card: dict, side: str | None, art_path: Path | None, finish: str = "
     if side:
         kind = " · ".join(w for w in (TERMS["types"]["Hero Cat"], TERMS["sides"]["kitten" if side == "kitten" else "bigCat"]) if w).upper()
     d.rounded_rectangle((42, 596, W - 42, 648), radius=14, fill=tint, outline=main, width=3)
-    d.text((62, 622), f'{kind} · {card["family"].upper()}',font=font("segoeuib.ttf", 25), fill=dark, anchor="lm")
+    d.text((62, 622), f'{kind} · {TERMS["families"].get(card["family"], card["family"]).upper()}',font=font("segoeuib.ttf", 25), fill=dark, anchor="lm")
     # The collector line: rarity mark, card number (a Hero's two sides share it), and on a finished copy its finish
     # code (F, G or P).
     key = card["id"]

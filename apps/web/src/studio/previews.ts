@@ -111,7 +111,7 @@ export function announcementPreview(art: string | null, setName: string): string
   const bg = art ? `background-image:url(${art})` : '';
   return `<div class="pv-announce">
     <figure><div class="pv-share"><div class="pv-share-art" style="${bg}"></div>
-      <div class="pv-share-text"><small>fruitcats.viamochi.com</small><b>${esc(setName)}: coming soon to Fruitcats</b><span>New cards, a new deck and new friends.</span></div></div>
+      <div class="pv-share-text"><small>fruitcats.viamochi.com</small><b>${esc(setName)}: coming soon to Folkborn</b><span>New cards, a new deck and new friends.</span></div></div>
       <figcaption>Shared as a link, in a chat or on social media</figcaption></figure>
     <figure><div class="pv-banner" style="${bg}"><b>${esc(setName)}</b></div><figcaption>At the top of the announcement page</figcaption></figure>
   </div>`;

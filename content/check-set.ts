@@ -16,6 +16,7 @@ import {
 } from '../packages/engine/src/index';
 import { CONTENT, loadContent, type ContentSet } from './index';
 import { cardTexts, suggestText } from './rules-text';
+import TERMS from '../packages/engine/src/terms.json';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -40,6 +41,15 @@ function checkSet(set: ContentSet, games: number): Report {
   const where = (c: { id: string }) => `${c.id} (${CARDS[c.id]?.name ?? c.id})`;
   const code = data.set;
   const cards: CardDef[] = [...data.cards, ...(data.tokens ?? []).map((t) => ({ ...t, token: true }))];
+
+  // 0. The game's words. Players read terms.json's words (Offerings, Candles, the Lantern, Creature…); the retired ones
+  // from the fruit-cat days must not come back on any card or in any set's hints. Rules wording (text, reminders,
+  // hints, blurbs) is held to every retired word; names, flavor and lore only to the game's own terms, so a cat deck
+  // may still have a card called "Hiss!" or a Kitten in its flavor.
+  for (const [where, text, all] of setWords(data, cards)) {
+    const found = retiredIn(text, all);
+    if (found.length) r.errors.push(`${where}: uses the retired word${found.length > 1 ? 's' : ''} ${found.map((w) => `"${w}"`).join(', ')}. Use the words in packages/engine/src/terms.json (${RETIRED_HINT}).`);
+  }
 
   // 1. Structure
   if (!code || !data.name) r.errors.push('set.json needs "set" (a code like HW1) and "name".');
@@ -145,6 +155,32 @@ function checkSet(set: ContentSet, games: number): Report {
   // 7. Bots
   if (games > 0) for (const key of Object.keys(data.decks ?? {})) r.notes.push(botRun(key, games));
   return r;
+}
+
+// The retired words (terms.json, "retired"): all of them for rules wording; for names, flavor and lore only the game's
+// own terms (not ordinary words a cat deck's flavor may use).
+const FLAVOR_OK = new Set(['Kitten', 'Big Cat', 'Meow', 'Purr', 'Hiss', 'Trick', 'Tricks', 'Toy', 'Toys', 'Plant', 'Planted', 'Lives', 'Den', 'Critter', 'Critters']);
+const RETIRED_HINT = 'Offering(s), Offer, Candle(s), Hearth, the Mist, the Lantern, Creature, Charm, Talisman, Swift, Ambush, Hero, Awaken';
+export function retiredIn(text: string, all: boolean): string[] {
+  return (TERMS.retired as string[]).filter((w) => (all || !FLAVOR_OK.has(w)) && new RegExp(`\\b${w}\\b`).test(text));
+}
+/** Every piece of player-facing wording in a set: [where, text, held to every retired word]. */
+function setWords(data: SetData, cards: CardDef[]): [string, string, boolean][] {
+  const out: [string, string, boolean][] = [];
+  const d = data as SetData & { families?: Record<string, { hint?: string; playsLike?: string }>; decks?: Record<string, { blurb?: string }>; lore?: unknown };
+  for (const [name, f] of Object.entries(d.families ?? {})) for (const k of ['hint', 'playsLike'] as const) if (f?.[k]) out.push([`family ${name} ${k}`, f[k]!, true]);
+  for (const [name, m] of Object.entries((d.mechanics ?? {}) as Record<string, { reminder?: string; badge?: { title?: string } }>)) {
+    if (m.reminder) out.push([`mechanic ${name}`, m.reminder, true]);
+    if (m.badge?.title) out.push([`mechanic ${name} badge`, m.badge.title, true]);
+  }
+  for (const [key, deck] of Object.entries(d.decks ?? {})) if (deck?.blurb) out.push([`deck ${key}`, deck.blurb, true]);
+  if (d.lore) out.push(['lore', JSON.stringify(d.lore), false]);
+  for (const c of cards) {
+    const at = `${c.id} (${c.name})`;
+    out.push([at, c.text ?? '', true], [`${at} name`, c.name, false], [`${at} flavor`, c.flavor ?? '', false]);
+    for (const side of [c.kitten, c.bigCat]) if (side) out.push([at, side.text ?? '', true], [`${at} name`, side.name ?? '', false], [`${at} flavor`, (side as { flavor?: string }).flavor ?? '', false]);
+  }
+  return out;
 }
 
 function knownFamily(family: string, data: SetData): boolean {

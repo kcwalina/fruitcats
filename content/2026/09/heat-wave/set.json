@@ -98,7 +98,7 @@
             }
           }
         },
-        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nAwaken: 4 or more Cats and Critters are in the Composts."
+        "text": "Exhaust: Deal 1 damage to a unit you control. It gets +1 Power this round.\nAwaken: 4 or more Fabled and Creatures are in the Mist."
       },
       "bigCat": {
         "name": "Blaze, Wildfire",
@@ -172,7 +172,7 @@
         }
       ],
       "flavor": "Nine pounds. Ninety percent attitude.",
-      "text": "Zoomies. Hello: You may deal 1 damage to another unit you control.",
+      "text": "Swift. Hello: You may deal 1 damage to another unit you control.",
       "keywords": [
         "Zoomies"
       ]
@@ -324,7 +324,7 @@
         }
       ],
       "flavor": "One drop. Maybe two. Okay, the whole bottle.",
-      "text": "Pounce. Deal 1 damage to a unit you control. It gets +3 Power this round."
+      "text": "Ambush. Deal 1 damage to a unit you control. It gets +3 Power this round."
     },
     {
       "id": "HW1-P10",

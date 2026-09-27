@@ -162,6 +162,12 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
 .invite .track span { display: block; height: 100%; background: var(--accent); }
 .synced { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 .synced.stale { color: var(--warn); font-weight: 700; }
+/* Signing in on the Portal (src/playtests/signin.ts). */
+.signin { display: grid; gap: 12px; max-width: 440px; }
+.signin p { margin: 0; }
+.signin .field input { font-size: 16px; }
+.si-buttons { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.si-error { color: var(--block); font-weight: 700; }
 @media (max-width: 860px) {
   .status, .main, .start { grid-template-columns: minmax(0, 1fr); }
   .runs { max-height: none; }
@@ -181,6 +187,8 @@ button.link { font: inherit; font-weight: 700; color: var(--accent); background:
     </div>
     <span id="latest-pill" class="pill pass" hidden></span>
   </header>
+
+  <section id="signin" class="panel" hidden></section>
 
   <nav class="tabs" role="tablist" aria-label="Dashboard">
     <button role="tab" id="tabbtn-playtests" data-tab="playtests" aria-controls="tab-playtests" aria-selected="true">Playtests</button>

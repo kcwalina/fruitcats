@@ -19,7 +19,7 @@ makes the picture, then you set it as your wallpaper.
 4. Tap **Save picture**.
 
 <div class="steps">
-<figure><img src="guide/collection/showcase-hold.webp" alt="Tango held in the Showcase, with a menu offering Make wallpaper" loading="lazy"><figcaption><b>1</b> Hold a card and tap <b>Make wallpaper</b>.</figcaption></figure>
+<figure><img src="guide/collection/showcase-hold.webp" alt="Dziadziuś held in the Showcase, with a menu offering Make wallpaper" loading="lazy"><figcaption><b>1</b> Hold a card and tap <b>Make wallpaper</b>.</figcaption></figure>
 <figure><img src="guide/wallpapers/make-2-sheet.webp" alt="The Wallpaper window: Phone, Tablet or Computer, a preview of the wallpaper, and Save picture" loading="lazy"><figcaption><b>2</b> Check the preview, and tap <b>Save picture</b>.</figcaption></figure>
 </div>
 

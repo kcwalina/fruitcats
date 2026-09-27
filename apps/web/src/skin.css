@@ -868,3 +868,7 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .pf-card button.pf-add:hover { background: rgba(255, 240, 210, 0.1); }
 .pf-card .pf-plus { background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e); color: #3b2610; }
 .friend-code { color: #f3cd7a; }
+/* Light chips inside the walnut panels keep dark ink (the panels set a cream --ink for their own text). */
+.clock-chip, .emote-bubble { color: #3b2e22; }
+.clock-chip.overtime, .clock-chip.low { color: #b8321f; }
+.clock-chip.paused { color: #7a6650; }

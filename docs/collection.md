@@ -18,7 +18,7 @@ Tap a deck's cover and you get its cards and its tale.
   filters.
 
 <div class="steps shots">
-<figure><img src="guide/collection/card-open.webp" alt="Tangerine Chick open full screen, with Make wallpaper and Add to Showcase" loading="lazy"><figcaption>Tap a card to see it big, add it to your Showcase, or make it your wallpaper.</figcaption></figure>
+<figure><img src="guide/collection/card-open.webp" alt="Mane-Braiding Domowik open full screen, with Make wallpaper and Add to Showcase" loading="lazy"><figcaption>Tap a card to see it big, add it to your Showcase, or make it your wallpaper.</figcaption></figure>
 </div>
 
 ## Showcase

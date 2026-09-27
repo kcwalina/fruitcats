@@ -5,4 +5,6 @@ export function isAncestor(older: string, newer: string, cwd?: string): boolean;
 export function requireOnMain(cwd?: string): string;
 export function requireLiveInHead(commit: string | null, what: string, cwd?: string): void;
 export function takeLock(name: string, opts?: { pid?: number; waitMinutes?: number }): Promise<() => void>;
+export function lockHolder(name: string): number | null;
+export function requireLockHeldBy(name: string, pid: number): void;
 export function releaseLock(name: string): void;

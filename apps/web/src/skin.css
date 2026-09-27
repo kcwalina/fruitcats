@@ -831,3 +831,40 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 }
 .life-heart.low::before { background: linear-gradient(180deg, #ffd9a0 0%, #ff8a3d 16%, #c9401f 27%, #3b2a1e 32%, #3b2a1e 38%, #fbf1dc 38%, #e0c69a 100%); }
 .life-heart b { margin-top: 15px; font-size: 16px; color: #4a3322; text-shadow: none; }
+
+/* Deck builder on the grove: walnut plaques with cream lettering, like the board's panels; honey for "new". */
+.deck-tile, .deck-panel, .build-bar, .build-head {
+  --ink: var(--plaque-ink); --muted: var(--plaque-muted);
+  color: var(--ink); background: var(--plaque); border: none; box-shadow: var(--plaque-edge);
+}
+.deck-tile .deck-name, .deck-tile-text, .deck-panel .deck-name { color: var(--plaque-ink); }
+.deck-tile-sub { color: var(--plaque-muted); }
+.new-deck { border: none; box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 8px 18px rgba(0, 0, 0, 0.45); outline: 1px dashed rgba(214, 174, 106, 0.45); outline-offset: -6px; }
+.new-plus { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e); }
+.deck-tile-art { box-shadow: 0 0 0 2px #1a130e, 0 0 0 4px var(--fam, var(--plaque-line)); }
+.deck-status { color: #f3b27a; }
+.deck-status.ready { color: var(--moss); }
+.deck-group h3 { color: var(--plaque-ink); text-shadow: 0 2px 0 #1a130e, 0 3px 10px rgba(0, 0, 0, 0.6); }
+@media (max-width: 760px) {
+  .deck-toggle { background: var(--plaque); color: var(--plaque-ink); }
+}
+.build-bar .save-state { color: var(--plaque-muted); }
+.build-bar .save-state.saved { color: var(--moss); }
+.build-bar .save-state.twin { color: #a9d4ff; }
+.pips i.on { background: var(--honey); border-color: var(--honey-dark); }
+
+/* Play with a friend on the grove: the card is a walnut plaque; each friend a slightly lighter inset row. */
+.pf-card { --ink: var(--plaque-ink); --muted: var(--plaque-muted); color: var(--ink); background: var(--plaque); border: none; box-shadow: var(--plaque-edge); }
+.pf-card-head { border-bottom-color: rgba(214, 174, 106, 0.3); }
+.pf-head-art { background: #2a211a; box-shadow: 0 0 0 2px #1a130e, 0 0 0 3px var(--plaque-line), 0 6px 14px rgba(0, 0, 0, 0.45); }
+.pf-card .pf-row { background: rgba(255, 240, 210, 0.06); border: 1px solid rgba(214, 174, 106, 0.3); box-shadow: none; }
+.pf-card .pf-row:has(button.pf-pick:not([aria-disabled="true"]):hover) { border-color: var(--plaque-line); }
+.pf-card button.pf-pick, .pf-card .pf-who b { color: var(--plaque-ink); }
+.pf-card button.pf-more { color: var(--plaque-muted); }
+.pf-card button.pf-more:hover { background: rgba(255, 240, 210, 0.08); }
+.pf-card .pf-play { box-shadow: 0 3px 0 var(--honey-dark); }
+.pf-skeleton { background: linear-gradient(90deg, rgba(255, 240, 210, 0.05) 0%, rgba(255, 240, 210, 0.12) 50%, rgba(255, 240, 210, 0.05) 100%); background-size: 200% 100%; }
+.pf-card button.pf-add { border: 1px dashed var(--plaque-line); background: rgba(255, 240, 210, 0.06); color: var(--plaque-ink); box-shadow: none; }
+.pf-card button.pf-add:hover { background: rgba(255, 240, 210, 0.1); }
+.pf-card .pf-plus { background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e); color: #3b2610; }
+.friend-code { color: #f3cd7a; }

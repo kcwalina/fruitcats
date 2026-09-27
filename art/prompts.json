@@ -7,7 +7,7 @@
     },
     "app-icon": {
       "size": "1024x1024",
-      "prompt": "A square app icon for a card game about gentle folk creatures from around the world, in a soft stylised 3D look: a small magical tree with a soft round canopy and a glowing pale-aqua trunk, a single warm glowing lantern hanging from it, on a smooth warm graphite background with a soft glow behind the tree. Bold, simple, readable at tiny sizes. Full bleed, no rounded corners, no border, no text."
+      "prompt": "A square app icon of Dziadzius, the Domowiki hero (drawn with his hero card, content/2026/10/domowiki/art/illustrations/DW1-H01-kitten.webp, as the style reference): the same painterly acrylic brushwork and face, a close-up of his head and shoulders filling the square, gentle warm smile, hugging a small round loaf of bread, the warm orange glow of his tiled stove behind him and violet shadows at the edges. Full bleed, no border, no text."
     },
     "icon-settings": {
       "prompt": "A single round cog wheel (settings gear) with eight chunky rounded teeth and a round hole in the middle, in warm caramel orange. Perfectly symmetrical. A single game icon drawn in a flat kawaii sticker style for a card game of folk creatures: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no numbers, no extra objects, no background shapes.",

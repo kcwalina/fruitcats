@@ -101,6 +101,7 @@ def main() -> int:
     parser.add_argument("--model", default="gpt-image-1-mini", choices=MODELS)
     parser.add_argument("--quality", default="medium", choices=["low", "medium", "high"])
     parser.add_argument("--reference", type=Path, help="style reference image (uses /images/edits)")
+    parser.add_argument("--fidelity", choices=["low", "high"], help="how closely to follow the reference (input_fidelity)")
     parser.add_argument("--jobs", type=int, default=4, help="parallel requests")
     parser.add_argument("--ui", action="store_true", help="draw the interface art (backgrounds, card back) into art/ui/")
     args = parser.parse_args()
@@ -139,12 +140,16 @@ def main() -> int:
 
         try:
             if args.reference:
-                prompt = ("Draw a NEW illustration in exactly the same art style as this reference image "
-                          "(same linework, shading, colour treatment and level of cuteness), "
-                          "but with a completely different subject and scene.\n\n" + prompt)
-                body, content_type = multipart(
-                    {"prompt": prompt, "n": "1", "size": "1536x1024", "quality": args.quality},
-                    "image", args.reference)
+                # A set may bring its own lead: the default asks for the reference's "level of cuteness", which
+                # pulled painted references towards picture-book art (Domowiki, 2026-09-27).
+                lead = prompts.get("referenceLead") or (
+                    "Draw a NEW illustration in exactly the same art style as this reference image "
+                    "(same linework, shading, colour treatment and level of cuteness), "
+                    "but with a completely different subject and scene.")
+                fields = {"prompt": lead + "\n\n" + prompt, "n": "1", "size": "1536x1024", "quality": args.quality}
+                if args.fidelity:
+                    fields["input_fidelity"] = args.fidelity
+                body, content_type = multipart(fields, "image", args.reference)
                 url = f"{endpoint}/openai/deployments/{deployment}/images/edits?api-version={API_VERSION}"
             else:
                 body = json.dumps({"prompt": prompt, "n": 1, "size": "1536x1024",

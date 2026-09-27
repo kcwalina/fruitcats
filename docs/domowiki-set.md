@@ -103,9 +103,16 @@ at 7 Offerings (Domowiki 55%, Pari 42%).
 
 ## Art
 
-Painterly oil-painting folk tale: deep violet night, glowing bokeh, warm ember light, as in the owner's prototype
-cards (2026-09-26). Direction and one subject per card in `art/prompts.json`; drawn with `tools/generate_art.py
---set dw1 --model gpt-image-2 --reference <the prototype art>` and composed with `tools/compose_cards.py --set dw1`.
+A naive oil painting, redrawn 2026-09-27 after the owner's reference: a 1999 painting of a white church with a
+brick-red roof under a turquoise sky. Thick, scraped paint, simplified shapes, whitewash and earth browns, and clear
+(not saturated) colour: turquoise skies and walls, brick-red roofs and caps. Serious rather than cute; the Domowik is a
+small old man in a rust-red cap. (The first art, a violet night with glowing bokeh, read as a picture book.)
+
+Direction and one scene per card in `art/prompts.json`; drawn with `tools/generate_art.py --set dw1 --model gpt-image-2
+--quality high --fidelity high --reference <the church painting, frame cropped off>` and composed with
+`tools/compose_cards.py --set dw1`. What made it work: one reference at a time (three at once were averaged into a
+blander style), a short lead that points at the reference instead of describing a style in words, and asking for its
+colour outright (without that the model painted it nearly monochrome).
 
 ## The old decks, in the Store
 

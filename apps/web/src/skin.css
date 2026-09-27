@@ -23,7 +23,7 @@
 }
 
 /* Backdrops */
-/* The mossy forest edge where the folk creatures live, in the board's palette (velvety green, walnut, lantern gold). */
+/* A forest glade in warm amber light where the folk creatures live (the owner's reference, 2026-09-27). */
 body.menu-screen { background: var(--img-menu-bg) center / cover no-repeat, #1c2418; }
 @media (orientation: portrait) { body.menu-screen { background-image: var(--img-menu-bg-tall); } }
 body.game-screen {

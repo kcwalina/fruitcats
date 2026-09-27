@@ -23,7 +23,7 @@
 }
 
 /* Backdrops */
-/* A forest glade in warm amber light where the folk creatures live (the owner's reference, 2026-09-27). */
+/* A glowing night wood where the folk creatures live (the owner's reference, 2026-09-27). */
 body.menu-screen { background: var(--img-menu-bg) center / cover no-repeat, #1c2418; }
 @media (orientation: portrait) { body.menu-screen { background-image: var(--img-menu-bg-tall); } }
 body.game-screen {
@@ -882,3 +882,28 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .deck-choice, .difficulty-choice { border-radius: 4px; }
 /* Tutorial and Documentation fit their tiles at phone width. */
 @media (max-width: 400px) { .modes .mode-card.mini .mode-name { font-size: 12px; letter-spacing: 0; } }
+
+/* Tablets and computers: the home tiles are big cards that fill the screen, three to a row in two rows (they were six
+   small tiles in one row with the background all around them, which looked empty on an iPad). Sized by the width,
+   and by the height so all rows fit on a landscape iPad. Phones (and phones held sideways) keep their own layout. */
+@media (min-width: 641px) and (min-height: 600px) {
+  .home .modes {
+    --tile: min(calc(var(--vh, 1vh) * 22), calc((min(100vw, 1100px) - 100px) / 3 - 30px));
+    display: flex; flex-direction: column; align-items: center; --group-gap: 16px; gap: 16px;
+  }
+  .home .mode-group { display: flex; gap: 16px; }
+  .home .mode-more { display: flex; justify-content: center; gap: 16px; align-self: center; }
+  .home .modes .mode-card.mini { width: calc(var(--tile) + 24px); }
+  .home .mode-name { font-size: clamp(16px, calc(var(--tile) * 0.1), 22px); }
+  .home .mode-sub { font-size: clamp(12px, calc(var(--tile) * 0.065), 15px); }
+  .home .modes .mode-card.mini .mode-name { font-size: clamp(15px, calc(var(--tile) * 0.085), 19px); }
+  .home .title h1 { font-size: clamp(48px, calc(var(--vh, 1vh) * 8), 84px); }
+  .home .title p { display: inline-block; font-size: clamp(15px, calc(var(--vh, 1vh) * 1.9), 20px); }
+}
+/* Landscape tablets and computers: a smaller title and gaps, so the cards can take more of the height. */
+@media (min-width: 641px) and (min-height: 600px) and (orientation: landscape) {
+  .home .modes { --tile: min(calc(var(--vh, 1vh) * 23), calc((min(100vw, 1200px) - 100px) / 3 - 30px)); gap: 12px; }
+  .home .mode-group, .home .mode-more { gap: 14px; }
+  .home .title h1 { font-size: clamp(40px, calc(var(--vh, 1vh) * 6.5), 72px); }
+  .home .title p { margin-bottom: 4px; }
+}

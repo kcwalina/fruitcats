@@ -702,15 +702,15 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 @keyframes fx-fade { 0% { opacity: 0; } 15%, 75% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ══ Crafted things by lantern light ═══════════════════════════════════════════════════════════════
-   The shell's backdrop is the graphite grove. What sits on it is made of crafted materials, not flat panels: the
+   Everything on the glowing night wood is a deep night-indigo plaque with a thin glowing teal line (it was walnut): the
    home tiles are illustrated cards in an engraved bronze-and-walnut frame (art/ui/frame.png), the panels are dark
    walnut plaques with cream lettering and a thin brass line, actions are honey amber, picks moss green. The game's
    own cards keep their frames: they carry each deck's art style. */
 :root {
-  --plaque: linear-gradient(180deg, #45342a, #2c211a); --plaque-line: rgba(214, 174, 106, 0.6);
+  --plaque: linear-gradient(180deg, #262b52, #171a36); --plaque-line: rgba(130, 214, 228, 0.6);
   --plaque-ink: #f3e7cf; --plaque-muted: rgba(243, 231, 207, 0.72);
-  --plaque-edge: inset 0 1px 0 rgba(255, 230, 190, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 8px 18px rgba(0, 0, 0, 0.45);
-  --moss: #9fd07a; --moss-deep: #4d7a3c; --honey: #e2ad4e; --honey-dark: #9c6a22; --walnut: #5e4129; --walnut-dark: #36251a;
+  --plaque-edge: inset 0 1px 0 rgba(200, 225, 255, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 8px 18px rgba(0, 0, 0, 0.45);
+  --moss: #9fd07a; --moss-deep: #4d7a3c; --honey: #e2ad4e; --honey-dark: #9c6a22; --walnut: #2b3060; --walnut-dark: #151833;
   --linen: #f6efe0; --linen-2: #e7dac0; --card-face: linear-gradient(180deg, var(--linen), var(--linen-2));
 }
 
@@ -720,13 +720,13 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 .modes .mode-card {
   padding: 7px 7px 0; gap: 0; justify-content: flex-start; overflow: visible; border: none; border-radius: 3px;
   background: var(--plaque);
-  box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 12px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 12px 24px rgba(0, 0, 0, 0.55);
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.modes .mode-card:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.16), inset 0 0 0 1px rgba(232, 196, 128, 0.8), 0 0 0 1px #1a130e, 0 16px 28px rgba(0, 0, 0, 0.6); }
+.modes .mode-card:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.16), inset 0 0 0 1px rgba(150, 230, 240, 0.8), 0 0 0 1px #0c0d1f, 0 16px 28px rgba(0, 0, 0, 0.6); }
 .modes .mode-card img, .modes .mode-card.mini img {
   position: static; width: 100%; height: auto; min-width: 0; min-height: 0; aspect-ratio: 1; object-fit: cover;
-  border-radius: 1px; filter: none; box-shadow: 0 0 0 1px rgba(214, 174, 106, 0.45), 0 1px 3px rgba(0, 0, 0, 0.7);
+  border-radius: 1px; filter: none; box-shadow: 0 0 0 1px rgba(130, 214, 228, 0.45), 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 .modes .mode-card.mini img { aspect-ratio: 2.6; object-position: center 35%; }
 .modes .mode-text, .modes .mode-card.mini .mode-name { position: static; width: 100%; box-sizing: border-box; padding: 7px 4px 9px; background: none; }
@@ -761,13 +761,13 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 .difficulty-choice img { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)); }
 .difficulty-choice.chosen, .deck-choice.chosen { background: linear-gradient(180deg, #3f4a2e, #2a3320);
   box-shadow: inset 0 0 0 1px rgba(159, 208, 122, 0.55), 0 0 0 3px var(--pick), 0 8px 18px rgba(0, 0, 0, 0.45); }
-.picker h2, .new-name span, .setup-bar h2 { color: var(--plaque-ink); text-shadow: 0 2px 0 #1a130e, 0 3px 10px rgba(0, 0, 0, 0.6); }
+.picker h2, .new-name span, .setup-bar h2 { color: var(--plaque-ink); text-shadow: 0 2px 0 #0c0d1f, 0 3px 10px rgba(0, 0, 0, 0.6); }
 
-/* The board: a green embroidered cloth on an old walnut table, in a walnut frame with a thin honey inlay. */
+/* The board: a dark teal velvet cloth, embroidered in teal, rose and gold, on a night-blue table, in a night frame with a teal inlay. */
 .board {
-  background: var(--img-playmat) center / cover, #22351f;
-  box-shadow: inset 0 0 0 2px rgba(214, 174, 106, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.45),
-    0 0 0 6px var(--walnut), 0 0 0 7px var(--honey), 0 0 0 10px var(--walnut-dark), 0 20px 40px rgba(0, 0, 0, 0.55);
+  background: var(--img-playmat) center / cover, #0f2426;
+  box-shadow: inset 0 0 0 2px rgba(130, 214, 228, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.45),
+    0 0 0 6px var(--walnut), 0 0 0 7px var(--plaque-line), 0 0 0 10px var(--walnut-dark), 0 20px 40px rgba(0, 0, 0, 0.55);
 }
 .player, .midbar, .log-panel {
   --ink: var(--plaque-ink); --muted: var(--plaque-muted);
@@ -775,15 +775,15 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 }
 .player.thinking { box-shadow: 0 0 0 2px var(--honey), 0 0 18px 4px rgba(240, 190, 90, 0.5), var(--plaque-edge); }
 .ability b { text-decoration-color: rgba(243, 231, 207, 0.4); }
-.counters span { background: rgba(255, 240, 210, 0.08); box-shadow: inset 0 0 0 1px rgba(214, 174, 106, 0.3); }
-.hero { border-color: var(--honey); box-shadow: 0 0 0 2px #1a130e, 0 5px 12px rgba(0, 0, 0, 0.45); }
-.hero.grown { border-color: #f3cd7a; box-shadow: 0 0 0 2px #1a130e, 0 0 16px 4px rgba(240, 200, 100, 0.7); }
+.counters span { background: rgba(255, 240, 210, 0.08); box-shadow: inset 0 0 0 1px rgba(130, 214, 228, 0.3); }
+.hero { border-color: var(--honey); box-shadow: 0 0 0 2px #0c0d1f, 0 5px 12px rgba(0, 0, 0, 0.45); }
+.hero.grown { border-color: #f3cd7a; box-shadow: 0 0 0 2px #0c0d1f, 0 0 16px 4px rgba(240, 200, 100, 0.7); }
 .card-back, .treat { border-color: rgba(243, 231, 207, 0.75); background-color: #2e2d31; }
 .empty-yard { color: rgba(243, 231, 207, 0.5); border-color: rgba(243, 231, 207, 0.22); }
 /* The round: an amber wax seal. */
 .round {
   background: radial-gradient(circle at 35% 30%, #f6d58e, var(--honey) 60%, #a8741f); color: #3b2610;
-  box-shadow: 0 0 0 2px #1a130e, 0 0 0 3px var(--plaque-line), 0 4px 10px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px #0c0d1f, 0 0 0 3px var(--plaque-line), 0 4px 10px rgba(0, 0, 0, 0.45);
 }
 /* The Treats tray: a carved wooden bowl seen from above (it was a cat's food bowl with a paw print). */
 .treats {
@@ -798,7 +798,7 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 .pantry-label { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
 .pantry-label b { color: var(--moss); }
 .inspector img { box-shadow: 0 0 0 3px var(--honey), 0 10px 24px rgba(0, 0, 0, 0.5); }
-.log-panel h3 { color: #f3cd7a; border-bottom-color: rgba(214, 174, 106, 0.35); }
+.log-panel h3 { color: #f3cd7a; border-bottom-color: rgba(130, 214, 228, 0.35); }
 .log li.me { color: #a9d4ff; }
 .log li.foe { color: #ffb4a3; }
 .log li.sys { color: var(--plaque-muted); }
@@ -806,7 +806,7 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 /* Pop-ups (settings, rules, game over) and the tutorial: light pages to read, in a walnut and honey frame. */
 .game-over, .rules, .settings {
   background: var(--card-face); border: 3px solid var(--walnut);
-  box-shadow: 0 0 0 1px var(--honey), 0 0 0 5px var(--walnut-dark), 0 20px 50px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 1px var(--plaque-line), 0 0 0 5px var(--walnut-dark), 0 20px 50px rgba(0, 0, 0, 0.55);
 }
 .game-over img { box-shadow: 0 0 0 3px var(--honey), 0 8px 18px rgba(0, 0, 0, 0.3); }
 .tut-balloon { background: var(--card-face); border-color: var(--walnut); }
@@ -838,12 +838,12 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 }
 .deck-tile .deck-name, .deck-tile-text, .deck-panel .deck-name { color: var(--plaque-ink); }
 .deck-tile-sub { color: var(--plaque-muted); }
-.new-deck { border: none; box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 8px 18px rgba(0, 0, 0, 0.45); outline: 1px dashed rgba(214, 174, 106, 0.45); outline-offset: -6px; }
+.new-deck { border: none; box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 8px 18px rgba(0, 0, 0, 0.45); outline: 1px dashed rgba(130, 214, 228, 0.45); outline-offset: -6px; }
 .new-plus { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e); }
-.deck-tile-art { box-shadow: 0 0 0 2px #1a130e, 0 0 0 4px var(--fam, var(--plaque-line)); }
+.deck-tile-art { box-shadow: 0 0 0 2px #0c0d1f, 0 0 0 4px var(--fam, var(--plaque-line)); }
 .deck-status { color: #f3b27a; }
 .deck-status.ready { color: var(--moss); }
-.deck-group h3 { color: var(--plaque-ink); text-shadow: 0 2px 0 #1a130e, 0 3px 10px rgba(0, 0, 0, 0.6); }
+.deck-group h3 { color: var(--plaque-ink); text-shadow: 0 2px 0 #0c0d1f, 0 3px 10px rgba(0, 0, 0, 0.6); }
 @media (max-width: 760px) {
   .deck-toggle { background: var(--plaque); color: var(--plaque-ink); }
 }
@@ -854,9 +854,9 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 
 /* Play with a friend on the grove: the card is a walnut plaque; each friend a slightly lighter inset row. */
 .pf-card { --ink: var(--plaque-ink); --muted: var(--plaque-muted); color: var(--ink); background: var(--plaque); border: none; box-shadow: var(--plaque-edge); }
-.pf-card-head { border-bottom-color: rgba(214, 174, 106, 0.3); }
-.pf-head-art { background: #2a211a; box-shadow: 0 0 0 2px #1a130e, 0 0 0 3px var(--plaque-line), 0 6px 14px rgba(0, 0, 0, 0.45); }
-.pf-card .pf-row { background: rgba(255, 240, 210, 0.06); border: 1px solid rgba(214, 174, 106, 0.3); box-shadow: none; }
+.pf-card-head { border-bottom-color: rgba(130, 214, 228, 0.3); }
+.pf-head-art { background: #2a211a; box-shadow: 0 0 0 2px #0c0d1f, 0 0 0 3px var(--plaque-line), 0 6px 14px rgba(0, 0, 0, 0.45); }
+.pf-card .pf-row { background: rgba(255, 240, 210, 0.06); border: 1px solid rgba(130, 214, 228, 0.3); box-shadow: none; }
 .pf-card .pf-row:has(button.pf-pick:not([aria-disabled="true"]):hover) { border-color: var(--plaque-line); }
 .pf-card button.pf-pick, .pf-card .pf-who b { color: var(--plaque-ink); }
 .pf-card button.pf-more { color: var(--plaque-muted); }
@@ -873,11 +873,11 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .clock-chip.paused { color: #7a6650; }
 
 /* The title on the forest: warm cream with a soft lantern glow (it was cool white with an aqua glow on the grey grove). */
-.title h1 { color: #f3e7cf; text-shadow: 0 0 18px rgba(240, 190, 90, 0.35), 0 3px 0 #1a130e, 0 8px 18px rgba(0, 0, 0, 0.6); }
+.title h1 { color: #f3e7cf; text-shadow: 0 0 18px rgba(240, 190, 90, 0.35), 0 3px 0 #0c0d1f, 0 8px 18px rgba(0, 0, 0, 0.6); }
 .title p { color: rgba(243, 231, 207, 0.88); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 
 /* The account chip's initial (no Portrait yet) sits on the walnut plaque like the gear, in cream. */
-.account-avatar:not(.is-image), .corner-face .account-avatar.small:not(.is-image) { color: var(--plaque-ink); background: var(--plaque); box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e; text-shadow: none; }
+.account-avatar:not(.is-image), .corner-face .account-avatar.small:not(.is-image) { color: var(--plaque-ink); background: var(--plaque); box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f; text-shadow: none; }
 /* Setup choices are plaques: nearly square corners, like the home tiles. */
 .deck-choice, .difficulty-choice { border-radius: 4px; }
 /* Tutorial and Documentation fit their tiles at phone width. */
@@ -906,4 +906,14 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
   .home .mode-group, .home .mode-more { gap: 14px; }
   .home .title h1 { font-size: clamp(40px, calc(var(--vh, 1vh) * 6.5), 72px); }
   .home .title p { margin-bottom: 4px; }
+}
+/* The Offerings tray on the night wood: a dark night-blue bowl with a soft teal glow inside (it was carved walnut). */
+.treats {
+  background: radial-gradient(circle closest-side, #2d3466 0 56%, #252a55 63%, #1d2146 76%, #141733 81%,
+    #3c4585 84%, #2a3063 92%, #141733 98%, transparent 100%);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+}
+.treats::before {
+  box-shadow: inset 0 calc(var(--bowl-d) * 0.05) calc(var(--bowl-d) * 0.06) rgba(5, 6, 20, 0.55);
+  background: radial-gradient(circle, rgba(130, 214, 228, 0.22), transparent 70%);
 }

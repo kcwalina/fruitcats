@@ -375,7 +375,7 @@ button.undo-btn {
 .tile-card.finish-signature { box-shadow: 0 0 18px rgba(255, 120, 40, 0.5), 0 10px 24px rgba(0, 0, 0, 0.5); }
 
 /* ── Collection home: the Showcase, then each deck you have, as covers (the paintings in their frames: .deck-slot, store.css) ── */
-.col-title { margin: 0; justify-self: center; font: 600 20px/1 Fredoka, Nunito, sans-serif; color: #f3e7cf; text-shadow: 0 0 14px rgba(240, 190, 90, 0.3), 0 2px 0 #1a130e; letter-spacing: 0.3px; text-align: center; }
+.col-title { margin: 0; justify-self: center; font: 600 20px/1 Fredoka, Nunito, sans-serif; color: #f3e7cf; text-shadow: 0 0 14px rgba(240, 190, 90, 0.3), 0 2px 0 #0c0d1f; letter-spacing: 0.3px; text-align: center; }
 .decks-page { flex: 1; min-height: 0; overflow-y: auto; padding: 10px var(--corner-right, 16px) 40px var(--corner-left, 16px); }
 /* Rows of covers, a short last row centred under the others, as paintings are hung. --cols covers to a row. */
 .deck-covers { --cols: 2; --gap: 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px var(--gap); max-width: 760px; margin: 0 auto; }
@@ -390,7 +390,7 @@ button.undo-btn {
    soft shadow; one dark hairline round the painting, and a warm mat under it while it loads. */
 .deck-cover .deck-slot .frame {
   padding: 4.4%; border-radius: 1px; background: var(--plaque);
-  box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 12px 20px -10px rgba(0, 0, 0, 0.75);
+  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 12px 20px -10px rgba(0, 0, 0, 0.75);
 }
 .deck-cover .deck-slot .sight { --mat: #3a3029; --mat-ink: rgba(246, 236, 220, 0.72); --mat-rule: rgba(246, 236, 220, 0.16); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 /* The empty Showcase: a lighter warm mat, a honey star and what goes there, so it reads as waiting for you. */

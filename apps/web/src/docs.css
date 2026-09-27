@@ -1,13 +1,13 @@
 /* The documentation (docs.html, rules.html, cards.html, collection.html, wallpapers.html): the game's look (the
    glowing night wood behind, walnut and honey for the bars, light linen pages), made for long reading. */
 :root {
-  --wood-dark: #36251a;
-  --wood: #5e4129;
-  --gold: #d9a441;
+  --wood-dark: #151833;
+  --wood: #2b3060;
+  --gold: #7fc3d0;
   --gold-light: #f3e7cf;
   --parchment: #f6efe0;
   --parchment-2: #e7dac0;
-  --parchment-edge: #c9ad7e;
+  --parchment-edge: #a9bccb;
   --ink: #3b2e22;
   --muted: #7a6650;
   --accent: #a8512f;
@@ -39,16 +39,16 @@ a:hover { color: var(--orchard); }
 .topbar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
-  background: linear-gradient(180deg, #45342a, #2c211a);
-  box-shadow: inset 0 -1px 0 rgba(214, 174, 106, 0.6);
+  background: linear-gradient(180deg, #262b52, #171a36);
+  box-shadow: inset 0 -1px 0 rgba(130, 214, 228, 0.6);
 }
 /* Like the game's Solo screen: a round Home button on the left, the page's name in the middle, and an
    empty slot on the right so the name stays centred. To play, go Home. */
 .home-button, .topbar-balance { width: 44px; height: 44px; flex: none; }
 .home-button {
   display: grid; place-items: center; border-radius: 999px;
-  background: linear-gradient(180deg, #5a4535, #3a2b21);
-  box-shadow: inset 0 0 0 1px rgba(214, 174, 106, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, #2e3366, #1a1d3c);
+  box-shadow: inset 0 0 0 1px rgba(130, 214, 228, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4);
   transition: transform 0.08s, box-shadow 0.08s, filter 0.12s;
 }
 .home-button img { width: 30px; height: 30px; object-fit: contain; }

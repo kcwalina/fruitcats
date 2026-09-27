@@ -17,6 +17,7 @@ import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
 import { ownedDeckKeys } from './mydecks';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
+import { framedPainting } from './storefront';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase is empty: they pick what to show off (the owner's call, 2026-09-26). */
@@ -399,28 +400,23 @@ export function renderShowcase(): string {
   ${renderWallpaperSheet()}`;
 }
 
-/** A deck's cover, as the Store draws it: its hero's art on two card backs, its name on a plate. */
-function deckCover(key: string): string {
-  const d = DECKS[key], hero = d.hero;
-  return `<span class="slot ${famClass(hero)}" aria-hidden="true">
-      <span class="face back b1"></span><span class="face back b2"></span>
-      <span class="face cover">
-        <span class="cover-art" style="background-image:url(${artUrl(`${hero}-kitten`)})"></span>
-        <span class="plate"><b>${esc(d.name)}</b><small>${esc(CARDS[hero]?.family ?? '')}</small></span>
-      </span>
-    </span>`;
-}
+/** A star, for the empty Showcase. */
+const EMPTY_STAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M12 3.4l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.7l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/></svg>`;
+
+/** A deck's cover: its hero's painting in the Store's frame (framedPainting). The first row loads first. */
+const deckCover = (key: string, eager: boolean) => {
+  const hero = DECKS[key].hero;
+  return framedPainting({ art: artUrl(`${hero}-kitten`), fallback: artUrl(`${hero}-bigcat`), name: DECKS[key].name, eager });
+};
 
 /** The Collection's first screen: the Showcase, then each ready-made deck you have, as covers. */
 function renderDecks(): string {
   const first = showcase[0];
-  const showcaseCover = `<span class="slot showcase-slot" aria-hidden="true">
-      <span class="face back b1"></span><span class="face back b2"></span>
-      <span class="face cover">${first
-        ? `<img class="cover-pick" src="${yourCardUrl(first)}" alt="" draggable="false">`
-        : '<span class="cover-empty">☆</span>'}
-      </span>
-    </span>`;
+  // The Showcase: your first favourite's painting in the same frame. Empty, a lighter mat with a honey star and a line
+  // saying what goes there, so it reads as waiting for you, not as a picture that didn't load.
+  const showcaseCover = first
+    ? framedPainting({ art: artUrl(first), name: faceName(first), eager: true, cls: 'showcase-slot' })
+    : `<span class="slot deck-slot showcase-slot" aria-hidden="true"><span class="frame"><span class="sight"><span class="painting empty">${EMPTY_STAR}<small>Add cards you love</small></span></span></span></span>`;
   const n = showcase.length;
   return `
     <div class="decks-page" data-keep-scroll="decks">
@@ -430,10 +426,10 @@ function renderDecks(): string {
           <span class="cover-name">Showcase</span>
           <span class="cover-sub">${n ? `${n} ${n === 1 ? 'card' : 'cards'}` : 'Your favourites'}</span>
         </button>
-        ${ownedDeckKeys().map((key) => {
+        ${ownedDeckKeys().map((key, i) => {
           const faces = deckFaces(key), cards = new Set(faces.map(idOf)).size;
           return `<button class="deck-cover" data-click="col:deck:${key}" aria-label="${esc(DECKS[key].name)}, ${cards} cards">
-            ${deckCover(key)}
+            ${deckCover(key, i < 3)}
             <span class="cover-name">${esc(DECKS[key].name)}</span>
             <span class="cover-sub">${cards} cards</span>
           </button>`;

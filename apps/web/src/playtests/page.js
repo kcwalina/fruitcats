@@ -1,6 +1,7 @@
 // The playtest dashboard (docs/playtests.md): everything comes from the Fruitcats API, which PC2024's playtester keeps up
 // to date (data.ts). Only the owner's Via Mochi account may read it.
 import { DashboardError, cancelRequest, loadDashboard, queueRun, runWithReport } from './data';
+import { showSignIn, showWrongAccount } from './signin';
 
 // Decks, family colors and personas come from the meta document PC2024's runner sends, built from the card
 // data, so a new deck appears here by itself. Until it loads, or for a deck it doesn't know, the key stands in.
@@ -450,9 +451,27 @@ $('runs').addEventListener('click', (e) => {
 
 // Every 20 seconds while the page is open and showing; at once when it comes back into view.
 function showProblem(err) {
-  const signIn = err instanceof DashboardError && err.code === 'signed_out';
+  const signIn = err instanceof DashboardError && (err.code === 'signed_out' || err.code === 'not_owner');
   const text = err instanceof DashboardError ? err.message : 'Something went wrong loading the playtests.';
-  const html = `<div class="empty">${esc(text)}${signIn ? ' <a href="/account.html">Sign in on your Account page</a>, then come back.' : ''}</div>`;
+  const html = `<div class="empty">${esc(text)}</div>`;
+  // Signed out (or signed in as someone else): sign in right here, then load.
+  if (signIn) {
+    const box = $('signin');
+    if (box.hidden) {
+      box.hidden = false;
+      (err.code === 'not_owner' ? showWrongAccount : showSignIn)(box, () => { box.hidden = true; box.innerHTML = ''; void refresh(); });
+    }
+    if (!online) {
+      $('runform').querySelector('button').disabled = true;
+      $('formnote').textContent = 'Sign in to start runs.';
+      for (const id of ['decks', 'runs']) $(id).innerHTML = '<div class="empty">Sign in above to see the playtests.</div>';
+      $('requests').innerHTML = '<li class="note">—</li>';
+      $('issues').innerHTML = '<li class="note">—</li>';
+      $('trend').innerHTML = '';
+      $('acct-health').innerHTML = '<div class="panel"><div class="empty">Sign in above to see the accounts.</div></div>';
+      return;
+    }
+  }
   if (!online) {
     $('runform').querySelector('button').disabled = true;
     $('formnote').textContent = signIn ? 'Sign in to start runs.' : '';
@@ -473,6 +492,7 @@ async function refresh() {
   try {
     const data = await loadDashboard();
     online = true;
+    if (!$('signin').hidden) { $('signin').hidden = true; $('signin').innerHTML = ''; }
     $('runform').querySelector('button').disabled = false;
     if ($('formnote').textContent === 'Sign in to start runs.') $('formnote').textContent = '';
     runner = data.runner;

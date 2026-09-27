@@ -41,8 +41,9 @@ import {
 const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/lantern.webp" alt="Lantern">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
-// The shell's backdrop is Folkborn's neutral grove (grove-tall on portrait screens), so every deck's art style fits on it.
-for (const [name, file] of [['--img-menu-bg', 'grove.webp'], ['--img-menu-bg-tall', 'grove-tall.webp'], ['--img-playmat', 'table.webp'], ['--img-cardback', 'cardback.webp'],
+// The shell's backdrop is a glowing night wood: tall trees with teal, magenta and orange canopies under a starry sky full
+// of drifting sparks (glowwood-tall on portrait screens); painted from the owner's reference, 2026-09-27.
+for (const [name, file] of [['--img-menu-bg', 'glowwood.webp'], ['--img-menu-bg-tall', 'glowwood-tall.webp'], ['--img-playmat', 'table.webp'], ['--img-cardback', 'cardback.webp'],
   ['--img-paw', 'stat-power.svg'], ['--img-heart', 'stat-heart.svg'], ['--img-store', 'tile-store.webp']])
   document.documentElement.style.setProperty(name, `url("${new URL(`${BASE}ui/${file}`, location.href).href}")`);
 // --vh = 1% of the height you can actually see. On iPhone Safari, 100vh is taller than the visible

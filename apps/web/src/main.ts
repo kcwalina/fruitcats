@@ -117,6 +117,8 @@ let myDeck = loadChosenDeck();
 let deckInView = myDeck;
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
+/** The card the side panel's inspector shows enlarged: the last one hovered or tapped. Null: your Hero. */
+let inspected: string | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
 let tutorialGame = false;
 let selection: Selection | null = null;
@@ -301,7 +303,7 @@ function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { 
   viewQueue = [];
   storyLines = msg.view.log;
   game = msg.view;
-  if (!same) { unitArrivals.clear(); resetLogSounds(game); }
+  if (!same) { unitArrivals.clear(); resetLogSounds(game); inspected = null; }
   selection = null; confirming = null; picks = new Set(); notice = ''; flash = '';
   markHumanTurnDone();
   renderedFoeUnits = new Set(game.players[theirSeat].yard.map((u) => u.uid));
@@ -388,6 +390,7 @@ function startGame(tutorial = false) {
   const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
   const theirDeck = tutorial ? 'pari'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
+  inspected = null;
   game = tutorial
     ? createGame({ decks: ['domowiki', 'pari'], names: ['You', 'Opponent'], firstPlayer: mySeat })
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
@@ -677,6 +680,7 @@ function resumeSavedGame(): boolean {
   if (!save) return false;
   setOnlineAside();
   game = save.game;
+  inspected = null;
   game.events ??= []; // saved before events existed
   tutorialGame = false;
   if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
@@ -1008,14 +1012,14 @@ function renderGame(): string {
       ${renderHand(s, playable)}
     </main>
     <aside class="side">
-      <div class="inspector"><img id="zoom" src="${yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
+      <div class="inspector"><img id="zoom" src="${inspected ?? yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
+      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
         <button data-click="${ol ? 'ol:home' : 'ui:quit'}">Home</button>
         ${onlineSideButtons()}
       </div>
-      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
     </aside>
     ${ol ? renderOnlineResult(s) : s.winner !== null ? renderGameOver(s) : ''}
     ${ol ? renderVersus(s as PlayerView) : ''}
@@ -1501,11 +1505,16 @@ window.addEventListener('pointerup', (event) => {
   render();
 });
 
-app.addEventListener('mouseover', (event) => {
-  const el = (event.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
+// The side panel's inspector shows the card you point at: hovered with a mouse, or tapped on a touch
+// screen (a tap fires no reliable mouseover on iPad). The choice is remembered, so redrawing the screen
+// after the tap (the card gets selected) keeps showing it instead of snapping back to your Hero.
+function inspect(el: HTMLElement | null) {
+  if (!el?.dataset.zoom) return;
+  inspected = el.dataset.zoom;
   const zoom = document.getElementById('zoom') as HTMLImageElement | null;
-  if (el && zoom && zoom.src !== el.dataset.zoom) zoom.src = el.dataset.zoom!;
-});
+  if (zoom && zoom.src !== inspected) zoom.src = inspected;
+}
+app.addEventListener('mouseover', (event) => inspect((event.target as HTMLElement).closest<HTMLElement>('[data-zoom]')));
 
 // ── Long press: show a card enlarged ─────────────────────────────────────────────────────────────
 //
@@ -1556,6 +1565,7 @@ function closeZoom() {
 app.addEventListener('pointerdown', (event) => {
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
   if (!el || event.button !== 0) return;
+  inspect(el);
   pressAt = { x: event.clientX, y: event.clientY };
   window.clearTimeout(pressTimer);
   pressTimer = window.setTimeout(() => {

@@ -957,6 +957,8 @@ body.dragging .hand-card:hover { transform: none; }
 
 /* Side panel */
 .side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+/* Top to bottom: the enlarged card, the story (takes the room that is left), and Rules / Settings / Home
+   last: while playing nobody needs them, so they stay out of the way at the bottom. */
 .inspector { flex: none; }
 .inspector img { width: 100%; max-height: calc(var(--vh, 1vh) * 52); object-fit: contain; border-radius: 14px; box-shadow: var(--shadow); display: block; }
 .side-buttons { display: flex; gap: 8px; flex: none; }
@@ -1231,15 +1233,14 @@ button.pf-rejoin { width: 100%; padding: 12px; border-radius: 16px; border-color
   padding: 8px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); min-width: 150px;
 }
 .emote-menu button { text-align: left; }
-/* The ⋯ menu beside Rules and Home: Concede, Show my hand, Mute. It opens above the button on phones (the row is at
-   the bottom), below it on wide screens (the row is at the top of the side column). */
+/* The ⋯ menu beside Rules and Home: Concede, Show my hand, Mute. The row sits at the bottom of the side panel
+   (under the story) on every screen, so the menu opens above it. */
 .game-menu-wrap { position: relative; display: flex; }
 .game-menu-open { font-size: 22px; line-height: 1; font-weight: 800; }
 .game-menu {
-  position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); display: flex; flex-direction: column; gap: 6px;
+  position: absolute; z-index: 30; right: 0; bottom: calc(100% + 6px); display: flex; flex-direction: column; gap: 6px;
   padding: 8px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); min-width: 190px;
 }
-@media (max-width: 1000px) { .game-menu { top: auto; bottom: calc(100% + 6px); } }
 .game-menu button { width: 100%; text-align: left; }
 /* Use ability / Big Cat attack sit in the stats column, under the Hero Cat's text, instead of squeezing it. */
 .stats .hero-actions { margin-top: 2px; }

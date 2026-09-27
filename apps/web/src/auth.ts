@@ -233,11 +233,15 @@ export async function startSignUp(email: string, displayName: string, birthYear?
 
 /**
  * The code out of whatever landed in the box: iPhone Mail turns an 8-digit code into a phone link, and "Copy link"
- * pastes "tel:12345678" (2026-09-26), so everything but digits goes. A longer run keeps its last digits (a "+1" a
- * phone app added in front).
+ * pastes "tel:12345678" (2026-09-26), so everything but digits goes, and so do spaces a hand selection takes along. When
+ * the paste holds more than the code (a sentence with a date in it), the one run of exactly the code's length is the
+ * code (2026-09-27). Otherwise a longer run keeps its last digits (a "+1" a phone app added in front).
  */
 export function codeDigits(text: string, length: number): string {
-  const digits = text.replace(/\D/g, '');
+  const trimmed = text.trim();
+  const exact = length > 0 ? (trimmed.match(/\d+/g) ?? []).filter((run) => run.length === length) : [];
+  if (exact.length === 1) return exact[0];
+  const digits = trimmed.replace(/\D/g, '');
   return length > 0 && digits.length > length ? digits.slice(-length) : digits;
 }
 

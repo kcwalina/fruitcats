@@ -36,7 +36,7 @@ export function ownedCards(): string[] {
 export type Finish = 'standard' | 'foil' | 'gold' | 'prismatic' | 'signature';
 export const FINISH_NAMES: Record<Finish, string> = { standard: 'Standard', foil: 'Foil', gold: 'Gold', prismatic: 'Prismatic', signature: 'Signature' };
 
-const FINISHES: Record<string, Finish> = { 'SB1-H01': 'foil', 'SB1-H02': 'gold', 'SB1-H03': 'prismatic', 'DW1-H01': 'gold' };
+const FINISHES: Record<string, Finish> = { 'SB1-H01': 'foil', 'SB1-H02': 'gold', 'SB1-H03': 'prismatic', 'DW1-H01': 'gold', 'PR1-H01': 'gold' };
 
 /** The finest finish the player has a card in. */
 export function finish(id: string): Finish {

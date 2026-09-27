@@ -43,7 +43,10 @@ const released = () => Object.keys(DECKS).filter((k) => SETS[CARDS[DECKS[k].hero
 
 function* states(gamesPerPairing: number): Generator<GameState> {
   let seed = 1;
-  for (const a of released()) for (const b of released()) {
+  // Each pair of decks once, not both ways round: every state is checked from both seats anyway, and it keeps
+  // the test's time from growing as fast as the number of starter decks.
+  const decks = released();
+  for (const [i, a] of decks.entries()) for (const b of decks.slice(i)) {
     for (let i = 0; i < gamesPerPairing; i++, seed++) {
       const r = rng(seed);
       const s = createGame({ decks: [a, b], seed });

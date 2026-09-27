@@ -2,7 +2,9 @@
   "set": "PR1",
   "name": "Pari",
   "version": "0.1.0",
-  "status": "prototype",
+  "status": "released",
+  "released": "2026-10",
+  "starter": true,
   "families": {
     "Pari": {
       "colors": [

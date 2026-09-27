@@ -8,7 +8,7 @@
 //   buying    priceCart(cart, catalog, owned)   → a Quote: each line's price, what it brings, the total
 //             cartForDeck(deck, catalog, owned) → the cards a deck is missing, as a cart
 
-import { CARDS, SETS, copyLimit, type DeckList, type Rarity } from '@fruitcats/engine';
+import { CARDS, DECKS, SETS, copyLimit, type DeckList, type Rarity } from '@fruitcats/engine';
 
 export const CURRENCY = 'USD';
 /** A single card's price by rarity, in cents (store-plan.md, Pricing: starting points). */
@@ -55,6 +55,16 @@ export function isStarterSet(set: string): boolean {
 
 /** Is this a set from before the folklore re-theme? The Store shows its decks and cards in the Legacy tab. */
 export const isLegacySet = (set: string): boolean => !!SETS[set]?.legacy;
+
+/**
+ * The ready-made decks the Solo opponent may lead against a deck with this Hero Cat: any other deck, never a Legacy
+ * one (the owner's call, 2026-09-27: Legacy decks appear in a game only when a player took one from the Store).
+ */
+export function soloFoeDecks(hero: string): string[] {
+  const folkborn = Object.keys(DECKS).filter((key) => !isLegacySet(CARDS[DECKS[key].hero]?.set ?? ''));
+  const others = folkborn.filter((key) => DECKS[key].hero !== hero);
+  return others.length ? others : folkborn;
+}
 
 /** Cards of a starter set come free with the starter decks, so they're never sold. */
 const isStarterCard = (id: string) => isStarterSet(CARDS[id]?.set ?? '');

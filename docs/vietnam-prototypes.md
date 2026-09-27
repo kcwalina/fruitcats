@@ -38,3 +38,7 @@ Ba Na people.
 Drawn with `python tools/generate_art.py --set mb1|hh1 --model gpt-image-2 --quality high --jobs 1 --reference <the
 painting>`. The reference images are the Commons files above, cropped to the painting. Both styles are the old
 paintings' own, not a living artist's.
+
+The owner's bar (2026-09-27): every card must look like a museum photo of the real old painting, with its pigments,
+wear and stylised figures. The first draw asked for "cute", big-eyed, kid-friendly figures and came out as children's
+game art; it was redrawn with prompts that describe the painting itself and forbid cartoon styles.

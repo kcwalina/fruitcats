@@ -35,6 +35,8 @@ export const SETUP_TREATS = 2;
 export const DRAW_PER_ROUND = 2;
 export const YARD_LIMIT = 6;
 export const HAND_LIMIT = 10;
+/** The most cards a mulligan may swap (the owner's call, 2026-09-27: swapping the whole hand is not a mulligan). */
+export const MULLIGAN_MAX = 3;
 export const MAX_ROUNDS = 40;
 /** Triggered abilities allowed in a row before the engine stops the chain (two cards triggering each other). */
 export const TRIGGER_CHAIN_LIMIT = 200;
@@ -570,6 +572,7 @@ export function apply(s: GameState, action: Action): GameState {
   switch (action.t) {
     case 'mulligan': {
       validateSubset(s, p, action.uids);
+      if (action.uids.length > MULLIGAN_MAX) throw new IllegalAction(`swap at most ${MULLIGAN_MAX} card(s)`);
       const aside = action.uids.map((uid) => takeFromHand(s, p, uid));
       me.hand.push(...me.deck.splice(0, aside.length));
       me.deck.push(...aside);

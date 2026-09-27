@@ -8,7 +8,7 @@
 // Units are named by where they stand: Y1…Y6 in your Yard, T1…T6 in theirs; cards in hand are H1…Hn.
 
 import { behaviour, CARDS, keywords, MECHANICS } from './cards';
-import { HAND_LIMIT, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
+import { HAND_LIMIT, MULLIGAN_MAX, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 import { viewFor, type PlayerView } from './view';
 import TERMS from './terms.json';
@@ -243,7 +243,7 @@ export function listChoices(s: GameState, o: ChoiceOptions = {}): Choices {
   const seat = prompt.player;
   switch (prompt.kind) {
     case 'mulligan':
-      return { question: 'Mulligan: list the hand cards (H numbers) to swap for new ones, or "none" to keep all six.', options: [], multi: { kind: 'mulligan' } };
+      return { question: `Mulligan: list up to ${MULLIGAN_MAX} hand cards (H numbers) to swap for new ones, or "none" to keep all six.`, options: [], multi: { kind: 'mulligan' } };
     case 'setupPlant':
       return { question: `Offer ${prompt.count} cards from your hand as your first Offerings: list exactly ${prompt.count} H numbers. Offer the cards you want least.`, options: [], multi: { kind: 'setupPlant', count: prompt.count } };
     case 'discard':
@@ -285,6 +285,7 @@ export function parseChoice(s: GameState, reply: string): { action: Action } | {
     if (nums.some((n) => n < 1 || n > hand.length)) return { error: `Hand numbers go from 1 to ${hand.length}.` };
     if (new Set(nums).size !== nums.length) return { error: 'List each card once.' };
     if (c.multi.count !== undefined && nums.length !== c.multi.count) return { error: `Choose exactly ${c.multi.count} card(s); you chose ${nums.length}.` };
+    if (c.multi.kind === 'mulligan' && nums.length > MULLIGAN_MAX) return { error: `Swap at most ${MULLIGAN_MAX} cards; you chose ${nums.length}.` };
     return { action: { t: c.multi.kind, uids: nums.map((n) => hand[n - 1].uid) } as Action };
   }
   const m = /\d+/.exec(text);

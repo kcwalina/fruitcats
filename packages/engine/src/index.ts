@@ -12,7 +12,7 @@ export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiC
 export {
   createGame, apply, legalActions, playOptions, playChoices, targetsFor, findUnit, unitPower, unitHealth, unitKeywords,
   isGuardian, isSneaky, heroSide, readyTreats, other, cardName, random, IllegalAction, hasZest, isLush, evaluateCondition,
-  RULES_VERSION, LIVES, DECK_SIZE, YARD_LIMIT, HAND_LIMIT, RIPEN_MAX, LUSH_TREATS, TRIGGER_CHAIN_LIMIT,
+  RULES_VERSION, LIVES, DECK_SIZE, YARD_LIMIT, HAND_LIMIT, MULLIGAN_MAX, RIPEN_MAX, LUSH_TREATS, TRIGGER_CHAIN_LIMIT,
 } from './engine';
 export type { GameOptions, PlayChoice } from './engine';
 export { viewFor, HIDDEN } from './view';

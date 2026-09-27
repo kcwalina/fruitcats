@@ -70,7 +70,7 @@ describe('catalog', () => {
   });
 
   it('never gives the Solo opponent a Legacy deck', () => {
-    const legacy = Object.keys(DECKS).filter((key) => isLegacySet(CARDS[DECKS[key].hero].set));
+    const legacy = Object.keys(DECKS).filter((key) => isLegacySet(CARDS[DECKS[key].hero]?.set ?? ''));
     expect(legacy.length).toBeGreaterThan(0);
     for (const deck of Object.values(DECKS)) {
       const foes = soloFoeDecks(deck.hero);

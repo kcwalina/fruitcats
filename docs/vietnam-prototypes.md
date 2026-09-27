@@ -49,3 +49,9 @@ Hui Hai, second redraw (2026-09-27): the owner wanted the tiger's own bright, sa
 Each picture was compared side by side with the tiger and redrawn until it matched: brightness (mean HSV value about
 190, like the tiger's 189), cream-white figures with pink outlines, a mid cerulean-cobalt ground, blotchy flat ochre
 rocks, and folk-painting faces of a few ink strokes, never manga eyes.
+
+Third pass (2026-09-27): the owner pointed out that on the tiger the hand-brushed colour spills over the outlines, and
+that the imperfection is what makes it. The prompts now ask for a fast, loose hand, colour off register, few strokes and
+five-mark faces. The model still keeps colour inside its lines, so `tools/bleed_colour.py` finishes each picture: it
+blurs and shifts only the colour (not the ink lines) a few pixels, so the washes spread past the lines like the
+original. Run it on every new Hui Hai picture after `generate_art.py`.

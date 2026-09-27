@@ -5,11 +5,9 @@
 // deck can be built around. PC2024's playtester runs `node runner.mjs dashboard-meta` once an hour and sends it to the
 // Fruitcats API (docs/playtests.md).
 //
-// Interim: docs/card-data-architecture.md moves cards, decks and families (with their frame colors) into set
-// folders read through packages/content. When that lands, build this from the loaded sets and delete
-// FAMILY_COLORS; the shape the page reads can stay the same.
+// Colors come from the sets: each family's first color (its card frame) in its set.json.
 
-import { CARDS, DECKS, cardName, deckCode } from '../lib/engine';
+import { CARDS, DECKS, FAMILIES, cardName, deckCode } from '../lib/engine';
 import { playableHeroes } from '../balance/decks';
 import { deckFamilies, libraryDecks } from '../decks/library';
 import { averageRate } from '../decks/retention';
@@ -17,12 +15,8 @@ import { cardsHash } from '../lib/runs';
 import { seedFrom } from '../lib/rng';
 import { PERSONAS } from '../llm/personas';
 
-// The card frames' family colors (tools/compose_cards.py), except Tropical in green: its orange frame reads too
-// close to Citrus's yellow side by side on a chart. A family missing here gets a stable hue of its own.
-const FAMILY_COLORS: Record<string, string> = {
-  Citrus: '#E89400', Orchard: '#CC3D3D', Tropical: '#3F8F2F', Berry: '#D6336C', Melon: '#3FA66B', Garden: '#5FA84D',
-};
-const familyColor = (family: string): string => FAMILY_COLORS[family] ?? `hsl(${seedFrom(family) % 360} 55% 45%)`;
+/** A family's frame color from its set, or a stable hue of its own for a family that has none. */
+const familyColor = (family: string): string => FAMILIES[family]?.colors?.[0] ?? `hsl(${seedFrom(family) % 360} 55% 45%)`;
 
 export interface DashboardMeta {
   updatedAt: string;

@@ -1,4 +1,4 @@
-// play new [--deck zest-rush|picnic-club|LIBRARY-KEY|FC1.code|file.json] [--vs orchard-guard|…] [--seed N] [--file game.json]
+// play new [--deck STARTER|LIBRARY-KEY|FC1.code|file.json] [--vs STARTER|…]   (default: the first two starter decks) [--seed N] [--file game.json]
 // play show | play do <your answer> | play log | play rules   [--file game.json]
 //
 // A game against the bot, one decision per command, for a player that reads: a Claude Code session doing a
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { arg } from '../lib/args';
 import { loadDeck } from '../decks/library';
 import {
-  apply, rulesPrimer, choicesText, chooseAction, createGame, describe, parseChoice,
+  DECKS, apply, rulesPrimer, choicesText, chooseAction, createGame, describe, parseChoice,
   type GameState, type PlayerId,
 } from '../lib/engine';
 import { mulberry } from '../lib/rng';
@@ -46,8 +46,8 @@ export async function playCommand(): Promise<number> {
   if (sub === 'rules') { console.log(rulesPrimer()); return 0; }
   if (sub === 'new') {
     const seed = Number(arg('seed') ?? Math.floor(Math.random() * 1e9));
-    const mine = loadDeck(arg('deck') ?? 'zest-rush');
-    const theirs = loadDeck(arg('vs') ?? 'orchard-guard');
+    const mine = loadDeck(arg('deck') ?? Object.keys(DECKS)[0]);
+    const theirs = loadDeck(arg('vs') ?? Object.keys(DECKS)[1]);
     const g: SavedGame = { state: createGame({ decks: [mine, theirs], seed, names: ['You', 'Bot'] }), seat: 0, botSeed: seed };
     botUntilTurn(g);
     mkdirSync(dirname(file), { recursive: true });

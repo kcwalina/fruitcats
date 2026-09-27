@@ -127,7 +127,7 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
       return `- **${d.name}** (${CARDS[d.hero]?.name.split(',')[0] ?? d.hero})${b ? `: the LLM won ${b.won} of ${b.games}` : ': no games'}. \`${deckCode(d)}\``;
     }), ''] : []),
     `Player: **${o.player.name}**, ${o.player.about}. ${callsPerMove.toFixed(1)} model calls a move${Object.keys(toolCalls).length ? ` (tools: ${Object.entries(toolCalls).map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}.`, '',
-    `Against the bot's judgment: agrees with its choice on ${pct(judgement.agreeWithBot)} of ${judgement.judgedMoves} moves, gives up ${judgement.regretPerMove.toFixed(2)} points a move; per game it takes the Yarn ${judgement.yarnWithMovesLeftPerGame.toFixed(1)} times and passes ${judgement.passWithMovesLeftPerGame.toFixed(1)} times with a useful move left.`, '',
+    `Against the bot's judgment: agrees with its choice on ${pct(judgement.agreeWithBot)} of ${judgement.judgedMoves} moves, gives up ${judgement.regretPerMove.toFixed(2)} points a move; per game it takes the Lantern ${judgement.yarnWithMovesLeftPerGame.toFixed(1)} times and passes ${judgement.passWithMovesLeftPerGame.toFixed(1)} times with a useful move left.`, '',
     `${results.length} games, LLM won ${pct(winRate)}. ${moves} LLM moves, ${fallbacks} fell back to the bot. ` +
     `Tokens: ${usage.input.toLocaleString()} in (${usage.cachedInput.toLocaleString()} cached), ${usage.output.toLocaleString()} out${cost !== null ? `, $${cost.toFixed(2)}` : ''}.`, '',
     '## Problems', '', ...(problems.length ? problems.map((p) => `- **${p.level}**: ${p.text}`) : ['None.']), '',
@@ -157,7 +157,8 @@ async function bench(providerName: string, models: string[] | undefined): Promis
   const ids = models ?? (await base.listModels());
   console.log(`${providerName}: ${ids.length} model(s): ${ids.join(', ')}\n`);
   // A mid-game decision with real choices in it.
-  const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 11 });
+  const [first, second] = Object.keys(DECKS);
+  const s = createGame({ decks: [first, second], seed: 11 });
   while (!(s.prompt?.kind === 'action' && s.round >= 3 && s.prompt.player === 0)) apply(s, chooseAction(s, { random: mulberry(s.actions) }));
   const persona = PERSONAS.exploit;
   const messages = [
@@ -197,7 +198,7 @@ async function throughput(providerName: string, model: string | undefined, level
   const system = `${rulesPrimer()}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}`;
   const positions: string[] = [];
   for (let seed = 1; positions.length < 16; seed++) {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard', 'mango-tango'].slice(seed % 2, seed % 2 + 2) as [string, string], seed });
+    const s = createGame({ decks: Object.keys(DECKS).slice(seed % 2, seed % 2 + 2) as [string, string], seed });
     while (!(s.prompt?.kind === 'action' && s.round >= 2 + (seed % 4)) && s.winner === null) apply(s, chooseAction(s, { random: mulberry(s.actions) }));
     if (s.winner === null) positions.push(`${describe(s, s.prompt!.player)}\n\n${choicesText(s)}\n\n${ANSWER_REMINDER}`);
   }
@@ -255,7 +256,7 @@ export async function llmCompareCommand(): Promise<number> {
   const md = [
     '# LLM player comparison', '',
     `${games} games each, the same deals (seeds "${seedTag}"), ${persona.name.toLowerCase()} persona, against the bot. In these seats the bot itself would win about half.`, '',
-    '| Player | Won | Agrees with the bot | Value given up a move | Yarn taken with moves left (a game) | Passed with moves left (a game) | Calls a move | Seconds a move | Fallbacks |',
+    '| Player | Won | Agrees with the bot | Value given up a move | Lantern taken with moves left (a game) | Passed with moves left (a game) | Calls a move | Seconds a move | Fallbacks |',
     '|---|---|---|---|---|---|---|---|---|',
     ...table.map((t) => `| ${t.player} | ${pct(t.llmWinRate)} | ${pct(t.judgement.agreeWithBot)} | ${t.judgement.regretPerMove.toFixed(2)} | ${t.judgement.yarnWithMovesLeftPerGame.toFixed(1)} | ${t.judgement.passWithMovesLeftPerGame.toFixed(1)} | ${t.callsPerMove.toFixed(1)} | ${t.secondsPerMove.toFixed(1)} | ${t.fallbacks} |`),
     '', `Plays most like the bot: **${best?.player}**.`, '',
@@ -293,7 +294,7 @@ export async function llmPlaytestCommand(): Promise<number> {
     seedTag: arg('seeds'),
     personas,
     games: numArg('games') ?? 3,
-    pairs: deck || vs ? deckPairs(loadDecks(deck ?? 'zest-rush'), loadDecks(vs ?? 'orchard-guard')) : undefined,
+    pairs: deck || vs ? deckPairs(loadDecks(deck ?? Object.keys(DECKS)[0]), loadDecks(vs ?? Object.keys(DECKS)[1])) : undefined,
     parallel: numArg('parallel'),
     hours: numArg('hours'),
     maxTokens: numArg('budget'),

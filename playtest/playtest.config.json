@@ -1,4 +1,8 @@
 {
+  "sets": {
+    "about": "The card sets playtests play (codes). Only these are loaded: their released decks are the starter decks the gauntlet and the deploy gate test, and their cards are the only cards random, mutated and LLM-built decks may use. The Starter Box and the older prototypes are retired (2026-09-27): add a new set's code here when it joins.",
+    "play": ["DW1", "PR1", "AL1"]
+  },
   "providers": {
     "pc2024": {
       "about": "PC2024, from PC2024 itself (where the nightly paw runs): the paw's own llama-server for a run (PLAYTEST_LLM_URL, 8 games at once), else Ollama. Ollama is not a catsitter GPU tenant.",

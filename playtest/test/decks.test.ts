@@ -31,30 +31,31 @@ describe('deck library', () => {
   });
 
   it('a deck can be named by key, code, or as a list', () => {
-    const code = deckCode({ ...DECKS['zest-rush'], name: 'Copy Cat' });
+    const first = Object.values(DECKS)[0];
+    const code = deckCode({ ...first, name: 'Copy Cat' });
     expect(loadDeck(code).name).toBe('Copy Cat');
     expect(loadDecks(`starters,${code}`).map((d) => d.name)).toEqual([...Object.values(DECKS).map((d) => d.name), 'Copy Cat']);
     expect(() => loadDeck('no-such-deck')).toThrow(/No deck/);
-    const broken = deckCode({ name: 'Too small', hero: DECKS['zest-rush'].hero, cards: { 'SB1-C01': 3 } });
+    const broken = deckCode({ name: 'Too small', hero: first.hero, cards: { [Object.keys(first.cards)[0]]: 3 } });
     expect(() => loadDeck(broken)).toThrow(/more cards/);
   });
 });
 
 describe('assembleDeck', () => {
   it('makes a legal deck from a sloppy wish list, and says what it changed', () => {
-    const og = DECKS['orchard-guard'];
-    // Names instead of ids, a Hero Cat by name, too many copies, a third family, and too few cards.
+    const [base, partner, third] = Object.values(DECKS);
+    const familyCard = (d: DeckList) => Object.keys(d.cards).find((id) => CARDS[id].family === CARDS[d.hero].family && CARDS[id].type !== 'Cat')!;
+    // Names instead of ids, a Hero by name, too many copies, a third family, and too few cards.
     const wish: Record<string, number> = {};
-    for (const id of Object.keys(og.cards).slice(0, 10)) wish[CARDS[id].name] = 5;
+    for (const id of Object.keys(base.cards).slice(0, 10)) wish[CARDS[id].name] = 5;
     wish['No Such Card'] = 3;
-    const zest = Object.keys(DECKS['zest-rush'].cards).find((id) => CARDS[id].family === 'Citrus')!;
-    const mango = Object.keys(DECKS['mango-tango'].cards).find((id) => CARDS[id].family === 'Tropical')!;
-    wish[zest] = 3; wish[CARDS[mango].name] = 1;
-    const made = assembleDeck('Sloppy', CARDS[og.hero].name.split(',')[0], wish, mulberry(1))!;
+    const other = familyCard(partner), extra = familyCard(third);
+    wish[other] = 3; wish[CARDS[extra].name] = 1;
+    const made = assembleDeck('Sloppy', CARDS[base.hero].name.split(',')[0], wish, mulberry(1))!;
     expect(deckProblems(made.deck)).toEqual([]);
-    expect(made.deck.cards[mango]).toBeUndefined();
+    expect(made.deck.cards[extra]).toBeUndefined();
     expect(made.notes.join(' ')).toMatch(/unknown card/);
-    expect(made.notes.join(' ')).toMatch(/Tropical left out/);
+    expect(made.notes.join(' ')).toMatch(new RegExp(`${CARDS[third.hero].family} left out`));
     expect(made.chosen).toBeGreaterThan(20);
   });
 
@@ -68,7 +69,7 @@ describe('tokens', () => {
     const tokens = Object.values(CARDS).filter((c) => c.token).map((c) => c.id);
     expect(tokens.length).toBeGreaterThan(0);
     for (const id of tokens) {
-      expect(deckProblems({ name: 't', hero: 'SB1-H01', cards: { [id]: 1 } }).join(' ')).toMatch(/can't be put in a deck/);
+      expect(deckProblems({ name: 't', hero: Object.values(DECKS)[0].hero, cards: { [id]: 1 } }).join(' ')).toMatch(/can't be put in a deck/);
       for (const h of playableHeroes()) expect(randomDeck(mulberry(1), h, undefined, 'r').cards[id]).toBeUndefined();
     }
   });

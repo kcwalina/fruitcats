@@ -2,30 +2,41 @@
 // text, a JSON reply, the deck builder's own rule check, and one round of repairs with the problems sent back.
 // The deck hunt (decks meant to break the game) and the deck builder (a deck for a goal) both use it.
 
-import { CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, STRATEGY_PRIMER, cardName, rulesPrimer, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, DECK_RULES, FAMILIES, STRATEGY_PRIMER, TERMS, cardName, isNeutralFamily, rulesPrimer, type DeckList } from '../lib/engine';
 import { assembleDeck, findCard, playableHeroes, type Assembled } from '../balance/decks';
 import { mulberry, seedFrom } from '../lib/rng';
 import { addUsage, noUsage, type ChatMessage, type Provider, type Usage } from './providers';
 
+// The model reads the game's rules primer, which uses the players' words (packages/engine/src/terms.json): so does
+// everything here. The code's own names ('Hero Cat', 'Critter', kitten, bigCat) never reach a prompt.
+const TYPE = TERMS.types as Record<string, string>;
+const TYPES = TERMS.typesPlural as Record<string, string>;
+const familyWord = (f: string) => (TERMS.families as Record<string, string>)[f] ?? f;
+/** Families any deck may use (Wildfolk in the Starter Box), by their players' names. */
+const neutralFamilies = () => Object.keys(FAMILIES).filter((f) => isNeutralFamily(f)).map(familyWord);
+
 export function cardPoolText(): string {
   const heroes = playableHeroes().map((id) => {
     const h = CARDS[id];
-    return `${id} ${h.name} (Hero Cat, ${h.family}). Kitten: ${h.kitten?.text.replace(/\n/g, ' ')} Big Cat (Power ${h.bigCat?.power ?? 0}): ${h.bigCat?.text.replace(/\n/g, ' ')}`;
+    return `${id} ${h.name} (${TYPE['Hero Cat']}, ${familyWord(h.family)}). ${h.kitten?.text.replace(/\n/g, ' ')} ${TERMS.grewUp} (Power ${h.bigCat?.power ?? 0}): ${h.bigCat?.text.replace(/\n/g, ' ')}`;
   });
   const cards = Object.values(CARDS)
     .filter((c) => c.type !== 'Hero Cat' && !c.preview && !c.token)
-    .map((c) => `${c.id} ${c.name} [${c.family}] ${c.type}, cost ${c.cost ?? 0}${c.power !== undefined ? `, ${c.power}/${c.health}` : ''}${c.text ? `: ${c.text}` : ''}`);
-  return `HERO CATS\n${heroes.join('\n')}\n\nCARDS\n${cards.join('\n')}`;
+    .map((c) => `${c.id} ${c.name} [${familyWord(c.family)}] ${TYPE[c.type] ?? c.type}, cost ${c.cost ?? 0}${c.power !== undefined ? `, ${c.power}/${c.health}` : ''}${c.text ? `: ${c.text}` : ''}`);
+  return `${TYPES['Hero Cat'].toUpperCase()}\n${heroes.join('\n')}\n\nCARDS\n${cards.join('\n')}`;
 }
 
-export const RULES = `DECKBUILDING RULES: exactly ${DECK_RULES.size} cards plus a Hero Cat (the Hero Cat is not one of the ${DECK_RULES.size}). ` +
-  `Cards from the Hero Cat's family and ${NEUTRAL_FAMILY} cards, plus at most ONE other family. At most ${DECK_RULES.copies} copies of a card; ` +
-  `Cats (type Cat) are one of a kind (1 copy) and at most ${DECK_RULES.maxCats} per deck.`;
+export const RULES = ((): string => {
+  const hero = TYPE['Hero Cat'], fabled = TYPE.Cat, neutral = neutralFamilies();
+  return `DECKBUILDING RULES: exactly ${DECK_RULES.size} cards plus a ${hero} (the ${hero} is not one of the ${DECK_RULES.size}). ` +
+    `Cards from the ${hero}'s family${neutral.length ? ` and ${neutral.join(' and ')} cards` : ''}, plus at most ONE other family. ` +
+    `At most ${DECK_RULES.copies} copies of a card; ${fabled} cards are one of a kind (1 copy) and at most ${DECK_RULES.maxCats} per deck.`;
+})();
 
 export const deckText = (d: DeckList): string => `${d.name} (${cardName(d.hero)}, ${d.hero}): ${Object.entries(d.cards).map(([id, q]) => `${q} ${id}`).join(', ')}`;
 
-/** A deck's shape in one line: card types, the cost curve and its families. What a deckbuilder checks first. */
-export function deckShape(d: DeckList): string {
+const KINDS = ['Critter', 'Cat', 'Trick', 'Toy'];
+function shapeOf(d: DeckList): { types: Record<string, number>; curve: number[]; families: Set<string> } {
   const types: Record<string, number> = {};
   const curve = [0, 0, 0, 0, 0, 0];
   const families = new Set<string>();
@@ -34,27 +45,38 @@ export function deckShape(d: DeckList): string {
     if (!c) continue;
     types[c.type] = (types[c.type] ?? 0) + q;
     curve[Math.min(Math.max(c.cost ?? 0, 1), 6) - 1] += q;
-    families.add(c.family);
+    families.add(familyWord(c.family));
   }
-  const t = ['Critter', 'Cat', 'Trick', 'Toy'].map((k) => `${types[k] ?? 0} ${k}s`).join(', ');
+  return { types, curve, families };
+}
+
+/** A deck's shape in one line: card types, the cost curve and its families. What a deckbuilder checks first. */
+export function deckShape(d: DeckList): string {
+  const { types, curve, families } = shapeOf(d);
+  const t = KINDS.map((k) => `${types[k] ?? 0} ${TYPES[k]}`).join(', ');
   return `${t}; by cost ${curve.map((n, i) => `${i === 5 ? '6+' : i + 1}:${n}`).join(' ')}; families ${[...families].join(' + ')}`;
 }
 
 export const starterText = (): string => Object.values(DECKS).map((d) => `${deckText(d)}\n  shape: ${deckShape(d)}`).join('\n');
 
 /**
- * How the game plays, so decks are built for this game and not a generic one: the rules primer the LLM
- * players get, the strategy primer, and what the starter decks' shapes have in common.
+ * How the game plays, so decks are built for this game and not a generic one: the rules primer the LLM players get,
+ * the strategy primer, and what the starter decks' shapes have in common (from the starter decks being played, so it
+ * follows the sets in play).
  */
 export function gameText(): string {
-  return `${rulesPrimer()}\n\n${STRATEGY_PRIMER}\n\nDECK SHAPE: the starter decks each run about 30-32 Critters, 3 Cats, 12-15 Tricks and 2-3 Toys, ` +
-    'with 15-20 cards costing 1, 8-11 costing 2, 10-13 costing 3 and 10 or fewer costing 4 and up. Units win games: ' +
-    'a deck with too few cheap units falls behind on the board, and a deck full of expensive cards is stuck with a hand it cannot play. ' +
+  const shapes = Object.values(DECKS).map(shapeOf);
+  const range = (xs: number[]) => (Math.min(...xs) === Math.max(...xs) ? `${xs[0]}` : `${Math.min(...xs)}-${Math.max(...xs)}`);
+  const types = KINDS.filter((k) => shapes.some((s) => s.types[k])).map((k) => `${range(shapes.map((s) => s.types[k] ?? 0))} ${TYPES[k]}`).join(', ');
+  const curve = [0, 1, 2].map((i) => `${range(shapes.map((s) => s.curve[i]))} costing ${i + 1}`).join(', ');
+  const top = range(shapes.map((s) => s.curve.slice(3).reduce((a, b) => a + b, 0)));
+  return `${rulesPrimer()}\n\n${STRATEGY_PRIMER}\n\nDECK SHAPE: the starter decks each run ${types}, with ${curve} and ${top} costing 4 and up. ` +
+    `${TYPES.Critter} win games: a deck with too few cheap ones falls behind on the board, and a deck full of expensive cards is stuck with a hand it cannot play. ` +
     'Depart from this shape only on purpose, and say why in the idea.';
 }
 
 export const JSON_FORMAT = 'Reply with only a JSON array: [{"name": "short name", "idea": "one or two sentences: how the deck wins", ' +
-  '"hero": "Hero Cat name or id", "cards": {"card name or id": copies, ...}}]. Aim for 50 cards (the Hero Cat is not one of them); ' +
+  `"hero": "${TYPE['Hero Cat']} name or id", "cards": {"card name or id": copies, ...}}]. Aim for 50 cards (the ${TYPE['Hero Cat']} is not one of them); ` +
   'a few too many or too few is fixed for you, but choose the cards yourself: that is the deck.';
 
 export interface DesignedDeck { name: string; idea: string; deck: DeckList }
@@ -88,11 +110,11 @@ export function familiesIn(goal: string): string[] {
 
 function assess(r: Raw, i: number, o: DesignOptions): { raw: Raw; name: string; made: Assembled | null; problem: string } {
   const name = `${o.prefix ?? ''}${String(r.name ?? `idea ${i + 1}`).slice(0, 40)}`;
-  if (!r.hero || !findCard(String(r.hero), true)) return { raw: r, name, made: null, problem: `"${r.hero ?? ''}" is not a Hero Cat you can use: pick one from the HERO CATS list.` };
+  if (!r.hero || !findCard(String(r.hero), true)) return { raw: r, name, made: null, problem: `"${r.hero ?? ''}" is not a ${TYPE['Hero Cat']} you can use: pick one from the ${TYPES['Hero Cat'].toUpperCase()} list.` };
   const made = assembleDeck(name, String(r.hero), r.cards ?? {}, mulberry(seedFrom(name)));
   if (!made) return { raw: r, name, made, problem: 'it could not be made into a legal deck.' };
   if (made.chosen < MIN_CHOSEN) {
-    return { raw: r, name, made, problem: `only ${made.chosen} of its cards could be used (${made.notes.join('; ')}). Use card names or ids from the CARDS list, from the Hero Cat's family, ${NEUTRAL_FAMILY} and at most one other family.` };
+    return { raw: r, name, made, problem: `only ${made.chosen} of its cards could be used (${made.notes.join('; ')}). Use card names or ids from the CARDS list, from the ${TYPE['Hero Cat']}'s family${neutralFamilies().length ? `, ${neutralFamilies().join(', ')}` : ''} and at most one other family.` };
   }
   if (o.families?.length) {
     const used = new Set([CARDS[made.deck.hero].family, ...Object.keys(made.deck.cards).map((id) => CARDS[id].family)]);

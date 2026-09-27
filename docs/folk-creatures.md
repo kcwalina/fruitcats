@@ -11,7 +11,8 @@ second starter deck (content/2026/10/pari, [pari-set.md](pari-set.md)), and the 
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
 from a research pass (about 170 articles, one agent per continent), and the owner approved them, with Veli for
-Oceania.
+Oceania. On 2026-09-27 the owner put the Hedgehog Immortals, the pick for China, [on hold](#on-hold), and picked the
+[Jiaoren](#jiaoren) instead.
 
 **What we looked for**
 
@@ -20,6 +21,8 @@ Oceania.
 - **Unmistakably from its culture**, yet little known, even to many people from that culture.
 - **Not a game cliché** (no elves, dragons, fox spirits).
 - **A folk of small beings**, so a deck can be a family of characters, like the Domowiki.
+- **Not a real animal** (added 2026-09-27). A creature that does not exist and that nobody has ever seen, with some
+  mystery around it, not a real animal with magic powers.
 
 The pictures are for reference only. Some come from Wikimedia Commons and are free to use; the others belong to
 their makers, and each section says whose they are and links to where they are shown. None may go into the game.
@@ -37,7 +40,7 @@ generators were left out.
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg/330px-An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg" width="80"> | [Pari](#pari) | Persia (Iran) | **In the game (a starter deck).** Winged beings of Persian poetry and fairy tales, once harmful spirits, later the very picture of beauty and goodness. [More](https://en.wikipedia.org/wiki/Par%C4%AB) |
 | <img src="https://www.rappler.com/tachyon/2025/10/Tabi-tabi-po.jpg" width="80"> | [Nuno sa punso](#nuno-sa-punso) | Philippines | The old man of the mound: step past an anthill without saying "tabi tabi po" (excuse me) and he'll make you pay. [More](https://en.wikipedia.org/wiki/Nuno_sa_punso) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/MET_1986_510.jpg/330px-MET_1986_510.jpg" width="80"> | [Yech](#yech) | Kashmir, India | A sprite in a white cap that comes near houses on snowy nights; snatch the cap and it grants your wishes. [More](https://searchkashmir.org/yach/) |
-| <img src="http://k.sinaimg.cn/n/sinacn20190527s/201/w641h360/20190527/2b98-hxntqyz1002047.jpg/w700d1q75cms.jpg" width="80"> | [Hedgehog Immortals](#hedgehog-immortals) | North China | A hedgehog living in your courtyard may be a spirit that settles in with the family and keeps it prosperous. [More](https://folklore.elpub.ru/jour/article/view/76) |
+| | [Jiaoren](#jiaoren) | South China Sea | **Prototype deck.** Sea people who weave silk that never gets wet and weep pearls; one stayed as a guest and left her host a plate of pearls. [More](https://zh.wikipedia.org/zh-hans/鮫人) |
 | <img src="https://archive.org/download/1930-rattray/page/n82_w800.jpg" width="80"> | [Mmoatia](#mmoatia) | Akan, Ghana | Foot-high forest folk with backward feet who talk in whistles, love bananas, and teach healing. [More](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/) |
 | <img src="https://2114141.fs1.hubspotusercontent-na1.net/hubfs/2114141/Imported_Blog_Media/2307-Casita-del-Alux-by-Alberto-Chuc-3.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | **In the game (the second deck).** A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Momoy_I.jpg/330px-Momoy_I.jpg" width="80"> | [Momoyes](#momoyes) | Andes of Venezuela | Knee-high bearded men of the mountain lakes; leave litter by their lake and they give it back to you. [More](https://es.wikipedia.org/wiki/Momoy) |
@@ -49,6 +52,7 @@ generators were left out.
 |---|---|---|---|
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Shree_dev_bodgeshwar.jpg/330px-Shree_dev_bodgeshwar.jpg" width="80"> | [Devchar](#devchar) | India | Goan prankster spirits, easy to trick into a bottle; villagers leave giant sandals so one can stroll at night. [More](https://talkingmyths.com/the-spirit-in-the-bottle/) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Imperial_Encyclopaedia_-_Animal_Kingdom_-_pic291_-_%E7%95%B6%E5%BA%B7%E5%9C%96.png/330px-Imperial_Encyclopaedia_-_Animal_Kingdom_-_pic291_-_%E7%95%B6%E5%BA%B7%E5%9C%96.png" width="80"> | [Dangkang](#dangkang) | China | A tusked pig-beast that cries out its own name and announces a great harvest. [More](https://baike.baidu.com/en/item/Dangkang/25344) |
+| | [Muke](#muke) | China | A hidden mountain folk who trade timber without ever showing their faces, bury their dead in treetops, and write poems. [More](https://www.cbaigui.com/monster/1546) |
 | <img src="https://www.reciprocitree.com/wp-content/uploads/2019/05/Aziza-by-Cherubinoir-1-300x300.jpg" width="80"> | [Aziza](#aziza) | Africa | Little hairy folk living in anthills who help hunters and taught people to use fire. [More](https://en.wikipedia.org/wiki/Aziza_(mythology)) |
 | <img src="https://assets-artbooks.artcanada.com/wp-content/uploads/2026/06/19100728/michael-francis-micmac-legends-little-people-1a.jpg" width="80"> | [Wiklatmu'j](#wiklatmuj) | North America | Mi'kmaq rock people whose favourite joke is tying knots in your hair. [More](http://www.native-languages.org/wiklatmuj.htm) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/La_Pincoya.jpg/330px-La_Pincoya.jpg" width="80"> | [Pincoya](#pincoya) | South America | A girl dressed in seaweed whose dance on the beach decides whether the fish come. [More](https://en.wikipedia.org/wiki/Pincoya) |
@@ -124,22 +128,27 @@ lentils) outside for it.
 - More: [SearchKashmir, Yach](https://searchkashmir.org/yach/)
 - Image: a 9th-century Kashmiri stone pedestal with a Yaksha, the Yech's ancient ancestor ([The Met](https://www.metmuseum.org/art/collection/search/38406), public domain). No picture of the white-capped sprite itself exists that we could find; [SearchKashmir shows a Khichri Amavasya offering](https://searchkashmir.org/khich-mavas-feast-for-yetis-and-dogs/).
 
-### Hedgehog Immortals
+### Jiaoren
 
-**From:** Han folk religion of North and Northeast China (Tianjin, Hebei, Beijing, Manchuria). Chinese: 白仙
-(Bái Xiān, "White Immortal"), 白老太太 (Bái Lǎotàitai, "White Old Lady").
+**From:** Chinese folklore of the South Sea. Chinese: 鮫人 (jiāorén), also 泉客 (quánkè, "spring guests"). Picked by the
+owner on 2026-09-27, in place of the Hedgehog Immortals.
 
-The hedgehog is one of the Five Great Immortals, the "household-protecting immortals" (保家仙). In old Tianjin a
-hedgehog living in your courtyard might be a spirit that settles in with the family and keeps it prosperous. The
-White Immortal is a healer who appears as a white-haired old woman.
+Sea people who live in the water like fish and never stop weaving. They weave in the Dragon-Silk Palace under the
+South Sea, and their silk, "dragon silk", cost more than a hundred pieces of gold; clothes made of it go into water
+and come out dry. When a jiaoren weeps, the tears turn into pearls. In one story a jiaoren came out of the sea, stayed
+at a person's house for some days selling silk, and on leaving asked for a plate, wept into it, and gave it to her
+host full of pearls.
 
-- Why it fits: the closest Chinese match to the Domowiki, and hedgehogs are easy to draw charmingly. Sources say
-  hedgehog spirits met in yards and homes do not harm people.
-- Care: the same folk religion includes spirit mediums, and the fox and weasel immortals are tricksters. Keep the
-  deck to the household hedgehogs.
-- More: [Mazo, "Were-hedgehogs in Chinese texts"](https://folklore.elpub.ru/jour/article/view/76),
-  [Wikipedia, Wudaxian](https://en.wikipedia.org/wiki/Wudaxian)
-- Image: a modern cartoon of the Five Great Immortals, each holding its sign; the hedgehog holds 白. Copyrighted; shown in [Sina](https://k.sina.cn/article_6319522468_178ac42a400100kt73.html). Few pictures of the hedgehog immortal exist online.
+- Why it fits: no one has ever seen one, the lore is gentle and full of drawable detail (looms, pearls, silk, the
+  moonlit sea), and it is unmistakably Chinese.
+- Care: better known in China than the other picks (web novels and TV dramas use it), so the deck should lean on the
+  old books' details rather than the modern romance version. One old story says the lamps in the First Emperor's
+  tomb burned "mermaid oil": leave that out. Draw them fully clothed.
+- Cousins: a Tang poem says the southern mountain folk "trade with the jiaoren and marry the Muke", so the
+  [Muke](#muke) could join the deck.
+- **Prototype deck:** four cards in the owner's style reference, [jiaoren-set.md](jiaoren-set.md).
+- Sources: *Soushen Ji* 12 and *Shuyi Ji* ([Wikisource](https://zh.wikisource.org/zh-hant/述異記)), *Bowu Zhi*
+  (quoted in [Wikipedia (Classical Chinese), 鮫人](https://zh-classical.wikipedia.org/wiki/鮫人)).
 
 ### Mmoatia
 
@@ -229,6 +238,27 @@ white tail that you can keep to chase away sorrow.
 - More: [Baidu Baike, Dangkang](https://baike.baidu.com/en/item/Dangkang/25344)
 - Image: Dangkang in the Qing imperial encyclopaedia ([Commons](https://commons.wikimedia.org/wiki/File:Imperial_Encyclopaedia_-_Animal_Kingdom_-_pic291_-_%E7%95%B6%E5%BA%B7%E5%9C%96.png), public domain).
 
+### Muke
+
+**Backup for:** China. **From:** the mountains where Jiangxi, Fujian and Guangdong meet (now the Hakka heartland),
+recorded from the 400s. Chinese: 木客 (mùkè, "wood guests"), with cousins the 山都 (shāndū).
+
+A hidden mountain folk the size of small children, with hooked claws on their hands and feet. They trade timber
+without ever showing their faces: leave goods under a tree, and if the deal is fair they leave cut wood. They bury
+their dead in treetops with songs "like wind in a forest", love wine, and write poems: "The city is noise and dust;
+back to the mountain to play with the moon." Some turned into flocks of birds ranked by feather colour like a
+government office. Their cousins, the shandu, build egg-shaped nests, the husband's above and the wife's below.
+
+- Care: some scholars read them as Han pictures of the region's first peoples; draw them as spirits with bird claws,
+  never as a caricature of a people.
+- Sources: *Nankang Ji* in *Taiping Guangji* 324 ([cbaigui](https://www.cbaigui.com/monster/1546)), Su Shi's poems on
+  Ganzhou ([Wikisource](https://zh.wikisource.org/wiki/虔州八境圖八首)).
+
+Other finds for China, from the same research (2026-09-27): **Qingji** (慶忌), a four-inch rider in yellow who
+gallops a thousand li and back if you call his name; the **Crane-Folk** (鶴民), a three-inch people who carve wooden
+dolls of themselves so the cranes eat those instead; and the **ginseng child** (人参娃娃) of the Changbai Mountains,
+caught with a red thread (well known in China).
+
 ### Aziza
 
 **Backup for:** Africa. **From:** the Fon of Benin (old Dahomey), also the Ewe.
@@ -277,6 +307,32 @@ undone until dawn chased them off, and that is how people learned to make fishin
 - More: [Wikipedia, Patupaiarehe](https://en.wikipedia.org/wiki/Patupaiarehe)
 - Image: a painting of patupaiarehe by V. Deroles ([Commons](https://commons.wikimedia.org/wiki/File:Patupaiarehe_(V._Deroles).jpg)).
 
+## On hold
+
+Creatures the owner has put aside for now. Not rejected: they may come back as a later deck.
+
+### Hedgehog Immortals
+
+**On hold since 2026-09-27.** It was the chosen creature for China. The owner put it aside because hedgehog
+immortals are real animals: everybody knows what a hedgehog looks like. The first decks should be creatures that do
+not exist and that nobody has ever seen, with some mystery around them, like the Domowiki, the Pari and the Aluxes.
+It may still be a deck later. The [Jiaoren](#jiaoren) took its place.
+
+**From:** Han folk religion of North and Northeast China (Tianjin, Hebei, Beijing, Manchuria). Chinese: 白仙
+(Bái Xiān, "White Immortal"), 白老太太 (Bái Lǎotàitai, "White Old Lady").
+
+The hedgehog is one of the Five Great Immortals, the "household-protecting immortals" (保家仙). In old Tianjin a
+hedgehog living in your courtyard might be a spirit that settles in with the family and keeps it prosperous. The
+White Immortal is a healer who appears as a white-haired old woman.
+
+- Why it fit: the closest Chinese match to the Domowiki, and hedgehogs are easy to draw charmingly. Sources say
+  hedgehog spirits met in yards and homes do not harm people.
+- Care: the same folk religion includes spirit mediums, and the fox and weasel immortals are tricksters. Keep the
+  deck to the household hedgehogs.
+- More: [Mazo, "Were-hedgehogs in Chinese texts"](https://folklore.elpub.ru/jour/article/view/76),
+  [Wikipedia, Wudaxian](https://en.wikipedia.org/wiki/Wudaxian)
+- Image: <img src="http://k.sinaimg.cn/n/sinacn20190527s/201/w641h360/20190527/2b98-hxntqyz1002047.jpg/w700d1q75cms.jpg" width="80"> a modern cartoon of the Five Great Immortals, each holding its sign; the hedgehog holds 白. Copyrighted; shown in [Sina](https://k.sina.cn/article_6319522468_178ac42a400100kt73.html). Few pictures of the hedgehog immortal exist online.
+
 ## Rejected
 
 - **Vetala** (India): too gruesome; a spirit living in corpses.
@@ -312,6 +368,8 @@ This shows that decks in very different styles all fit in the game.
 | Tutorial | [Mmoatia](#mmoatia) | They take a person into the forest, and that person comes back a skilled healer: they teach. Shown reading a book of herbs. | Cut-paper collage |
 | Documentation | [Kodama](#kodama) | Call out in the mountains and the kodama answers: you ask, and you get an answer. Shown with a lantern at the roots of its tree. | Japanese woodblock print |
 
+- The Collection tile needs a new creature: the Hedgehog Immortals are [on hold](#on-hold). The Jiaoren may take it
+  (weavers of treasured silk: building up what you keep).
 - Left out on purpose: Alux (shown as small Maya people; wait for a reviewer). Momoyes has no tile yet; their St.
   John's night drum party would suit Friend if Pari moves.
 - The Kodama mockup came out looking like the kodama in the film *Princess Mononoke* (a white round head with dark

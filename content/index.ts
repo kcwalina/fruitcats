@@ -15,6 +15,7 @@ import mochi from './2026/12/mochi/set.json';
 import domowiki from './2026/10/domowiki/set.json';
 import pari from './2026/10/pari/set.json';
 import aluxes from './2026/11/aluxes/set.json';
+import jiaoren from './2026/12/jiaoren/set.json';
 
 export interface ContentSet {
   data: SetData;
@@ -30,6 +31,7 @@ export const CONTENT: ContentSet[] = [
   { data: aluxes as unknown as SetData, folder: '2026/11/aluxes' },
   { data: berryPicnic as unknown as SetData, plugin: berryPicnicPlugin, folder: '2026/12/berry-picnic' },
   { data: mochi as unknown as SetData, folder: '2026/12/mochi' },
+  { data: jiaoren as unknown as SetData, folder: '2026/12/jiaoren' },
 ];
 
 export interface LoadOptions {

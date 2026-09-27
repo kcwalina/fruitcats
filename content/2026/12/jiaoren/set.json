@@ -1,0 +1,154 @@
+{
+  "set": "JR1",
+  "name": "Jiaoren",
+  "version": "0.1.0",
+  "status": "prototype",
+  "families": {
+    "Jiaoren": {
+      "colors": [
+        "#D9735F",
+        "#7A2E2A",
+        "#FCE9E3"
+      ],
+      "personality": "Quiet weavers of the South Sea, grateful to the kind",
+      "playsLike": "Weep pearls: extra Offerings when a jiaoren leaves or is moved"
+    }
+  },
+  "lore": {
+    "creature": "Jiaoren (鮫人, jiāorén), the sea people",
+    "from": "Chinese folklore: the South Sea, in books from the 3rd to the 6th century and in Tang poetry",
+    "title": "The Jiaoren",
+    "eyebrow": "Chinese folklore · the South Sea",
+    "facts": [
+      "Beyond the South Sea live the jiaoren. They live in the water like fish.",
+      "Jiaoren never stop weaving. They weave in the Dragon-Silk Palace deep under the South Sea, and some of their silk is as white as frost.",
+      "When a jiaoren weeps, her tears turn into pearls.",
+      "Sometimes a jiaoren came out of the sea and stayed at a person's house for a few days, selling her silk.",
+      "When she left, she asked her host for a plate, wept into it, and gave the plate back full of pearls.",
+      "Jiaoren silk was called dragon silk. It cost more than a hundred pieces of gold.",
+      "Clothes made of jiaoren silk go into water and come out dry.",
+      "The jiaoren were also called 'spring guests', guests from the springs under the sea.",
+      "The poet Li Shangyin wrote of the moonlit sea, where the pearls have tears."
+    ],
+    "sources": [
+      "https://zh.wikisource.org/zh-hant/搜神記/第12卷",
+      "https://zh.wikisource.org/zh-hant/述異記",
+      "https://zh-classical.wikipedia.org/wiki/鮫人",
+      "https://zh.wikipedia.org/zh-hans/鮫人"
+    ]
+  },
+  "cards": [
+    {
+      "id": "JR1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Jiaoren",
+      "name": "Zhu'er, the Littlest Jiaoren",
+      "flavor": "Her name means Little Pearl. She has never cried a tear that wasn't one.",
+      "kitten": {
+        "name": "Zhu'er, the Littlest Jiaoren",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "do": [
+              {
+                "readyTreats": 1
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "treats": {
+              "atLeast": 8
+            }
+          }
+        },
+        "text": "Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings."
+      },
+      "bigCat": {
+        "name": "Zhu'er, Pearl of the Moonlit Sea",
+        "power": 3,
+        "abilities": [
+          {
+            "when": "exhaust",
+            "do": [
+              {
+                "readyTreats": 2
+              }
+            ]
+          }
+        ],
+        "text": "Exhaust: Ready two of your Offerings."
+      },
+      "frame": "gold"
+    },
+    {
+      "id": "JR1-D01",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "The Spring Guest",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "flavor": "She stayed a few days to sell her silk. Leaving, she wept a plate of pearls for her host.",
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "readyTreats": 2
+            }
+          ]
+        }
+      ],
+      "text": "Goodbye: Ready two of your Offerings."
+    },
+    {
+      "id": "JR1-D02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Weaver of the Sea Hall",
+      "cost": 2,
+      "power": 1,
+      "health": 3,
+      "flavor": "Deep under the South Sea, her loom never stops.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Draw a card."
+    },
+    {
+      "id": "JR1-D03",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Jiaoren",
+      "name": "Dragon Silk",
+      "cost": 2,
+      "flavor": "Woven by the jiaoren. A robe of it goes into the sea and comes out dry.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "health": 3,
+              "keywords": [
+                "Guardian"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "text": "Attached unit gets +3 Health and Guardian."
+    }
+  ]
+}

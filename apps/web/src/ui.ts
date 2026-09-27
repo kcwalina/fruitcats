@@ -13,8 +13,10 @@ export const PACKS: string = import.meta.env.VITE_PACKS ?? 'https://fruitcatspac
  */
 export const ART_BASES: Record<string, { art: string; cards: string }> = {};
 const LOCAL_ART: boolean = import.meta.env.VITE_LOCAL_ART === 'on';
+/** Set folders the game isn't built with (the Studio's practice sets): their few frames stay on the site. */
+const SITE_ART = new Set<string>(import.meta.env.VITE_SITE_ART_SETS ?? []);
 /** A set's art addresses, by set code: where its illustrations and finished cards are. */
-export const artBases = (code: string) => ART_BASES[code] ?? (LOCAL_ART
+export const artBases = (code: string) => ART_BASES[code] ?? (LOCAL_ART || SITE_ART.has(code)
   ? { art: `${BASE}${code}/`, cards: `${BASE}cards/${code}/` }
   : { art: `${PACKS}${code}/art/illustrations/`, cards: `${PACKS}${code}/art/cards/` });
 const setCode = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.set ?? 'SB1').toLowerCase();

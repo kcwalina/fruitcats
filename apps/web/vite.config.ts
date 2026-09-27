@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
+import { CONTENT as GAME_SETS } from '../../content/index';
 
 // Interface art lives in the repo's art/ folder and is served as-is. Each card set's art lives in its own
 // folder, content/<year>/<month>/<set>/, and is published at stable addresses (contentAssets below):
@@ -41,6 +42,7 @@ export default defineConfig(({ mode, command }) => ({
     // Card art: served from the sets' folders in dev, taken from the pack storage in a build (contentAssets below).
     'import.meta.env.VITE_PACKS': JSON.stringify(PACKS),
     'import.meta.env.VITE_LOCAL_ART': JSON.stringify(command === 'serve' || LOCAL_ART ? 'on' : 'off'),
+    'import.meta.env.VITE_SITE_ART_SETS': JSON.stringify(contentSets().filter((s) => !s.registered).map((s) => s.code)),
     'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on'),
     // When this build was made, shown at the bottom of the Artist Studio: which version a device has, at a glance.
     'import.meta.env.VITE_BUILT': JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'),
@@ -191,14 +193,17 @@ function docsPages(): Plugin {
 // where the game already looks for card packs, and the build refuses when a set's art here isn't the art the
 // storage has (its fingerprint, content/art-hash.ts). VITE_LOCAL_ART=on builds with the art inside, for a
 // build that must work without the storage; it is too big to deploy.
+// Set folders the game isn't built with (content/index.ts): the Artist Studio's practice sets, a few MB of frames.
+// Those stay on the site as before, and the Studio finds them there (VITE_SITE_ART_SETS).
 
 const CONTENT = fileURLToPath(new URL('../../content/', import.meta.url));
 const PACKS = process.env.VITE_PACKS ?? 'https://fruitcatspacks.blob.core.windows.net/packs/';
 const LOCAL_ART = process.env.VITE_LOCAL_ART === 'on';
 
-/** Every set folder in content/: its root, its code and its data. */
-function contentSets(): { root: string; folder: string; code: string; data: Record<string, unknown> }[] {
-  const sets: { root: string; folder: string; code: string; data: Record<string, unknown> }[] = [];
+/** Every set folder in content/: its root, its code and its data; `registered`: the game is built with it (content/index.ts). */
+function contentSets(): { root: string; folder: string; code: string; data: Record<string, unknown>; registered: boolean }[] {
+  const sets: { root: string; folder: string; code: string; data: Record<string, unknown>; registered: boolean }[] = [];
+  const registered = new Set(GAME_SETS.map((c) => c.folder));
   const dirs = (d: string) => (existsSync(d) ? readdirSync(d).filter((n) => statSync(join(d, n)).isDirectory()) : []);
   for (const year of dirs(CONTENT))
     for (const month of dirs(join(CONTENT, year)))
@@ -206,7 +211,7 @@ function contentSets(): { root: string; folder: string; code: string; data: Reco
         const root = join(CONTENT, year, month, folder);
         if (!existsSync(join(root, 'set.json'))) continue;
         const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8'));
-        sets.push({ root, folder, code: String(data.set).toLowerCase(), data });
+        sets.push({ root, folder, code: String(data.set).toLowerCase(), data, registered: registered.has(`${year}/${month}/${folder}`) });
       }
   // A set that builds on another (Heat Wave uses the Starter Box's Garden cards) comes after it.
   const needs = (s: { data: Record<string, unknown> }) => (s.data.requires as string[] | undefined) ?? [];
@@ -224,8 +229,8 @@ function packFiles(localArt: boolean): Record<string, string> {
       packs: sets.map((s) => ({
         set: s.data.set, name: s.data.name, version: s.data.version, status: s.data.status,
         data: `packs/${s.code}/set.json`,
-        art: localArt ? `${s.code}/` : `${PACKS}${s.code}/art/illustrations/`,
-        cards: localArt ? `cards/${s.code}/` : `${PACKS}${s.code}/art/cards/`,
+        art: localArt || !s.registered ? `${s.code}/` : `${PACKS}${s.code}/art/illustrations/`,
+        cards: localArt || !s.registered ? `cards/${s.code}/` : `${PACKS}${s.code}/art/cards/`,
       })),
     }, null, 1),
   };
@@ -242,10 +247,10 @@ function packFiles(localArt: boolean): Record<string, string> {
 /** Each set's folders and the address each is published at. `build`: copied into a build (the art isn't, see above). */
 function contentMounts(): { url: string; dir: string; build: boolean }[] {
   const mounts: { url: string; dir: string; build: boolean }[] = [];
-  for (const { root, folder, code } of contentSets())
+  for (const { root, folder, code, registered } of contentSets())
     mounts.push(
-      { url: `/${code}/`, dir: join(root, 'art', 'illustrations'), build: LOCAL_ART },
-      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards'), build: LOCAL_ART },
+      { url: `/${code}/`, dir: join(root, 'art', 'illustrations'), build: LOCAL_ART || !registered },
+      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards'), build: LOCAL_ART || !registered },
       { url: `/announcements/${folder}/`, dir: join(root, 'announcement'), build: true },
       // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
       { url: '/avatars/', dir: join(root, 'avatars'), build: true },
@@ -260,7 +265,7 @@ function contentMounts(): { url: string; dir: string; build: boolean }[] {
 async function unpublishedArt(): Promise<string[]> {
   const stale: string[] = [];
   for (const s of contentSets()) {
-    const local = artHash(s.root);
+    const local = s.registered ? artHash(s.root) : null;
     if (!local) continue;
     const published = await fetch(`${PACKS}${s.code}/art.json`, { cache: 'no-cache' })
       .then((r) => (r.ok ? (r.json() as Promise<{ hash?: string }>) : null)).catch(() => null);

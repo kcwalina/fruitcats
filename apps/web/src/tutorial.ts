@@ -95,9 +95,9 @@ const STEPS: Balloon[] = [
       const settling = s.players[ME].yard.some((u) => u.exhausted);
       return settling
         ? 'A creature that just arrived is tilted and marked <b>new</b>: it gets its bearings this round and can attack from the next one. '
-          + 'The paw is its power, the heart its health.'
+          + 'The lightning is its power, the heart its health.'
         : 'Most creatures get their bearings the round they arrive — this one is <b>Swift</b>, so it can attack straight away. '
-          + 'The paw is its power, the heart its health.';
+          + 'The lightning is its power, the heart its health.';
     },
   },
   {

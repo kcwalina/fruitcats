@@ -91,7 +91,7 @@
       "flavor": "Knee-high and invisible. Every corn stalk in the field is his.",
       "kitten": {
         "name": "Aluxito, Keeper of the Milpa",
-        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Lives.",
+        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Candles.",
         "abilities": [
           {
             "when": "exhaust",
@@ -304,7 +304,7 @@
       "family": "Aluxes",
       "name": "A Whistle in the Dark",
       "cost": 1,
-      "text": "Pounce. Cancel an attack. (The attacker stays exhausted.)",
+      "text": "Ambush. Cancel an attack. (The attacker stays exhausted.)",
       "flavor": "He walks the field at night and whistles. Thieves and animals turn back.",
       "keywords": [
         "Pounce"
@@ -511,7 +511,7 @@
       "family": "Aluxes",
       "name": "A Sweet on the Doorstep",
       "cost": 1,
-      "text": "Pounce. A unit you control gets +2 Power this round.",
+      "text": "Ambush. A unit you control gets +2 Power this round.",
       "flavor": "Sweets and fruit in the little house. The alux works twice as hard.",
       "keywords": [
         "Pounce"

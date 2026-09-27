@@ -119,6 +119,20 @@ describe('deckbuilding (rulebook 11.1)', () => {
 });
 
 describe('setup', () => {
+  it('lets a mulligan swap at most 3 cards, for players and the computer alike', () => {
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 7 });
+    const hand = s.players[s.prompt!.player].hand.map((c) => c.uid);
+    expect(() => apply(structuredClone(s), { t: 'mulligan', uids: hand })).toThrow(/at most 3/);
+    expect(() => apply(structuredClone(s), { t: 'mulligan', uids: hand.slice(0, 4) })).toThrow(/at most 3/);
+    apply(s, { t: 'mulligan', uids: hand.slice(0, 3) });
+    expect(s.prompt?.kind).toBe('mulligan');
+    for (let seed = 1; seed <= 200; seed++) {
+      const g = createGame({ decks: ['domowiki', 'pari'], seed });
+      const a = chooseAction(g);
+      expect(a.t === 'mulligan' && a.uids.length).toBeLessThanOrEqual(3);
+    }
+  });
+
   it('deals 9 Lives, 6 cards, then plants 2', () => {
     const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 7 });
     expect(s.prompt?.kind).toBe('mulligan');

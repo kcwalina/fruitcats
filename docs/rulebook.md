@@ -116,7 +116,7 @@ and gives it a **signature mechanic** that only that family has.
 1. Put your Hero in your Hearth, **first side up** (not Awakened), ready.
 2. Shuffle your deck. Deal the top **9 cards face-down** as your **Candles**, without looking.
 3. Draw **6 cards**.
-4. **Mulligan (once):** set aside any number of cards from your hand, draw that many, then shuffle the set-aside
+4. **Mulligan (once):** set aside up to **3** cards from your hand, draw that many, then shuffle the set-aside
    cards into your deck. You always end up with 6 again — the mulligan costs you nothing, it just changes *which*
    6 you are choosing from.
 5. **Offer 2** cards from your hand face-down as ready Offerings.
@@ -394,7 +394,7 @@ The following values are deliberately isolated so playtesting can adjust them wi
 
 ## Quick Reference
 
-**Setup:** Hero in Hearth → deal 9 Candles → draw 6 → mulligan once → offer 2 → random Lantern holder.
+**Setup:** Hero in Hearth → deal 9 Candles → draw 6 → mulligan once (up to 3) → offer 2 → random Lantern holder.
 
 **Round:** *Start* (ready, draw 2, offer ≤ 1 — skip in round 1) → *Actions* (alternate one at a time until both pass) → *End* (effects end, hand max 10, Lantern passes if untaken).
 

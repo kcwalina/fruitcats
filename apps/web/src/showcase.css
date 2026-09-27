@@ -383,13 +383,22 @@ button.undo-btn {
   background: none; border: none; box-shadow: none; border-radius: 16px; color: #fff;
 }
 .collection-screen button.deck-cover:hover:not(:disabled) { transform: translateY(-4px); box-shadow: none; background: rgba(255, 255, 255, 0.05); }
-.deck-cover .slot { width: 78%; margin-bottom: 10px; --shade: 0, 0, 0; }
+.deck-cover .slot { width: 88%; margin-bottom: 10px; --shade: 0, 0, 0; }
 .deck-cover .cover-name { font: 600 16px/1.15 Fredoka, Nunito, sans-serif; text-align: center; }
 .deck-cover .cover-sub { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
 /* The Showcase's cover: your first favourite as the cover itself, or a star on gold when it's empty. */
 .showcase-slot .cover { padding: 0; background: linear-gradient(160deg, #6b4a12, #2a1a08); align-items: center; justify-content: center; }
 .showcase-slot .cover-pick { display: block; width: 100%; height: 100%; object-fit: cover; }
 .showcase-slot .cover-empty { font-size: 64px; color: #ffd76a; text-shadow: 0 0 24px rgba(255, 215, 106, 0.6); }
+
+/* Tablets and computers: bigger covers, about three to a row on an iPad held upright, four sideways, five on a
+   computer (the owner found the phone-sized covers half the size they should be on an iPad). */
+@media (min-width: 700px) {
+  .deck-covers { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px 14px; max-width: 1240px; }
+  .deck-cover .cover-name { font-size: 19px; }
+  .deck-cover .cover-sub { font-size: 12px; }
+  .deck-stage .viewer { --card-w: min(52vw, 420px); }
+}
 
 /* ── A deck's page: the card, swiped, beside its tale; under it on a phone ── */
 .deck-page { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }

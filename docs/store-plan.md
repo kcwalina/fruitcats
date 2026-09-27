@@ -206,6 +206,27 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
   Store deck brings the same cards for less, it says so. The deck builder also says "Missing N cards" on the deck
   and offers **See the missing cards**.
 
+### Codes: a deck without paying (2026-09-27)
+
+The owner's call: until buying opens, and afterwards for testers, friends and giveaways, a deck can be given with a
+code. The Store's third tab, **Codes** (next to Folkborn and Legacy, the owner's call), says "Have a code?": type the
+code, tap **Get the deck**, and the deck's cards are revealed like an order's, then the Store is back on Folkborn. It works while buying is off (`STORE=preview`) because nothing is paid; it is not a way
+around the payment work, which stays closed.
+
+- **Making codes:** `npm run store-code -w @fruitcats/api -- <deck key> [--uses N] [--note "why"]` (e.g. `jiaoren`)
+  prints a code like `JX7K-4QMW-9DRT` once. It writes the live tables as Claude's agent identity; `--local` makes one
+  for `npm run api:local`. Codes use letters and digits that can't be confused (no 0/O, 1/I/L); case, spaces and
+  dashes don't matter when typed.
+- **The rules** (apps/api/src/store.ts, Codes; tests in apps/api/test/store-codes.test.ts): a code names one deck on
+  sale and a number of uses. Each account can use a code once, and it's never granted twice (a retry is answered with
+  the same order). A use is taken before the deck is granted, so a code never serves more accounts than it allows,
+  even two at once. An account that has the whole deck already is told so, and the code isn't used up. Codes are
+  stored only as a hash (table `storecodes`), so the table can't be read back as codes. Ten wrong codes in an hour
+  lock that account out of codes for the hour, and the security log records it (`store.code_guessing`).
+- **Records:** taking a code is an order with status `code` and total 0, next to the account's other orders, in the
+  owned total, and in the security log (`purchase.code`). "Export my data" includes it; deleting the account keeps it
+  like a free deck's order.
+
 ### Trying it on your computer
 
 1. `npm run api:local` runs the API on port 8790 with its data in `.local-api/` (nothing in Azure is touched).
@@ -221,7 +242,7 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 ### On the live site: a preview for every playtester
 
 Since 2026-09-25 (the owner's call, after trying the whole test flow), the live API runs `STORE=preview`,
-`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1` (since 2026-09-26: the old Starter Box decks, free): every signed-in player can open the Store and see every deck, card and
+`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,JR1` (SB1 since 2026-09-26: the old Starter Box decks, free; JR1 since 2026-09-27: the Jiaoren deck at $9.99, the first Folkborn deck on sale): every signed-in player can open the Store and see every deck, card and
 price, but **Add to cart** says "Coming soon", and there's no cart. The free decks' **Get** works in preview too. The owner sees the same. Test orders placed during
 the tester test are kept but count for nothing (no cards, not listed).
 

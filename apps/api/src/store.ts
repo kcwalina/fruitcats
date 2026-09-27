@@ -8,6 +8,7 @@
 //   POST /v1/store/confirm            { orderId }  →  the order, after asking Paddle (back from the payment window)
 //   POST /v1/store/test-checkout      { orderId, cart, total }  →  a test order; grants the cards, charges nothing
 //   POST /v1/store/get                { orderId, product }  →  takes a free ($0) deck: grants its cards, no checkout
+//   POST /v1/store/redeem             { code }  →  a Store code's deck: grants its cards, no checkout (see Codes)
 //   POST /v1/store/test-reset         forget your test orders, and the cards they brought
 //   POST /v1/webhooks/paddle          Paddle's signed events (paddleWebhook, not signed in)
 //
@@ -36,6 +37,7 @@
 // copies from every order that counts. It is always rebuilt from the orders when written, so it can't drift, and
 // reading what an account owns is one row. Test orders are left out of it: they count only while test checkout is on.
 
+import { createHash, randomInt } from 'node:crypto';
 import { cardName, CARDS, SETS } from '@fruitcats/engine';
 import {
   MAX_CART_LINES, buildCatalog, collectionOf, priceCart, type CartLine, type PricedLine, type Quote,
@@ -56,6 +58,8 @@ const orders = table('orders');
 const txns = table('paymenttxns');
 /** Every Paddle event we've handled, once. */
 const events = table('webhookevents');
+/** Store codes (see Codes), by the code's hash. */
+const codes = table('storecodes');
 
 const OWNED = '~owned';
 const ACCOUNT = /^[0-9a-f]{32}$/;
@@ -405,6 +409,98 @@ async function startPayment(user: string, row: OrderRow): Promise<string> {
 
 export type Reply = [status: number, body: unknown];
 
+// ── Codes ────────────────────────────────────────────────────────────────────────────────────────
+//
+// A Store code gives a deck without paying: the owner makes one (npm run store-code -w @fruitcats/api) for a tester, a
+// friend or a giveaway, and the player types it in the Store. It names a deck on sale and how many accounts may use it;
+// each account can use a code once. Taking it is an order like a free deck's (status "code"), written with the owned
+// total, so it's in the account's history and can't be granted twice. Codes are kept only as their hash: the table
+// can't be read back as codes. Wrong codes are limited per account, so codes can't be guessed.
+
+type CodeRow = Row & { product: string; maxUses: number; uses: number; createdAt: string; note?: string; disabled?: boolean; etag?: string };
+
+/** Letters and digits that can't be mistaken for each other (no 0/O, 1/I/L), in groups of four: "JX7K-4QMW-9DRT". */
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+/** What the player typed, as the code it means: capitals, no spaces or dashes. */
+export const normalizeCode = (text: string) => text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+const codeHash = (code: string) => createHash('sha256').update(`fruitcats-store-code:${code}`).digest('hex');
+/** The order a code makes for an account: the same id every time, so an account uses a code once. */
+const codeOrderId = (hash: string) => `code-${hash.slice(0, 32)}`;
+
+/** Make a code for a deck on sale. Returns the code: it's stored only as its hash, so it can't be shown again. */
+export async function createCode(product: string, { uses = 1, note = '' }: { uses?: number; note?: string } = {}): Promise<string> {
+  const p = catalog().products[product];
+  if (p?.kind !== 'deck') throw new Error(`${product} is not a deck on sale (STORE_SETS: ${process.env.STORE_SETS ?? 'every set'})`);
+  if (!Number.isInteger(uses) || uses < 1) throw new Error('uses must be a whole number, 1 or more');
+  for (;;) {
+    const raw = Array.from({ length: 12 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
+    const row: CodeRow = {
+      partitionKey: 'code', rowKey: codeHash(raw), product, maxUses: uses, uses: 0, createdAt: new Date().toISOString(),
+      ...(note ? { note: note.slice(0, 200) } : {}),
+    };
+    if (await codes.add(row)) {
+      log('security', 'store.code_created', { product, uses, code: row.rowKey.slice(0, 12) });
+      return raw.match(/.{4}/g)!.join('-');
+    }
+  }
+}
+
+/** At most this many wrong codes per account an hour. */
+const WRONG_CODES_PER_HOUR = 10;
+const wrongCodes = new Map<string, number[]>();
+const recentWrong = (user: string, now = Date.now()) => (wrongCodes.get(user) ?? []).filter((t) => now - t < 3_600_000);
+function wrongCode(user: string): Reply {
+  const recent = recentWrong(user);
+  wrongCodes.set(user, [...recent, Date.now()]);
+  if (recent.length + 1 >= WRONG_CODES_PER_HOUR) log('security', 'store.code_guessing', { userId: user, tries: recent.length + 1 }, 'warning');
+  return [400, { error: 'bad_code' }];
+}
+
+/** Put back a use taken for an order that then couldn't be written. */
+async function giveBackUse(hash: string) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const row = await codes.get<CodeRow>('code', hash);
+    if (!row || row.uses <= 0) return;
+    if (await codes.batch([{ op: 'replace', row: { ...row, uses: row.uses - 1 }, etag: row.etag! }])) return;
+  }
+}
+
+async function redeem(user: string, typed: unknown): Promise<Reply> {
+  if (recentWrong(user).length >= WRONG_CODES_PER_HOUR) return [429, { error: 'too_many_codes' }];
+  const code = typeof typed === 'string' ? normalizeCode(typed.slice(0, 60)) : '';
+  if (code.length < 8 || code.length > 24) return wrongCode(user);
+  const hash = codeHash(code);
+  const orderId = codeOrderId(hash);
+  return oneAtATime(user, async (): Promise<Reply> => {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const { list, owned } = await partition(user);
+      // This account used the code already (a double tap, a retry after a lost reply): answered, not granted again.
+      const existing = list.find((r) => r.rowKey === orderId);
+      if (existing) return [200, { order: toOrder(existing), owned: await purchasedCards(user), repeated: true }];
+      const row = await codes.get<CodeRow>('code', hash);
+      if (!row || row.disabled) return wrongCode(user);
+      const product = catalog().products[row.product];
+      if (product?.kind !== 'deck') return [400, { error: 'code_unavailable' }];
+      if (row.uses >= row.maxUses) return [400, { error: 'code_used_up' }];
+      const quote = priceCart([{ product: product.id, qty: 1 }], catalog(), collectionOf(await purchasedCards(user)));
+      if (!Object.keys(quote.grants).length) return [400, { error: 'already_owned' }];
+      // A use is taken first, so a code never serves more accounts than it allows.
+      if (!await codes.batch([{ op: 'replace', row: { ...row, uses: row.uses + 1 }, etag: row.etag! }])) continue;
+      const order = newRow(user, orderId, 'code', { ...quote, total: 0 });
+      if (!await orders.batch([{ op: 'create', row: order }, ...ownedStep(user, owned, [...list.map(stateOf), stateOf(order)])])) {
+        await giveBackUse(hash);
+        continue;
+      }
+      log('security', 'purchase.code', {
+        userId: user, orderId, product: product.id, code: hash.slice(0, 12),
+        copies: Object.values(quote.grants).reduce((a, b) => a + b, 0),
+      });
+      return [200, { order: toOrder(order), owned: await purchasedCards(user) }];
+    }
+    return [409, { error: 'busy' }];
+  });
+}
+
 /** The price check both checkouts share: the server's own price, and the total the player agreed to. */
 function priceFor(cart: CartLine[], owned: Record<string, number>, agreed: unknown): Reply | Quote {
   const quote = priceCart(cart, catalog(), collectionOf(owned));
@@ -450,7 +546,7 @@ export async function storeRequest(user: string, method: string, path: string, b
         // The same order again (a retry, or the payment window opened a second time): the same transaction, never a
         // second order. An order already paid is just answered.
         const s = stateOf(existing);
-        if (s.paidAt || existing.status === 'test' || existing.status === 'granted' || existing.status === 'free') return [200, { order: toOrder(existing), owned: await purchasedCards(user) }];
+        if (s.paidAt || existing.status === 'test' || existing.status === 'granted' || existing.status === 'free' || existing.status === 'code') return [200, { order: toOrder(existing), owned: await purchasedCards(user) }];
         if (existing.total !== sent.total) return [409, { error: 'order_exists' }];
         try {
           const txn = s.txn ?? await startPayment(user, existing);
@@ -548,6 +644,12 @@ export async function storeRequest(user: string, method: string, path: string, b
       }
       return [409, { error: 'busy' }];
     });
+  }
+
+  if (path === '/v1/store/redeem' && method === 'POST') {
+    // Whenever the Store is open to the account, preview included: taking a code's deck is not buying.
+    const sent = await body() as { code?: unknown };
+    return redeem(user, sent?.code);
   }
 
   if (path === '/v1/store/test-reset' && method === 'POST') {

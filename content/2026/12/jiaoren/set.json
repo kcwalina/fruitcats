@@ -1,0 +1,604 @@
+{
+  "set": "JR1",
+  "name": "Jiaoren",
+  "version": "0.1.0",
+  "status": "released",
+  "families": {
+    "Jiaoren": {
+      "colors": [
+        "#D9735F",
+        "#7A2E2A",
+        "#FCE9E3"
+      ],
+      "personality": "Quiet weavers of the South Sea, grateful to the kind",
+      "playsLike": "Every tear is a pearl: when a jiaoren is hurt, you get an Offering back",
+      "mechanic": "Pearl Tears",
+      "hint": "hurt units ready Offerings"
+    }
+  },
+  "lore": {
+    "creature": "Jiaoren (鮫人, jiāorén), the sea people",
+    "from": "Chinese folklore: the South Sea, in books from the 3rd to the 6th century and in Tang poetry",
+    "title": "The Jiaoren",
+    "eyebrow": "Chinese folklore · the South Sea",
+    "facts": [
+      "Beyond the South Sea live the jiaoren. They live in the water like fish.",
+      "Jiaoren never stop weaving. They weave in the Dragon-Silk Palace deep under the South Sea, and some of their silk is as white as frost.",
+      "When a jiaoren weeps, her tears turn into pearls.",
+      "Jiaoren silk was called dragon silk. It cost more than a hundred pieces of gold.",
+      "Clothes made of jiaoren silk go into water and come out dry.",
+      "Sometimes a jiaoren came out of the sea and stayed at a person's house for a few days, selling her silk.",
+      "When she left, she asked her host for a plate, wept into it, and gave the plate back full of pearls.",
+      "The jiaoren were also called spring guests (quanke) and quanxian. A poem of the 200s calls them the guests of the deep, who are moved and weep pearls.",
+      "Old Chinese books say that pearl oysters are full when the moon is full, and empty when the moon is dark.",
+      "The poet Li Shangyin wrote of the moonlit sea, where the pearls have tears.",
+      "In Chinese medicine, pearls ground to a fine powder were used to soothe and heal.",
+      "On Mount Yuanqiao lived the ice silkworm. Covered in frost and snow, it spun a cocoon a foot long, and cloth woven from it would not get wet or burn.",
+      "In the southern mountains lived the Muke, the 'wood guests'. They traded timber without ever showing their faces, and they wrote poems. A Tang poem says the mountain people traded with the jiaoren and married the Muke."
+    ],
+    "sources": [
+      "https://zh.wikisource.org/zh-hant/搜神記/第12卷",
+      "https://zh.wikisource.org/zh-hant/述異記",
+      "https://zh-classical.wikipedia.org/wiki/鮫人",
+      "https://zh.wikipedia.org/zh-hans/鮫人",
+      "https://zh.wikisource.org/zh-hant/拾遺記/卷十",
+      "https://www.cbaigui.com/monster/1546",
+      "https://www.shigeku.com/xlib/lingshidao/gushi/liuyuxi.htm"
+    ],
+    "story": [
+      "Far beyond the South Sea, deeper than any fisherman has ever dived, there is a palace. Its halls are pale coral and mother-of-pearl, and in every one of them a loom is working. It never stops, not by day and not by night.",
+      "This is the Dragon-Silk Palace, the home of the jiaoren: the sea people of old Chinese books, who live in the water like fish and weave like no one on land. Their silk is so fine that the old books call it dragon silk. Some of it is as white as frost, a single length of it costs more than a hundred pieces of gold, and a robe made from it goes into the sea and comes out dry.",
+      "But the most famous thing about the jiaoren is their tears. When a jiaoren weeps, every tear turns into a pearl.",
+      "Once, the story goes, a jiaoren came up out of the sea and stayed at a person's house as a guest. For some days she sold her silk in the town. When it was time to go home, she asked her host for an empty plate. She wept into it, and handed it back full of pearls: her thank-you for the kindness.",
+      "So the jiaoren are also called the spring guests. And when poets looked at the moon shining on the sea, they thought of them. \"Moonlight on the wide sea,\" wrote the poet Li Shangyin, \"and the pearls have tears.\""
+    ]
+  },
+  "cards": [
+    {
+      "id": "JR1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Jiaoren",
+      "name": "Zhu'er, the Littlest Jiaoren",
+      "flavor": "Her name means Little Pearl. She has never cried a tear that wasn't one.",
+      "kitten": {
+        "name": "Zhu'er, the Littlest Jiaoren",
+        "abilities": [
+          {
+            "static": {
+              "grant": {
+                "keywords": [
+                  "Pearl Tears"
+                ]
+              },
+              "to": {
+                "each": "own"
+              }
+            }
+          },
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "heal": 2
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "unitsInComposts": {
+              "atLeast": 4
+            }
+          }
+        },
+        "text": "Your units have Pearl Tears.\nExhaust: Heal 2 from a unit you control.\nAwaken: 4 or more Fabled and Creatures are in the Mist."
+      },
+      "bigCat": {
+        "name": "Zhu'er, Pearl of the Moonlit Sea",
+        "power": 3,
+        "abilities": [
+          {
+            "static": {
+              "grant": {
+                "health": 1,
+                "keywords": [
+                  "Pearl Tears"
+                ]
+              },
+              "to": {
+                "each": "own"
+              }
+            }
+          },
+          {
+            "when": "exhaust",
+            "do": [
+              {
+                "readyTreats": 2
+              }
+            ]
+          }
+        ],
+        "text": "Your units get +1 Health and Pearl Tears.\nExhaust: Ready two of your Offerings."
+      },
+      "frame": "gold"
+    },
+    {
+      "id": "JR1-D01",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "The Spring Guest",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "flavor": "She stayed a few days to sell her silk. Leaving, she wept a plate of pearls for her host.",
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "readyTreats": 2
+            }
+          ]
+        }
+      ],
+      "text": "Goodbye: Ready two of your Offerings."
+    },
+    {
+      "id": "JR1-D02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Weaver of the Sea Hall",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "flavor": "Deep under the South Sea, her loom never stops.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Draw a card."
+    },
+    {
+      "id": "JR1-D03",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Jiaoren",
+      "name": "Dragon Silk",
+      "cost": 2,
+      "flavor": "Woven by the jiaoren. A robe of it goes into the sea and comes out dry.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "health": 3,
+              "keywords": [
+                "Guardian"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "text": "Attached unit gets +3 Health and Guardian."
+    },
+    {
+      "id": "JR1-D04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Pearl Oyster",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "flavor": "When the moon is full, the oysters are full. When the moon is dark, they are empty.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "readyTreats": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Ready one of your Offerings."
+    },
+    {
+      "id": "JR1-D05",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Jiaoren of the Tide Pools",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "keywords": [
+        "Pearl Tears"
+      ],
+      "flavor": "Lives in the water like a fish, and cries like one of us.",
+      "text": "Pearl Tears."
+    },
+    {
+      "id": "JR1-D06",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Ice Silkworm",
+      "cost": 1,
+      "power": 2,
+      "health": 1,
+      "flavor": "Covered in frost and snow, it spins a cocoon a foot long. Its silk won't wet or burn."
+    },
+    {
+      "id": "JR1-D07",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Jiaoren Children at Play",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "keywords": [
+        "Zoomies"
+      ],
+      "flavor": "Racing the fish through the Dragon-Silk Palace.",
+      "text": "Swift."
+    },
+    {
+      "id": "JR1-D08",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Guest from the Deep",
+      "cost": 2,
+      "power": 1,
+      "health": 3,
+      "keywords": [
+        "Guardian",
+        "Pearl Tears"
+      ],
+      "flavor": "The guests from the deep are moved to tears, and weep pearls.",
+      "text": "Guardian. Pearl Tears."
+    },
+    {
+      "id": "JR1-D09",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Keeper of the Dragon-Silk Palace",
+      "cost": 3,
+      "power": 2,
+      "health": 4,
+      "keywords": [
+        "Guardian",
+        "Pearl Tears"
+      ],
+      "flavor": "Some of the silk inside is as white as frost. She lets no one near it.",
+      "text": "Guardian. Pearl Tears."
+    },
+    {
+      "id": "JR1-D10",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Jiaoren Pearl-Healer",
+      "cost": 4,
+      "power": 3,
+      "health": 5,
+      "flavor": "A little pearl, ground to powder, for every hurt.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Heal 2 from each unit you control."
+    },
+    {
+      "id": "JR1-D11",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Muke, the Wood Guests",
+      "cost": 5,
+      "power": 5,
+      "health": 5,
+      "flavor": "They leave timber under the tree and take a fair price. Nobody ever sees their faces.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Draw a card."
+    },
+    {
+      "id": "JR1-D12",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Elder of the South Sea",
+      "cost": 8,
+      "power": 7,
+      "health": 7,
+      "keywords": [
+        "Guardian",
+        "Fierce",
+        "Pearl Tears"
+      ],
+      "flavor": "The jiaoren live beyond the South Sea. He has seen every wave of it.",
+      "text": "Guardian. Fierce. Pearl Tears."
+    },
+    {
+      "id": "JR1-D13",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Jiaoren",
+      "name": "A Plate of Pearls",
+      "cost": 1,
+      "keywords": [
+        "Pounce"
+      ],
+      "flavor": "The thank-you gift of a guest from the sea.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            },
+            {
+              "readyTreats": 1
+            }
+          ]
+        }
+      ],
+      "text": "Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings."
+    },
+    {
+      "id": "JR1-D14",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Jiaoren",
+      "name": "The Sea Turns Rough",
+      "cost": 4,
+      "keywords": [
+        "Lucky"
+      ],
+      "flavor": "The South Sea is calm, until it isn't.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "any"
+          },
+          "do": [
+            {
+              "damage": 5
+            }
+          ]
+        }
+      ],
+      "text": "Lucky. Deal 5 damage to a unit."
+    },
+    {
+      "id": "JR1-D15",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Jiaoren",
+      "name": "Moonlit Sea, Pearls with Tears",
+      "cost": 1,
+      "keywords": [
+        "Lucky"
+      ],
+      "flavor": "A line from the poet Li Shangyin. Even enemies stop to look.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            }
+          ]
+        }
+      ],
+      "text": "Lucky. Exhaust an enemy unit."
+    },
+    {
+      "id": "JR1-D16",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Jiaoren",
+      "name": "Frost-White Silk",
+      "cost": 1,
+      "flavor": "The finest jiaoren silk, white as frost.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "health": 2,
+              "keywords": [
+                "Pearl Tears"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "text": "Attached unit gets +2 Health and Pearl Tears."
+    },
+    {
+      "id": "JR1-D17",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Jiaoren",
+      "name": "Quanxian, First of the Springs",
+      "cost": 5,
+      "power": 4,
+      "health": 5,
+      "keywords": [
+        "Guardian",
+        "Pearl Tears"
+      ],
+      "flavor": "The jiaoren are also called the spring guests. She came first.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "readyTreats": 2
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Pearl Tears. Hello: Ready two of your Offerings."
+    },
+    {
+      "id": "JR1-D18",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Jiaoren",
+      "name": "The Muke Poet",
+      "cost": 4,
+      "power": 3,
+      "health": 4,
+      "flavor": "\"The town is all noise and dust. Back to the mountain, to play with the moon.\"",
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "draw": 2
+            }
+          ]
+        }
+      ],
+      "text": "Goodbye: Draw 2 cards."
+    },
+    {
+      "id": "JR1-D19",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Jiaoren",
+      "name": "The Oldest Weaver",
+      "cost": 8,
+      "power": 8,
+      "health": 8,
+      "keywords": [
+        "Fierce",
+        "Pearl Tears"
+      ],
+      "flavor": "The jiaoren never stop weaving. She hasn't stopped for a thousand years.",
+      "text": "Fierce. Pearl Tears."
+    },
+    {
+      "id": "JR1-D20",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Jiaoren",
+      "name": "Tears of Gratitude",
+      "cost": 1,
+      "keywords": [
+        "Pounce"
+      ],
+      "flavor": "Moved by a kindness, a jiaoren weeps pearls.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Ambush. A unit you control gets +2 Power this round."
+    }
+  ],
+  "mechanics": {
+    "Pearl Tears": {
+      "family": "Jiaoren",
+      "kind": "keyword",
+      "reminder": "When this unit is damaged and survives, ready one of your Offerings.",
+      "abilities": [
+        {
+          "when": "damagedAndSurvives",
+          "do": [
+            {
+              "readyTreats": 1
+            }
+          ]
+        }
+      ],
+      "icon": "💧"
+    }
+  },
+  "decks": {
+    "jiaoren": {
+      "name": "Jiaoren",
+      "hero": "JR1-H01",
+      "cards": {
+        "JR1-D01": 3,
+        "JR1-D02": 3,
+        "JR1-D03": 3,
+        "JR1-D04": 3,
+        "JR1-D05": 3,
+        "JR1-D06": 3,
+        "JR1-D07": 3,
+        "JR1-D08": 3,
+        "JR1-D09": 3,
+        "JR1-D10": 3,
+        "JR1-D11": 2,
+        "JR1-D12": 2,
+        "JR1-D13": 3,
+        "JR1-D14": 2,
+        "JR1-D15": 2,
+        "JR1-D16": 3,
+        "JR1-D17": 1,
+        "JR1-D18": 1,
+        "JR1-D19": 1,
+        "JR1-D20": 3
+      },
+      "blurb": "Every tear is a pearl. Hurt a jiaoren and she weeps you an Offering; led by Zhu'er, the Littlest Jiaoren.",
+      "price": 999
+    }
+  },
+  "released": "2026-12"
+}

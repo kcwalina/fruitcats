@@ -109,6 +109,17 @@ export async function takeLock(name, { pid = process.pid, waitMinutes = 20 } = {
   }
 }
 
+/** The pid that holds the deploy lock for `name`, or null when nobody does. */
+export function lockHolder(name) {
+  try { return JSON.parse(readFileSync(join(LOCKS, `${name}.lock`), 'utf8')).pid ?? null; } catch { return null; }
+}
+
+/** Refuses unless `pid` holds the deploy lock for `name` (a step handed to a child process runs under its parent's lock). */
+export function requireLockHeldBy(name, pid) {
+  const holder = lockHolder(name);
+  if (holder !== pid) throw new Error(`The ${name} deploy lock is held by ${holder ?? 'nobody'}, not ${pid}. Run npm run deploy, which takes it.`);
+}
+
 export function releaseLock(name) {
   rmSync(join(LOCKS, `${name}.lock`), { force: true });
 }

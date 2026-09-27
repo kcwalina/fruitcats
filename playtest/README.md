@@ -18,7 +18,7 @@ than the starter decks, and LLM players look for what the bots can't.
 | `npm run nightly` | All of it, unattended: full gauntlet (with the library decks), deck hunt, LLM games with custom decks and then the starters until the time is up, and what changed since the last run. | a night |
 
 **Which cards playtests use.** Only the sets listed in `playtest.config.json` under `sets.play` are loaded: today
-Domowiki, Pari and Aluxes (DW1, PR1, AL1). Their decks are the starter decks every gauntlet and the deploy gate test,
+Domowiki, Pari, Aluxes and Jiaoren (DW1, PR1, AL1, JR1). Their decks are the starter decks every gauntlet and the deploy gate test,
 and their cards are the only ones random, changed and LLM-built decks may use. The Starter Box (Zest Rush, Orchard
 Guard, Mango Tango) and the older prototypes are retired from playtests; a library deck built from their cards can't
 be played and the next library night removes it. Add a new set's code to the list when it joins.

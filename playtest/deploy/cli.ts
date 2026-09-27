@@ -20,6 +20,11 @@
 //
 // --force-balance deploys despite a blocking balance problem (say why in the commit); --dry-run stops
 // before the push and upload.
+//
+// The cards (CARDS, and everything that imports content/) load when this process starts, before step 0's merge. When
+// the merge brings anything in, steps 1-7 run in a fresh copy of this command (--after-merge), under this one's lock,
+// so they check the merged cards: with the old ones, deleting a set failed the bundle check and crashed the balance
+// check (its workers loaded the new cards, this process still had the old).
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -34,10 +39,12 @@ import { runMain } from '../lib/pool';
 import { precacheProblems } from '../../apps/web/src/sw-rules';
 import { buildRunner } from './runner-bundle';
 import { siteSize, sizeProblem } from './size-guard';
-import { fetchMain, requireClean, requireLiveInHead, requireOnMain, takeLock } from '../../scripts/git/deploy-guard.mjs';
+import { fetchMain, head, requireClean, requireLiveInHead, requireLockHeldBy, requireOnMain, takeLock } from '../../scripts/git/deploy-guard.mjs';
 import { HOW_TO_FIX, describe, lostInRange } from '../../scripts/git/lost-work.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+/** Set on the copy of this command that runs the checks after the merge (see the top). */
+const AFTER_MERGE = 'after-merge';
 const DIST = join(ROOT, 'apps/web/dist');
 const SITE = 'https://fruitcats.viamochi.com';
 const AZURE = { name: 'fruitcats', group: 'mochi-tcg', subscription: '57c8ee32-8d62-47b9-9eec-1c0ef6d0e39f' };
@@ -72,13 +79,14 @@ const hasMain = () => spawnSync('git', ['merge-base', '--is-ancestor', 'origin/m
 
 /**
  * Brings origin/main in (a merge, which the lost-work check can read, not a rebase), and refuses if any merge not on
- * main yet dropped work that's already there.
+ * main yet dropped work that's already there. True when the merge changed the checkout.
  */
-function integrate(): void {
+function integrate(): boolean {
   // The pre-push hook runs the same check on every push to main, deploy or not.
   run('git', ['config', 'core.hooksPath', '.githooks']);
   fetchMain(ROOT);
   requireClean(ROOT);
+  const before = head(ROOT);
   if (!hasMain()) {
     const merged = spawnSync('git', ['merge', '--no-edit', 'origin/main'], { cwd: ROOT, encoding: 'utf8' });
     if (merged.status !== 0) {
@@ -88,6 +96,26 @@ function integrate(): void {
     }
     console.log('   merged origin/main');
   }
+  checkNothingLost();
+  return head(ROOT) !== before;
+}
+
+/**
+ * Runs steps 1-7 in a new copy of this command, which loads the cards as merged. This process keeps the lock and waits.
+ * tsx's loader comes along in execArgv.
+ */
+function continueInFreshProcess(): number {
+  console.log('   the merge changed the checkout: continuing in a fresh process, so the checks read the merged cards');
+  const r = spawnSync(process.execPath, [...process.execArgv, process.argv[1], ...process.argv.slice(2), `--${AFTER_MERGE}`], { cwd: ROOT, stdio: 'inherit' });
+  if (r.error) throw r.error;
+  return r.status ?? 1;
+}
+
+/** The copy started by continueInFreshProcess: its parent holds the lock and has just merged; check both. */
+function requireMergedUnderLock(): void {
+  requireLockHeldBy('site', process.ppid);
+  requireClean(ROOT);
+  if (!hasMain()) throw new Error('This checkout lacks origin/main: run npm run deploy, which merges it.');
   checkNothingLost();
 }
 
@@ -191,15 +219,14 @@ async function fetchText(url: string): Promise<string> {
 
 runMain(async () => {
   step(0, 'Up to date with main');
+  if (flag(AFTER_MERGE)) { requireMergedUnderLock(); return deploy(); }
   // Every session's worktree is on this machine: one deploy at a time, or two could each pass the checks below
   // against the same main and the slower one would take the faster one's work off the site.
   const unlock = await takeLock('site');
-  try { return await deploy(); } finally { unlock(); }
+  try { return integrate() ? continueInFreshProcess() : await deploy(); } finally { unlock(); }
 });
 
 async function deploy(): Promise<number> {
-  integrate();
-
   step(1, 'Type-check and tests');
   run('npm', ['run', 'typecheck']);
   run('npx', ['vitest', 'run']);

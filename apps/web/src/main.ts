@@ -11,7 +11,7 @@ import { yourCardUrl } from './rarity';
 import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
 import { ACCOUNTS, ONLINE, STORE } from './flags';
-import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
+import { openStore, openStoreForDeck, renderStore, storeClick, storeCodeEnter, storeCodeInput, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
 import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
@@ -847,16 +847,16 @@ function renderHome(): string {
           return `
         <button class="mode-card ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
           ${friend?.badge ? `<span class="mode-badge" aria-label="${friend.badge} waiting">${friend.badge}</span>` : ''}
-          <img src="${BASE}ui/card-${m.key}.webp" alt="">
+          <img src="${BASE}ui/place-${m.key}.webp" alt="">
           <span class="mode-text"><span class="mode-name">${m.name}</span>${status}</span>
         </button>`;
         }).join('')}
       </div>`).join('')}
       <div class="mode-group mode-more">
         <button class="mode-card mini" data-click="home:tutorial" title="A guided first game with tips">
-          <img src="${BASE}ui/card-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
+          <img src="${BASE}ui/place-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
         <a class="mode-card mini" href="${BASE}docs.html">
-          <img src="${BASE}ui/card-docs.webp" alt=""><span class="mode-name">Documentation</span></a>
+          <img src="${BASE}ui/place-docs.webp" alt=""><span class="mode-name">Documentation</span></a>
       </div>
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
@@ -979,11 +979,13 @@ function renderSoloFooter(): string {
 function renderSolo(): string {
   return `
   <div class="menu solo">
+    <div class="scene-bg scene-solo" aria-hidden="true"></div>
     <div class="setup-bar">
       ${backButton()}
-      <h2>Solo game</h2>
+      <span></span>
       ${settingsButton()}
     </div>
+    <header class="scene-title"><h1>Solo game</h1></header>
     <div class="setup-body">
       ${renderDeckPicker()}
       <section class="picker difficulty-picker">
@@ -1430,6 +1432,8 @@ app.addEventListener('input', (event) => {
   if (field) accountInput(field);
   const pf = ONLINE ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-pf]:not([type="checkbox"])') : null;
   if (pf) friendsInput(pf);
+  const code = (event.target as HTMLElement).closest<HTMLInputElement>('[data-storecode]');
+  if (code) storeCodeInput(code.value);
 });
 // Play with a friend's Teaching game switch is a checkbox: it reports a change, not input.
 app.addEventListener('change', (event) => {
@@ -1441,6 +1445,8 @@ app.addEventListener('keydown', (event) => {
   if (input && event.key === 'Enter') input.blur();
   const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
   if (field && event.key === 'Enter' && field.tagName !== 'TEXTAREA') { event.preventDefault(); accountEnter(field, { render }); }
+  const code = (event.target as HTMLElement).closest<HTMLInputElement>('[data-storecode]');
+  if (code && event.key === 'Enter') { event.preventDefault(); storeCodeEnter(storeHost); }
 });
 
 app.addEventListener('click', (event) => {

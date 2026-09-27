@@ -1,8 +1,8 @@
 # Aluxes (AL1): the second folklore deck
 
 The second deck of the folklore re-theme (see [folk-creatures.md](folk-creatures.md) and
-[designing-good-deck.md](designing-good-deck.md)): the aluxes, the little guardians of the Maya cornfield. It is
-free in the Store, like the old Starter Box decks; the Domowiki stay the starter deck everyone has.
+[designing-good-deck.md](designing-good-deck.md)): the aluxes, the little guardians of the Maya cornfield. It is a
+starter deck, one every player has, next to the Domowiki and the Pari.
 
 Status: released (2026-11), data in `content/2026/11/aluxes/set.json`. Last updated 2026-09-26.
 
@@ -119,10 +119,11 @@ Direction and one subject per card in `art/prompts.json`; drawn with
 `python tools/generate_art.py --set al1 --model gpt-image-2 --quality high --jobs 1 --reference <the owner's image>`
 (one at a time; the rate limit refuses anything faster) and composed with `python tools/compose_cards.py --set al1`.
 
-## In the Store
+## Everyone has it
 
-The deck has `"price": 0`, so the Store shows it with a **Get · Free** button, the same as the old Starter Box decks,
-and it works while buying is off. Changing the price is the owner's call.
+The set is `"starter": true`, so the deck is in every player's Collection from the start, like the Domowiki and the
+Pari (the owner's call, 2026-09-26: the deck wasn't showing in the Collection while it was only a free Store deck,
+which needs a tester account). Making it a Store deck later is one line in the set.
 
 ## What it needs built
 

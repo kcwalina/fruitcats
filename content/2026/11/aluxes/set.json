@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "status": "released",
   "released": "2026-11",
+  "starter": true,
   "requires": [
     "SB1"
   ],
@@ -593,8 +594,7 @@
         "AL1-D18": 3,
         "AL1-D19": 3
       },
-      "blurb": "Patient guardians of the cornfield. Wall up, heal with the rain, and let the Rain-Fed corn grow tall.",
-      "price": 0
+      "blurb": "Patient guardians of the cornfield. Wall up, heal with the rain, and let the Rain-Fed corn grow tall."
     }
   }
 }

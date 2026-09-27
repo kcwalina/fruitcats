@@ -55,3 +55,9 @@ that the imperfection is what makes it. The prompts now ask for a fast, loose ha
 five-mark faces. The model still keeps colour inside its lines, so `tools/bleed_colour.py` finishes each picture: it
 blurs and shifts only the colour (not the ink lines) a few pixels, so the washes spread past the lines like the
 original. Run it on every new Hui Hai picture after `generate_art.py`.
+
+Fourth pass (2026-09-27): the owner noted that the tiger has strong colour in unexpected places (green eyes, a lilac-grey
+crown, a red tongue, a green-and-red disc), while our figures were all cream with a pink outline. The prompts now paint
+each figure in several solid colours laid on as broad patches (bright spring greens and jade, lilac-grey hair, red
+sashes, orange flowers, green eyes), with pink edging only here and there. The pictures are now a little darker and more
+saturated than the tiger (mean value about 165 against 189); that is the price of the added colour.

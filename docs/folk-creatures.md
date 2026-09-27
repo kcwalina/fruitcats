@@ -310,6 +310,124 @@ undone until dawn chased them off, and that is how people learned to make fishin
 - More: [Wikipedia, Patupaiarehe](https://en.wikipedia.org/wiki/Patupaiarehe)
 - Image: a painting of patupaiarehe by V. Deroles ([Commons](https://commons.wikimedia.org/wiki/File:Patupaiarehe_(V._Deroles).jpg)).
 
+## Vietnam (proposed)
+
+Researched 2026-09-27 at the owner's request: a Vietnamese deck that does not look like a slightly different take
+on the [Jiaoren](#jiaoren). Two research passes: one on the folklore of the Việt (Kinh) majority, one on the Central
+Highlands peoples (Ba Na, Jarai, Ê Đê and others), the northern peoples (Tày, Nùng, Thái, Mường, H'Mông) and the
+Cham. Nothing is picked yet.
+
+To stay clear of the Jiaoren, these leave out the sea, pearls, silk and weaving, and anything that is a Chinese
+figure with a Vietnamese name (dragons, the lân, the phoenix, fox spirits, the Jade Emperor's court, Chang'e). They
+lean instead on what Vietnam shares with Southeast Asia rather than with China: betel chewing, rice souls, the banyan
+tree, the mountain peoples' Yàng spirits.
+
+| Creature | From | Lore in one line |
+|---|---|---|
+| [Ông Bình Vôi](#ông-bình-vôi) | Việt (Kinh) | A lime pot so old its mouth has closed is never thrown away: it retires to the village banyan with all the other old pots and guards the village. |
+| [The rice that rolled home](#the-rice-that-rolled-home) | Việt, Ba Na, Jarai, Mường | Rice grains were once as big as pomelos and rolled home by themselves, until someone was rude to them. |
+| [Mẻ Bjoóc's flower-souls](#mẻ-bjoócs-flower-souls) | Tày, Nùng | Every child is a flower in Mother Flower's garden in the sky, gold for boys and silver for girls. |
+| [Hui Hai](#hui-hai) | Ba Na | Tiny, invisible, very strong forest folk; you know you have offended one when a pebble lands at your feet. |
+
+**Recommendation:** Ông Bình Vôi. It meets every criterion (many small beings, a real custom, gentle, mysterious,
+nothing like anything Chinese) and comes with a ready-made family from a 15th-century book. Second choice: the rice
+that rolled home, with the Hui Hai joining it as the forest side of the Highlands' spirit world.
+
+### Ông Bình Vôi
+
+**From:** the Việt (Kinh), northern and central Vietnam. "Ông" is "Mister" or "Grandfather"; a *bình vôi* is a
+lime pot.
+
+Every home that chewed betel kept a small clay pot of slaked lime (lime, betel leaf and areca nut are chewed
+together). Each time lime was scooped out, a little stuck to the rim, and over the years the crust grew until the pot
+closed its own mouth. Such a pot was never thrown away. It had become *Ông Bình Vôi*, a small household guardian, and
+was carried to the foot of the village's old banyan tree or to the family graves, where it sat among the other
+retired pots of the village. Some families pulled out its stopper every night so it could keep watch over the house.
+
+The betel itself has a story in *Lĩnh Nam chích quái* (15th century), "Truyện Trầu Cau": two loving brothers and
+the wife of the elder die one after another and become the areca tree, the betel vine and the limestone, which is
+why the three are always chewed together and why betel is offered at every wedding.
+
+- Why it fits: a whole colony of old pots, each from a different family, plus Areca, Betel and Limestone as three
+  heroes. Ordinary things with a quiet mystery, gentle, and Southeast Asian: China has no betel culture.
+- Drawable: squat round pots with a spout and a loop handle, crusted white with lime, lined up among banyan roots;
+  red betel stains, lacquered betel trays (*cơi trầu*), areca palms.
+- Care: one website story makes the pot a spiteful monk who died on a branch; it is not in the old collections, so
+  leave it out. The betel story ends in three deaths; keep it sad but gentle. The custom is fading, so older
+  Vietnamese know it well and younger ones may not.
+- Sources: [Wikipedia (Vietnamese), Bình vôi](https://vi.wikipedia.org/wiki/B%C3%ACnh_v%C3%B4i); Phan Khôi's essay
+  [Ông bình vôi](https://vi.wikisource.org/wiki/%C3%94ng_b%C3%ACnh_v%C3%B4i) (1956), which describes the custom
+  first-hand (it belongs to a political controversy, so borrow the custom, not the essay);
+  [Lĩnh Nam chích quái, in translation](https://dotchuoinon.com/wp-content/uploads/2010/11/linhnamchichquai_march18_2015.pdf).
+
+### The rice that rolled home
+
+**From:** told by the Việt and across the Central Highlands (Ba Na *Yang Sri*, Jarai *Yang Hri*), with cousins
+among the Mường and Thái and elsewhere in Southeast Asia.
+
+Rice has a soul, the "rice mother" (*mẹ lúa*), who lives in the stalk. Long ago the grains were as big as pomelos
+and, when ripe, rolled home to the granary by themselves. Then a woman who hadn't finished sweeping scolded them, or
+hit one with her broom, and it shattered. The rice spirit took offence, and since then the grains are small and
+people must cut, carry and thresh them. The Ba Na still strip the rice by hand, because a sickle would cut its soul,
+and after harvest they hold a ceremony to put the rice soul to sleep in the granary for the winter.
+
+- Why it fits: the best single hook of the search, a crowd of rice-grain beings with the Rice Mother at their head,
+  and a gentle comedy. Nothing like it in Chinese lore.
+- Drawable: round, glossy grain-beings trundling down hill paths to stilt-house granaries, a sleepy rice mother
+  tucked into a basket for winter, a guilty broom.
+- Care: rice rites are still practised in the Highlands; show them respectfully, never as a mock ritual. Some
+  retellings make the rice spirit the Jade Emperor's daughter, a Chinese frame: leave it out. The rolling-rice tale is
+  mostly known from modern retellings; the Highland rice-soul customs are better documented.
+- Sources: [University of Social Sciences and Humanities, HCMC, on rice-soul beliefs in the Highlands](https://khoavanhoc-ngonngu.edu.vn/dao-tao/4420-so-sanh-tin-ngng-hn-lua-trong-i-sng-vn-hoa-c-truyn-hai-nhom-tc-ngi-nam-o-va-mon-kh-me-trng-sn-tay-nguyen.html),
+  [Viettoc, the Jarai Yang Hri rite](https://viettoc.org/le-cung-than-lua-nga-yang-hri/), [the Ba Na tale "Hạt lúa
+  thần"](https://thegioivanhoc.com/hat-lua-than/).
+
+### Mẻ Bjoóc's flower-souls
+
+**From:** the Tày and Nùng of the northeast (Cao Bằng, Lạng Sơn). *Mẻ Bjoóc* is "Mother Flower".
+
+In the sky, Mother Flower keeps a garden where every child's soul grows as a flower, gold for boys and silver for
+girls, and she hands the flowers down to couples. When a child's soul wanders off and the child falls ill, a *Then*
+singer journeys up to the garden to tend the flower's roots, and a paper flower is placed on Mother Flower's altar at
+home.
+
+- Why it fits: the most beautiful premise found, distinctly Tày, and almost unknown even to other Vietnamese.
+  Supporting cards could come from the same world: the twelve moon daughters who lend seeds in the Tày spring
+  festival Nàng Hai.
+- Care: Then is a living practice (on UNESCO's list since 2019), and children's illness is tender ground: keep the
+  deck about the garden, not about sickness.
+- Sources: [Báo Cao Bằng, the soul-calling rite](https://baocaobang.vn/-45416.html),
+  [the Nàng Hai festival](https://scov.gov.vn/ban-sac-van-hoa/gioi-thieu-ban-sac-van-hoa/le-hoi-nang-hai-tin-nguong-dac-sac-cua-nguoi-tay-o-cao-bang.html).
+  Very little in English.
+
+### Hui Hai
+
+**From:** the Ba Na (Bahnar) of Gia Lai and Kon Tum. *Hui Hai* are the men, *Yă Hui Hai* the women (*yă* is
+"grandmother" or "lady").
+
+Invisible people of miniature size who live in the forests and streams. They are small but very strong, and they
+throw stones at people who behave badly in the forest. Nobody has seen one: you know one is there when a pebble lands
+at your feet. From the same source: the *Gơhlŏu*, "an imaginary thing that lives in trees and smells good".
+
+- Why it fits: the only true little folk found in Vietnam, gentle and mysterious, exactly the brief.
+- Trade-off: one source only. Check the entry in Guilleminet's *Dictionnaire bahnar–français* (1959) before building
+  a deck on it. It could also join the rice deck as the forest side of the Highland spirit world.
+- Source: [Trần et al., "Yang, forest animism… among the Bahnar"](https://pmc.ncbi.nlm.nih.gov/articles/PMC13513994/).
+
+**Other finds for Vietnam:** the **Nghê**, the village's gentle mythical guard dog, which carries a lamp on its head
+where China puts fierce stone lions (very drawable, but it has almost no stories); **Tứ Pháp**, four rain-goddess
+sisters (Cloud, Rain, Thunder, Lightning) carved from one banyan log (a living temple cult); **Cuội**, the boy who
+clung to a flying banyan and still sits on the moon (famous in Vietnam, and always paired with Chinese Chang'e); the
+**Tết pole**, where people won the land from greedy *quỷ* by asking only for the shade of a robe on a bamboo pole (the
+quỷ would have to stay comic); the Khơ Mú **gourd people**, all of Vietnam's peoples once tiny folk queueing inside
+one gourd (an origin myth tied to skin colour and ethnicity, so risky); the **three hearth stones** (Ông Công Ông
+Táo) and the Mường **twelve-handled egg**, both good stories, but partly Chinese or funeral liturgy.
+
+**Left out:** ma lai, ma da, ma trành, ma cà rồng and ma xó (frightening); ma gà and *phi pọp* (accusations of these
+still harm real people); the Jarai Kings of Fire, Water and Wind (living ritual offices held by real people); the
+Cham Po Inư Nưgar (living religion, born from sea foam); the hundred eggs of Âu Cơ (a dragon father, the sea, and
+the nation's origin story); Nàng tiên ốc (a snail).
+
 ## On hold
 
 Creatures the owner has put aside for now. Not rejected: they may come back as a later deck.

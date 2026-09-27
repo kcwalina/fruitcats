@@ -1049,3 +1049,11 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 @media (max-width: 640px) { .home .modes .mode-card.mini { width: 34%; } .home .modes .mode-card.mini img { width: 72%; } }
 body .setup-bar h2, body .picker h2 { font-family: var(--serif-sc); font-weight: 600; letter-spacing: 0.06em; }
 @media (max-width: 640px) { .home .mode-more { display: flex; justify-content: center; gap: 48px; width: 100%; } .home .modes .mode-card.mini { width: 30%; } .home .modes .mode-card.mini img { width: 80%; } }
+/* Tablets: the deck builder's tiles a size up, in a centred column, so they don't look like small labels on a big page. */
+@media (min-width: 700px) and (min-height: 700px) {
+  .deck-tiles { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .deck-tile { min-height: 108px; gap: 16px; padding: 10px 18px 10px 10px; }
+  .deck-tile-art { width: 88px; height: 88px; }
+  .deck-tile .deck-name { font-size: 24px; }
+  .deck-tile-sub { font-size: 14.5px; }
+}

@@ -931,8 +931,12 @@ button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
 .hand-card.playable { filter: none; }
 .hand-card.playable img { box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
 /* Hover only nudges cards that aren't chosen; a chosen card keeps ONE fixed position whether or not the
-   mouse is over it, so clicking never makes it bounce (the old hover and "picked" offsets fought). */
-.hand-card:not(.picked):not(.selected):hover { transform: translateY(-8%); z-index: 5; filter: none; }
+   mouse is over it, so clicking never makes it bounce (the old hover and "picked" offsets fought).
+   Mouse only: a touch screen keeps :hover on the last card tapped, so a card tapped a second time (unpicked)
+   stayed raised instead of sitting back down in the row. */
+@media (hover: hover) {
+  .hand-card:not(.picked):not(.selected):hover { transform: translateY(-8%); z-index: 5; filter: none; }
+}
 .hand-card.picked, .hand-card.selected, .hand-card.picked:hover, .hand-card.selected:hover {
   transform: translateY(-22%); z-index: 6; filter: none; transition: none;
 }
@@ -985,7 +989,10 @@ body.dragging .hand-card:hover { transform: none; }
 .game-over.lost h2 { color: var(--orchard); }
 .game-over .buttons { justify-content: center; margin-top: calc(var(--vh, 1vh) * 1.2); }
 .rules { text-align: left; line-height: 1.45; }
-.rules h2 { margin-top: 0; }
+.rules h2 { margin-top: 0; padding-right: 44px; }
+/* Close in the top corner, where every dialog has it: Got it at the very bottom was the only way out, and a reader
+   who doesn't scroll never sees it. */
+.rules .rules-close { position: sticky; top: 0; float: right; margin: -6px -14px 0 8px; font-size: 28px; line-height: 1; z-index: 1; }
 @keyframes pop { from { transform: scale(0.9); opacity: 0; } }
 
 /* Narrow screens: the side panel becomes a slim strip under the board; the card inspector is dropped

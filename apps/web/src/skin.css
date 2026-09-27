@@ -26,8 +26,10 @@
 /* Folkborn's neutral grove: warm graphite with a little soft glow, so every deck's art style sits well on it. */
 body.menu-screen { background: var(--img-menu-bg) center / cover no-repeat, #2e2d31; }
 @media (orientation: portrait) { body.menu-screen { background-image: var(--img-menu-bg-tall); } }
+/* In a game the board is the whole screen: what shows around its edges is a plain dark table, not slivers of the
+   menu's grove (which looked like clutter poking out from behind the board). */
 body.game-screen {
-  background: linear-gradient(rgba(20, 20, 24, 0.35), rgba(20, 20, 24, 0.5)), var(--img-menu-bg) center / cover no-repeat, #2e2d31;
+  background: radial-gradient(120% 90% at 50% 40%, #35302b 0%, #1c1917 100%), #1c1917;
 }
 
 /* Buttons: soft 3D that presses down on click. :where() keeps this base style at the lowest

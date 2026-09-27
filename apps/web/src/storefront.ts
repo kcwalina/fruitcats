@@ -39,8 +39,8 @@ type View = { kind: 'browse' } | { kind: 'deck'; product: string } | { kind: 'ca
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'] as const;
 
 let view: View = { kind: 'browse' };
-/** The list's tab: Folkborn's decks (the main one), or the Legacy decks from before the folklore re-theme. */
-type Tab = 'main' | 'legacy';
+/** The list's tab: Folkborn's decks (the main one), the Legacy decks from before the folklore re-theme, or Codes. */
+type Tab = 'main' | 'legacy' | 'code';
 let tab: Tab = 'main';
 /** A line under the header after something happened ("Added 3 cards to your cart"). */
 let notice = '';
@@ -72,8 +72,8 @@ let checkout: null | {
 /** After an order: its cards, one at a time, then all together. */
 let reveal: null | { cards: string[]; copies: Record<string, number>; index: number; all: boolean } = null;
 let resetAsk = false;
-/** "Have a code?": the code as typed, while the API checks it, and why it didn't work. */
-let codeAsk: null | { text: string; busy: boolean; message: string } = null;
+/** The Codes tab: the code as typed, while the API checks it, and why it didn't work. */
+let code = { text: '', busy: false, message: '' };
 /**
  * An order sent without an answer (the connection dropped). It may have gone through, so the next try sends the
  * same id: the API then answers with that order instead of taking a second one.
@@ -89,7 +89,7 @@ export function openStore(host: StoreHost) {
   notice = '';
   checkout = null;
   reveal = null;
-  codeAsk = null;
+  code = { text: '', busy: false, message: '' };
   refresh(host);
 }
 
@@ -127,7 +127,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
     case 'deck': view = { kind: 'deck', product: arg }; break;
     case 'card': view = { kind: 'card', product: arg }; break;
     case 'browse': view = { kind: 'browse' }; break;
-    case 'tab': tab = arg === 'legacy' ? 'legacy' : 'main'; view = { kind: 'browse' }; break;
+    case 'tab': tab = arg === 'legacy' || arg === 'code' ? arg : 'main'; view = { kind: 'browse' }; break;
     case 'retry': refresh(host); break;
     case 'cart': view = canBuy() ? { kind: 'cart' } : { kind: 'browse' }; break;
     case 'add': {
@@ -138,8 +138,6 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
       break;
     }
     case 'get': void getFree(arg, host); return;
-    case 'code': codeAsk = { text: '', busy: false, message: '' }; break;
-    case 'nocode': if (!codeAsk?.busy) codeAsk = null; break;
     case 'redeem': void useCode(host); return;
     case 'more': setLineQty(arg, inCart(arg) + 1); break;
     case 'less': setLineQty(arg, inCart(arg) - 1); break;
@@ -182,8 +180,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
 
 /** Escape: close the topmost thing. True if it did something. */
 export function storeEscape(host: StoreHost): boolean {
-  if (codeAsk) { if (codeAsk.busy) return true; codeAsk = null; }
-  else if (resetAsk) resetAsk = false;
+  if (resetAsk) resetAsk = false;
   else if (checkout && !['placing', 'paying', 'finishing'].includes(checkout.stage)) checkout = null;
   else if (reveal) { if (!reveal.all) reveal.all = true; else reveal = null; }
   else if (view.kind !== 'browse') view = { kind: 'browse' };
@@ -301,25 +298,28 @@ async function getFree(product: string, host: StoreHost) {
 
 /** The code box: what's typed is kept as it's typed (no redraw, so the keyboard stays up). */
 export function storeCodeInput(text: string) {
-  if (codeAsk && !codeAsk.busy) codeAsk.text = text;
+  if (!code.busy) code.text = text;
 }
 /** Enter in the code box: the same as "Get the deck". */
 export function storeCodeEnter(host: StoreHost) {
   void useCode(host);
 }
 
-/** "Get the deck" with a code: the API checks it and gives the deck, then its cards are revealed like an order's. */
+/**
+ * "Get the deck" with a code: the API checks it and gives the deck, then its cards are revealed like an order's, and the
+ * Store is back on Folkborn, where the deck now says you have every card.
+ */
 async function useCode(host: StoreHost) {
-  if (!codeAsk || codeAsk.busy) return;
-  if (!codeAsk.text.trim()) { codeAsk.message = 'Type the code you were given.'; host.render(); return; }
-  codeAsk = { ...codeAsk, busy: true, message: '' };
+  if (code.busy) return;
+  if (!code.text.trim()) { code.message = 'Type the code you were given.'; host.render(); return; }
+  code = { ...code, busy: true, message: '' };
   host.render();
-  const result = await redeemCode(codeAsk.text);
-  if (!codeAsk) return;
+  const result = await redeemCode(code.text);
   if (!result.ok) {
-    codeAsk = { ...codeAsk, busy: false, message: result.message };
+    code = { ...code, busy: false, message: result.message };
   } else {
-    codeAsk = null;
+    code = { text: '', busy: false, message: '' };
+    tab = 'main';
     const deck = result.order.lines[0]?.product;
     const name = deck ? catalog()?.products[deck] : undefined;
     if (result.repeated) notice = `You used this code already: ${name?.kind === 'deck' ? `the ${name.name} deck` : 'its deck'} is in your collection.`;
@@ -384,7 +384,7 @@ export function renderStore(): string {
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}
     ${body}
   </div>
-  ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}${renderCodeDialog()}`;
+  ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}`;
 }
 
 /** A card's picture as the Store sells it: the standard print, or the Signature print for a Signature card (its only print). */
@@ -422,6 +422,7 @@ function priceChip(full: number, now: number): string {
 function renderShop(): string {
   const cat = catalog()!;
   const owned = ownedNow();
+  if (tab === 'code') return shopPage(renderCodes());
   const here = Object.values(cat.products).filter((p) => isLegacySet(p.set) === (tab === 'legacy'));
   const decks = here.filter((p): p is DeckProduct => p.kind === 'deck');
   const cards = here.filter((p): p is CardProduct => p.kind === 'card')
@@ -431,13 +432,16 @@ function renderShop(): string {
     : tab === 'main'
       ? '<div class="store-empty"><h2>New decks are on the way</h2><p>The first Folkborn deck comes to the Store soon.</p></div>'
       : '<div class="store-empty"><h2>No Legacy decks</h2></div>';
+  return shopPage(`${tab === 'legacy' ? '<p class="tab-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : ''}${list}`);
+}
+
+/** The Store's page around a tab's content: the tabs, then the content, then the note about your account. */
+function shopPage(content: string): string {
   const tabButton = (t: Tab, label: string) =>
     `<button role="tab" class="${tab === t ? 'chosen' : ''}" aria-selected="${tab === t}" data-click="store:tab:${t}">${label}</button>`;
   return `<main class="store-main">
-      <nav class="store-tabs" role="tablist" aria-label="Store">${tabButton('main', 'Folkborn')}${tabButton('legacy', 'Legacy')}</nav>
-      ${tab === 'legacy' ? '<p class="tab-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : ''}
-      ${list}
-      <button class="store-btn ghost code-btn" data-click="store:code">${TICKET}Have a code?</button>
+      <nav class="store-tabs" role="tablist" aria-label="Store">${tabButton('main', 'Folkborn')}${tabButton('legacy', 'Legacy')}${tabButton('code', 'Codes')}</nav>
+      ${content}
       <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</span></p>
       ${renderTesterTools()}
     </main>`;
@@ -766,23 +770,18 @@ function renderTesterTools(): string {
   </footer>`;
 }
 
-/** "Have a code?": type a code you were given, and its deck joins your collection. Nothing is paid. */
-function renderCodeDialog(): string {
-  if (!codeAsk) return '';
-  const { text, busy, message } = codeAsk;
-  return `<div class="overlay"><div class="settings delete-dialog code-dialog" role="dialog" aria-label="Have a code?">
+/** The Codes tab: type a code you were given, and its deck joins your collection. Nothing is paid. */
+function renderCodes(): string {
+  const { text, busy, message } = code;
+  return `<section class="code-panel" aria-label="Codes">
+    <span class="code-icon">${TICKET}</span>
     <h2>Have a code?</h2>
     <p>If you were given a code for a deck, type it here. The deck joins your collection, and there’s nothing to pay.</p>
-    <label class="account-field">Code
-      <input data-storecode class="store-code" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
-        maxlength="40" placeholder="XXXX-XXXX-XXXX" value="${esc(text)}" ${busy ? 'disabled' : ''}>
-    </label>
+    <input data-storecode class="store-code" aria-label="Code" autocomplete="off" autocapitalize="characters" spellcheck="false"
+      enterkeyhint="go" maxlength="40" placeholder="XXXX-XXXX-XXXX" value="${esc(text)}" ${busy ? 'disabled' : ''}>
     ${message ? `<p class="code-problem" role="alert">${esc(message)}</p>` : ''}
-    <div class="delete-buttons">
-      <button data-click="store:nocode" ${busy ? 'disabled' : ''}>Cancel</button>
-      <button class="primary" data-click="store:redeem" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Get the deck'}</button>
-    </div>
-  </div></div>`;
+    <button class="store-btn buy wide" data-click="store:redeem" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Get the deck'}</button>
+  </section>`;
 }
 
 /** What "Add to cart" says while buying isn't open: everything can be looked at, nothing bought yet. */

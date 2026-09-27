@@ -558,12 +558,20 @@
   opacity: 1; animation: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
 }
 
-/* ── Codes: "Have a code?" under the list, and its dialog ── */
-.store-screen button.store-btn.code-btn { display: flex; margin: clamp(22px, 3.6vw, 32px) auto 0; }
-.store-screen button.store-btn.code-btn svg { flex: none; }
-.code-dialog .account-field { margin: 0 0 14px; }
-.code-dialog input.store-code {
+/* ── The Codes tab: a code for a deck, on a panel like an empty tab's ── */
+.code-panel {
+  max-width: 460px; margin: 0 auto; padding: clamp(26px, 5vw, 40px) clamp(18px, 4vw, 30px); text-align: center;
+  border-radius: 22px; background: var(--tile); border: 1px solid var(--line);
+}
+.code-icon { display: inline-flex; padding: 12px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-deep); }
+.code-icon svg { width: 28px; height: 28px; }
+.code-panel h2 { margin: 12px 0 8px; font: 600 clamp(22px, 3vw, 26px)/1.2 Fredoka, Nunito, sans-serif; color: var(--ink); }
+.code-panel p { margin: 0 0 18px; font-weight: 600; color: var(--ink-2); line-height: 1.45; }
+.code-panel input.store-code {
+  display: block; width: 100%; box-sizing: border-box; margin: 0 0 14px; padding: 14px 12px; border-radius: 14px;
+  border: 1.5px solid #ebc9a2; background: #fffaf3; color: #3b2a1c;
   font: 800 22px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-align: center; text-transform: uppercase;
 }
-.code-dialog input.store-code::placeholder { color: #c9b8a2; letter-spacing: 0.12em; }
-.delete-dialog p.code-problem { margin: -4px 0 14px; color: #b3261e; }
+.code-panel input.store-code:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(242, 154, 82, 0.3); }
+.code-panel input.store-code::placeholder { color: #c9b8a2; letter-spacing: 0.12em; }
+.code-panel p.code-problem { margin: -4px 0 14px; color: #e0685e; }

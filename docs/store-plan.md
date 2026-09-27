@@ -209,8 +209,8 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 ### Codes: a deck without paying (2026-09-27)
 
 The owner's call: until buying opens, and afterwards for testers, friends and giveaways, a deck can be given with a
-code. Under the list the Store has **Have a code?**: type the code, tap **Get the deck**, and the deck's cards are
-revealed like an order's. It works while buying is off (`STORE=preview`) because nothing is paid; it is not a way
+code. The Store's third tab, **Codes** (next to Folkborn and Legacy, the owner's call), says "Have a code?": type the
+code, tap **Get the deck**, and the deck's cards are revealed like an order's, then the Store is back on Folkborn. It works while buying is off (`STORE=preview`) because nothing is paid; it is not a way
 around the payment work, which stays closed.
 
 - **Making codes:** `npm run store-code -w @fruitcats/api -- <deck key> [--uses N] [--note "why"]` (e.g. `jiaoren`)

@@ -341,7 +341,6 @@ export function renderStore(): string {
           ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>` : ''}
       </div>
       <div class="sb-inner">
-        <div class="sb-eyebrow">Folkborn</div>
         <h1>${title}</h1>
         ${view.kind === 'browse' ? '<p class="sb-tagline">Decks and cards for your collection.</p>' : ''}
       </div>

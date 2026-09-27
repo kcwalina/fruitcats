@@ -21,6 +21,8 @@
 /** How the worker answers one request. `key`: the address it is stored under (shell and packs). */
 export type Route =
   | { strategy: 'shell'; key: string }
+  /** The game's page: the site's, if it answers within PAGE_TIMEOUT_MS; else the stored one. */
+  | { strategy: 'page'; key: string }
   | { strategy: 'packs'; key: string }
   | { strategy: 'runtime' }
   | { strategy: 'network' };
@@ -54,11 +56,12 @@ export function route(req: RequestInfo, ctx: RouteContext): Route {
   if (url.origin === scope.origin) {
     if (!url.pathname.startsWith(scope.pathname)) return { strategy: 'network' };
     const path = decodeURIComponent(url.pathname.slice(scope.pathname.length));
-    // The game's page, however it's opened (?mute, ?invite=…, ?prototypes): always the stored index.html. Other pages
-    // (the Studio, the Portal, the docs) aren't the game's and go to the network.
+    // The game's page, however it's opened (?mute, ?invite=…, ?prototypes): from the site when it answers in time, so a
+    // reload always brings the newest version as it did before the worker; the stored index.html when it doesn't
+    // (offline, or the site down). Other pages (the Studio, the Portal, the docs) aren't the game's: the network.
     if (req.mode === 'navigate') {
       return (path === '' || path === 'index.html') && ctx.precache.has('index.html')
-        ? { strategy: 'shell', key: 'index.html' } : { strategy: 'network' };
+        ? { strategy: 'page', key: 'index.html' } : { strategy: 'network' };
     }
     if (/^packs\/.+\.json$/.test(path)) return { strategy: 'packs', key: url.origin + url.pathname };
     // Built scripts and styles (assets/, named by their contents) and the game's other files are looked up in every
@@ -85,6 +88,24 @@ export function route(req: RequestInfo, ctx: RouteContext): Route {
 export const RUNTIME_MAX_ENTRIES = 500;
 /** A kept picture is fetched again in the background once it's older than this, so new art reaches the player. */
 export const RUNTIME_REFRESH_MS = 24 * 60 * 60 * 1000;
+/** How long the site gets to send the game's page before the stored copy is served. */
+export const PAGE_TIMEOUT_MS = 3000;
+
+/** The version a page from the site runs, as the build wrote it into its index.html; null when it has none. */
+export const versionInPage = (html: string): string | null =>
+  /<meta name="folkborn-version" content="([^"]+)"/.exec(html)?.[1] ?? null;
+
+/**
+ * The game's page came from the site: serve it, or the stored page of the last version that started? The site's page
+ * runs the site's version, so the same rule as chooseVersion applies to it: once that version has failed to start
+ * twice lately and a version that started is stored, the stored one.
+ */
+export function pageToServe(state: BootState, siteVersion: string | null, stored: readonly string[], now: number): 'site' | string {
+  if (!siteVersion) return 'site';
+  const pick = chooseVersion(state, siteVersion, stored, now);
+  return pick === siteVersion ? 'site' : pick;
+}
+
 /** How long the network gets to answer for a pack list before the stored copy is used (content.ts gives up at 1.5 s). */
 export const PACKS_TIMEOUT_MS = 1000;
 

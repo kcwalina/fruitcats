@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  EMPTY_STATE, FALLBACK_FOR_MS, afterFailure, chooseVersion, evictions, failed, isShellFile, needsRefresh, precacheProblems,
-  readState, route, shellCache, staleCaches, started, type RouteContext,
+  EMPTY_STATE, FALLBACK_FOR_MS, afterFailure, chooseVersion, evictions, failed, isShellFile, needsRefresh, pageToServe, precacheProblems,
+  readState, route, shellCache, staleCaches, started, versionInPage, type RouteContext,
 } from '../src/sw-rules';
 
 const SITE = 'https://fruitcats.viamochi.com/';
@@ -15,9 +15,9 @@ const get = (url: string, mode = 'no-cors') => route({ url, method: 'GET', mode 
 
 describe('route', () => {
   it('serves the game page from the stored shell, however it is opened', () => {
-    expect(route({ url: SITE, method: 'GET', mode: 'navigate' }, ctx)).toEqual({ strategy: 'shell', key: 'index.html' });
-    expect(route({ url: `${SITE}?mute&invite=AB12`, method: 'GET', mode: 'navigate' }, ctx)).toEqual({ strategy: 'shell', key: 'index.html' });
-    expect(route({ url: `${SITE}index.html`, method: 'GET', mode: 'navigate' }, ctx)).toEqual({ strategy: 'shell', key: 'index.html' });
+    expect(route({ url: SITE, method: 'GET', mode: 'navigate' }, ctx)).toEqual({ strategy: 'page', key: 'index.html' });
+    expect(route({ url: `${SITE}?mute&invite=AB12`, method: 'GET', mode: 'navigate' }, ctx)).toEqual({ strategy: 'page', key: 'index.html' });
+    expect(route({ url: `${SITE}index.html`, method: 'GET', mode: 'navigate' }, ctx)).toEqual({ strategy: 'page', key: 'index.html' });
   });
 
   it('leaves the other pages to the network', () => {
@@ -173,5 +173,28 @@ describe('the build list', () => {
     expect(precacheProblems(['index.html', 'assets/main-abc.js'], html)).toEqual(['packs/index.json is not in the precache list']);
     expect(precacheProblems(['index.html', 'packs/index.json'], html)).toEqual(['the entry script assets/main-abc.js is not in the precache list']);
     expect(precacheProblems(['index.html', 'packs/index.json'], '<p>no script</p>')).toEqual(['index.html loads no entry script']);
+  });
+});
+
+describe('the game page from the site', () => {
+  const html = (v: string) => `<!doctype html><head><meta charset="UTF-8" />\n    <meta name="folkborn-version" content="${v}" /></head>`;
+
+  it('reads the version the site’s page runs', () => {
+    expect(versionInPage(html('abc123'))).toBe('abc123');
+    expect(versionInPage('<html></html>')).toBeNull();
+  });
+
+  it('serves the site’s page, so a reload brings the newest version', () => {
+    expect(pageToServe(EMPTY_STATE, 'new', ['old'], 0)).toBe('site');
+    expect(pageToServe({ good: 'old', failures: { new: 1 }, lastFailureAt: 0 }, 'new', ['old'], 1000)).toBe('site');
+    expect(pageToServe(EMPTY_STATE, null, [], 0)).toBe('site');
+  });
+
+  it('serves the stored page that started, once the site’s version has failed to start twice', () => {
+    const state = { good: 'old', failures: { new: 2 }, lastFailureAt: 1000 };
+    expect(pageToServe(state, 'new', ['old', 'new'], 2000)).toBe('old');
+    // Not when the good one isn't stored any more, and not a day after the last failure: try the new one again.
+    expect(pageToServe(state, 'new', ['new'], 2000)).toBe('site');
+    expect(pageToServe(state, 'new', ['old'], 1000 + FALLBACK_FOR_MS + 1)).toBe('site');
   });
 });

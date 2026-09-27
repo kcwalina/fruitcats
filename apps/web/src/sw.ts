@@ -7,6 +7,10 @@
 // which version to serve) is in sw-rules.ts, tested on its own; this file only moves bytes. docs/offline.md has the
 // whole picture.
 //
+// The game's page comes from the site whenever the site answers in time, so a reload brings the newest version, as it
+// did before there was a worker; the stored page is for when the site doesn't answer (offline, or the site down), and
+// for the last-good fallback.
+//
 // Updates: the page asks for sw.js again at each launch (offline.ts). A new version stores its files in the background,
 // in a cache of its own, and then waits. The browser hands over once every window of the game has closed, so the new
 // version takes over at the next launch and never in the middle of a game (no skipWaiting: a page running one version
@@ -14,8 +18,8 @@
 // version has started once (the last-good fallback).
 
 import {
-  EMPTY_STATE, PACKS_TIMEOUT_MS, SHELL_PREFIX, chooseVersion, evictions, failed, needsRefresh, readState, route,
-  shellCache, staleCaches, started, versionOfCache, type BootState, type RouteContext,
+  EMPTY_STATE, PACKS_TIMEOUT_MS, PAGE_TIMEOUT_MS, SHELL_PREFIX, chooseVersion, evictions, failed, needsRefresh, pageToServe,
+  readState, route, shellCache, staleCaches, started, versionInPage, versionOfCache, type BootState, type RouteContext,
 } from './sw-rules';
 
 declare const __SW_VERSION__: string;
@@ -107,6 +111,7 @@ worker.addEventListener('fetch', (e) => {
   const r = route({ url: req.url, method: req.method, mode: req.mode }, ctx());
   if (r.strategy === 'network') return;   // not answered: the browser goes to the network as if there were no worker
   if (r.strategy === 'shell') e.respondWith(fromShell(r.key, req));
+  else if (r.strategy === 'page') e.respondWith(page(req));
   else if (r.strategy === 'packs') e.respondWith(packs(r.key, req, e));
   else e.respondWith(runtime(req, e));
 });
@@ -122,6 +127,27 @@ async function fromShell(path: string, req: Request): Promise<Response> {
     if (hit) return hit;
   }
   return fetch(req);
+}
+
+/**
+ * The game's page: the site's, when it answers within PAGE_TIMEOUT_MS, unless the version it runs has failed to start
+ * twice lately and a version that started is stored (then that one's page). The stored page when the site doesn't answer.
+ */
+async function page(req: Request): Promise<Response> {
+  const site = await Promise.race([
+    fetch(req).catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), PAGE_TIMEOUT_MS)),
+  ]);
+  if (site?.ok) {
+    const html = await site.text().catch(() => null);
+    if (html !== null) {
+      const pick = pageToServe(await loadState(), versionInPage(html), await storedVersions(), Date.now());
+      const kept = pick === 'site' ? undefined : await (await caches.open(shellCache(pick))).match(address('index.html'));
+      // A page built afresh: one that came through a redirect can't answer a page load.
+      return kept ?? new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+    }
+  }
+  return fromShell('index.html', req);
 }
 
 /** Pack lists and set data: the network if it answers within PACKS_TIMEOUT_MS, else the last copy kept. */

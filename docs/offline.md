@@ -41,11 +41,15 @@ change you are making.
 
 ## Updates
 
-At each launch the page asks for the worker's script again. When a new version has been deployed, the browser downloads
-its files in the background into a store of their own. The new version takes over at the next launch, once every
-window of the game has closed. It never takes over a game in progress, because a page running one version while
-another serves its files can fail to load its next script. On a phone that means the app has to be closed (swiped
-away) and opened again. In a browser tab, the tab has to be closed and opened again; reloading is not enough.
+The game's page comes from the site whenever the site answers within 3 seconds, so opening or reloading the game
+brings the newest version, as it did before there was a worker. The stored page is used only when the site doesn't
+answer (offline, or the site down), and for the last-good fallback below.
+
+The stored copy is updated separately. At each launch the page asks for the worker's script again. When a new version
+has been deployed, the browser downloads its files in the background into a store of their own. The new worker takes
+over once every window of the game has closed, never during a game in progress: a page running one version while
+another serves its files can fail to load its next script. Until then, an offline launch gets the version stored
+before.
 
 ## The last-good fallback
 

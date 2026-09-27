@@ -34,3 +34,12 @@ is not done until it is live.
 
 Every security fix gets a test that fails without the fix. Tests run on every deploy, so a fix that goes missing
 stops the next deploy, instead of silently reopening the hole.
+
+## Game words (Folkborn)
+
+What players read for the game's own concepts is in `packages/engine/src/terms.json`: Offerings (not Treats), Candles
+(not Lives), the Lantern (not the Yarn Ball), Creature / Charm / Talisman, Swift / Ambush, Hero / Fabled / Awaken,
+Wildfolk. Card text is generated from it (`npm run write-text`). The code keeps its old names (`treats`, `pantry`,
+`Zoomies`, `'Hero Cat'`…) because saved games and the online protocol use them; only players' words changed.
+`check-set` (and so every deploy) refuses the retired words in any card's text, name, flavor or a set's hints. Don't
+work around it: use the new words.

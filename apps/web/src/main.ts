@@ -37,8 +37,8 @@ import {
 
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
 
-/** The painted Lantern (the file is still yarn.webp; an emoji looks like a small dot on some devices). */
-const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/yarn.webp" alt="Lantern">`;
+/** The painted Lantern (an emoji looks like a small dot on some devices). */
+const YARN_ICON = `<img class="yarn-ico" src="${BASE}ui/lantern.webp" alt="Lantern">`;
 // Absolute URLs: a relative url() inside a CSS variable resolves against the stylesheet that uses it
 // (dist/assets/…) rather than the page, which broke the backgrounds in the published build.
 // The shell's backdrop is Folkborn's neutral grove (grove-tall on portrait screens), so every deck's art style fits on it.

@@ -94,7 +94,7 @@ function docHeader(current: string): string {
     `<a class="doc-tab" href="./${d.html}"${d.html === current ? ' aria-current="page"' : ''}>${d.tab}</a>`).join('');
   return `<div class="doc-head">
       <header class="topbar">
-        <a class="home-button" href="./" title="Play Fruitcats" aria-label="Play Fruitcats"><img src="./ui/icon-home.webp" alt="" width="30" height="30" /></a>
+        <a class="home-button" href="./" title="Play Folkborn" aria-label="Play Folkborn"><img src="./ui/icon-home.webp" alt="" width="30" height="30" /></a>
         <a class="page-title" href="./docs.html"${current === 'docs.html' ? ' aria-current="page"' : ''}>Documentation</a>
         <span class="topbar-balance" aria-hidden="true"></span>
       </header>

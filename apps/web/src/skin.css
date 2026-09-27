@@ -817,3 +817,5 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 #zoom-overlay img { box-shadow: 0 0 0 3px var(--honey), 0 24px 60px rgba(0, 0, 0, 0.6); }
 /* Rules, Settings and Home beside the board: walnut plaques like the panels. */
 body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
+/* The Lantern swings from its handle. */
+.yarn .yarn-ico { transform-origin: 50% 6%; }

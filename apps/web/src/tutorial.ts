@@ -10,7 +10,7 @@
 import { cardName, isGuardian, legalActions, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 import { count, note } from './progress';
 
-const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/yarn.webp" alt="Lantern">`;
+const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/lantern.webp" alt="Lantern">`;
 
 type Text = string | ((s: GameState) => string);
 

@@ -1635,6 +1635,8 @@ if (ONLINE) onlineTicks(renderUnlessAnimating);
 // a friend, go straight to the game. (Anywhere else, the Friend tile says "Back to the game".)
 if (ONLINE) onGameFound(() => {
   if (screen !== 'home' && screen !== 'friends') return;
+  // A game played directly opens from the other device (or this one), with no connection to the API needed.
+  if (isPeerMatch(live.match) && !ol) { send({ t: 'rejoin', match: live.match! }); return; }
   if (screen !== 'friends') { openFriends(friendsHost); screen = 'friends'; }
   render();   // Play a friend connects, and the connection takes the game back up (welcome's match)
 });

@@ -467,3 +467,10 @@ async function call<T>(id: string, what: string, body: Record<string, unknown> =
     return { status: 0, body: null };
   }
 }
+
+// In development only: the game played directly, for looking into it from the console.
+if (import.meta.env.DEV) (window as unknown as { peerState?: () => unknown }).peerState = () => run && {
+  note: run.note, host: !!run.host, attached: run.attached, linked: run.linked, attempt: run.attempt,
+  pc: run.pc && { connection: run.pc.connectionState, ice: run.pc.iceConnectionState, signaling: run.pc.signalingState, gathering: run.pc.iceGatheringState },
+  dc: run.dc?.readyState ?? null,
+};

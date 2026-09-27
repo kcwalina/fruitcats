@@ -93,7 +93,7 @@ export function startLive(host: { render(): void }) {
   signedIn = true;
   // A game this device was running directly, when it was last open: carry on with it, even before the API answers.
   const kept = resumeLocalGame();
-  if (kept) { live.match = kept.match; startPeer(kept, false); }
+  if (kept) { live.match = kept.match; startPeer(kept, false); gameFound(); }
   void sayHere();
 }
 

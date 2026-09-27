@@ -26,8 +26,10 @@
 /* A glowing night wood where the folk creatures live (the owner's reference, 2026-09-27). */
 body.menu-screen { background: var(--img-menu-bg) center / cover no-repeat, #1c2418; }
 @media (orientation: portrait) { body.menu-screen { background-image: var(--img-menu-bg-tall); } }
+/* In a game the board is the whole screen: what shows around its edges is a plain night-blue table (the board's
+   own table colour), not slivers of the menu's wood, which looked like clutter poking out from behind the board. */
 body.game-screen {
-  background: linear-gradient(rgba(20, 20, 24, 0.35), rgba(20, 20, 24, 0.5)), var(--img-menu-bg) center / cover no-repeat, #1c2418;
+  background: radial-gradient(120% 90% at 50% 40%, #1a2038 0%, #0c0d1f 100%), #0c0d1f;
 }
 
 /* Buttons: soft 3D that presses down on click. :where() keeps this base style at the lowest

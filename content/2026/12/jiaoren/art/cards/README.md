@@ -18,6 +18,16 @@ Each Hero starts on its first side and Awakens into its second. .
 
 </table>
 
+## Jiaoren deck (led by Zhu'er, the Littlest Jiaoren)
+
+<table>
+<tr><td align="center"><img src="JR1-D01.webp" width="180" alt="The Spring Guest"><br><b>The Spring Guest</b><br><sub>JR1-D01 ×3</sub></td><td align="center"><img src="JR1-D02.webp" width="180" alt="Weaver of the Sea Hall"><br><b>Weaver of the Sea Hall</b><br><sub>JR1-D02 ×3</sub></td><td align="center"><img src="JR1-D03.webp" width="180" alt="Dragon Silk"><br><b>Dragon Silk</b><br><sub>JR1-D03 ×3</sub></td><td align="center"><img src="JR1-D04.webp" width="180" alt="Pearl Oyster"><br><b>Pearl Oyster</b><br><sub>JR1-D04 ×3</sub></td></tr>
+<tr><td align="center"><img src="JR1-D05.webp" width="180" alt="Jiaoren of the Tide Pools"><br><b>Jiaoren of the Tide Pools</b><br><sub>JR1-D05 ×3</sub></td><td align="center"><img src="JR1-D06.webp" width="180" alt="Ice Silkworm"><br><b>Ice Silkworm</b><br><sub>JR1-D06 ×3</sub></td><td align="center"><img src="JR1-D07.webp" width="180" alt="Jiaoren Children at Play"><br><b>Jiaoren Children at Play</b><br><sub>JR1-D07 ×3</sub></td><td align="center"><img src="JR1-D08.webp" width="180" alt="Guest from the Deep"><br><b>Guest from the Deep</b><br><sub>JR1-D08 ×3</sub></td></tr>
+<tr><td align="center"><img src="JR1-D09.webp" width="180" alt="Keeper of the Dragon-Silk Palace"><br><b>Keeper of the Dragon-Silk Palace</b><br><sub>JR1-D09 ×3</sub></td><td align="center"><img src="JR1-D10.webp" width="180" alt="Jiaoren Pearl-Healer"><br><b>Jiaoren Pearl-Healer</b><br><sub>JR1-D10 ×3</sub></td><td align="center"><img src="JR1-D11.webp" width="180" alt="Muke, the Wood Guests"><br><b>Muke, the Wood Guests</b><br><sub>JR1-D11 ×2</sub></td><td align="center"><img src="JR1-D12.webp" width="180" alt="Elder of the South Sea"><br><b>Elder of the South Sea</b><br><sub>JR1-D12 ×2</sub></td></tr>
+<tr><td align="center"><img src="JR1-D13.webp" width="180" alt="A Plate of Pearls"><br><b>A Plate of Pearls</b><br><sub>JR1-D13 ×3</sub></td><td align="center"><img src="JR1-D14.webp" width="180" alt="The Sea Turns Rough"><br><b>The Sea Turns Rough</b><br><sub>JR1-D14 ×2</sub></td><td align="center"><img src="JR1-D15.webp" width="180" alt="Moonlit Sea, Pearls with Tears"><br><b>Moonlit Sea, Pearls with Tears</b><br><sub>JR1-D15 ×2</sub></td><td align="center"><img src="JR1-D16.webp" width="180" alt="Frost-White Silk"><br><b>Frost-White Silk</b><br><sub>JR1-D16 ×3</sub></td></tr>
+<tr><td align="center"><img src="JR1-D17.webp" width="180" alt="Quanxian, First of the Springs"><br><b>Quanxian, First of the Springs</b><br><sub>JR1-D17 ×1</sub></td><td align="center"><img src="JR1-D18.webp" width="180" alt="The Muke Poet"><br><b>The Muke Poet</b><br><sub>JR1-D18 ×1</sub></td><td align="center"><img src="JR1-D19.webp" width="180" alt="The Oldest Weaver"><br><b>The Oldest Weaver</b><br><sub>JR1-D19 ×1</sub></td><td align="center"><img src="JR1-D20.webp" width="180" alt="Tears of Gratitude"><br><b>Tears of Gratitude</b><br><sub>JR1-D20 ×3</sub></td></tr>
+</table>
+
 ## Garden (in both decks)
 
 <table>

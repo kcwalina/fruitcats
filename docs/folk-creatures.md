@@ -4,10 +4,12 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 [retheme-proposal.md](retheme-proposal.md)). This is the list of creatures for the first decks: one from every
 inhabited continent, plus backups.
 
-**In the game now: the Domowiki, the Pari and the Aluxes.** Since 2026-09-26 the Domowiki are the game's starter
+**In the game now: the Domowiki, the Pari, the Aluxes and the Jiaoren.** Since 2026-09-26 the Domowiki are the game's starter
 deck, the one every player has (content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)), and the Pari are the
 second starter deck (content/2026/10/pari, [pari-set.md](pari-set.md)), and the Aluxes the third
-(content/2026/11/aluxes, [aluxes-set.md](aluxes-set.md)). The other creatures below are planned decks.
+(content/2026/11/aluxes, [aluxes-set.md](aluxes-set.md)). The Jiaoren (content/2026/12/jiaoren,
+[jiaoren-set.md](jiaoren-set.md)) are the first deck sold in the Store, since 2026-09-27. The other creatures below
+are planned decks.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
 from a research pass (about 170 articles, one agent per continent), and the owner approved them, with Veli for
@@ -40,7 +42,7 @@ generators were left out.
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg/330px-An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg" width="80"> | [Pari](#pari) | Persia (Iran) | **In the game (a starter deck).** Winged beings of Persian poetry and fairy tales, once harmful spirits, later the very picture of beauty and goodness. [More](https://en.wikipedia.org/wiki/Par%C4%AB) |
 | <img src="https://www.rappler.com/tachyon/2025/10/Tabi-tabi-po.jpg" width="80"> | [Nuno sa punso](#nuno-sa-punso) | Philippines | The old man of the mound: step past an anthill without saying "tabi tabi po" (excuse me) and he'll make you pay. [More](https://en.wikipedia.org/wiki/Nuno_sa_punso) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/MET_1986_510.jpg/330px-MET_1986_510.jpg" width="80"> | [Yech](#yech) | Kashmir, India | A sprite in a white cap that comes near houses on snowy nights; snatch the cap and it grants your wishes. [More](https://searchkashmir.org/yach/) |
-| | [Jiaoren](#jiaoren) | South China Sea | **Prototype deck.** Sea people who weave silk that never gets wet and weep pearls; one stayed as a guest and left her host a plate of pearls. [More](https://zh.wikipedia.org/zh-hans/鮫人) |
+| | [Jiaoren](#jiaoren) | South China Sea | **In the game (in the Store, $9.99).** Sea people who weave silk that never gets wet and weep pearls; one stayed as a guest and left her host a plate of pearls. [More](https://zh.wikipedia.org/zh-hans/鮫人) |
 | <img src="https://archive.org/download/1930-rattray/page/n82_w800.jpg" width="80"> | [Mmoatia](#mmoatia) | Akan, Ghana | Foot-high forest folk with backward feet who talk in whistles, love bananas, and teach healing. [More](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/) |
 | <img src="https://2114141.fs1.hubspotusercontent-na1.net/hubfs/2114141/Imported_Blog_Media/2307-Casita-del-Alux-by-Alberto-Chuc-3.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | **In the game (the second deck).** A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Momoy_I.jpg/330px-Momoy_I.jpg" width="80"> | [Momoyes](#momoyes) | Andes of Venezuela | Knee-high bearded men of the mountain lakes; leave litter by their lake and they give it back to you. [More](https://es.wikipedia.org/wiki/Momoy) |
@@ -146,7 +148,8 @@ host full of pearls.
   tomb burned "mermaid oil": leave that out. Draw them fully clothed.
 - Cousins: a Tang poem says the southern mountain folk "trade with the jiaoren and marry the Muke", so the
   [Muke](#muke) could join the deck.
-- **Prototype deck:** four cards in the owner's style reference, [jiaoren-set.md](jiaoren-set.md).
+- **In the game** since 2026-09-27, sold in the Store at $9.99. Its hero is Zhu'er, the littlest jiaoren. Cards,
+  lore and art: [jiaoren-set.md](jiaoren-set.md).
 - Sources: *Soushen Ji* 12 and *Shuyi Ji* ([Wikisource](https://zh.wikisource.org/zh-hant/述異記)), *Bowu Zhi*
   (quoted in [Wikipedia (Classical Chinese), 鮫人](https://zh-classical.wikipedia.org/wiki/鮫人)).
 

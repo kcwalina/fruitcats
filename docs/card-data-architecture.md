@@ -62,6 +62,7 @@ Still to do is listed at the end.
 | Domowiki (DW1) | `content/2026/10/domowiki/` | released, the starter (docs/domowiki-set.md) | none needed |
 | Pari (PR1) | `content/2026/10/pari/` | released, a second starter (docs/pari-set.md) | none needed |
 | Aluxes (AL1) | `content/2026/11/aluxes/` | released, a third starter (docs/aluxes-set.md) | none needed |
+| Jiaoren (JR1) | `content/2026/12/jiaoren/` | released, sold in the Store at $9.99 (docs/jiaoren-set.md) | none needed |
 
 ## Cards as data: abilities
 

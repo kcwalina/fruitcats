@@ -875,3 +875,10 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 /* The title on the forest: warm cream with a soft lantern glow (it was cool white with an aqua glow on the grey grove). */
 .title h1 { color: #f3e7cf; text-shadow: 0 0 18px rgba(240, 190, 90, 0.35), 0 3px 0 #1a130e, 0 8px 18px rgba(0, 0, 0, 0.6); }
 .title p { color: rgba(243, 231, 207, 0.88); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+
+/* The account chip's initial (no Portrait yet) sits on the walnut plaque like the gear, in cream. */
+.account-avatar:not(.is-image), .corner-face .account-avatar.small:not(.is-image) { color: var(--plaque-ink); background: var(--plaque); box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e; text-shadow: none; }
+/* Setup choices are plaques: nearly square corners, like the home tiles. */
+.deck-choice, .difficulty-choice { border-radius: 4px; }
+/* Tutorial and Documentation fit their tiles at phone width. */
+@media (max-width: 400px) { .modes .mode-card.mini .mode-name { font-size: 12px; letter-spacing: 0; } }

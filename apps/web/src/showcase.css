@@ -374,31 +374,41 @@ button.undo-btn {
 :is(.collection-screen, .viewer-overlay) button.viewer-card.finish-signature:hover:not(:disabled) { box-shadow: 0 0 18px rgba(255, 120, 40, 0.5); }
 .tile-card.finish-signature { box-shadow: 0 0 18px rgba(255, 120, 40, 0.5), 0 10px 24px rgba(0, 0, 0, 0.5); }
 
-/* ── Collection home: the Showcase, then each deck you have, as covers (the Store's .slot, store.css) ── */
-.col-title { margin: 0; justify-self: center; font: 600 20px/1 Fredoka, Nunito, sans-serif; color: #fff; letter-spacing: 0.3px; text-align: center; }
+/* ── Collection home: the Showcase, then each deck you have, as covers (the paintings in their frames: .deck-slot, store.css) ── */
+.col-title { margin: 0; justify-self: center; font: 600 20px/1 Fredoka, Nunito, sans-serif; color: #f3e7cf; text-shadow: 0 0 14px rgba(240, 190, 90, 0.3), 0 2px 0 #1a130e; letter-spacing: 0.3px; text-align: center; }
 .decks-page { flex: 1; min-height: 0; overflow-y: auto; padding: 10px var(--corner-right, 16px) 40px var(--corner-left, 16px); }
-.deck-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 14px; max-width: 880px; margin: 0 auto; }   /* five to a row on a computer */
+/* Rows of covers, a short last row centred under the others, as paintings are hung. --cols covers to a row. */
+.deck-covers { --cols: 2; --gap: 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px var(--gap); max-width: 760px; margin: 0 auto; }
+.deck-covers > .deck-cover { flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); min-width: 0; }
 .collection-screen button.deck-cover {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px 12px;
   background: none; border: none; box-shadow: none; border-radius: 16px; color: #fff;
 }
 .collection-screen button.deck-cover:hover:not(:disabled) { transform: translateY(-4px); box-shadow: none; background: rgba(255, 255, 255, 0.05); }
-.deck-cover .slot { width: 88%; margin-bottom: 10px; --shade: 0, 0, 0; }
-.deck-cover .cover-name { font: 600 16px/1.15 Fredoka, Nunito, sans-serif; text-align: center; }
-.deck-cover .cover-sub { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
-/* The Showcase's cover: your first favourite as the cover itself, or a star on gold when it's empty. */
-.showcase-slot .cover { padding: 0; background: linear-gradient(160deg, #6b4a12, #2a1a08); align-items: center; justify-content: center; }
-.showcase-slot .cover-pick { display: block; width: 100%; height: 100%; object-fit: cover; }
-.showcase-slot .cover-empty { font-size: 64px; color: #ffd76a; text-shadow: 0 0 24px rgba(255, 215, 106, 0.6); }
+.deck-cover .slot.deck-slot { width: 100%; margin-bottom: 12px; }
+/* The cover's frame, as the Home tiles draw theirs: a walnut plaque with a thin brass line, square corners, a
+   soft shadow; one dark hairline round the painting, and a warm mat under it while it loads. */
+.deck-cover .deck-slot .frame {
+  padding: 4.4%; border-radius: 1px; background: var(--plaque);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 12px 20px -10px rgba(0, 0, 0, 0.75);
+}
+.deck-cover .deck-slot .sight { --mat: #3a3029; --mat-ink: rgba(246, 236, 220, 0.72); --mat-rule: rgba(246, 236, 220, 0.16); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+/* The empty Showcase: a lighter warm mat, a honey star and what goes there, so it reads as waiting for you. */
+.showcase-slot .painting.empty { background: radial-gradient(95% 95% at 50% 40%, #5a4c3f 0%, #463a30 60%, #3a3029 100%); }
+.showcase-slot .painting.empty svg { width: 34%; color: #f3cd7a; filter: drop-shadow(0 0 12px rgba(243, 205, 122, 0.4)); }
+.showcase-slot .painting.empty small { font: 700 clamp(11px, 1.7vw, 14px)/1.2 Nunito, sans-serif; letter-spacing: 0.02em; color: rgba(246, 236, 220, 0.8); }
+.deck-cover .cover-name { font: 600 16px/1.15 Fredoka, Nunito, sans-serif; text-align: center; color: #f6ecdc; }
+.deck-cover .cover-sub { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(246, 236, 220, 0.55); }
 
-/* Tablets and computers: bigger covers, about three to a row on an iPad held upright, four sideways, five on a
-   computer (the owner found the phone-sized covers half the size they should be on an iPad). */
+/* Two covers to a row on a phone and on an iPad held upright (a finished 2x2 for the Showcase and three decks); three
+   on an iPad held sideways and on a computer, in a column about 1000px wide so each painting is big enough to enjoy. */
 @media (min-width: 700px) {
-  .deck-covers { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px 14px; max-width: 1240px; }
+  .deck-covers { --gap: 28px; row-gap: 18px; }
   .deck-cover .cover-name { font-size: 19px; }
   .deck-cover .cover-sub { font-size: 12px; }
   .deck-stage .viewer { --card-w: min(52vw, 420px); }
 }
+@media (min-width: 1000px) { .deck-covers { --cols: 3; max-width: 1000px; } }
 
 /* ── A deck's page: the card, swiped, beside its tale; under it on a phone ── */
 .deck-page { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
@@ -433,7 +443,7 @@ button.undo-btn {
   .deck-stage .viewer { --card-w: min(30vw, calc((var(--vh, 1vh) * 100 - 260px) * 0.714), 420px); }
   .deck-lore { flex: 1; min-width: 0; margin: 0 var(--corner-right, 24px) 24px 0; padding: 34px 40px 30px; overflow-y: auto; }
 }
-/* The name is written under each cover, so the cover itself is just the painting in its frame (no plate). */
-.deck-cover .plate { display: none; }
-.showcase-slot .cover { background: linear-gradient(180deg, #34302b, #2a2622); }
-.showcase-slot .cover-empty { color: rgba(243, 205, 122, 0.8); text-shadow: 0 0 18px rgba(243, 205, 122, 0.35); }
+
+/* The covers page sits in the forest like Home, dimmed so the paintings lead; the card viewer keeps its plain mat. */
+.collection-screen { background: linear-gradient(rgba(12, 9, 7, 0.72), rgba(12, 9, 7, 0.86)), var(--img-menu-bg) center / cover no-repeat, #150f0b; }
+@media (orientation: portrait) { .collection-screen { background-image: linear-gradient(rgba(12, 9, 7, 0.72), rgba(12, 9, 7, 0.86)), var(--img-menu-bg-tall); } }

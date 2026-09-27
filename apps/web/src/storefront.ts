@@ -20,7 +20,7 @@ import {
 } from './shop';
 import { BUYING } from './flags';
 import { payWithPaddle } from './paddle';
-import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, famClass, familyName, finishUrl } from './ui';
+import { BASE, artUrl, backButton, cardUrl as standardUrl, esc, finishUrl } from './ui';
 
 export interface StoreHost {
   render(): void;
@@ -373,8 +373,8 @@ function priceChip(full: number, now: number): string {
 
 /**
  * Everything for sale as one list (the owner's call, 2026-09-25): no banner ads, tabs or filters. Decks first, then the
- * single cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck is its cover on real card backs,
- * exactly a card's size.
+ * single cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck is its hero's painting, whole, in a
+ * slim walnut frame.
  */
 function renderShop(): string {
   const cat = catalog()!;
@@ -383,7 +383,7 @@ function renderShop(): string {
   const cards = Object.values(cat.products).filter((p): p is CardProduct => p.kind === 'card')
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
   return `<main class="store-main">
-      <div class="offers">${decks.map(renderDeckOffer).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
+      <div class="offers">${decks.map((p, i) => renderDeckOffer(p, i < 4)).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
       <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</span></p>
       ${renderTesterTools()}
     </main>`;
@@ -392,18 +392,54 @@ function renderShop(): string {
 /** A small cloud, for "it lives in your account". */
 const CLOUD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 11a4 4 0 0 1-2.5 8Z"/></svg>`;
 
-/** A deck: its cover (the Hero Cat in its family's colours, the deck's name on a plate) on two real card backs. */
-function deckSlot(p: DeckProduct, big = false): string {
-  return `<span class="slot ${big ? 'big' : ''} ${famClass(p.hero)}" aria-hidden="true">
-      <span class="face back b1"></span><span class="face back b2"></span>
-      <span class="face cover">
-        <span class="cover-art" style="background-image:url(${artUrl(`${p.hero}-kitten`)})"></span>
-        <span class="plate"><b>${esc(p.name)}</b><small>${esc(familyName(CARDS[p.hero]?.family))} deck</small></span>
-      </span>
-    </span>`;
+/**
+ * What happened to each painting asked for, by address: the address that shows it (the painting's, or its fallback's
+ * once the painting failed), or null when neither exists. A redrawn screen then shows a painting it has already
+ * loaded straight away, with no fade and no second failed request.
+ */
+const paintings = new Map<string, string | null>();
+if (typeof document !== 'undefined') {
+  // Load and error events don't bubble, but they can be caught on the way down: one pair of listeners serves every
+  // framed painting, in the Store and the Collection alike.
+  document.addEventListener('load', (e) => {
+    const img = e.target as HTMLElement;
+    if (!(img instanceof HTMLImageElement) || !img.classList.contains('painting')) return;
+    paintings.set(img.dataset.art ?? img.src, img.getAttribute('src'));
+    img.classList.add('ready');
+  }, true);
+  document.addEventListener('error', (e) => {
+    const img = e.target as HTMLElement;
+    if (!(img instanceof HTMLImageElement) || !img.classList.contains('painting')) return;
+    const fallback = img.dataset.fallback;
+    if (fallback) { delete img.dataset.fallback; img.src = fallback; return; }
+    paintings.set(img.dataset.art ?? '', null);
+    img.closest('.sight')?.classList.add('missing');
+    img.remove();
+  }, true);
 }
 
-/** A single card, the same footprint as a deck. */
+/**
+ * A painting in the covers' gallery frame, used by the Store and the Collection: the whole painting at its own shape
+ * (3:2, as it's painted and as it sits on the card), fading in over a warm mat as it loads. If the painting is
+ * missing, `fallback` (another painting of the same creature) is tried, and then the mat shows `name` instead.
+ * `eager`: the picture is on the first screen, so it loads first rather than when scrolled to.
+ */
+export function framedPainting(o: { art: string; fallback?: string; name: string; eager?: boolean; cls?: string }): string {
+  const known = paintings.get(o.art);
+  const inner = known === null
+    ? ''
+    : `<img class="painting ${known ? 'ready' : ''}" src="${known ?? o.art}" data-art="${o.art}" ${!known && o.fallback ? `data-fallback="${o.fallback}"` : ''} alt="" draggable="false" ${o.eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"'}>`;
+  return `<span class="slot deck-slot ${o.cls ?? ''}" aria-hidden="true"><span class="frame"><span class="sight ${known === null ? 'missing' : ''}" data-name="${esc(o.name)}">${inner}</span></span></span>`;
+}
+
+/**
+ * A deck: its hero's painting in the frame (a kitten Hero Cat's painting, or the grown one's if a set has no kitten
+ * painting). Nothing is written on it: the name is beside it.
+ */
+const deckSlot = (p: DeckProduct, big = false, eager = big) =>
+  framedPainting({ art: artUrl(`${p.hero}-kitten`), fallback: artUrl(`${p.hero}-bigcat`), name: p.name, eager, cls: big ? 'big' : '' });
+
+/** A single card, at its own size on the same stage. */
 const cardSlot = (id: string, big = false) =>
   `<span class="slot ${big ? 'big' : ''}"><img class="face" src="${cardUrl(faceOf(id))}" alt="" loading="lazy" draggable="false" ${FALLBACK}></span>`;
 
@@ -438,9 +474,10 @@ function offerTile(p: DeckProduct | CardProduct, owned: boolean, slot: string, d
     </div>`;
 }
 
-function renderDeckOffer(p: DeckProduct): string {
+/** `eager`: on the first screen (the first row or two of the list). */
+function renderDeckOffer(p: DeckProduct, eager = false): string {
   const { size, now, complete } = deckFacts(p);
-  return offerTile(p, complete, deckSlot(p), `
+  return offerTile(p, complete, deckSlot(p, false, eager), `
         <span class="kind">Deck</span>
         <span class="name">${esc(p.name)}</span>
         <span class="sub">${esc(cardName(p.hero))} + ${size} cards</span>`,

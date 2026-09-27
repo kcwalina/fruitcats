@@ -18,14 +18,20 @@
 //   - a connection that isn't in a game and does nothing for 10 minutes is closed, to make room;
 //   - LIVE=off on the API turns online play off (docs/emergency-stop.md).
 //
+// Friend games are played directly between the two devices when both can (@fruitcats/match, "Friend games played
+// directly"): then the hub only introduces them, passes along what they need to connect (peer()), keeps a checked copy
+// of the record, and records the result. Neither holds a connection here while they play. When they can't reach each
+// other, the hub takes the game over from its copy (serve()).
+//
 // The hub knows nothing about sockets: socket.ts turns a WebSocket into connect/receive/closed, and the tests use
 // plain functions.
 
 import { CARDS, RULES_VERSION, other, type DeckList, type PlayerId } from '@fruitcats/engine';
 import {
-  CHALLENGE_MS, HERE_MS, PROTOCOL, cleanLives, cleanOptions, friendRules, normalizeCode, validCode,
-  type ChallengeNote, type ChallengeOptions, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person,
-  type SentNote, type ServerMessage, type Tally,
+  CHALLENGE_MS, HERE_MS, PEER_LINK_MS, PEER_SIGNAL_MS, PROTOCOL, cleanLives, cleanOptions, friendRules, normalizeCode, rebuild, validCode,
+  type ChallengeNote, type ChallengeOptions, type ClientMessage, type EndHow, type EnterAnswer, type FriendStatus, type HereAnswer,
+  type MatchEnd, type PeerNote, type PeerPollAnswer, type PeerSaveAnswer, type PeerSignal, type Person, type Played, type SentNote,
+  type ServerMessage, type Tally,
 } from '@fruitcats/match';
 import { Match, newMatchId, newSeed, type MatchHost, type MatchRecord } from './match';
 import type { LiveStore } from './records';
@@ -44,6 +50,8 @@ export interface HubDeps {
   maxPlayers: number;
   /** Online play is switched on (LIVE=off turns it off). */
   open(): boolean;
+  /** Friend games may be played directly between the devices (LIVE_PEER=off: always on the API). */
+  peers?(): boolean;
   log(event: string, fields?: Record<string, unknown>): void;
 }
 
@@ -99,6 +107,35 @@ const PAID_KEPT_MS = 10 * 60_000;
 const CODE_MS = 15 * 60_000;
 const LOOKUPS_PER_MINUTE = 12;
 const MAX_MESSAGE = 64 * 1024;
+/** A game played directly with neither device heard from this long is called off (as BOTH_GONE_MS for the API's). */
+export const PEER_GONE_MS = 30 * 60_000;
+/** A game played directly with no move for this long is called off (as IDLE_MS for the API's). */
+export const PEER_IDLE_MS = 24 * 60 * 60_000;
+/** A device heard from within this long is still trying to connect (it asks every PEER_POLL_MS). */
+const PEER_TRYING_MS = 5000;
+/** A finished game played directly is remembered this long, so a device that saves it again hears the same answer. */
+const PEER_ENDED_MS = 60 * 60_000;
+/** Moves in one record, at most (a real game has a few hundred). */
+const MAX_PLAYED = 5000;
+/** What one device may leave for the other at once. */
+const MAX_MAIL = 8;
+
+/** A Friend game played directly between the two devices, as the hub keeps it. */
+interface PeerGame {
+  record: MatchRecord;
+  /** When each seat's device was last heard from about this game (asking for news, saving, "I'm here"). */
+  seen: [number, number];
+  /** Since when each seat's device has been trying to reach the other (null: connected, or not trying). */
+  trying: [number | null, number | null];
+  /** How many moves seat 0's device says it has: the hub takes the game over only once its copy has them all. */
+  hostPlayed: number;
+  /** The device that runs the game: the one that last asked for the record. Another device of that account stops. */
+  device: string | null;
+  /** What each seat's device hasn't been passed yet. */
+  mail: [(PeerSignal & { at: number })[], (PeerSignal & { at: number })[]];
+  /** When the last move was saved. */
+  moved: number;
+}
 
 export function createHub(deps: HubDeps) {
   const conns = new Map<string, Conn>();                 // account → its connection (the newest one)
@@ -116,6 +153,12 @@ export function createHub(deps: HubDeps) {
   const paidCache = new Map<string, { paid: boolean; at: number }>();
   /** Each account's friends as viamochi-id last told us: used while it can't be asked (restarting, down). */
   const knownFriends = new Map<string, Set<string>>();
+  /** Friend games played directly between the two devices: match id → game. */
+  const peers = new Map<string, PeerGame>();
+  /** Games played directly that are over: how each ended and each seat's record (a device may save it again). */
+  const peersEnded = new Map<string, { end: MatchEnd; records: [Tally | null, Tally | null]; seats: [string, string]; at: number; record: MatchRecord; /** The rematch, once asked for. */ next: MatchRecord | null }>();
+  /** Accounts whose game (the newest to say hello or "I'm here") can play a Friend game directly. */
+  const peerCapable = new Map<string, boolean>();
 
   /**
    * Ask viamochi-id who this connection's friends are. When it can't answer, the last list it gave stays (a restart
@@ -176,15 +219,18 @@ export function createHub(deps: HubDeps) {
     return { status: 'waiting', position: position - Math.max(0, room) + 1, paid };
   }
 
-  function hereNow(account: string, person?: Person): HereAnswer {
+  function hereNow(account: string, person?: Person, peer?: boolean): HereAnswer {
     here.set(account, { at: Date.now(), person });
+    if (peer !== undefined) peerCapable.set(account, peer);
+    const pg = peers.get(matchOf.get(account) ?? '');
+    if (pg) pg.seen[seatIn(pg.record, account)!] = Date.now();
     const m = matches.get(matchOf.get(account) ?? '');
     const notes: ChallengeNote[] = [];
     for (const ch of challenges.values()) {
       if (ch.to !== account) continue;
       notes.push({ id: ch.id, from: ch.fromPerson, options: ch.options, lives: ch.lives });
     }
-    return { open: deps.open(), challenges: notes, sent: sentBy(account), match: m && !m.end ? m.id : null };
+    return { open: deps.open(), challenges: notes, sent: sentBy(account), match: m && !m.end ? m.id : pg ? pg.record.id : null, peer: peerNote(account) ?? undefined };
   }
 
   /** Let go of what's run out: presence, places in line, places kept, idle connections. */
@@ -194,6 +240,11 @@ export function createHub(deps: HubDeps) {
     for (const [a, w] of waiting) if (now - w.asked > WAITING_KEPT_MS) waiting.delete(a);
     for (const [code, v] of codes) if (v.expires < now) codes.delete(code);
     for (const [a, until] of letIn) if (until < now) letIn.delete(a);
+    for (const pg of [...peers.values()]) {
+      if (now - Math.max(...pg.seen) > PEER_GONE_MS || now - pg.moved > PEER_IDLE_MS) void endPeer(pg, { winner: null, how: 'called-off' });
+      for (const box of pg.mail) while (box.length && now - box[0].at > PEER_SIGNAL_MS) box.shift();
+    }
+    for (const [id, e] of peersEnded) if (now - e.at > PEER_ENDED_MS) peersEnded.delete(id);
     for (const c of conns.values()) {
       if (now - c.active < IDLE_CONNECTION_MS || inGame(c.account!)) continue;
       c.send({ t: 'idle' });
@@ -216,7 +267,7 @@ export function createHub(deps: HubDeps) {
   const statusOf = (account: string): FriendStatus['status'] => {
     if (!conns.has(account)) return Date.now() - (here.get(account)?.at ?? 0) <= HERE_MS ? 'online' : 'offline';
     const m = matches.get(matchOf.get(account) ?? '');
-    return m && !m.end ? 'playing' : 'online';
+    return (m && !m.end) || peers.has(matchOf.get(account) ?? '') ? 'playing' : 'online';
   };
 
   /** Tell this account's online friends how it is now. */
@@ -277,18 +328,7 @@ export function createHub(deps: HubDeps) {
       for (const acct of [a, b]) { const c = conns.get(acct); if (c) c.active = Date.now(); }
       deps.log('live.match_ended', { match: m.id, kind: m.record.rules.kind, how: m.end?.how, winner: m.end?.winner, moves: m.record.played.length });
       for (const acct of [a, b]) announce(acct);
-      const w = m.end?.winner;
-      if (!m.record.rules.counts || w === null || w === undefined) return [undefined, undefined];
-      try {
-        const resultFor = (seat: PlayerId) => (w === 'draw' ? 'draw' : w === seat ? 'win' : 'loss');
-        const both = [await deps.store.addResult(a, b, resultFor(0)), await deps.store.addResult(b, a, resultFor(1))] as [Tally, Tally];
-        tallies.set(`${a}|${b}`, both[0]);
-        tallies.set(`${b}|${a}`, both[1]);
-        return both;
-      } catch (e) {
-        deps.log('live.record_failed', { match: m.id, message: (e as Error).message });
-        return [undefined, undefined];
-      }
+      return recordResult(m.record);
     },
     rematch(m) {
       forget(m);
@@ -297,6 +337,23 @@ export function createHub(deps: HubDeps) {
     },
     forget,
   };
+
+  /** A game that counts is over: one more win, loss or draw in each friend's record against the other. */
+  async function recordResult(r: MatchRecord): Promise<[Tally | undefined, Tally | undefined]> {
+    const [a, b] = [r.seats[0].person.id, r.seats[1].person.id];
+    const w = r.end?.winner;
+    if (!r.rules.counts || w === null || w === undefined) return [undefined, undefined];
+    try {
+      const resultFor = (seat: PlayerId) => (w === 'draw' ? 'draw' : w === seat ? 'win' : 'loss');
+      const both = [await deps.store.addResult(a, b, resultFor(0)), await deps.store.addResult(b, a, resultFor(1))] as [Tally, Tally];
+      tallies.set(`${a}|${b}`, both[0]);
+      tallies.set(`${b}|${a}`, both[1]);
+      return both;
+    } catch (e) {
+      deps.log('live.record_failed', { match: r.id, message: (e as Error).message });
+      return [undefined, undefined];
+    }
+  }
 
   function forget(m: Match) {
     if (matches.get(m.id) !== m) return;   // already forgotten (both left, then the result's time ran out)
@@ -322,6 +379,207 @@ export function createHub(deps: HubDeps) {
     return m;
   }
 
+  // ── Friend games played directly between the two devices ──────────────────────────────────────
+
+  const seatIn = (r: MatchRecord, account: string): PlayerId | null =>
+    r.seats[0].person.id === account ? 0 : r.seats[1].person.id === account ? 1 : null;
+
+  /** The game played directly that this account is in, if any, and its seat. */
+  function peerNote(account: string): PeerNote | null {
+    const pg = peers.get(matchOf.get(account) ?? '');
+    return pg ? { match: pg.record.id, seat: seatIn(pg.record, account)! } : null;
+  }
+
+  function addPeer(record: MatchRecord): PeerGame {
+    const now = Date.now();
+    const pg: PeerGame = { record, seen: [now, now], trying: [null, null], hostPlayed: record.played.length, device: null, mail: [[], []], moved: now };
+    peers.set(record.id, pg);
+    for (const s of record.seats) matchOf.set(s.person.id, record.id);
+    return pg;
+  }
+
+  /** At most one write a second per game, as for the API's own games. */
+  function savePeer(pg: PeerGame) {
+    const id = pg.record.id;
+    if (saving.has(id)) return;
+    saving.set(id, setTimeout(() => {
+      saving.delete(id);
+      if (peers.get(id) !== pg) return;
+      void deps.store.saveMatch(pg.record).catch((e) => deps.log('live.save_failed', { match: id, message: (e as Error).message }));
+    }, 1000));
+  }
+
+  /** A Friend game played directly: the hub keeps its record and tells both games ("I'm here" tells one that isn't connected). */
+  function startPeer(seats: MatchRecord['seats'], options: ChallengeOptions | null, firstPlayer?: PlayerId): PeerGame {
+    const record: MatchRecord = {
+      id: newMatchId(), rules: friendRules(options ?? { pace: 'relaxed', teaching: false, startersOnly: false }), options,
+      seats, seed: newSeed(), firstPlayer, played: [], createdAt: new Date().toISOString(), rulesVersion: RULES_VERSION, end: null, peer: true,
+    };
+    const pg = addPeer(record);
+    for (const s of seats) for (const ch of [...challenges.values()]) if (ch.from === s.person.id || ch.to === s.person.id) endChallenge(ch, 'busy');
+    savePeer(pg);
+    seats.forEach((s, seat) => sendTo(s.person.id, { t: 'peer', match: record.id, seat: seat as PlayerId }));
+    for (const s of seats) announce(s.person.id);
+    deps.log('live.match_started', { match: record.id, kind: record.rules.kind, peer: true, teaching: record.rules.teaching, pace: options?.pace, lives: seats.map((s) => s.lives) });
+    return pg;
+  }
+
+  /** A game played directly is over: the result is recorded, and the replay kept, as for the API's own games. */
+  async function endPeer(pg: PeerGame, end: MatchEnd): Promise<[Tally | null, Tally | null]> {
+    const id = pg.record.id;
+    if (peers.get(id) !== pg) return peersEnded.get(id)?.records ?? [null, null];
+    peers.delete(id);
+    const seats: [string, string] = [pg.record.seats[0].person.id, pg.record.seats[1].person.id];
+    for (const a of seats) if (matchOf.get(a) === id) matchOf.delete(a);
+    pg.record.end = end;
+    const entry = { end, records: [null, null] as [Tally | null, Tally | null], seats, at: Date.now(), record: pg.record, next: null as MatchRecord | null };
+    peersEnded.set(id, entry);
+    deps.log('live.match_ended', { match: id, kind: pg.record.rules.kind, peer: true, how: end.how, winner: end.winner, moves: pg.record.played.length });
+    for (const a of seats) announce(a);
+    const r = await recordResult(pg.record);
+    entry.records = [r[0] ?? null, r[1] ?? null];
+    await deps.store.finishMatch(pg.record).catch((e) => deps.log('live.save_failed', { match: id, message: (e as Error).message }));
+    return entry.records;
+  }
+
+  /**
+   * The two devices can't reach each other: the hub takes the game over from its copy of the record, and it carries on
+   * as one of its own. Both devices hear so (their next poll) and connect here as for any online game.
+   */
+  function serve(pg: PeerGame) {
+    const id = pg.record.id;
+    peers.delete(id);
+    const record: MatchRecord = { ...pg.record };
+    delete record.peer;
+    const m = new Match(record, host);
+    matches.set(id, m);
+    m.start(true);
+    host.save(m);
+    deps.log('live.peer_served', { match: id, moves: record.played.length });
+  }
+
+  /** Both devices have been trying to reach each other for a while, and the hub's copy has every move: take it over. */
+  function shouldServe(pg: PeerGame): boolean {
+    const now = Date.now();
+    const [a, b] = pg.trying;
+    return a !== null && b !== null && now - pg.seen[0] < PEER_TRYING_MS && now - pg.seen[1] < PEER_TRYING_MS
+      && now - Math.max(a, b) >= PEER_LINK_MS && pg.hostPlayed === pg.record.played.length;
+  }
+
+  /** A record's moves as a device sent them, cleaned, or null when they don't make sense. */
+  function cleanPlayed(x: unknown): Played[] | null {
+    if (!Array.isArray(x) || x.length > MAX_PLAYED) return null;
+    const out: Played[] = [];
+    for (const p of x as Played[]) {
+      if (!p || (p.seat !== 0 && p.seat !== 1) || !p.action || typeof p.action !== 'object' || typeof p.action.t !== 'string') return null;
+      out.push(p.auto === true ? { seat: p.seat, action: p.action, auto: true } : { seat: p.seat, action: p.action });
+    }
+    return out;
+  }
+
+  const END_HOWS: EndHow[] = ['played', 'conceded', 'timeout', 'left', 'claimed', 'called-off'];
+  function cleanEnd(x: unknown): MatchEnd | null {
+    const e = x as MatchEnd | null;
+    if (!e || typeof e !== 'object' || !END_HOWS.includes(e.how) || ![0, 1, 'draw', null].includes(e.winner as never)) return null;
+    return { winner: e.winner, how: e.how };
+  }
+
+  /**
+   * A device about its game played directly (PEER_PATH): `what` is
+   *   record  (seat 0) the record, to run the game: after a reload, or on another device (which then runs it);
+   *   poll    what's waiting for it (the other device's offer or answer), and whether the hub has taken the game over;
+   *   signal  an offer (seat 0) or answer (seat 1) for the other device;
+   *   save    (seat 0) the record after a move, checked by playing it through; with `end` when the game is over;
+   *   end     conceding, or ending a game whose other player has been gone too long, while the devices aren't connected;
+   *   rematch (seat 0) both asked for another game.
+   */
+  async function peer(account: string, id: string, what: string, body: Record<string, unknown>): Promise<[number, unknown]> {
+    const now = Date.now();
+    const pg = peers.get(id);
+    const served = matches.get(id);
+    const ended = peersEnded.get(id);
+    const r = pg?.record ?? served?.record;
+    const seat = r ? seatIn(r, account) : ended ? ([0, 1] as PlayerId[]).find((s) => ended.seats[s] === account) ?? null : null;
+    if (seat === null) return [404, { error: 'not_found' }];
+    const device = typeof body.device === 'string' ? body.device.slice(0, 64) : null;
+    const hostOnly = what === 'record' || what === 'save' || what === 'rematch';
+    if (hostOnly && seat !== 0) return [403, { error: 'not_host' }];
+    const gone = (): PeerPollAnswer => ({ signals: [], serve: !!served, end: ended?.end ?? served?.end ?? null, replaced: false });
+    const replaced = seat === 0 && !!pg && !!device && !!pg.device && device !== pg.device;
+    if (pg) pg.seen[seat] = now;
+
+    switch (what) {
+      case 'record': {
+        if (!pg) return [200, { record: null, ...gone() }];
+        if (device) pg.device = device;
+        return [200, { record: pg.record }];
+      }
+      case 'poll': {
+        if (!pg) return [200, gone()];
+        if (replaced) return [200, { signals: [], serve: false, end: null, replaced: true } satisfies PeerPollAnswer];
+        pg.trying[seat] = body.linked === true ? null : pg.trying[seat] ?? now;
+        if (seat === 0 && typeof body.played === 'number') pg.hostPlayed = body.played;
+        if (shouldServe(pg)) { serve(pg); return [200, { signals: [], serve: true, end: null, replaced: false } satisfies PeerPollAnswer]; }
+        const signals = pg.mail[seat].splice(0).map(({ kind, attempt, sdp }) => ({ kind, attempt, sdp }));
+        return [200, { signals, serve: false, end: null, replaced: false } satisfies PeerPollAnswer];
+      }
+      case 'signal': {
+        if (!pg) return [200, gone()];
+        const sig = body.signal as PeerSignal | undefined;
+        const kind = seat === 0 ? 'offer' : 'answer';
+        if (!sig || sig.kind !== kind || typeof sig.attempt !== 'string' || sig.attempt.length > 64 || typeof sig.sdp !== 'string' || sig.sdp.length > 20_000) return [400, { error: 'bad_signal' }];
+        const box = pg.mail[other(seat)];
+        box.push({ kind, attempt: sig.attempt, sdp: sig.sdp, at: now });
+        while (box.length > MAX_MAIL) box.shift();
+        return [200, { ok: true }];
+      }
+      case 'save': {
+        if (!pg) return [200, { ok: !!ended, end: ended?.end ?? null, records: ended?.records, serve: !!served } satisfies PeerSaveAnswer];
+        if (replaced) return [200, { ok: false, end: null, replaced: true } satisfies PeerSaveAnswer];
+        const played = cleanPlayed(body.played);
+        if (!played) return [400, { error: 'bad_record' }];
+        // A move is never rewritten, except taken back in a teaching game.
+        const had = pg.record.played;
+        if (!pg.record.rules.teaching && JSON.stringify(played.slice(0, had.length)) !== JSON.stringify(had)) return [409, { error: 'conflict' }];
+        let state;
+        try { state = rebuild({ ...pg.record, played }, played.length); } catch { return [400, { error: 'illegal' }]; }
+        const end = body.end === undefined || body.end === null ? null : cleanEnd(body.end);
+        if (body.end && !end) return [400, { error: 'bad_end' }];
+        // A game played to its end ends as it was played; one still going can't end as "played".
+        if (end && ((end.how === 'played') !== (state.winner !== null) || (end.how === 'played' && end.winner !== state.winner))) return [400, { error: 'bad_end' }];
+        if (played.length > had.length) pg.moved = now;
+        pg.record.played = played;
+        pg.hostPlayed = played.length;
+        if (!end) { savePeer(pg); return [200, { ok: true, end: null } satisfies PeerSaveAnswer]; }
+        const records = await endPeer(pg, end);
+        return [200, { ok: true, end, records } satisfies PeerSaveAnswer];
+      }
+      case 'end': {
+        if (!pg) return [200, { ok: !!ended, end: ended?.end ?? null, records: ended?.records, serve: !!served } satisfies PeerSaveAnswer];
+        const how = body.how;
+        let end: MatchEnd;
+        if (how === 'concede') end = { winner: other(seat), how: 'conceded' };
+        else if (how === 'claim' || how === 'call-off') {
+          if (now - pg.seen[other(seat)] < pg.record.rules.dropGraceMs) return [409, { error: 'not_yet' }];
+          end = how === 'claim' ? { winner: seat, how: 'claimed' } : { winner: null, how: 'called-off' };
+        } else return [400, { error: 'bad_end' }];
+        const records = await endPeer(pg, end);
+        return [200, { ok: true, end, records } satisfies PeerSaveAnswer];
+      }
+      case 'rematch': {
+        if (!ended) return [409, { error: 'not_over' }];
+        if (ended.next) return [200, { record: ended.next }];
+        const [a, b] = ended.seats;
+        if (inGame(a) || inGame(b)) return [409, { error: 'busy' }];
+        const r0 = ended.record;
+        const next = startPeer([r0.seats[0], r0.seats[1]], r0.options, other(rebuild(r0, 0).startingYarn)).record;
+        ended.next = next;
+        return [200, { record: next }];
+      }
+    }
+    return [404, { error: 'not_found' }];
+  }
+
   // ── Challenges ────────────────────────────────────────────────────────────────────────────────
 
   function endChallenge(ch: Challenge, why: 'declined' | 'cancelled' | 'expired' | 'offline' | 'busy' | 'started') {
@@ -338,7 +596,11 @@ export function createHub(deps: HubDeps) {
   const sentBy = (account: string): SentNote[] => [...challenges.values()]
     .filter((ch) => ch.from === account).map((ch) => ({ id: ch.id, to: ch.to, left: Math.max(0, ch.expires - Date.now()) }));
 
-  const inGame = (account: string) => { const m = matches.get(matchOf.get(account) ?? ''); return !!m && !m.end; };
+  const inGame = (account: string) => {
+    const id = matchOf.get(account) ?? '';
+    const m = matches.get(id);
+    return (!!m && !m.end) || peers.has(id);
+  };
 
   async function challenge(c: Conn, msg: Extract<ClientMessage, { t: 'challenge' }>) {
     const me = c.account!;
@@ -396,7 +658,10 @@ export function createHub(deps: HubDeps) {
     if (problem) return error(problem);
     if (!challenges.has(ch.id)) return error('That game isn’t open any more.');
     endChallenge(ch, 'started');
-    const m = startMatch([{ person: ch.fromPerson, deck: ch.deck, lives: ch.lives }, { person: c.person, deck: deck!, lives }], ch.options);
+    const seats: MatchRecord['seats'] = [{ person: ch.fromPerson, deck: ch.deck, lives: ch.lives }, { person: c.person, deck: deck!, lives }];
+    // Both games can play it directly: the hub only introduces them.
+    if (deps.peers?.() && peerCapable.get(ch.from) && peerCapable.get(c.account)) { startPeer(seats, ch.options); return; }
+    const m = startMatch(seats, ch.options);
     // The one who asked isn't connected (the game in the background, or closed): the game waits for them like any
     // dropped connection, and their game opens it when it's back ("I'm here" and welcome both bring the match).
     if (!conns.has(ch.from)) m.dropped(0);
@@ -417,6 +682,7 @@ export function createHub(deps: HubDeps) {
     c.account = who.id;
     c.token = msg.token;
     c.person = { id: who.id, name: who.name.slice(0, 40) || 'A friend', avatar };
+    peerCapable.set(who.id, msg.peer === true);
     await loadFriends(c, who.id, msg.token);
     // The newest connection wins: the same account on a second device, or a reload.
     const older = conns.get(who.id);
@@ -426,7 +692,8 @@ export function createHub(deps: HubDeps) {
     // With the requests waiting both ways, so the game never shows a request as gone between two messages.
     const incoming = [...challenges.values()].filter((ch) => ch.to === who.id)
       .map((ch) => ({ id: ch.id, from: ch.fromPerson, options: ch.options, lives: ch.lives }));
-    c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m && !m.end ? m.id : null, sent: sentBy(who.id), incoming });
+    const pg = peers.get(matchOf.get(who.id) ?? '');
+    c.send({ t: 'welcome', you: c.person, friends: await statuses(c), match: m && !m.end ? m.id : pg ? pg.record.id : null, sent: sentBy(who.id), incoming, peer: peerNote(who.id) });
     if (m) m.connected(m.seatOf(who.id)!);
     announce(who.id);
   }
@@ -485,7 +752,11 @@ export function createHub(deps: HubDeps) {
     // Everything else is about a match.
     const m = matches.get((msg as { match?: string }).match ?? '');
     const seat = m?.seatOf(me);
-    if (!m || seat === null || seat === undefined) { if (msg.t === 'rejoin') c.send({ t: 'error', message: 'That game is over.' }); return; }
+    if (!m || seat === null || seat === undefined) {
+      // A game played directly isn't played through here: its devices talk to each other.
+      if (msg.t === 'rejoin' && !peers.has(msg.match)) c.send({ t: 'error', message: 'That game is over.' });
+      return;
+    }
     m.handle(seat, msg);
   }
 
@@ -524,6 +795,8 @@ export function createHub(deps: HubDeps) {
     /** Pick up the games that were going when the API last stopped. The players find them waiting when they return. */
     async restore() {
       for (const r of await deps.store.liveMatches()) {
+        // A game played directly: its devices carry on as they were; the hub keeps its copy again.
+        if (r.peer) { addPeer(r); continue; }
         try {
           const m = new Match(r, host);
           matches.set(m.id, m);
@@ -538,8 +811,10 @@ export function createHub(deps: HubDeps) {
     enter,
     /** "I'm here": the game is open but not playing online. */
     here: hereNow,
+    /** A device about its Friend game played directly (PEER_PATH). */
+    peer,
     /** For tests and the stats: how many are connected, playing and waiting. */
-    counts: () => ({ connected: conns.size, matches: matches.size, challenges: challenges.size, waiting: waiting.size, letIn: letIn.size, here: here.size }),
+    counts: () => ({ connected: conns.size, matches: matches.size, peers: peers.size, challenges: challenges.size, waiting: waiting.size, letIn: letIn.size, here: here.size }),
     stop: () => { clearInterval(sweeper); clearInterval(pruner); clearTimeout(pruneFirst); },
   };
 }

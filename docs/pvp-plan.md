@@ -18,7 +18,7 @@ Last updated 2026-09-25.
 | **Who holds the game** | The Fruitcats API. It runs the same engine, keeps the full `GameState`, and sends each player only `viewFor(state, seat)`: never the other player's hand, the deck order or the seed. A move is checked against the rules on the server before it's applied. Nothing a client says about the game is trusted. |
 | **One match code for both modes** | Friend games and Ranked run on the same code once two players are paired and each has picked a deck: the match, clock, reconnecting, conceding, emotes, the result, replays. What differs is in one `MatchRules` object; the match never asks which mode it's in. This is about not writing the code twice; it has nothing to do with what players own. |
 | **Each player plays their own deck** | Nothing a player owns is ever shared with, lent to or seen by another player: not cards, not decks, not purchases. Each player picks one of their own decks, built from cards their own account owns (the starter decks count, as everyone has them). The server checks every card against that account's ownership in the Store. |
-| **Transport** | A game holds a connection (one WebSocket, `/v1/live`) only while it's playing online: on Play a friend, waiting for an answer, in a game. The rest of the time, a signed-in game says "I'm here" with a small request every 20 seconds (`/v1/live/here`): that's how friends see it online, and how a challenge reaches it. |
+| **Transport** | Friend games are played directly between the two devices when both can (WebRTC; the API introduces them, keeps a checked copy and records the result, [offline-and-costs.md](offline-and-costs.md)). Otherwise, and for Ranked: a game holds a connection (one WebSocket, `/v1/live`) only while it's playing online: on Play a friend, waiting for an answer, in a game. The rest of the time, a signed-in game says "I'm here" with a small request every 20 seconds (`/v1/live/here`): that's how friends see it online, and how a challenge reaches it. |
 | **A fixed ceiling on cost** | No autoscaling. Online play has room for a fixed number of connected players (`LIVE_MAX_PLAYERS`, 300 by default). When it's full, players wait in line (`/v1/live/enter`), and **players who have bought cards go first**. The bill can't grow by itself: the worst case is a waiting line. `LIVE=off` switches online play off. The Terms of Use (section 7) say buying doesn't buy online play or a waiting time. |
 | **Where friends live** | Inside the Friend game mode, not in a place of their own. The Home screen keeps its six tiles: the **Friend** tile opens **Play a friend**, where you pick who to play from your friends, or add one. Settings → Account → Friends is gone. |
 | **Adding a friend** | A code, never a link. Together: one phone shows its code as a QR code, the other scans it inside the game, sees whose code it is and taps **Add**. Or type the code. Codes are viamochi-id's: 6 characters, 15 minutes, one use. |
@@ -253,6 +253,10 @@ double tap, a message that crossed another) is never applied twice; the player i
   `online.test.ts` checks the two options.
 
 ## What online play costs, and its ceiling
+
+Since 2026-09-27, Friend games are played directly between the two devices whenever both can, and hold no connection
+to the API while they play: see [offline-and-costs.md](offline-and-costs.md). What follows is about the games the API
+still runs (a Friend game whose devices couldn't connect directly, and Ranked later).
 
 The aim: players who never buy anything should cost next to nothing, and the bill should never grow by itself.
 

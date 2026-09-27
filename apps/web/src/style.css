@@ -128,6 +128,8 @@ button.corner-signin { height: 44px; padding: 0 18px; border-radius: 999px; font
 .setting + .setting { border-top: 1px solid rgba(120, 70, 20, 0.15); }
 .setting-name { display: flex; flex-direction: column; font-weight: 700; }
 .setting-name small { font-weight: 600; font-size: 12.5px; color: var(--muted); }
+/* How online play stands (Settings → Gameplay): a quiet line under the settings, never a warning. */
+.setting-note { margin: 4px 0 0; padding-top: 12px; border-top: 1px solid rgba(120, 70, 20, 0.15); font-weight: 600; font-size: 13.5px; color: var(--muted); }
 .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 16px; flex: none; }
 .segmented button { width: 80px; min-height: 40px; padding: 0; }   /* both controls line up */
 /* Settings: a title bar with Close, sections down the left (Contact us at the bottom) and the picked section on the right.

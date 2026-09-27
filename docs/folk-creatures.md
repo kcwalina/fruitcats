@@ -6,7 +6,7 @@ inhabited continent, plus backups.
 
 **In the game now: the Domowiki, the Pari and the Aluxes.** Since 2026-09-26 the Domowiki are the game's starter
 deck, the one every player has (content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)), and the Pari are the
-second starter deck (content/2026/10/pari, [pari-set.md](pari-set.md)). The Aluxes are the third deck, free in the Store
+second starter deck (content/2026/10/pari, [pari-set.md](pari-set.md)), and the Aluxes the third
 (content/2026/11/aluxes, [aluxes-set.md](aluxes-set.md)). The other creatures below are planned decks.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
@@ -162,7 +162,7 @@ tricks.
 
 **From:** the Yucatec Maya of Yucatán (Mexico), Belize and Guatemala. Plural: aluxo'ob.
 
-**In the game.** The second folklore deck, since 2026-09-26. Its hero is Aluxito, the smallest alux. Cards, art and
+**In the game.** The third folklore deck and a starter, since 2026-09-26. Its hero is Aluxito, the smallest alux. Cards, art and
 lore: [aluxes-set.md](aluxes-set.md).
 
 A farmer builds a doll-sized house in his cornfield. For seven years the alux living there calls the rain and walks

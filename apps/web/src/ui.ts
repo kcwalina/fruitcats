@@ -42,8 +42,9 @@ export function settingsButton(extraClass = ''): string {
       <img src="${BASE}ui/icon-settings.webp" alt=""></button>`;
 }
 
-/** The button at the left of a menu header: Home (the house icon), or back one step (an arrow). */
+/** The button at the left of a menu header: Home (the house icon, wherever Home is; in a game too, so players
+ *  find the same icon everywhere), or back one step (an arrow). */
 export function backButton(click = 'ui:back', label = 'Home'): string {
-  const face = click === 'ui:back' ? `<img src="${BASE}ui/icon-home.webp" alt="">` : '<span class="back-arrow" aria-hidden="true">‹</span>';
+  const face = label === 'Home' ? `<img src="${BASE}ui/icon-home.webp" alt="">` : '<span class="back-arrow" aria-hidden="true">‹</span>';
   return `<button class="icon-button back-button" data-click="${click}" title="${label}" aria-label="${label}">${face}</button>`;
 }

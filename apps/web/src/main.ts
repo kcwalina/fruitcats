@@ -1019,7 +1019,7 @@ function renderGame(): string {
       <div class="side-buttons">
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
-        <button data-click="${ol ? 'ol:home' : 'ui:quit'}">Home</button>
+        ${backButton(ol ? 'ol:home' : 'ui:quit', 'Home')}
         ${onlineSideButtons()}
       </div>
     </aside>
@@ -1390,7 +1390,8 @@ function onlineStatus(): string {
 
 function renderRules(): string {
   return `<div class="overlay">
-    <div class="rules">
+    <div class="rules" role="dialog" aria-label="Quick rules">
+      <button class="icon-button rules-close" data-click="ui:rules" aria-label="Close" title="Close">×</button>
       <h2>Quick rules</h2>
       <p><b>Goal:</b> knock out all 9 of the rival Hero’s Candles.</p>
       <p><b>Each round:</b> ready everything, draw 2, and you may offer 1 card face-down as an <b>Offering</b>. Offerings pay for cards — any card can be an Offering.</p>

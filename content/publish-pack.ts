@@ -1,8 +1,9 @@
 // publish-pack: put a card set on the pack storage, where running games take it at their next start,
 // without deploying the game (docs/card-data-architecture.md, Card packs).
 //
-//   npm run publish-pack -- heat-wave            # by folder name or code (hw1)
-//   npm run publish-pack -- hw1 --dry-run        # check and list what would be uploaded
+//   npm run publish-pack -- berry-picnic         # by folder name or code (bp1)
+//   npm run publish-pack -- bp1 --dry-run        # check and list what would be uploaded
+//   npm run publish-pack -- hw1 --unpublish      # take a set out of the index (by code): games stop loading it
 //
 // It runs check-set first and stops on any error. Released sets are taken by every game; prototypes only
 // with ?prototypes in the address (playtesters). A set whose cards need plugin code the deployed game
@@ -48,7 +49,8 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dry = args.includes('--dry-run');
   const which = args.find((a) => !a.startsWith('--'));
-  if (!which) throw new Error('Name the set to publish: npm run publish-pack -- heat-wave');
+  if (!which) throw new Error('Name the set to publish: npm run publish-pack -- berry-picnic');
+  if (args.includes('--unpublish')) return unpublish(which.toUpperCase(), dry);
 
   const [{ set, report }] = runChecks(which);
   const code = set.data.set.toLowerCase();
@@ -94,6 +96,24 @@ async function main(): Promise<void> {
   // The index last: a game never sees a pack whose data and art aren't up yet.
   uploadFile(join(temp, 'index.json'), 'index.json', 'application/json');
   console.log(`  ✓ published. Games take it at their next start${entry.status === 'released' ? '' : ' (with ?prototypes: it is a prototype)'}.`);
+}
+
+/**
+ * Take a set out of the index, for a set that was deleted from content/: games stop loading it at their next start.
+ * Its files stay on the storage (nothing lists them any more), so this can be undone by publishing the set again.
+ */
+async function unpublish(code: string, dry: boolean): Promise<void> {
+  const current = await fetch(`${PUBLIC}/index.json`, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null) as { packs: PackEntry[] } | null;
+  if (!current) throw new Error(`Couldn't read ${PUBLIC}/index.json.`);
+  if (!current.packs.some((p) => p.set === code)) { console.log(`${code} isn't in the index: nothing to do.`); return; }
+  const index = { packs: current.packs.filter((p) => p.set !== code) };
+  console.log(`  → index.json without ${code} (${index.packs.length} pack(s))`);
+  if (dry) return;
+  if (!existsSync(CONFIG_DIR)) throw new Error(`No Azure sign-in at ${CONFIG_DIR} (the Via Mochi deploy identity).`);
+  const temp = mkdtempSync(join(tmpdir(), 'fruitcats-pack-'));
+  writeFileSync(join(temp, 'index.json'), JSON.stringify(index, null, 1));
+  uploadFile(join(temp, 'index.json'), 'index.json', 'application/json');
+  console.log(`  ✓ ${code} unpublished. Games stop loading it at their next start.`);
 }
 
 main().catch((e) => {

@@ -43,7 +43,7 @@ const alerts = () => errors.mock.calls.map((c) => String(c[0])).filter((l) => l.
 afterEach(() => { errors.mockClear(); });
 
 const call = (user: string, method: string, path: string, body: unknown = {}) => store.storeRequest(user, method, path, async () => body);
-const DECK = [{ product: deckProduct('five-alarm'), qty: 1 }];
+const DECK = [{ product: deckProduct('picnic-club'), qty: 1 }];
 
 async function checkout(user: string, cart = DECK, id = orderId()) {
   const q = (await call(user, 'POST', '/v1/store/quote', { cart }))[1] as Quote;
@@ -131,8 +131,8 @@ describe('paying', () => {
     const paid = paddle.pay(txn);
     expect(await webhook('transaction.completed', paid, 'evt_000000000aaa')).toEqual([200, { ok: true }]);
     const cards = await owned(user);
-    expect(cards['HW1-H01']).toBe(1);
-    expect(cards['HW1-P01']).toBe(3);
+    expect(cards['BP1-H01']).toBe(1);
+    expect(cards['BP1-B01']).toBe(3);
     // The same event again, then Paddle's other event for the same payment.
     expect(await webhook('transaction.completed', paid, 'evt_000000000aaa')).toEqual([200, { ok: true, repeated: true }]);
     expect((await webhook('transaction.paid', paid))[0]).toBe(200);
@@ -147,7 +147,7 @@ describe('paying', () => {
     paddle.pay(txn);
     const [, body] = await call(user, 'POST', '/v1/store/confirm', { orderId: id }) as [number, { order: { status: string }; owned: Record<string, number> }];
     expect(body.order.status).toBe('paid');
-    expect(body.owned['HW1-H01']).toBe(1);
+    expect(body.owned['BP1-H01']).toBe(1);
   });
 
   it('a checkout after paying is answered with the paid order, never a second payment', async () => {
@@ -181,7 +181,7 @@ describe('crash drills', () => {
     await expect(webhook('transaction.completed', paid, 'evt_00000000crash')).rejects.toThrow();   // server.ts answers 500
     expect(await owned(user)).toEqual({});
     expect((await webhook('transaction.completed', paid, 'evt_00000000crash'))[0]).toBe(200);
-    expect((await owned(user))['HW1-H01']).toBe(1);
+    expect((await owned(user))['BP1-H01']).toBe(1);
   });
 
   it('a crash after the write, before answering Paddle: the retry changes nothing', async () => {
@@ -216,7 +216,7 @@ describe('crash drills', () => {
     expect(await orderOf(user, id)).toMatchObject({ status: 'abandoned' });
     await webhook('transaction.completed', paddle.pay(txn));
     expect(await orderOf(user, id)).toMatchObject({ status: 'paid' });
-    expect((await owned(user))['HW1-H01']).toBe(1);
+    expect((await owned(user))['BP1-H01']).toBe(1);
   });
 
   it('two payments for one order: one grant, and an alert to refund the second', async () => {
@@ -264,14 +264,14 @@ describe('refunds and chargebacks', () => {
 
   it('a refund of one line takes only that line’s cards', async () => {
     const user = account();
-    const cart = [...DECK, { product: cardProduct('HW1-X01'), qty: 1 }];
+    const cart = [...DECK, { product: cardProduct('BP1-X01'), qty: 1 }];
     const { id, txn } = await checkout(user, cart);
     await webhook('transaction.completed', paddle.pay(txn));
-    expect((await owned(user))['HW1-X01']).toBe(1);
+    expect((await owned(user))['BP1-X01']).toBe(1);
     await webhook('adjustment.created', paddle.adjust(txn, 'refund', [1]));
     const cards = await owned(user);
-    expect(cards['HW1-X01']).toBeUndefined();
-    expect(cards['HW1-H01']).toBe(1);
+    expect(cards['BP1-X01']).toBeUndefined();
+    expect(cards['BP1-H01']).toBe(1);
     expect(await orderOf(user, id)).toMatchObject({ status: 'paid' });
   });
 
@@ -299,7 +299,7 @@ describe('refunds and chargebacks', () => {
     const { id, txn } = await checkout(user);
     await webhook('transaction.completed', paddle.pay(txn));
     await webhook('adjustment.created', paddle.adjust(txn, 'chargeback_warning', 'all'));
-    expect((await owned(user))['HW1-H01']).toBe(1);
+    expect((await owned(user))['BP1-H01']).toBe(1);
     await webhook('adjustment.created', paddle.adjust(txn, 'chargeback', 'all'));
     expect(await orderOf(user, id)).toMatchObject({ status: 'charged_back' });
     expect(await owned(user)).toEqual({});
@@ -324,7 +324,7 @@ describe('the owned total and deleted accounts', () => {
     const { table } = await import('../src/tables');
     const orders = table('orders');
     const row = await orders.get(user, '~owned');
-    await orders.put({ ...row!, grants: JSON.stringify({ 'HW1-H01': 7 }) });
+    await orders.put({ ...row!, grants: JSON.stringify({ 'BP1-H01': 7 }) });
     await store.reconcile({ deep: true });
     expect(await owned(user)).toEqual(right);
   });
@@ -333,7 +333,7 @@ describe('the owned total and deleted accounts', () => {
     const user = account();
     const { id, txn } = await checkout(user);
     await webhook('transaction.completed', paddle.pay(txn));
-    const unpaid = await checkout(user, [{ product: deckProduct('five-alarm'), qty: 1 }, { product: cardProduct('HW1-X02'), qty: 1 }]);
+    const unpaid = await checkout(user, [{ product: deckProduct('picnic-club'), qty: 1 }, { product: cardProduct('BP1-X02'), qty: 1 }]);
     await store.eraseOrders(user);
     const kept = await store.exportOrders(user);
     expect(kept.map((o) => o.id)).toEqual([id]);

@@ -205,12 +205,12 @@ button.account-face-button:hover { box-shadow: none; }
 @keyframes legend-turn { to { --legend-turn: 360deg; } }
 @keyframes legend-shine { 0%, 55% { left: -110%; } 100% { left: 170%; } }
 @media (prefers-reduced-motion: reduce) { .legend-frame, .legend-shine::after { animation: none; } }
-/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Reaper, the Carolina
-   Sphynx). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
+/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Noelle, the
+   Cranberry Forest Cat). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
    flickers like a fire, and embers rising off it. Markup (as pawtrait() in apps/web/src/account.ts builds it):
 
      <span class="signature-frame SIZE-CLASS">
-       <img src="…/legend-reaper.webp" alt="">
+       <img src="…/legend-noelle.webp" alt="">
        <span class="sig-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
      </span>
 */
@@ -933,8 +933,12 @@ button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
 .hand-card.playable { filter: none; }
 .hand-card.playable img { box-shadow: 0 0 0 3px var(--glow), var(--shadow); }
 /* Hover only nudges cards that aren't chosen; a chosen card keeps ONE fixed position whether or not the
-   mouse is over it, so clicking never makes it bounce (the old hover and "picked" offsets fought). */
-.hand-card:not(.picked):not(.selected):hover { transform: translateY(-8%); z-index: 5; filter: none; }
+   mouse is over it, so clicking never makes it bounce (the old hover and "picked" offsets fought).
+   Mouse only: a touch screen keeps :hover on the last card tapped, so a card tapped a second time (unpicked)
+   stayed raised instead of sitting back down in the row. */
+@media (hover: hover) {
+  .hand-card:not(.picked):not(.selected):hover { transform: translateY(-8%); z-index: 5; filter: none; }
+}
 .hand-card.picked, .hand-card.selected, .hand-card.picked:hover, .hand-card.selected:hover {
   transform: translateY(-22%); z-index: 6; filter: none; transition: none;
 }
@@ -987,7 +991,10 @@ body.dragging .hand-card:hover { transform: none; }
 .game-over.lost h2 { color: var(--orchard); }
 .game-over .buttons { justify-content: center; margin-top: calc(var(--vh, 1vh) * 1.2); }
 .rules { text-align: left; line-height: 1.45; }
-.rules h2 { margin-top: 0; }
+.rules h2 { margin-top: 0; padding-right: 44px; }
+/* Close in the top corner, where every dialog has it: Got it at the very bottom was the only way out, and a reader
+   who doesn't scroll never sees it. */
+.rules .rules-close { position: sticky; top: 0; float: right; margin: -6px -14px 0 8px; font-size: 28px; line-height: 1; z-index: 1; }
 @keyframes pop { from { transform: scale(0.9); opacity: 0; } }
 
 /* Narrow screens: the side panel becomes a slim strip under the board; the card inspector is dropped

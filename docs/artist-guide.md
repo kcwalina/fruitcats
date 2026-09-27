@@ -32,8 +32,8 @@ chance to show off, too. The brief marks all of these.
 
 | Picture | Size (pixels) | Shape | File |
 |---|---|---|---|
-| Card picture (including Hero Cats and tokens) | 1536 × 1024 | landscape | WebP, named as in the brief (for example `HW1-P07.webp`) |
-| Pawtrait | 512 × 512 | square, shown as a circle | WebP, named as in the brief (for example `legend-reaper.webp`) |
+| Card picture (including Hero Cats and tokens) | 1536 × 1024 | landscape | WebP, named as in the brief (for example `BP1-B04.webp`) |
+| Pawtrait | 512 × 512 | square, shown as a circle | WebP, named as in the brief (for example `legend-noelle.webp`) |
 | Announcement picture | 2400 × 1260 | wide | WebP, `key-art.webp` |
 
 The game needs two things to work: **these sizes and shapes, and the file names from the brief**. Everything
@@ -89,7 +89,7 @@ How a card is made:
 2. You draw its picture.
 3. We put your picture on the card. Our software adds the frame, the name, the numbers and the rules text.
 
-![Serrano Wolf, a finished Heat Wave card](../content/2026/09/heat-wave/art/cards/HW1-P04.webp)
+![Keeper of the Door, a finished Domowiki card](../content/2026/10/domowiki/art/cards/DW1-D04.webp)
 
 *A finished card. The picture in the middle is the artist's work. The rest is added by our software.*
 
@@ -143,11 +143,6 @@ to go all out on. We call this **showcase art**. Things that have worked well fo
 
 These are ideas, not rules. A quiet, funny or unexpected picture can be just as special.
 
-Compare the Heat Wave cards: an ordinary deck card, then a Foil card (Jack), a Gold card (Nova) and the
-Signature card (Reaper).
-
-<img src="../content/2026/09/heat-wave/art/cards/HW1-P04.webp" width="180" alt="Serrano Wolf, deck card"> <img src="../content/2026/09/heat-wave/art/cards/foil/HW1-X01.webp" width="180" alt="Jack, Foil"> <img src="../content/2026/09/heat-wave/art/cards/gold/HW1-X02.webp" width="180" alt="Nova, Gold"> <img src="../content/2026/09/heat-wave/art/cards/signature/HW1-X03-bigcat.webp" width="180" alt="Reaper, Signature">
-
 ### One picture per card
 
 You make one picture per card. (A Hero Cat needs two, because it has two forms: Kitten and Big Cat.) The card's
@@ -188,11 +183,11 @@ A Hero Cat has two forms. Draw them so they clearly look like the same character
 - **Big Cat:** the same character grown up: bigger, bolder, a power pose
 
 In cute sets, the face is minimal and sewn-on: tiny dot eyes, a small smile, pink blush cheeks, three stripes on
-the forehead, long straight whiskers. In "cool" sets (like Heat Wave), it has attitude instead: narrowed eyes, one
+the forehead, long straight whiskers. In "cool" sets, it has attitude instead: narrowed eyes, one
 raised eyebrow, a cocky half-smile, no blush.
 
 A **Signature** Hero Cat has kept the sticker style and gone further, for example with a glowing halo behind it,
-costume details (Reaper has a cape and glowing ember cracks), stronger contrast and a commanding pose.
+costume details (a cape, glowing cracks), stronger contrast and a commanding pose.
 
 ### Families
 
@@ -207,15 +202,13 @@ colours are added by us, and backgrounds from the same world help a family feel 
 | Berry | a lush berry patch, pinks, reds and purples |
 | Tropical | a tropical jungle clearing, palm leaves, a golden sunset |
 | Melon | a lazy summer melon patch, soft greens and pinks |
-| Pepper *(Heat Wave)* | a volcanic canyon at dusk, dark basalt, glowing cracks, drifting embers, smoky red-orange sky |
 
-A set can give a family a new look for its own cards: Heat Wave's Garden cards are set in a moonlit Halloween
-pumpkin patch. **A new family brings its own background world and three frame colours**, and the brief lists them.
+A set can give a family a new look for its own cards. **A new family brings its own background world and three frame colours**, and the brief lists them.
 
 ### Each set has a tone
 
-The brief gives the set's tone. The Starter Box is **cute**: sunbeams, hugs, beach days, big sparkly eyes. Heat
-Wave is aimed at teens and is **"cool, not cute"**: confident smirks, narrowed eyes, action poses, low camera
+The brief gives the set's tone. The Starter Box is **cute**: sunbeams, hugs, beach days, big sparkly eyes. A set
+aimed at teens can be **"cool, not cute"**: confident smirks, narrowed eyes, action poses, low camera
 angles, a darker palette (charcoal, crimson, ember orange) with fire, sparks and smoke. Streetwear, ninja scarves
 and armour are fine.
 
@@ -229,8 +222,8 @@ Pawtrait is a **Legend Pawtrait** if it comes with a Legendary card. The brief m
 | Shown as | a **circle**: the square's corners are cut off, and the ring covers a thin band around the edge |
 | Framing | **head and shoulders**, face large and centred, filling most of the frame, facing the viewer |
 | Style | the **plush sticker style**: bold clean outlines, flat bright colours, a touch of glossy highlight |
-| Face | simple and appealing: big round shiny eyes, a happy smile, round pink cheeks (a cool character can smirk, like Reaper) |
-| Background (Legend) | a radiant **golden sunburst** with a few big simple four-pointed sparkles. The Signature card's Pawtrait can use its own backdrop: Reaper's is molten ember-orange on black. |
+| Face | simple and appealing: big round shiny eyes, a happy smile, round pink cheeks (a cool character can smirk) |
+| Background (Legend) | a radiant **golden sunburst** with a few big simple four-pointed sparkles. The Signature card's Pawtrait can use its own backdrop. |
 | Background (everyday) | one flat pastel colour, nothing else |
 | The ring | The game adds a rainbow-gold ring to Legend Pawtraits, and a ring of molten lava to the Signature card's Pawtrait. A ring drawn into the picture would show inside it. |
 
@@ -299,12 +292,12 @@ the sides are cut off:
 
 ![What each wallpaper keeps of the picture](../art/guide/artist/crops.webp)
 
-*An example picture (Nova). The phone wallpaper keeps only the part inside the white box. The star in her
-hand is partly cut off.*
+*An example picture. The phone wallpaper keeps only the part inside the white box. The star in the
+character's hand is partly cut off.*
 
-<img src="../art/guide/artist/wallpaper-phone.webp" width="300" alt="Nova as a phone wallpaper, approximately">
+<img src="../art/guide/artist/wallpaper-phone.webp" width="300" alt="An example picture as a phone wallpaper, approximately">
 
-*Nova as a phone wallpaper, approximately, with the clock on top.*
+*An example picture as a phone wallpaper, approximately, with the clock on top.*
 
 What this means for your picture:
 
@@ -336,10 +329,10 @@ phone wallpaper, which is fine: the card is what matters.
 
 ## Style notes
 
-- **Keep each character the same on every card it appears on.** For example, Blaze, the Heat Wave Hero Cat,
-  also appears on the Showdown and Ring of Fire cards.
-- **Make the fruit easy to recognise.** For example, a chili is long, curved and pointed. A round red hood
-  looks like a tomato.
+- **Keep each character the same on every card it appears on.** For example, Jam, the Berry Picnic Hero Cat,
+  also appears on her Pawtrait and in the announcement picture.
+- **Make the fruit easy to recognise.** For example, a strawberry is pointed, with seeds and a green leafy
+  cap. A plain round red hood looks like a tomato.
 - **The house style is drawn, not photographic.** Photo-realism and a 3D-render look don't match the other cards.
 - **Make it your own.** We can't publish characters or art copied from other games.
 - **Ask when a description is unclear.**
@@ -369,7 +362,7 @@ we both want them, this is the point where we would stop, before you've put time
 Upload each picture in the Studio, which keeps every version. If the Studio isn't working for you, an email, a
 zip or a shared folder is fine too. Then please use the file names from the brief exactly, because our tools
 find each picture by its name. Capitals and dashes matter:
-`HW1-P07.webp`, not `hw1_p07.webp` or `Scotch Bonnet Rhino.webp`.
+`BP1-B04.webp`, not `bp1_b04.webp` or `Dewberry Possum.webp`.
 
 ## Suggesting changes
 
@@ -394,10 +387,10 @@ The brief gives the size and file name of every picture. This is the same inform
 
 | Picture | Size (pixels) | Shape | File name |
 |---|---|---|---|
-| Card picture | 1536 × 1024 | landscape, 3:2 | the card's ID: `HW1-P07.webp` |
-| Hero Cat, Kitten and Big Cat faces | 1536 × 1024 each | landscape, 3:2 | `HW1-H01-kitten.webp`, `HW1-H01-bigcat.webp` |
-| Token | 1536 × 1024 | landscape, 3:2 | the token's ID: `HW1-K01.webp` |
-| Pawtrait | 512 × 512 | square, shown as a circle | `legend-<name>.webp`: `legend-reaper.webp` |
+| Card picture | 1536 × 1024 | landscape, 3:2 | the card's ID: `BP1-B04.webp` |
+| Hero Cat, Kitten and Big Cat faces | 1536 × 1024 each | landscape, 3:2 | `BP1-H01-kitten.webp`, `BP1-H01-bigcat.webp` |
+| Token | 1536 × 1024 | landscape, 3:2 | the token's ID: `BP1-K01.webp` |
+| Pawtrait | 512 × 512 | square, shown as a circle | `legend-<name>.webp`: `legend-noelle.webp` |
 
 - **Format:** WebP, quality 90 or more. If your software can't save WebP, send PNG with the same name and
   we'll convert it.
@@ -434,7 +427,7 @@ No. The card comes first. But for the paid cards, it's worth checking that the m
 its own, because that's what a phone wallpaper shows (see [As a wallpaper](#as-a-wallpaper)).
 
 **How cute or how cool?**
-The brief gives each set's tone. When unsure, look at that set's finished cards, or at Heat Wave for "cool".
+The brief gives each set's tone. When unsure, look at that set's finished cards.
 
 **Can I sign my art?**
 Yes, please. We ask for a signature in a corner of each deck's two main pictures, and we especially
@@ -445,8 +438,7 @@ encourage it on the paid cards and on the set's Signature card. See
 Ask, or tell us what you'd rather draw. Anything in the brief can change, including the cards' rules.
 
 **Where can I see a finished example?**
-Heat Wave. Its announcement page, <https://fruitcats.viamochi.com/announcements/heat-wave>, shows its cards,
-and [its art brief](art-brief-heat-wave.md) lists every card.
+Domowiki. [Its card list](../content/2026/10/domowiki/art/cards/README.md) shows every finished card.
 
 ---
 

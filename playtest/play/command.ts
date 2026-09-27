@@ -1,4 +1,4 @@
-// play new [--deck zest-rush|five-alarm|LIBRARY-KEY|FC1.code|file.json] [--vs orchard-guard|…] [--seed N] [--file game.json]
+// play new [--deck zest-rush|picnic-club|LIBRARY-KEY|FC1.code|file.json] [--vs orchard-guard|…] [--seed N] [--file game.json]
 // play show | play do <your answer> | play log | play rules   [--file game.json]
 //
 // A game against the bot, one decision per command, for a player that reads: a Claude Code session doing a

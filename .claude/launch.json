@@ -23,6 +23,19 @@
       "autoPort": true
     },
     {
+      "name": "web-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "apps/web",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
+    },
+    {
       "name": "studio-api",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

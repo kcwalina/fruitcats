@@ -98,6 +98,9 @@ same room through Nearby Connections. Neither needs a server of ours. The Steam 
 
 ## Not done yet
 
+More ideas, including Ranked, are in [optimizing-cost.md](optimizing-cost.md).
+
+
 - **Starting a game with no server at all.** Two phones in the same room, swapping connection details by QR code.
   This needs two more pieces: a signed record of which cards each account owns, so each device can check the other's
   deck without asking the API, and the QR screens. Games already going don't need either.

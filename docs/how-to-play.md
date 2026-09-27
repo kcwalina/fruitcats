@@ -20,7 +20,7 @@ After the tutorial, tap **Solo** to play the computer.
 ## Your cards
 
 <div class="steps">
-<figure><img src="guide/play/3-read-card.webp" alt="A card opened full size: Clementine, cost 3" loading="lazy"><figcaption><b>1</b> Your cards are at the bottom. <b>Press and hold</b> one to read it. The number in the top-left corner is its <b>price</b>.</figcaption></figure>
+<figure><img src="guide/play/3-read-card.webp" alt="A card opened full size: Keeper of the Door, cost 3" loading="lazy"><figcaption><b>1</b> Your cards are at the bottom. <b>Press and hold</b> one to read it. The number in the top-left corner is its <b>price</b>.</figcaption></figure>
 <figure><img src="guide/play/4-plant.webp" alt="Two cards picked to offer, and the Offer 2/2 button" loading="lazy"><figcaption><b>2</b> You pay with <b>Offerings</b>. At the start, pick the <b>2 cards you need least</b> (usually the most expensive: you can’t afford them yet) and tap <b>Offer</b>. Each becomes 1 Offering.</figcaption></figure>
 </div>
 

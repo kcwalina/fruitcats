@@ -11,7 +11,8 @@
 //   3. the engine the web app builds against is this checkout's (a worktree build once shipped new card
 //      images with the main checkout's old card stats)
 //   4. build the site, and the playtest runner bundle PC2024 downloads
-//   5. the built bundle carries every card's current cost, Power and Health
+//   5. the built bundle carries every card's current cost, Power and Health, and the site is small enough to upload in
+//      Azure's 2-minute window (deploys failed for hours with only "exit code 1" when card art made it 115 MB)
 //   6. push to main, then upload exactly origin/main, and only if it contains the commit the live site runs (deploying
 //      before pushing let a second session, without those commits, deploy right over them)
 //   7. the live site serves this build
@@ -30,6 +31,7 @@ import { flag } from '../lib/args';
 import { CARDS } from '../lib/engine';
 import { runMain } from '../lib/pool';
 import { buildRunner } from './runner-bundle';
+import { siteSize, sizeProblem } from './size-guard';
 import { fetchMain, requireClean, requireLiveInHead, requireOnMain, takeLock } from '../../scripts/git/deploy-guard.mjs';
 import { HOW_TO_FIX, describe, lostInRange } from '../../scripts/git/lost-work.mjs';
 
@@ -205,6 +207,12 @@ async function deploy(): Promise<number> {
 
   step(5, 'Bundle check');
   const main = checkBundle();
+  // Before the push: a site too big to upload in Azure's 2-minute window fails in seconds here, with the reason,
+  // instead of after the push with only "exit code 1" (playtest/deploy/size-guard.ts).
+  const size = siteSize(DIST);
+  const tooBig = sizeProblem(size);
+  if (tooBig) throw new Error(tooBig);
+  console.log(`   ${(size.bytes / 1024 / 1024).toFixed(1)} MB in ${size.files} files: fits the upload window`);
 
   if (flag('dry-run')) { console.log('\n--dry-run: stopping before the push and upload.'); return 0; }
 
@@ -217,7 +225,15 @@ async function deploy(): Promise<number> {
   requireLiveInHead(await liveCommit(), SITE, ROOT);
   writeFileSync(join(DIST, 'version.json'), JSON.stringify({ commit, time: new Date().toISOString() }));
   const token = deploymentToken();
-  run('npx', ['-y', '@azure/static-web-apps-cli@latest', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
+  try {
+    run('npx', ['-y', '@azure/static-web-apps-cli@latest', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
+  } catch (e) {
+    // The uploader's own message ("The deployment binary exited with code 1") says nothing. It is almost never Azure:
+    // it has been a site too big for the upload window. Find the real reason before trying again.
+    throw new Error(`${(e as Error).message}
+The upload failed. Don't just retry: run it again with SWA_CLI_DEBUG=silly set to see Azure's `
+      + 'real reason (a "Signature not valid in the specified key time frame" means the site took over 2 minutes to upload: make it smaller).');
+  }
 
   step(7, 'Live check');
   for (let attempt = 1; ; attempt++) {

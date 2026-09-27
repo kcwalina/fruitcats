@@ -9,7 +9,9 @@ replaced another's. The scripts below enforce the rules that prevent it. Follow 
 1. Commit your work.
 2. `npm run deploy`. It merges origin/main in, checks, pushes to main, and only then uploads. What goes live is
    always exactly origin/main.
-3. If it stops, fix what it says and run it again. Never deploy by hand (swa-cli, `az`), and never
+3. If it stops, fix what it says and run it again. An upload failure is a real error, not a glitch: find the cause
+   (the message says how) before retrying. The site must stay small (under 40 MB, checked before the push): card art is
+   served from the card-pack storage (`npm run publish-pack`), never copied into `apps/web/dist`. Never deploy by hand (swa-cli, `az`), and never
    `--no-verify`, force-push, or reset main.
 
 ## Merging origin/main

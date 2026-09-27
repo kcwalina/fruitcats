@@ -1,51 +1,57 @@
 # Collection
 
-The Collection is where you look at your cards, even when you're not playing. Open it from the home
-screen. It opens on your **Showcase**; the grid button at the top right goes to **All cards**.
+The Collection is where you look at your cards, and read the folk tales behind them, even when you're not
+playing. Open it from the home screen. It opens on a row of covers: your **Showcase** first, then every deck
+you have. Tap a cover to open it.
+
+## A deck's page
+
+Tap a deck's cover and you get its cards and its tale.
+
+- The deck's **hero** is in the middle, large. **Swipe** left and right to go through every card in the deck.
+  On a computer, use the arrow keys or swipe on the trackpad.
+- Beside the cards (under them on a phone) is the **tale** of the deck's creatures: where they come from,
+  what people believed about them, and a few facts that the cards are made from, with links to read more.
+- **Tap the card** in the middle to see it big. From there you can **＋ Add to Showcase** or **Make
+  wallpaper**, and swipe through the rest of the deck.
+- The grid button at the top right shows **All cards**: every card you have as a grid, with rarity and family
+  filters.
 
 <div class="steps shots">
-<figure><img src="guide/collection/showcase.webp" alt="The Showcase: Tango in a Prismatic print, large on a dark brown background, with Home and All cards in the top corners" loading="lazy"><figcaption>The <b>Showcase</b>: your favourite cards, one at a time.</figcaption></figure>
-<figure><img src="guide/collection/all-cards.webp" alt="All cards: 53 of 53 collected, rarity and family filters, and the cards in a grid" loading="lazy"><figcaption><b>All cards</b>: every card in the set, and how many you have.</figcaption></figure>
 <figure><img src="guide/collection/card-open.webp" alt="Tangerine Chick open full screen, with Make wallpaper and Add to Showcase" loading="lazy"><figcaption>Tap a card to see it big, add it to your Showcase, or make it your wallpaper.</figcaption></figure>
 </div>
 
 ## Showcase
 
-Your Showcase holds the cards you're proudest of. Everyone starts with Tango, on both sides: its first side and its
-Awakened side.
+Your Showcase holds the cards you're proudest of. It starts empty: you choose what goes in it.
 
 - Cards appear one at a time, large, on a plain dark brown background, with nothing else on screen
-  but **Home** (top left) and **All cards** (top right). **Swipe** left and right to go through them.
-  On a computer, use the arrow keys or swipe on the trackpad.
+  but the way back (top left). **Swipe** left and right to go through them. On a computer, use the arrow
+  keys or swipe on the trackpad.
 - **Press and hold** a card (right-click on a computer) for **Make wallpaper** and **Take out of
   Showcase**. Taken out a card by mistake? Tap **Undo**.
-- You add cards to your Showcase in [All cards](#all-cards).
+- You add cards to your Showcase from a deck's page: tap a card, then **＋ Add to Showcase**.
 
 <div class="steps shots">
-<figure><img src="guide/collection/showcase-hold.webp" alt="Tango held in the Showcase: the screen dims and a menu offers Make wallpaper and Take out of Showcase" loading="lazy"><figcaption>Press and hold a card for <b>Make wallpaper</b>.</figcaption></figure>
+<figure><img src="guide/collection/showcase-hold.webp" alt="A card held in the Showcase: the screen dims and a menu offers Make wallpaper and Take out of Showcase" loading="lazy"><figcaption>Press and hold a card for <b>Make wallpaper</b>.</figcaption></figure>
 </div>
 - Signed in, your Showcase is kept in your Via Mochi account, so it's the same on all your devices.
 
 ## All cards
 
-The whole Starter Box as a grid, in collector-number order.
+Every card of the decks you have, as a grid, the starter deck first and each deck in its own order.
 
-- At the top: how many cards of the set you have, with a bar that fills as you collect.
+- At the top: how many of those cards you have, with a bar that fills as you collect.
 - **Rarity** filters: **Common**, **Uncommon**, **Rare** or **Legendary**. Each shows how many of that
   [rarity](#rarity) you have (like **3/5**), or a **✓** once you have them all.
-- **Family** filters: **Citrus**, **Orchard**, **Tropical** or **Wildfolk**. Pick one of each to combine
-  them: Rare Orchard cards, say. Tap **All** to clear a row.
+- **Family** filters, one per family in your cards. Pick one of each row to combine them: Rare Domowiki
+  cards, say. Tap **All** to clear a row.
 - **×3** on a card means you have three copies. A **★** by its number means it's in your Showcase.
-- Cards you don't have yet are dark shadows marked *Coming soon*.
+- Cards you don't have yet are dark shadows marked *Coming soon*. A deck you own nothing of isn't here at
+  all: its cards are in the Store.
 - A Hero's two sides are two separate cards here, so you can show off either.
 
-### Add a card to your Showcase
-
-1. In **All cards**, tap the card. It opens full screen, and you can swipe through your other cards
-   from there.
-2. Tap **＋ Add to Showcase**. It now says **★ In your Showcase**.
-
-To take a card out, open it the same way and tap **Remove from Showcase** under its buttons. Changed
+To take a card out of your Showcase, open it and tap **Remove from Showcase** under its buttons. Changed
 your mind? Tap **Undo** in the bar that appears.
 
 ## Rarity

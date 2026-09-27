@@ -1,0 +1,591 @@
+{
+  "set": "AL1",
+  "name": "Aluxes",
+  "version": "0.1.0",
+  "status": "released",
+  "released": "2026-11",
+  "requires": [
+    "SB1"
+  ],
+  "families": {
+    "Aluxes": {
+      "colors": [
+        "#2E8FA3",
+        "#1A4D5C",
+        "#DCF1F5"
+      ],
+      "personality": "Tiny, invisible, mischievous, loyal for seven years",
+      "playsLike": "Guard the milpa, call the rain, and let the corn grow tall",
+      "mechanic": "Rain-Fed",
+      "hint": "units grow +1/+1 every round"
+    }
+  },
+  "mechanics": {
+    "Rain-Fed": {
+      "family": "Aluxes",
+      "kind": "keyword",
+      "reminder": "At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2.",
+      "counter": {
+        "name": "rain",
+        "power": 1,
+        "health": 1,
+        "log": "{name} grows in the rain (+{n}/+{n})."
+      },
+      "abilities": [
+        {
+          "when": "roundStart",
+          "inline": true,
+          "target": "self",
+          "do": [
+            {
+              "counter": {
+                "name": "rain",
+                "add": 1,
+                "max": 2
+              }
+            }
+          ]
+        }
+      ],
+      "icon": "🌽"
+    }
+  },
+  "lore": {
+    "creature": "Alux (plural aluxo'ob, or aluxes)",
+    "from": "Yucatec Maya folklore: Yucatán, Quintana Roo and Campeche (Mexico), Belize and Guatemala",
+    "facts": [
+      "An alux is knee-high and looks like a tiny Maya farmer: white cotton clothes, a straw hat and huarache sandals.",
+      "A farmer builds a doll-sized stone house, the kahtal alux, at the edge of his cornfield, and an alux comes to live in it.",
+      "For seven years the alux helps the corn grow, calls the rain, and walks the field at night, whistling to scare off thieves and animals.",
+      "After the seven years the farmer must seal the little house's door, or the alux runs wild and turns to tricks.",
+      "The j-meen, the Maya healer, shapes an alux from clay, prays over it for weeks until it comes to life, and sets it in its house or under the oldest tree on the land, often a great ceiba.",
+      "Aluxes are usually invisible. People know one is near from a shadow, a gentle breeze, giggles in the dark, or footprints the size of a bird's.",
+      "They love offerings: saká (a sweet corn drink), honey, tortillas, fruit and sweets, left in the little house.",
+      "Their tricks are small: putting out fires, tossing pots and pans, hiding tools, tossing pebbles at your feet, and leading walkers in circles in the monte, the jungle.",
+      "People who met one say he was dressed like a farmer, with a slingshot in his sash and a little dog trotting behind him.",
+      "An alux may stop a traveller on the road and ask for a small offering. Give it, and he brings good luck; refuse, and things go wrong.",
+      "Aluxes guard cenotes too, the deep pools of fresh water in the Yucatán rock. The toh bird nests in the cenotes' walls.",
+      "Aluxes live in old ruins as well, among the fallen stones of the ancient cities.",
+      "Don't say their name out loud: it calls them.",
+      "In the 1990s a bridge near Cancún fell down three times while it was being built. A Maya healer said the aluxes were angry, so the builders made them a little house, and the bridge stood.",
+      "Builders in Yucatán still hold a ceremony for the aluxes before breaking ground, and hotels keep alux houses on their grounds."
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/Alux",
+      "https://yucatantoday.com/en/blog/a-house-for-an-alux",
+      "https://mayan.org/myths/aluxes/",
+      "https://www.ancient-origins.net/myths-legends-americas/aluxes-0016592",
+      "https://naatikmexico.org/blog/maya-aluxes-mysterious-elven-guardians-of-the-yucatn-jungle",
+      "https://yucatantoday.com/en/blog/yucatan-legends-news-aluxes-xtabay",
+      "https://www.milenio.com/estados/leyenda-de-los-aluxes-en-yucatan-historia",
+      "https://folktalesamerica.com/the-aluxes-the-little-forest-guardians-of-the-yucatec-maya/"
+    ]
+  },
+  "cards": [
+    {
+      "id": "AL1-H01",
+      "rarity": "Legendary",
+      "type": "Hero Cat",
+      "family": "Aluxes",
+      "name": "Aluxito, Keeper of the Milpa",
+      "flavor": "Knee-high and invisible. Every corn stalk in the field is his.",
+      "kitten": {
+        "name": "Aluxito, Keeper of the Milpa",
+        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Lives.",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "heal": 2
+              }
+            ]
+          }
+        ],
+        "growUp": {
+          "if": {
+            "lives": {
+              "atMost": 6
+            }
+          }
+        }
+      },
+      "bigCat": {
+        "name": "Aluxito, Caller of the Rain",
+        "power": 3,
+        "text": "Exhaust: Heal 3 from a unit you control. It gains Guardian this round.",
+        "abilities": [
+          {
+            "when": "exhaust",
+            "target": {
+              "unit": "own"
+            },
+            "do": [
+              {
+                "heal": 3
+              },
+              {
+                "buff": {
+                  "keywords": [
+                    "Guardian"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "frame": "gold"
+    },
+    {
+      "id": "AL1-D01",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Saká-Bearing Alux",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "text": "Hello: Heal 2 from a unit.",
+      "flavor": "A gourd of sweet corn drink, carried to whoever needs it most.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "any"
+          },
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D02",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Night Patrol Alux",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "text": "Guardian.",
+      "flavor": "Walks the rows all night. Nothing gets to the corn.",
+      "keywords": [
+        "Guardian"
+      ]
+    },
+    {
+      "id": "AL1-D03",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Corn-Tending Alux",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "text": "Rain-Fed. Hello: If you control a Guardian, draw a card.",
+      "flavor": "Tends the field while the farmer sleeps. The corn is taller by morning.",
+      "keywords": [
+        "Rain-Fed"
+      ],
+      "abilities": [
+        {
+          "when": "hello",
+          "if": {
+            "yardHas": {
+              "keyword": "Guardian"
+            }
+          },
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Clay Alux, Fresh from the J-meen",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "text": "Rain-Fed.",
+      "flavor": "Shaped from clay by the healer. Seven weeks of prayers, and it stands up.",
+      "keywords": [
+        "Rain-Fed"
+      ]
+    },
+    {
+      "id": "AL1-D05",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Tool-Hiding Alux",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "text": "Hello: Exhaust an enemy unit.",
+      "flavor": "Your machete was right here. Now it isn't.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D06",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Slingshot Alux",
+      "cost": 4,
+      "power": 4,
+      "health": 3,
+      "text": "Guardian.",
+      "flavor": "Dressed like a farmer, with a slingshot in his sash. Coatis know him.",
+      "keywords": [
+        "Guardian"
+      ]
+    },
+    {
+      "id": "AL1-D07",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Alux of the Old Stones",
+      "cost": 4,
+      "power": 2,
+      "health": 5,
+      "text": "Guardian. Tough 1.",
+      "flavor": "Lives in the fallen stones of a ruin. Stone doesn't feel a hit.",
+      "keywords": [
+        "Guardian",
+        "Tough 1"
+      ]
+    },
+    {
+      "id": "AL1-D08",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Alux of the Ceiba Roots",
+      "cost": 6,
+      "power": 5,
+      "health": 6,
+      "text": "Guardian. Fierce.",
+      "flavor": "The healer set his clay figure under the oldest tree. He grew into it.",
+      "keywords": [
+        "Guardian",
+        "Fierce"
+      ]
+    },
+    {
+      "id": "AL1-D09",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Aluxes",
+      "name": "A Whistle in the Dark",
+      "cost": 1,
+      "text": "Pounce. Cancel an attack. (The attacker stays exhausted.)",
+      "flavor": "He walks the field at night and whistles. Thieves and animals turn back.",
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "pounceOnly": "attack",
+          "target": "attack",
+          "do": [
+            {
+              "cancelAttack": true
+            }
+          ],
+          "note": "The attacker stays exhausted."
+        }
+      ]
+    },
+    {
+      "id": "AL1-D10",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Aluxes",
+      "name": "Honey and Tortillas",
+      "cost": 2,
+      "text": "Lucky. Heal 3 from a unit you control. Draw a card.",
+      "flavor": "Left on the little doorstep at dusk. Gone by morning.",
+      "keywords": [
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "optionalTarget": true,
+          "do": [
+            {
+              "heal": 3
+            },
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D11",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Aluxes",
+      "name": "Pots and Pans Flung",
+      "cost": 3,
+      "text": "Deal 4 damage to an exhausted unit.",
+      "flavor": "Fall asleep without leaving an offering, and the kitchen lets you know.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "any",
+            "filter": {
+              "exhausted": true
+            }
+          },
+          "do": [
+            {
+              "damage": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D12",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Aluxes",
+      "name": "Kahtal Alux, the Little House",
+      "cost": 2,
+      "text": "Attached unit gets +3 Health and Guardian.",
+      "flavor": "A doll-sized house at the edge of the field. Whoever lives in it guards the corn for seven years.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "health": 3,
+              "keywords": [
+                "Guardian"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ]
+    },
+    {
+      "id": "AL1-D13",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Aluxes",
+      "name": "The Roadside Alux",
+      "cost": 3,
+      "power": 2,
+      "health": 4,
+      "text": "Once per round, when you heal 1 or more damage from a unit, draw a card.",
+      "flavor": "Stops travellers and asks for a little something. Give it, and luck follows you home.",
+      "abilities": [
+        {
+          "when": "youHeal",
+          "oncePerRound": true,
+          "do": [
+            {
+              "draw": 1
+            }
+          ],
+          "log": "Sakura draws a card."
+        }
+      ]
+    },
+    {
+      "id": "AL1-D14",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Aluxes",
+      "name": "The Alux of the Sacred Cenote",
+      "cost": 4,
+      "power": 3,
+      "health": 5,
+      "text": "Guardian. At the start of each round, heal 1 from each unit you control.",
+      "flavor": "Guards the deep pool where the rain begins.",
+      "keywords": [
+        "Guardian"
+      ],
+      "abilities": [
+        {
+          "when": "roundStart",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "heal": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D15",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Aluxes",
+      "name": "The Bridge Alux of Cancún",
+      "cost": 6,
+      "power": 6,
+      "health": 7,
+      "text": "Guardian. Tough 1.",
+      "flavor": "The bridge fell three times. Then they built him a house, and it stood.",
+      "keywords": [
+        "Guardian",
+        "Tough 1"
+      ]
+    },
+    {
+      "id": "AL1-D16",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "The Alux's Dog",
+      "cost": 1,
+      "power": 2,
+      "health": 1,
+      "text": "",
+      "flavor": "Where an alux walks, a little dog trots behind."
+    },
+    {
+      "id": "AL1-D17",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Aluxes",
+      "name": "Toh, the Cenote Bird",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "text": "Hello: Draw a card.",
+      "flavor": "Nests in the walls of the cenote and knows everything that goes on there.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D18",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Aluxes",
+      "name": "A Sweet on the Doorstep",
+      "cost": 1,
+      "text": "Pounce. A unit you control gets +2 Power this round.",
+      "flavor": "Sweets and fruit in the little house. The alux works twice as hard.",
+      "keywords": [
+        "Pounce"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AL1-D19",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Aluxes",
+      "name": "Lost in the Monte",
+      "cost": 1,
+      "text": "Lucky. Exhaust an enemy unit.",
+      "flavor": "He walks you in circles until you say please.",
+      "keywords": [
+        "Lucky"
+      ],
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "decks": {
+    "aluxes": {
+      "name": "Aluxes",
+      "hero": "AL1-H01",
+      "cards": {
+        "AL1-D01": 3,
+        "AL1-D02": 3,
+        "AL1-D03": 3,
+        "AL1-D04": 3,
+        "AL1-D05": 3,
+        "AL1-D06": 3,
+        "AL1-D07": 3,
+        "AL1-D08": 3,
+        "AL1-D09": 3,
+        "AL1-D10": 3,
+        "AL1-D11": 3,
+        "AL1-D12": 2,
+        "AL1-D13": 1,
+        "AL1-D14": 1,
+        "AL1-D15": 1,
+        "AL1-D16": 3,
+        "AL1-D17": 3,
+        "AL1-D18": 3,
+        "AL1-D19": 3
+      },
+      "blurb": "Patient guardians of the cornfield. Wall up, heal with the rain, and let the Rain-Fed corn grow tall.",
+      "price": 0
+    }
+  }
+}

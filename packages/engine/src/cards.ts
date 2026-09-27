@@ -61,6 +61,21 @@ export interface SetData {
   cards: CardDef[];
   tokens?: CardDef[];
   decks?: Record<string, DeckList>;
+  /** The folklore behind the set, shown with its decks: a short tale for players, and the facts it rests on. */
+  lore?: SetLore;
+}
+
+export interface SetLore {
+  creature?: string;
+  from?: string;
+  /** The tale's heading ("The Domowiki") and the small line above it ("Slavic folklore · Poland…"). */
+  title?: string;
+  eyebrow?: string;
+  /** The tale, a few short paragraphs, with a hook in the first line: written for young readers. */
+  story?: string[];
+  /** One belief per fact, plain and true; every card of the set comes from one of them. */
+  facts?: string[];
+  sources?: string[];
 }
 
 // ── Plugins ──────────────────────────────────────────────────────────────────────────────────────

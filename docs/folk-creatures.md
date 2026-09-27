@@ -4,10 +4,10 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 [retheme-proposal.md](retheme-proposal.md)). This is the list of creatures for the first decks: one from every
 inhabited continent, plus backups.
 
-**In the game now: the Domowiki.** Since 2026-09-26 they are the game's starter deck, the one every player has
-(content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)). **Also in the game: the Pari**, the second
-starter deck, since 2026-09-26 (content/2026/10/pari, [pari-set.md](pari-set.md)). The other creatures
-below are planned decks.
+**In the game now: the Domowiki, the Pari and the Aluxes.** Since 2026-09-26 the Domowiki are the game's starter
+deck, the one every player has (content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)), and the Pari are the
+second starter deck (content/2026/10/pari, [pari-set.md](pari-set.md)). The Aluxes are the third deck, free in the Store
+(content/2026/11/aluxes, [aluxes-set.md](aluxes-set.md)). The other creatures below are planned decks.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
 from a research pass (about 170 articles, one agent per continent), and the owner approved them, with Veli for
@@ -39,7 +39,7 @@ generators were left out.
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/MET_1986_510.jpg/330px-MET_1986_510.jpg" width="80"> | [Yech](#yech) | Kashmir, India | A sprite in a white cap that comes near houses on snowy nights; snatch the cap and it grants your wishes. [More](https://searchkashmir.org/yach/) |
 | <img src="http://k.sinaimg.cn/n/sinacn20190527s/201/w641h360/20190527/2b98-hxntqyz1002047.jpg/w700d1q75cms.jpg" width="80"> | [Hedgehog Immortals](#hedgehog-immortals) | North China | A hedgehog living in your courtyard may be a spirit that settles in with the family and keeps it prosperous. [More](https://folklore.elpub.ru/jour/article/view/76) |
 | <img src="https://archive.org/download/1930-rattray/page/n82_w800.jpg" width="80"> | [Mmoatia](#mmoatia) | Akan, Ghana | Foot-high forest folk with backward feet who talk in whistles, love bananas, and teach healing. [More](https://pursiful.com/2014/03/28/mmoatia-ghanaian-tricksters-of-the-forest/) |
-| <img src="https://2114141.fs1.hubspotusercontent-na1.net/hubfs/2114141/Imported_Blog_Media/2307-Casita-del-Alux-by-Alberto-Chuc-3.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
+| <img src="https://2114141.fs1.hubspotusercontent-na1.net/hubfs/2114141/Imported_Blog_Media/2307-Casita-del-Alux-by-Alberto-Chuc-3.jpg" width="80"> | [Alux](#alux) | Yucatec Maya, Mexico | **In the game (the second deck).** A farmer builds a doll-sized house in his cornfield, and the alux living there calls the rain for seven years. [More](https://en.wikipedia.org/wiki/Alux) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Momoy_I.jpg/330px-Momoy_I.jpg" width="80"> | [Momoyes](#momoyes) | Andes of Venezuela | Knee-high bearded men of the mountain lakes; leave litter by their lake and they give it back to you. [More](https://es.wikipedia.org/wiki/Momoy) |
 | <img src="https://www.fijitimes.com.fj/wp-content/uploads/2026/04/Fiji_88022.webp" width="80"> | [Veli](#veli) | Fiji | Small hairy forest folk who grow their own kava, sing sweetly, and can't resist stealing iron tools. [More](https://press-files.anu.edu.au/downloads/press/p301541/html/interlude5.xhtml?page=31) |
 
@@ -161,6 +161,9 @@ tricks.
 ### Alux
 
 **From:** the Yucatec Maya of Yucatán (Mexico), Belize and Guatemala. Plural: aluxo'ob.
+
+**In the game.** The second folklore deck, since 2026-09-26. Its hero is Aluxito, the smallest alux. Cards, art and
+lore: [aluxes-set.md](aluxes-set.md).
 
 A farmer builds a doll-sized house in his cornfield. For seven years the alux living there calls the rain and walks
 the field at night to guard it. Then the farmer must seal the house's door, or his helper turns to mischief. Aluxes

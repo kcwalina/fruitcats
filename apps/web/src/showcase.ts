@@ -1,19 +1,22 @@
-// The Collection: a gallery for looking at cards. Showcase is your favourite cards, one at a time and
-// large, on a plain espresso ground that sets each one off like a mat, with nothing else on screen but
-// Home and All cards; pressing and holding a card offers Make wallpaper and Take out of Showcase. All cards is the whole set as a grid (cards you don't have yet are shadows), and
-// tapping one opens the same full-screen view through the cards you're looking at, which is where cards
-// are added to and taken out of the Showcase. Any card can become a wallpaper. What you own comes from collection.ts;
-// every card shows its rarity mark, and your copies are shown in their finish (rarity.ts).
+// The Collection: a gallery for looking at cards, and for the folk tales behind them. It opens on covers: the
+// Showcase (your favourite cards) first, then each ready-made deck you have. A deck's page is its cards, one at a
+// time and large, swiped, beside the tale of its creatures (the set's `lore`), on a plain espresso ground that sets
+// the art off like a mat; on a phone the tale sits under the card. Tapping the card in the middle opens it full
+// screen, with Make wallpaper and Add to Showcase. The Showcase is only the cards; pressing and holding one offers
+// Make wallpaper and Take out of Showcase. All cards (from a deck's page) is the whole collection as a grid, cards
+// you don't have yet as shadows. What you own comes from collection.ts; every card shows its rarity mark, and your
+// copies are shown in their finish (rarity.ts).
 //
 // A Hero Cat's two sides are two cards here: its Kitten and its Big Cat. So the screens deal in card
 // faces: a card's id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`.
 
 import { isStarterSet } from '@fruitcats/store';
 import './showcase.css';
-import { CARDS, RARITIES, TERMS, type Rarity } from '@fruitcats/engine';
+import { CARDS, DECKS, SETS, RARITIES, TERMS, type Rarity } from '@fruitcats/engine';
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
-import { BASE, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
+import { ownedDeckKeys } from './mydecks';
+import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
 /** A new player's Showcase is empty: they pick what to show off (the owner's call, 2026-09-26). */
@@ -59,9 +62,12 @@ export interface ShowcaseHost {
   render(): void;
 }
 
-type Tab = 'showcase' | 'all';
+/** decks: the covers. showcase: your cards. deck: a deck's cards beside its tale. all: every card as a grid. */
+type View = 'decks' | 'showcase' | 'deck' | 'all';
 let host: ShowcaseHost = { render() {} };
-let tab: Tab = 'showcase';
+let view: View = 'decks';
+/** The deck page that's open: the ready-made deck's key, its faces in deck order, and the one in the middle. */
+let deck: { key: string; faces: string[]; index: number } | null = null;
 let familyFilter = 'all';
 /** All cards shows every rarity, or just one. */
 let rarityFilter: Rarity | 'all' = 'all';
@@ -84,7 +90,8 @@ const HINT_MS = 5500;
 
 export function openShowcase(h: ShowcaseHost): void {
   host = h;
-  tab = 'showcase';
+  view = 'decks';
+  deck = null;
   familyFilter = 'all';
   rarityFilter = 'all';
   showcase = loadShowcase();
@@ -102,11 +109,36 @@ export function openShowcase(h: ShowcaseHost): void {
 /** The cards being looked at one by one, if any: the one opened from All cards, or the Showcase. */
 function viewer(): { list: string[]; index: number } | null {
   if (browsing) return browsing;
-  return tab === 'showcase' && showcase.length ? { list: showcase, index: showcaseIndex } : null;
+  if (view === 'deck' && deck?.faces.length) return { list: deck.faces, index: deck.index };
+  return view === 'showcase' && showcase.length ? { list: showcase, index: showcaseIndex } : null;
 }
 function setIndex(index: number) {
   if (browsing) browsing.index = index;
+  else if (view === 'deck' && deck) deck.index = index;
   else showcaseIndex = index;
+}
+
+/** A ready-made deck's cards you have, as faces: the hero's two sides first, then the deck in its own order. */
+function deckFaces(key: string): string[] {
+  const d = DECKS[key];
+  if (!d) return [];
+  return [d.hero, ...Object.keys(d.cards)].filter((id) => CARDS[id] && owned(id) > 0).flatMap(facesOf);
+}
+function openDeck(key: string) {
+  const faces = deckFaces(key);
+  if (!faces.length) return;
+  deck = { key, faces, index: 0 };
+  view = 'deck';
+}
+/** The tale a deck's page tells: its set's lore, or for a deck from before the tales, what the deck says of itself. */
+function loreOf(key: string) {
+  const d = DECKS[key], set = SETS[CARDS[d.hero]?.set ?? ''], lore = set?.lore;
+  const family = CARDS[d.hero]?.family ?? '';
+  if (lore?.story?.length) {
+    return { eyebrow: lore.eyebrow ?? lore.from ?? set.name, title: lore.title ?? set.name, story: lore.story, facts: lore.facts ?? [], sources: lore.sources ?? [] };
+  }
+  const blurb = (d as { blurb?: string }).blurb;
+  return { eyebrow: `${set?.name ?? ''} · ${family}`, title: d.name, story: [blurb ?? '', `A ${family} deck from Folkborn's early days, before the folk tales.`].filter(Boolean), facts: [] as string[], sources: [] as string[] };
 }
 const current = () => { const v = viewer(); return v ? v.list[v.index] : null; };
 /** The finish your copy of this card is in. */
@@ -170,7 +202,7 @@ function removeFromShowcase(face: string) {
   if (at === -1) return;
   showcase = showcase.filter((f) => f !== face);
   // Looking at the Showcase itself: stay on the card that slid into its place (or the new last one).
-  if (!browsing && tab === 'showcase') showcaseIndex = Math.min(showcaseIndex, Math.max(0, showcase.length - 1));
+  if (!browsing && view === 'showcase') showcaseIndex = Math.min(showcaseIndex, Math.max(0, showcase.length - 1));
   saveShowcase();
   window.clearTimeout(undo?.timer);
   undo = { face, at, timer: window.setTimeout(() => { undo = null; host.render(); }, 6000) };
@@ -183,7 +215,7 @@ function undoRemove() {
   undo = null;
   if (showcase.includes(face)) return;
   showcase = [...showcase.slice(0, at), face, ...showcase.slice(at)];
-  if (!browsing && tab === 'showcase') showcaseIndex = at;
+  if (!browsing && view === 'showcase') showcaseIndex = at;
   saveShowcase();
 }
 
@@ -259,16 +291,20 @@ export function showcaseClick(action: string, arg: string, h: ShowcaseHost): voi
   if (menu && action === 'go') return;
   if (action !== 'menu') menu = false;
   switch (action) {
-    case 'menu': if (!browsing && tab === 'showcase' && current()) menu = true; break;
+    case 'menu': if (!browsing && view === 'showcase' && current()) menu = true; break;
     case 'unmenu': break;
-    case 'tab': if (arg === 'showcase' || arg === 'all') tab = arg; break;
+    case 'tab': if (arg === 'showcase' || arg === 'all' || arg === 'decks' || (arg === 'deck' && deck)) { view = arg as View; if (arg === 'showcase' || arg === 'decks') deck = null; } break;
+    case 'deck': openDeck(arg); break;
     case 'filter': if (FAMILIES().includes(arg)) familyFilter = arg; break;
     case 'clear': familyFilter = 'all'; rarityFilter = 'all'; break;
     case 'rarity': if (arg === 'all' || (RARITIES as readonly string[]).includes(arg)) rarityFilter = arg as Rarity | 'all'; break;
-    case 'go': scrollToCard(Number(arg)); return;   // a card beside the one in the middle: bring it over
+    case 'go':
+      // On a deck's page, a tap on the card in the middle opens it full screen; a card beside it is brought over.
+      if (view === 'deck' && deck && Number(arg) === deck.index) { browsing = { list: deck.faces, index: deck.index }; break; }
+      scrollToCard(Number(arg)); return;
     case 'turn': step(Number(arg)); return;
     case 'open': {
-      const list = ownedFaces();
+      const list = view === 'deck' && deck ? deck.faces : ownedFaces();
       if (list.includes(arg)) browsing = { list, index: list.indexOf(arg) };
       break;
     }
@@ -312,6 +348,8 @@ export function showcaseEscape(h: ShowcaseHost): boolean {
   if (menu) menu = false;
   else if (wallpaper) closeWallpaper();
   else if (browsing) browsing = null;
+  else if (view === 'all' && deck) view = 'deck';
+  else if (view !== 'decks') { view = 'decks'; deck = null; }
   else return false;
   host.render();
   return true;
@@ -328,27 +366,29 @@ export function showcaseArrow(key: string, h: ShowcaseHost): boolean {
 // ── Screens ──────────────────────────────────────────────────────────────────────────────────────
 
 export function renderShowcase(): string {
-  // The Showcase is only the card: Home and All cards in the corners, nothing else. All cards keeps the
-  // Showcase / All cards switch and Settings at the top.
-  const top = tab === 'showcase'
-    ? `<div class="showcase-top">
-      ${backButton()}
-      <button class="icon-button grid-button" data-click="col:tab:all" title="All cards" aria-label="All cards">${GRID_ICON}</button>
-    </div>`
-    : `<div class="collection-top">
-      ${backButton()}
-      <div class="seg" role="tablist" aria-label="Collection">
-        ${(['showcase', 'all'] as Tab[]).map((t) => `<button class="seg-btn ${tab === t ? 'on' : ''}" role="tab" aria-selected="${tab === t}"
-          data-click="col:tab:${t}">${t === 'showcase' ? 'Showcase' : 'All cards'}</button>`).join('')}
-      </div>
-      ${settingsButton()}
-    </div>`;
+  const back = (to: 'decks' | 'deck', label: string) => backButton(`col:tab:${to}`, label);
+  let top: string, body: string;
+  if (view === 'showcase') {
+    // The Showcase is only the cards: the way back in one corner, nothing else.
+    top = `<div class="showcase-top">${back('decks', 'Collection')}</div>`;
+    body = showcase.length ? renderViewer(showcase, showcaseIndex, false) : renderEmptyShowcase();
+  } else if (view === 'deck' && deck) {
+    top = `<div class="collection-top">${back('decks', 'Collection')}<h1 class="col-title">${esc(DECKS[deck.key]?.name ?? '')}</h1>
+      <button class="icon-button grid-button" data-click="col:tab:all" title="All cards" aria-label="All cards">${GRID_ICON}</button></div>`;
+    body = renderDeckPage(deck.key, deck.faces, deck.index);
+  } else if (view === 'all') {
+    top = `<div class="collection-top">${back(deck ? 'deck' : 'decks', deck ? DECKS[deck.key]?.name ?? 'Back' : 'Collection')}<h1 class="col-title">All cards</h1>${settingsButton()}</div>`;
+    body = renderGrid();
+  } else {
+    top = `<div class="collection-top">${backButton()}<h1 class="col-title">Collection</h1>${settingsButton()}</div>`;
+    body = renderDecks();
+  }
   return `
-  <div class="collection-screen ${tab === 'showcase' ? 'on-showcase' : ''} ${menu ? 'menu-open' : ''}">
+  <div class="collection-screen view-${view} ${view === 'showcase' ? 'on-showcase' : ''} ${menu ? 'menu-open' : ''}">
     ${top}
-    ${tab === 'all' ? renderGrid() : showcase.length ? renderViewer(showcase, showcaseIndex, false) : renderEmptyShowcase()}
+    ${body}
     ${menu ? renderMenu() : ''}
-    ${tab === 'showcase' && showcase.length ? renderHint() : ''}
+    ${view === 'showcase' && showcase.length ? renderHint() : ''}
   </div>
   ${browsing ? `
   <div class="viewer-overlay" role="dialog" aria-label="Cards">
@@ -357,6 +397,85 @@ export function renderShowcase(): string {
   </div>` : ''}
   ${renderUndo()}
   ${renderWallpaperSheet()}`;
+}
+
+/** A deck's cover, as the Store draws it: its hero's art on two card backs, its name on a plate. */
+function deckCover(key: string): string {
+  const d = DECKS[key], hero = d.hero;
+  return `<span class="slot ${famClass(hero)}" aria-hidden="true">
+      <span class="face back b1"></span><span class="face back b2"></span>
+      <span class="face cover">
+        <span class="cover-art" style="background-image:url(${artUrl(`${hero}-kitten`)})"></span>
+        <span class="plate"><b>${esc(d.name)}</b><small>${esc(CARDS[hero]?.family ?? '')}</small></span>
+      </span>
+    </span>`;
+}
+
+/** The Collection's first screen: the Showcase, then each ready-made deck you have, as covers. */
+function renderDecks(): string {
+  const first = showcase[0];
+  const showcaseCover = `<span class="slot showcase-slot" aria-hidden="true">
+      <span class="face back b1"></span><span class="face back b2"></span>
+      <span class="face cover">${first
+        ? `<img class="cover-pick" src="${yourCardUrl(first)}" alt="" draggable="false">`
+        : '<span class="cover-empty">☆</span>'}
+      </span>
+    </span>`;
+  const n = showcase.length;
+  return `
+    <div class="decks-page" data-keep-scroll="decks">
+      <div class="deck-covers">
+        <button class="deck-cover" data-click="col:tab:showcase" aria-label="Showcase, ${n} ${n === 1 ? 'card' : 'cards'}">
+          ${showcaseCover}
+          <span class="cover-name">Showcase</span>
+          <span class="cover-sub">${n ? `${n} ${n === 1 ? 'card' : 'cards'}` : 'Your favourites'}</span>
+        </button>
+        ${ownedDeckKeys().map((key) => {
+          const faces = deckFaces(key), cards = new Set(faces.map(idOf)).size;
+          return `<button class="deck-cover" data-click="col:deck:${key}" aria-label="${esc(DECKS[key].name)}, ${cards} cards">
+            ${deckCover(key)}
+            <span class="cover-name">${esc(DECKS[key].name)}</span>
+            <span class="cover-sub">${cards} cards</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+/** Under a deck page's card: its name, kind and rarity, and where it is in the deck. */
+function renderDeckCaption(faces: string[], index: number): string {
+  const face = faces[index], card = CARDS[idOf(face)];
+  const kind = sideOf(face) ? sideLabel(face) : TERMS.types[card.type as keyof typeof TERMS.types] ?? card.type;
+  const position = faces.length <= 12
+    ? `<span class="v-dots">${faces.map((_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('')}</span>`
+    : `<span class="v-count">${index + 1} / ${faces.length}</span>`;
+  return `<div class="viewer-info deck-caption" aria-live="polite">
+          <h2 class="v-name">${esc(faceName(face))}</h2>
+          <p class="v-sub">${esc(kind)} · ${rarityMark(rarity(idOf(face)))} ${rarity(idOf(face))}</p>
+          ${position}
+          <p class="deck-tap">Tap the card to see it large</p>
+        </div>`;
+}
+
+/** A deck's page: its cards, one at a time and swiped, beside the tale of its creatures. */
+function renderDeckPage(key: string, faces: string[], index: number): string {
+  const lore = loreOf(key);
+  const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+  return `
+    <div class="deck-page">
+      <div class="deck-stage">
+        ${renderViewer(faces, index, false)}
+        ${renderDeckCaption(faces, index)}
+      </div>
+      <article class="deck-lore">
+        <p class="lore-eyebrow">${esc(lore.eyebrow)}</p>
+        <h2 class="lore-title">${esc(lore.title)}</h2>
+        ${lore.story.map((para, i) => `<p class="lore-para ${i === 0 ? 'first' : ''}">${esc(para)}</p>`).join('')}
+        ${lore.facts.length ? `<h3 class="lore-facts-title">Did you know?</h3>
+        <ul class="lore-facts">${lore.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+        ${lore.sources.length ? `<p class="lore-sources">From ${lore.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(hostOf(u))}</a>`).join(', ')}.</p>` : ''}
+      </article>
+    </div>`;
 }
 
 /** Press and hold (or right-click) a Showcase card: what can be done with it. */
@@ -434,8 +553,8 @@ function renderEmptyShowcase(): string {
     <div class="showcase-empty">
       <p class="empty-star" aria-hidden="true">☆</p>
       <h2>Your Showcase is empty</h2>
-      <p>Open any card in All cards and tap <b>＋ Add to Showcase</b> to show it off here.</p>
-      <button class="v-wallpaper" data-click="col:tab:all">Browse all cards</button>
+      <p>Open a deck, tap a card, then tap <b>＋ Add to Showcase</b> to show it off here.</p>
+      <button class="v-wallpaper" data-click="col:tab:decks">Choose a deck</button>
     </div>`;
 }
 
@@ -560,7 +679,7 @@ export function showcaseMounted(): void {
     if (now && nearest !== now.index) {
       setIndex(nearest);
       const info = container.querySelector('.viewer-info');
-      if (info) info.outerHTML = renderInfo(now.list, nearest);
+      if (info) info.outerHTML = info.classList.contains('deck-caption') ? renderDeckCaption(now.list, nearest) : renderInfo(now.list, nearest);
     }
   };
   track.addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(update); }, { passive: true });
@@ -582,7 +701,7 @@ function followDrags(track: HTMLElement) {
   let drag: { id: number; x0: number; y0: number; left0: number; from: number; x: number; t: number; vx: number; moved: boolean } | null = null;
   let dragged = false;
   // In the Showcase, a finger held still on the card in the middle opens its menu; so does a right-click.
-  const holds = !browsing && tab === 'showcase';
+  const holds = !browsing && view === 'showcase';
   let hold = 0;
   const openMenu = () => { hold = 0; drag = null; showcaseClick('menu', '', host); };
   track.addEventListener('pointerdown', (e) => {

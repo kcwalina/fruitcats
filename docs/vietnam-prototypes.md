@@ -21,6 +21,8 @@ the garden, not about sickness.
 
 ## Hui Hai (HH1), content/2027/01/hui-hai
 
+**The owner's pick** (2026-09-27) of the two styles.
+
 Tiny, invisible, very strong forest folk of the Ba Na (Bahnar) of the Central Highlands, who throw stones at people who
 behave badly in the forest. The cards: the hero Pebble, the Littlest Hui Hai, Hui Hai of the Stream (Creature), Yă Hui
 Hai, Lady of the Ferns (Fabled) and A Pebble at Your Feet (Charm). They play by small, sudden damage.
@@ -42,3 +44,8 @@ paintings' own, not a living artist's.
 The owner's bar (2026-09-27): every card must look like a museum photo of the real old painting, with its pigments,
 wear and stylised figures. The first draw asked for "cute", big-eyed, kid-friendly figures and came out as children's
 game art; it was redrawn with prompts that describe the painting itself and forbid cartoon styles.
+
+Hui Hai, second redraw (2026-09-27): the owner wanted the tiger's own bright, saturated gouache-and-watercolour look.
+Each picture was compared side by side with the tiger and redrawn until it matched: brightness (mean HSV value about
+190, like the tiger's 189), cream-white figures with pink outlines, a mid cerulean-cobalt ground, blotchy flat ochre
+rocks, and folk-painting faces of a few ink strokes, never manga eyes.

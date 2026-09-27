@@ -26,7 +26,7 @@ export const PERSONAS: Record<string, Persona> = {
   newcomer: {
     key: 'newcomer',
     name: 'New player',
-    style: 'You are new to Fruitcats, and new to card games in general. Play the way a sensible beginner would: do what the cards seem to invite, and don\'t plan far ahead.',
+    style: 'You are new to Folkborn, and new to card games in general. Play the way a sensible beginner would: do what the cards seem to invite, and don\'t plan far ahead.',
     watch: 'anything confusing: rules, card text, why something happened, or what a choice meant',
   },
 };

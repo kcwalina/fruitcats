@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DECKS, deckProblems, deckSize } from '../lib/engine';
+import { CARDS, DECKS, deckProblems, deckSize } from '../lib/engine';
 import { runJobs } from '../lib/pool';
 import { mulberry } from '../lib/rng';
 import { cardPool, families, mutateDeck, playableHeroes, randomDeck } from '../balance/decks';
@@ -25,23 +25,26 @@ describe('generated decks', () => {
     }
   }, 60_000); // 1,000 decks: over the default 5 s when the whole suite runs at once
 
-  it('a card pool holds only the hero family, Garden and the partner', () => {
-    const pool = cardPool('SB1-H01', 'Orchard');
-    expect(pool.some((id) => id.startsWith('SB1-O'))).toBe(true);
-    expect(pool.some((id) => id.startsWith('SB1-T'))).toBe(false);
+  it('a card pool holds only the hero family, the neutral cards and the partner', () => {
+    const [a, b, c] = Object.values(DECKS).map((d) => d.hero);
+    const [fb, fc] = [CARDS[b].family, CARDS[c].family];
+    const pool = cardPool(a, fb);
+    expect(pool.some((id) => CARDS[id].family === fb)).toBe(true);
+    expect(pool.some((id) => CARDS[id].family === fc)).toBe(false);
   });
 });
 
 describe('worker pool', () => {
   it('plays the same games on four threads as on one', async () => {
+    const [first, second] = Object.keys(DECKS);
     const job: MatchJob = {
-      a: { key: 'zest-rush', deck: DECKS['zest-rush'] },
-      b: { key: 'mango-tango', deck: DECKS['mango-tango'] },
+      a: { key: first, deck: DECKS[first] },
+      b: { key: second, deck: DECKS[second] },
       seed: 1234, from: 0, to: 40,
     };
     const [single] = await runJobs([job], { threads: 1 });
     const [multi] = await runJobs([job], { threads: 4 });
     expect(multi).toEqual(single);
-    expect(matchups(single).overall['zest-rush'].games).toBe(40);
+    expect(matchups(single).overall[first].games).toBe(40);
   }, 120_000);
 });

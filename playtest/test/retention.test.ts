@@ -7,7 +7,7 @@ const NOW = Date.parse('2027-01-01T00:00:00Z');
 const cfg: RetentionConfig = { cap: 4, graceDays: 14, dropBelow: 0.35, keepAbove: 0.6, agePenaltyPerMonth: 0.02, gamesPerStarter: 40 };
 
 function deck(name: string, daysOld: number, rates: number[], extra: Partial<LibraryDeck> = {}): LibraryDeck {
-  const base = DECKS['zest-rush'];
+  const base = Object.values(DECKS)[0];
   return {
     name, hero: base.hero, cards: base.cards, source: 'built', about: '', addedAt: new Date(NOW - daysOld * 86400e3).toISOString(),
     stats: { bot: rates.map((rate, i) => ({ date: `2026-12-${String(i + 1).padStart(2, '0')}`, rate })) }, ...extra,

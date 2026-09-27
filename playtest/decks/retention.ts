@@ -9,11 +9,14 @@
 //     for every month it has been in the library, so of two middling decks the older one makes room. Keepers
 //     go only when keepers alone fill the cap. Pinned decks (a deck someone brought in by hand) never go.
 //
+// A deck the rules no longer allow goes first, pinned or not: its cards were changed, or its set was retired from
+// playtests (playtest.config.json sets.play). No playtest can play it.
+//
 // LLM playtest results are recorded but don't decide: PC2024's LLM player wins about one game in five with any
 // deck, so they say more about the player than the deck.
 
 import config from '../playtest.config.json';
-import { CARDS, DECKS, resolveDeck, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, deckProblems, resolveDeck, type DeckList } from '../lib/engine';
 import { scoreDecks } from '../llm/builder';
 import type { LibraryDeck, LibraryFile } from './library';
 
@@ -51,7 +54,9 @@ export function retention(file: LibraryFile, now = Date.now(), cfg = retentionCo
   const pct = (r?: number) => (r === undefined ? 'no results yet' : `${Math.round(r * 100)}%`);
   for (const v of all) {
     const d = file.decks[v.key];
-    if (d.pinned) v.why = 'pinned';
+    const problems = deckProblems(d);
+    if (problems.length) { v.keep = false; v.why = `can't be played any more: ${problems[0]}`; }
+    else if (d.pinned) v.why = 'pinned';
     else if (v.ageDays < cfg.graceDays) v.why = `new (${Math.floor(v.ageDays)} of ${cfg.graceDays} grace days)`;
     else if (v.rate !== undefined && v.rate < cfg.dropBelow) { v.keep = false; v.why = `loses: ${pct(v.rate)} against the starters, below ${pct(cfg.dropBelow)}`; }
     else if (v.rate !== undefined && v.rate >= cfg.keepAbove) v.why = `keeper: ${pct(v.rate)} against the starters`;

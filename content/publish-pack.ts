@@ -16,6 +16,7 @@ import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { artHash } from './art-hash';
 import { runChecks } from './check-set';
 
 const ACCOUNT = 'fruitcatspacks';
@@ -83,8 +84,12 @@ async function main(): Promise<void> {
   const temp = mkdtempSync(join(tmpdir(), 'fruitcats-pack-'));
   writeFileSync(join(temp, 'set.json'), JSON.stringify(set.data));
   writeFileSync(join(temp, 'index.json'), JSON.stringify(index, null, 1));
-  uploadDir(join(root, 'art', 'illustrations'), `${code}/art/illustrations`, 'public, max-age=86400');
-  uploadDir(join(root, 'art', 'cards'), `${code}/art/cards`, 'public, max-age=86400');
+  for (const dir of ['illustrations', 'cards'])
+    if (existsSync(join(root, 'art', dir))) uploadDir(join(root, 'art', dir), `${code}/art/${dir}`, 'public, max-age=86400');
+  // The art's fingerprint, after the art: the game's build ships only when the storage has the art it was built
+  // for (content/art-hash.ts, apps/web/vite.config.ts).
+  writeFileSync(join(temp, 'art.json'), JSON.stringify({ hash: artHash(root), published: entry.published }));
+  uploadFile(join(temp, 'art.json'), `${code}/art.json`, 'application/json');
   uploadFile(join(temp, 'set.json'), entry.data, 'application/json');
   // The index last: a game never sees a pack whose data and art aren't up yet.
   uploadFile(join(temp, 'index.json'), 'index.json', 'application/json');

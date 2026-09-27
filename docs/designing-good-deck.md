@@ -173,7 +173,15 @@ notes, and what (if anything) needs building. Add the set to the table in
 [card-data-architecture.md](card-data-architecture.md), and mark the creature as "in the game" in
 [folk-creatures.md](folk-creatures.md).
 
-Then commit and `npm run deploy` (it merges main, tests, pushes, uploads). A finished deck is one that's live.
+Then commit, publish the art and deploy:
+
+```
+npm run publish-pack -- <set folder>   # the art goes to the pack storage; the site doesn't carry it
+npm run deploy                          # merges main, tests, pushes, uploads
+```
+
+The build refuses while the storage lacks the set's current art, so a forgotten `publish-pack` can't ship broken
+pictures. A finished deck is one that's live.
 
 ## Checklist before showing the owner
 

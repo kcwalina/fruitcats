@@ -161,7 +161,9 @@ Errors fail the check; warnings don't. `npm test` runs the same checks on every 
 
 ## Card packs: new sets on a running site
 
-Every set can be published as a **card pack**, its data and its art, without deploying the game:
+Every set can be published as a **card pack**, its data and its art, without deploying the game. Since 2026-09-27 this
+is also where the site's card art comes from: **a build carries no card art**, and a deploy refuses to ship a set whose
+art isn't in the storage yet (see below).
 
 ```
 npm run publish-pack -- heat-wave            # check-set, then upload; --dry-run to only check
@@ -178,6 +180,16 @@ npm run publish-pack -- heat-wave            # check-set, then upload; --dry-run
   3. Updates `index.json` last, so a game never sees a pack whose files aren't up yet.
 
   It signs in as the deploy identity (`~/.azure-viamochi-deploy`), never your own Azure login.
+  4. Writes `<set>/art.json`: a fingerprint of the set's art (`content/art-hash.ts`).
+- **The site's art is the storage's.** Azure takes the site as one upload inside a two-minute window, and card art
+  (over 100 MB by the third deck) doesn't fit through a home uplink in that time: every deploy failed on 2026-09-27
+  until the art left the site. Now `apps/web/src/ui.ts` addresses a built-in set's art at
+  `<storage>/<set>/art/illustrations/` and `<set>/art/cards/`, `vite.config.ts` copies no art into the build
+  (about 10 MB instead of 120), and the build compares each set's fingerprint with `<set>/art.json` in the storage:
+  a set whose art was changed but not published stops the build, naming the `publish-pack` command to run. In dev
+  the art is still served straight from the set's folder, so new pictures show without publishing.
+  `VITE_LOCAL_ART=on` builds with the art inside (for a build that must work without the storage); it is too big
+  to deploy.
 - **The site's own list:** the site also lists the sets it was built with at `/packs/index.json`, as a
   fallback.
 

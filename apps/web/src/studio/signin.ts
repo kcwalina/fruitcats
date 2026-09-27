@@ -2,7 +2,7 @@
 // password (src/auth.ts). A new artist creates their account here. In development (?dev), pick a pretend account.
 
 import { AuthError, accountExists, codeDigits, invitesRequired, oneTap, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
-import { esc, BASE } from '../ui';
+import { artBases, esc, BASE } from '../ui';
 import { DEV, DEV_ACCOUNTS, setDevUser } from './api';
 
 type Step = 'email' | 'invite' | 'details' | 'code';
@@ -59,7 +59,7 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
   return `<main class="si">
     <div class="si-art" aria-hidden="true">
       <div class="si-fan">${['foil/SP1-X01', 'signature/SP1-X03-kitten', 'gold/SP1-X02'].map((f) =>
-        `<div class="si-card"><div class="si-window"><span>Your image</span></div><img src="${BASE}cards/sp1/frames/${f}.webp" alt=""></div>`).join('')}</div>
+        `<div class="si-card"><div class="si-window"><span>Your image</span></div><img src="${artBases('sp1').cards}frames/${f}.webp" alt=""></div>`).join('')}</div>
       <p>Make the image with your own tools and upload it here. We add the frame, the name and the rules, and you see it on the card straight away.</p>
     </div>
     <div class="si-panel">

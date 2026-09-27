@@ -3,6 +3,7 @@ import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
+import { artHash } from '../../content/art-hash';
 
 // Interface art lives in the repo's art/ folder and is served as-is. Each card set's art lives in its own
 // folder, content/<year>/<month>/<set>/, and is published at stable addresses (contentAssets below):
@@ -34,9 +35,12 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
 // Accounts (src/flags.ts) are on in every build since 2026-09-24: while sign-up needs a playtest invite code, the
 // public site has them too. `vite build --mode playtest` (npm run build:playtest) builds into dist-playtest/ for the
 // playtest site; any feature still hidden from the public goes in its `define` only.
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   base: './',
   define: {
+    // Card art: served from the sets' folders in dev, taken from the pack storage in a build (contentAssets below).
+    'import.meta.env.VITE_PACKS': JSON.stringify(PACKS),
+    'import.meta.env.VITE_LOCAL_ART': JSON.stringify(command === 'serve' || LOCAL_ART ? 'on' : 'off'),
     'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on'),
     // When this build was made, shown at the bottom of the Artist Studio: which version a device has, at a glance.
     'import.meta.env.VITE_BUILT': JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'),
@@ -178,10 +182,19 @@ function docsPages(): Plugin {
 // ── Card sets' art ─────────────────────────────────────────────────────────────────────────────────
 //
 // Every set folder in content/ publishes its art at the addresses the game, wallpapers and announcement
-// pages use: served straight from the folder in dev, and copied into the build. A set's folder is the one
-// place its art lives; nothing is duplicated in the repo.
+// pages use: served straight from the folder in dev. A set's folder is the one place its art lives; nothing
+// is duplicated in the repo.
+//
+// A build doesn't carry the card art. Azure takes the site as one upload inside a two-minute window, and card
+// art (over 100 MB by the third deck) doesn't fit through a home uplink in that time, so every deploy failed.
+// The art is published to the pack storage instead (`npm run publish-pack -- <set>`, content/publish-pack.ts),
+// where the game already looks for card packs, and the build refuses when a set's art here isn't the art the
+// storage has (its fingerprint, content/art-hash.ts). VITE_LOCAL_ART=on builds with the art inside, for a
+// build that must work without the storage; it is too big to deploy.
 
 const CONTENT = fileURLToPath(new URL('../../content/', import.meta.url));
+const PACKS = process.env.VITE_PACKS ?? 'https://fruitcatspacks.blob.core.windows.net/packs/';
+const LOCAL_ART = process.env.VITE_LOCAL_ART === 'on';
 
 /** Every set folder in content/: its root, its code and its data. */
 function contentSets(): { root: string; folder: string; code: string; data: Record<string, unknown> }[] {
@@ -204,13 +217,15 @@ function contentSets(): { root: string; folder: string; code: string; data: Reco
  * The card packs: an index of every set, and each set's data, so a running game can take a set it wasn't
  * built with (apps/web/src/content.ts, loadPacks). Its art is published beside it (contentMounts).
  */
-function packFiles(): Record<string, string> {
+function packFiles(localArt: boolean): Record<string, string> {
   const sets = contentSets();
   const files: Record<string, string> = {
     'packs/index.json': JSON.stringify({
       packs: sets.map((s) => ({
         set: s.data.set, name: s.data.name, version: s.data.version, status: s.data.status,
-        data: `packs/${s.code}/set.json`, art: `${s.code}/`, cards: `cards/${s.code}/`,
+        data: `packs/${s.code}/set.json`,
+        art: localArt ? `${s.code}/` : `${PACKS}${s.code}/art/illustrations/`,
+        cards: localArt ? `cards/${s.code}/` : `${PACKS}${s.code}/art/cards/`,
       })),
     }, null, 1),
   };
@@ -224,18 +239,34 @@ function packFiles(): Record<string, string> {
   return files;
 }
 
-/** Each set's folders and the address each is published at. */
-function contentMounts(): { url: string; dir: string }[] {
-  const mounts: { url: string; dir: string }[] = [];
+/** Each set's folders and the address each is published at. `build`: copied into a build (the art isn't, see above). */
+function contentMounts(): { url: string; dir: string; build: boolean }[] {
+  const mounts: { url: string; dir: string; build: boolean }[] = [];
   for (const { root, folder, code } of contentSets())
     mounts.push(
-      { url: `/${code}/`, dir: join(root, 'art', 'illustrations') },
-      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards') },
-      { url: `/announcements/${folder}/`, dir: join(root, 'announcement') },
+      { url: `/${code}/`, dir: join(root, 'art', 'illustrations'), build: LOCAL_ART },
+      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards'), build: LOCAL_ART },
+      { url: `/announcements/${folder}/`, dir: join(root, 'announcement'), build: true },
       // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
-      { url: '/avatars/', dir: join(root, 'avatars') },
+      { url: '/avatars/', dir: join(root, 'avatars'), build: true },
     );
   return mounts.filter((m) => existsSync(m.dir));
+}
+
+/**
+ * The sets whose art here isn't what the pack storage has (never published, or changed since): a build must
+ * not ship until `npm run publish-pack -- <set>` has run for each. Sets with no art have nothing to publish.
+ */
+async function unpublishedArt(): Promise<string[]> {
+  const stale: string[] = [];
+  for (const s of contentSets()) {
+    const local = artHash(s.root);
+    if (!local) continue;
+    const published = await fetch(`${PACKS}${s.code}/art.json`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? (r.json() as Promise<{ hash?: string }>) : null)).catch(() => null);
+    if (published?.hash !== local) stale.push(s.folder);
+  }
+  return stale;
 }
 
 const TYPES: Record<string, string> = {
@@ -245,15 +276,24 @@ const TYPES: Record<string, string> = {
 
 function contentAssets(): Plugin {
   let outDir = '';
+  let building = false;
   return {
     name: 'fruitcats-content-assets',
     configResolved(config) {
       outDir = resolve(config.root, config.build.outDir);
+      building = config.command === 'build';
+    },
+    async buildStart() {
+      if (!building || LOCAL_ART || process.env.FRUITCATS_SKIP_ART_CHECK) return;
+      const stale = await unpublishedArt();
+      if (stale.length)
+        throw new Error(`The pack storage doesn't have the current art of ${stale.join(', ')}. A build takes card art from `
+          + `the storage, so publish it first: ${stale.map((f) => `npm run publish-pack -- ${f}`).join('; ')}`);
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = decodeURIComponent((req.url ?? '').split('?')[0]);
-        const pack = packFiles()[path.replace(/^\//, '')];
+        const pack = packFiles(true)[path.replace(/^\//, '')];
         if (pack) {
           res.setHeader('Content-Type', 'application/json');
           res.end(pack);
@@ -272,8 +312,8 @@ function contentAssets(): Plugin {
       });
     },
     writeBundle() {
-      for (const m of contentMounts()) cpSync(m.dir, join(outDir, m.url), { recursive: true });
-      for (const [file, text] of Object.entries(packFiles())) {
+      for (const m of contentMounts()) if (m.build) cpSync(m.dir, join(outDir, m.url), { recursive: true });
+      for (const [file, text] of Object.entries(packFiles(LOCAL_ART))) {
         mkdirSync(dirname(join(outDir, file)), { recursive: true });
         writeFileSync(join(outDir, file), text);
       }

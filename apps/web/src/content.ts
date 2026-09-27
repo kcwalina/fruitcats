@@ -9,7 +9,7 @@
 // A pack whose cards need plugin code the game doesn't have is skipped: code only arrives with a build.
 import { SETS, missingPieces, registerSet, type SetData } from '@fruitcats/engine';
 import { loadContent } from '../../../content';
-import { ART_BASES, BASE } from './ui';
+import { ART_BASES, BASE, PACKS } from './ui';
 
 loadContent(registerSet);
 
@@ -18,7 +18,7 @@ loadContent(registerSet);
  * this site's own list (the sets it was built with). See docs/card-data-architecture.md.
  */
 export const PACK_INDEXES = [
-  import.meta.env.VITE_PACK_INDEX ?? 'https://fruitcatspacks.blob.core.windows.net/packs/index.json',
+  import.meta.env.VITE_PACK_INDEX ?? `${PACKS}index.json`,
   `${BASE}packs/index.json`,
 ];
 

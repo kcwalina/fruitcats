@@ -6,7 +6,7 @@
 //  - as a wallpaper: the game's own wallpaper maker (src/wallpaper.ts).
 
 import { CARDS, type Rarity } from '@fruitcats/engine';
-import { esc, BASE } from '../ui';
+import { artBases, esc } from '../ui';
 import { renderWallpaper, type Device } from '../wallpaper';
 import type { Finish } from '../collection';
 import type { BriefPicture } from './brief';
@@ -44,7 +44,7 @@ const isImage = (palette?: string) => !!palette?.startsWith('image:');
 const frameUrl = (code: string, key: string, finish: string) => {
   const palette = framePalettes.get(`${code}/${key}`);
   const dir = isImage(palette) ? 'p-image/' : palette ? `p-${palette}/` : '';
-  return `${BASE}cards/${code}/frames/${dir}${finish === 'standard' ? '' : `${finish}/`}${key}.webp`;
+  return `${artBases(code).cards}frames/${dir}${finish === 'standard' ? '' : `${finish}/`}${key}.webp`;
 };
 
 /** The picture on its card. With no picture yet, the window shows where it will go. */

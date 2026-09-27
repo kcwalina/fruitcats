@@ -3,16 +3,22 @@
 import { CARDS, TERMS } from '@fruitcats/engine';
 
 export const BASE = import.meta.env.BASE_URL;
+/** The pack storage: every set's data and art, published with `npm run publish-pack` (docs/card-data-architecture.md). */
+export const PACKS: string = import.meta.env.VITE_PACKS ?? 'https://fruitcatspacks.blob.core.windows.net/packs/';
 /**
- * Where each set's art is published, by set code ('sb1'). A set built into the game is on this site
- * (/<set>/, /cards/<set>/); a card pack from the pack storage brings its own addresses (content.ts).
+ * Where each set's art is published, by set code ('sb1'). In dev the set's folder is served on this site
+ * (/<set>/, /cards/<set>/, vite.config.ts). A build takes the art from the pack storage instead, so the site
+ * stays small enough to deploy: Azure takes the whole site as one upload in a two-minute window, and card art
+ * (over 100 MB by the third deck) doesn't fit. A card pack from the storage brings its own addresses (content.ts).
  */
 export const ART_BASES: Record<string, { art: string; cards: string }> = {};
+const LOCAL_ART: boolean = import.meta.env.VITE_LOCAL_ART === 'on';
+/** A set's art addresses, by set code: where its illustrations and finished cards are. */
+export const artBases = (code: string) => ART_BASES[code] ?? (LOCAL_ART
+  ? { art: `${BASE}${code}/`, cards: `${BASE}cards/${code}/` }
+  : { art: `${PACKS}${code}/art/illustrations/`, cards: `${PACKS}${code}/art/cards/` });
 const setCode = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.set ?? 'SB1').toLowerCase();
-const bases = (key: string) => {
-  const code = setCode(key);
-  return ART_BASES[code] ?? { art: `${BASE}${code}/`, cards: `${BASE}cards/${code}/` };
-};
+const bases = (key: string) => artBases(setCode(key));
 /** A card's illustration. `key` is a card id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`. */
 export const artUrl = (key: string) => `${bases(key).art}${key}.webp`;
 /** A card's finished picture, standard print. */

@@ -321,7 +321,7 @@ describe('full games', () => {
         expect(s.winner).not.toBeNull();
       }
     }
-  });
+  }, 60_000); // 12 random games per ordered pairing: grows with every released deck (six now)
 
   it('AI agents finish, and the same seeds replay identically', () => {
     const run = () => {

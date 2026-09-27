@@ -380,15 +380,15 @@ function scheduleAi() {
 
 function startGame(tutorial = false) {
   setOnlineAside();
-  // The opponent leads one of the other decks, at random. The tutorial is always Sunny vs Pippin,
-  // with you going first, so its balloons can talk about specific cards.
+  // The opponent leads one of the other decks, at random. The tutorial is always the Domowiki against the Pari (the
+  // two folk starter decks), with you going first.
   // Against your own deck, it leads a ready-made deck with a different Hero Cat (any of them, owned or not).
   const mine = deckForKey(myDeck) ?? DECKS[firstDeck()];
   const others = Object.keys(DECKS).filter((d) => DECKS[d].hero !== mine.hero);
-  const theirDeck = tutorial ? 'orchard-guard'
+  const theirDeck = tutorial ? 'pari'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   game = tutorial
-    ? createGame({ decks: ['zest-rush', 'orchard-guard'], names: ['You', 'Opponent'], firstPlayer: mySeat })
+    ? createGame({ decks: ['domowiki', 'pari'], names: ['You', 'Opponent'], firstPlayer: mySeat })
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
   aiRandom = devSeed === undefined || tutorial ? undefined : mulberry(devSeed);
   tutorialGame = tutorial;

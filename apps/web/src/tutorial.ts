@@ -169,6 +169,11 @@ const TIPS: Balloon[] = [
       + 'You’ve already played a card, so the glowing <b>Zest!</b> cards now get their bonus.',
   },
   {
+    id: 'wellFed', title: 'Well-Fed', anchor: '.player.me .pantry-label, .yard.me .pantry-label',
+    when: (s) => myPrompt(s, 'action') && s.players[ME].pantry.length >= 7,
+    text: 'The house is <b>Well-Fed</b>: with 7 or more Offerings, Domowiki cards that say <b>Well-Fed</b> get their bonus.',
+  },
+  {
     id: 'ripen', title: 'Ripen 🍎',
     anchor: (s) => { const u = s.players.flatMap((p) => p.yard).find((x) => (x.counters?.ripe ?? 0) > 0); return u ? `[data-click="unit:${u.uid}"]` : undefined; },
     when: (s) => myPrompt(s) && s.players.some((p) => p.yard.some((u) => (u.counters?.ripe ?? 0) > 0)),
@@ -208,8 +213,8 @@ const TIPS: Balloon[] = [
   },
   {
     id: 'grown', title: 'Awakened!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,
-    text: 'Sunny <b>Awakened</b>! She now has Power, can attack with the <b>Hero attack</b> button, '
-      + 'and her ability is stronger.',
+    text: (s) => `${cardName(s.players[ME].hero.id).split(',')[0]} <b>Awakened</b>! Your Hero now has Power, can attack with the `
+      + '<b>Hero attack</b> button, and its ability is stronger.',
   },
 ];
 

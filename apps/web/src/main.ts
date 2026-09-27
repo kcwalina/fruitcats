@@ -22,6 +22,7 @@ import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEsc
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck, firstDeck, ownedDeckKeys } from './mydecks';
 import { addOpen, closeAddSheet, closeFriends, friendName, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
 import { live, onGameFound, onLive, send, startLive, stopLive, wantConnection } from './live';
+import { isPeerMatch } from './peer';
 import {
   enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
   playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
@@ -508,7 +509,7 @@ function onClick(key: string) {
       else {
         openFriends(friendsHost);
         screen = 'friends';
-        if (live.connected && live.match && !ol) send({ t: 'rejoin', match: live.match });
+        if ((live.connected || isPeerMatch(live.match)) && live.match && !ol) send({ t: 'rejoin', match: live.match });
       }
     }
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
@@ -713,7 +714,8 @@ function render() {
   // and while an online game is going (or its result is showing). Signing out stops both.
   if (ONLINE && signedIn()) {
     startLive({ render: renderUnlessAnimating });
-    wantConnection(screen === 'friends' || (!!ol && (!ol.end || screen === 'game')));
+    // A Friend game played directly between the two devices needs no connection (peer.ts).
+    wantConnection(screen === 'friends' || (!!ol && !isPeerMatch(ol.info.id) && (!ol.end || screen === 'game')));
   } else if (ONLINE) stopLive();
   // Settings pops in when it opens, not again each time it is redrawn (picking a section) while it is showing.
   const settingsWasOpen = !!app.querySelector('.settings-dialog');

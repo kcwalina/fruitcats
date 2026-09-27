@@ -43,6 +43,18 @@
         "--fake-sign-in"
       ],
       "port": 8790
+    },
+    {
+      "name": "api-local-fake-any",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "api:local",
+        "--",
+        "--fake-sign-in"
+      ],
+      "port": 8791,
+      "autoPort": true
     }
   ]
 }

@@ -45,6 +45,8 @@ export interface HereAnswer {
   sent?: SentNote[];
   /** A game you're in that's still going. */
   match: string | null;
+  /** That game is played directly between the two devices (peer.ts): which one, and your seat. */
+  peer?: PeerNote | null;
 }
 
 /**
@@ -242,7 +244,7 @@ export interface MatchEnd {
 
 export type ClientMessage =
   /** First message on a new connection. `name` is only used by a local API with fake sign-in. */
-  | { t: 'hello'; token: string; protocol: number; rules: number; avatar: string; name?: string }
+  | { t: 'hello'; token: string; protocol: number; rules: number; avatar: string; name?: string; /** This game can play a Friend game directly with the other device. */ peer?: boolean }
   /** My friends' presence again; `again`: also ask viamochi-id who they are (after adding or removing one). */
   | { t: 'friends'; again?: boolean }
   /** The friend code I'm showing (a QR code or typed), so a friend who scans it sees who I am first; null: stopped. */
@@ -273,7 +275,9 @@ export type ClientMessage =
   | { t: 'leave'; match: string };
 
 export type ServerMessage =
-  | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null; /** Your own requests still waiting. */ sent: SentNote[]; /** Friends' requests waiting for you. */ incoming: ChallengeNote[] }
+  | { t: 'welcome'; you: Person; friends: FriendStatus[]; match: string | null; /** Your own requests still waiting. */ sent: SentNote[]; /** Friends' requests waiting for you. */ incoming: ChallengeNote[]; /** `match` is played directly between the devices. */ peer?: PeerNote | null }
+  /** A Friend game starts, played directly between the two devices (peer.ts): seat 0's device runs it. */
+  | { t: 'peer'; match: string; seat: PlayerId }
   /** This game is older than the server: reload to play online. */
   | { t: 'update' }
   /** Online play is full (ask to be let in first), or switched off. The connection is closed after this. */
@@ -309,3 +313,54 @@ export type ServerMessage =
 /** Friend codes as viamochi-id makes them: 6 letters and digits, shown as K7M-4Q2. */
 export const normalizeCode = (code: string): string => code.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 export const validCode = (code: string): boolean => /^[A-Z0-9]{6}$/.test(normalizeCode(code));
+
+// ── Friend games played directly between the two devices ────────────────────────────────────────
+//
+// So that online play costs next to nothing per player and keeps going when our servers don't answer, a Friend game is
+// played directly between the two devices when both can: the device of the friend who asked (seat 0) runs the match
+// (the same Match as the API's, peer.ts) and the other device talks to it over a direct connection (WebRTC on the web),
+// saying and hearing exactly what it would say to and hear from the API. The API only introduces them, passes along
+// what they need to connect (a few small requests, no connection held), keeps a checked copy of every move, and
+// records the result. When the two devices can't reach each other, the API takes the game over from its copy, and it
+// carries on as an ordinary online game (docs/offline-and-costs.md).
+
+/** Everything about a game played directly: GET {PEER_PATH}/{id} (the record, for seat 0), POST …/{id}/{what}. */
+export const PEER_PATH = '/v1/live/peer';
+/** Both devices trying to reach each other this long without managing: the API takes the game over. */
+export const PEER_LINK_MS = 20_000;
+/** While trying to connect, each device asks for news this often. */
+export const PEER_POLL_MS = 1500;
+/** An answer the API hasn't passed on within this long is dropped (the device made a new offer meanwhile). */
+export const PEER_SIGNAL_MS = 60_000;
+
+/** A game you're in that's played directly between the two devices. */
+export interface PeerNote { match: string; seat: PlayerId }
+
+/** What one device sends the other to connect: seat 0 offers, seat 1 answers that offer (`attempt`). */
+export interface PeerSignal { kind: 'offer' | 'answer'; attempt: string; sdp: string }
+
+/** POST …/{id}/poll: what's waiting for this device. */
+export interface PeerPollAnswer {
+  signals: PeerSignal[];
+  /** The API has taken the game over: play it through the connection (LIVE_PATH) from now on. */
+  serve: boolean;
+  /** The game ended while this device wasn't there (the other player conceded, or took the win). */
+  end: MatchEnd | null;
+  /** Another device of this account runs the game now: stop. */
+  replaced: boolean;
+}
+
+/** POST …/{id}/save (seat 0): the API's answer to a copy of the record. */
+export interface PeerSaveAnswer {
+  ok: boolean;
+  /** The game is over, as the API has it: the record the save carried, or one that ended while the device was away. */
+  end: MatchEnd | null;
+  /** Each seat's record against the other, once a game that counts has ended. */
+  records?: [Tally | null, Tally | null];
+  replaced?: boolean;
+  serve?: boolean;
+}
+
+export { Match, IDLE_MS, RESULT_KEEP_MS, newMatchId, newSeed, plainestMove, rebuild, takeBackPoint } from './match';
+export type { MatchHost, MatchRecord, Played, SeatRecord } from './match';
+export { PeerHost, peerWire, type PeerHostDeps } from './peer';

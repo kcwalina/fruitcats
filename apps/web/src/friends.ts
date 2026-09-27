@@ -631,8 +631,13 @@ onLive((msg) => {
         host?.render();
       }).catch(() => {});
       return;
+    case 'peer':
+      // Played directly between the two devices: the friend who asked runs it, and this device connects to theirs.
+      if (msg.seat === 1 && view.kind === 'accept') note = 'Connecting to your friend…';
+      return;
     case 'match':
       busy = false;
+      note = '';
       if (view.kind === 'waiting' || view.kind === 'accept' || view.kind === 'setup') view = { kind: 'list' };
       return;
     case 'error':

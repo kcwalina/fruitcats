@@ -820,3 +820,14 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
 /* The Lantern swings from its handle. */
 .yarn .yarn-ico { transform-origin: 50% 6%; }
+
+/* Candles (9 per player, what a hit blows out): a wax candle with its flame, the number left on the wax. It was a
+   heart. Units keep the heart for Health. */
+:root { --candle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 34'%3E%3Cpath d='M12 0c2.6 3.2 4.3 5.6 4.3 7.7a4.3 4.3 0 0 1-8.6 0C7.7 5.6 9.4 3.2 12 0z'/%3E%3Crect x='11.3' y='11' width='1.4' height='2.4' rx='.6'/%3E%3Crect x='4.5' y='13' width='15' height='21' rx='2.6'/%3E%3C/svg%3E"); }
+.life-heart { width: 30px; height: 42px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); }
+.life-heart::before {
+  background: linear-gradient(180deg, #fff3b0 0%, #ffc44d 14%, #f08a24 27%, #3b2a1e 32%, #3b2a1e 38%, #fbf1dc 38%, #e9d3a8 100%);
+  -webkit-mask: var(--candle) center / contain no-repeat; mask: var(--candle) center / contain no-repeat;
+}
+.life-heart.low::before { background: linear-gradient(180deg, #ffd9a0 0%, #ff8a3d 16%, #c9401f 27%, #3b2a1e 32%, #3b2a1e 38%, #fbf1dc 38%, #e0c69a 100%); }
+.life-heart b { margin-top: 15px; font-size: 16px; color: #4a3322; text-shadow: none; }

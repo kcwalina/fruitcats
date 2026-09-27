@@ -46,7 +46,9 @@ function mergeMain(resolved: string, message = 'Merge main') {
   return commit(message);
 }
 
-describe('lost-work', () => {
+// Each test runs a dozen real git commands; on a busy Windows machine that can take well over vitest's default 5 s, which
+// failed deploys for no reason. The checks themselves are unchanged.
+describe('lost-work', { timeout: 60_000 }, () => {
   it('passes a merge that keeps both sides', () => {
     mergeMain('export function signIn(user) {\n  if (!user.verified) throw new Error("not verified");\n  return session(user, { remember: true });\n}\n');
     expect(lostInRange('main..session', dir).findings).toEqual([]);

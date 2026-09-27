@@ -1,5 +1,6 @@
 {
   "mimeTypes": {
-    ".webmanifest": "application/manifest+json"
+    ".webmanifest": "application/manifest+json",
+    ".wav": "audio/wav"
   }
 }

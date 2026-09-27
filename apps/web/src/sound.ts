@@ -1,7 +1,7 @@
 // Sound effects: a few short recorded sounds (CC0, see art/sounds/CREDITS.md), kept deliberately
 // sparse — only the moments that matter make a sound:
 //
-//   card played · Hero Cat ability · attack hits a Hero Cat (you hit / you're hit) · attack fails
+//   card played · Hero ability · attack hits a Hero (you hit / you're hit) · attack fails
 //
 // Sounds follow the game log, so every event makes a sound whoever caused it (you or the AI):
 // `playLogSounds(game)` is called after each render and plays the entries it hasn't heard yet.
@@ -18,8 +18,8 @@ const FILES: Record<SoundName, string> = {
   card: 'sounds/card-played.mp3',
   ability: 'sounds/ability.mp3',
   fail: 'sounds/attack-fail.mp3',
-  hitGood: 'sounds/hit-good.mp3', // you hit their Hero Cat: paw punch + little meow
-  hitBad: 'sounds/hit-bad.mp3',   // they hit yours: big soft thump + meow
+  hitGood: 'sounds/hit-good.wav', // you hit their Hero: a crisp thud and a candle blown out
+  hitBad: 'sounds/hit-bad.wav',   // they hit yours: a deep soft thud and a candle blown out
 };
 
 const STORAGE_KEY = 'fruitcats-sound-v3'; // v3: recorded sounds, on by default

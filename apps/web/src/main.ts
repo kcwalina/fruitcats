@@ -1378,7 +1378,7 @@ function renderRules(): string {
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
-      <p><b>Families (classes):</b> each fruit family has a signature mechanic.
+      <p><b>Families (classes):</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
       <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first.</p>
       <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>

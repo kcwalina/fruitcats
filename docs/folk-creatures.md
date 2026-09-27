@@ -177,8 +177,9 @@ tricks.
 
 **From:** the Yucatec Maya of Yucatán (Mexico), Belize and Guatemala. Plural: aluxo'ob.
 
-**In the game.** The third folklore deck and a starter, since 2026-09-26. Its hero is Aluxito, the smallest alux. Cards, art and
-lore: [aluxes-set.md](aluxes-set.md).
+**In the game.** The third folklore deck and a starter, since 2026-09-26. Its hero is Aluxito, the smallest alux. Since
+2026-09-27 its cards look like an ancient Maya wall painting (the owner's references were real Maya murals). Cards, art
+and lore: [aluxes-set.md](aluxes-set.md).
 
 A farmer builds a doll-sized house in his cornfield. For seven years the alux living there calls the rain and walks
 the field at night to guard it. Then the farmer must seal the house's door, or his helper turns to mischief. Aluxes

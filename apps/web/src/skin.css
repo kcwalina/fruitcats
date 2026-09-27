@@ -987,3 +987,65 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .collection-screen.view-decks .deck-cover .cover-sub { color: rgba(246, 236, 220, 0.72); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 .collection-screen.view-decks .deck-cover .cover-name { text-shadow: 0 2px 0 #0c0d1f, 0 2px 10px rgba(0, 0, 0, 0.7); }
 .collection-screen .showcase-slot .painting.empty { background: radial-gradient(95% 95% at 50% 40%, #343a6c 0%, #252a52 60%, #1b1f40 100%); }
+
+/* ══ Painted places (2026-09-27) ══════════════════════════════════════════════════════════════════
+   Home: each place is a small object painted like the Pari and Jiaoren decks (ink line, gouache, watercolour), set
+   straight on the night wood with its name in an elegant serif beneath: no boxes. The same refined serif and quiet
+   ivory lines carry through the other screens. */
+:root { --serif-sc: 'Cormorant SC', 'Cormorant Garamond', Georgia, serif; --serif: 'Cormorant Garamond', Georgia, serif; --ivory: #f7eedd; }
+.home .title h1 { font: 600 clamp(46px, calc(var(--vh, 1vh) * 8), 100px)/1 var(--serif-sc); letter-spacing: 0.08em; color: var(--ivory);
+  background: none; -webkit-background-clip: initial; filter: none; text-shadow: 0 0 30px rgba(10, 10, 30, 0.9), 0 2px 10px rgba(0, 0, 0, 0.8); }
+.home .title p { display: inline-block; font: italic 500 clamp(16px, calc(var(--vh, 1vh) * 2), 22px) var(--serif); color: rgba(247, 238, 221, 0.85);
+  background: none; box-shadow: none; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9); }
+.home .modes .mode-card, .home .modes .mode-card.mini {
+  background: none; border: none; box-shadow: none; padding: 0; overflow: visible; aspect-ratio: auto; min-height: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none; justify-content: flex-start; gap: 0;
+}
+.home .modes .mode-card::before, .home .modes .mode-card::after { content: none; }
+.home .modes .mode-card:hover { transform: none; box-shadow: none; }
+.home .modes .mode-card img, .home .modes .mode-card.mini img {
+  position: static; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 0; box-shadow: none; background: none;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 18px rgba(247, 238, 221, 0.12)); transition: transform 0.15s, filter 0.15s;
+}
+.home .modes .mode-card.mini img { width: 78%; margin: 0 auto; }
+.home .modes .mode-card:hover img { transform: translateY(-4px) scale(1.04); filter: drop-shadow(0 16px 18px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 24px rgba(247, 238, 221, 0.3)); }
+.home .modes .mode-card:focus-visible { outline: 1px solid rgba(247, 238, 221, 0.7); outline-offset: 4px; border-radius: 8px; }
+.home .modes .mode-text, .home .modes .mode-card.mini .mode-name {
+  position: static; width: 100%; padding: 2px 4px 0; text-align: center; background: radial-gradient(ellipse at 50% 50%, rgba(8, 9, 24, 0.7), rgba(8, 9, 24, 0) 72%);
+}
+.home .modes .mode-name { font: 600 clamp(17px, calc(var(--tile) * 0.12), 26px)/1.05 var(--serif-sc); letter-spacing: 0.08em; color: var(--ivory);
+  white-space: nowrap; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); }
+.home .modes .mode-card.mini .mode-name { font-size: clamp(15px, calc(var(--tile) * 0.1), 22px); }
+.home .modes .mode-sub { font: italic 500 clamp(14px, calc(var(--tile) * 0.09), 19px)/1.2 var(--serif); color: rgba(247, 238, 221, 0.78);
+  white-space: nowrap; text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9); }
+.home .modes .mode-sub.continue-line { color: #b9ecc0; font-weight: 600; }
+.home .modes .mode-sub.signin-line { color: #f5cf94; font-weight: 600; }
+.home .modes .mode-card.soon img { filter: saturate(0.5) brightness(0.8) drop-shadow(0 12px 14px rgba(0, 0, 0, 0.6)); opacity: 1; }
+.home .mode-more { gap: clamp(40px, 9vw, 110px); }
+@media (max-width: 640px) {
+  .home .modes { max-width: 460px; --tile: min(28vw, calc(var(--vh, 1vh) * 15)); }
+  .home .mode-group { gap: 10px; }
+  .home .modes .mode-card { width: 100%; }
+  .home .modes .mode-name { font-size: clamp(15px, 4.4vw, 19px); }
+  .home .modes .mode-sub { font-size: clamp(13px, 3.7vw, 16px); }
+  .home .modes .mode-card.mini .mode-name { font-size: 15px; letter-spacing: 0.03em; }
+  .home .mode-more { justify-content: center; }
+  .home .modes .mode-card.mini { width: 40%; }
+}
+
+/* The rest of the shell in the same hand: headings in the refined serif, panels quieter (an ivory hairline instead of the
+   glowing teal one). */
+:root { --plaque-line: rgba(247, 238, 221, 0.32); --plaque: linear-gradient(180deg, rgba(30, 32, 64, 0.9), rgba(16, 18, 40, 0.92)); }
+.picker h2, .setup-bar h2, .new-name span, .col-title, .settings h2, .game-over h2, .pf-head-text h3, .deck-group h3 {
+  font-family: var(--serif-sc); font-weight: 600; letter-spacing: 0.06em;
+}
+.setup-bar h2, .picker h2, .col-title { color: var(--ivory); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85); }
+.deck-name, .diff-name, .cover-name { font-family: var(--serif-sc); font-weight: 600; letter-spacing: 0.04em; }
+.deck-blurb, .diff-sub { font-family: var(--serif); font-style: italic; font-size: 1.05em; }
+.home .modes .mode-card.mini img { width: 56%; }
+@media (min-width: 641px) and (min-height: 600px) and (orientation: landscape) {
+  .home .modes { --tile: min(calc(var(--vh, 1vh) * 20), calc((min(100vw, 1200px) - 100px) / 3 - 30px)); }
+}
+@media (max-width: 640px) { .home .modes .mode-card.mini { width: 34%; } .home .modes .mode-card.mini img { width: 72%; } }
+body .setup-bar h2, body .picker h2 { font-family: var(--serif-sc); font-weight: 600; letter-spacing: 0.06em; }
+@media (max-width: 640px) { .home .mode-more { display: flex; justify-content: center; gap: 48px; width: 100%; } .home .modes .mode-card.mini { width: 30%; } .home .modes .mode-card.mini img { width: 80%; } }

@@ -152,6 +152,9 @@ host full of pearls.
   lore and art: [jiaoren-set.md](jiaoren-set.md).
 - Sources: *Soushen Ji* 12 and *Shuyi Ji* ([Wikisource](https://zh.wikisource.org/zh-hant/述異記)), *Bowu Zhi*
   (quoted in [Wikipedia (Classical Chinese), 鮫人](https://zh-classical.wikipedia.org/wiki/鮫人)).
+- Image: "Jiaoren of the South Sea" by Jessica So Ren Tang (2020, hand embroidery and acrylic on fabric), a jiaoren on a
+  pale jade ground in an oval gold frame. Copyrighted; shown by [Modern Eden Gallery](https://www.moderneden.com/products/jiaoren-of-the-south-sea).
+  The owner chose it as the deck's style reference (2026-09-27): the cards take its colours and feel, never the picture itself.
 
 ### Mmoatia
 

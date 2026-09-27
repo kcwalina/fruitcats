@@ -83,11 +83,12 @@ The deck is 50 cards: three of each Common and most Uncommons, one of each Fable
 
 ## Art
 
-The owner's style reference (2026-09-27) is a contemporary Chinese gongbi-style painting of a mermaid on a pale
-jade-green ground, with coral and teal silks and scattered silver blossoms. It shows a bare-chested figure, so the
-prompt uses only its style and every card is fully clothed. Jiaoren are drawn with a human upper body and a turquoise
+The owner's style reference (2026-09-27) is "Jiaoren of the South Sea" by Jessica So Ren Tang (2020, hand embroidery
+and acrylic on fabric), shown by [Modern Eden Gallery](https://www.moderneden.com/products/jiaoren-of-the-south-sea):
+a jiaoren on a pale jade-green ground, with coral and teal silks and scattered silver blossoms, in an oval gold frame.
+It shows a bare-chested figure, so the prompt uses only its style and every card is fully clothed. Jiaoren are drawn with a human upper body and a turquoise
 fish tail, in coral and teal Chinese silk robes; the Muke cards move to a misty pine forest in the same palette.
 Family colour: coral (#D9735F).
 
 Drawn with `python tools/generate_art.py --set jr1 --model gpt-image-2 --quality high --jobs 1 --reference <image>`.
-The reference itself belongs to its painter and is not in the repo.
+The reference belongs to its artist and is not in the repo; only its style was used, and no card copies it.

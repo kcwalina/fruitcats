@@ -431,7 +431,7 @@ export async function removeFriend(id: string, block = false): Promise<void> {
 export interface Avatar { id: string; name: string; kind: 'everyday' | 'legend'; cardId: string | null; cardName: string | null }
 
 /** Bumped when the images are redrawn: browsers keep them for a week. */
-const AVATAR_VERSION = 6;
+const AVATAR_VERSION = 7;
 export const avatarUrl = (id: string) => `${ID_SERVICE}/avatars/${id}.webp?v=${AVATAR_VERSION}`;
 
 let catalog: Avatar[] | null = null;

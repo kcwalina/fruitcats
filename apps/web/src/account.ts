@@ -388,7 +388,7 @@ async function openPicker(host: Host) {
  * opponent wears the everyday Pawtrait of the fruit family its deck leads.
  */
 const FAMILY_PAWTRAIT: Record<string, string> = {
-  Citrus: 'orange', Orchard: 'apple', Tropical: 'pineapple', Berry: 'strawberry', Melon: 'watermelon', Garden: 'peapod', Domowiki: 'lemon', Pari: 'pear',
+  Citrus: 'orange', Orchard: 'apple', Tropical: 'pineapple', Berry: 'strawberry', Melon: 'watermelon', Garden: 'peapod', Domowiki: 'lemon', Pari: 'pear', Aluxes: 'pineapple', Jiaoren: 'cantaloupe',
 };
 export function boardFace(who: 'you' | 'computer', family: string): string {
   const id = who === 'you' ? session()?.avatar : FAMILY_PAWTRAIT[family] ?? 'lemon';

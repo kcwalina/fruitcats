@@ -1,4 +1,4 @@
-# Fruitcats and Via Mochi Privacy Policy
+# Folkborn and Via Mochi Privacy Policy
 
 > **DRAFT for legal review. Not yet in effect.** Written to match what the Service actually collects and keeps
 > (docs/accounts.md: accounts, observability and log retention). Items in **[brackets]** must be confirmed before
@@ -7,7 +7,7 @@
 **Version:** 2026-09-draft-1. **Effective:** [date of publication].
 
 This policy explains what information **Via Mochi** (viamochi.com) ("we", "us"), collects
-when you play Fruitcats or use a Via Mochi account, why, who else handles it, how long we keep it, and your choices.
+when you play Folkborn or use a Via Mochi account, why, who else handles it, how long we keep it, and your choices.
 It goes with our [Terms of Use](terms-of-use.md).
 
 **The short version:**
@@ -33,7 +33,7 @@ It goes with our [Terms of Use](terms-of-use.md).
 | **Display name** | Shown to you, and to friends you add. |
 | **Birth year** | To confirm you're 13 or older (and whether a parent's approval is needed to buy). We use it only for age checks. |
 | **Account id** | A random number that identifies your account inside our systems. |
-| **Your Pawtrait** (avatar choice) | Shown to you, your friends and opponents. |
+| **Your Portrait** (avatar choice) | Shown to you, your friends and opponents. |
 | **Your game data:** custom decks, the Showcase, progress, settings | To keep your collection the same on every device. |
 | **Which Terms version you accepted, and when** | To keep a record of your agreement. |
 | **Friends and blocks** | So you can play and share with the people you choose. |
@@ -48,7 +48,7 @@ type as a deck name in our logs.
 ## 2. How we use it
 
 - To run your account, sign you in and keep your collection on every device.
-- To grant the cards and Pawtraits you get, and remove them if a purchase is refunded.
+- To grant the cards and Portraits you get, and remove them if a purchase is refunded.
 - To keep the Service safe: preventing abuse, fraud and account takeover.
 - To fix problems and improve the game, using technical logs and totals such as "games played per day".
 - To contact you about your account (sign-in codes, important changes to these policies or the Service). We don't send
@@ -67,14 +67,14 @@ We use a few trusted providers, each only for what's listed:
 | **The Seller of each purchase** (Paddle.com on the web; Apple, Google or Valve in their apps) | Payment, taxes, receipts and refunds. They handle this under their own privacy policies; we receive only what we need to grant your items. |
 
 We **don't sell** your personal information and **don't share** it for targeted advertising. We may disclose
-information if the law requires it, to protect people's safety, or to a buyer if Fruitcats is ever sold (who must then
+information if the law requires it, to protect people's safety, or to a buyer if Folkborn is ever sold (who must then
 keep to this policy).
 
 ## 4. How long we keep it
 
 | What | Kept for |
 |---|---|
-| Your account (email, display name, birth year, Pawtrait, game data) | Until you delete your account (plus a 30-day grace period, in case you change your mind). |
+| Your account (email, display name, birth year, Portrait, game data) | Until you delete your account (plus a 30-day grace period, in case you change your mind). |
 | Your record against each friend, and when you were last online | Until you delete your account. |
 | Records of finished online games (account ids and moves, no names), for looking into bug reports | 30 days. |
 | Security records (sign-ins, IP addresses, account changes) | 1 year. |
@@ -82,7 +82,7 @@ keep to this policy).
 | Totals with no personal data (e.g. games per day) | Kept. |
 | Purchase records | Kept as business records (see below). |
 
-**When you delete your account,** your email, display name, birth year, Pawtrait and game data are deleted. Remaining
+**When you delete your account,** your email, display name, birth year, Portrait and game data are deleted. Remaining
 log lines and purchase records carry only your random account id, which then no longer points to anyone, so they
 become anonymous; logs expire on the schedule above, and anonymous purchase records are kept for accounting. The
 Sellers keep their own records under their policies.
@@ -91,7 +91,7 @@ Sellers keep their own records under their policies.
 
 - **Download your data:** Account → Export data.
 - **Delete your account:** Account → Delete account (takes effect after 30 days).
-- **Correct your information:** change your display name and Pawtrait in the game. (Your email can't be changed: it is
+- **Correct your information:** change your display name and Portrait in the game. (Your email can't be changed: it is
   your account.)
 - **Ask us anything, or exercise your rights** (access, deletion, correction, objection, portability, and for EU/UK
   players, complaining to your data protection authority): send us a message with **Contact us** in the game (section 11).

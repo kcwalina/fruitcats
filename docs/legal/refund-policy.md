@@ -1,11 +1,11 @@
-# Fruitcats Refund Policy
+# Folkborn Refund Policy
 
 > **DRAFT for legal review. Not yet in effect.** Written from the decisions in docs/store-plan.md. Items in
 > **[brackets]** must be confirmed before publishing, together with the [Terms of Use](terms-of-use.md).
 
 **Version:** 2026-09-draft-1. **Effective:** [date of publication].
 
-This policy covers decks and cards bought in the Fruitcats Store on the web (fruitcats.viamochi.com). It explains
+This policy covers decks and cards bought in the Folkborn Store on the web (fruitcats.viamochi.com). It explains
 how to get your money back, and what happens to the cards when you do.
 
 ## Who sells, and who refunds

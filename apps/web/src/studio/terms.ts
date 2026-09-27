@@ -9,7 +9,7 @@ export const STUDIO_TERMS_VERSION = 'studio-2026-09-draft-1';
 
 export const STUDIO_TERMS = `
 <h3>What the Studio is</h3>
-<p>The Fruitcats Artist Studio is where you upload the images you make for Fruitcats, see them on the cards, and
+<p>The Folkborn Artist Studio is where you upload the images you make for Folkborn, see them on the cards, and
 talk about them with us. You make your images with your own tools; the Studio only receives them.</p>
 
 <h3>Your images</h3>

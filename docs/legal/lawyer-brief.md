@@ -1,4 +1,4 @@
-# Brief for a lawyer: review of the Fruitcats Terms of Use and Privacy Policy
+# Brief for a lawyer: review of the Folkborn Terms of Use and Privacy Policy
 
 **What I'm asking for:** a one-time review of two draft documents, before real sign-ups open and before the first
 sale. Please mark what must change, suggest wording, and answer the questions below. A fixed-fee quote would help.
@@ -9,8 +9,8 @@ sale. Please mark what must change, suggest wording, and answer the questions be
 
 ## The product
 
-- **Fruitcats** is a free card game played in a web browser (fruitcats.viamochi.com), and later as free apps on the
-  Apple App Store, Google Play and Steam.
+- **Folkborn** is a free card game played in a web browser (fruitcats.viamochi.com), and later as free apps on the
+  Apple App Store, Google Play and Steam. It was called Fruitcats until 2026-09-26; the web address hasn't changed yet.
 - A free **Via Mochi account** (email address, signed in with a one-time code; no password) keeps a player's cards and
   decks on every device, and will enable friends, online play and purchases.
 - **What will be sold:** fixed decks and single cards the player sees before buying. No random paid items, no loot

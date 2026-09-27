@@ -1,4 +1,4 @@
-# Fruitcats and Via Mochi Terms of Use
+# Folkborn and Via Mochi Terms of Use
 
 > **DRAFT for legal review. Not yet in effect.** Written from the decisions in
 > docs/accounts.md and docs/store-plan.md. Items in **[brackets]** must be
@@ -8,15 +8,15 @@
 **Version:** 2026-09-draft-1. **Effective:** [date of publication].
 
 These Terms of Use ("Terms") are an agreement between you and **Via Mochi** (viamochi.com) ("Via Mochi", "we",
-"us"), the creator and licensor of Fruitcats. They cover the Fruitcats game on
+"us"), the creator and licensor of Folkborn. They cover the Folkborn game on
 every platform (web, iPhone, iPad, Android, Steam), Via Mochi accounts, and the use of anything you obtain in
-Fruitcats (together, the "Service").
+Folkborn (together, the "Service").
 
 **Our role is only to grant you rights to use the game and its content.** We are not a seller. Every purchase is sold
 to you by a third party, the "Seller" (section 5), under a separate contract between you and that Seller. We are not
 a party to that contract, and we don't receive your payment, charge you, collect taxes or issue refunds.
 
-**By creating a Via Mochi account, or by playing Fruitcats, you agree to these Terms.** If you don't agree, don't use
+**By creating a Via Mochi account, or by playing Folkborn, you agree to these Terms.** If you don't agree, don't use
 the Service. Our [Privacy Policy](privacy-policy.md) explains how we handle your information.
 
 **Please read section 14 (Disputes).** It includes an agreement to resolve most disputes by individual arbitration and
@@ -64,13 +64,13 @@ a waiver of class actions, with a way to opt out.
 ## 4. Digital items: cards and decks
 
 - **What you get is a license from us, not property.** Cards, decks, premium variants and anything else you obtain
-  in Fruitcats ("Digital Items") are content you're licensed to use in the Service, under section 3. When you buy a
+  in Folkborn ("Digital Items") are content you're licensed to use in the Service, under section 3. When you buy a
   Digital Item from a Seller, what the Seller sells you is access to that license; we grant the license itself. **Digital Items are not
   money, have no cash value, and can't be sold, traded, transferred or exchanged for money**, inside or outside the
   Service, except where the Service itself offers a way to do so.
 - **Your Digital Items are tied to your Via Mochi account** and are available on every platform where you sign in to
   it, whichever Seller you bought them from.
-- **No random paid items.** Nothing offered for sale in Fruitcats is random, and there are no loot boxes: you always
+- **No random paid items.** Nothing offered for sale in Folkborn is random, and there are no loot boxes: you always
   see exactly what you'll get.
 - **Cards can change after you get them.** A license is to use a card **as it exists in the game at the time**, not
   as it looked or played when you got it. At any time, including after purchase, we may change any card or deck,
@@ -165,7 +165,7 @@ and devices secure is your responsibility.
 
 ## 11. Ending the Service
 
-**We may shut down Fruitcats, or any part of it, at any time, including after you've made purchases.** We don't
+**We may shut down Folkborn, or any part of it, at any time, including after you've made purchases.** We don't
 promise to keep the game, its servers, your account or your collection available for any period of time.
 
 - Before a planned shutdown of the whole game (or of its online features), we'll give **at least 90 days' notice** in
@@ -222,7 +222,7 @@ If you're a consumer in the EU or UK, you also keep the protection of the mandat
 
 ## 16. App stores
 
-If you downloaded Fruitcats from the **Apple App Store**, you also agree that:
+If you downloaded Folkborn from the **Apple App Store**, you also agree that:
 
 - these Terms are between you and us, not Apple, and Apple isn't responsible for the app or its content;
 - Apple has no obligation to provide maintenance or support for the app;
@@ -246,7 +246,7 @@ Copyright Act with **Contact us** in the game, or at **fruitcats.viamochi.com** 
 - These Terms, the Privacy Policy and any store terms that apply are the whole agreement between us about the Service.
 - If a part of these Terms can't be enforced, the rest still applies.
 - If we don't enforce a right, we haven't waived it.
-- We may transfer these Terms, for example if Fruitcats is sold to someone who continues the Service; your rights
+- We may transfer these Terms, for example if Folkborn is sold to someone who continues the Service; your rights
   under them continue. You may not transfer them.
 
 ## 19. Contact

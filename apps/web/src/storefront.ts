@@ -16,7 +16,7 @@ import { rarity, rarityMark } from './rarity';
 import {
   addLinesToCart, addToCart, planForDeck, cartCount, cartLines, catalog, clearCart, inCart, localQuote, ownedNow, placeTestOrder,
   newOrderId, refreshStore, removeLine, resetTestOrders, serverQuote, setLineQty, storeAccess, testCheckout, type Order,
-  awaitOrder, confirmOrder, getFreeDeck, payments, startCheckout, takeArrived,
+  awaitOrder, confirmOrder, getFreeDeck, payments, redeemCode, startCheckout, takeArrived,
 } from './shop';
 import { BUYING } from './flags';
 import { payWithPaddle } from './paddle';
@@ -72,6 +72,8 @@ let checkout: null | {
 /** After an order: its cards, one at a time, then all together. */
 let reveal: null | { cards: string[]; copies: Record<string, number>; index: number; all: boolean } = null;
 let resetAsk = false;
+/** "Have a code?": the code as typed, while the API checks it, and why it didn't work. */
+let codeAsk: null | { text: string; busy: boolean; message: string } = null;
 /**
  * An order sent without an answer (the connection dropped). It may have gone through, so the next try sends the
  * same id: the API then answers with that order instead of taking a second one.
@@ -87,6 +89,7 @@ export function openStore(host: StoreHost) {
   notice = '';
   checkout = null;
   reveal = null;
+  codeAsk = null;
   refresh(host);
 }
 
@@ -135,6 +138,9 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
       break;
     }
     case 'get': void getFree(arg, host); return;
+    case 'code': codeAsk = { text: '', busy: false, message: '' }; break;
+    case 'nocode': if (!codeAsk?.busy) codeAsk = null; break;
+    case 'redeem': void useCode(host); return;
     case 'more': setLineQty(arg, inCart(arg) + 1); break;
     case 'less': setLineQty(arg, inCart(arg) - 1); break;
     case 'remove': removeLine(arg); break;
@@ -176,7 +182,8 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
 
 /** Escape: close the topmost thing. True if it did something. */
 export function storeEscape(host: StoreHost): boolean {
-  if (resetAsk) resetAsk = false;
+  if (codeAsk) { if (codeAsk.busy) return true; codeAsk = null; }
+  else if (resetAsk) resetAsk = false;
   else if (checkout && !['placing', 'paying', 'finishing'].includes(checkout.stage)) checkout = null;
   else if (reveal) { if (!reveal.all) reveal.all = true; else reveal = null; }
   else if (view.kind !== 'browse') view = { kind: 'browse' };
@@ -292,6 +299,35 @@ async function getFree(product: string, host: StoreHost) {
   host.render();
 }
 
+/** The code box: what's typed is kept as it's typed (no redraw, so the keyboard stays up). */
+export function storeCodeInput(text: string) {
+  if (codeAsk && !codeAsk.busy) codeAsk.text = text;
+}
+/** Enter in the code box: the same as "Get the deck". */
+export function storeCodeEnter(host: StoreHost) {
+  void useCode(host);
+}
+
+/** "Get the deck" with a code: the API checks it and gives the deck, then its cards are revealed like an order's. */
+async function useCode(host: StoreHost) {
+  if (!codeAsk || codeAsk.busy) return;
+  if (!codeAsk.text.trim()) { codeAsk.message = 'Type the code you were given.'; host.render(); return; }
+  codeAsk = { ...codeAsk, busy: true, message: '' };
+  host.render();
+  const result = await redeemCode(codeAsk.text);
+  if (!codeAsk) return;
+  if (!result.ok) {
+    codeAsk = { ...codeAsk, busy: false, message: result.message };
+  } else {
+    codeAsk = null;
+    const deck = result.order.lines[0]?.product;
+    const name = deck ? catalog()?.products[deck] : undefined;
+    if (result.repeated) notice = `You used this code already: ${name?.kind === 'deck' ? `the ${name.name} deck` : 'its deck'} is in your collection.`;
+    else startReveal(result.order);
+  }
+  host.render();
+}
+
 function startReveal(order: Order) {
   // Commons first, the rarest last (a Hero Cat last of all): the reveal ends on the best card. A card this game doesn't
   // know (from a set since deleted, like Heat Wave) isn't shown.
@@ -348,7 +384,7 @@ export function renderStore(): string {
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}
     ${body}
   </div>
-  ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}`;
+  ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}${renderCodeDialog()}`;
 }
 
 /** A card's picture as the Store sells it: the standard print, or the Signature print for a Signature card (its only print). */
@@ -401,10 +437,14 @@ function renderShop(): string {
       <nav class="store-tabs" role="tablist" aria-label="Store">${tabButton('main', 'Folkborn')}${tabButton('legacy', 'Legacy')}</nav>
       ${tab === 'legacy' ? '<p class="tab-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : ''}
       ${list}
+      <button class="store-btn ghost code-btn" data-click="store:code">${TICKET}Have a code?</button>
       <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</span></p>
       ${renderTesterTools()}
     </main>`;
 }
+
+/** A ticket, for a code that gives a deck. */
+const TICKET = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/></svg>`;
 
 /** A small cloud, for "it lives in your account". */
 const CLOUD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 11a4 4 0 0 1-2.5 8Z"/></svg>`;
@@ -724,6 +764,25 @@ function renderTesterTools(): string {
     <span class="tester-tag">Test store · no money is taken, and no card details are asked for</span>
     <button class="tester-btn" data-click="store:reset">Remove my test purchases</button>
   </footer>`;
+}
+
+/** "Have a code?": type a code you were given, and its deck joins your collection. Nothing is paid. */
+function renderCodeDialog(): string {
+  if (!codeAsk) return '';
+  const { text, busy, message } = codeAsk;
+  return `<div class="overlay"><div class="settings delete-dialog code-dialog" role="dialog" aria-label="Have a code?">
+    <h2>Have a code?</h2>
+    <p>If you were given a code for a deck, type it here. The deck joins your collection, and there’s nothing to pay.</p>
+    <label class="account-field">Code
+      <input data-storecode class="store-code" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
+        maxlength="40" placeholder="XXXX-XXXX-XXXX" value="${esc(text)}" ${busy ? 'disabled' : ''}>
+    </label>
+    ${message ? `<p class="code-problem" role="alert">${esc(message)}</p>` : ''}
+    <div class="delete-buttons">
+      <button data-click="store:nocode" ${busy ? 'disabled' : ''}>Cancel</button>
+      <button class="primary" data-click="store:redeem" ${busy ? 'disabled' : ''}>${busy ? 'Checking…' : 'Get the deck'}</button>
+    </div>
+  </div></div>`;
 }
 
 /** What "Add to cart" says while buying isn't open: everything can be looked at, nothing bought yet. */

@@ -557,3 +557,13 @@
 .deck-slot .painting.empty {
   opacity: 1; animation: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
 }
+
+/* ── Codes: "Have a code?" under the list, and its dialog ── */
+.store-screen button.store-btn.code-btn { display: flex; margin: clamp(22px, 3.6vw, 32px) auto 0; }
+.store-screen button.store-btn.code-btn svg { flex: none; }
+.code-dialog .account-field { margin: 0 0 14px; }
+.code-dialog input.store-code {
+  font: 800 22px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-align: center; text-transform: uppercase;
+}
+.code-dialog input.store-code::placeholder { color: #c9b8a2; letter-spacing: 0.12em; }
+.delete-dialog p.code-problem { margin: -4px 0 14px; color: #b3261e; }

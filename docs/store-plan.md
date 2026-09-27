@@ -206,6 +206,27 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
   Store deck brings the same cards for less, it says so. The deck builder also says "Missing N cards" on the deck
   and offers **See the missing cards**.
 
+### Codes: a deck without paying (2026-09-27)
+
+The owner's call: until buying opens, and afterwards for testers, friends and giveaways, a deck can be given with a
+code. Under the list the Store has **Have a code?**: type the code, tap **Get the deck**, and the deck's cards are
+revealed like an order's. It works while buying is off (`STORE=preview`) because nothing is paid; it is not a way
+around the payment work, which stays closed.
+
+- **Making codes:** `npm run store-code -w @fruitcats/api -- <deck key> [--uses N] [--note "why"]` (e.g. `jiaoren`)
+  prints a code like `JX7K-4QMW-9DRT` once. It writes the live tables as Claude's agent identity; `--local` makes one
+  for `npm run api:local`. Codes use letters and digits that can't be confused (no 0/O, 1/I/L); case, spaces and
+  dashes don't matter when typed.
+- **The rules** (apps/api/src/store.ts, Codes; tests in apps/api/test/store-codes.test.ts): a code names one deck on
+  sale and a number of uses. Each account can use a code once, and it's never granted twice (a retry is answered with
+  the same order). A use is taken before the deck is granted, so a code never serves more accounts than it allows,
+  even two at once. An account that has the whole deck already is told so, and the code isn't used up. Codes are
+  stored only as a hash (table `storecodes`), so the table can't be read back as codes. Ten wrong codes in an hour
+  lock that account out of codes for the hour, and the security log records it (`store.code_guessing`).
+- **Records:** taking a code is an order with status `code` and total 0, next to the account's other orders, in the
+  owned total, and in the security log (`purchase.code`). "Export my data" includes it; deleting the account keeps it
+  like a free deck's order.
+
 ### Trying it on your computer
 
 1. `npm run api:local` runs the API on port 8790 with its data in `.local-api/` (nothing in Azure is touched).

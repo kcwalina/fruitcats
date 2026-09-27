@@ -11,7 +11,7 @@ import { yourCardUrl } from './rarity';
 import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
 import { ACCOUNTS, ONLINE, STORE } from './flags';
-import { openStore, openStoreForDeck, renderStore, storeClick, storeEscape, type StoreHost } from './storefront';
+import { openStore, openStoreForDeck, renderStore, storeClick, storeCodeEnter, storeCodeInput, storeEscape, type StoreHost } from './storefront';
 import { refreshStore, storeAccess } from './shop';
 import { startSync, syncNow } from './sync';
 import { saveAgreedTerms } from './auth';
@@ -1432,6 +1432,8 @@ app.addEventListener('input', (event) => {
   if (field) accountInput(field);
   const pf = ONLINE ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-pf]:not([type="checkbox"])') : null;
   if (pf) friendsInput(pf);
+  const code = (event.target as HTMLElement).closest<HTMLInputElement>('[data-storecode]');
+  if (code) storeCodeInput(code.value);
 });
 // Play with a friend's Teaching game switch is a checkbox: it reports a change, not input.
 app.addEventListener('change', (event) => {
@@ -1443,6 +1445,8 @@ app.addEventListener('keydown', (event) => {
   if (input && event.key === 'Enter') input.blur();
   const field = ACCOUNTS ? (event.target as HTMLElement).closest<HTMLInputElement>('[data-acct]') : null;
   if (field && event.key === 'Enter' && field.tagName !== 'TEXTAREA') { event.preventDefault(); accountEnter(field, { render }); }
+  const code = (event.target as HTMLElement).closest<HTMLInputElement>('[data-storecode]');
+  if (code && event.key === 'Enter') { event.preventDefault(); storeCodeEnter(storeHost); }
 });
 
 app.addEventListener('click', (event) => {

@@ -7,6 +7,7 @@
     "start": "node dist/server.mjs",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File deploy.ps1",
     "local": "tsx src/local.ts",
+    "store-code": "tsx src/store-code.ts",
     "studio:dev": "tsx src/studio/dev.ts"
   },
   "dependencies": {

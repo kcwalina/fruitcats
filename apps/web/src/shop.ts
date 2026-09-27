@@ -234,6 +234,32 @@ export async function getFreeDeck(product: string, orderId: string = newOrderId(
   return { ok: true, order };
 }
 
+/**
+ * A Store code (store.ts on the API, Codes): the deck it names joins the collection, without paying, so it works while
+ * buying is off. `repeated`: this account used the code before, and nothing new was given.
+ */
+export async function redeemCode(code: string): Promise<{ ok: true; order: Order; repeated: boolean } | { ok: false; message: string }> {
+  const r = await call('POST', '/v1/store/redeem', { code });
+  if (!r) return { ok: false, message: 'The Store didn’t answer. Check your connection and try again.' };
+  if (r.status !== 200) return { ok: false, message: CODE_REFUSALS[String(r.data.error)] ?? REFUSALS[String(r.data.error)] ?? 'The Store couldn’t take this code. Please try again later.' };
+  const order = r.data.order as Order;
+  if (cache) {
+    cache.saved.owned = r.data.owned as Record<string, number>;
+    if (!cache.saved.orders.some((o) => o.id === order.id)) cache.saved.orders.push(order);
+    save();
+  }
+  return { ok: true, order, repeated: r.data.repeated === true };
+}
+
+const CODE_REFUSALS: Record<string, string> = {
+  bad_code: 'That code doesn’t work. Check the letters and try again.',
+  code_used_up: 'This code has already been used as many times as it can be.',
+  code_unavailable: 'This code’s deck isn’t in the Store any more.',
+  already_owned: 'You already have every card in this deck, so the code wasn’t used. You can pass it on to a friend.',
+  too_many_codes: 'Too many codes didn’t work. Please wait an hour and try again.',
+  busy: 'The Store is busy. Please try again.',
+};
+
 const REFUSALS: Record<string, string> = {
   not_free: 'This deck isn’t free any more.',
   below_minimum: 'This order is under the minimum. Nothing was ordered.',

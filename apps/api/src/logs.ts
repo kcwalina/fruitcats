@@ -58,3 +58,6 @@ async function flush() {
 }
 
 setInterval(() => void flush(), 10_000).unref();
+
+/** Write what's queued now: for a script that ends before the next flush. */
+export const flushLogs = () => flush();

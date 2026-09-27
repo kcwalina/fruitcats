@@ -423,3 +423,13 @@
 .sb-ground { display: none; }
 .store-screen button.store-btn.buy { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, #e2ad4e 55%, #c98f2e); box-shadow: 0 3px 0 #9c6a22, 0 8px 18px -8px rgba(var(--shade), 0.5); }
 .offer-buy .buy { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, #e2ad4e 55%, #c98f2e); box-shadow: 0 3px 0 #9c6a22, 0 8px 18px -8px rgba(var(--shade), 0.5); }
+
+/* Deck covers (Store and Collection): a quiet gallery frame so the painting is what you see. A charcoal mat inside a
+   slim dark moulding and a neutral name band; no family colour (it competed with the art). */
+.slot .cover {
+  padding: 4%; background: linear-gradient(180deg, #34302b, #2a2622);
+  box-shadow: 0 0 0 1px #0d0a08, 0 0 0 3px #1d1712, 0 0 0 4px rgba(255, 236, 205, 0.12), 0 14px 24px -10px rgba(var(--shade), 0.6);
+}
+.cover-art { border-radius: 2px; background-color: #1d1712; box-shadow: 0 0 0 1px rgba(255, 238, 210, 0.2), 0 1px 3px rgba(0, 0, 0, 0.6); }
+.plate { margin-top: 4%; padding: 6% 4% 5%; border-radius: 2px; background: none; color: #efe6d6; }
+.plate small { opacity: 0.55; }

@@ -433,3 +433,7 @@ button.undo-btn {
   .deck-stage .viewer { --card-w: min(30vw, calc((var(--vh, 1vh) * 100 - 260px) * 0.714), 420px); }
   .deck-lore { flex: 1; min-width: 0; margin: 0 var(--corner-right, 24px) 24px 0; padding: 34px 40px 30px; overflow-y: auto; }
 }
+/* The name is written under each cover, so the cover itself is just the painting in its frame (no plate). */
+.deck-cover .plate { display: none; }
+.showcase-slot .cover { background: linear-gradient(180deg, #34302b, #2a2622); }
+.showcase-slot .cover-empty { color: rgba(243, 205, 122, 0.8); text-shadow: 0 0 18px rgba(243, 205, 122, 0.35); }

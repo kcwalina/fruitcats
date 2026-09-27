@@ -3,13 +3,26 @@
 // in front of it. (A deploy once shipped new card images with old card stats that way.)
 export * from '../../packages/engine/src/index';
 
-// The engine has no cards of its own: load every set. Prototype sets' cards are loaded too, but not their
-// decks: the balance gate treats every registered deck as a starter deck. Play a prototype deck by passing
-// it as an extra deck (prototypeDecks()).
-import { registerSet } from '../../packages/engine/src/index';
-import { loadContent } from '../../content';
-export { prototypeDecks } from '../../content';
-loadContent(registerSet, { prototypes: true, prototypeDecks: false });
+// The engine has no cards of its own: load the sets playtests play (playtest.config.json `sets.play`) and no
+// others, so a retired set's decks are never played and its cards never turn up in a generated or LLM-built deck.
+// A released set's decks are the starter decks (the balance gate tests them all); a prototype set's cards are loaded
+// but its decks aren't: play one by passing it as an extra deck (prototypeDecks()).
+import { clearCatalog, registerSet } from '../../packages/engine/src/index';
+import { CONTENT, type ContentSet } from '../../content';
+import playtestConfig from '../playtest.config.json';
+
+const PLAYED = new Set((playtestConfig as unknown as { sets: { play: string[] } }).sets.play);
+/** The sets playtests play, in release order (a set that builds on another is registered after it). */
+export const playedSets: ContentSet[] = CONTENT.filter((c) => PLAYED.has(c.data.set));
+for (const code of PLAYED) if (!playedSets.some((c) => c.data.set === code)) throw new Error(`playtest.config.json sets.play: no set ${code} in content/`);
+// Tests load every set first (packages/engine/test/setup.ts); a playtest sees only its own, there as here.
+clearCatalog();
+for (const c of playedSets) registerSet(c.data.status === 'released' ? c.data : { ...c.data, decks: {} }, c.plugin);
+
+/** The decks of the played prototype sets, by key: to playtest them against the starter decks. */
+export function prototypeDecks(): Record<string, NonNullable<ContentSet['data']['decks']>[string]> {
+  return Object.assign({}, ...playedSets.filter((c) => c.data.status !== 'released').map((c) => c.data.decks ?? {}));
+}
 
 // What-if balance experiments: PLAYTEST_CARD_MODS='{"SB1-T08":{"cost":9}}' changes cards for this process and
 // every worker it starts (they share the environment), so `npm run balance` can measure a proposed card change

@@ -124,7 +124,7 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
     }
   }
   const [flo, fhi] = cfg.warn.firstPlayer;
-  if (shape.firstPlayer < flo || shape.firstPlayer > fhi) problems.push({ level: 'warn', text: `The starting Yarn holder wins ${pct(shape.firstPlayer)} of games.` });
+  if (shape.firstPlayer < flo || shape.firstPlayer > fhi) problems.push({ level: 'warn', text: `Whoever holds the Lantern first wins ${pct(shape.firstPlayer)} of games.` });
 
   const cards = cardImpact(all);
   const outliers = cards.filter((c) => c.games >= cfg.warn.cardMinGames && Math.abs(c.delta) > cfg.warn.cardDelta);
@@ -180,8 +180,8 @@ function markdown(
   lines.push(...(problems.length ? problems.map((p) => `- **${p.level}**: ${p.text}`) : ['None.']), '');
   lines.push('## Starter decks', '', `| Win rate of row vs column | ${keys.map((k) => DECKS[k].name).join(' | ')} | Overall |`, `|---|${keys.map(() => '---|').join('')}---|`);
   for (const a of keys) lines.push(`| ${DECKS[a].name} | ${keys.map((b) => (a === b ? '—' : pct(st.rate(a, b)))).join(' | ')} | **${pct(st.rate(a))}** |`);
-  lines.push('', `Starting Yarn holder wins ${pct(shape.firstPlayer)}. Average game: ${shape.avgRounds.toFixed(1)} rounds, ${shape.avgActions.toFixed(0)} actions.`, '');
-  lines.push('| Deck | Grew Up | Grow Up round | Cards in hand at the end |', '|---|---|---|---|');
+  lines.push('', `Whoever holds the Lantern first wins ${pct(shape.firstPlayer)}. Average game: ${shape.avgRounds.toFixed(1)} rounds, ${shape.avgActions.toFixed(0)} actions.`, '');
+  lines.push('| Deck | Awakened | Awakened in round | Cards in hand at the end |', '|---|---|---|---|');
   for (const k of keys) lines.push(`| ${DECKS[k].name} | ${pct(shape.grewUp[k] ?? 0)} | ${(shape.grewUpRound[k] ?? 0).toFixed(1)} | ${(shape.handEnd[k] ?? 0).toFixed(1)} |`);
   if (outliers.length) {
     lines.push('', '## Card outliers', '', "| Card | Games played in | Win rate | Points above its deck's usual rate |", '|---|---|---|---|');

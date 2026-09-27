@@ -14,6 +14,7 @@
 //   /v1/live  (WebSocket)            →  online play: presence, friend codes, challenges, matches (live/, docs/pvp-plan.md)
 //   POST /v1/live/here               →  "I'm here": challenges waiting, a game going (the game isn't playing online)
 //   POST /v1/live/enter              →  "let me in": in, a place in the waiting line, or closed
+//   GET|POST /v1/live/peer/{id}/…    →  a Friend game played directly between two devices: connecting them, its record
 //
 // Online play's settings: LIVE=off turns it off (docs/emergency-stop.md); LIVE_MAX_PLAYERS is how many may be connected
 // at once (default 300: App Service's Basic plan allows 350 WebSockets per instance).
@@ -30,7 +31,7 @@ import { TableClient } from '@azure/data-tables';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { DefaultAzureCredential } from '@azure/identity';
 import { CARDS, DECKS, deckProblems, registerSet, type DeckList } from '@fruitcats/engine';
-import { ENTER_PATH, HERE_PATH } from '@fruitcats/match';
+import { ENTER_PATH, HERE_PATH, PEER_PATH } from '@fruitcats/match';
 import { collectionOf, isStarterSet } from '@fruitcats/store';
 import { createLocalJWKSet, createRemoteJWKSet, jwksCache, jwtVerify, type JSONWebKeySet, type JWTPayload } from 'jose';
 import { loadContent } from '../../../content';
@@ -362,10 +363,19 @@ const server = createServer(async (req, res) => {
       if (!who) return send(res, 401, { error: 'signed_out' });
       if (req.url === ENTER_PATH) return send(res, 200, await hub.enter(who.id));
       // The Pawtrait comes from the game (it's only a picture); the name from the token, or, faked locally, from the game.
-      const body = await readJson(req).catch(() => ({})) as { avatar?: unknown; name?: unknown };
+      const body = await readJson(req).catch(() => ({})) as { avatar?: unknown; name?: unknown; peer?: unknown };
       const avatar = typeof body.avatar === 'string' && /^[a-z0-9-]{1,40}$/.test(body.avatar) ? body.avatar : 'cat';
       const name = (FAKE_SIGN_IN && typeof body.name === 'string' ? body.name.slice(0, 40) : who.name) || 'A friend';
-      return send(res, 200, hub.here(who.id, { id: who.id, name, avatar }));
+      return send(res, 200, hub.here(who.id, { id: who.id, name, avatar }, body.peer === undefined ? undefined : body.peer === true));
+    }
+    const peerCall = new RegExp(`^${PEER_PATH}/([0-9a-f]{32})/(record|poll|signal|save|end|rematch)$`).exec(req.url ?? '');
+    if (peerCall && (req.method === 'POST' || (req.method === 'GET' && peerCall[2] === 'record'))) {
+      const who = await whoOf(req);
+      if (!who) return send(res, 401, { error: 'signed_out' });
+      if (process.env.LIVE === 'off') return send(res, 200, { closed: true });
+      const body = req.method === 'POST' ? await readJson(req).catch(() => ({})) as Record<string, unknown> : {};
+      const [status, answer] = await hub.peer(who.id, peerCall[1], peerCall[2], body ?? {});
+      return send(res, status, answer);
     }
     if (req.url === '/v1/sync' && req.method === 'POST') {
       const user = await accountOf(req);
@@ -454,6 +464,8 @@ const hub = createHub({
   paid: (account) => hasPaid(account),
   maxPlayers: Number(process.env.LIVE_MAX_PLAYERS) || 300,
   open: () => process.env.LIVE !== 'off',
+  // LIVE_PEER=off: every Friend game is played on the API, as before games could be played directly (docs/emergency-stop.md).
+  peers: () => process.env.LIVE_PEER !== 'off',
   log: (event, fields) => log('ops', event, fields),
 });
 attachLive(server, hub, originAllowed);

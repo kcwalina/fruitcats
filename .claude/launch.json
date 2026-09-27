@@ -23,6 +23,19 @@
       "autoPort": true
     },
     {
+      "name": "web-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "apps/web",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
+    },
+    {
       "name": "studio-api",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
@@ -43,6 +56,18 @@
         "--fake-sign-in"
       ],
       "port": 8790
+    },
+    {
+      "name": "api-local-fake-any",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "api:local",
+        "--",
+        "--fake-sign-in"
+      ],
+      "port": 8791,
+      "autoPort": true
     }
   ]
 }

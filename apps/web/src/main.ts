@@ -5,6 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
+import { keepPictures } from './offline';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
@@ -22,6 +23,7 @@ import { openShowcase, renderShowcase, showcaseArrow, showcaseClick, showcaseEsc
 import { deckForKey, isReady, listDecks, customKey, loadChosenDeck, saveChosenDeck, firstDeck, ownedDeckKeys } from './mydecks';
 import { addOpen, closeAddSheet, closeFriends, friendName, friendsClick, friendsInput, friendsMounted, openFriends, renderChallengeBanner, renderFriends, type FriendsHost } from './friends';
 import { live, onGameFound, onLive, send, startLive, stopLive, wantConnection } from './live';
+import { isPeerMatch } from './peer';
 import {
   enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
   playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
@@ -396,6 +398,13 @@ function startGame(tutorial = false) {
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
   aiRandom = devSeed === undefined || tutorial ? undefined : mulberry(devSeed);
   tutorialGame = tutorial;
+  // Both decks' pictures, kept by the offline worker, so a later game with them shows every card with no connection.
+  keepPictures(game.players.flatMap((pl, p) => {
+    const face = p === mySeat ? yourCardUrl : cardUrl;
+    const ids = [...new Set([...pl.deck, ...pl.hand].map((c) => c.id))];
+    const hero = [`${pl.hero.id}-kitten`, `${pl.hero.id}-bigcat`];
+    return [...ids.flatMap((id) => [face(id), artUrl(id)]), ...hero.flatMap((k) => [face(k), artUrl(k)])];
+  }));
   resetLogSounds(game);
   unitArrivals.clear();
   if (tutorial) startTutorial({
@@ -508,7 +517,7 @@ function onClick(key: string) {
       else {
         openFriends(friendsHost);
         screen = 'friends';
-        if (live.connected && live.match && !ol) send({ t: 'rejoin', match: live.match });
+        if ((live.connected || isPeerMatch(live.match)) && live.match && !ol) send({ t: 'rejoin', match: live.match });
       }
     }
     else if (raw === 'decks') { openDeckBuilder(); screen = 'decks'; }
@@ -713,7 +722,8 @@ function render() {
   // and while an online game is going (or its result is showing). Signing out stops both.
   if (ONLINE && signedIn()) {
     startLive({ render: renderUnlessAnimating });
-    wantConnection(screen === 'friends' || (!!ol && (!ol.end || screen === 'game')));
+    // A Friend game played directly between the two devices needs no connection (peer.ts).
+    wantConnection(screen === 'friends' || (!!ol && !isPeerMatch(ol.info.id) && (!ol.end || screen === 'game')));
   } else if (ONLINE) stopLive();
   // Settings pops in when it opens, not again each time it is redrawn (picking a section) while it is showing.
   const settingsWasOpen = !!app.querySelector('.settings-dialog');
@@ -1344,7 +1354,8 @@ function renderSettings(alreadyOpen: boolean): string {
   const body: Record<SettingsSection, () => string> = {
     gameplay: () => `
       ${row('Animations', 'Show attacks, damage and played cards as they happen', choice('anim', 'on', 'On', animationsEnabled()) + choice('anim', 'off', 'Off', !animationsEnabled()))}
-      ${row('Speed', 'How long the computer pauses, and how fast animations play', choice('speed', 'normal', 'Normal', speed === 'normal') + choice('speed', 'fast', 'Fast', speed === 'fast'))}`,
+      ${row('Speed', 'How long the computer pauses, and how fast animations play', choice('speed', 'normal', 'Normal', speed === 'normal') + choice('speed', 'fast', 'Fast', speed === 'fast'))}
+      ${ONLINE && signedIn() ? `<p class="setting-note">${esc(onlineStatus())}</p>` : ''}`,
     sound: () => row('Sound', '', choice('sound', 'on', 'On', soundEnabled()) + choice('sound', 'off', 'Off', !soundEnabled())),
     account: () => (ACCOUNTS ? `<div class="account-panel">${renderAccountPanel()}</div>` : ''),
     contact: () => (ACCOUNTS ? `<div class="account-panel">${renderContactPanel()}</div>` : ''),
@@ -1370,6 +1381,19 @@ function renderSettings(alreadyOpen: boolean): string {
       </div>
     </div>
   </div>`;
+}
+
+/**
+ * How online play stands, in a sentence, for Settings. The game never depends on our servers to play: this only says
+ * what works while they don't answer, so nobody has to wonder whether something is broken.
+ */
+function onlineStatus(): string {
+  if (!navigator.onLine) return 'You’re offline. Solo, your decks and the Collection work as usual.';
+  if (live.answering === false) {
+    return 'Our servers aren’t answering right now. Solo, your decks and the Collection work as usual, and a game with a '
+      + 'friend that’s already going carries on. New games with friends can start when they’re back.';
+  }
+  return live.answering ? 'Online play is working.' : 'Checking online play…';
 }
 
 function renderRules(): string {
@@ -1634,6 +1658,8 @@ if (ONLINE) onlineTicks(renderUnlessAnimating);
 // a friend, go straight to the game. (Anywhere else, the Friend tile says "Back to the game".)
 if (ONLINE) onGameFound(() => {
   if (screen !== 'home' && screen !== 'friends') return;
+  // A game played directly opens from the other device (or this one), with no connection to the API needed.
+  if (isPeerMatch(live.match) && !ol) { send({ t: 'rejoin', match: live.match! }); return; }
   if (screen !== 'friends') { openFriends(friendsHost); screen = 'friends'; }
   render();   // Play a friend connects, and the connection takes the game back up (welcome's match)
 });

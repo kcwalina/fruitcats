@@ -1,7 +1,7 @@
-/* The Store (storefront.ts), in the owner's chosen design (option A, "parchment", 2026-09-25): one warm paper colour for
-   the whole page, the Home landscape washed into a full-width banner with the Store's own picture, and the cards as
-   the only strong colour. Every item sits on the same stage: a card at a card's size, a deck as its hero's painting in a
-   slim walnut frame. Only the reveal after an order stays dark, like the Collection's viewer. */
+/* The Store (storefront.ts). Its layout is the owner's chosen design (option A, 2026-09-25): a full-width banner, then
+   one list where every item sits on the same stage, a card at a card's size, a deck as its hero's painting in a slim
+   frame. Its colours were parchment until 2026-09-27; now they're Home's night wood (the section "The night wood", at
+   the end of the list rules, overrides the parchment tokens and colours set here). */
 
 .store-screen {
   --paper: #fbf4e8; --paper-2: #f5e9d6; --tile: #fffbf4; --line: #eadcc6;
@@ -413,18 +413,112 @@
 .offer-buy .price-chip { padding: 4px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.22); }
 @media (max-width: 380px) { .offer-buy .buy .price-chip s { display: none; } }
 
-/* Folkborn (2026-09-26): the same parchment layout, in the game's new accents (honey and terracotta, not orange), and
-   the Store's own painting (the Yech of the home screen's Store card) instead of the old cut-out washed into the paper. */
-.store-screen { --accent: #c98f2e; --accent-deep: #8f5a1c; --accent-soft: #f6e6c6; }
-.sb-art {
-  background: url('/ui/card-store.webp') center / cover no-repeat; mix-blend-mode: normal; border-radius: 14px;
-  height: calc(100% - clamp(58px, 6vw, 56px) - env(safe-area-inset-top) - 18px); bottom: 12px;
-  box-shadow: 0 0 0 1px #0d0a08, 0 0 0 4px #1d1712, 0 0 0 5px rgba(255, 236, 205, 0.2), 0 12px 24px rgba(0, 0, 0, 0.35);
-  -webkit-mask: none; mask: none;
+/* ── The night wood (the owner's call, 2026-09-27: the Store looks like Home, not like a page of its own) ──
+   The layout above stays; its colours move to Home's: the glowing night wood behind everything, night-indigo plaques
+   with a thin teal line for tiles, panels and the cart, cream lettering, honey-amber buttons. The banner is the Store's
+   own painting (art/ui/store-banner.webp), a card stall in that same wood, drawn from Home's backdrop. */
+.store-screen {
+  --paper: #121530; --paper-2: #151936; --tile: #1d2146; --line: rgba(130, 214, 228, 0.28);
+  --ink: #f3e7cf; --ink-2: rgba(243, 231, 207, 0.72); --accent: #7fd3e0; --accent-deep: #f0c677; --accent-soft: rgba(226, 173, 78, 0.14);
+  --shade: 0, 0, 0; --good: #a8d98a;
+  isolation: isolate; background: #0e1026;
 }
-.sb-ground { display: none; }
-.store-screen button.store-btn.buy { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, #e2ad4e 55%, #c98f2e); box-shadow: 0 3px 0 #9c6a22, 0 8px 18px -8px rgba(var(--shade), 0.5); }
-.offer-buy .buy { color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); background: linear-gradient(#f3cd7a, #e2ad4e 55%, #c98f2e); box-shadow: 0 3px 0 #9c6a22, 0 8px 18px -8px rgba(var(--shade), 0.5); }
+.store-screen::before {   /* Home's backdrop, fixed behind the scrolling page, a little darker so the plaques read */
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg) center / cover no-repeat;
+}
+@media (orientation: portrait) { .store-screen::before { background-image: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg-tall); } }
+
+.store-banner { background: none; border-bottom: 0; }
+.store-banner::before {   /* the painting, melting into the wood below it: no edge between banner and page */
+  opacity: 1; filter: none; background: url('/ui/store-banner.webp') 72% 55% / cover no-repeat;
+  -webkit-mask: linear-gradient(180deg, #000 60%, transparent 100%); mask: linear-gradient(180deg, #000 60%, transparent 100%);
+}
+.store-banner::after {   /* night under the title, so it reads over the painting; it fades out with the painting */
+  background: linear-gradient(90deg, rgba(12, 13, 34, 0.78) 0%, rgba(12, 13, 34, 0.42) 42%, rgba(12, 13, 34, 0) 68%);
+  -webkit-mask: linear-gradient(180deg, #000 60%, transparent 100%); mask: linear-gradient(180deg, #000 60%, transparent 100%);
+}
+@media (max-width: 560px) {
+  .store-banner::before { background-position: 80% 55%; }
+  .store-banner::after { background: linear-gradient(90deg, rgba(12, 13, 34, 0.8) 0%, rgba(12, 13, 34, 0.5) 50%, rgba(12, 13, 34, 0.05) 85%); }
+}
+.sb-art, .sb-ground { display: none; }
+.sb-eyebrow { color: #f0c677; }
+.sb-eyebrow::before { background: var(--accent); box-shadow: 0 0 8px rgba(127, 211, 224, 0.8); }
+.sb-inner h1 { color: var(--ink); text-shadow: 0 2px 0 #0c0d1f, 0 4px 18px rgba(0, 0, 0, 0.6); }
+.sb-tagline { color: rgba(243, 231, 207, 0.86); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); }
+.store-screen .sb-top .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); border: 0; }
+.store-screen .sb-top .icon-button:hover:not(:disabled) { box-shadow: var(--plaque-edge); }
+.store-screen .sb-top .back-arrow { color: var(--plaque-ink); }
+.cart-badge { background: #d9486c; box-shadow: 0 0 0 2.5px #171a36; }
+.store-notice { color: var(--good); background: rgba(40, 70, 40, 0.75); box-shadow: inset 0 0 0 1px rgba(168, 217, 138, 0.45); }
+
+/* Tabs, words on the wood: cream, the chosen one underlined in glowing teal. */
+.store-tabs { border-bottom-color: rgba(130, 214, 228, 0.25); }
+.store-screen .store-tabs button { color: rgba(243, 231, 207, 0.78); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
+.store-screen .store-tabs button.chosen::after { box-shadow: 0 0 10px rgba(127, 211, 224, 0.7); }
+.tab-intro { color: rgba(243, 231, 207, 0.82); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+.store-empty { background: var(--plaque); border: 0; border-radius: 3px; box-shadow: var(--plaque-edge); }
+
+/* Tiles, cart lines and panels: Home's night plaques. */
+.store-screen .offer, .cart-line, .cart-total, .product-stage {
+  background: var(--plaque); border: 0; border-radius: 3px; box-shadow: var(--plaque-edge);
+}
+.store-screen .offer:hover:not(:disabled) {
+  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.16), inset 0 0 0 1px rgba(150, 230, 240, 0.8), 0 0 0 1px #0c0d1f, 0 16px 28px rgba(0, 0, 0, 0.6);
+}
+.stage { background: radial-gradient(70% 60% at 50% 45%, rgba(127, 211, 224, 0.1) 0%, rgba(127, 211, 224, 0) 100%), rgba(8, 9, 26, 0.35); border-bottom-color: var(--line); }
+.product-stage { background: radial-gradient(70% 60% at 50% 45%, rgba(127, 211, 224, 0.12) 0%, rgba(127, 211, 224, 0) 100%), var(--plaque); }
+.kind { color: #f0c677; background: rgba(226, 173, 78, 0.14); box-shadow: inset 0 0 0 1px rgba(226, 173, 78, 0.3); }
+.info .sub b, .facts .good { color: var(--good); }
+.store-note { background: rgba(23, 26, 54, 0.82); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
+.store-note svg { color: var(--accent); }
+.tester-tools { border-top-color: var(--line); }
+.store-screen button.tester-btn { color: #f0c677; background: var(--plaque); border-color: var(--line); }
+
+/* Buttons that act: honey amber, like Home's. Done and in the cart: moss. */
+.store-screen button.store-btn.buy, .offer-buy .buy {
+  color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
+  background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e);
+  box-shadow: 0 3px 0 var(--honey-dark), 0 8px 18px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.store-screen .offer-buy button.buy:active { box-shadow: 0 1px 0 var(--honey-dark); }
+.offer-buy .buy .price-chip s { color: #3b2610; }
+.offer-buy .price-chip, .store-btn.buy .price-chip { background: rgba(255, 250, 235, 0.38); }
+.offer-buy .buy.in-cart, .offer-buy .buy.done, .owned-pill {
+  color: var(--good); text-shadow: none; background: rgba(60, 90, 50, 0.45); box-shadow: inset 0 0 0 1.5px rgba(168, 217, 138, 0.5);
+}
+.store-screen button.store-btn.ghost { color: var(--ink); background: rgba(23, 26, 54, 0.85); border-color: var(--line); }
+.info .buy { background: rgba(226, 173, 78, 0.12); border-color: rgba(226, 173, 78, 0.45); color: #f0c677; box-shadow: none; }
+.offer.pick.off .info .buy { color: var(--ink-2); background: rgba(8, 9, 26, 0.4); border-color: var(--line); }
+.offer.pick.off .pick-check { background: #171a36; box-shadow: inset 0 0 0 2px rgba(243, 231, 207, 0.4); }
+.pick-check { background: var(--moss-deep); }
+
+/* A product's page, the cart and the bar at the bottom. */
+.facts span { background: rgba(23, 26, 54, 0.85); border-color: var(--line); }
+.facts .good { background: rgba(60, 90, 50, 0.45); border-color: rgba(168, 217, 138, 0.45); }
+.product-info h2, .missing-head h2, .section-title, .store-message h2 { text-shadow: 0 2px 0 #0c0d1f, 0 3px 12px rgba(0, 0, 0, 0.6); }
+.blurb, .section-title span, .inside-label, .store-message p { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+.inside-label b { color: #f0c677; }
+.store-warning, .ct-min { color: #f6d9a0; background: rgba(120, 70, 20, 0.45); box-shadow: inset 0 0 0 1px rgba(240, 198, 119, 0.45); }
+.cl-note { color: #f0c677; }
+.ct-row { color: var(--ink); }
+.stepper { background: rgba(8, 9, 26, 0.45); border-color: var(--line); }
+.buy-bar { background: rgba(18, 20, 46, 0.92); border-top-color: var(--line); box-shadow: 0 -10px 30px -12px rgba(0, 0, 0, 0.7); }
+.bb-total { color: var(--ink); }
+.bb-total small { color: var(--ink-2); }
+@media (hover: hover) and (pointer: fine) { .store-screen { scrollbar-color: rgba(130, 214, 228, 0.35) transparent; } }
+
+/* A deck's painting sits on its tile as a Home tile's picture does: edge to edge under a thin plaque margin, one teal
+   hairline round it, no frame inside the frame. On its page it hangs on the wood itself, in its slim frame. */
+.store-screen .offer .stage:has(.deck-slot) { aspect-ratio: auto; padding: 7px 7px 0; background: none; border-bottom: 0; }
+.store-screen .offer .slot.deck-slot { width: 100%; }
+.store-screen .offer .deck-slot .frame { padding: 0; background: none; box-shadow: none; }
+.store-screen .offer .deck-slot .sight { box-shadow: 0 0 0 1px rgba(130, 214, 228, 0.45), 0 1px 3px rgba(0, 0, 0, 0.7); }
+.product-stage:has(.deck-slot) { padding: 0; background: none; box-shadow: none; }
+.product-stage .deck-slot .frame { box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 18px 40px -12px rgba(0, 0, 0, 0.8), 0 0 40px -8px rgba(127, 211, 224, 0.35); }
+/* "Get · Free" together, in the middle of the big button (Add to cart keeps its price at the end). */
+.store-screen .product-buy button.store-btn.big.get { justify-content: center; gap: 14px; }
 
 /* ── Deck covers (Store and Collection): the hero's painting, whole and at its own shape ──
    The paintings are 3:2, and a cover shows all of it, exactly as it sits on the card: no crop, no stretch. It hangs in

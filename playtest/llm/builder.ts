@@ -12,7 +12,7 @@
 // checkout; a run on PC2024 reports it with its deck code, and `npm run decks -- import` brings it home.
 
 import { arg, flag, numArg, textArg } from '../lib/args';
-import { CARDS, DECKS, cardName, deckCode, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, TERMS, cardName, deckCode, type DeckList } from '../lib/engine';
 import { runJobs } from '../lib/pool';
 import { seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
@@ -74,9 +74,9 @@ const resultsText = (tried: Tried[]) => tried.map((t) =>
   `- ${t.name} (round ${t.round}): ${pct(t.winRate)} overall (${Object.entries(t.vs).map(([k, v]) => `${pct(v)} vs ${k}`).join(', ')}), games last ${t.rounds.toFixed(1)} rounds on average. Shape: ${deckShape(t.deck)}`).join('\n');
 
 export async function buildDeck(o: BuildOptions): Promise<BuildResult> {
-  const heroLine = o.hero ? `The deck's Hero Cat must be ${o.hero} (${cardName(o.hero)}).` : 'Choose the Hero Cat that suits the goal best.';
+  const heroLine = o.hero ? `The deck's Hero must be ${o.hero} (${cardName(o.hero)}).` : 'Choose the Hero that suits the goal best.';
   const messages: ChatMessage[] = [
-    { role: 'system', content: `You are an expert deckbuilder for a new card game, Fruitcats. You build decks that do exactly what they are asked to do, and you read playtest numbers honestly.\n\nHOW THE GAME PLAYS\n${gameText()}` },
+    { role: 'system', content: `You are an expert deckbuilder for a new card game, ${TERMS.game}. You build decks that do exactly what they are asked to do, and you read playtest numbers honestly.\n\nHOW THE GAME PLAYS\n${gameText()}` },
     {
       role: 'user',
       content: `${cardPoolText()}\n\n${RULES}\n\nTHE STARTER DECKS (for reference)\n${starterText()}\n\n` +
@@ -173,7 +173,7 @@ export async function runDeckBuild(o: BuildOptions & { save?: boolean; key?: str
       ...(saved ? [`Saved to the deck library as \`${saved}\`.`, ''] : []),
     ] : []),
     '## Every deck tried', '',
-    '| Round | Deck | Hero Cat | Overall | ' + o.opponents.map((d) => `vs ${d.name}`).join(' | ') + ' | Rounds |',
+    '| Round | Deck | Hero | Overall | ' + o.opponents.map((d) => `vs ${d.name}`).join(' | ') + ' | Rounds |',
     '|---|---|---|---|' + o.opponents.map(() => '---|').join('') + '---|',
     ...r.tried.map((t) => `| ${t.round} | ${t.name}${t === r.pick ? ' ✓' : ''} | ${cardName(t.deck.hero)} | ${pct(t.winRate)} | ${o.opponents.map((d) => pct(t.vs[d.name] ?? 0)).join(' | ')} | ${t.rounds.toFixed(1)} |`),
     '',
@@ -193,7 +193,7 @@ export async function deckBuildCommand(): Promise<number> {
   const goal = textArg('goal');
   if (!goal) { console.error('deck-build --goal <what the deck is for> [--hero ID] [--vs DECK,…] [--candidates 3] [--rounds 2] [--games 40] [--save]'); return 1; }
   const hero = arg('hero');
-  if (hero && CARDS[hero]?.type !== 'Hero Cat') { console.error(`${hero} is not a Hero Cat.`); return 1; }
+  if (hero && CARDS[hero]?.type !== 'Hero Cat') { console.error(`${hero} is not a Hero.`); return 1; }
   const summary = await runDeckBuild({
     provider: getProvider(arg('provider') ?? 'pc2024', arg('model')),
     goal, hero,

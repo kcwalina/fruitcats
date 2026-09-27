@@ -1,10 +1,10 @@
-"""Draw the Via Mochi account avatars ("Pawtraits") with the same image model and plush style as the Hero Cats.
+"""Draw the Via Mochi account avatars ("Portraits"): everyday ones are folk creatures; Legend ones come with a card.
 
     python tools/generate_avatars.py                 # draw every avatar that has no image yet
     python tools/generate_avatars.py --only lemon    # one avatar
     python tools/generate_avatars.py --force         # redraw
 
-Everyday Pawtraits are plain fruit-hooded cats anyone can pick. Legend Pawtraits come with a Legendary card: owning
+Everyday Portraits are folk creatures anyone can pick. Legend Portraits come with a Legendary card: owning
 the card unlocks its avatar (docs/accounts.md, Avatars). Images are square, head-and-shoulders portraits made to
 be shown in a circle, saved at 512px: everyday ones to art/avatars/<id>.webp, Legend ones to their card set's
 folder (content/<yyyy>/<mm>/<set>/avatars/<id>.webp, see LEGEND_SETS). Every run costs money, so existing files are skipped.
@@ -24,16 +24,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from generate_art import API_VERSION, MODELS, ROOT, access_token, multipart, post  # noqa: E402
 
 STYLE = (
-    "An avatar portrait of a cute collectible mascot cat drawn as a soft plush toy, in a simple flat kawaii sticker "
-    "style: bold clean black outlines, completely flat colours, no gradients and almost no shading. Head and "
-    "shoulders only, the face large and centred, filling most of the frame, facing the viewer, made to be cropped "
-    "into a circle for a profile picture. The face is minimal and sewn-on looking: two tiny black dot eyes set wide "
-    "apart, a small soft smile, two round pink blush ovals on the cheeks, three short black stripes on the forehead, "
-    "and three long straight black whiskers on each side of the face. The cat wears a soft fruit-shaped hood over its "
-    "head, with its two little cat ears poking out through the hood. Toy-like and huggable, never realistic, no fur "
-    "texture, no 3D render. Absolutely no text, letters, numbers, symbols, logos, borders, frames or watermarks."
+    "An avatar portrait of one cute, gentle creature from world folklore, in a soft storybook style: gently painterly "
+    "soft 3D with smooth rounded shapes, warm lantern light from one side, a friendly face with kind eyes, lovable and "
+    "never scary, never a caricature of a real people. Head and shoulders only, the face large and centred, filling "
+    "most of the frame, facing the viewer, made to be cropped into a circle for a profile picture. Simple and readable "
+    "at a small size. No text, letters, numbers, logos, borders, frames or watermarks."
 )
-# Legend Pawtraits come with the most expensive cards. They stay in the clean, cute Hero Cat look (simple and readable
+# Legend Portraits come with the most expensive cards. They stay in the clean, cute Hero Cat look (simple and readable
 # at icon size); what makes them special is bright, joyful colour, a radiant golden backdrop and a happy hero pose. The
 # game adds the rest around them: a turning foil ring, a glow and a shine (apps/web/src/account.ts, pawtrait()).
 LEGEND_STYLE = (
@@ -46,12 +43,12 @@ LEGEND_STYLE = (
     "Joyful, sweet and huggable, never scary, never realistic, no 3D render. Absolutely no text, letters, numbers, "
     "logos, borders, frames or watermarks."
 )
-EVERYDAY_BACKGROUND = "Background: one plain flat pastel colour ({colour}) filling the whole square, nothing else."
+EVERYDAY_BACKGROUND = "Background: one soft plain warm colour ({colour}) with a faint darker vignette, nothing else."
 LEGEND_BACKGROUND = ("Background: a radiant sunburst of warm gold and soft cream rays spreading from behind the head, "
                      "with three or four big simple four-pointed white-gold sparkles. Bright, warm and celebratory.")
 # Every Legend is drawn from real Hero Cat art, so it matches the game's own look.
-# Each Legend Pawtrait comes with a card, so it lives in that card's set folder (the site publishes each set's
-# avatars/ at /avatars/, apps/web/vite.config.ts). Everyday Pawtraits belong to no set and stay in art/avatars/.
+# Each Legend Portrait comes with a card, so it lives in that card's set folder (the site publishes each set's
+# avatars/ at /avatars/, apps/web/vite.config.ts). Everyday Portraits belong to no set and stay in art/avatars/.
 LEGEND_SETS = {
     "legend-tango": "content/2026/09/starter-box/avatars",
     "legend-nova": "content/2026/09/heat-wave/avatars",
@@ -59,22 +56,23 @@ LEGEND_SETS = {
 }
 LEGEND_REFERENCE = "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"
 
-# id: (subject, background colour or None for a Legend Pawtrait, reference image for a known character)
+# id: (subject, background colour or None for a Legend Portrait, reference image for a known character)
 AVATARS = {
-    # Everyday Pawtraits: two per fruit family.
-    "lemon": ("a pale cream cat wearing a bright yellow lemon hood with a little green leaf", "pale butter yellow", None),
-    "orange": ("a ginger cat wearing a round orange-fruit hood with a green stem", "pale apricot", None),
-    "apple": ("a white cat wearing a shiny red apple hood with a stalk and a leaf", "pale apple green", None),
-    "pear": ("a soft grey cat wearing a green pear hood with a brown stalk", "pale cream", None),
-    "strawberry": ("a calico cat wearing a red strawberry hood with tiny seeds and a green leafy top", "pale pink", None),
-    "blueberry": ("a black cat wearing a round blueberry hood with a little crown-shaped top", "pale lavender", None),
-    "pineapple": ("a tabby cat wearing a golden pineapple hood with spiky green leaves", "pale peach", None),
-    "coconut": ("a chocolate-brown cat wearing a brown coconut-shell hood", "pale sky blue", None),
-    "watermelon": ("a white cat with a black patch wearing a green striped watermelon hood", "pale mint", None),
-    "cantaloupe": ("an orange tabby wearing a netted cantaloupe-melon hood", "pale sea green", None),
-    "peapod": ("a black-and-white tuxedo cat wearing a green pea-pod hood", "pale spring green", None),
-    "pumpkin": ("a grey tabby wearing an orange pumpkin hood with a curly vine", "pale beige", None),
-    # Legend Pawtraits: each comes with its Legendary card.
+    # Everyday Portraits: folk creatures from around the world (Folkborn, 2026-09-26). The ids are the old fruit names,
+    # because accounts store the id; the names players see are in viamochi-id's Avatars.cs.
+    "lemon": ("a Polish domowik house spirit: a small round furry old fellow with a long soft grey beard, bushy eyebrows, droopy sleepy eyes, a big soft pink nose, an embroidered white linen shirt", "warm honey", None),
+    "orange": ("a Chinese feifei: a small fluffy raccoon-dog-like creature with soft grey-brown fur, a big bushy white-tipped tail curled beside its face and a gentle comforting smile", "soft moss green", None),
+    "apple": ("a Chinese household hedgehog spirit with soft spines, a tiny white topknot and a small red lucky knot charm, gentle smile", "dusty rose", None),
+    "pear": ("a Persian pari: a small graceful winged being with soft feathered wings, a delicate jewelled headband, flowing robe with Persian patterns", "pale turquoise", None),
+    "strawberry": ("a Filipino nuno sa punso: a tiny old spirit with a long white beard and a wide conical woven salakot hat, twinkling eyes", "warm sand", None),
+    "blueberry": ("a Kashmiri yech: a small dark soft civet-like sprite wearing a white cap, a few snowflakes around it, sly friendly smile", "soft slate blue", None),
+    "pineapple": ("a Ghanaian mmoatia: a tiny leafy forest spirit with a face of soft bark and a crown of banana leaves, wise gentle eyes", "leaf green", None),
+    "coconut": ("a Fijian veli: a small furry forest spirit wearing a band of patterned brown-and-black tapa cloth and a hibiscus flower behind one ear", "terracotta", None),
+    "watermelon": ("a Venezuelan momoy: a tiny bearded little mountain-lake spirit in a palm-fibre hat trimmed with feathers, leaves and flowers", "misty lilac", None),
+    "cantaloupe": ("a Scottish selkie pup: a round soft grey seal with big gentle dark eyes and a little shawl of seaweed", "sea blue-grey", None),
+    "peapod": ("a Slavic klobuk house bird spirit: a round fluffy little bird with warm brown feathers and golden-tipped wings, a tiny embroidered collar", "warm straw", None),
+    "pumpkin": ("a Chinese dangkang lucky beast: a round cheerful little pig-like creature with two small soft tusks and a golden harvest grain stalk behind its ear", "warm apricot", None),
+    # Legend Portraits: each comes with its Legendary card.
     "legend-tango": ("Tango, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
                      "ears, wearing a bright golden-orange mango hood with a little crown of green palm leaves and a "
                      "small orange bow at the neck, a proud happy smile", None, "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"),

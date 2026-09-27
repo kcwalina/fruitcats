@@ -23,11 +23,11 @@
 }
 
 /* Backdrops */
-/* Folkborn's neutral grove: warm graphite with a little soft glow, so every deck's art style sits well on it. */
-body.menu-screen { background: var(--img-menu-bg) center / cover no-repeat, #2e2d31; }
+/* The mossy forest edge where the folk creatures live, in the board's palette (velvety green, walnut, lantern gold). */
+body.menu-screen { background: var(--img-menu-bg) center / cover no-repeat, #1c2418; }
 @media (orientation: portrait) { body.menu-screen { background-image: var(--img-menu-bg-tall); } }
 body.game-screen {
-  background: linear-gradient(rgba(20, 20, 24, 0.35), rgba(20, 20, 24, 0.5)), var(--img-menu-bg) center / cover no-repeat, #2e2d31;
+  background: linear-gradient(rgba(20, 20, 24, 0.35), rgba(20, 20, 24, 0.5)), var(--img-menu-bg) center / cover no-repeat, #1c2418;
 }
 
 /* Buttons: soft 3D that presses down on click. :where() keeps this base style at the lowest
@@ -714,26 +714,25 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
   --linen: #f6efe0; --linen-2: #e7dac0; --card-face: linear-gradient(180deg, var(--linen), var(--linen-2));
 }
 
-/* Home tiles: each picture hangs like a work in a gallery. A slim dark walnut moulding, a narrow charcoal mat with a
-   fine bevel around the picture, and the name set on the mat below it like a museum label. The frame stays quiet so
-   the picture is what you see. Each creature comes from a different folk tale, in its own art style
+/* Home tiles: each picture on a walnut plaque like the board's panels, a thin brass line around the plaque and the
+   picture, the name below it in cream. Quiet, so the picture is what you see. Each creature comes from a different folk tale, in its own art style
    (docs/folk-creatures.md, Home screen tiles). */
 .modes .mode-card {
   padding: 7px 7px 0; gap: 0; justify-content: flex-start; overflow: visible; border: none; border-radius: 3px;
-  background: linear-gradient(180deg, #34302b, #2a2622);
-  box-shadow: 0 0 0 1px #0d0a08, 0 0 0 4px #1d1712, 0 0 0 5px rgba(255, 236, 205, 0.1), 0 14px 26px rgba(0, 0, 0, 0.55);
+  background: var(--plaque);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #1a130e, 0 12px 24px rgba(0, 0, 0, 0.55);
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.modes .mode-card:hover { transform: translateY(-3px); box-shadow: 0 0 0 1px #0d0a08, 0 0 0 4px #1d1712, 0 0 0 5px rgba(255, 236, 205, 0.16), 0 18px 30px rgba(0, 0, 0, 0.6); }
+.modes .mode-card:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.16), inset 0 0 0 1px rgba(232, 196, 128, 0.8), 0 0 0 1px #1a130e, 0 16px 28px rgba(0, 0, 0, 0.6); }
 .modes .mode-card img, .modes .mode-card.mini img {
   position: static; width: 100%; height: auto; min-width: 0; min-height: 0; aspect-ratio: 1; object-fit: cover;
-  border-radius: 1px; filter: none; box-shadow: 0 0 0 1px rgba(255, 238, 210, 0.2), 0 1px 3px rgba(0, 0, 0, 0.7);
+  border-radius: 1px; filter: none; box-shadow: 0 0 0 1px rgba(214, 174, 106, 0.45), 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 .modes .mode-card.mini img { aspect-ratio: 2.6; object-position: center 35%; }
 .modes .mode-text, .modes .mode-card.mini .mode-name { position: static; width: 100%; box-sizing: border-box; padding: 7px 4px 9px; background: none; }
 .modes .mode-card.mini .mode-name { padding: 6px 4px 8px; }
-.modes .mode-name { color: #efe6d6; font-weight: 600; letter-spacing: 0.3px; text-shadow: none; }
-.modes .mode-sub { color: rgba(239, 230, 214, 0.62); text-shadow: none; }
+.modes .mode-name { color: var(--plaque-ink); font-weight: 600; letter-spacing: 0.3px; text-shadow: none; }
+.modes .mode-sub { color: var(--plaque-muted); text-shadow: none; }
 .modes .mode-card.soon img { filter: saturate(0.45) brightness(0.8); }
 .mode-badge { z-index: 3; }
 /* The line under a tile's name: "Coming soon" quietly, a game to continue in moss green. */
@@ -872,3 +871,7 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .clock-chip, .emote-bubble { color: #3b2e22; }
 .clock-chip.overtime, .clock-chip.low { color: #b8321f; }
 .clock-chip.paused { color: #7a6650; }
+
+/* The title on the forest: warm cream with a soft lantern glow (it was cool white with an aqua glow on the grey grove). */
+.title h1 { color: #f3e7cf; text-shadow: 0 0 18px rgba(240, 190, 90, 0.35), 0 3px 0 #1a130e, 0 8px 18px rgba(0, 0, 0, 0.6); }
+.title p { color: rgba(243, 231, 207, 0.88); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }

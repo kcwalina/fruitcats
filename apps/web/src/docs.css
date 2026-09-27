@@ -1,5 +1,5 @@
 /* The documentation (docs.html, rules.html, cards.html, collection.html, wallpapers.html): the game's look (the
-   graphite grove behind, walnut and honey for the bars, light linen pages), made for long reading. */
+   mossy forest behind, walnut and honey for the bars, light linen pages), made for long reading. */
 :root {
   --wood-dark: #36251a;
   --wood: #5e4129;
@@ -27,7 +27,7 @@ body {
   font-family: Nunito, 'Segoe UI', system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.6;
-  background: url('/ui/grove.webp') center / cover fixed, #2e2d31;
+  background: url('/ui/forest.webp') center / cover fixed, #1c2418;
 }
 
 a { color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 2px; }

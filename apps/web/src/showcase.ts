@@ -381,7 +381,8 @@ export function renderShowcase(): string {
     top = `<div class="collection-top">${back(deck ? 'deck' : 'decks', deck ? DECKS[deck.key]?.name ?? 'Back' : 'Collection')}<h1 class="col-title">All cards</h1>${settingsButton()}</div>`;
     body = renderGrid();
   } else {
-    top = `<div class="collection-top">${backButton()}<h1 class="col-title">Collection</h1>${settingsButton()}</div>`;
+    // The first screen opens under its painting (skin.css, Painted banners), with the name written large on it.
+    top = `<div class="collection-top over-scene">${backButton()}<span></span>${settingsButton()}</div>`;
     body = renderDecks();
   }
   return `
@@ -420,6 +421,8 @@ function renderDecks(): string {
   const n = showcase.length;
   return `
     <div class="decks-page" data-keep-scroll="decks">
+      <div class="scene-bg scene-collection" aria-hidden="true"></div>
+      <header class="scene-title"><h1>Collection</h1><p>Every card you have, deck by deck.</p></header>
       <div class="deck-covers">
         <button class="deck-cover" data-click="col:tab:showcase" aria-label="Showcase, ${n} ${n === 1 ? 'card' : 'cards'}">
           ${showcaseCover}

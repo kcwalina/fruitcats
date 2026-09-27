@@ -1,4 +1,4 @@
-// The Store screen (docs/store-plan.md, Store experience): a Decks tab and a Cards tab, a deck's page, the cart, an
+// The Store screen (docs/store-plan.md, Store experience): the Folkborn tab and the Legacy tab, a deck's page, the cart, an
 // explicit confirmation step and, after an order, the new cards revealed one by one. It's built on the Collection's
 // dark gallery (showcase.css) with store.css on top.
 //
@@ -9,7 +9,7 @@
 import './store.css';
 import { CARDS, SETS, TERMS, cardName, type DeckList } from '@fruitcats/engine';
 import {
-  deckPrice, deckWith, formatPrice, maxCopies, missingForDeck,
+  deckPrice, deckWith, formatPrice, isLegacySet, maxCopies, missingForDeck,
   type CardProduct, type DeckProduct, type NotSold, type Quote,
 } from '@fruitcats/store';
 import { rarity, rarityMark } from './rarity';
@@ -39,6 +39,9 @@ type View = { kind: 'browse' } | { kind: 'deck'; product: string } | { kind: 'ca
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'] as const;
 
 let view: View = { kind: 'browse' };
+/** The list's tab: Folkborn's decks (the main one), or the Legacy decks from before the folklore re-theme. */
+type Tab = 'main' | 'legacy';
+let tab: Tab = 'main';
 /** A line under the header after something happened ("Added 3 cards to your cart"). */
 let notice = '';
 let loading = false;
@@ -80,6 +83,7 @@ let unanswered: string | null = null;
 /** Open the Store from Home. It shows what it knows at once and asks the API for the latest. */
 export function openStore(host: StoreHost) {
   view = { kind: 'browse' };
+  tab = 'main';
   notice = '';
   checkout = null;
   reveal = null;
@@ -120,6 +124,7 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
     case 'deck': view = { kind: 'deck', product: arg }; break;
     case 'card': view = { kind: 'card', product: arg }; break;
     case 'browse': view = { kind: 'browse' }; break;
+    case 'tab': tab = arg === 'legacy' ? 'legacy' : 'main'; view = { kind: 'browse' }; break;
     case 'retry': refresh(host); break;
     case 'cart': view = canBuy() ? { kind: 'cart' } : { kind: 'browse' }; break;
     case 'add': {
@@ -288,9 +293,11 @@ async function getFree(product: string, host: StoreHost) {
 }
 
 function startReveal(order: Order) {
-  // Commons first, the rarest last (a Hero Cat last of all): the reveal ends on the best card.
-  const cards = Object.keys(order.grants).sort((a, b) =>
+  // Commons first, the rarest last (a Hero Cat last of all): the reveal ends on the best card. A card this game doesn't
+  // know (from a set since deleted, like Heat Wave) isn't shown.
+  const cards = Object.keys(order.grants).filter((id) => CARDS[id]).sort((a, b) =>
     RARITIES.indexOf(rarity(a)) - RARITIES.indexOf(rarity(b)) || (CARDS[a].type === 'Hero Cat' ? 1 : 0) - (CARDS[b].type === 'Hero Cat' ? 1 : 0) || a.localeCompare(b));
+  if (!cards.length) return;
   reveal = { cards, copies: order.grants, index: 0, all: false };
   view = { kind: 'browse' };
 }
@@ -324,7 +331,7 @@ export function renderStore(): string {
     : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck') : backButton('store:browse', 'Store');
   // The page scrolls as one: the banner, then the page's content. Bars for buying stay fixed at the bottom.
   return `
-  <div class="store-screen" data-keep-scroll="store-${view.kind}">
+  <div class="store-screen" data-keep-scroll="store-${view.kind}${view.kind === 'browse' ? `-${tab}` : ''}">
     <header class="store-banner ${view.kind === 'browse' ? '' : 'slim'}">
       <div class="sb-ground" aria-hidden="true"></div>
       <div class="sb-art" role="img" aria-label="A market stall"></div>
@@ -372,18 +379,29 @@ function priceChip(full: number, now: number): string {
 }
 
 /**
- * Everything for sale as one list (the owner's call, 2026-09-25): no banner ads, tabs or filters. Decks first, then the
- * single cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck is its hero's painting, whole, in a
- * slim walnut frame.
+ * Two tabs (the owner's call, 2026-09-27): Folkborn, the main one, for the decks of the folklore game, and Legacy, for
+ * the free decks from before it (sets marked `legacy`). No banner ads or filters. In each, decks first, then the single
+ * cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck is its hero's painting, whole, in a slim
+ * frame.
  */
 function renderShop(): string {
   const cat = catalog()!;
   const owned = ownedNow();
-  const decks = Object.values(cat.products).filter((p): p is DeckProduct => p.kind === 'deck');
-  const cards = Object.values(cat.products).filter((p): p is CardProduct => p.kind === 'card')
+  const here = Object.values(cat.products).filter((p) => isLegacySet(p.set) === (tab === 'legacy'));
+  const decks = here.filter((p): p is DeckProduct => p.kind === 'deck');
+  const cards = here.filter((p): p is CardProduct => p.kind === 'card')
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
+  const list = here.length
+    ? `<div class="offers">${decks.map((p, i) => renderDeckOffer(p, i < 4)).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>`
+    : tab === 'main'
+      ? '<div class="store-empty"><h2>New decks are on the way</h2><p>The first Folkborn deck comes to the Store soon.</p></div>'
+      : '<div class="store-empty"><h2>No Legacy decks</h2></div>';
+  const tabButton = (t: Tab, label: string) =>
+    `<button role="tab" class="${tab === t ? 'chosen' : ''}" aria-selected="${tab === t}" data-click="store:tab:${t}">${label}</button>`;
   return `<main class="store-main">
-      <div class="offers">${decks.map((p, i) => renderDeckOffer(p, i < 4)).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>
+      <nav class="store-tabs" role="tablist" aria-label="Store">${tabButton('main', 'Folkborn')}${tabButton('legacy', 'Legacy')}</nav>
+      ${tab === 'legacy' ? '<p class="tab-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : ''}
+      ${list}
       <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</span></p>
       ${renderTesterTools()}
     </main>`;

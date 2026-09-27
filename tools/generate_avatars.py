@@ -51,8 +51,6 @@ LEGEND_BACKGROUND = ("Background: a radiant sunburst of warm gold and soft cream
 # avatars/ at /avatars/, apps/web/vite.config.ts). Everyday Portraits belong to no set and stay in art/avatars/.
 LEGEND_SETS = {
     "legend-tango": "content/2026/09/starter-box/avatars",
-    "legend-nova": "content/2026/09/heat-wave/avatars",
-    "legend-reaper": "content/2026/09/heat-wave/avatars",
 }
 LEGEND_REFERENCE = "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"
 
@@ -76,14 +74,6 @@ AVATARS = {
     "legend-tango": ("Tango, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
                      "ears, wearing a bright golden-orange mango hood with a little crown of green palm leaves and a "
                      "small orange bow at the neck, a proud happy smile", None, "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"),
-    # Nova and Reaper are drawn by the Heat Wave card work to match their cards (content/2026/09/heat-wave/avatars/); don't redraw them from these older descriptions.
-    "legend-nova": ("Nova, the Starfruit Voyager: a sunny golden-tabby cat wearing a bright lemon-yellow hood shaped "
-                    "like a five-pointed starfruit star, one small glowing star tucked by its ear, wide-eyed and "
-                    "delighted, a wonder-filled smile", None, None),
-    "legend-reaper": ("Reaper, the Carolina Sphynx: a round, chubby, smooth peachy-pink cartoon kitten with big "
-                      "pointy ears (drawn simply, like the other mascots, no wrinkles), wearing a glossy bright "
-                      "cherry-red chili-pepper hood with a little curly green stem on top, two tiny cute flames beside "
-                      "it, a cheeky playful grin", None, None),
 }
 
 

@@ -5,9 +5,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DECKS, HIDDEN, RULES_VERSION, legalActions, type Action, type PlayerView } from '@fruitcats/engine';
 import {
-  ASK_MS, OVERTIME_CLAIM_MS, PACES, PROTOCOL, rankedRules, type ChallengeOptions, type ClientMessage, type ServerMessage,
+  ASK_MS, OVERTIME_CLAIM_MS, PACES, PEER_LINK_MS, PROTOCOL, PeerHost, rankedRules,
+  type ChallengeOptions, type ClientMessage, type PeerPollAnswer, type PeerSaveAnswer, type ServerMessage,
 } from '@fruitcats/match';
-import { CHALLENGE_MS, createHub } from '../src/live/hub';
+import { CHALLENGE_MS, PEER_GONE_MS, createHub } from '../src/live/hub';
 import { IDLE_MS, Match, RESULT_KEEP_MS, type MatchHost, type MatchRecord } from '../src/live/match';
 import { tableStore } from '../src/live/records';
 import type { Row, Table } from '../src/tables';
@@ -43,6 +44,8 @@ const FRIENDS: Record<string, string[]> = { [A]: [B], [B]: [A], [C]: [], [D]: []
 const PAID = new Set([D]);
 let maxPlayers = 100;
 let open = true;
+/** LIVE_PEER: Friend games may be played directly between the devices. */
+let peersOn = true;
 /** viamochi-id, or the storage behind the deck check, not answering (restarting). */
 let idDown = false;
 let storageDown = false;
@@ -63,6 +66,7 @@ function makeHub() {
     async paid(account) { return PAID.has(account); },
     get maxPlayers() { return maxPlayers; },
     open: () => open,
+    peers: () => peersOn,
     store,
     async verify(token) { const id = token.slice(4); return NAMES[id] ? { id, name: NAMES[id] } : null; },
     async friendsOf(account) { if (idDown) throw new Error('friends: 503'); return FRIENDS[account] ?? []; },
@@ -87,7 +91,7 @@ interface Player {
 }
 
 /** Ask to be let in, then connect. */
-async function connect(id: string, letIn = true): Promise<Player> {
+async function connect(id: string, letIn = true, peer = false): Promise<Player> {
   if (letIn) expect(await hub.enter(id)).toEqual({ status: 'in' });
   const inbox: ServerMessage[] = [];
   const p: Player = {
@@ -101,7 +105,7 @@ async function connect(id: string, letIn = true): Promise<Player> {
     if (m.t === 'match') { p.view = m.view; p.match = m.info.id; }
     if (m.t === 'view') p.view = m.view;
   }, () => {});
-  p.send({ t: 'hello', token: `tok-${id}`, protocol: PROTOCOL, rules: RULES_VERSION, avatar: 'cat-jam' });
+  p.send({ t: 'hello', token: `tok-${id}`, protocol: PROTOCOL, rules: RULES_VERSION, avatar: 'cat-jam', peer });
   await flush();
   return p;
 }
@@ -147,6 +151,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
   maxPlayers = 100;
   open = true;
+  peersOn = true;
   idDown = false;
   storageDown = false;
   makeHub();
@@ -818,5 +823,237 @@ describe('after a restart', () => {
     back.send({ t: 'rejoin', match: id });
     await flush();
     expect(back.last('match')!.view.actions).toBe(saved[0].played.length);
+  });
+});
+
+// ── Friend games played directly between the two devices ─────────────────────────────────────────
+
+/** Sam and Pippin, both on games that can play directly; Sam asks, Pippin says yes. */
+async function startPeerGame(options = RELAXED): Promise<{ sam: Player; pippin: Player; id: string }> {
+  const sam = await connect(A, true, true), pippin = await connect(B, true, true);
+  sam.send({ t: 'challenge', to: B, deck: STARTER, options, lives: 9 });
+  await flush();
+  pippin.send({ t: 'accept', id: pippin.last('challenge')!.id, deck: OTHER, lives: 9 });
+  await flush();
+  return { sam, pippin, id: sam.last('peer')!.match };
+}
+
+const call = async <T>(account: string, id: string, what: string, body: Record<string, unknown> = {}) => {
+  const [status, answer] = await hub.peer(account, id, what, body);
+  return { status, answer: answer as T };
+};
+
+/**
+ * Sam's device runs the game (PeerHost) and Pippin's talks to it through a pretend direct connection, as two browsers
+ * would over WebRTC. Sam's device saves every move with the hub, as the game does.
+ */
+async function playDirectly(id: string) {
+  const { answer } = await call<{ record: MatchRecord }>(A, id, 'record', { device: 'sams-phone' });
+  const samSees: ServerMessage[] = [], pippinSees: ServerMessage[] = [];
+  let saves = 0;
+  let records: PeerSaveAnswer['records'];
+  const hostRunner = new PeerHost(answer.record, {
+    local: (m) => samSees.push(m),
+    save: (r) => { saves++; void hub.peer(A, id, 'save', { device: 'sams-phone', played: r.played, end: r.end }); },
+    finished: async (r) => {
+      const [, a] = await hub.peer(A, id, 'save', { device: 'sams-phone', played: r.played, end: r.end });
+      records = (a as PeerSaveAnswer).records;
+      return [records?.[0] ?? undefined, records?.[1] ?? undefined];
+    },
+    rematch() {},
+    forget() {},
+  });
+  hostRunner.open();
+  hostRunner.linked((text) => pippinSees.push(JSON.parse(text)));
+  return { hostRunner, samSees, pippinSees, saves: () => saves, records: () => records };
+}
+
+describe('Friend games played directly between the devices', () => {
+  it('introduces the two devices instead of running the game, when both can', async () => {
+    const { sam, pippin, id } = await startPeerGame();
+    expect(sam.last('peer')).toEqual({ t: 'peer', match: id, seat: 0 });
+    expect(pippin.last('peer')).toEqual({ t: 'peer', match: id, seat: 1 });
+    expect(sam.last('match')).toBeUndefined();
+    expect(hub.counts()).toMatchObject({ matches: 0, peers: 1 });
+    // Friends see them playing, and "I'm here" brings the game back to a device that reopens.
+    expect(hub.here(A).peer).toEqual({ match: id, seat: 0 });
+    expect(hub.here(B)).toMatchObject({ match: id, peer: { match: id, seat: 1 } });
+  });
+
+  it('runs the game on the API as before, when either game can’t play directly', async () => {
+    const sam = await connect(A, true, true), pippin = await connect(B);
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    pippin.send({ t: 'accept', id: pippin.last('challenge')!.id, deck: OTHER, lives: 9 });
+    await flush();
+    expect(sam.last('match')).toBeDefined();
+    expect(sam.last('peer')).toBeUndefined();
+  });
+
+  it('runs the game on the API when LIVE_PEER is off', async () => {
+    peersOn = false;
+    const sam = await connect(A, true, true), pippin = await connect(B, true, true);
+    sam.send({ t: 'challenge', to: B, deck: STARTER, options: RELAXED, lives: 9 });
+    await flush();
+    pippin.send({ t: 'accept', id: pippin.last('challenge')!.id, deck: OTHER, lives: 9 });
+    await flush();
+    expect(sam.last('match')).toBeDefined();
+    expect(sam.last('peer')).toBeUndefined();
+  });
+
+  it('plays a whole game between the devices, checks every move, and records the result', async () => {
+    const { id } = await startPeerGame();
+    const g = await playDirectly(id);
+    expect(g.samSees.find((m) => m.t === 'match')).toBeDefined();
+    const theirs = g.pippinSees.find((m) => m.t === 'match');
+    expect(theirs && theirs.t === 'match' && theirs.info.seat).toBe(1);
+    // Pippin's device never sees Sam's hand.
+    if (theirs?.t === 'match') expect(theirs.view.players[0].hand.every((c) => c.id === HIDDEN)).toBe(true);
+
+    const rnd = rng(7);
+    let pippinView = (theirs as Extract<ServerMessage, { t: 'match' }>).view;
+    let samView = (g.samSees.find((m) => m.t === 'match') as Extract<ServerMessage, { t: 'match' }>).view;
+    for (let i = 0; i < 5000 && samView.winner === null; i++) {
+      if (samView.prompt?.player === 0) g.hostRunner.fromHere({ t: 'act', match: id, seq: samView.actions, action: choose(samView, rnd) });
+      else if (pippinView.prompt?.player === 1) g.hostRunner.fromGuest(JSON.stringify({ t: 'act', match: id, seq: pippinView.actions, action: choose(pippinView, rnd) }));
+      else vi.advanceTimersByTime(ASK_MS + 1);
+      await flush();
+      for (const m of g.samSees.splice(0)) if (m.t === 'view') samView = m.view;
+      for (const m of g.pippinSees.splice(0)) if (m.t === 'view') pippinView = m.view;
+    }
+    expect(samView.winner).not.toBeNull();
+    await flush();
+    expect(g.saves()).toBeGreaterThan(10);
+    expect(hub.counts().peers).toBe(0);
+    const w = samView.winner;
+    if (w !== 'draw') {
+      expect(await store.tally(A, B)).toEqual({ wins: w === 0 ? 1 : 0, losses: w === 1 ? 1 : 0, draws: 0 });
+      expect(g.records()?.[0]).toEqual(await store.tally(A, B));
+    }
+    // Saving again (the answer was lost on the way) hears the same thing, and counts nothing twice.
+    const again = await call<PeerSaveAnswer>(A, id, 'save', { device: 'sams-phone', played: [], end: null });
+    expect(again.answer).toMatchObject({ ok: true, end: { how: 'played', winner: w } });
+    if (w !== 'draw') expect((await store.tally(A, B)).wins + (await store.tally(A, B)).losses).toBe(1);
+  });
+
+  it('refuses a record with a move against the rules, a move rewritten, or a save from the other player', async () => {
+    const { id } = await startPeerGame();
+    const bad = await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'pass' } }] });
+    expect(bad.status).toBe(400);
+    const keep = { seat: 0, action: { t: 'mulligan', uids: [] } };
+    expect((await call(A, id, 'save', { played: [keep] })).status).toBe(200);
+    const rewritten = await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'mulligan', uids: [1] } }] });
+    expect(rewritten.status).toBe(409);
+    expect((await call(B, id, 'save', { played: [keep] })).status).toBe(403);
+    expect((await call(C, id, 'poll', {})).status).toBe(404);
+    // Ending a game still going as though it had been played to the end.
+    expect((await call(A, id, 'save', { played: [keep], end: { winner: 0, how: 'played' } })).status).toBe(400);
+  });
+
+  it('passes each device what the other sends to connect, and nothing to anyone else', async () => {
+    const { id } = await startPeerGame();
+    const offer = { kind: 'offer', attempt: 'x1', sdp: 'v=0 offer' };
+    expect((await call(A, id, 'signal', { signal: offer })).status).toBe(200);
+    // Seat 1 answers; it doesn't offer.
+    expect((await call(B, id, 'signal', { signal: offer })).status).toBe(400);
+    expect((await call<PeerPollAnswer>(A, id, 'poll', {})).answer.signals).toEqual([]);
+    expect((await call<PeerPollAnswer>(B, id, 'poll', {})).answer.signals).toEqual([offer]);
+    expect((await call<PeerPollAnswer>(B, id, 'poll', {})).answer.signals).toEqual([]);
+    const answer = { kind: 'answer', attempt: 'x1', sdp: 'v=0 answer' };
+    await call(B, id, 'signal', { signal: answer });
+    expect((await call<PeerPollAnswer>(A, id, 'poll', {})).answer.signals).toEqual([answer]);
+  });
+
+  it('takes the game over when the two devices can’t reach each other, from its copy of the record', async () => {
+    const { id } = await startPeerGame();
+    const keep = { seat: 0, action: { t: 'mulligan', uids: [] } };
+    await call(A, id, 'save', { device: 'd', played: [keep] });
+    const poll = async (account: string, played?: number) => (await call<PeerPollAnswer>(account, id, 'poll', { device: 'd', linked: false, played })).answer;
+    // Sam's device has a move the hub hasn't been sent yet: not until it has.
+    for (let t = 0; t <= PEER_LINK_MS + 3000; t += 1500) {
+      expect((await poll(A, 2)).serve).toBe(false);
+      expect((await poll(B)).serve).toBe(false);
+      vi.advanceTimersByTime(1500);
+    }
+    // Now it has every move.
+    expect((await poll(A, 1)).serve).toBe(true);
+    expect((await poll(B)).serve).toBe(true);
+    expect(hub.counts()).toMatchObject({ matches: 1, peers: 0 });
+    // Both connect here and carry on where they were.
+    const sam = await connect(A, true, true);
+    expect(sam.last('welcome')!.match).toBe(id);
+    expect(sam.last('welcome')!.peer).toBeFalsy();
+    sam.send({ t: 'rejoin', match: id });
+    await flush();
+    expect(sam.last('match')!.view.actions).toBe(1);
+  });
+
+  it('never takes a game over while one device is simply away', async () => {
+    const { id } = await startPeerGame();
+    for (let t = 0; t <= PEER_LINK_MS * 3; t += 1500) {
+      expect((await call<PeerPollAnswer>(B, id, 'poll', { linked: false })).answer.serve).toBe(false);
+      vi.advanceTimersByTime(1500);
+    }
+  });
+
+  it('lets a player take the win only when the other has been gone too long', async () => {
+    const { id } = await startPeerGame();
+    expect((await call(B, id, 'end', { how: 'claim' })).status).toBe(409);
+    vi.advanceTimersByTime(3 * 60_000 + 1);
+    const claimed = await call<PeerSaveAnswer>(B, id, 'end', { how: 'claim' });
+    expect(claimed.answer.end).toEqual({ winner: 1, how: 'claimed' });
+    expect(await store.tally(B, A)).toEqual({ wins: 1, losses: 0, draws: 0 });
+    // Sam's device, back, hears how it ended.
+    expect((await call<PeerPollAnswer>(A, id, 'poll', {})).answer.end).toEqual({ winner: 1, how: 'claimed' });
+  });
+
+  it('lets a player concede at any time, even when the devices aren’t connected', async () => {
+    const { id } = await startPeerGame();
+    const r = await call<PeerSaveAnswer>(A, id, 'end', { how: 'concede' });
+    expect(r.answer.end).toEqual({ winner: 1, how: 'conceded' });
+  });
+
+  it('stops a second device of the same player once another runs the game', async () => {
+    const { id } = await startPeerGame();
+    await call(A, id, 'record', { device: 'phone' });
+    await call(A, id, 'record', { device: 'tablet' });
+    expect((await call<PeerSaveAnswer>(A, id, 'save', { device: 'phone', played: [] })).answer.replaced).toBe(true);
+    expect((await call<PeerPollAnswer>(A, id, 'poll', { device: 'phone' })).answer.replaced).toBe(true);
+    expect((await call<PeerSaveAnswer>(A, id, 'save', { device: 'tablet', played: [] })).answer.ok).toBe(true);
+  });
+
+  it('starts a rematch, once, with the other player going first', async () => {
+    const { id } = await startPeerGame();
+    await call(A, id, 'end', { how: 'concede' });
+    const r1 = await call<{ record: { id: string; firstPlayer?: number } }>(A, id, 'rematch', {});
+    const r2 = await call<{ record: { id: string } }>(A, id, 'rematch', {});
+    expect(r1.answer.record.id).toBe(r2.answer.record.id);
+    expect(r1.answer.record.id).not.toBe(id);
+    expect(hub.here(B).peer).toEqual({ match: r1.answer.record.id, seat: 1 });
+  });
+
+  it('calls off a game neither device has been heard from in a long time', async () => {
+    const { id } = await startPeerGame();
+    vi.advanceTimersByTime(PEER_GONE_MS + 60_000);
+    expect(hub.counts().peers).toBe(0);
+    expect((await call<PeerPollAnswer>(A, id, 'poll', {})).answer.end).toEqual({ winner: null, how: 'called-off' });
+  });
+
+  it('keeps a game played directly across a restart of the API', async () => {
+    const { id } = await startPeerGame();
+    await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'mulligan', uids: [] } }] });
+    vi.advanceTimersByTime(1500);
+    await flush();
+    const kept = store;
+    hub.stop();
+    hub = createHub({
+      async paid() { return false; }, maxPlayers: 100, open: () => true, peers: () => true,
+      store: kept, async verify(token) { const x = token.slice(4); return { id: x, name: NAMES[x] }; },
+      async friendsOf(a) { return FRIENDS[a]; }, async checkDeck() { return null; }, log() {},
+    });
+    await hub.restore();
+    expect(hub.here(A).peer).toEqual({ match: id, seat: 0 });
+    const { answer } = await call<{ record: { played: unknown[] } }>(A, id, 'record', {});
+    expect(answer.record.played).toHaveLength(1);
   });
 });

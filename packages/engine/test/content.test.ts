@@ -18,7 +18,7 @@ describe('rules text comes from the data', () => {
     expect(suggestText(CARDS['SB1-C09'])).toBe('Ambush. Lucky. Deal 2 damage to a unit.');
     expect(suggestText(CARDS['SB1-C01'])).toBe('Swift. Zest: gets +1 Power this round.');
     expect(suggestText(CARDS['SB1-O09'])).toBe('Ambush. Cancel an attack. (The attacker stays exhausted.)');
-    expect(suggestText(CARDS['HW1-X01'])).toBe("Guardian. Goodbye: Summon a 2/2 Jack-o'-Lantern with Guardian.");
+    expect(suggestText(CARDS['BP1-B04'])).toBe('Guardian. Goodbye: Summon an Ant.');
     expect(heroTexts(CARDS['SB1-H03']).kitten).toBe('Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.');
   });
   it('never writes a retired word (Treats, Pounce, Zoomies…) on any card', () => {

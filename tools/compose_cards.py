@@ -254,7 +254,7 @@ CHROME = {
     "signature": (["#2a1a15", "#120b09"], "#120b09"),
     "signature-rainbow": (["#1a1420", "#0b0810"], "#0b0810"),
 }
-# Signature: a set's top card is printed only this way (docs/heat-wave-set.md). Charred black stone with
+# Signature: a set's top card is printed only this way (docs/store-plan.md, Signature cards). Charred black stone with
 # glowing lava cracks running through it. Cards opt in with "signature": true; it's never a default print.
 # "signature": "rainbow" is the same stone with cracks glowing in every colour: Mochi's, the game's own card.
 SIGNATURE = "signature"

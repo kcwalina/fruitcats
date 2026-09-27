@@ -128,6 +128,8 @@ button.corner-signin { height: 44px; padding: 0 18px; border-radius: 999px; font
 .setting + .setting { border-top: 1px solid rgba(120, 70, 20, 0.15); }
 .setting-name { display: flex; flex-direction: column; font-weight: 700; }
 .setting-name small { font-weight: 600; font-size: 12.5px; color: var(--muted); }
+/* How online play stands (Settings → Gameplay): a quiet line under the settings, never a warning. */
+.setting-note { margin: 4px 0 0; padding-top: 12px; border-top: 1px solid rgba(120, 70, 20, 0.15); font-weight: 600; font-size: 13.5px; color: var(--muted); }
 .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 16px; flex: none; }
 .segmented button { width: 80px; min-height: 40px; padding: 0; }   /* both controls line up */
 /* Settings: a title bar with Close, sections down the left (Contact us at the bottom) and the picked section on the right.
@@ -203,12 +205,12 @@ button.account-face-button:hover { box-shadow: none; }
 @keyframes legend-turn { to { --legend-turn: 360deg; } }
 @keyframes legend-shine { 0%, 55% { left: -110%; } 100% { left: 170%; } }
 @media (prefers-reduced-motion: reduce) { .legend-frame, .legend-shine::after { animation: none; } }
-/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Reaper, the Carolina
-   Sphynx). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
+/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Noelle, the
+   Cranberry Forest Cat). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
    flickers like a fire, and embers rising off it. Markup (as pawtrait() in apps/web/src/account.ts builds it):
 
      <span class="signature-frame SIZE-CLASS">
-       <img src="…/legend-reaper.webp" alt="">
+       <img src="…/legend-noelle.webp" alt="">
        <span class="sig-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
      </span>
 */

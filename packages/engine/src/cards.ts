@@ -55,6 +55,8 @@ export interface SetData {
   released?: string;
   /** Its decks are the starter decks everyone has for free, so its cards come with them (docs/store-plan.md). */
   starter?: boolean;
+  /** Its decks are from before the folklore re-theme: the Store shows them apart, in its Legacy tab. */
+  legacy?: boolean;
   requires?: string[];
   families?: Record<string, FamilyDef>;
   mechanics?: Record<string, MechanicDef>;

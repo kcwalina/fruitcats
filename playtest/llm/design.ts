@@ -102,7 +102,7 @@ export interface DesignOptions {
   families?: string[];
 }
 
-/** The families a goal names ("an aggressive Pepper deck" names Pepper). */
+/** The families a goal names ("an aggressive Citrus deck" names Citrus). */
 export function familiesIn(goal: string): string[] {
   const all = new Set(Object.values(CARDS).map((c) => c.family));
   return [...all].filter((f) => new RegExp(`\b${f}\b`, 'i').test(goal));

@@ -14,8 +14,7 @@ the data, not the text.
 The goal is **the most interesting and desirable deck in the game**, now and later. Two judges shaped this
 version: one for gameplay, one for theme and names.
 
-- **Who it's for:** young adults, mostly young women. The Starter Box is for kids and Heat Wave is for teenage
-  boys.
+- **Who it's for:** young adults, mostly young women. The Starter Box is for kids.
 - **The artist:** Basil Leaf (basiilleaf), who draws fruit cats: grey-white cats with three stripes on the
   forehead, dot eyes, a ":3" mouth, pink cheeks and long whiskers, in fruit hoods. Her style is pixel-line
   doodles, washed greys with strawberry red and leaf green, and goofy expressions. The Hero Cats already follow

@@ -8,17 +8,22 @@
 //     full, the game shows your place in the waiting line and asks again every few seconds. Players who have bought
 //     cards go first.
 //
+// A Friend game played directly between the two devices (peer.ts) needs neither while it's going: its messages go to
+// peer.ts instead of the connection, and come back from it as if the API had sent them.
+//
 // This file only keeps the connection and what the server last said. The screens are friends.ts (Play a friend) and
 // online.ts (an online game); main.ts draws them.
 
 import { RULES_VERSION } from '@fruitcats/engine';
 import {
   ENTER_EVERY_MS, ENTER_PATH, HERE_EVERY_MS, HERE_PATH, LIVE_PATH, PROTOCOL,
-  type ChallengeNote, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type Person, type SentNote, type ServerMessage,
+  type ChallengeNote, type ClientMessage, type EnterAnswer, type FriendStatus, type HereAnswer, type PeerNote, type Person, type SentNote,
+  type ServerMessage,
 } from '@fruitcats/match';
 import { API } from './api';
 import { authedFetch, refreshAccount, session, token } from './auth';
 import { NO_RETRY } from './net';
+import { PEER_ABLE, isPeerMatch, onPeer, resumeLocalGame, sendPeer, startPeer, stopPeer } from './peer';
 
 export type Challenge = ChallengeNote;
 
@@ -45,6 +50,10 @@ export const live = {
   outgoing: null as { id: string; to: string; until: number } | null,
   /** A game you're in that's still going, if any. */
   match: null as string | null,
+  /** That game is played directly with the other device (peer.ts), not through the connection. */
+  peer: null as PeerNote | null,
+  /** Whether the Fruitcats API answered the last time it was asked (null: not asked yet). Shown in Settings. */
+  answering: null as boolean | null,
 };
 
 const outgoingFrom = (sent: SentNote[] | undefined) => {
@@ -84,6 +93,9 @@ export function startLive(host: { render(): void }) {
   render = host.render;
   if (signedIn || !session()) return;
   signedIn = true;
+  // A game this device was running directly, when it was last open: carry on with it, even before the API answers.
+  const kept = resumeLocalGame();
+  if (kept) { live.match = kept.match; startPeer(kept, false); gameFound(); }
   void sayHere();
 }
 
@@ -98,6 +110,7 @@ export function stopLive() {
   live.outgoing = null;
   live.match = null;
   live.waiting = null;
+  stopPeer();
 }
 
 async function sayHere() {
@@ -106,7 +119,8 @@ async function sayHere() {
   // Connected, the connection says it all; hidden (another tab, a locked phone), nothing is said.
   if (!live.connected && document.visibilityState === 'visible') {
     const s = session();
-    const answer = await post<HereAnswer>(HERE_PATH, { avatar: s?.avatar ?? 'cat', name: s?.displayName });
+    const answer = await post<HereAnswer>(HERE_PATH, { avatar: s?.avatar ?? 'cat', name: s?.displayName, peer: PEER_ABLE });
+    live.answering = !!answer;
     if (answer) {
       const changed = answer.open !== live.open || answer.match !== live.match
         || answer.challenges.map((c) => c.id).join() !== live.incoming.map((c) => c.id).join()
@@ -114,6 +128,8 @@ async function sayHere() {
       const found = !!answer.match && answer.match !== live.match;
       live.open = answer.open;
       if (!live.connected) { live.incoming = answer.challenges; live.outgoing = outgoingFrom(answer.sent); live.match = answer.match; }
+      // A game played directly: keep it going (it opens when the player asks for it).
+      if (answer.peer) startPeer(answer.peer, false);
       if (found && !live.connected) gameFound();
       if (changed) render();
     }
@@ -175,6 +191,7 @@ export function reconnect() {
 }
 
 export function send(msg: ClientMessage): boolean {
+  if ('match' in msg && isPeerMatch(msg.match)) return sendPeer(msg);
   if (!socket || socket.readyState !== WebSocket.OPEN || !live.connected) return false;
   socket.send(JSON.stringify(msg));
   return true;
@@ -233,7 +250,7 @@ async function open() {
   ws.onopen = () => {
     // A local API with fake sign-in takes the name from here; the real one reads it from the token.
     const s = session();
-    ws.send(JSON.stringify({ t: 'hello', token: t, protocol: PROTOCOL, rules: RULES_VERSION, avatar: s?.avatar ?? 'cat', name: s?.displayName } satisfies ClientMessage));
+    ws.send(JSON.stringify({ t: 'hello', token: t, protocol: PROTOCOL, rules: RULES_VERSION, avatar: s?.avatar ?? 'cat', name: s?.displayName, peer: PEER_ABLE } satisfies ClientMessage));
   };
   ws.onmessage = (e) => {
     let msg: ServerMessage;
@@ -254,6 +271,7 @@ async function open() {
 function received(msg: ServerMessage) {
   switch (msg.t) {
     case 'welcome':
+      live.answering = true;
       live.connected = true;
       live.connecting = false;
       retry = 0;
@@ -263,7 +281,8 @@ function received(msg: ServerMessage) {
       live.match = msg.match;
       live.outgoing = outgoingFrom(msg.sent);
       live.incoming = msg.incoming;
-      // A game still going: back into it.
+      // A game still going: back into it (a game played directly is asked for from the other device).
+      if (msg.peer) startPeer(msg.peer, false);
       if (msg.match) send({ t: 'rejoin', match: msg.match });
       break;
     case 'update': live.outdated = true; wanted = false; break;
@@ -292,6 +311,8 @@ function received(msg: ServerMessage) {
       if (live.outgoing?.id === msg.id) live.outgoing = null;
       break;
     case 'match': live.match = msg.end ? null : msg.info.id; live.outgoing = null; break;
+    // A Friend game starts, played directly between the two devices: it opens as soon as it can.
+    case 'peer': live.match = msg.match; live.outgoing = null; startPeer({ match: msg.match, seat: msg.seat }, true); break;
     case 'end': if (live.match === msg.match) live.match = null; break;
   }
   for (const fn of listeners) fn(msg);
@@ -300,3 +321,10 @@ function received(msg: ServerMessage) {
 }
 
 const MATCH_MESSAGES = new Set<ServerMessage['t']>(['match', 'view', 'clock', 'emote', 'away', 'back', 'nudge', 'hint', 'end', 'rematch']);
+
+// A game played directly: its messages reach the screens exactly as the API's would.
+onPeer(received, (note) => {
+  live.peer = note;
+  if (note) live.match = note.match;
+  render();
+});

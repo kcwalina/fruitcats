@@ -16,7 +16,6 @@ Win rate against the starter decks:
 | Zest Rush (Sunny) | 48–49% | 53% | 52% |
 | Orchard Guard (Pippin) | 48–49% | 59% | 55% |
 | Mango Tango (Tango) | 50% | 53% | 52% |
-| Five Alarm (Heat Wave) | 48–51% | 53% | 49% |
 | Picnic Club (Berry Picnic) | 60–61% | 67% | 66% |
 
 With Health 5, Guardian and Orchard's healing made it too strong there (+11). Health 4 keeps it a card every deck

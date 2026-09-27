@@ -213,7 +213,7 @@ function contentSets(): { root: string; folder: string; code: string; data: Reco
         const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8'));
         sets.push({ root, folder, code: String(data.set).toLowerCase(), data, registered: registered.has(`${year}/${month}/${folder}`) });
       }
-  // A set that builds on another (Heat Wave uses the Starter Box's Garden cards) comes after it.
+  // A set that builds on another (Berry Picnic uses the Starter Box's Garden cards) comes after it.
   const needs = (s: { data: Record<string, unknown> }) => (s.data.requires as string[] | undefined) ?? [];
   return sets.sort((a, b) => (needs(a).includes(String(b.data.set)) ? 1 : needs(b).includes(String(a.data.set)) ? -1 : 0));
 }

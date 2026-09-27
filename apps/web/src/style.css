@@ -203,12 +203,12 @@ button.account-face-button:hover { box-shadow: none; }
 @keyframes legend-turn { to { --legend-turn: 360deg; } }
 @keyframes legend-shine { 0%, 55% { left: -110%; } 100% { left: 170%; } }
 @media (prefers-reduced-motion: reduce) { .legend-frame, .legend-shine::after { animation: none; } }
-/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Reaper, the Carolina
-   Sphynx). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
+/* The Signature Pawtrait frame: for the Pawtrait that comes with a set's Signature card (Noelle, the
+   Cranberry Forest Cat). A step above the Legend frame's rainbow-gold ring: a ring of molten lava that turns, a glow that
    flickers like a fire, and embers rising off it. Markup (as pawtrait() in apps/web/src/account.ts builds it):
 
      <span class="signature-frame SIZE-CLASS">
-       <img src="…/legend-reaper.webp" alt="">
+       <img src="…/legend-noelle.webp" alt="">
        <span class="sig-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
      </span>
 */

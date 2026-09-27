@@ -35,12 +35,12 @@ Still to do is listed at the end.
   from the engine: the caller passes in `registerSet`, so the sets always land in the caller's engine.
 - **Released and prototype sets.** A set's `status` is `released` or `prototype`. The public game loads
   released sets only; playtests, simulations and tests load prototypes too. So a designed but unreleased
-  deck (Heat Wave today) can be playtested by bots and agents without appearing in the game.
-- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/09/heat-wave/`. Everything a
+  deck (Berry Picnic today) can be playtested by bots and agents without appearing in the game.
+- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/12/berry-picnic/`. Everything a
   set owns lives in its folder:
 
   ```
-  content/2026/09/heat-wave/
+  content/2026/12/berry-picnic/
     set.json                   cards, tokens, families, mechanics, decks
     plugin.ts                  optional
     art/prompts.json           art direction
@@ -59,7 +59,6 @@ Still to do is listed at the end.
 | Set | Folder | Status | Plugin |
 |---|---|---|---|
 | Starter Box (SB1) | `content/2026/09/starter-box/` | released; its decks are free in the Store | yes: the bot's Zest heuristic |
-| Heat Wave (HW1) | `content/2026/09/heat-wave/` | prototype | none needed |
 | Domowiki (DW1) | `content/2026/10/domowiki/` | released, the starter (docs/domowiki-set.md) | none needed |
 | Pari (PR1) | `content/2026/10/pari/` | released, a second starter (docs/pari-set.md) | none needed |
 | Aluxes (AL1) | `content/2026/11/aluxes/` | released, a third starter (docs/aluxes-set.md) | none needed |
@@ -140,7 +139,7 @@ with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
 
 ## Validation: check-set
 
-`npm run check-set` (or `npm run check-set -- heat-wave --games 40`) checks a set before it can be played:
+`npm run check-set` (or `npm run check-set -- berry-picnic --games 40`) checks a set before it can be played:
 
 - **Structure:** ids start with the set code, and no card appears twice or in another set.
 - **Card basics:** types and rarities are valid, units have stats, and every family is defined.
@@ -166,7 +165,8 @@ is also where the site's card art comes from: **a build carries no card art**, a
 art isn't in the storage yet (see below).
 
 ```
-npm run publish-pack -- heat-wave            # check-set, then upload; --dry-run to only check
+npm run publish-pack -- berry-picnic         # check-set, then upload; --dry-run to only check
+npm run publish-pack -- hw1 --unpublish      # take a set out of the pack index, by code; its files stay on the storage
 ```
 
 - **Where packs live:** the pack storage, the `fruitcatspacks` storage account (ViaMochi Production,
@@ -206,7 +206,7 @@ saved.
 - **Plugins:** a pack whose cards need plugin code the game doesn't have is skipped with a console warning
   (the engine's `missingPieces` names what's missing). Code only arrives with a new build of the game.
 - **Prototypes:** prototype packs are taken only with `?prototypes` in the address, so a playtester can
-  play an unreleased set on the real site. Heat Wave is published this way.
+  play an unreleased set on the real site. Berry Picnic is published this way.
 
 ## The Studio (future: not to build yet)
 

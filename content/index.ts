@@ -9,7 +9,6 @@
 import type { Plugin, SetData } from '../packages/engine/src/cards';
 import starterBox from './2026/09/starter-box/set.json';
 import starterBoxPlugin from './2026/09/starter-box/plugin';
-import heatWave from './2026/09/heat-wave/set.json';
 import berryPicnic from './2026/12/berry-picnic/set.json';
 import berryPicnicPlugin from './2026/12/berry-picnic/plugin';
 import mochi from './2026/12/mochi/set.json';
@@ -26,7 +25,6 @@ export interface ContentSet {
 
 export const CONTENT: ContentSet[] = [
   { data: starterBox as unknown as SetData, plugin: starterBoxPlugin, folder: '2026/09/starter-box' },
-  { data: heatWave as unknown as SetData, folder: '2026/09/heat-wave' },
   { data: domowiki as unknown as SetData, folder: '2026/10/domowiki' },
   { data: pari as unknown as SetData, folder: '2026/10/pari' },
   { data: aluxes as unknown as SetData, folder: '2026/11/aluxes' },
@@ -48,7 +46,7 @@ export interface LoadOptions {
 /** Register the sets with an engine: pass its `registerSet`. Returns the sets it loaded. */
 export function loadContent(register: (data: SetData, plugin?: Plugin) => void, options: LoadOptions = {}): ContentSet[] {
   const chosen = CONTENT.filter((c) => c.data.status === 'released' || options.prototypes);
-  // Sets are listed in release order, so one that builds on another (Heat Wave uses the Starter Box's
+  // Sets are listed in release order, so one that builds on another (Berry Picnic uses the Starter Box's
   // Garden cards and mechanics) is registered after it.
   for (const c of chosen) {
     const keepDecks = c.data.status === 'released' || options.prototypeDecks !== false;

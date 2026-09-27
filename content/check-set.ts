@@ -2,8 +2,8 @@
 // Studio) who changes data, not code.
 //
 //   npm run check-set                      # every set
-//   npm run check-set -- heat-wave         # one set, by folder name or code (hw1)
-//   npm run check-set -- hw1 --games 40    # also play its decks against the released decks (bots)
+//   npm run check-set -- berry-picnic      # one set, by folder name or code (bp1)
+//   npm run check-set -- bp1 --games 40    # also play its decks against the released decks (bots)
 //
 // Errors (the set can't be played as it is) fail the check; warnings (worth a look) don't.
 
@@ -52,7 +52,7 @@ function checkSet(set: ContentSet, games: number): Report {
   }
 
   // 1. Structure
-  if (!code || !data.name) r.errors.push('set.json needs "set" (a code like HW1) and "name".');
+  if (!code || !data.name) r.errors.push('set.json needs "set" (a code like BP1) and "name".');
   if (!['released', 'prototype'].includes(String(data.status))) r.errors.push(`"status" must be "released" or "prototype", not ${JSON.stringify(data.status)}.`);
   for (const req of data.requires ?? []) if (!CONTENT.some((c) => c.data.set === req)) r.errors.push(`It requires set ${req}, which isn't in content/.`);
 

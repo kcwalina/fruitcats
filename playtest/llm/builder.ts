@@ -4,7 +4,7 @@
 // PC2024's gpt-oss is free and runs from the dashboard; fireworks-k3 (Kimi K3, about $0.20-0.40 a build) is
 // for a build worth a frontier model, run from the laptop that has the key. A paid build stops at --max-usd.
 //
-// An LLM builds a deck for a goal: "an aggressive Pepper deck", "beat Orchard Guard", "a fun deck for a
+// An LLM builds a deck for a goal: "an aggressive Citrus deck", "beat Orchard Guard", "a fun deck for a
 // beginner". It designs a few candidates under the real deckbuilding rules (checked with the deck builder's
 // own deckProblems), the bots play each against the opponents (`--vs`, the starters by default), the LLM sees
 // the numbers and builds better versions, and at the end it picks the one that fits the goal best (not always

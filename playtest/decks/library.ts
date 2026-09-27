@@ -1,4 +1,4 @@
-// The deck library: custom decks a playtest can name by a short key (`--deck pepper-swarm`), kept in
+// The deck library: custom decks a playtest can name by a short key (`--deck citrus-swarm`), kept in
 // library.json next to this file. Decks come from deck hunts that beat the starters, from the LLM deck
 // builder (one a night, `decks nightly`), and from players' deck codes pasted in. The file is bundled into
 // runner.mjs, and `decks nightly` also publishes it to the pack storage, where PC2024's runner takes the
@@ -22,7 +22,7 @@ export interface LibraryDeck extends DeckList {
   source: DeckSource;
   /** One sentence: the idea behind it, or what it was built for. */
   about: string;
-  /** For a built deck, what it was asked to be ("an aggressive Pepper deck"). */
+  /** For a built deck, what it was asked to be ("an aggressive Citrus deck"). */
   goal?: string;
   /** Its bot win rate against the starter decks when it was added. */
   vsStarters?: number;
@@ -157,7 +157,7 @@ export function removeFromLibrary(key: string): boolean {
 const plain = (d: DeckList): DeckList => ({ name: d.name, hero: d.hero, cards: { ...d.cards } });
 
 /**
- * Any way of naming a deck, as a DeckList: a starter's key, a prototype set's deck key (five-alarm), a library
+ * Any way of naming a deck, as a DeckList: a starter's key, a prototype set's deck key (picnic-club), a library
  * key, a deck code (FC1.…) or a JSON file with a DeckList. Throws, saying why, when it's none of them or the
  * deck breaks the rules.
  */

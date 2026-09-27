@@ -132,7 +132,7 @@ inside the game, on every platform. The Store only adds the tester list below.
   - single cards: common $0.49, uncommon $0.99, rare $1.49, Legendary Cat $4.99
   - a set's top Hero Cat, sold on its own: **$19.99**, as a premium **Signature** print (higher later, not for the first set) (see below)
   - decks: **$9.99**, Hero Cat included
-  - A whole deck bought card by card costs about 3× the deck price (Five Alarm: about $30), so the deck is
+  - A whole deck bought card by card costs about 3× the deck price (about $30), so the deck is
     clearly the good deal, and singles are for finishing a collection.
 - **Paid singles are premium prints.** A single sold on its own comes in a finish that climbs with its price
   (Foil, then Gold, then Signature), with showcase-quality art, so every card someone pays for is one they'd want
@@ -155,7 +155,8 @@ inside the game, on every platform. The Store only adds the tester list below.
 
 ## Store experience
 
-- **The Store screen:** one list of decks and single cards, all the same size, plus a cart (no tabs or filters).
+- **The Store screen:** two tabs, **Folkborn** (the main one, for the decks of the folklore game) and **Legacy** (the
+  free fruit-cat decks from before it), each a list of decks and single cards, all the same size, plus a cart (no filters).
 - **A deck** shows every card in it and marks the cards you already own.
 - **A single card** opens its own page with a full-size preview before buying.
 - **Without an account:** the Store tile is locked like the Collection; tapping it opens the in-game "Sign in or
@@ -189,9 +190,11 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
   ids; `STORE_TEST_CHECKOUT` = `on` lets testers place test orders; `STORE_SETS` limits the sets on sale. In the
   game, the Store is in every build (`src/flags.ts`, `STORE`); for accounts the API doesn't let in, the tile stays
   "Coming soon".
-- **In the game** (`apps/web/src/storefront.ts`, `shop.ts`): one list of everything for sale, all tiles the same
-  size, each labelled Deck or Card (the owner's call, 2026-09-25: no banner, tabs or filters; announcements of new
-  releases, if any, will be their own experience). A deck looks like a boxed deck of cards; a card is shown as itself.
+- **In the game** (`apps/web/src/storefront.ts`, `shop.ts`): everything for sale, all tiles the same size, each
+  labelled Deck or Card (the owner's call, 2026-09-25: no banner or filters; announcements of new releases, if any,
+  will be their own experience). Two tabs since 2026-09-27 (the owner's call): **Folkborn**, the main one, and
+  **Legacy**, for the sets marked `"legacy": true` in their set.json (the old Starter Box: Zest Rush, Orchard Guard,
+  Mango Tango, free). Until the first Folkborn deck is on sale, the Folkborn tab says new decks are on the way. A deck looks like a boxed deck of cards; a card is shown as itself.
   A tile's price is its **Add to cart** button (one tap adds it; then it reads "In cart" and opens the cart), and
   tapping the picture or name opens the item's page, where **Add to cart** sits right under the name, on the first
   screen of a phone (the owner's call, 2026-09-25: a price that only opened the page, and a button at the bottom of
@@ -218,7 +221,7 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 ### On the live site: a preview for every playtester
 
 Since 2026-09-25 (the owner's call, after trying the whole test flow), the live API runs `STORE=preview`,
-`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,HW1` (SB1 since 2026-09-26: the old Starter Box decks, free): every signed-in player can open the Store and see every deck, card and
+`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1` (since 2026-09-26: the old Starter Box decks, free): every signed-in player can open the Store and see every deck, card and
 price, but **Add to cart** says "Coming soon", and there's no cart. The free decks' **Get** works in preview too. The owner sees the same. Test orders placed during
 the tester test are kept but count for nothing (no cards, not listed).
 
@@ -226,7 +229,7 @@ To go back to the full test flow for someone (cart, test checkout, reveal, "Remo
 `STORE_TEST_CHECKOUT=on`, their id in `STORE_TESTERS`. Tell the artist tool session first: a settings change restarts
 the API.
 
-**Signature cards** (`"signature"` in the card's data, like Reaper) exist only as their Signature print: the Store
+**Signature cards** (`"signature"` in the card's data, like Noelle, BP1-X03) exist only as their Signature print: the Store
 shows that print, labels them "Signature" and prices them at `SIGNATURE_PRICE` ($19.99), never as a standard copy.
 
 ## Making it real: what is left
@@ -261,10 +264,10 @@ source of truth for money, and ours can always be rebuilt from it.
 
 **What Paddle gets, and why ownership can't be faked.**
 
-- **Paddle gets no cards.** It gets a line item and price ("Five Alarm deck, $9.99", or "3 single cards") and our
+- **Paddle gets no cards.** It gets a line item and price ("Picnic Club deck, $9.99", or "3 single cards") and our
   order id and account id as custom data. It sells the right to have those items in the player's Via Mochi account,
   and gives back its own transaction id (`txn_…`).
-- **Owning a card is a row in our database:** account A has 2 copies of `HW1-R03`, from order O. `HW1-R03` is the
+- **Owning a card is a row in our database:** account A has 2 copies of `DW1-D04`, from order O. `DW1-D04` is the
   card's fixed id from its set's data; copies are counts, not objects with their own ids (a player market might need
   serial numbers later).
 - **No collisions:** order ids are 128-bit random, and the server refuses an existing id for a different account or
@@ -408,7 +411,7 @@ a refund always lands. Paying is for testers (`STORE=testers`) or everyone (`STO
 
 - **Prices:** confirm or change the starting points (decks $9.99, singles $0.49 to $4.99, a $4.99 minimum order).
   They live in `packages/store`, so a change is made in one place and covered by tests.
-- **What's on sale at launch:** which sets (`STORE_SETS`; testers see the Halloween set today) and which singles.
+- **What's on sale at launch:** which sets (`STORE_SETS`; testers see the free Starter Box decks today) and which singles.
   Every card sold needs its final art.
 - **Premium prints and Signature cards** (Foil, Gold, Signature, First Edition): decide whether any are in the
   launch, or come later as their own work (new finishes, one product per variant).
@@ -498,7 +501,7 @@ is saved either way and can be played once the player has every card.
 
 ## From the accounts work
 
-- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now Nova and Reaper, then
+- **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now
   Mochi's `legend-mochi` once its art is in; Tango's `legend-tango` is open to everyone) must also unlock the
   Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id, RowKey the Pawtrait id)
   in the same step that grants the card, and remove it on a refund. There's no endpoint for

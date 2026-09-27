@@ -296,10 +296,11 @@ const initial = (name: string) => esc(name.trim().charAt(0).toUpperCase() || '?'
 
 /**
  * A Pawtrait, however big `cls` makes it. Legend Pawtraits are unmistakable at any size: a turning rainbow-gold foil
- * ring, a golden glow and a shine that sweeps across. A set's Signature card (Reaper, for Heat Wave) gets a step above:
- * a turning ring of molten lava with a flickering glow and rising embers. Everyday ones are a plain picture.
+ * ring, a golden glow and a shine that sweeps across. The Pawtrait of a set's Signature card gets a step above: a
+ * turning ring of molten lava with a flickering glow and rising embers (none today: the first, Reaper's, left with Heat
+ * Wave). Everyday ones are a plain picture.
  */
-const SIGNATURE = new Set(['legend-reaper']);
+const SIGNATURE = new Set<string>();
 export function pawtrait(id: string, cls: string): string {
   if (SIGNATURE.has(id)) {
     return `<span class="signature-frame ${cls}"><img src="${avatarUrl(id)}" alt="">`

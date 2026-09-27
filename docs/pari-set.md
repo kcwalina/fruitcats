@@ -4,8 +4,8 @@ The second deck of the folklore re-theme ([folk-creatures.md](folk-creatures.md)
 ([domowiki-set.md](domowiki-set.md)). It is a family of paris, the winged beings of Persian tales, and of the
 people, animals and places in their stories.
 
-Status: prototype (2026-09-26). The data is in `content/2026/10/pari/set.json`. Playtests and bots can use it;
-players can't see it yet. Last updated 2026-09-26.
+Status: released (2026-10), a starter deck: every player has it, next to the Domowiki. The data is in
+`content/2026/10/pari/set.json`. Last updated 2026-09-26.
 
 ## The creature
 
@@ -124,8 +124,7 @@ How it was drawn:
 - The cards were composed with `tools/compose_cards.py --set pr1`.
 - The reference image isn't in the repo.
 
-## What's next
+## Released
 
-- The owner reviews the whole deck.
-- Then set `status: "released"` and make Pari a second starter deck next to the Domowiki, so every player has
-  both.
+The owner approved the deck on 2026-09-26. It is `released` and `starter`, so every player has both the Pari
+and the Domowiki. Parijan comes in the gold finish, like Dziadziuś (`apps/web/src/collection.ts`).

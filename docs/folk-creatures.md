@@ -5,8 +5,8 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 inhabited continent, plus backups.
 
 **In the game now: the Domowiki.** Since 2026-09-26 they are the game's starter deck, the one every player has
-(content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)). **Designed: the Pari**, the second deck, a
-prototype waiting for the owner's review (content/2026/10/pari, [pari-set.md](pari-set.md)). The other creatures
+(content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)). **Also in the game: the Pari**, the second
+starter deck, since 2026-09-26 (content/2026/10/pari, [pari-set.md](pari-set.md)). The other creatures
 below are planned decks.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
@@ -34,7 +34,7 @@ generators were left out.
 |---|---|---|---|
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Domovoi.jpg/330px-Domovoi.jpg" width="80"> | [Domowiki](#domowiki) | Poland, Slavic | **In the game (the starter deck).** Every home has its own little old house spirit living behind the stove; keep the home kind and he keeps it lucky. [More](https://en.wikipedia.org/wiki/Domovoy) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/SekienKodama.jpg/330px-SekienKodama.jpg" width="80"> | [Kodama](#kodama) | Japan | Spirits living in old trees; the echo in the mountains is a kodama answering you. [More](https://en.wikipedia.org/wiki/Kodama_(spirit)) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg/330px-An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg" width="80"> | [Pari](#pari) | Persia (Iran) | Winged beings of Persian poetry and fairy tales, once harmful spirits, later the very picture of beauty and goodness. [More](https://en.wikipedia.org/wiki/Par%C4%AB) |
+| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg/330px-An_angel%2C_flying%2C_with_cup_and_wine_flask_%28FGA_F1937.7%29.jpg" width="80"> | [Pari](#pari) | Persia (Iran) | **In the game (a starter deck).** Winged beings of Persian poetry and fairy tales, once harmful spirits, later the very picture of beauty and goodness. [More](https://en.wikipedia.org/wiki/Par%C4%AB) |
 | <img src="https://www.rappler.com/tachyon/2025/10/Tabi-tabi-po.jpg" width="80"> | [Nuno sa punso](#nuno-sa-punso) | Philippines | The old man of the mound: step past an anthill without saying "tabi tabi po" (excuse me) and he'll make you pay. [More](https://en.wikipedia.org/wiki/Nuno_sa_punso) |
 | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/MET_1986_510.jpg/330px-MET_1986_510.jpg" width="80"> | [Yech](#yech) | Kashmir, India | A sprite in a white cap that comes near houses on snowy nights; snatch the cap and it grants your wishes. [More](https://searchkashmir.org/yach/) |
 | <img src="http://k.sinaimg.cn/n/sinacn20190527s/201/w641h360/20190527/2b98-hxntqyz1002047.jpg/w700d1q75cms.jpg" width="80"> | [Hedgehog Immortals](#hedgehog-immortals) | North China | A hedgehog living in your courtyard may be a spirit that settles in with the family and keeps it prosperous. [More](https://folklore.elpub.ru/jour/article/view/76) |
@@ -89,7 +89,7 @@ Winged beings of Persian poetry and fairy tales. In the oldest Zoroastrian texts
 centuries they became the image of beauty and goodness, and "pari" is still a word for a beautiful person. Many
 tales are about a pari and a mortal falling in love.
 
-**Designed** (prototype, 2026-09-26): a fast, flying deck whose rules come from the tales: paris come in
+**In the game** (a starter deck since 2026-09-26): a fast, flying deck whose rules come from the tales: paris come in
 companies (Company), slip away as doves (Feather Coat), and only the third Orange-Peri lives. Its hero is
 Parijan, the littlest pari. Cards, lore and art: [pari-set.md](pari-set.md).
 

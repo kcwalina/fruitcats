@@ -1240,12 +1240,13 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
 function renderYard(s: GameState, p: PlayerId, targets: Set<string>, attackers: Set<number>): string {
   const yard = s.players[p].yard;
   // The opponent's hand (face-down backs, or face up in a teaching game) sits at the start of their Yard, across
-  // from their Offerings, so their bar holds only who they are.
+  // from their Offerings, so their bar holds only who they are. On the wide board the backs are left out (their
+  // plaque's count says as much, and the room is the Yard's), unless the hand is being shown.
   const hand = s.players[p].hand.length;
   const foeHand = p === theirSeat
     ? `<div class="foe-hand-slot">${shownHand(s) ?? `<div class="foe-hand">${s.players[p].hand.map(() => '<div class="card-back"></div>').join('')}</div>`}
       <div class="pantry-label foe-hand-label">${hand} in hand</div></div>` : '';
-  return `<section class="yard ${p === mySeat ? 'me' : 'foe'}">
+  return `<section class="yard ${p === mySeat ? 'me' : 'foe'}" style="--n:${Math.max(1, yard.length)}">
     ${foeHand}
     ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === mySeat ? 'Your' : 'Their'} Yard is empty</div>`}
     ${renderPantry(s, p)}

@@ -1202,7 +1202,17 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
   }
   .game { grid-template-columns: minmax(0, 1fr) clamp(284px, 25vw, 340px); gap: 14px; }
   .board.wide { grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: calc(var(--vh, 1vh) * 1); }
-  .board.wide .yard { padding-left: calc(var(--tray-w) + 24px); padding-right: calc(var(--tray-w) + 24px); gap: 16px; }
+  /* The Offerings bowl takes the Yard's right end. A few units sit centred on the board (the left end padded to match);
+     as more arrive the left padding gives way, down to a margin, and a full Yard of six then shrinks its tiles
+     together rather than spilling off the row. */
+  .board.wide .yard {
+    --need: calc(var(--n, 1) * var(--unit-h) * 0.76 + (var(--n, 1) - 1) * 16px);
+    padding-left: clamp(20px, calc(100% - var(--tray-w) - 16px - var(--need)), calc(var(--tray-w) + 16px));
+    padding-right: calc(var(--tray-w) + 16px); gap: 16px; container-type: inline-size;
+  }
+  .board.wide .unit { height: min(var(--unit-h), 100%, calc((100cqw - (var(--n, 1) - 1) * 16px) / var(--n, 1) / 0.76)); }
+  /* The opponent's card backs stay off the wide board (their plaque counts the hand), unless the hand is shown. */
+  .board.wide .foe-hand-slot:not(:has(.foe-hand.shown)) { display: none; }
   .board.wide .prompt { font-size: 16px; }
   .board.wide .prompt b { font-size: 17px; }
   .board.wide .empty-yard { font-size: 17px; padding: 14px 28px; }

@@ -1226,11 +1226,13 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
-    <div class="uname">${esc(cardName(u.id))}</div>
-    ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
+    <div class="ubox">
+      <div class="uname">${esc(cardName(u.id))}</div>
+      ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
+      <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
+      <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
+    </div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
-    <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     ${u.exhausted ? `<div class="zzz ${resting.tag}">${resting.tag === 'new' ? 'new' : 'zzz'}</div>` : ''}
   </div>`;
 }

@@ -21,6 +21,10 @@ type LoseOnEmptyDraw : LifeRule {}                // drawing from an empty deck 
 // Drawing from an empty deck costs life; `growth` makes each successive one cost more.
 type EmptyDeckDrawCosts : LifeRule { n: int, growth: int = 0 }
 type WinAtCounter : LifeRule { counter: text, n: int }   // first to n of a counter wins (lore)
+// Life as separate objects each with hit points (provinces, towers, zones with defence).
+type LifeObjects : LifeRule { type: CardType, lose-when: int }
+type DamageTiers : LifeRule { tiers: [text] }            // damage moves a unit through named states
+type RuneThresholds : LifeRule { every: int }            // losing n life triggers (a draw, a play)
 
 properties = [
   life = Property { on = player, yields = units }        // .count on a stack, the total on a number

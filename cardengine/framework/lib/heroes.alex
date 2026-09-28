@@ -6,6 +6,7 @@ heroes = Library
 name = 'Heroes'
 version = '0.1'
 core = '1'
+requires = [@common]
 
 type HeroCard : Card {
   face1: Face
@@ -16,9 +17,12 @@ type HeroCard : Card {
 type Face {
   name: text
   power: int?
+  health: int?
   keywords: [Keyword | Applied] = empty
   abilities: [Ability] = empty
 }
+// Equipment for the hero itself, with power and a durability that depletes (Hearthstone).
+type WeaponCard : Card { cost: Cost, power: int, durability: int }
 
 type HeroRule : Rule {}
 extension Game { hero: [HeroRule] = empty }
@@ -29,6 +33,11 @@ type AwakenedKeepsExhaustedState : HeroRule {}
 type AwakenedNeverReverts : HeroRule {}
 type HeroAttacksWhenAwakened : HeroRule { takes-no-damage: bool }
 type PowerOncePerRound : HeroRule {}                  // the face's `exhaust` ability, once a round
+type PowerOncePerGame : HeroRule {}
+type Levels : HeroRule { counter: text, faces: int }   // faces reached by a counter (XP, grow)
+type PayToFlip : HeroRule { cost: Cost }               // the second face is paid for, not earned
+type HeroIsUnit : HeroRule {}                          // the hero fights and takes damage like one
+type HeroRespawns : HeroRule { after: int }            // a defeated hero returns after n turns
 
 extension Face {
   exhaust: effect?

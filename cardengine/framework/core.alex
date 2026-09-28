@@ -13,6 +13,10 @@
 // `Game.on-loss` removed (rules decide game-over through `provide-game-over`); `Filter` takes
 // parameters; a `target` may be a unit or a player; the objects whose rules are live is a query a
 // library may widen (cards under other cards); the scheduler's drain policy is selectable.
+// From the 156-game survey: objects may have 2-D coordinates and a facing, a controller may
+// change, objects may belong to no player, dice are face lists, zones may be created during
+// play, zones carry a role, a rulebook may be a document whose sections rules cite, cards may
+// name their art, and scenarios are a block kind.
 core = Core
 
 version = '1'
@@ -36,12 +40,20 @@ enum Visibility   { none, owner, all, top-card }
 enum Order        { clockwise, counter-clockwise }
 enum RandomSource { shuffle, initiative, coin, die }
 enum Status       { prototype, released, retired }
+// What a zone is for, so libraries can find a game's deck, hand or discard without a parameter.
+enum ZoneRole     { deck, hand, discard, board, life, resource, exile, other }
 
 // -------------------------------------------------------------------------------------------
 // The extension point. Every rule of every library is a subtype. A game lists the rules that
 // apply to it; a rule that is not listed does not apply. There are no behaviour defaults.
 
-type Rule { cites: text? }        // cites: a rulebook citation, copied into logs; never parsed
+// cites: a rulebook citation, copied into logs; a section of a Rulebook document when the game
+// has one, plain text otherwise. Never parsed.
+type Rule { cites: Section | text | nic }
+
+// A rulebook as a document, so citations can be checked and shown.
+type Rulebook : data { title: text, sections: [text: Section] }
+type Section { number: text, text: text }
 
 // A library: a set of helpers over the core that a game may use or ignore. It declares the rule
 // types, card records, keywords and vocabulary it owns, and the other libraries it builds on. A
@@ -70,7 +82,7 @@ type Moment { name: text }
 
 type Game : data {
   name: text
-  rulebook: text?
+  rulebook: Rulebook | text | nic  // a Rulebook document, or a path to one outside Alex
   core: text                      // the core version this document was written against
   uses: [Library]                 // the libraries whose rules, records and vocabulary it may use
   players: Players
@@ -101,6 +113,9 @@ type CardType {
 type Zone {
   name: text
   shape: Shape
+  role: ZoneRole = other
+  width: int?                     // grid zones: columns
+  height: int?                    // grid zones: rows
   visible: Visibility = all
   face-down: bool = false
   count-public: bool = true
@@ -151,7 +166,8 @@ type Card : data {
   name: text
   flavor: text?
   pronoun: text?
-  cites: text?
+  art: text?                      // an asset reference, never inline image data
+  cites: Section | text | nic
   keywords: [Keyword | Applied] = empty
   abilities: [Ability] = empty
 }
@@ -177,9 +193,9 @@ enum ParamType {
   target                          // a unit or a player ("any target", "any character")
   targets
   card                            // a card definition, not an object in play
-  moment, pending, rules, zone
+  moment, pending, rules, zone, coords, object, objects, faces
 }
-enum BlockKind { effect, condition, static }
+enum BlockKind { effect, condition, static, scenario }
 
 // Parameters are in call order; positional arguments bind in that order and any parameter may
 // be given by name; `optional` parameters follow `params` in call order and may be omitted. A
@@ -244,6 +260,7 @@ selectors = [
   all = Selector { yields = players }
   units = Selector { yields = units, params = [from = players], optional = [filters = filters] }
   pending = Selector { yields = pending }         // effects waiting in the scheduler
+  adjacent = Selector { yields = units, params = [to = unit], optional = [range = int] }
 ]
 properties = [
   count = Property { on = units, yields = int }

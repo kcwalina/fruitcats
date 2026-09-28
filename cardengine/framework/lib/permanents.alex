@@ -8,8 +8,10 @@ core = '1'
 requires = [@common]
 
 type PermanentCard : Card {
-  cost: Cost
+  cost: Cost?
+  health: int?                    // a base or location with hit points
   shared: bool = false            // one in play for both players, replaced when another is played
+  capacity: int?                  // how many units may be at it
 }
 
 extension PermanentCard {

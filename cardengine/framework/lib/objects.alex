@@ -18,6 +18,8 @@ type InheritedEffects : ObjectRule {}
 // Stacking onto a unit keeps the unit's damage, counters and attachments (evolve, shift).
 type StackPreservesState : ObjectRule {}
 type StackLeavesTogether : ObjectRule {}          // the whole stack leaves play as one
+type LevelsOnReplay : ObjectRule { counter: text }   // a replayed card enters as a stronger card
+type MergeIntoOne : ObjectRule {}                 // two objects fuse into a replacement (fusion)
 
 actions = [
   stack-onto = ActionKind { name = 'Stack onto a unit' }   // evolve, digivolve, shift
@@ -25,4 +27,6 @@ actions = [
 
 verbs = [
   stack-onto = Verb { on = player, params = [card = card, onto = unit] }
+  swap-card = Verb { on = unit, params = [card = card] }   // keep state, change the printed card
+  merge = Verb { on = units, params = [into = card] }
 ]

@@ -17,9 +17,20 @@ type AttackerChooses : CombatRule { targets: [CombatTarget] }
 type DefenderBlocks : CombatRule { targets: [CombatTarget], max-per-attacker: int? }
 type Lanes : CombatRule { count: int }
 type Retreat : CombatRule { pay: Cost, once-per-turn: bool }
+type TeamAttack : CombatRule {}                   // several units attack as one, powers summed
+type TeamBlock : CombatRule {}                    // several units block one attacker
+type BlockWithHandCard : CombatRule {}            // defend by playing a card from hand as a blocker
+type BlockersNeedKeyword : CombatRule { keyword: Keyword }   // only units with it may block
+type ZoneMatchedBlock : CombatRule {}             // a block works only from the matching zone
+type MutualStrikeExchange : CombatRule { strikes: int }     // alternate strikes into a pool
+type ReversalNegates : CombatRule {}              // a played reversal cancels the attack's damage
+type ComboWindow : CombatRule { resource: text }  // pay mid-attack to add power from hand
+type PokerHandContest : CombatRule { draw: int }  // draw n, rank as a poker hand, higher wins
+type RowRestrictedTargeting : CombatRule {}       // front row shields the back row
 
 // Who may attack, and whom.
 type AttackerMustBeReady : CombatRule {}
+type AttackTargetsPermanents : CombatRule {}     // permanents (a base, a tamer) may be attacked
 type GuardiansFirst : CombatRule {}               // must-be-attacked-first keywords are honoured
 type SneakyIgnoresGuardians : CombatRule {}
 type CancelledAttackerStaysExhausted : CombatRule {}
@@ -54,6 +65,8 @@ type DivineShield : Keyword {}                    // negates the next hit, then 
 type Elusive : Keyword {}                         // cannot be attacked unless the only target
 type BlockableOnlyBy : Keyword { quality: text }  // flying and reach as one rule
 type Ward : Keyword {}                            // cannot be chosen by an opponent's effect
+type Blocker : Keyword {}                         // may block for another unit (intercept)
+type Stun : Keyword {}                            // stunned: cannot ready next round either
 
 actions = [
   attack = ActionKind { name = 'Attack' }
@@ -61,6 +74,7 @@ actions = [
 
 events = [
   attack = Event { fields = [attacker = unit, target = target], cancellable = true }
+  team-attack = Event { fields = [attackers = units, target = target], cancellable = true }
   combat = Event { fields = [attacker = unit, defender = unit] }
   hero-hit = Event {
     fields = [attacker = unit, defender = player, amount = int], cancellable = true
@@ -82,6 +96,8 @@ type OnYouHeal : Ability { holders = [nameof(UnitCard)] }
 
 filters = [
   guardian = Filter {}
+  blocker = Filter {}
+  in-row = Filter { params = [row = text] }
 ]
 
 selectors = [

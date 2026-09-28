@@ -8,6 +8,7 @@ core = '1'
 uses = [
   @common, @units, @spells, @attachments, @heroes, @abilities, @life, @life-stack, @resources
   @turns, @initiative, @combat, @responses, @scheduling, @objects, @families, @decks, @setup
+  @scenarios
 ]
 players = Players { min = 2, max = 2 }              // singular `opponent` is legal in this game
 sets = [@starter-box, @berry-picnic]
@@ -30,13 +31,15 @@ types = [
 
 // §200.1 Zones, one of each per player. §100.5 what is hidden. §4 nobody may look at Candles.
 zones = [
-  Deck = Zone { name = nameof(Deck), shape = pile, visible = none, count-public = true }
-  Hand = Zone { name = nameof(Hand), shape = set, visible = owner }
-  Candles = Zone { name = nameof(Candles), shape = pile, visible = none }
-  Offerings = Zone { name = nameof(Offerings), shape = set, visible = owner, face-down = true }
-  Yard = Zone { name = nameof(Yard), shape = row, visible = all }
+  Deck = Zone { name = nameof(Deck), shape = pile, role = deck, visible = none }
+  Hand = Zone { name = nameof(Hand), shape = set, role = hand, visible = owner }
+  Candles = Zone { name = nameof(Candles), shape = pile, role = life, visible = none }
+  Offerings = Zone {
+    name = nameof(Offerings), shape = set, role = resource, visible = owner, face-down = true
+  }
+  Yard = Zone { name = nameof(Yard), shape = row, role = board, visible = all }
   Hearth = Zone { name = nameof(Hearth), shape = slot, visible = all }
-  Mist = Zone { name = nameof(Mist), shape = pile, visible = all }
+  Mist = Zone { name = nameof(Mist), shape = pile, role = discard, visible = all }
 ]
 
 // §10 Keywords: each is a library's keyword type under our name. §700.3 Lucky plays are free.
@@ -65,6 +68,7 @@ deck-rules = [
 // §5 Setup. Offering two cards is a resource policy below.
 setup = [
   StartsInZone { type = @Hero, zone = @Hearth, face = 1 }             // §5.1
+  ShuffleDeck {}                                                      // §5.2
   OpeningHand { n = 6 }                                               // §5.3
   Mulligan { times = 1, up-to = 3 }                                   // §5.4
   RandomInitiative {}                                                 // §5.6

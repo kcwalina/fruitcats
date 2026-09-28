@@ -1,0 +1,63 @@
+// objectives: winning by something other than life. Races to a counter, shared objectives that
+// are claimed or captured, control of a zone, missions completed, the majority of rounds. About a
+// quarter of the 156 surveyed games win this way. Depends on common for Cost.
+objectives = Library
+
+name = 'Objectives'
+version = '0.1'
+core = '1'
+requires = [@common]
+
+type ObjectiveRule : Rule {}
+extension Game { objectives: [ObjectiveRule] = empty }
+
+// A shared card on the table that players contest: a location, a story, a mission, a scene, a
+// lost soul. It belongs to no player until captured (core: owner may be nothing).
+type ObjectiveCard : Card {
+  score: int = 1                  // what it is worth when claimed or held
+  capturable: bool = true         // may change controller through a won contest
+  ordered: int?                   // its place when objectives must be taken in order
+}
+// A mission or quest with steps; progress is a counter on the card.
+type MissionCard : ObjectiveCard { steps: int = 1, hidden: bool = false }
+// A plot or scheme revealed simultaneously that sets this round's parameters (Game of Thrones).
+type PlotCard : Card { initiative: int = 0 }
+
+type WinOnObjectives : ObjectiveRule { n: int }               // control or complete n objectives
+type ClaimInOrder : ObjectiveRule { n: int, of: int }          // claim n of m ordered objectives
+type ZoneControlWin : ObjectiveRule { zone: Zone, turns: int } // hold a zone for n turns straight
+type ControlPoints : ObjectiveRule { counter: text, n: int }   // score from held objectives
+type RoundsMajority : ObjectiveRule { of: int }               // best of n rounds; the board resets
+type MultipleRaceTracks : ObjectiveRule { counters: [text], n: int }   // first of several to n
+type ScoreWhenHeld : ObjectiveRule { moment: Moment }         // objectives pay their score then
+type PlotReveal : ObjectiveRule {}                            // all players reveal a plot together
+
+actions = [
+  claim = ActionKind { name = 'Claim an objective' }
+  reveal-plot = ActionKind { name = 'Reveal a plot' }
+]
+
+// Contest for an objective: attacker and defender compare a stat or a total, the winner takes it.
+events = [
+  contest = Event { fields = [object = object, attacker = player, defender = player] }
+]
+
+extension ObjectiveCard {
+  on-claim: effect?
+  on-lose: effect?
+  static: static?
+}
+type OnClaim : Ability { holders = [nameof(ObjectiveCard)] }
+type OnLose : Ability { holders = [nameof(ObjectiveCard)] }
+type ObjectiveStatic : Ability { holders = [nameof(ObjectiveCard)], kind = static }
+
+properties = [
+  progress = Property { on = unit, yields = int }              // a mission's steps completed
+  controlled = Property { on = units, yields = int }           // objectives a player holds
+]
+
+verbs = [
+  capture = Verb { on = unit, params = [by = player] }         // core set-controller
+  advance = Verb { on = unit, optional = [steps = int] }       // progress a mission
+  score = Verb { on = player, params = [counter = counter, amount = int] }
+]

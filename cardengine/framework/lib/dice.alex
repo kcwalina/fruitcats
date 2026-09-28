@@ -1,0 +1,47 @@
+// dice: dice as objects with faces (Star Wars: Destiny, Dice Masters), dice as a rolled resource
+// (Ashes), a die added to a contest (Neopets, Illuminati, X-Men), a unit's stat rolled per battle
+// (Bakugan). Uses the core's `die` object field, `roll` and `roll-object`. Depends on the core
+// only.
+dice = Library
+
+name = 'Dice'
+version = '0.1'
+core = '1'
+
+type DiceRule : Rule {}
+extension Game { dice: [DiceRule] = empty }
+
+type DiePool : DiceRule {}                              // objects' dice are rolled into a pool
+type ResolveFacesAsActions : DiceRule {}                // each face is spent as an action
+type DiceAsResource : DiceRule { faces: [text] }        // rolled faces pay costs (Ashes)
+type DieAugmentedContest : DiceRule { faces: int }      // a die is added to stat comparisons
+type RandomizedUnitStat : DiceRule { stat: text, faces: int }   // a unit's stat per battle
+type BagDraw : DiceRule { zone: Zone }                  // a zone drawn from at random (a bag)
+type SharedMarket : DiceRule { zone: Zone }             // a shared purchase pool both players use
+
+extension Card { die: [text] = empty }                  // a card that is also a die
+
+actions = [
+  roll = ActionKind { name = 'Roll' }
+  resolve-face = ActionKind { name = 'Resolve a die face' }
+  reroll = ActionKind { name = 'Reroll' }
+  buy = ActionKind { name = 'Buy from the market' }
+]
+
+events = [
+  rolled = Event { fields = [object = unit, face = text] }
+]
+
+extension Card { on-rolled: effect? }
+type OnRolled : Ability { holders = [nameof(Card)] }
+
+properties = [
+  showing = Property { on = unit, yields = text }       // the face a die shows
+]
+
+verbs = [
+  roll-die = Verb { on = units }
+  reroll-die = Verb { on = units }
+  resolve = Verb { on = unit }
+  buy = Verb { on = player, params = [card = card] }
+]

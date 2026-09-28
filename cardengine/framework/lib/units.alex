@@ -8,12 +8,15 @@ version = '0.1'
 core = '1'
 requires = [@common]
 
+// Only what every unit in every surveyed game has is required. Snap units have no health,
+// KeyForge creatures no cost, Yu-Gi-Oh! monsters a second stat; each is a rule or a field below.
 type UnitCard : Card {
-  cost: Cost
+  cost: Cost?
   power: int
-  health: int
+  health: int?
+  defense: int?                   // a second combat stat, chosen by position or conflict type
+  level: int?                     // a printed level, rank or grade
   unique: bool = false            // fixed to true by a game's legendary-like type
-  once-per-round: bool = false    // applies to every trigger the rules attach to this card
 }
 extension Token { power: int, health: int }
 
@@ -37,9 +40,14 @@ type UnitRule : Rule {}
 extension Game { units: [UnitRule] = empty }
 
 type UnitsEnterExhausted : UnitRule {}
+type DefensePosition : UnitRule {}                // a unit is in attack or defence position
+type DualStatByConflict : UnitRule {}             // power or defense is used per conflict type
+type PowerOnly : UnitRule {}                      // units have no health; power compares only
+type SizeCapacity : UnitRule { zone: Zone, max: int, stat: text }   // capacity by a stat's sum
+type HealthThresholdStatics : UnitRule {}         // statics may test the holder's own health
 // A generalisation: a unit enters with a status that blocks some actions until a moment.
 type EntersWithStatus : UnitRule { status: text, blocks: [ActionKind], clears: Moment }
-type DefeatAtHealth : UnitRule {}                 // damage >= health defeats, on state check
+type DefeatAtHealth : UnitRule {}                 // damage >= health defeats (health required)
 type DefeatAtZero : UnitRule {}                   // health counts down instead
 type LegendRule : UnitRule {}                     // two `unique` units of one name: keep one
 
@@ -51,6 +59,7 @@ extension UnitCard {
   on-enter: effect?
   on-defeated: effect?
   on-round-start: effect?
+  on-use: effect?                 // exhaust the unit for value instead of attacking (reap)
   static: static?
 }
 
@@ -64,11 +73,18 @@ type OnEnter : Ability { holders = [nameof(UnitCard)] }            // Hello, Bat
 type OnDefeated : Ability { holders = [nameof(UnitCard)] }         // Goodbye, Deathrattle
 type OnRoundStart : Ability { holders = [nameof(UnitCard)] }
 type Static : Ability { holders = [nameof(UnitCard)], kind = static }
+type OnUse : Ability { holders = [nameof(UnitCard)] }
 
 properties = [
   power = Property { on = unit, yields = int }
   health = Property { on = unit, yields = int }
+  defense = Property { on = unit, yields = int }
+  level = Property { on = unit, yields = int }
   damage = Property { on = unit, yields = int }
+]
+
+actions = [
+  use = ActionKind { name = 'Use a unit' }               // reap, quest, tap for value
 ]
 
 filters = [
@@ -91,4 +107,6 @@ verbs = [
   cant = Verb { on = units, params = [action = action], only-in = static }
   must = Verb { on = units, params = [action = action], only-in = static }
   move-largest-counter = Verb { on = unit, params = [from = unit, to = unit, as = counter] }
+  set-position = Verb { on = unit, params = [defense = bool] }
+  stun = Verb { on = units }                            // a state beyond exhausted: skips readying
 ]

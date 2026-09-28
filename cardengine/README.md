@@ -23,7 +23,10 @@ discussed by editing them instead of re-pasting them into chat.
   depends on the core and on what its `requires` lists, and on nothing else. `common` (costs,
   rarity, generic verbs), `units`, `spells`, `attachments`, `permanents`, `heroes`, `abilities`,
   `life` and `life-stack`, `resources`, `turns`, `initiative`, `combat`, `responses`,
-  `scheduling`, `objects`, `families`, `decks`, `setup`.
+  `scheduling`, `objects`, `families`, `decks`, `setup`, and, from the 156-game survey,
+  `objectives` (winning by things other than life), `board` (grids and movement), `reveal`
+  (checks that turn over deck cards), `dice`, `encounter` (scripted opponents for cooperative
+  play), `stat-cards` (the Attax family) and `scenarios` (the vocabulary of scenario blocks).
 - `survey/`: eight popular TCGs written against the catalogue by survey agents, each with a game
   document, five cards, a gap table and a verdict; `summary.md` consolidates the gaps by layer.
   `survey/broad/`: 156 TCGs classified against the libraries with a fixed record per game

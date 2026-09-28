@@ -61,3 +61,8 @@ crown, a red tongue, a green-and-red disc), while our figures were all cream wit
 each figure in several solid colours laid on as broad patches (bright spring greens and jade, lilac-grey hair, red
 sashes, orange flowers, green eyes), with pink edging only here and there. The pictures are now a little darker and more
 saturated than the tiger (mean value about 165 against 189); that is the price of the added colour.
+
+Fifth pass (2026-09-27): the fourth pass went too far, painting the figures green all over. The tiger is about a third
+cream-white and only 3% green, with its colour in small splotches. The figures and ferns are now mostly cream with a few small
+splotches of green and red and small accents (green eyes, lilac-grey streaks, a red sash or berry). Measured: 24-38% cream,
+1-2% green, brightness 177-187 (tiger 189), saturation 105-130 (tiger 112).

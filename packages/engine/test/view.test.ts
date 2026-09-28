@@ -104,7 +104,7 @@ describe('player views (online play)', () => {
         expect(v.prompt).toEqual(s.prompt?.player === seat ? s.prompt : null);
       }
     }
-  });
+  }, 60_000); // plays every released deck pairing, like the test above: ~6s with six decks, more on a busy machine
 
   it('offers the same choices as the full game, so a screen can work from its view', () => {
     for (const s of states(1)) {

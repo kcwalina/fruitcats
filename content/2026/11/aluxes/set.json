@@ -1,7 +1,7 @@
 {
   "set": "AL1",
   "name": "Aluxes",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "status": "released",
   "released": "2026-11",
   "starter": true,
@@ -56,6 +56,8 @@
     "from": "Yucatec Maya folklore: Yucatán, Quintana Roo and Campeche (Mexico), Belize and Guatemala",
     "title": "The Aluxes",
     "eyebrow": "Maya folklore · Yucatán, Mexico",
+    "banner": "AL1-banner",
+    "bannerAt": "40% 58%",
     "story": [
       "At the edge of a cornfield in Yucatán stands a house no bigger than a shoebox, built of stone, with a little palm roof and a dark doorway. Nobody lives in it. That is what you would think.",
       "The Maya farmers know better. When a farmer clears a new field, the healer of the village, the j-meen, shapes a small figure out of clay and prays over it for weeks. Then it is set inside the little house, and an alux comes to live there: a spirit no taller than your knee, dressed like a tiny farmer in white cotton, a straw hat and sandals. You will almost never see him. A shadow between the corn rows, a breeze that comes from nowhere, footprints the size of a bird's: that is all he leaves behind.",

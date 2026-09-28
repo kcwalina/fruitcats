@@ -1,7 +1,7 @@
 {
   "set": "DW1",
   "name": "Domowiki",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "status": "released",
   "released": "2026-10",
   "starter": true,
@@ -42,6 +42,8 @@
     "from": "Slavic folklore: Poland (domowik), Russia (domovoi), Ukraine (domovyk), Belarus (damavik), Czechia (děd), Slovakia (škriatok), Bulgaria (stopan)",
     "title": "The Domowiki",
     "eyebrow": "Slavic folklore · Poland and its neighbours",
+    "banner": "DW1-banner",
+    "bannerAt": "66% 58%",
     "story": [
       "Somewhere behind your stove, in the warmest, darkest corner of the house, lives a little old man with a huge nose and a beard down to his toes. You will never see him. But he sees you.",
       "He is a Domowik, the spirit of the home, and in the villages of Poland and the lands around it, every house had one. People believed he was the family's first grandfather, still looking after his children's children long after his own time. He kept thieves and bad luck outside, watched the babies at night, and slipped out to the stable to braid the manes of the horses he liked.",

@@ -120,9 +120,12 @@
 }
 @keyframes prism-label { to { background-position: 250% 0; } }
 @media (prefers-reduced-motion: reduce) { .v-rank em.fin-prismatic { animation: none; } }
-.v-dots { display: flex; justify-content: center; gap: 7px; margin-top: 12px; }
-.v-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); transition: background 0.3s, transform 0.3s; }
-.v-dots i.on { background: #fff; transform: scale(1.3); }
+.v-dots { display: flex; justify-content: center; align-items: center; gap: 8px; height: 10px; margin-top: 12px; }
+.v-dots i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.32); transition: background 0.3s, transform 0.3s; }
+.v-dots i.on { background: #fff; transform: scale(1.25); box-shadow: 0 0 8px rgba(255, 240, 210, 0.5); }
+/* A long list's dots at the window's ends: smaller, as more lie beyond. */
+.v-dots i.sm { transform: scale(0.72); }
+.v-dots i.xs { transform: scale(0.45); }
 .v-count { display: block; margin-top: 10px; font: 700 13px Nunito, sans-serif; color: rgba(255, 255, 255, 0.7); }
 .v-actions { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 14px; }
 .collection-screen button.v-wallpaper, .viewer-overlay button.v-wallpaper {
@@ -384,7 +387,9 @@ button.undo-btn {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px 12px;
   background: none; border: none; box-shadow: none; border-radius: 16px; color: #fff;
 }
-.collection-screen button.deck-cover:hover:not(:disabled) { transform: translateY(-4px); box-shadow: none; background: rgba(255, 255, 255, 0.05); }
+/* Hover only where there is one: on a phone a tapped cover kept it, a raised box round it. */
+.collection-screen button.deck-cover:hover:not(:disabled) { transform: none; box-shadow: none; }
+@media (hover: hover) { .collection-screen button.deck-cover:hover:not(:disabled) { transform: translateY(-4px); background: rgba(255, 255, 255, 0.05); } }
 .deck-cover .slot.deck-slot { width: 100%; margin-bottom: 12px; }
 /* The cover's frame, as the Home tiles draw theirs: a walnut plaque with a thin brass line, square corners, a
    soft shadow; one dark hairline round the painting, and a warm mat under it while it loads. */
@@ -393,10 +398,6 @@ button.undo-btn {
   box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 12px 20px -10px rgba(0, 0, 0, 0.75);
 }
 .deck-cover .deck-slot .sight { --mat: #3a3029; --mat-ink: rgba(246, 236, 220, 0.72); --mat-rule: rgba(246, 236, 220, 0.16); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
-/* The empty Showcase: a lighter warm mat, a honey star and what goes there, so it reads as waiting for you. */
-.showcase-slot .painting.empty { background: radial-gradient(95% 95% at 50% 40%, #5a4c3f 0%, #463a30 60%, #3a3029 100%); }
-.showcase-slot .painting.empty svg { width: 34%; color: #f3cd7a; filter: drop-shadow(0 0 12px rgba(243, 205, 122, 0.4)); }
-.showcase-slot .painting.empty small { font: 700 clamp(11px, 1.7vw, 14px)/1.2 Nunito, sans-serif; letter-spacing: 0.02em; color: rgba(246, 236, 220, 0.8); }
 .deck-cover .cover-name { font: 600 16px/1.15 Fredoka, Nunito, sans-serif; text-align: center; color: #f6ecdc; }
 .deck-cover .cover-sub { font: 700 11px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(246, 236, 220, 0.55); }
 
@@ -412,20 +413,43 @@ button.undo-btn {
 
 /* ── A deck's page: the card, swiped, beside its tale; under it on a phone ── */
 .deck-page { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+/* Scrolled, the tale fades out under the buttons at the top rather than being cut in a line. */
+.deck-page { -webkit-mask: linear-gradient(180deg, transparent, #000 22px); mask: linear-gradient(180deg, transparent, #000 22px); }
 /* The strip inside is 22 cards wide: the stage must never grow to fit it (min-width 0, and the strip 100%). */
 .deck-stage { flex: none; display: flex; flex-direction: column; align-items: center; padding-top: 6px; width: 100%; min-width: 0; }
 .deck-stage .viewer { --card-w: min(64vw, 300px); flex: none; width: 100%; min-width: 0; align-self: stretch; }
-.deck-caption { text-align: center; padding: 4px 16px 10px; }
+/* Only the card in the middle shows, as in the Showcase: its neighbours fade in as they're swiped over (the dots under
+   it say there are more), never a cut-off card peeking in at the side. */
+.collection-screen .deck-stage button.viewer-card, .collection-screen .deck-stage button.viewer-card:hover:not(:disabled) {
+  transform: scale(calc(1 - var(--ad, 0) * 0.06)); opacity: calc(1 - max(0, var(--ad, 0) - 0.55) * 2.3);
+}
+.collection-screen .deck-stage .viewer-track { gap: 24px; }
+.deck-caption { text-align: center; padding: 2px 16px 10px; }
+.deck-caption .v-dots { margin: 0 0 14px; }
 .deck-caption .v-name { margin: 0; font: 600 20px/1.2 Fredoka, Nunito, sans-serif; }
 .deck-caption .v-sub { margin: 3px 0 6px; font: 700 12px/1.3 Nunito, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
 .deck-tap { margin: 6px 0 0; font: 600 12px/1.3 Nunito, sans-serif; color: rgba(255, 255, 255, 0.4); }
-.deck-lore {
-  flex: none; margin: 8px 16px 48px; padding: 26px 22px 22px; border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 244, 222, 0.07), rgba(255, 244, 222, 0.03));
-  box-shadow: inset 0 0 0 1px rgba(255, 224, 170, 0.14), 0 20px 50px rgba(0, 0, 0, 0.35);
+/* The tale sits straight on the page's ground, no panel: a column of text under its banner. */
+.deck-lore { flex: none; width: 100%; max-width: 680px; margin: 10px auto 48px; padding: 0 22px; }
+/* The banner: one of the deck's paintings, wide, melting into the dark at its foot and fading at its sides, with the
+   tale's name on its lower part. */
+.lore-banner { position: relative; display: flex; align-items: flex-end; min-height: 0; aspect-ratio: 16 / 10; margin: 0 -22px 18px; }
+.lore-banner-art {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%;
+  -webkit-mask: linear-gradient(180deg, transparent, #000 8%, #000 66%, transparent 100%); mask: linear-gradient(180deg, transparent, #000 8%, #000 66%, transparent 100%);
 }
-.lore-eyebrow { margin: 0 0 6px; font: 700 12px/1.3 Nunito, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: #e9c069; }
-.lore-title { margin: 0 0 16px; font: 600 clamp(28px, 4vw, 40px)/1.05 Fredoka, Nunito, sans-serif; color: #fff7e8; }
+.lore-banner-text { position: relative; padding: 0 22px 16px; }
+@media (max-width: 420px) { .lore-eyebrow { font-size: 10.5px; letter-spacing: 0.09em; } }
+/* A deck with no banner painting: its tale's name alone. */
+.lore-banner.plain { aspect-ratio: auto; padding-top: 12px; }
+.lore-eyebrow {
+  margin: 0 0 6px; font: 700 11.5px/1.35 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #f0cd7c;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.8);
+}
+.lore-title {
+  margin: 0; font: 600 clamp(32px, 4.2vw, 46px)/1.02 Fredoka, Nunito, sans-serif; color: #fff7e8;
+  text-shadow: 0 2px 0 rgba(12, 13, 31, 0.9), 0 3px 24px rgba(0, 0, 0, 0.85);
+}
 .lore-para { margin: 0 0 14px; font: 500 clamp(16px, 1.35vw, 19px)/1.55 Nunito, sans-serif; color: rgba(255, 247, 232, 0.9); }
 .lore-para.first { font-weight: 700; font-size: clamp(18px, 1.55vw, 22px); color: #fff7e8; }
 .lore-para.first::first-letter { float: left; margin: 4px 8px 0 0; font: 600 3.2em/0.85 Fredoka, Nunito, sans-serif; color: #e9c069; }
@@ -438,35 +462,115 @@ button.undo-btn {
 
 /* Wide screens (computers, iPads held sideways): the card on the left, the tale on the right. */
 @media (min-width: 900px) and (min-aspect-ratio: 1/1) {
-  .deck-page { flex-direction: row; align-items: stretch; overflow: hidden; }
+  .deck-page { flex-direction: row; align-items: stretch; overflow: hidden; -webkit-mask: none; mask: none; }
   .deck-stage { flex: 0 0 46%; width: 46%; min-width: 0; justify-content: center; padding: 0 0 16px; }
-  .deck-stage .viewer { --card-w: min(30vw, calc((var(--vh, 1vh) * 100 - 260px) * 0.714), 420px); }
-  .deck-lore { flex: 1; min-width: 0; margin: 0 var(--corner-right, 24px) 24px 0; padding: 34px 40px 30px; overflow-y: auto; }
+  .deck-stage .viewer { --card-w: min(30vw, calc((var(--vh, 1vh) * 100 - 290px) * 0.714), 420px); }
+  /* The tale's column scrolls on its own, its text fading out at the foot rather than stopping at an edge. */
+  .deck-lore {
+    flex: 1; min-width: 0; width: auto; max-width: 720px; margin: 0; padding: 0 max(40px, var(--corner-right, 24px)) 60px 16px; overflow-y: auto; scrollbar-width: thin;
+    scrollbar-color: rgba(255, 240, 215, 0.2) transparent;
+    -webkit-mask: linear-gradient(180deg, transparent, #000 28px, #000 calc(100% - 56px), transparent); mask: linear-gradient(180deg, transparent, #000 28px, #000 calc(100% - 56px), transparent);
+  }
+  /* Wide, the banner sits in the tale's column: its sides fade too, so it never stands out as a box. */
+  .lore-banner { margin: 0 0 22px; aspect-ratio: 1.9 / 1; }
+  .lore-banner-art {
+    -webkit-mask: linear-gradient(180deg, transparent, #000 8%, #000 66%, transparent 100%), linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    -webkit-mask-composite: source-in;
+    mask: linear-gradient(180deg, transparent, #000 8%, #000 66%, transparent 100%) intersect, linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  }
+  .lore-banner-text { padding: 0 0 18px; }
+}
+/* The deck's page: one dark night ground under the card and the tale alike, the wood only just showing, with a soft
+   light behind the card. */
+.collection-screen.view-deck {
+  background: radial-gradient(ellipse 60% 70% at 25% 48%, rgba(70, 60, 110, 0.35), transparent 70%),
+    linear-gradient(rgba(9, 10, 26, 0.84), rgba(9, 10, 26, 0.93)), var(--img-menu-bg) center / cover no-repeat, #0b0c1f;
+}
+@media (orientation: portrait) {
+  .collection-screen.view-deck {
+    background: radial-gradient(ellipse 90% 40% at 50% 28%, rgba(70, 60, 110, 0.35), transparent 70%),
+      linear-gradient(rgba(9, 10, 26, 0.84), rgba(9, 10, 26, 0.93)), var(--img-menu-bg-tall) center / cover no-repeat, #0b0c1f;
+  }
 }
 
 /* The covers page sits in the forest like Home, dimmed so the paintings lead; the card viewer keeps its plain mat. */
 .collection-screen { background: linear-gradient(rgba(12, 9, 7, 0.72), rgba(12, 9, 7, 0.86)), var(--img-menu-bg) center / cover no-repeat, #150f0b; }
 @media (orientation: portrait) { .collection-screen { background-image: linear-gradient(rgba(12, 9, 7, 0.72), rgba(12, 9, 7, 0.86)), var(--img-menu-bg-tall); } }
 
-/* The Showcase cover: your favourite cards themselves, fanned on a deep velvet mat with a thin gold edge (the decks are
-   paintings in frames; this is a hand of cards, so the two never look alike). Same 3:2 footprint as a deck cover. */
-.showcase-fan .fan-mat {
-  position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 6px;
-  background: radial-gradient(120% 110% at 50% 35%, #4a1f3c 0%, #2c1230 55%, #190a1e 100%);
-  box-shadow: inset 0 0 0 1px rgba(243, 205, 122, 0.55), inset 0 0 40px rgba(0, 0, 0, 0.55), 0 12px 20px -10px rgba(0, 0, 0, 0.75);
+/* The Showcase cover: a glass-fronted cabinet, built of the decks' own frame (the night plaque, its fine teal line) so it
+   stands among them as one of the family, the same size as their frames. Inside, lit from above, two glass shelves;
+   your cards stand small on them, two to a door on each, as cards are shown in a real cabinet; in front, two glass
+   doors with a slim bar across their tops, meeting in the middle at their brass knobs. */
+.showcase-cabinet {
+  position: relative; display: block; width: 100%; margin-bottom: 12px; padding: 4.4%; border-radius: 1px; background: var(--plaque);
+  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.12), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 12px 20px -10px rgba(0, 0, 0, 0.75);
 }
-.showcase-fan .fan-card {
-  position: absolute; left: 50%; top: 12%; height: 84%; aspect-ratio: 0.714; border-radius: 5% / 3.6%;
-  transform-origin: 50% 110%; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
+.showcase-cabinet::before, .showcase-cabinet::after {   /* the cabinet's cap, a little wider than it, and its plinth */
+  content: ''; position: absolute; background: var(--plaque);
+  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.14), inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f;
 }
-.showcase-fan .fan-card.f0 { transform: translateX(-50%) rotate(0deg); z-index: 3; }
-.showcase-fan .fan-card.f1 { transform: translateX(-50%) rotate(-13deg); z-index: 2; }
-.showcase-fan .fan-card.f2 { transform: translateX(-50%) rotate(13deg); z-index: 1; }
-.showcase-fan.n1 .fan-card.f0, .showcase-fan.n2 .fan-card.f0 { transform: translateX(-50%) rotate(6deg); }
-.showcase-fan.n2 .fan-card.f1 { transform: translateX(-50%) rotate(-8deg); }
-.showcase-fan .painting.empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: none; }
-.showcase-fan .painting.empty svg { width: 30%; color: #f3cd7a; filter: drop-shadow(0 0 12px rgba(243, 205, 122, 0.4)); }
-.showcase-fan .painting.empty small { font: italic 500 clamp(13px, 1.9vw, 16px)/1.2 var(--serif, Georgia, serif); color: rgba(246, 236, 220, 0.85); }
+.showcase-cabinet::before { top: -6px; left: -5px; right: -5px; height: 7px; border-radius: 2px 2px 0 0; }
+.showcase-cabinet::after { bottom: -6px; left: 4%; right: 4%; height: 6px; border-radius: 0 0 2px 2px; }
+.cab-body {
+  position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden;
+  background:
+    radial-gradient(38% 42% at 25% 0%, rgba(255, 222, 170, 0.24), transparent 100%),   /* a small lamp over each door */
+    radial-gradient(38% 42% at 75% 0%, rgba(255, 222, 170, 0.24), transparent 100%),
+    linear-gradient(180deg, #1c2046, #10132c);
+  box-shadow: 0 0 0 1px rgba(130, 214, 228, 0.45), inset 0 0 24px rgba(0, 0, 0, 0.6);
+}
+/* The shelves: a pane of glass lit along its front edge, and the cabinet's floor. */
+.cab-shelf { position: absolute; left: 0; right: 0; display: block; }
+.cab-shelf.top {
+  top: 49%; height: 2.2%;
+  background: linear-gradient(180deg, rgba(220, 240, 255, 0.55), rgba(160, 200, 230, 0.18));
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+}
+.cab-shelf.floor { top: 92%; bottom: 0; background: linear-gradient(180deg, #2a2f5c, #171a36); box-shadow: inset 0 1px 0 rgba(130, 214, 228, 0.35); }
+/* A card stands on its shelf: four to a shelf, two behind each door. */
+.cab-card {
+  position: absolute; height: 37%; aspect-ratio: 0.714; translate: -50% 0; border-radius: 5% / 3.6%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+.cab-card img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.cab-card:is(.s0, .s1, .s2, .s3) { bottom: 51%; }
+.cab-card:is(.s4, .s5, .s6, .s7) { bottom: 8%; }
+.cab-card:is(.s0, .s4) { left: 13.2%; }
+.cab-card:is(.s1, .s5) { left: 35.6%; }
+.cab-card:is(.s2, .s6) { left: 64.4%; }
+.cab-card:is(.s3, .s7) { left: 86.8%; }
+/* No cards yet: a star and what goes here, on the empty shelves. */
+.cab-empty {
+  position: absolute; left: 0; right: 0; top: 12%; bottom: 51%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4%;
+}
+.cab-empty svg { height: 48%; color: #f3cd7a; filter: drop-shadow(0 0 10px rgba(243, 205, 122, 0.45)); }
+.cab-empty small { padding-bottom: 4%; font: italic 500 clamp(12px, 1.7vw, 16px)/1.2 var(--serif, Georgia, serif); color: rgba(246, 236, 220, 0.85); }
+/* The glass: a faint cool tint and two soft diagonal glints. */
+.cab-glass {
+  position: absolute; inset: 0; display: block; pointer-events: none;
+  background:
+    linear-gradient(118deg, transparent 14%, rgba(255, 255, 255, 0.11) 19%, rgba(255, 255, 255, 0.03) 24%, transparent 27%,
+      transparent 62%, rgba(255, 255, 255, 0.07) 66%, transparent 70%),
+    linear-gradient(180deg, rgba(190, 215, 255, 0.06), rgba(190, 215, 255, 0.02));
+}
+/* The doors: each a fine teal line round its glass, a slim bar across its top, and the two meeting in a stile. */
+.cab-door {
+  position: absolute; top: 0; bottom: 0; display: block; pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(130, 214, 228, 0.3);
+  background: linear-gradient(180deg, transparent 5%, rgba(130, 214, 228, 0.45) 5%, rgba(130, 214, 228, 0.45) 5.5%,
+    #1e2247 5.5%, #1e2247 8%, rgba(130, 214, 228, 0.45) 8%, rgba(130, 214, 228, 0.45) 8.5%, transparent 8.5%);
+}
+.cab-door.left { left: 0; right: 50%; border-right: clamp(2px, 0.5vw, 4px) solid #1e2247; }
+.cab-door.right { left: 50%; right: 0; border-left: clamp(2px, 0.5vw, 4px) solid #1e2247; }
+/* The brass knobs, where the doors meet. */
+.cab-door::after {
+  content: ''; position: absolute; top: 24%; width: clamp(2px, 0.35vw, 3px); height: 9%; border-radius: 1px;
+  background: linear-gradient(90deg, #7a5412, #f3d27a 45%, #b8862b);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+.cab-door.left::after { right: 4%; }
+.cab-door.right::after { left: 4%; }
+@media (hover: hover) { .collection-screen button.deck-cover:hover:not(:disabled) .cab-glass { filter: brightness(1.5); } }
 
 /* Tablets and computers: the title sits just under the header, over the top of the painting, and the covers follow it
    right away (the banner's gap grew with the width and pushed them to the middle of an iPad). iPad upright: two big

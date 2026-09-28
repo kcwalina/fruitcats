@@ -172,23 +172,32 @@ npm run publish-pack -- hw1 --unpublish      # take a set out of the pack index,
 ```
 
 - **Where packs live:** the pack storage, the `fruitcatspacks` storage account (ViaMochi Production,
-  `rg-fruitcats`, westus2). Its public-read container `packs` holds `index.json`, and for each set
-  `<set>/set.json`, `<set>/art/illustrations/` and `<set>/art/cards/`. Anyone may read it, from any
-  origin; only the Via Mochi deploy and agent identities may write (shared keys are off). The pack list and
-  set data aren't cached; art may be cached for a day.
+  `rg-fruitcats`, westus2). Its public-read container `packs` holds `index.json`, and for each set every
+  version of its art and data, each at an address named by its fingerprint (`content/pack-storage.ts`):
+  `<set>/art/<fingerprint>/illustrations/`, `cards/` and `art.json`, and `<set>/data/<fingerprint>.json`.
+  Anyone may read it, from any origin; only the Via Mochi deploy and agent identities may write (shared keys are
+  off). The pack list isn't cached; what sits at a fingerprint never changes, so it may be kept for good.
+  (Before 2026-09-27 a set had one address, `<set>/set.json`, `<set>/art/illustrations/`, `<set>/art/cards/` and
+  `<set>/art.json`. Those stay as they were for games built before then; nothing writes them any more.)
 - **What the command does:**
   1. Runs `check-set` and stops on any error.
-  2. Uploads the art, then the data.
-  3. Updates `index.json` last, so a game never sees a pack whose files aren't up yet.
+  2. Uploads the art to its fingerprint's folder (skipped when the storage has it already), then that folder's
+     `art.json`, so a build never takes a half-uploaded folder. Then the data.
+  3. Updates `index.json` last, so a game never sees a pack whose files aren't up yet. Only when the set's folder
+     is exactly what origin/main has: running games take what the index lists, and what players get is always main.
+     From a branch, the art and data go up and the index is left alone. The index is written only over the version
+     that was read (its ETag), so two sessions publishing at once can't drop each other's set.
 
-  It signs in as the deploy identity (`~/.azure-viamochi-deploy`), never your own Azure login.
-  4. Writes `<set>/art.json`: a fingerprint of the set's art (`content/art-hash.ts`).
+  It signs in as the deploy identity (`~/.azure-viamochi-deploy`), never your own Azure login. It is safe from any
+  branch at any time: no publish replaces what another checkout, or the live site, uses. On 2026-09-27, when a set
+  had one address, sessions publishing from their own branches kept replacing each other's art, and every deploy's
+  build refused until it republished, 3–4 rounds running.
 - **The site's art is the storage's.** Azure takes the site as one upload inside a two-minute window, and card art
   (over 100 MB by the third deck) doesn't fit through a home uplink in that time: every deploy failed on 2026-09-27
-  until the art left the site. Now `apps/web/src/ui.ts` addresses a built-in set's art at
-  `<storage>/<set>/art/illustrations/` and `<set>/art/cards/`, `vite.config.ts` copies no art into the build
-  (about 10 MB instead of 120), and the build compares each set's fingerprint with `<set>/art.json` in the storage:
-  a set whose art was changed but not published stops the build, naming the `publish-pack` command to run. In dev
+  until the art left the site. Now `vite.config.ts` copies no art into the build (about 10 MB instead of 120); it
+  fingerprints each built-in set's art and points the game at that fingerprint's folder on the storage
+  (`VITE_ART_BASES`, read by `apps/web/src/ui.ts`). A set whose folder isn't there yet (its `art.json` naming that
+  fingerprint) stops the build, naming the `publish-pack` command to run. In dev
   the art is still served straight from the set's folder, so new pictures show without publishing.
   `VITE_LOCAL_ART=on` builds with the art inside (for a build that must work without the storage); it is too big
   to deploy.

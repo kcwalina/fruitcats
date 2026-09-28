@@ -15,8 +15,14 @@ export const ART_BASES: Record<string, { art: string; cards: string }> = {};
 const LOCAL_ART: boolean = import.meta.env.VITE_LOCAL_ART === 'on';
 /** Set folders the game isn't built with (the Studio's practice sets): their few frames stay on the site. */
 const SITE_ART = new Set<string>(import.meta.env.VITE_SITE_ART_SETS ?? []);
+/**
+ * Where a build found each built-in set's art on the pack storage: a folder named by the art's fingerprint
+ * (vite.config.ts, content/pack-storage.ts). What is there never changes, so another checkout publishing its own
+ * art can't change what this build shows.
+ */
+const BUILT_ART: Record<string, { art: string; cards: string }> = import.meta.env.VITE_ART_BASES ?? {};
 /** A set's art addresses, by set code: where its illustrations and finished cards are. */
-export const artBases = (code: string) => ART_BASES[code] ?? (LOCAL_ART || SITE_ART.has(code)
+export const artBases = (code: string) => ART_BASES[code] ?? BUILT_ART[code] ?? (LOCAL_ART || SITE_ART.has(code)
   ? { art: `${BASE}${code}/`, cards: `${BASE}cards/${code}/` }
   : { art: `${PACKS}${code}/art/illustrations/`, cards: `${PACKS}${code}/art/cards/` });
 /**
@@ -27,13 +33,15 @@ export const artBases = (code: string) => ART_BASES[code] ?? (LOCAL_ART || SITE_
 export const ART_STAMPS: Record<string, string> = {};
 const setCode = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.set ?? 'SB1').toLowerCase();
 const bases = (key: string) => artBases(setCode(key));
-const stamp = (key: string) => { const v = ART_STAMPS[setCode(key)]; return v ? `?v=${encodeURIComponent(v)}` : ''; };
+/** The stamp for a set's pictures; none for a build's own fingerprinted art, whose addresses already change with it. */
+const stampOf = (set: string) => { const v = !ART_BASES[set] && BUILT_ART[set] ? undefined : ART_STAMPS[set]; return v ? `?v=${encodeURIComponent(v)}` : ''; };
+const stamp = (key: string) => stampOf(setCode(key));
 /** A card's illustration. `key` is a card id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`. */
 export const artUrl = (key: string) => `${bases(key).art}${key}.webp${stamp(key)}`;
 /** One of a set's own pictures that isn't a card's (its tale's banner), by the set's code and the picture's name. */
 export const setArtUrl = (code: string, name: string) => {
-  const set = code.toLowerCase(), v = ART_STAMPS[set];
-  return `${artBases(set).art}${name}.webp${v ? `?v=${encodeURIComponent(v)}` : ''}`;
+  const set = code.toLowerCase();
+  return `${artBases(set).art}${name}.webp${stampOf(set)}`;
 };
 /** A card's finished picture, standard print. */
 export const cardUrl = (key: string) => `${bases(key).cards}${key}.webp${stamp(key)}`;

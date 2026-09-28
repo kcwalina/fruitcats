@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
+import { artPaths, artPublished } from '../../content/pack-storage';
 import { CONTENT as GAME_SETS } from '../../content/index';
 import { isShellFile, precacheProblems } from './src/sw-rules';
 
@@ -45,6 +46,8 @@ export default defineConfig(({ mode, command }) => ({
     'import.meta.env.VITE_PACKS': JSON.stringify(PACKS),
     'import.meta.env.VITE_LOCAL_ART': JSON.stringify(command === 'serve' || LOCAL_ART ? 'on' : 'off'),
     'import.meta.env.VITE_SITE_ART_SETS': JSON.stringify(contentSets().filter((s) => !s.registered).map((s) => s.code)),
+    // Where each built-in set's art is on the pack storage: the folder named by its fingerprint (builtArt below).
+    'import.meta.env.VITE_ART_BASES': JSON.stringify(command === 'build' ? artBasesOf(builtArt()) : {}),
     'import.meta.env.VITE_ACCOUNTS': JSON.stringify('on'),
     // When this build was made, shown at the bottom of the Artist Studio: which version a device has, at a glance.
     'import.meta.env.VITE_BUILT': JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'),
@@ -192,9 +195,11 @@ function docsPages(): Plugin {
 // A build doesn't carry the card art. Azure takes the site as one upload inside a two-minute window, and card
 // art (over 100 MB by the third deck) doesn't fit through a home uplink in that time, so every deploy failed.
 // The art is published to the pack storage instead (`npm run publish-pack -- <set>`, content/publish-pack.ts),
-// where the game already looks for card packs, and the build refuses when a set's art here isn't the art the
-// storage has (its fingerprint, content/art-hash.ts). VITE_LOCAL_ART=on builds with the art inside, for a
-// build that must work without the storage; it is too big to deploy.
+// where the game already looks for card packs, under a folder named by the art's fingerprint (content/art-hash.ts,
+// content/pack-storage.ts). A build points each set at the folder of its own art, and refuses when the storage
+// doesn't have that folder yet. Every version stays there, so a publish from another branch can't change what this
+// build shows. VITE_LOCAL_ART=on builds with the art inside, for a build that must work without the storage; it is
+// too big to deploy.
 // Set folders the game isn't built with (content/index.ts): the Artist Studio's practice sets, a few MB of frames.
 // Those stay on the site as before, and the Studio finds them there (VITE_SITE_ART_SETS).
 
@@ -231,8 +236,7 @@ function packFiles(localArt: boolean): Record<string, string> {
       packs: sets.map((s) => ({
         set: s.data.set, name: s.data.name, version: s.data.version, status: s.data.status,
         data: `packs/${s.code}/set.json`,
-        art: localArt || !s.registered ? `${s.code}/` : `${PACKS}${s.code}/art/illustrations/`,
-        cards: localArt || !s.registered ? `cards/${s.code}/` : `${PACKS}${s.code}/art/cards/`,
+        ...(localArt || !s.registered ? { art: `${s.code}/`, cards: `cards/${s.code}/` } : artBasesOf(builtArt())[s.code] ?? {}),
       })),
     }, null, 1),
   };
@@ -260,19 +264,32 @@ function contentMounts(): { url: string; dir: string; build: boolean }[] {
   return mounts.filter((m) => existsSync(m.dir));
 }
 
+let built: { code: string; folder: string; hash: string }[] | undefined;
 /**
- * The sets whose art here isn't what the pack storage has (never published, or changed since): a build must
+ * The art a build takes from the pack storage: each set the game is built with that has art, with its fingerprint.
+ * None when the build carries its own art (VITE_LOCAL_ART). Worked out once per build: it reads every picture.
+ */
+function builtArt(): { code: string; folder: string; hash: string }[] {
+  if (LOCAL_ART) return [];
+  return built ??= contentSets().filter((s) => s.registered)
+    .map((s) => ({ code: s.code, folder: s.folder, hash: artHash(s.root) ?? '' })).filter((s) => s.hash);
+}
+
+/** Each set's art addresses on the pack storage, by code: in its fingerprint's folder. */
+function artBasesOf(art: { code: string; hash: string }[]): Record<string, { art: string; cards: string }> {
+  return Object.fromEntries(art.map(({ code, hash }) => {
+    const p = artPaths(code, hash);
+    return [code, { art: `${PACKS}${p.art}`, cards: `${PACKS}${p.cards}` }];
+  }));
+}
+
+/**
+ * The sets whose art here the pack storage doesn't have yet (never published, or changed since): a build must
  * not ship until `npm run publish-pack -- <set>` has run for each. Sets with no art have nothing to publish.
  */
 async function unpublishedArt(): Promise<string[]> {
   const stale: string[] = [];
-  for (const s of contentSets()) {
-    const local = s.registered ? artHash(s.root) : null;
-    if (!local) continue;
-    const published = await fetch(`${PACKS}${s.code}/art.json`, { cache: 'no-cache' })
-      .then((r) => (r.ok ? (r.json() as Promise<{ hash?: string }>) : null)).catch(() => null);
-    if (published?.hash !== local) stale.push(s.folder);
-  }
+  for (const s of builtArt()) if (!(await artPublished(PACKS, s.code, s.hash))) stale.push(s.folder);
   return stale;
 }
 
@@ -295,7 +312,8 @@ function contentAssets(): Plugin {
       const stale = await unpublishedArt();
       if (stale.length)
         throw new Error(`The pack storage doesn't have the current art of ${stale.join(', ')}. A build takes card art from `
-          + `the storage, so publish it first: ${stale.map((f) => `npm run publish-pack -- ${f}`).join('; ')}`);
+          + `the storage, so publish it first (safe from any branch: each version of the art has its own folder): `
+          + stale.map((f) => `npm run publish-pack -- ${f}`).join('; '));
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {

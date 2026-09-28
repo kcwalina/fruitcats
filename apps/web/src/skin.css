@@ -1458,7 +1458,6 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 .mc-short { display: none; }
 .mc-foot { display: block; font: 600 3.3cqw/1 Nunito, sans-serif; color: #9a8f7e; padding-bottom: 0.3cqw; }
 /* Coming soon: the picture greys, and says so across it. */
-.mcard.soon .mc-art img { filter: saturate(0.35) brightness(0.9); }
 .mcard .mode-badge { z-index: 2; }
 /* Middle-sized cards (an iPad): the rules text grows so it stays easy to read; the flavour (on a card with no state to
    show) keeps the card from ending in an empty band. */
@@ -1532,7 +1531,7 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 .mc-state.continue-line { color: #9fe0a8; }
 .mc-short { color: #f3e7cf; }
 .mc-foot { color: color-mix(in srgb, var(--foil-line) 70%, transparent); margin-top: auto; }
-.mcard.soon .mc-art img { filter: saturate(0.45) brightness(0.85); }
+.mcard.soon .mc-art img { filter: saturate(0.8); }   /* silver foil and "Coming soon" say it; the picture stays lively */
 @container (max-width: 160px) {
   .mc-text { justify-content: center; padding-top: 0; }
   .mc-face { padding-bottom: 2.2cqw; }

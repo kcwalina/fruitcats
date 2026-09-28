@@ -23,7 +23,7 @@ process.env.STORE ??= 'testers';
 process.env.STORE_TESTERS ??= '*';
 const FAKE_PADDLE = process.argv.includes('--fake-paddle');
 process.env.STORE_TEST_CHECKOUT ??= FAKE_PADDLE ? 'off' : 'on';
-// Like the live Store: the old Starter Box decks (free, in the Legacy tab) and the Jiaoren and Hui Hai decks. Berry Picnic's art
+// Like the live Store: the old Starter Box decks (free, in the Legacy decks) and the Jiaoren and Hui Hai decks. Berry Picnic's art
 // isn't final, and the Store never sells a card you can't see.
 process.env.STORE_SETS ??= 'SB1,JR1,HH1';
 if (process.argv.includes('--fake-sign-in')) process.env.FAKE_SIGN_IN = 'on';

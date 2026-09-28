@@ -1,333 +1,468 @@
-/* The Store (storefront.ts). Its layout is the owner's chosen design (option A, 2026-09-25): a full-width banner, then
-   one list where every item sits on the same stage, a card at a card's size, a deck as its hero's painting in a slim
-   frame. Its colours were parchment until 2026-09-27; now they're Home's night wood (the section "The night wood", at
-   the end of the list rules, overrides the parchment tokens and colours set here). */
+/* The Store (storefront.ts), in Home's night wood (the owner's calls, 2026-09-27 and 2026-09-28).
+   The Store's own painting (art/ui/store-banner.webp, a lantern-lit card stall) lies behind the top of the page and
+   melts into the wood; the decks start right under it, hung as the Collection hangs its covers: the hero's painting
+   in a plain frame, the name in the shell's serif under it. Codes and the Legacy decks are in the corner menu, never in
+   the way. No tabs, no dividers, no visible scrollbar.
+   Most rules are scoped to .store-screen. Three groups aren't, because they're used outside it: the deck covers'
+   frame (.deck-slot, also the Collection's), and the dialogs and the reveal (drawn beside the screen, not in it). */
 
 .store-screen {
-  --paper: #fbf4e8; --paper-2: #f5e9d6; --tile: #fffbf4; --line: #eadcc6;
-  --ink: #3a2a1f; --ink-2: #7a6453; --accent: #e98a3f; --accent-deep: #b4561b; --accent-soft: #fce6cf;
-  --shade: 58, 42, 31; --pad: clamp(16px, 4vw, 36px);
-  position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
-  background: var(--paper); color: var(--ink); font-family: Nunito, system-ui, sans-serif;
+  --ink: #f3e7cf; --ink-2: rgba(243, 231, 207, 0.74); --gold: #f0c677; --good: #a8d98a;
+  --line: rgba(247, 238, 221, 0.2); --tile: #1d2146; --pad: clamp(16px, 4vw, 40px);
+  --shade: 0, 0, 0;
+  position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; isolation: isolate;
+  background: #0e1026; color: var(--ink); font-family: Nunito, system-ui, sans-serif;
+  scrollbar-width: none;
+}
+.store-screen::-webkit-scrollbar { display: none; }
+.store-screen::before {   /* Home's backdrop, fixed behind the scrolling page, a little darker so the pictures lead */
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(10, 11, 30, 0.4), rgba(10, 11, 30, 0.7)), var(--img-menu-bg) center / cover no-repeat;
+}
+@media (orientation: portrait) {
+  .store-screen::before { background-image: linear-gradient(180deg, rgba(10, 11, 30, 0.4), rgba(10, 11, 30, 0.7)), var(--img-menu-bg-tall); }
 }
 
-/* ── The banner ── */
+/* ── The painting and the header row ── */
 
-.store-banner {
-  position: relative; overflow: hidden; height: calc(clamp(236px, 34vw, 300px) + env(safe-area-inset-top));
-  background: radial-gradient(120% 90% at 78% 40%, #fff3e2 0%, rgba(255, 243, 226, 0) 60%), linear-gradient(180deg, #f8e6cc 0%, #f3d8b4 100%);
-  border-bottom: 1px solid #e6cfae;
+/* The card stall, behind the top of the page, scrolling with it. On the Store's own page there's a band of it between
+   the header and the decks; the inner pages keep it dim behind their header. */
+.store-scene {
+  --scene-h: calc(var(--corner-top) + 44px + var(--scene-gap, 120px) + 200px);
+  position: absolute; z-index: -1; top: 0; left: 0; right: 0; height: var(--scene-h); pointer-events: none;
+  background: url('/ui/store-banner.webp') 72% 58% / cover no-repeat;
+  -webkit-mask: linear-gradient(180deg, #000 45%, transparent 100%); mask: linear-gradient(180deg, #000 45%, transparent 100%);
 }
-.store-banner.slim { height: calc(150px + env(safe-area-inset-top)); }
-.store-banner::before {   /* the painted Home landscape, washed into the paper */
-  content: ''; position: absolute; inset: 0; background: var(--img-menu-bg) center 62% / cover no-repeat;
-  opacity: 0.34; filter: sepia(0.55) saturate(0.8) brightness(1.08);
-  -webkit-mask: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0%, #000 55%); mask: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0%, #000 55%);
+.store-inner .store-scene { --scene-h: calc(var(--corner-top) + 300px); opacity: 0.45; }
+/* A phone: the whole painting, across the width, so the stall and its lanterns stand above the first deck. */
+@media (max-width: 640px) {
+  .store-home .store-scene { height: calc(100vw * 2 / 3 + var(--corner-top)); background-position: 50% 100%; }
+  .store-inner .store-scene { background-position: 82% 55%; }
 }
-.store-banner::after {    /* calm paper under the title */
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, rgba(250, 238, 219, 0.96) 0%, rgba(250, 238, 219, 0.82) 38%, rgba(250, 238, 219, 0) 70%),
-    linear-gradient(0deg, rgba(var(--shade), 0.1) 0%, rgba(var(--shade), 0) 30%);
+
+.store-top {
+  position: relative; z-index: 3; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  max-width: 1180px; margin: 0 auto; padding: var(--corner-top) var(--corner-right) 0 var(--corner-left);
 }
-.sb-art {   /* the Store's own picture (Home's tile), its edges faded into the paper */
-  position: absolute; z-index: 1; right: clamp(8px, 6vw, 64px); bottom: 0; height: calc(100% - clamp(58px, 6vw, 56px) - env(safe-area-inset-top));
-  aspect-ratio: 1; background: var(--img-store) center / contain no-repeat; mix-blend-mode: multiply;
-  -webkit-mask: linear-gradient(0deg, transparent 0%, #000 16%, #000 90%, transparent 100%), linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask: linear-gradient(0deg, transparent 0%, #000 16%, #000 90%, transparent 100%), linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
-  mask-composite: intersect;
+.store-top-end { display: flex; gap: 10px; justify-content: flex-end; min-width: 44px; }
+.store-screen .store-top .icon-button {
+  position: relative; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  color: var(--plaque-ink, var(--ink)); background: var(--plaque); box-shadow: var(--plaque-edge);
 }
-.sb-ground {
-  position: absolute; z-index: 1; right: clamp(8px, 6vw, 64px); bottom: -18px; width: 240px; height: 48px;
-  background: radial-gradient(closest-side, rgba(120, 72, 30, 0.22), rgba(120, 72, 30, 0));
+.store-screen .store-top .icon-button:hover:not(:disabled) { transform: none; box-shadow: var(--plaque-edge), 0 0 16px rgba(240, 198, 119, 0.3); }
+.store-screen .store-top .icon-button img { width: 32px; height: 32px; }
+.store-screen .store-top .icon-button svg { width: 21px; height: 21px; color: var(--gold); }
+.store-screen .store-top .back-arrow { font: 600 30px/1 Fredoka, Nunito, sans-serif; color: var(--plaque-ink, var(--ink)); margin-top: -3px; }
+.store-screen .store-top .icon-button.on { box-shadow: var(--plaque-edge), 0 0 0 2px var(--gold); }
+.store-title {
+  margin: 0; justify-self: center; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 600 clamp(21px, 3vw, 26px)/1 var(--serif-sc, Georgia, serif); letter-spacing: 0.06em; color: var(--ivory, var(--ink));
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
 }
-.sb-top {
-  position: absolute; z-index: 3; top: 0; left: 0; right: 0;
-  display: flex; justify-content: space-between; align-items: center; padding: var(--corner-top) var(--corner-right) 0 var(--corner-left);
-}
-.store-screen .sb-top .icon-button {
-  position: relative; width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center;
-  background: rgba(255, 251, 244, 0.92); color: var(--ink); border: 1px solid rgba(var(--shade), 0.1);
-  box-shadow: inset 0 1px 0 #fff, 0 6px 16px -6px rgba(var(--shade), 0.35);
-}
-.store-screen .sb-top .icon-button:hover:not(:disabled) { transform: none; box-shadow: inset 0 1px 0 #fff, 0 8px 18px -6px rgba(var(--shade), 0.45); }
-.store-screen .sb-top .icon-button img { width: 32px; height: 32px; }
-.store-screen .sb-top .back-arrow { font: 600 30px/1 Fredoka, Nunito, sans-serif; color: var(--ink); margin-top: -3px; }
-.store-screen .cart-button.on { box-shadow: 0 0 0 3px var(--accent), 0 6px 16px -6px rgba(var(--shade), 0.35); }
+/* The name hidden for sight: the header's grid keeps its three columns. */
+.store-top > .sr-only + .store-top-end { grid-column: 3; }
 .cart-badge {
   position: absolute; top: -3px; right: -3px; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 11px;
-  background: var(--accent-deep); color: #fff; font: 800 12px/21px Nunito, sans-serif; text-align: center; box-shadow: 0 0 0 2.5px var(--tile);
+  background: #d9486c; color: #fff; font: 800 12px/21px Nunito, sans-serif; text-align: center; box-shadow: 0 0 0 2.5px #171a36;
 }
-.sb-inner {
-  position: relative; z-index: 2; height: 100%; max-width: 1100px; margin: 0 auto;
-  display: flex; flex-direction: column; justify-content: flex-end; padding: 0 var(--pad) clamp(26px, 4.4vw, 44px);
+
+/* The corner menu: Use a code, Legacy decks. */
+.store-menu-scrim { position: fixed; inset: 0; z-index: 4; }
+.store-menu {
+  position: absolute; z-index: 5; top: calc(var(--corner-top) + 54px); right: var(--corner-right);
+  width: min(320px, calc(100vw - 24px)); padding: 6px; border-radius: 14px;
+  background: rgba(20, 22, 50, 0.97); box-shadow: inset 0 0 0 1px var(--line), 0 18px 40px rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); animation: store-menu-in 0.14s ease-out;
 }
-.store-banner.slim .sb-inner { padding-bottom: 20px; }
-.sb-eyebrow {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
-  font: 800 clamp(11px, 1.5vw, 13px)/1 Nunito, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-deep);
+@keyframes store-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+.store-screen .store-menu button {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 10px 12px; border: 0; border-radius: 10px;
+  background: none; box-shadow: none; color: var(--ink); text-align: left;
 }
-.sb-eyebrow::before { content: ''; width: 22px; height: 2px; border-radius: 2px; background: var(--accent); }
-.sb-inner h1 {
-  margin: 0; font: 600 clamp(44px, 8.6vw, 76px)/0.95 Fredoka, Nunito, sans-serif; letter-spacing: -0.01em; color: var(--ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+.store-screen .store-menu button:hover:not(:disabled) { transform: none; box-shadow: none; background: rgba(247, 238, 221, 0.07); }
+.sm-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--gold); background: rgba(240, 198, 119, 0.12); }
+.sm-icon svg { width: 21px; height: 21px; }
+.sm-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sm-text b { font: 600 19px/1.1 var(--serif-sc, Georgia, serif); letter-spacing: 0.04em; color: var(--ivory, var(--ink)); }
+.sm-text small { font: 600 13.5px/1.3 Nunito, sans-serif; color: var(--ink-2); }
+
+.store-screen .store-notice {
+  position: relative; z-index: 2; max-width: 640px; width: calc(100% - 2 * var(--pad)); margin: 14px auto 0; padding: 10px 16px; border-radius: 14px;
+  font: 700 14px/1.4 Nunito, sans-serif; text-align: center; color: var(--good); background: rgba(34, 60, 36, 0.85);
+  box-shadow: inset 0 0 0 1px rgba(168, 217, 138, 0.45);
 }
-.store-banner.slim .sb-inner h1 { font-size: clamp(34px, 6vw, 48px); }
-.sb-tagline { margin: 10px 0 0; font-size: clamp(14px, 2vw, 17px); font-weight: 600; color: var(--ink-2); max-width: 32ch; }
-@media (max-width: 560px) {
-  .sb-art { right: 6px; height: calc(100% - 66px - env(safe-area-inset-top)); }
-  .sb-ground { right: 6px; width: 180px; }
-  .store-banner::after {
-    background: linear-gradient(90deg, rgba(250, 238, 219, 0.97) 0%, rgba(250, 238, 219, 0.85) 46%, rgba(250, 238, 219, 0) 78%),
-      linear-gradient(0deg, rgba(var(--shade), 0.1) 0%, rgba(var(--shade), 0) 30%);
+
+/* ── The page ── */
+
+.store-main {
+  position: relative; z-index: 1; max-width: 1180px; margin: 0 auto;
+  padding: clamp(14px, 2.4vw, 26px) var(--pad) calc(40px + env(safe-area-inset-bottom));
+}
+/* The Store's own page: the painting shows between the header and the decks, as on the Collection's covers page. */
+.store-home .store-main { padding-top: var(--scene-gap, 120px); }
+.store-home .store-notice + .store-main { padding-top: calc(var(--scene-gap, 120px) - 44px); }
+.store-screen .page-intro {
+  max-width: 640px; margin: 0 auto clamp(18px, 3vw, 28px); text-align: center;
+  font: italic 500 clamp(18px, 2.2vw, 21px)/1.4 var(--serif, Georgia, serif); color: var(--ink); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+}
+.store-screen .store-empty {
+  max-width: 560px; margin: 0 auto; padding: clamp(32px, 6vw, 56px) 20px; text-align: center; border-radius: 4px;
+  background: var(--plaque); box-shadow: var(--plaque-edge);
+}
+.store-screen .store-empty h2 { margin: 0 0 8px; font: 600 clamp(24px, 3vw, 30px)/1.15 var(--serif-sc, Georgia, serif); letter-spacing: 0.04em; color: var(--ink); }
+.store-screen .store-empty p { margin: 0; font-weight: 600; color: var(--ink-2); line-height: 1.45; }
+.store-screen .store-message { position: relative; z-index: 1; max-width: 520px; margin: 18vh auto 40px; padding: 0 var(--pad); text-align: center; }
+.store-screen .store-message h2 { margin: 0 0 10px; font: 600 30px/1.15 var(--serif-sc, Georgia, serif); letter-spacing: 0.04em; color: var(--ink); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+.store-screen .store-message p { margin: 0 0 18px; font-weight: 600; color: var(--ink-2); line-height: 1.45; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+
+/* ── The decks: one to a row on a phone, two or three on an iPad ── */
+
+/* Rows of --cols decks, a short last row centred under the others, as the Collection hangs its covers. */
+.deck-shelf {
+  --cols: 1; --gap: clamp(20px, 3vw, 40px);
+  display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(30px, 4vw, 44px) var(--gap); max-width: 1080px; margin: 0 auto;
+}
+.deck-shelf > .deck-offer { flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); min-width: 0; }
+@media (min-width: 700px) {
+  .deck-shelf { --cols: 2; }
+  .deck-shelf.n1 { --cols: 1; max-width: 620px; }
+}
+/* An iPad held upright with one or two decks: one big painting to a row, so the page is filled, not a strip on top. */
+@media (min-width: 700px) and (orientation: portrait) { .deck-shelf.n2 { --cols: 1; max-width: 640px; } }
+@media (min-width: 1000px) and (orientation: landscape) { .deck-shelf.n3 { --cols: 3; max-width: 1180px; } }
+
+.deck-offer { position: relative; display: flex; flex-direction: column; }
+.store-screen button.do-open {
+  display: flex; flex-direction: column; align-items: stretch; width: 100%; padding: 0; border: 0; border-radius: 0;
+  background: none; box-shadow: none; color: inherit; text-align: left;
+}
+.store-screen button.do-open:hover:not(:disabled) { transform: none; box-shadow: none; }
+.do-cover { position: relative; display: block; transition: transform 0.25s ease; }
+.store-screen .do-cover .slot.deck-slot { width: 100%; }
+/* The frame (here and on a deck's page): a slim night moulding lit from above, an ivory hairline on its outer edge and
+   a fine gold fillet round the painting, with a warm lantern glow under it. */
+.store-screen :is(.do-cover, .product-stage) .deck-slot .frame {
+  padding: 2.2%; border-radius: 1px; background: linear-gradient(180deg, #2c3060 0%, #1a1d3d 45%, #111329 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 0 0 1px rgba(247, 238, 221, 0.28), 0 0 0 1px #07081a,
+    0 26px 44px -20px rgba(0, 0, 0, 0.9), 0 0 60px -24px rgba(240, 190, 90, 0.35);
+  transition: box-shadow 0.25s ease;
+}
+.store-screen :is(.do-cover, .product-stage) .deck-slot .sight {
+  --mat: #3a3029; --mat-ink: rgba(246, 236, 220, 0.72); --mat-rule: rgba(246, 236, 220, 0.16);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(240, 198, 119, 0.55);
+}
+@media (hover: hover) {
+  .deck-offer:hover .do-cover { transform: translateY(-4px); }
+  .store-screen .deck-offer:hover .do-cover .deck-slot .frame {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(247, 238, 221, 0.5), 0 0 0 1px #0c0d1f,
+      0 30px 50px -20px rgba(0, 0, 0, 0.9), 0 0 70px -16px rgba(240, 190, 90, 0.55);
   }
-  .store-screen .sb-top .icon-button { width: 44px; height: 44px; }
-  .sb-tagline { max-width: 18ch; }
-  .store-banner.slim .sb-art { opacity: 0.55; }
 }
-
-.store-notice {
-  max-width: 1100px; margin: 16px auto 0; padding: 10px 16px; border-radius: 14px; width: calc(100% - 2 * var(--pad));
-  font: 700 14px/1.4 Nunito, sans-serif; color: #2f6b3d; background: #e6f4e3; box-shadow: inset 0 0 0 1px #bfdcb9; text-align: center;
-}
-
-/* ── The list ── */
-
-.store-main { max-width: 1100px; margin: 0 auto; padding: clamp(22px, 3.6vw, 34px) var(--pad) calc(28px + env(safe-area-inset-bottom)); }
-.store-main.product-page { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
-/* The tabs: Folkborn (the main one) and Legacy. Words on the paper, the chosen one in ink over a thick accent line. */
-.store-tabs {
-  display: flex; gap: clamp(20px, 4vw, 36px); margin: 0 0 clamp(18px, 3vw, 26px); border-bottom: 1px solid var(--line);
-}
-.store-screen .store-tabs button {
-  position: relative; min-height: 44px; padding: 0 2px 10px; background: none; border: 0; border-radius: 0; box-shadow: none;
-  font: 600 clamp(19px, 2.6vw, 22px)/1 Fredoka, Nunito, sans-serif; color: var(--ink-2); cursor: pointer;
-}
-.store-screen .store-tabs button:hover { transform: none; color: var(--ink); }
-.store-screen .store-tabs button.chosen { color: var(--ink); }
-.store-screen .store-tabs button.chosen::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 4px; border-radius: 4px 4px 0 0; background: var(--accent);
-}
-.tab-intro { margin: -6px 0 clamp(16px, 2.6vw, 22px); font-weight: 600; color: var(--ink-2); line-height: 1.45; }
-.store-empty {
-  padding: clamp(36px, 7vw, 64px) 20px; text-align: center; border: 1.5px dashed var(--line); border-radius: 22px; background: var(--tile);
-}
-.store-empty h2 { margin: 0 0 8px; font: 600 clamp(22px, 3vw, 26px)/1.2 Fredoka, Nunito, sans-serif; color: var(--ink); }
-.store-empty p { margin: 0; font-weight: 600; color: var(--ink-2); line-height: 1.45; }
-
-.offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2.6vw, 22px); }
-@media (min-width: 1000px) { .offers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-
-/* A tile: .offer-open (picture and name: the item's page) above .offer-buy (the price: add to cart). */
-.store-screen .offer-open { display: flex; flex-direction: column; flex: 1; width: 100%; padding: 0; text-align: left; color: inherit; background: none; border: 0; border-radius: 0; box-shadow: none; }
-.offer-buy { padding: 0 16px 16px; }
-.store-screen .offer {
-  display: flex; flex-direction: column; padding: 0; text-align: left; overflow: hidden; color: var(--ink);
-  background: var(--tile); border: 1px solid var(--line); border-radius: 22px;
-  box-shadow: inset 0 1px 0 #fff, 0 14px 30px -18px rgba(var(--shade), 0.35), 0 2px 6px -2px rgba(var(--shade), 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.store-screen .offer:hover:not(:disabled) { transform: translateY(-2px); box-shadow: inset 0 1px 0 #fff, 0 20px 36px -18px rgba(var(--shade), 0.45); }
-.stage {
-  position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 0.92;
-  background: radial-gradient(70% 60% at 50% 45%, #fff8ee 0%, rgba(255, 248, 238, 0) 100%), var(--paper-2); border-bottom: 1px solid var(--line);
-}
+.store-screen .do-open:focus-visible { outline: none; }
+.store-screen .do-open:focus-visible .frame { outline: 2px solid var(--gold); outline-offset: 3px; }
 .of-flag {
-  position: absolute; top: 12px; right: 12px; padding: 5px 9px; border-radius: 8px;
-  font: 800 10.5px/1 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: #3f8f52;
+  position: absolute; top: 12px; right: 12px; padding: 6px 10px; border-radius: 8px;
+  font: 800 11px/1 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #16290f; background: var(--good);
 }
-.info { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; flex: 1; width: 100%; padding: 14px 16px 16px; }
-.kind {
-  display: inline-block; margin-bottom: 5px; padding: 5px 8px 4px; border-radius: 6px;
-  font: 800 10.5px/1 Nunito, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-deep); background: var(--accent-soft);
+/* The name and what's in the deck, with the price beside them (.do-buy sits over the row's right end). */
+.do-text { display: flex; flex-direction: column; justify-content: center; gap: 3px; min-height: 64px; padding: 14px 150px 0 2px; }
+/* A long name takes a second line rather than being cut. */
+.do-name {
+  font: 600 clamp(24px, 2.6vw, 31px)/1.05 var(--serif-sc, Georgia, serif); letter-spacing: 0.05em; color: var(--ivory, var(--ink));
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85); overflow-wrap: anywhere;
 }
-.info .name { font: 600 clamp(18px, 2.6vw, 22px)/1.15 Fredoka, Nunito, sans-serif; color: var(--ink); }
-.info .sub { font-size: clamp(13px, 1.7vw, 14.5px); font-weight: 600; color: var(--ink-2); margin-bottom: 14px; }
-.info .sub .rarity-mark { font-size: 13px; vertical-align: -0.15em; }
-.info .sub b { color: #3f8f52; }
-.info .buy {
-  margin-top: auto; align-self: stretch; display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 14px;
-  background: #fff3e3; border: 1.5px solid #ebc9a2; color: #9e4812; font: 800 16px/1 Nunito, sans-serif;
-  box-shadow: inset 0 1px 0 #fff, 0 3px 0 -1px #ebc9a2;
+.do-sub {
+  font: italic 500 clamp(16px, 1.7vw, 18px)/1.2 var(--serif, Georgia, serif); color: rgba(247, 238, 221, 0.8);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* The price on a tile is the Add to cart button, and looks like one. */
-.offer-buy .buy {
-  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px; padding: 0 10px; border-radius: 14px;
-  font: 800 16px/1 Nunito, sans-serif; color: #fff; background: linear-gradient(#f29a52, #d9701f); border: 0;
-  box-shadow: 0 3px 0 #a9520f, 0 8px 18px -8px rgba(var(--shade), 0.5);
+.do-buy { position: absolute; right: 0; bottom: 3px; max-width: 150px; }
+/* Three to a row (an iPad held sideways): the price under the name, so the name keeps the whole width. */
+@media (min-width: 1000px) and (orientation: landscape) {
+  .deck-shelf.n3 .do-text { padding-right: 2px; }
+  .deck-shelf.n3 .do-buy { position: static; max-width: none; margin-top: 12px; }
 }
-.store-screen .offer-buy button.buy:hover { filter: brightness(1.05); }
-.store-screen .offer-buy button.buy:active { transform: translateY(2px); box-shadow: 0 1px 0 #a9520f; }
-.offer-buy .buy .price-chip s { color: #fff; opacity: 0.75; }
-.offer-buy .buy.in-cart { color: #2f6b3d; background: #e6f4e3; box-shadow: inset 0 0 0 1.5px #bfdcb9; }
-.offer-buy .buy.done { color: #3f8f52; background: #eef7ea; box-shadow: inset 0 0 0 1.5px #bfdcb9; font-size: 14px; }
-.cart-icon { flex: none; width: 19px; height: 19px; }
-.offer-open .info { padding-bottom: 12px; }
-.offer-open .info .sub { margin-bottom: 0; }
-.price-chip { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
-.price-chip s { font-size: 0.8em; font-weight: 700; opacity: 0.55; }
 
-/* One stage for every item: a card's picture at a card's size; a deck as its hero's painting in a frame (.deck-slot, below). */
-.slot { position: relative; display: block; width: min(56%, 190px); aspect-ratio: 5 / 7; }
-.slot.big { width: min(64vw, 300px); }
-.slot .face {
+/* ── Single cards and a deck's missing cards: tiles, the card at a card's size on a small stage ── */
+
+.store-screen .shelf-title {
+  margin: clamp(36px, 5vw, 52px) 0 16px; text-align: center;
+  font: 600 clamp(22px, 2.6vw, 27px)/1.1 var(--serif-sc, Georgia, serif); letter-spacing: 0.06em; color: var(--ivory, var(--ink));
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+}
+.store-screen .offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2.6vw, 22px); }
+@media (min-width: 700px) { .store-screen .offers { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1000px) and (orientation: landscape) { .store-screen .offers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.store-screen .offer {
+  display: flex; flex-direction: column; padding: 0; overflow: hidden; text-align: left; color: var(--ink);
+  background: var(--plaque); border: 0; border-radius: 3px; box-shadow: var(--plaque-edge); transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.store-screen .offer:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--plaque-edge), 0 0 30px -10px rgba(240, 190, 90, 0.4); }
+.store-screen button.offer-open { display: flex; flex-direction: column; flex: 1; width: 100%; padding: 0; text-align: left; color: inherit; background: none; border: 0; border-radius: 0; box-shadow: none; }
+.store-screen .offer .stage {
+  position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 0.92;
+  background: radial-gradient(70% 60% at 50% 45%, rgba(247, 238, 221, 0.08) 0%, rgba(247, 238, 221, 0) 100%), rgba(8, 9, 26, 0.35);
+}
+.store-screen .offer .stage:has(.deck-slot) { aspect-ratio: auto; padding: 7px 7px 0; background: none; }
+.store-screen .offer .slot.deck-slot { width: 100%; }
+.store-screen .offer .deck-slot .frame { padding: 0; background: none; box-shadow: none; }
+.store-screen .offer .info { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; flex: 1; width: 100%; padding: 12px 14px; }
+.store-screen .offer .kind {
+  margin-bottom: 4px; font: 800 10.5px/1 Nunito, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+}
+.store-screen .offer .name { font: 600 clamp(19px, 2.4vw, 22px)/1.1 var(--serif-sc, Georgia, serif); letter-spacing: 0.04em; color: var(--ivory, var(--ink)); }
+.store-screen .offer .sub { font-size: clamp(13px, 1.7vw, 14.5px); font-weight: 600; color: var(--ink-2); }
+.store-screen .offer .sub .rarity-mark { font-size: 13px; vertical-align: -0.15em; }
+.store-screen .offer .sub b { color: var(--good); }
+.store-screen .offer .info .buy {   /* a missing-cards pick's price: a label, not a button */
+  margin-top: 10px; align-self: stretch; display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border-radius: 12px;
+  font: 800 15px/1 Nunito, sans-serif; color: var(--gold); background: rgba(226, 173, 78, 0.12); box-shadow: inset 0 0 0 1.5px rgba(226, 173, 78, 0.45);
+}
+.offer-buy { padding: 0 14px 14px; }
+.store-screen .slot { position: relative; display: block; width: min(56%, 190px); aspect-ratio: 5 / 7; }
+.store-screen .slot.big { width: min(64vw, 300px); }
+.store-screen .slot .face {
   position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 6.5% / 4.6%;
-  box-shadow: 0 12px 22px -10px rgba(var(--shade), 0.55), 0 2px 4px rgba(var(--shade), 0.12);
+  box-shadow: 0 12px 22px -10px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
-
-.store-note {
-  display: flex; gap: 12px; align-items: flex-start; margin: clamp(22px, 3.6vw, 32px) 0 0; padding: 16px 18px; border-radius: 18px;
-  background: var(--accent-soft); color: #6a4a33; font-size: 14.5px; font-weight: 600; line-height: 1.45;
-}
-.store-note svg { flex: none; width: 20px; height: 20px; margin-top: 1px; color: var(--accent-deep); }
-.tester-tools {
-  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
-  margin: 22px 0 0; padding: 16px 0 0; border-top: 1px dashed #dcc7a8; font-size: 13px; font-weight: 700; color: var(--ink-2);
-}
-.tester-tag { display: flex; align-items: center; gap: 8px; }
-.tester-tag::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: #c9b79e; }
-.store-screen button.tester-btn {
-  font: 800 13px/1 Nunito, sans-serif; color: var(--accent-deep); padding: 10px 14px; border-radius: 12px;
-  border: 1px solid #e3cdb0; background: var(--tile); box-shadow: none;
-}
-.store-message { max-width: 520px; margin: 40px auto; padding: 0 var(--pad); text-align: center; }
-.store-message h2 { margin: 0 0 8px; font: 600 26px/1.2 Fredoka, Nunito, sans-serif; color: var(--ink); }
-.store-message p { margin: 0 0 16px; font-weight: 600; color: var(--ink-2); line-height: 1.45; }
-
 @media (max-width: 560px) {
-  .info { padding: 11px 12px 12px; }
-  .kind { font-size: 10px; }
-  .info .sub { margin-bottom: 11px; }
-  .info .buy { height: 38px; font-size: 15px; border-radius: 12px; }
+  .store-screen .offer .info { padding: 11px 12px; }
   .offer-buy { padding: 0 12px 12px; }
-  .offer-buy .buy { height: 42px; font-size: 15px; gap: 6px; border-radius: 12px; }
-  .cart-icon { width: 17px; height: 17px; }
-  .slot { width: 53%; }
-  .store-note { font-size: 13.5px; padding: 14px 15px; }
+  .store-screen .slot { width: 53%; }
 }
 
 /* ── Buttons ── */
 
+/* The price on a deck or a tile: it adds to the cart, and looks like Home's honey buttons. */
+.store-screen :is(.do-buy, .offer-buy) .buy {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 46px; padding: 0 18px 0 15px; border: 0; border-radius: 999px;
+  font: 800 16px/1 Nunito, sans-serif; white-space: nowrap; color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
+  background: linear-gradient(#f3cd7a, var(--honey, #e2ad4e) 55%, #c98f2e);
+  box-shadow: 0 3px 0 var(--honey-dark, #9c6a22), 0 8px 18px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.store-screen .offer-buy .buy { display: flex; width: 100%; height: 44px; }
+.store-screen :is(.do-buy, .offer-buy) button.buy:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
+.store-screen :is(.do-buy, .offer-buy) button.buy:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--honey-dark, #9c6a22); }
+.store-screen :is(.do-buy, .offer-buy) .buy .price-chip { font-weight: 900; }
+.store-screen :is(.do-buy, .offer-buy) .buy .price-chip s { color: #3b2610; }
+.store-screen :is(.do-buy, .offer-buy) .buy :is(.in-cart, .done), .store-screen :is(.do-buy, .offer-buy) .buy:is(.in-cart, .done), .store-screen .owned-pill {
+  color: var(--good); text-shadow: none; background: rgba(40, 66, 36, 0.8); box-shadow: inset 0 0 0 1.5px rgba(168, 217, 138, 0.5);
+}
+.store-screen :is(.do-buy, .offer-buy) .buy.done { font-size: 14.5px; }
+.cart-icon { flex: none; width: 19px; height: 19px; }
+.price-chip { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.price-chip s { font-size: 0.8em; font-weight: 700; opacity: 0.6; }
+@media (max-width: 380px) { .store-screen .offer-buy .buy .price-chip s { display: none; } }
+
 .store-screen button.store-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 46px; padding: 0 22px; border-radius: 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; padding: 0 22px; border-radius: 999px;
   font: 800 16px/1 Nunito, sans-serif; white-space: nowrap;
 }
-.store-screen button.store-btn.buy { color: #fff; background: linear-gradient(#f29a52, #d9701f); box-shadow: 0 3px 0 #a9520f, 0 8px 18px -8px rgba(var(--shade), 0.5); }
+.store-screen button.store-btn.buy, .reveal-screen button.store-btn.buy, .buy-bar button.store-btn.buy {
+  color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6); border: 0;
+  background: linear-gradient(#f3cd7a, var(--honey, #e2ad4e) 55%, #c98f2e);
+  box-shadow: 0 3px 0 var(--honey-dark, #9c6a22), 0 8px 18px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
 .store-screen button.store-btn.buy:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.04); }
-.store-screen button.store-btn.buy:disabled { filter: saturate(0.2) opacity(0.6); }
-.store-btn.buy .price-chip { padding: 5px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.22); }
-.store-screen button.store-btn.ghost { color: var(--accent-deep); background: var(--tile); border: 1.5px solid #ebc9a2; box-shadow: none; }
-.store-screen button.store-btn.big { height: 54px; padding: 0 12px 0 26px; font-size: 18px; }
+.store-screen button.store-btn.buy:disabled, .buy-bar button.store-btn.buy:disabled { filter: saturate(0.2) opacity(0.6); }
+.store-btn.buy .price-chip { padding: 6px 11px; border-radius: 999px; background: rgba(255, 250, 235, 0.38); }
+.store-screen button.store-btn.ghost { color: var(--ink); background: rgba(23, 26, 54, 0.85); border: 0; box-shadow: inset 0 0 0 1.5px var(--line); }
+.store-screen button.store-btn.big { height: 56px; padding: 0 12px 0 26px; font-size: 18px; }
 .store-screen button.store-btn.ghost.big { padding: 0 26px; }
 .store-screen button.store-btn.wide { width: 100%; height: 52px; font-size: 17px; }
 .store-screen button.link-btn {
   padding: 6px 4px; background: none; box-shadow: none; border-radius: 6px; color: var(--ink-2);
   font: 700 13.5px/1.2 Nunito, sans-serif; text-decoration: underline; text-underline-offset: 3px;
 }
-.owned-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font: 800 14px/1 Nunito, sans-serif; color: #2f6b3d; background: #e6f4e3; }
-.owned-pill.big { padding: 14px 22px; font-size: 16px; }
-.buy-bar {
-  position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; gap: 16px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: rgba(251, 244, 232, 0.94);
-  border-top: 1px solid #eadcc6; box-shadow: 0 -10px 30px -12px rgba(58, 42, 31, 0.35);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
-.bb-total { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font: 600 24px/1 Fredoka, Nunito, sans-serif; color: #3a2a1f; }
-.bb-total small { font: 700 12px/1.3 Nunito, sans-serif; color: #7a6453; }
+.owned-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font: 800 14px/1 Nunito, sans-serif; }
+.owned-pill.big { padding: 17px 22px; font-size: 16px; }
 
-/* ── A product's page ── */
+/* ── A product's page: the painting (or the card) beside its name, price and story; its cards under them ── */
 
-.product-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; gap: clamp(20px, 4vw, 40px); }
-.product-stage {
-  display: grid; place-items: center; padding: 34px 0 30px; border-radius: 24px; border: 1px solid var(--line);
-  background: radial-gradient(70% 60% at 50% 45%, #fff8ee 0%, rgba(255, 248, 238, 0) 100%), var(--paper-2);
+.product-top { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: clamp(24px, 4vw, 52px); }
+.product-stage { display: grid; place-items: center; }
+.product-stage:not(:has(.deck-slot)) {
+  padding: 34px 0 30px; border-radius: 3px; box-shadow: var(--plaque-edge);
+  background: radial-gradient(70% 60% at 50% 45%, rgba(247, 238, 221, 0.1) 0%, rgba(247, 238, 221, 0) 100%), var(--plaque);
 }
-.product-info { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-.product-buy { align-self: stretch; margin: 4px 0 2px; }
+.store-screen .product-stage .slot.deck-slot.big { width: 100%; }
+.store-screen .product-stage .slot.big:not(.deck-slot) { width: min(62%, 280px); }
+.product-info { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.store-screen .eyebrow {
+  font: 800 12px/1.3 Nunito, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+.store-screen .product-info h2, .store-screen .missing-head h2 {
+  margin: -4px 0 2px; font: 600 clamp(38px, 5vw, 58px)/1 var(--serif-sc, Georgia, serif); letter-spacing: 0.04em; color: var(--ivory, var(--ink));
+  text-shadow: 0 2px 0 #0c0d1f, 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+.product-buy { align-self: stretch; margin: 2px 0; }
 .product-buy .store-btn.big, .product-buy .owned-pill.big { width: min(100%, 420px); justify-content: center; }
-.store-screen .product-buy button.store-btn.big { height: 58px; padding: 0 12px 0 20px; justify-content: space-between; font-size: 19px; }
-.store-screen .product-buy button.store-btn.ghost.big { justify-content: center; }
+.store-screen .product-buy button.store-btn.big { justify-content: space-between; padding: 0 10px 0 22px; font-size: 19px; }
+.store-screen .product-buy button.store-btn.ghost.big, .store-screen .product-buy button.store-btn.big.get { justify-content: center; gap: 14px; }
 .product-buy .cart-icon { width: 22px; height: 22px; margin-right: -4px; }
-.product-buy.again { display: flex; justify-content: center; margin-top: 26px; }
-.product-info h2, .missing-head h2 { margin: 0; font: 600 clamp(34px, 6vw, 50px)/1 Fredoka, Nunito, sans-serif; color: var(--ink); }
-.blurb { margin: 0; font-size: 15.5px; font-weight: 600; line-height: 1.5; color: var(--ink-2); }
-.blurb b { color: var(--ink); }
-.facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
-.facts span { padding: 6px 11px; border-radius: 999px; font: 700 13px/1 Nunito, sans-serif; color: var(--ink-2); background: var(--tile); border: 1px solid var(--line); }
-.facts .rarity-mark { font-size: 13px; vertical-align: -0.15em; }
-.facts .good { color: #2f6b3d; background: #eef7ea; border-color: #bfdcb9; }
-@media (max-width: 640px) {
-  .product-top { grid-template-columns: 1fr; gap: 16px; }
-  .product-stage { padding: 18px 0 16px; }
-  .product-info h2 { font-size: 32px; }
+.product-buy.again { display: flex; justify-content: center; margin-top: 32px; }
+.store-screen .blurb {
+  margin: 0; font: italic 500 clamp(18px, 1.8vw, 21px)/1.45 var(--serif, Georgia, serif); color: rgba(247, 238, 221, 0.9);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+}
+.store-screen .blurb b { color: var(--ink); }
+.store-screen .facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.store-screen .facts span {
+  padding: 7px 12px; border-radius: 999px; font: 700 13.5px/1 Nunito, sans-serif; color: var(--ink-2);
+  background: rgba(20, 22, 50, 0.85); box-shadow: inset 0 0 0 1px var(--line);
+}
+.store-screen .facts .rarity-mark { font-size: 13px; vertical-align: -0.15em; }
+.store-screen .facts .good { color: var(--good); background: rgba(40, 66, 36, 0.8); box-shadow: inset 0 0 0 1px rgba(168, 217, 138, 0.45); }
+@media (max-width: 760px), (orientation: portrait) {
+  .product-top { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .product-top .product-stage, .product-info { max-width: 760px; width: 100%; justify-self: center; }
   .product-buy .store-btn.big, .product-buy .owned-pill.big { width: 100%; }
 }
+@media (max-width: 640px) {
+  .product-stage:not(:has(.deck-slot)) { padding: 18px 0 16px; }
+  .store-screen .product-stage .slot.big:not(.deck-slot) { width: min(48vw, 220px); }
+  .store-screen .product-info h2 { font-size: 38px; }
+}
 
-.section-title {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 32px 0 14px; padding-bottom: 10px;
-  border-bottom: 1px solid var(--line); font: 600 22px/1.1 Fredoka, Nunito, sans-serif; color: var(--ink);
+/* Section headings: the serif alone, no rule under it. */
+.store-screen .section-title {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; margin: clamp(34px, 5vw, 52px) 0 16px;
+  font: 600 clamp(24px, 2.8vw, 30px)/1.1 var(--serif-sc, Georgia, serif); letter-spacing: 0.05em; color: var(--ivory, var(--ink));
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
 }
-.section-title span { font: 600 13px/1.3 Nunito, sans-serif; color: var(--ink-2); }
-.inside { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 16px 12px; }
-@media (max-width: 560px) { .inside { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; } }
-.inside-card { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: zoom-in; }
+.store-screen .section-title span { font: italic 500 17px/1.3 var(--serif, Georgia, serif); letter-spacing: 0; color: var(--ink-2); }
+.inside { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 18px 14px; }
+@media (max-width: 560px) { .inside { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; } }
+.inside-card { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: zoom-in; }
 .inside-face { position: relative; display: block; width: 100%; }
-.inside-face img { display: block; width: 100%; aspect-ratio: 5 / 7; object-fit: cover; border-radius: 6.5% / 4.6%; box-shadow: 0 8px 16px -8px rgba(var(--shade), 0.55); }
-.copies {
+.inside-face img { display: block; width: 100%; aspect-ratio: 5 / 7; object-fit: cover; border-radius: 6.5% / 4.6%; box-shadow: 0 10px 18px -8px rgba(0, 0, 0, 0.8); }
+.store-screen .copies {
   position: absolute; top: 40%; right: 6%; padding: 2px 8px; border-radius: 999px;
-  font: 800 12px/1.5 Nunito, sans-serif; color: #fff; background: rgba(40, 24, 12, 0.72);
+  font: 800 12px/1.5 Nunito, sans-serif; color: #fff; background: rgba(12, 10, 24, 0.78);
 }
-.inside-label { font: 700 12px/1.2 Nunito, sans-serif; color: var(--ink-2); text-align: center; }
-.inside-label b { color: var(--accent-deep); letter-spacing: 0.08em; text-transform: uppercase; }
+.inside-label { font: 700 12.5px/1.2 Nunito, sans-serif; color: var(--ink-2); text-align: center; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.inside-label b { color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; }
 .inside-card.unsold img { filter: grayscale(0.6) opacity(0.75); }
 
 /* ── Missing cards: the same tiles, picked or left out ── */
 
-.missing-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
+.missing-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 22px; }
 .pick-check {
   position: absolute; top: 12px; left: 12px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-  font: 800 16px/1 Nunito, sans-serif; color: #fff; background: #3f8f52; box-shadow: 0 2px 6px rgba(var(--shade), 0.35);
+  font: 800 16px/1 Nunito, sans-serif; color: #fff; background: var(--moss-deep, #4d7a3c); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 .store-screen button.offer.pick.off { opacity: 0.6; }
-.offer.pick.off .pick-check { background: var(--tile); box-shadow: inset 0 0 0 2px #c9b79e; }
+.offer.pick.off .pick-check { background: #171a36; box-shadow: inset 0 0 0 2px rgba(243, 231, 207, 0.4); }
 .offer.pick.off .slot { filter: grayscale(0.85); }
-.offer.pick.off .info .buy { color: var(--ink-2); background: var(--paper-2); border-color: var(--line); box-shadow: none; font-size: 14px; }
-.store-warning { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; font: 700 14px/1.4 Nunito, sans-serif; color: #8a4a06; background: #fff0d0; box-shadow: inset 0 0 0 1px #ecd09a; }
+.store-screen .offer.pick.off .info .buy { color: var(--ink-2); background: rgba(8, 9, 26, 0.4); box-shadow: inset 0 0 0 1.5px var(--line); font-size: 14px; }
+.store-warning, .store-screen .ct-min {
+  margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; font: 700 14px/1.4 Nunito, sans-serif;
+  color: #f6d9a0; background: rgba(110, 64, 18, 0.7); box-shadow: inset 0 0 0 1px rgba(240, 198, 119, 0.45);
+}
 
 /* ── The cart ── */
 
 .cart { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 .cart-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.cart-line {
-  display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px;
-  background: var(--tile); border: 1px solid var(--line); box-shadow: 0 8px 20px -16px rgba(var(--shade), 0.4);
-}
+.cart-line, .cart-total { background: var(--plaque); border-radius: 3px; box-shadow: var(--plaque-edge); }
+.cart-line { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; }
 .cart-line.idle { opacity: 0.65; }
-.cl-face { display: block; width: 58px; aspect-ratio: 5 / 7; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px -4px rgba(var(--shade), 0.5); }
-.cl-face.deck { aspect-ratio: 1; border-radius: 12px; }
+.cl-face { display: block; width: 58px; aspect-ratio: 5 / 7; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.7); }
+.cl-face.deck { aspect-ratio: 1; border-radius: 4px; }
 .cl-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.cl-name { font: 600 17px/1.2 Fredoka, Nunito, sans-serif; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-name { font: 600 19px/1.15 var(--serif-sc, Georgia, serif); letter-spacing: 0.03em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cl-sub { font: 700 12.5px/1.3 Nunito, sans-serif; color: var(--ink-2); }
 .cl-sub .rarity-mark { font-size: 12px; vertical-align: -0.15em; }
-.cl-note { font: 700 12px/1.3 Nunito, sans-serif; color: #a15a12; }
+.cl-note { font: 700 12px/1.3 Nunito, sans-serif; color: var(--gold); }
 .cl-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.cl-amount { font: 600 17px/1 Fredoka, Nunito, sans-serif; color: var(--ink); }
-.stepper { display: inline-flex; align-items: center; gap: 2px; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--line); }
+.cl-amount { font: 700 17px/1 Nunito, sans-serif; color: var(--ink); }
+.stepper { display: inline-flex; align-items: center; gap: 2px; border-radius: 999px; background: rgba(8, 9, 26, 0.45); box-shadow: inset 0 0 0 1px var(--line); }
 .stepper b { min-width: 22px; text-align: center; font: 700 14px/1 Nunito, sans-serif; color: var(--ink); }
 .store-screen .stepper button { width: 32px; height: 30px; padding: 0; border-radius: 999px; background: none; box-shadow: none; color: var(--ink); font: 700 18px/1 Fredoka, Nunito, sans-serif; }
 .store-screen .stepper button:disabled { opacity: 0.3; }
 .store-screen button.cl-remove { padding: 2px; font-size: 12px; }
-.cart-total {
-  display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 18px; border-radius: 20px;
-  background: var(--tile); border: 1px solid var(--line); box-shadow: 0 10px 26px -18px rgba(var(--shade), 0.45);
-}
-.ct-row { display: flex; justify-content: space-between; align-items: baseline; font: 600 18px/1 Fredoka, Nunito, sans-serif; color: #3a2a1f; }
-.ct-row b { font-size: 28px; font-weight: 600; }
+.cart-total { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 18px; }
+.ct-row { display: flex; justify-content: space-between; align-items: baseline; font: 600 20px/1 var(--serif-sc, Georgia, serif); letter-spacing: 0.04em; color: var(--ink); }
+.ct-row b { font: 700 28px/1 Nunito, sans-serif; letter-spacing: 0; }
 .ct-small { margin: 0; font: 600 12.5px/1.4 Nunito, sans-serif; color: var(--ink-2); }
-.ct-min { margin: 0; padding: 9px 11px; border-radius: 10px; font: 700 13px/1.4 Nunito, sans-serif; color: #8a4a06; background: #fff0d0; }
+.store-screen .cart-total .ct-min { margin: 0; }
 .cart-total .link-btn { align-self: center; }
+.buy-bar {
+  position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; gap: 16px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: rgba(16, 18, 42, 0.94);
+  box-shadow: 0 -12px 30px -10px rgba(0, 0, 0, 0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.bb-total { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font: 700 24px/1 Nunito, sans-serif; color: #f3e7cf; }
+.bb-total small { font: 700 12px/1.3 Nunito, sans-serif; color: rgba(243, 231, 207, 0.72); }
 
-/* ── Confirming: the parchment dialog every question in the game uses ── */
+/* For testers, at the very bottom. */
+.tester-tools {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
+  max-width: 640px; margin: 40px auto 0; font-size: 13px; font-weight: 700; color: var(--ink-2);
+}
+.tester-tag { display: flex; align-items: center; gap: 8px; }
+.tester-tag::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+.store-screen button.tester-btn {
+  font: 800 13px/1 Nunito, sans-serif; color: var(--gold); padding: 10px 14px; border-radius: 999px;
+  border: 0; background: rgba(20, 22, 50, 0.85); box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* ── Use a code ── */
+
+.code-panel {
+  max-width: 460px; margin: clamp(10px, 4vh, 40px) auto 0; padding: clamp(26px, 5vw, 40px) clamp(18px, 4vw, 30px); text-align: center;
+  border-radius: 4px; background: var(--plaque); box-shadow: var(--plaque-edge);
+}
+.code-icon { display: inline-flex; padding: 14px; border-radius: 50%; background: rgba(240, 198, 119, 0.12); color: var(--gold); }
+.code-icon svg { width: 30px; height: 30px; }
+.code-panel p { margin: 14px 0 20px; font: italic 500 19px/1.4 var(--serif, Georgia, serif); color: var(--ink); }
+.code-panel input.store-code {
+  display: block; width: 100%; box-sizing: border-box; margin: 0 0 14px; padding: 14px 12px; border-radius: 12px;
+  border: 0; background: rgba(8, 9, 26, 0.6); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line);
+  font: 800 22px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-align: center; text-transform: uppercase;
+}
+.code-panel input.store-code:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 0 3px rgba(240, 198, 119, 0.25); }
+.code-panel input.store-code::placeholder { color: rgba(243, 231, 207, 0.3); letter-spacing: 0.12em; }
+.code-panel p.code-problem { margin: -4px 0 14px; font: 700 14px/1.4 Nunito, sans-serif; color: #f09a8e; }
+
+/* ── Deck covers (Store and Collection): the hero's painting, whole and at its own shape ──
+   The paintings are 3:2, and a cover shows all of it, exactly as it sits on the card: no crop, no stretch. It hangs in
+   a plain frame like the Home tiles': a flat moulding, square corners, one dark hairline round the picture and a soft
+   shadow, with no ornament and no family colour, so every style of art reads as the art. The name is written beside
+   the cover, never on it. The Collection sets its own frame (showcase.css).
+   Markup (framedPainting, storefront.ts): .slot.deck-slot > .frame > .sight > img.painting, .sight.missing, or
+   .painting.empty (the empty Showcase). */
+.slot { position: relative; display: block; }
+.slot.deck-slot { width: 74%; aspect-ratio: auto; }
+@media (max-width: 560px) { .slot.deck-slot { width: 80%; } }
+.deck-slot .frame {
+  position: relative; display: block; padding: 3.2%; border-radius: 1px;
+  background: linear-gradient(180deg, #2b3060, #171a36);
+  box-shadow: inset 0 0 0 1px var(--plaque-line, rgba(130, 214, 228, 0.6)), 0 0 0 1px #0c0d1f, 0 10px 18px -10px rgba(0, 0, 0, 0.6);
+}
+/* The mat under the painting while it loads: a warm tone that reads as a frame waiting for its picture, not a hole. */
+.deck-slot .sight {
+  --mat: #3a3029; --mat-ink: rgba(246, 236, 220, 0.8); --mat-rule: rgba(246, 236, 220, 0.16);
+  position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden; background: var(--mat);
+  box-shadow: 0 0 0 1px rgba(130, 214, 228, 0.45);
+}
+.deck-slot .painting { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.35s ease; }
+.deck-slot .painting.ready { opacity: 1; }
+/* Should a load event ever be missed, the painting still shows. */
+.deck-slot .painting:not(.ready) { animation: painting-show 0s 5s forwards; }
+@keyframes painting-show { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .deck-slot .painting { transition: none; } }
+/* No painting at all (a prototype set's hero): the mat, with the name set on it inside a fine rule. */
+.deck-slot .sight.missing::before {
+  content: attr(data-name); position: absolute; inset: 7% 5%; display: grid; place-items: center; padding: 4%;
+  text-align: center; font: 600 clamp(15px, 2vw, 22px)/1.15 var(--serif-sc, Georgia, serif); color: var(--mat-ink);
+  box-shadow: inset 0 0 0 1px var(--mat-rule);
+}
+.deck-slot .painting.empty {
+  opacity: 1; animation: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
+}
+
+/* ── Dialogs: the parchment dialog every question in the game uses ── */
 
 .overlay .confirm-dialog { width: min(400px, 100%); text-align: left; }
 .confirm-dialog h2 { text-align: center; }
@@ -335,8 +470,11 @@
 .confirm-lines { list-style: none; margin: 0 0 12px; padding: 0; max-height: min(40vh, 300px); overflow-y: auto; }
 .confirm-lines.long { -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); padding-bottom: 18px; }
 .confirm-lines li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid rgba(120, 70, 20, 0.14); font-weight: 700; font-size: 14.5px; }
-.confirm-dialog .ct-row { margin: 4px 0 12px; }
-.confirm-dialog .ct-min { margin-bottom: 10px; }
+.confirm-dialog .ct-row { margin: 4px 0 12px; color: #3a2a1f; font-family: Fredoka, Nunito, sans-serif; letter-spacing: 0; }
+.confirm-dialog .ct-min {
+  margin: 0 0 10px; padding: 9px 11px; border-radius: 10px; font: 700 13px/1.4 Nunito, sans-serif; color: #8a4a06; background: #fff0d0;
+}
+.confirm-dialog > p.confirm-digital { font-size: 13.5px; color: #5d4631; }
 .confirm-dialog .delete-buttons button { white-space: nowrap; }
 .soon-dialog .delete-buttons, .confirm-dialog .delete-buttons.single { grid-template-columns: minmax(0, 220px); justify-content: center; }
 .confirm-test { padding: 10px 12px; border-radius: 12px; background: #fff4d6; box-shadow: inset 0 0 0 1px #ecd09a; }
@@ -392,188 +530,9 @@
   display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 24px; border-radius: 999px;
   font: 700 16px/1 Fredoka, Nunito, sans-serif; white-space: nowrap;
 }
-.reveal-screen button.store-btn.buy { color: #4a2c06; background: linear-gradient(#ffe39a, #f2b940); box-shadow: 0 4px 14px rgba(240, 180, 60, 0.32); }
 .reveal-screen button.link-btn { background: none; box-shadow: none; color: rgba(255, 255, 255, 0.72); font: 700 13.5px/1.2 Nunito, sans-serif; text-decoration: underline; text-underline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   .reveal-card { animation: none; }
   .reveal-stage::before { animation: none; opacity: 1; }
+  .store-menu { animation: none; }
 }
-
-/* With a mouse, the page shows a scrollbar (fingers don't need one). */
-@media (hover: hover) and (pointer: fine) {
-  .store-screen { scrollbar-width: thin; scrollbar-color: rgba(58, 42, 31, 0.35) transparent; }
-}
-
-/* The inner pages' banner: tall enough that the title clears Home and the cart. */
-.store-banner.slim { height: calc(178px + env(safe-area-inset-top)); }
-.product-stage .slot.big:not(.deck-slot) { width: min(62%, 280px); }
-/* A smaller picture on a phone, so the name and Add to cart sit on the first screen. */
-@media (max-width: 640px) { .product-stage .slot.big:not(.deck-slot) { width: min(48vw, 220px); } }
-.offer-buy .add-word { margin-right: 2px; }
-.offer-buy .price-chip { padding: 4px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.22); }
-@media (max-width: 380px) { .offer-buy .buy .price-chip s { display: none; } }
-
-/* ── The night wood (the owner's call, 2026-09-27: the Store looks like Home, not like a page of its own) ──
-   The layout above stays; its colours move to Home's: the glowing night wood behind everything, night-indigo plaques
-   with a thin teal line for tiles, panels and the cart, cream lettering, honey-amber buttons. The banner is the Store's
-   own painting (art/ui/store-banner.webp), a card stall in that same wood, drawn from Home's backdrop. */
-.store-screen {
-  --paper: #121530; --paper-2: #151936; --tile: #1d2146; --line: rgba(130, 214, 228, 0.28);
-  --ink: #f3e7cf; --ink-2: rgba(243, 231, 207, 0.72); --accent: #7fd3e0; --accent-deep: #f0c677; --accent-soft: rgba(226, 173, 78, 0.14);
-  --shade: 0, 0, 0; --good: #a8d98a;
-  isolation: isolate; background: #0e1026;
-}
-.store-screen::before {   /* Home's backdrop, fixed behind the scrolling page, a little darker so the plaques read */
-  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg) center / cover no-repeat;
-}
-@media (orientation: portrait) { .store-screen::before { background-image: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg-tall); } }
-
-.store-banner { background: none; border-bottom: 0; }
-.store-banner::before {   /* the painting, melting into the wood below it: no edge between banner and page */
-  opacity: 1; filter: none; background: url('/ui/store-banner.webp') 72% 55% / cover no-repeat;
-  -webkit-mask: linear-gradient(180deg, #000 60%, transparent 100%); mask: linear-gradient(180deg, #000 60%, transparent 100%);
-}
-.store-banner::after {   /* night under the title, so it reads over the painting; it fades out with the painting */
-  background: linear-gradient(90deg, rgba(12, 13, 34, 0.78) 0%, rgba(12, 13, 34, 0.42) 42%, rgba(12, 13, 34, 0) 68%);
-  -webkit-mask: linear-gradient(180deg, #000 60%, transparent 100%); mask: linear-gradient(180deg, #000 60%, transparent 100%);
-}
-@media (max-width: 560px) {
-  .store-banner::before { background-position: 80% 55%; }
-  .store-banner::after { background: linear-gradient(90deg, rgba(12, 13, 34, 0.8) 0%, rgba(12, 13, 34, 0.5) 50%, rgba(12, 13, 34, 0.05) 85%); }
-}
-.sb-art, .sb-ground { display: none; }
-.sb-eyebrow { color: #f0c677; }
-.sb-eyebrow::before { background: var(--accent); box-shadow: 0 0 8px rgba(127, 211, 224, 0.8); }
-.sb-inner h1 { color: var(--ink); text-shadow: 0 2px 0 #0c0d1f, 0 4px 18px rgba(0, 0, 0, 0.6); }
-.sb-tagline { color: rgba(243, 231, 207, 0.86); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); }
-.store-screen .sb-top .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); border: 0; }
-.store-screen .sb-top .icon-button:hover:not(:disabled) { box-shadow: var(--plaque-edge); }
-.store-screen .sb-top .back-arrow { color: var(--plaque-ink); }
-.cart-badge { background: #d9486c; box-shadow: 0 0 0 2.5px #171a36; }
-.store-notice { color: var(--good); background: rgba(40, 70, 40, 0.75); box-shadow: inset 0 0 0 1px rgba(168, 217, 138, 0.45); }
-
-/* Tabs, words on the wood: cream, the chosen one underlined in glowing teal. */
-.store-tabs { border-bottom-color: rgba(130, 214, 228, 0.25); }
-.store-screen .store-tabs button { color: rgba(243, 231, 207, 0.78); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
-.store-screen .store-tabs button.chosen::after { box-shadow: 0 0 10px rgba(127, 211, 224, 0.7); }
-.tab-intro { color: rgba(243, 231, 207, 0.82); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
-.store-empty { background: var(--plaque); border: 0; border-radius: 3px; box-shadow: var(--plaque-edge); }
-
-/* Tiles, cart lines and panels: Home's night plaques. */
-.store-screen .offer, .cart-line, .cart-total, .product-stage {
-  background: var(--plaque); border: 0; border-radius: 3px; box-shadow: var(--plaque-edge);
-}
-.store-screen .offer:hover:not(:disabled) {
-  box-shadow: inset 0 1px 0 rgba(200, 225, 255, 0.16), inset 0 0 0 1px rgba(150, 230, 240, 0.8), 0 0 0 1px #0c0d1f, 0 16px 28px rgba(0, 0, 0, 0.6);
-}
-.stage { background: radial-gradient(70% 60% at 50% 45%, rgba(127, 211, 224, 0.1) 0%, rgba(127, 211, 224, 0) 100%), rgba(8, 9, 26, 0.35); border-bottom-color: var(--line); }
-.product-stage { background: radial-gradient(70% 60% at 50% 45%, rgba(127, 211, 224, 0.12) 0%, rgba(127, 211, 224, 0) 100%), var(--plaque); }
-.kind { color: #f0c677; background: rgba(226, 173, 78, 0.14); box-shadow: inset 0 0 0 1px rgba(226, 173, 78, 0.3); }
-.info .sub b, .facts .good { color: var(--good); }
-.store-note { background: rgba(23, 26, 54, 0.82); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
-.store-note svg { color: var(--accent); }
-.tester-tools { border-top-color: var(--line); }
-.store-screen button.tester-btn { color: #f0c677; background: var(--plaque); border-color: var(--line); }
-
-/* Buttons that act: honey amber, like Home's. Done and in the cart: moss. */
-.store-screen button.store-btn.buy, .offer-buy .buy {
-  color: #3b2610; text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
-  background: linear-gradient(#f3cd7a, var(--honey) 55%, #c98f2e);
-  box-shadow: 0 3px 0 var(--honey-dark), 0 8px 18px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-.store-screen .offer-buy button.buy:active { box-shadow: 0 1px 0 var(--honey-dark); }
-.offer-buy .buy .price-chip s { color: #3b2610; }
-.offer-buy .price-chip, .store-btn.buy .price-chip { background: rgba(255, 250, 235, 0.38); }
-.offer-buy .buy.in-cart, .offer-buy .buy.done, .owned-pill {
-  color: var(--good); text-shadow: none; background: rgba(60, 90, 50, 0.45); box-shadow: inset 0 0 0 1.5px rgba(168, 217, 138, 0.5);
-}
-.store-screen button.store-btn.ghost { color: var(--ink); background: rgba(23, 26, 54, 0.85); border-color: var(--line); }
-.info .buy { background: rgba(226, 173, 78, 0.12); border-color: rgba(226, 173, 78, 0.45); color: #f0c677; box-shadow: none; }
-.offer.pick.off .info .buy { color: var(--ink-2); background: rgba(8, 9, 26, 0.4); border-color: var(--line); }
-.offer.pick.off .pick-check { background: #171a36; box-shadow: inset 0 0 0 2px rgba(243, 231, 207, 0.4); }
-.pick-check { background: var(--moss-deep); }
-
-/* A product's page, the cart and the bar at the bottom. */
-.facts span { background: rgba(23, 26, 54, 0.85); border-color: var(--line); }
-.facts .good { background: rgba(60, 90, 50, 0.45); border-color: rgba(168, 217, 138, 0.45); }
-.product-info h2, .missing-head h2, .section-title, .store-message h2 { text-shadow: 0 2px 0 #0c0d1f, 0 3px 12px rgba(0, 0, 0, 0.6); }
-.blurb, .section-title span, .inside-label, .store-message p { text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
-.inside-label b { color: #f0c677; }
-.store-warning, .ct-min { color: #f6d9a0; background: rgba(120, 70, 20, 0.45); box-shadow: inset 0 0 0 1px rgba(240, 198, 119, 0.45); }
-.cl-note { color: #f0c677; }
-.ct-row { color: var(--ink); }
-.stepper { background: rgba(8, 9, 26, 0.45); border-color: var(--line); }
-.buy-bar { background: rgba(18, 20, 46, 0.92); border-top-color: var(--line); box-shadow: 0 -10px 30px -12px rgba(0, 0, 0, 0.7); }
-.bb-total { color: var(--ink); }
-.bb-total small { color: var(--ink-2); }
-@media (hover: hover) and (pointer: fine) { .store-screen { scrollbar-color: rgba(130, 214, 228, 0.35) transparent; } }
-
-/* A deck's painting sits on its tile as a Home tile's picture does: edge to edge under a thin plaque margin, one teal
-   hairline round it, no frame inside the frame. On its page it hangs on the wood itself, in its slim frame. */
-.store-screen .offer .stage:has(.deck-slot) { aspect-ratio: auto; padding: 7px 7px 0; background: none; border-bottom: 0; }
-.store-screen .offer .slot.deck-slot { width: 100%; }
-.store-screen .offer .deck-slot .frame { padding: 0; background: none; box-shadow: none; }
-.store-screen .offer .deck-slot .sight { box-shadow: 0 0 0 1px rgba(130, 214, 228, 0.45), 0 1px 3px rgba(0, 0, 0, 0.7); }
-.product-stage:has(.deck-slot) { padding: 0; background: none; box-shadow: none; }
-.product-stage .deck-slot .frame { box-shadow: inset 0 0 0 1px var(--plaque-line), 0 0 0 1px #0c0d1f, 0 18px 40px -12px rgba(0, 0, 0, 0.8), 0 0 40px -8px rgba(127, 211, 224, 0.35); }
-/* "Get · Free" together, in the middle of the big button (Add to cart keeps its price at the end). */
-.store-screen .product-buy button.store-btn.big.get { justify-content: center; gap: 14px; }
-
-/* ── Deck covers (Store and Collection): the hero's painting, whole and at its own shape ──
-   The paintings are 3:2, and a cover shows all of it, exactly as it sits on the card: no crop, no stretch. It hangs in
-   a plain frame like the Home tiles': a flat moulding, square corners, one dark hairline round the picture and a soft
-   shadow, with no ornament and no family colour, so every style of art (painterly, miniature, sticker) reads as the
-   art. Here on the Store's paper the moulding is a lighter, warmer walnut; the Collection hangs the same frame in the
-   Home tiles' walnut plaque (showcase.css). The name is written beside the cover, never on it.
-   Markup (framedPainting, storefront.ts): .slot.deck-slot > .frame > .sight > img.painting, .sight.missing, or
-   .painting.empty (the empty Showcase). */
-.slot.deck-slot { width: 74%; aspect-ratio: auto; }
-.product-stage .slot.deck-slot.big { width: min(84%, 440px); }
-@media (max-width: 560px) { .slot.deck-slot { width: 80%; } }
-.deck-slot .frame {
-  position: relative; display: block; padding: 3.2%; border-radius: 1px;
-  background: linear-gradient(180deg, #2b3060, #171a36);
-  box-shadow: inset 0 0 0 1px var(--plaque-line, rgba(130, 214, 228, 0.6)), 0 0 0 1px #0c0d1f, 0 10px 18px -10px rgba(var(--shade), 0.6);
-}
-/* The mat under the painting while it loads: a warm tone that reads as a frame waiting for its picture, not a hole. */
-.deck-slot .sight {
-  --mat: var(--paper-2, #3a3029); --mat-ink: var(--ink-2, rgba(246, 236, 220, 0.8)); --mat-rule: rgba(58, 42, 31, 0.22);
-  position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden; background: var(--mat);
-  box-shadow: 0 0 0 1px rgba(130, 214, 228, 0.45);   /* the Home tiles' brass hairline round the picture */
-}
-.deck-slot .painting { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.35s ease; }
-.deck-slot .painting.ready { opacity: 1; }
-/* Should a load event ever be missed, the painting still shows. */
-.deck-slot .painting:not(.ready) { animation: painting-show 0s 5s forwards; }
-@keyframes painting-show { to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .deck-slot .painting { transition: none; } }
-/* No painting at all (a prototype set's hero): the mat, with the name set on it inside a fine rule. */
-.deck-slot .sight.missing::before {
-  content: attr(data-name); position: absolute; inset: 7% 5%; display: grid; place-items: center; padding: 4%;
-  text-align: center; font: 600 clamp(13px, 1.7vw, 19px)/1.15 Fredoka, Nunito, sans-serif; color: var(--mat-ink);
-  box-shadow: inset 0 0 0 1px var(--mat-rule);
-}
-.deck-slot .painting.empty {
-  opacity: 1; animation: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
-}
-
-/* ── The Codes tab: a code for a deck, on a panel like an empty tab's ── */
-.code-panel {
-  max-width: 460px; margin: 0 auto; padding: clamp(26px, 5vw, 40px) clamp(18px, 4vw, 30px); text-align: center;
-  border-radius: 22px; background: var(--tile); border: 1px solid var(--line);
-}
-.code-icon { display: inline-flex; padding: 12px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-deep); }
-.code-icon svg { width: 28px; height: 28px; }
-.code-panel h2 { margin: 12px 0 8px; font: 600 clamp(22px, 3vw, 26px)/1.2 Fredoka, Nunito, sans-serif; color: var(--ink); }
-.code-panel p { margin: 0 0 18px; font-weight: 600; color: var(--ink-2); line-height: 1.45; }
-.code-panel input.store-code {
-  display: block; width: 100%; box-sizing: border-box; margin: 0 0 14px; padding: 14px 12px; border-radius: 14px;
-  border: 1.5px solid #ebc9a2; background: #fffaf3; color: #3b2a1c;
-  font: 800 22px/1.2 Nunito, sans-serif; letter-spacing: 0.12em; text-align: center; text-transform: uppercase;
-}
-.code-panel input.store-code:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(242, 154, 82, 0.3); }
-.code-panel input.store-code::placeholder { color: #c9b8a2; letter-spacing: 0.12em; }
-.code-panel p.code-problem { margin: -4px 0 14px; color: #e0685e; }
-/* An iPad held upright: three to a row, so each tile is big enough to enjoy (four made them small). */
-@media (min-width: 1000px) and (orientation: portrait) { .offers { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

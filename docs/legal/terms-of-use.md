@@ -68,6 +68,8 @@ a waiver of class actions, with a way to opt out.
   Digital Item from a Seller, what the Seller sells you is access to that license; we grant the license itself. **Digital Items are not
   money, have no cash value, and can't be sold, traded, transferred or exchanged for money**, inside or outside the
   Service, except where the Service itself offers a way to do so.
+- **Everything in Folkborn's Store is digital.** Nothing is shipped to you: what you get is added to your Via Mochi
+  account.
 - **Your Digital Items are tied to your Via Mochi account** and are available on every platform where you sign in to
   it, whichever Seller you bought them from.
 - **No random paid items.** Nothing offered for sale in Folkborn is random, and there are no loot boxes: you always

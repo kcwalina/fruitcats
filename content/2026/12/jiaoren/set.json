@@ -1,7 +1,7 @@
 {
   "set": "JR1",
   "name": "Jiaoren",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "status": "released",
   "families": {
     "Jiaoren": {
@@ -21,6 +21,7 @@
     "from": "Chinese folklore: the South Sea, in books from the 3rd to the 6th century and in Tang poetry",
     "title": "The Jiaoren",
     "eyebrow": "Chinese folklore · the South Sea",
+    "banner": "JR1-banner",
     "facts": [
       "Beyond the South Sea live the jiaoren. They live in the water like fish.",
       "Jiaoren never stop weaving. They weave in the Dragon-Silk Palace deep under the South Sea, and some of their silk is as white as frost.",

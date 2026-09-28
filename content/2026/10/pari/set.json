@@ -1,7 +1,7 @@
 {
   "set": "PR1",
   "name": "Pari",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "status": "released",
   "released": "2026-10",
   "starter": true,
@@ -56,6 +56,7 @@
     "from": "Persian folklore, and the lands its tales reached: Turkey, Kurdistan, Central Asia, Afghanistan, Pakistan and India",
     "title": "The Paris",
     "eyebrow": "Persian folklore · Iran and its neighbours",
+    "banner": "PR1-banner",
     "story": [
       "If a white dove lands beside a mountain pool and looks at you a little too long, be polite. It may be a pari.",
       "Paris are the winged folk of Persian tales. They live in Paristan, the land around Mount Qāf, a mountain of emerald so big it circles the whole world, and its green glow tints the sky. Paris were so beautiful and so kind that people in Persia called them “those who are better than we”. Even today, calling someone a pari means they are lovely.",

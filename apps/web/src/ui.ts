@@ -30,6 +30,11 @@ const bases = (key: string) => artBases(setCode(key));
 const stamp = (key: string) => { const v = ART_STAMPS[setCode(key)]; return v ? `?v=${encodeURIComponent(v)}` : ''; };
 /** A card's illustration. `key` is a card id, or a Hero Cat's `<id>-kitten` / `<id>-bigcat`. */
 export const artUrl = (key: string) => `${bases(key).art}${key}.webp${stamp(key)}`;
+/** One of a set's own pictures that isn't a card's (its tale's banner), by the set's code and the picture's name. */
+export const setArtUrl = (code: string, name: string) => {
+  const set = code.toLowerCase(), v = ART_STAMPS[set];
+  return `${artBases(set).art}${name}.webp${v ? `?v=${encodeURIComponent(v)}` : ''}`;
+};
 /** A card's finished picture, standard print. */
 export const cardUrl = (key: string) => `${bases(key).cards}${key}.webp${stamp(key)}`;
 /** A card's finished picture in a special finish (foil, gold, prismatic, signature). */

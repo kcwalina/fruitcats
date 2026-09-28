@@ -767,6 +767,7 @@ function render() {
     if (screen === 'solo' || screen === 'friends') deckCarouselMounted(!scrolled.has('decks'));
     if (screen === 'friends') friendsMounted();
   }
+  handOverlap();
   renderedFoeUnits = new Set(game?.players[theirSeat].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, mySeat); } else stopTutorial();
@@ -1067,6 +1068,20 @@ function renderGame(): string {
 }
 
 /**
+ * Whether the hand's cards overlap (or shrink) because there are more than fit side by side: then each card's
+ * printed Health, on the corner the next card covers, is repeated on its visible edge. Checked after every redraw and
+ * when the window changes size, since the answer depends on the width.
+ */
+function handOverlap() {
+  const hand = app.querySelector<HTMLElement>('.hand');
+  if (!hand) return;
+  const cards = hand.querySelectorAll<HTMLElement>('.hand-card');
+  const width = cards.length ? cards[0].getBoundingClientRect().width : 0;
+  hand.classList.toggle('overlapping', cards.length > 1 && cards.length * width + (cards.length - 1) * 8 > hand.clientWidth);
+}
+window.addEventListener('resize', handOverlap);
+
+/**
  * Story so far: the game's transcript in a drawer that slides in from the board's edge (from the right beside the
  * panel; up from the bottom on a narrow screen). It is part of the board, not a dialog: no backdrop, and the game
  * goes on while it is out. Newest at the bottom, where the eye lands, and it keeps its scroll between redraws.
@@ -1267,7 +1282,11 @@ function renderHand(s: GameState, playable: Set<number>): string {
         'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
-      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
+      // A unit's Health is printed on the card's bottom-right corner, which a bigger hand's overlap hides: it is
+      // repeated as a chip on the left edge, over the art, while the hand overlaps (see handOverlap).
+      const health = CARDS[c.id].health;
+      const hp = health !== undefined ? `<span class="hand-hp" aria-hidden="true">${health}</span>` : '';
+      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${hp}</button>`;
     }).join('')}
   </section>`;
 }

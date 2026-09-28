@@ -1182,6 +1182,20 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
   .side-buttons { flex: none; flex-direction: row; justify-content: center; gap: 8px; width: 100%; }
 }
 
+/* A hand too big to lay side by side overlaps its cards, each covering the next one's right side and with it the
+   printed Health in that corner. While it does, the Health is repeated as a chip on the card's left edge, above the
+   printed Power, where it stays in view; the last card, wholly visible, has no need of it. */
+.hand-hp { display: none; }
+.hand.overlapping .hand-card:not(:last-child) .hand-hp {
+  position: absolute; left: 4%; bottom: 14%; z-index: 2; display: inline-flex; align-items: center; gap: 0.2em;
+  height: 1.45em; padding: 0 0.5em 0 0.4em; border-radius: 999px; font: 700 clamp(11px, 9cqw, 16px) Fredoka, Nunito, sans-serif;
+  color: #b3203f; background: #fde3ea; border: 1.5px solid #d9486c; box-shadow: 0 1px 3px rgba(40, 20, 5, 0.35); pointer-events: none;
+}
+.hand.overlapping .hand-card:not(:last-child) .hand-hp::before {
+  content: ''; width: 0.7em; height: 0.7em; background: #d9486c;
+  -webkit-mask: var(--img-heart) center / contain no-repeat; mask: var(--img-heart) center / contain no-repeat;
+}
+.hand-card { container-type: inline-size; }
 /* A unit's rules text shows only on the wide board, where the tile has room for it. */
 .utext { display: none; }
 /* The opponent's hand at the start of their Yard: card backs (face up in a teaching game) and how many. */

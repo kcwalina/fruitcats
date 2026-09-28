@@ -1,0 +1,87 @@
+// Berry Picnic rules: a program document. `this` is the object a declaration is attached to.
+berry-picnic-rules = Rules
+
+for = @berry-picnic
+
+// Jam: "Awaken: You control 5 or more units."
+condition five-units { units(own).count >= 5 }
+
+// §10 Summon, §200.5 Yard limit.
+effect summon-ant { summon(@Ant) }
+effect summon-two-ants { summon(@Ant, 2) }
+
+// Leftovers: "put a Crumb on a unit you control".
+effect feed-a-friend { choose(own).counter(@Crumb) += 1 }
+
+// "Put a Crumb on another unit you control." / "Put 2 Crumbs on another unit you control."
+effect give-crumb { choose(own, other).counter(@Crumb) += 1 }
+effect give-two-crumbs { choose(own, other).counter(@Crumb) += 2 }
+
+// Moose: "After Mulberry Moose defeats a unit in combat, put a Crumb on it." §800.2
+effect crumb-on-this { this.counter(@Crumb) += 1 }
+
+// Alpaca: "Put a Crumb on each other unit you control."
+effect crumb-for-others { units(own, other).counter(@Crumb) += 1 }
+
+// Pass the Plate: "Put a Crumb on each unit. (Yours and theirs.)"
+effect crumb-for-everyone { units(all).counter(@Crumb) += 1 }
+
+// Jam kit: "Put a Crumb on an exhausted unit you control."
+effect crumb-on-exhausted { choose(own, exhausted).counter(@Crumb) += 1 }
+
+// Jam awakened: "Your units get +1 Power this round."
+effect rally-plus-one { units(own).buff(power: +1, until: this-round) }
+
+// Goose: "Exhaust an enemy unit. Take a counter from it and put it on the Goose as a Crumb."
+effect steal-a-snack {
+  target = choose(opponents)
+  target.exhaust()
+  move-largest-counter(from: target, to: this, as: @Crumb)
+}
+
+// Second Helping: "Put a Crumb on a unit you control. It gets +1 Power this round."
+effect second-helping {
+  target = choose(own)
+  target.counter(@Crumb) += 1
+  target.buff(power: +1, until: this-round)
+}
+
+// Bleu: "Your Full units have Sneaky." Bramble: "Your Full units have Fierce."
+static full-units-sneaky { units(own, full).grant(sneaky) }
+static full-units-fierce { units(own, full).grant(fierce) }
+
+// Razz: "Your other units get +1 Power."
+static others-plus-one { units(own, other).grant(power: +1) }
+
+// Wiring.
+@Leftovers.mechanic-defeated = feed-a-friend
+@jam.face1.exhaust = crumb-on-exhausted
+@jam.face1.awaken = five-units
+@jam.face2.exhaust = rally-plus-one
+@squirrel.on-enter = summon-ant
+@lamb.on-enter = give-crumb
+@possum.on-defeated = summon-ant
+@goose.on-enter = steal-a-snack
+@moose.on-defeats-in-combat = crumb-on-this
+@alpaca.on-enter = crumb-for-others
+@milk-cow.on-enter = give-two-crumbs
+@ant-parade.on-play = summon-two-ants
+@pass-the-plate.on-play = crumb-for-everyone
+@second-helping.on-play = second-helping
+@bleu.on-enter = give-crumb
+@bleu.static = full-units-sneaky
+@razz.static = others-plus-one
+@bramble.static = full-units-fierce
+
+scenario 'Goose steals a Crumb' {
+  given controls(opponent, @lamb, counter: @Crumb, n: 2)
+  when play(me, @goose, target: @lamb)
+  then exhausted(@lamb), counter(@lamb, @Crumb) == 1, counter(@goose, @Crumb) == 1
+}
+
+// §800.4 Goodbye only on defeat.
+scenario 'Leftovers feeds the Ant' {
+  given controls(me, @ladybug), controls(me, @Ant)
+  when defeat(@ladybug)
+  then counter(@Ant, @Crumb) == 1
+}

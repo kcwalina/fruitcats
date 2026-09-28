@@ -1,0 +1,50 @@
+// turns: the shape of a round, its phases and steps, and limits on actions. Depends on the
+// core only.
+turns = Library
+
+name = 'Turns'
+version = '0.1'
+core = '1'
+
+type TurnRule : Rule {}
+extension Game { turns: [TurnRule] = empty }
+
+enum First { initiative-holder, random, loser-of-last }
+enum EndsWhen { all-pass-in-a-row, turn-ends, phase-list-done }
+
+type AlternatingActions : TurnRule { first: First, ends-when: EndsWhen }
+type FullTurns : TurnRule { first: First }
+type MaxRounds : TurnRule { n: int }
+type RoundStart : TurnRule { skip-round: int?, steps: [Step] }
+type RoundEnd : TurnRule { steps: [Step] }
+type Phases : TurnRule { phases: [Phase] }         // each phase is also a Moment
+type Phase { name: text, steps: [Step] }
+type Actions : TurnRule { allowed: [ActionKind] }
+type OncePerTurn : TurnRule { action: ActionKind, n: int = 1 }
+type GoAgainContinues : TurnRule {}                // an action flagged go-again keeps the turn
+// A shared signed counter decides whose turn it is (Digimon's memory gauge).
+type MemoryGauge : TurnRule { min: int, max: int, start: int, voluntary-pass: int }
+// Pick one of the game's groups each turn and act only with its cards (KeyForge houses).
+type ChooseGroupPerTurn : TurnRule { of: text }
+
+// Steps a phase may list. Each is a constructor; a form shows them as an ordered pick-list.
+type Step {}
+type ReadyAll : Step {}
+type ResetOncePerRound : Step {}
+type Triggers : Step { of: Moment }
+type Draw : Step { count: int, skip-very-first-turn: bool = false }
+type DrawTo : Step { hand: int }                   // draw up to a hand size
+type RefillHandTo : Step { hand: int }
+type DiscardTo : Step { hand: int }
+type BurnOnDrawIfFull : Step {}                    // an overdrawn card is destroyed at once
+type ExpireThisRound : Step {}
+type At : Step { moment: Moment }                  // a moment rules may hang triggers on
+
+properties = [
+  played-this-round = Property { on = player, yields = int }
+]
+
+moments = [
+  turn-start = Moment { name = 'Start of turn' }
+  turn-end = Moment { name = 'End of turn' }
+]

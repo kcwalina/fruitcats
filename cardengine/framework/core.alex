@@ -1,0 +1,264 @@
+// The core: the object model the engine runs and the plug points everything else hangs on. This
+// layer is meant to be frozen. It knows objects, zones, players, counters, randomness, the `Rule`
+// extension point, libraries, and the program-layer machinery (declaration kinds, the vocabulary
+// records). It does not know what a unit is, what combat is, or what a resource is; those are
+// rules and types in libraries built on top (framework/lib/*.alex).
+//
+// Evolution rules for this file: nothing is ever removed or renamed; enums are append-only; a
+// new field is optional and its default reproduces the behaviour that existed before it; an
+// existing default never changes. Anything that cannot be added under those rules is not added
+// here: it becomes a new rule or type in a library, side by side with what exists.
+//
+// Changes since core 0 (from the eight-game survey, before the freeze): `Game.win` and
+// `Game.on-loss` removed (rules decide game-over through `provide-game-over`); `Filter` takes
+// parameters; a `target` may be a unit or a player; the objects whose rules are live is a query a
+// library may widen (cards under other cards); the scheduler's drain policy is selectable.
+core = Core
+
+version = '1'
+
+// The root type of this document.
+type Core {
+  version: text
+  actions: [text: ActionKind]
+  moments: [text: Moment]
+  selectors: [text: Selector]
+  properties: [text: Property]
+  verbs: [text: Verb]
+  filters: [text: Filter]
+}
+
+// -------------------------------------------------------------------------------------------
+// Enums.
+
+enum Shape        { pile, set, row, slot, slots, lanes, grid }
+enum Visibility   { none, owner, all, top-card }
+enum Order        { clockwise, counter-clockwise }
+enum RandomSource { shuffle, initiative, coin, die }
+enum Status       { prototype, released, retired }
+
+// -------------------------------------------------------------------------------------------
+// The extension point. Every rule of every library is a subtype. A game lists the rules that
+// apply to it; a rule that is not listed does not apply. There are no behaviour defaults.
+
+type Rule { cites: text? }        // cites: a rulebook citation, copied into logs; never parsed
+
+// A library: a set of helpers over the core that a game may use or ignore. It declares the rule
+// types, card records, keywords and vocabulary it owns, and the other libraries it builds on. A
+// library depends on the core and on what it lists in `requires`, and on nothing else.
+type Library {
+  name: text
+  version: text
+  core: text
+  requires: [Library] = empty
+  actions: [text: ActionKind] = empty
+  moments: [text: Moment] = empty
+  events: [text: Event] = empty
+  selectors: [text: Selector] = empty
+  properties: [text: Property] = empty
+  filters: [text: Filter] = empty
+  verbs: [text: Verb] = empty
+}
+
+// Kinds of thing a player may do, and moments in a round that rules may hang on. Libraries add
+// their own as values, so the sets stay open without an enum anyone has to edit.
+type ActionKind { name: text }
+type Moment { name: text }
+
+// -------------------------------------------------------------------------------------------
+// The game and its structure.
+
+type Game : data {
+  name: text
+  rulebook: text?
+  core: text                      // the core version this document was written against
+  uses: [Library]                 // the libraries whose rules, records and vocabulary it may use
+  players: Players
+  sets: [Set]
+  types: [text: CardType]
+  zones: [text: Zone]
+  keywords: [text: Keyword] = empty   // tags cards may carry; libraries give them meaning
+  randomness: [RandomSource] = [shuffle]
+  rules: [Rule] = empty           // rules that belong to no library area
+  event-names: [text: text] = empty
+}
+
+type Players {
+  min: int = 2
+  max: int = 2
+  teams: Teams?
+  order: Order = clockwise
+}
+type Teams { size: int }
+
+// A game's own name for one of its card types. The type itself is declared by the game as a
+// subtype of a library card record (`type Creature : UnitCard {}`), under the same name.
+type CardType {
+  name: text
+  cites: text?
+}
+
+type Zone {
+  name: text
+  shape: Shape
+  visible: Visibility = all
+  face-down: bool = false
+  count-public: bool = true
+  shared: bool = false
+  cites: text?
+}
+
+// -------------------------------------------------------------------------------------------
+// Sets: a card pool. Libraries extend this with what their cards need (families, mechanics).
+
+type Set : data {
+  id: text
+  name: text
+  core: text
+  version: text?
+  status: Status = prototype
+  released: text?
+  legacy: bool = false
+  requires: [Set] = empty
+  counters: [text: Counter] = empty
+  keywords: [text: Keyword] = empty
+  tokens: [text: Token] = empty
+  cards: [text: Card] = empty
+  decks: [text: Deck] = empty
+}
+
+// A named number an object can carry. Libraries give counters meaning (stat bonuses, "full").
+type Counter {
+  name: text
+  max: int?
+}
+
+// A keyword is a tag on a card. The core only knows it is a tag; a library gives it meaning by
+// declaring a subtype (`type Guardian : Keyword {}`) or by attaching behaviour in a rules document.
+type Keyword {
+  name: text
+  cites: text?
+}
+// A keyword applied to a card with a parameter (Tough 1).
+type Applied {
+  keyword: Keyword
+  n: int
+}
+
+// The card the core knows: a named object of a game-declared type, with faces and tags. Stats
+// (cost, power, health) belong to library card records that extend this one.
+type Card : data {
+  name: text
+  flavor: text?
+  pronoun: text?
+  cites: text?
+  keywords: [Keyword | Applied] = empty
+  abilities: [Ability] = empty
+}
+type Token : Card { type: CardType }
+
+type Deck {
+  name: text
+  cards: [[Card, int]]
+  blurb: text?
+}
+
+// -------------------------------------------------------------------------------------------
+// Program layer: the plug points for behaviour. Libraries declare the actual events, verbs,
+// selectors and properties; the core declares what those declarations look like.
+
+// A rules document. Its members are declarations of the registered kinds (`effect`, `static`,
+// `condition`, `scenario`) and assignments to extension members of the objects it references.
+type Rules { for: Set }
+
+enum ParamType {
+  int, bool, text, unit, units, token, counter, resource, player, players, keyword, grant
+  duration, condition, action, event, filters
+  target                          // a unit or a player ("any target", "any character")
+  targets
+  card                            // a card definition, not an object in play
+  moment, pending, rules, zone
+}
+enum BlockKind { effect, condition, static }
+
+// Parameters are in call order; positional arguments bind in that order and any parameter may
+// be given by name; `optional` parameters follow `params` in call order and may be omitted. A
+// verb with `on = player` called without a receiver acts on `own`; one with `on = unit` acts on
+// `this`. A filter is a call too: `units(own, power >= 3)` passes a predicate as its argument.
+// An ability a card declares as data: that it has one, of what kind, with its printed text.
+// The kinds are types a library declares, for example
+// `type OnEnter : Ability { holders = [nameof(UnitCard)] }`, and a card constructs one
+// (`abilities = [OnEnter { text = '...' }]`). What the ability does is a
+// handler in a rules document, assigned to the holder's slot named after the kind
+// (`OnEnter` -> `on-enter`). The linker requires each declared ability to have its handler and
+// each handler to have its declared ability.
+type Ability {
+  text: text?                     // the printed text; the designer's, not generated
+  once-per-round: bool = false
+  holders: [text]                 // fixed by the kind: record types it may sit on
+  event: text?                    // fixed by the kind: the event the handler receives, if any
+  kind: BlockKind = effect        // fixed by the kind: effect, condition or static
+  responding: [text] = empty      // fixed by the kind: events it may be played in response to
+  hidden: bool = false            // fixed by the kind: fires without revealing itself (secrets)
+}
+type Event {
+  fields: [text: ParamType] = empty
+  cancellable: bool = false
+}
+type Selector {
+  yields: ParamType
+  params: [text: ParamType] = empty
+  optional: [text: ParamType] = empty
+}
+type Property {
+  on: ParamType
+  yields: ParamType
+}
+type Filter {
+  on: Verb?
+  params: [text: ParamType] = empty
+}
+type Verb {
+  on: ParamType?
+  params: [text: ParamType] = empty
+  optional: [text: ParamType] = empty
+  yields: ParamType?
+  only-in: BlockKind?
+}
+
+// What every game has, whatever its libraries: passing, the round, choosing and counting objects.
+actions = [
+  pass = ActionKind { name = 'Pass' }
+]
+moments = [
+  round-start = Moment { name = 'Start of round' }
+  round-end = Moment { name = 'End of round' }
+]
+selectors = [
+  this = Selector { yields = unit }
+  target = Selector { yields = unit }             // the one binding an effect may make
+  event = Selector { yields = event }
+  own = Selector { yields = player }
+  opponent = Selector { yields = player }         // legal only when players.max == 2
+  opponents = Selector { yields = players }
+  all = Selector { yields = players }
+  units = Selector { yields = units, params = [from = players], optional = [filters = filters] }
+  pending = Selector { yields = pending }         // effects waiting in the scheduler
+]
+properties = [
+  count = Property { on = units, yields = int }
+  any = Property { on = units, yields = bool }
+]
+filters = [
+  optional = Filter { on = @core.verbs.choose }       // the choice may be declined
+]
+verbs = [
+  choose = Verb { params = [from = players], optional = [filters = filters], yields = unit }
+  choose-target = Verb {
+    params = [from = players], optional = [filters = filters], yields = target
+  }
+  // The whole effect happens only if the player says so.
+  may = Verb { params = [effect = condition] }
+  counter = Verb { on = units, params = [counter = counter, delta = int] }   // x.counter(@c) += n
+  cancel = Verb { on = event }
+]

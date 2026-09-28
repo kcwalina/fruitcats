@@ -1,0 +1,30 @@
+// attachments: cards that sit on a unit and change it (Talismans, auras, equipment, tools,
+// energy). Depends on units for Grant and on common for Cost.
+attachments = Library
+
+name = 'Attachments'
+version = '0.1'
+core = '1'
+requires = [@common, @units]
+
+type AttachmentCard : Card {
+  cost: Cost
+  per-unit: int = 1               // fixed by the game's type; how many may sit on one unit
+  attached: Grant
+}
+
+extension AttachmentCard {
+  on-attach: effect?
+  on-detach: effect?
+  static: static?
+}
+
+selectors = [
+  attached = Selector { yields = unit }                 // the unit this attachment is on
+  here = Selector { yields = units, params = [of = unit] }   // the objects attached to a unit
+]
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type OnAttach : Ability { holders = [nameof(AttachmentCard)] }
+type OnDetach : Ability { holders = [nameof(AttachmentCard)] }
+type AttachedStatic : Ability { holders = [nameof(AttachmentCard)], kind = static }

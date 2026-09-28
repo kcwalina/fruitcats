@@ -1,6 +1,7 @@
-// The Store screen (docs/store-plan.md, Store experience): the Folkborn tab and the Legacy tab, a deck's page, the cart, an
-// explicit confirmation step and, after an order, the new cards revealed one by one. It's built on the Collection's
-// dark gallery (showcase.css) with store.css on top.
+// The Store screen (docs/store-plan.md, Store experience): Folkborn's decks under the Store's painting, a deck's page,
+// the cart, an explicit confirmation step and, after an order, the new cards revealed one by one. Codes and the Legacy
+// decks are one tap away in the corner (the owner's call, 2026-09-28: the decks lead; codes and Legacy stay out of the
+// way). Styles: store.css.
 //
 // No dark patterns: nothing is bought in one tap, there are no timers or "limited" offers, the total is always shown
 // before confirming, and a deck never costs you for cards you already have. Paying happens in Paddle's window
@@ -34,14 +35,13 @@ export interface StoreHost {
  * missing: the cards a deck (from a code, say) needs that you don't have, as a selection: all picked at first, tap one
  * to leave it out, then "Add to cart" below.
  */
-type View = { kind: 'browse' } | { kind: 'deck'; product: string } | { kind: 'card'; product: string } | { kind: 'cart' }
-  | { kind: 'missing'; deck: DeckList; plan: NonNullable<ReturnType<typeof planForDeck>>; left: Set<string> };
+type View = { kind: 'browse' } | { kind: 'legacy' } | { kind: 'code' } | { kind: 'deck'; product: string; from?: 'legacy' } | { kind: 'card'; product: string }
+  | { kind: 'cart' } | { kind: 'missing'; deck: DeckList; plan: NonNullable<ReturnType<typeof planForDeck>>; left: Set<string> };
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'] as const;
 
 let view: View = { kind: 'browse' };
-/** The list's tab: Folkborn's decks (the main one), the Legacy decks from before the folklore re-theme, or Codes. */
-type Tab = 'main' | 'legacy' | 'code';
-let tab: Tab = 'main';
+/** The small menu in the corner (Use a code, Legacy decks), open or not. */
+let menuOpen = false;
 /** A line under the header after something happened ("Added 3 cards to your cart"). */
 let notice = '';
 let loading = false;
@@ -72,7 +72,7 @@ let checkout: null | {
 /** After an order: its cards, one at a time, then all together. */
 let reveal: null | { cards: string[]; copies: Record<string, number>; index: number; all: boolean } = null;
 let resetAsk = false;
-/** The Codes tab: the code as typed, while the API checks it, and why it didn't work. */
+/** The Use a code page: the code as typed, while the API checks it, and why it didn't work. */
 let code = { text: '', busy: false, message: '' };
 /**
  * An order sent without an answer (the connection dropped). It may have gone through, so the next try sends the
@@ -85,7 +85,7 @@ let unanswered: string | null = null;
 /** Open the Store from Home. It shows what it knows at once and asks the API for the latest. */
 export function openStore(host: StoreHost) {
   view = { kind: 'browse' };
-  tab = 'main';
+  menuOpen = false;
   notice = '';
   checkout = null;
   reveal = null;
@@ -123,11 +123,14 @@ function mergeOrders(list: Order[]): Order {
 
 export function storeClick(action: string, arg: string, host: StoreHost): void {
   notice = '';
+  if (action !== 'menu') menuOpen = false;
   switch (action) {
-    case 'deck': view = { kind: 'deck', product: arg }; break;
+    case 'deck': view = { kind: 'deck', product: arg, ...(view.kind === 'legacy' ? { from: 'legacy' as const } : {}) }; break;
     case 'card': view = { kind: 'card', product: arg }; break;
     case 'browse': view = { kind: 'browse' }; break;
-    case 'tab': tab = arg === 'legacy' || arg === 'code' ? arg : 'main'; view = { kind: 'browse' }; break;
+    case 'menu': menuOpen = !menuOpen; break;
+    case 'legacy': view = { kind: 'legacy' }; break;
+    case 'code': view = { kind: 'code' }; break;
     case 'retry': refresh(host); break;
     case 'cart': view = canBuy() ? { kind: 'cart' } : { kind: 'browse' }; break;
     case 'add': {
@@ -180,9 +183,11 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
 
 /** Escape: close the topmost thing. True if it did something. */
 export function storeEscape(host: StoreHost): boolean {
-  if (resetAsk) resetAsk = false;
+  if (menuOpen) menuOpen = false;
+  else if (resetAsk) resetAsk = false;
   else if (checkout && !['placing', 'paying', 'finishing'].includes(checkout.stage)) checkout = null;
   else if (reveal) { if (!reveal.all) reveal.all = true; else reveal = null; }
+  else if (view.kind === 'deck' && view.from) view = { kind: 'legacy' };
   else if (view.kind !== 'browse') view = { kind: 'browse' };
   else return false;
   host.render();
@@ -307,7 +312,7 @@ export function storeCodeEnter(host: StoreHost) {
 
 /**
  * "Get the deck" with a code: the API checks it and gives the deck, then its cards are revealed like an order's, and the
- * Store is back on Folkborn, where the deck now says you have every card.
+ * Store is back on its decks, where the deck now says you have every card.
  */
 async function useCode(host: StoreHost) {
   if (code.busy) return;
@@ -319,7 +324,7 @@ async function useCode(host: StoreHost) {
     code = { ...code, busy: false, message: result.message };
   } else {
     code = { text: '', busy: false, message: '' };
-    tab = 'main';
+    view = { kind: 'browse' };
     const deck = result.order.lines[0]?.product;
     const name = deck ? catalog()?.products[deck] : undefined;
     if (result.repeated) notice = `You used this code already: ${name?.kind === 'deck' ? `the ${name.name} deck` : 'its deck'} is in your collection.`;
@@ -359,32 +364,45 @@ export function renderStore(): string {
   else if (view.kind === 'missing') body = renderMissingCards(view);
   else if (view.kind === 'deck' && cat.products[view.product]?.kind === 'deck') body = renderDeckPage(cat.products[view.product] as DeckProduct);
   else if (view.kind === 'card' && cat.products[view.product]?.kind === 'card') body = renderCardPage(cat.products[view.product] as CardProduct);
-  else body = renderShop();
+  else if (view.kind === 'code') body = `<main class="store-main">${renderCodes()}</main>`;
+  else body = renderShop(view.kind === 'legacy');
 
   const count = cartCount();
-  const title = view.kind === 'cart' ? 'Your cart' : view.kind === 'missing' ? 'Missing cards' : 'Store';
+  // Only the pages that aren't about one thing say where you are, small, in the header row. The Store's own page and a
+  // deck's page don't: the painting and the deck's name say it.
+  const headings: Partial<Record<View['kind'], string>> = { cart: 'Your cart', missing: 'Missing cards', legacy: 'Legacy decks', code: 'Use a code' };
+  const heading = headings[view.kind] ?? '';
   const back = view.kind === 'browse' ? backButton()
-    : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck') : backButton('store:browse', 'Store');
-  // The page scrolls as one: the banner, then the page's content. Bars for buying stay fixed at the bottom.
+    : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck')
+    : view.kind === 'deck' && view.from ? backButton('store:legacy', 'Legacy decks') : backButton('store:browse', 'Store');
+  const home = view.kind === 'browse' && !!cat && access !== 'private';
+  // The page scrolls as one: the painting, then the page's content. Bars for buying stay fixed at the bottom.
   return `
-  <div class="store-screen" data-keep-scroll="store-${view.kind}${view.kind === 'browse' ? `-${tab}` : ''}">
-    <header class="store-banner ${view.kind === 'browse' ? '' : 'slim'}">
-      <div class="sb-ground" aria-hidden="true"></div>
-      <div class="sb-art" role="img" aria-label="A market stall"></div>
-      <div class="sb-top">
-        ${back}
+  <div class="store-screen ${home ? 'store-home' : 'store-inner'}" data-keep-scroll="store-${view.kind}">
+    <div class="store-scene" aria-hidden="true"></div>
+    <header class="store-top">
+      ${back}
+      <h1 class="${heading ? 'store-title' : 'sr-only'}">${heading || 'Store'}</h1>
+      <div class="store-top-end">
+        ${home ? `<button class="icon-button more-button ${menuOpen ? 'on' : ''}" data-click="store:menu" aria-haspopup="menu" aria-expanded="${menuOpen}" aria-label="Codes and Legacy decks" title="Codes and Legacy decks">${TICKET}</button>` : ''}
         ${canBuy() ? `<button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
           ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>` : ''}
       </div>
-      <div class="sb-inner">
-        <h1>${title}</h1>
-        ${view.kind === 'browse' ? '<p class="sb-tagline">Decks and cards for your collection.</p>' : ''}
-      </div>
+      ${home && menuOpen ? renderMenu() : ''}
     </header>
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}
     ${body}
   </div>
   ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}`;
+}
+
+/** The corner menu: the two things that aren't the Store's decks. A tap outside it closes it. */
+function renderMenu(): string {
+  return `<div class="store-menu-scrim" data-click="store:menu" aria-hidden="true"></div>
+    <div class="store-menu" role="menu" aria-label="Codes and Legacy decks">
+      <button role="menuitem" data-click="store:code"><span class="sm-icon">${TICKET}</span><span class="sm-text"><b>Use a code</b><small>Got a code for a deck? Type it here</small></span></button>
+      <button role="menuitem" data-click="store:legacy"><span class="sm-icon">${CARDS_ICON}</span><span class="sm-text"><b>Legacy decks</b><small>The original fruit-cat decks, free</small></span></button>
+    </div>`;
 }
 
 /** A card's picture as the Store sells it: the standard print, or the Signature print for a Signature card (its only print). */
@@ -414,44 +432,30 @@ function priceChip(full: number, now: number): string {
 }
 
 /**
- * Two tabs (the owner's call, 2026-09-27): Folkborn, the main one, for the decks of the folklore game, and Legacy, for
- * the free decks from before it (sets marked `legacy`). No banner ads or filters. In each, decks first, then the single
- * cards, rarest first. Each tile says what it is ("Deck" or "Card"), and a deck is its hero's painting, whole, in a slim
- * frame.
+ * The Store's own page: Folkborn's decks, each its hero's painting hung in the Collection's frame, big enough to enjoy,
+ * with its name and price under it; then any single cards, rarest first. Legacy (legacy = true): the free decks from
+ * before Folkborn (sets marked `legacy`), the same way. No banners, tabs or filters (the owner's call, 2026-09-28).
  */
-function renderShop(): string {
+function renderShop(legacy: boolean): string {
   const cat = catalog()!;
   const owned = ownedNow();
-  if (tab === 'code') return shopPage(renderCodes());
-  const here = Object.values(cat.products).filter((p) => isLegacySet(p.set) === (tab === 'legacy'));
+  const here = Object.values(cat.products).filter((p) => isLegacySet(p.set) === legacy);
   const decks = here.filter((p): p is DeckProduct => p.kind === 'deck');
   const cards = here.filter((p): p is CardProduct => p.kind === 'card')
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
-  const list = here.length
-    ? `<div class="offers">${decks.map((p, i) => renderDeckOffer(p, i < 4)).join('')}${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>`
-    : tab === 'main'
-      ? '<div class="store-empty"><h2>New decks are on the way</h2><p>The first Folkborn deck comes to the Store soon.</p></div>'
-      : '<div class="store-empty"><h2>No Legacy decks</h2></div>';
-  return shopPage(`${tab === 'legacy' ? '<p class="tab-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : ''}${list}`);
-}
-
-/** The Store's page around a tab's content: the tabs, then the content, then the note about your account. */
-function shopPage(content: string): string {
-  const tabButton = (t: Tab, label: string) =>
-    `<button role="tab" class="${tab === t ? 'chosen' : ''}" aria-selected="${tab === t}" data-click="store:tab:${t}">${label}</button>`;
-  return `<main class="store-main">
-      <nav class="store-tabs" role="tablist" aria-label="Store">${tabButton('main', 'Folkborn')}${tabButton('legacy', 'Legacy')}${tabButton('code', 'Codes')}</nav>
-      ${content}
-      <p class="store-note">${CLOUD}<span>Everything here is digital: it’s added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</span></p>
-      ${renderTesterTools()}
-    </main>`;
+  const intro = legacy ? '<p class="page-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : '';
+  const list = !here.length
+    ? `<div class="store-empty"><h2>${legacy ? 'No Legacy decks' : 'New decks are on the way'}</h2>${legacy ? '' : '<p>The first Folkborn deck comes to the Store soon.</p>'}</div>`
+    : `${decks.length ? `<div class="deck-shelf n${Math.min(decks.length, 3)}">${decks.map((p, i) => renderDeckOffer(p, i < 3)).join('')}</div>` : ''}
+      ${cards.length ? `${decks.length ? '<h2 class="shelf-title">Single cards</h2>' : ''}<div class="offers">${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>` : ''}`;
+  return `<main class="store-main">${intro}${list}${renderTesterTools()}</main>`;
 }
 
 /** A ticket, for a code that gives a deck. */
 const TICKET = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/></svg>`;
 
-/** A small cloud, for "it lives in your account". */
-const CLOUD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 11a4 4 0 0 1-2.5 8Z"/></svg>`;
+/** Two cards fanned, for the Legacy decks. */
+const CARDS_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="6.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 13.5)"/><rect x="10.5" y="3.5" width="10" height="14" rx="1.6" transform="rotate(9 15.5 10.5)"/></svg>`;
 
 /**
  * What happened to each painting asked for, by address: the address that shows it (the painting's, or its fallback's
@@ -535,14 +539,21 @@ function offerTile(p: DeckProduct | CardProduct, owned: boolean, slot: string, d
     </div>`;
 }
 
-/** `eager`: on the first screen (the first row or two of the list). */
+/**
+ * A deck on the Store's page, as the Collection hangs its covers: the hero's painting in its frame, the name and what's
+ * in it under it, and the price beside them. The painting and the name open the deck's page; the price adds it to the
+ * cart. `eager`: on the first screen.
+ */
 function renderDeckOffer(p: DeckProduct, eager = false): string {
   const { size, now, complete } = deckFacts(p);
-  return offerTile(p, complete, deckSlot(p, false, eager), `
-        <span class="kind">Deck</span>
-        <span class="name">${esc(p.name)}</span>
-        <span class="sub">${esc(cardName(p.hero))} + ${size} cards</span>`,
-    tileAction(p, p.name, p.price, now, complete ? '✓ You have every card' : null));
+  const flag = canBuy() && inCart(p.id) ? '<span class="of-flag">In cart</span>' : '';
+  return `<article class="deck-offer ${complete ? 'owned' : ''}">
+      <button class="do-open" data-click="store:deck:${p.id}">
+        <span class="do-cover">${deckSlot(p, false, eager)}${flag}</span>
+        <span class="do-text"><span class="do-name">${esc(p.name)}</span><span class="do-sub">${esc(cardName(p.hero))} + ${size} cards</span></span>
+      </button>
+      <div class="do-buy">${tileAction(p, p.name, p.price, now, complete ? '✓ You have it' : null)}</div>
+    </article>`;
 }
 
 function renderCardOffer(p: CardProduct, have: number): string {
@@ -574,7 +585,7 @@ function renderDeckPage(p: DeckProduct): string {
       <section class="product-top">
         <div class="product-stage">${deckSlot(p, true)}</div>
         <div class="product-info">
-          <span class="kind">Deck · ${esc(setName(p.set))}</span>
+          <span class="eyebrow">${setName(p.set) === p.name ? 'Deck' : `Deck · ${esc(setName(p.set))}`}</span>
           <h2>${esc(p.name)}</h2>
           ${buyButton(p, p.price, now, complete)}
           ${p.blurb ? `<p class="blurb">${esc(p.blurb)}</p>` : ''}
@@ -604,7 +615,7 @@ function renderCardPage(p: CardProduct): string {
       <section class="product-top">
         <div class="product-stage" data-zoom="${cardUrl(faceOf(p.card))}" data-zoom-card="${faceOf(p.card)}">${cardSlot(p.card, true)}</div>
         <div class="product-info">
-          <span class="kind">Card · ${esc(setName(p.set))}</span>
+          <span class="eyebrow">Card · ${esc(setName(p.set))}</span>
           <h2>${esc(cardName(p.card))}</h2>
           <p class="facts"><span>${cardKind(p.card)}</span></p>
           ${buyButton(p, p.price, p.price, have >= max)}
@@ -649,7 +660,7 @@ function renderMissingCards(v: Extract<View, { kind: 'missing' }>): string {
   const singles = plan.lines.filter((l) => cat.products[l.product]?.kind === 'card');
   return `<main class="store-main product-page">
       <header class="missing-head">
-        <span class="kind">For your deck</span>
+        <span class="eyebrow">For your deck</span>
         <h2>${esc(deck.name)}</h2>
         <p class="blurb"><b>${plural(need, 'card')}</b> ${need === 1 ? 'isn’t' : 'aren’t'} in your collection yet. Here’s how to get ${need === 1 ? 'it' : 'them'}. Tap one to leave it out.</p>
       </header>
@@ -770,12 +781,11 @@ function renderTesterTools(): string {
   </footer>`;
 }
 
-/** The Codes tab: type a code you were given, and its deck joins your collection. Nothing is paid. */
+/** Use a code: type a code you were given, and its deck joins your collection. Nothing is paid. */
 function renderCodes(): string {
   const { text, busy, message } = code;
   return `<section class="code-panel" aria-label="Codes">
     <span class="code-icon">${TICKET}</span>
-    <h2>Have a code?</h2>
     <p>If you were given a code for a deck, type it here. The deck joins your collection, and there’s nothing to pay.</p>
     <input data-storecode class="store-code" aria-label="Code" autocomplete="off" autocapitalize="characters" spellcheck="false"
       enterkeyhint="go" maxlength="40" placeholder="XXXX-XXXX-XXXX" value="${esc(text)}" ${busy ? 'disabled' : ''}>
@@ -828,7 +838,8 @@ function renderCheckout(): string {
         return `<li><span>${l.qty > 1 ? `${l.qty} × ` : ''}${esc(info.name)}</span><b>${price(l.amount)}</b></li>`;
       }).join('')}</ul>
       <div class="ct-row"><span>Total</span><b>${price(q!.total)}</b></div>
-      ${paying() ? payNote() : '<p class="confirm-test"><b>This is a test order.</b> No money is taken. The cards are added to your Via Mochi account, and you can remove them again from the cart’s tester tools.</p>'}
+      <p class="confirm-digital">Everything in the Store is digital, and nothing is shipped. What you get is added to your Via Mochi account, and it’s yours wherever you play Folkborn signed in to that account.</p>
+      ${paying() ? payNote() : '<p class="confirm-test"><b>This is a test order.</b> No money is taken, and you can remove the cards again from the cart’s tester tools.</p>'}
       <div class="delete-buttons">
         <button data-click="store:cancel" ${checkout.stage === 'placing' ? 'disabled' : ''}>Back</button>
         <button class="primary" data-click="store:place" ${checkout.stage === 'placing' ? 'disabled' : ''}>${checkout.stage === 'placing' ? (paying() ? 'Opening…' : 'Placing…') : paying() ? 'Continue to payment' : 'Place order'}</button>

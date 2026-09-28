@@ -1,6 +1,6 @@
 // A set's art, fingerprinted: one hash over every illustration and finished card in its folder. publish-pack
-// stores it beside the art in the pack storage (<set>/art.json), and the game's build compares it with the
-// folder here, so a build never ships with art the storage doesn't have yet (apps/web/vite.config.ts).
+// uploads the art to a folder named by it (<set>/art/<fingerprint>/, content/pack-storage.ts), and the game's build
+// points at the folder of its own art and refuses while the storage doesn't have it yet (apps/web/vite.config.ts).
 //
 // Why the storage holds the art at all: the site is deployed as one upload inside Azure's two-minute window,
 // and card art (over 100 MB by the third deck) doesn't fit through a home uplink in that time. The art changes

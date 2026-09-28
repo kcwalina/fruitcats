@@ -63,7 +63,7 @@ describe('catalog', () => {
     expect(whyNotSold('BP1-X01', catalog)).toBeNull();
   });
 
-  it('puts the sets from before the folklore re-theme in the Legacy tab', () => {
+  it('puts the sets from before the folklore re-theme in the Legacy decks', () => {
     expect(isLegacySet('SB1')).toBe(true);
     expect(isLegacySet('BP1')).toBe(false);
     expect(isLegacySet('DW1')).toBe(false);

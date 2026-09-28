@@ -33,5 +33,8 @@
   "DW1-D20": "Knotted Mane: in a whitewashed stable at dawn, a big grumpy chestnut horse with its long dark mane tangled into a wild mess of knots, and the tiny domowik in a rust-red cap tugging mischievously on the knots from its neck, the horse rolling its eyes."
  },
  "backgrounds": {},
- "referenceLead": "This oil painting is by a painter. Paint a NEW oil painting by the same painter, as if from the same series."
+ "referenceLead": "This oil painting is by a painter. Paint a NEW oil painting by the same painter, as if from the same series.",
+ "banner": "The warm, dark corner behind the big whitewashed clay stove of an old Polish village cottage at night, where the house spirit lives. Embers glow orange in the stove's mouth. On the stove's ledge, left out for him: a slice of dark bread with a pinch of salt on it, a small clay bowl of porridge and a little cup of milk. On the wooden floor beside the stove stands one old, worn leather shoe, and a clay pot holds a glowing ember, ready to carry to a new home. A small window shows a blue night sky and a red-roofed neighbour's house.",
+ "bannerReference": "DW1-D05",
+ "bannerStyle": "Exactly the same technique, paint texture, brushwork, simplification of shapes, proportions, palette and mood. Follow the painting, not a generic idea of illustration. Keep the painting's COLOUR: it is not monochrome. Use its clear turquoise and sky blues, its brick and rust reds, warm ochre, fresh teal-green, set against whitewash and earth browns, as clearly coloured as the reference: the blue sky and the red roof are the loudest notes. Moderate saturation, never grey, never sepia, never washed out. No text, no letters, no signature, no frame."
 }

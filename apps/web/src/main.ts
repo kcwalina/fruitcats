@@ -33,7 +33,7 @@ import {
   renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, DECK_RULES, MECHANICS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
+  CARDS, DECKS, DECK_RULES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
   legalActions, other, readyTreats, unitHealth, unitPower, MULLIGAN_MAX,
   type Action, type DeckList, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -120,8 +120,12 @@ let myDeck = loadChosenDeck();
 let deckInView = myDeck;
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
-/** The card the side panel's inspector shows enlarged: the last one hovered or tapped. Null: your Hero. */
-let inspected: string | null = null;
+/**
+ * The card the side panel's inspector shows: the last one hovered or tapped (your Hero before that). Kept on
+ * narrow screens too, where there is no inspector: it is what the magnifier button opens full size. `key` is
+ * the card's id (a Hero's side), and `state` why a unit is resting, for the enlarged view's explanations.
+ */
+let inspected: { url: string; key?: string; state?: string } | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
 let tutorialGame = false;
 let selection: Selection | null = null;
@@ -135,6 +139,18 @@ let aiTimer: number | undefined;
 let confirming: 'yarn' | null = null;
 let showRules = false;
 let showSettings = false;
+/** The Story so far drawer (the game's transcript) is out: it slides in beside the board and stays until closed. */
+let showStory = false;
+/**
+ * A wide screen (an iPad sideways, a PC): the two players' plaques sit in the panel beside the board with the card
+ * reader between them, so the board's whole height goes to bigger cards, with their rules text on them. Narrower
+ * screens keep the player bars on the board. Crossing the line redraws the game.
+ */
+const WIDE = window.matchMedia('(min-width: 1001px)');
+let drawnWide = WIDE.matches;
+const relayout = () => { if (screen === 'game' && WIDE.matches !== drawnWide) render(); };
+WIDE.addEventListener('change', relayout);
+window.addEventListener('resize', relayout);   // some browsers resize without a media-query change event
 /** Settings' sections (Gameplay, Sound, Account, Contact us). Null: none picked yet; a wide screen shows the first, a phone shows the list. */
 type SettingsSection = 'gameplay' | 'sound' | 'account' | 'contact';
 let settingsSection: SettingsSection | null = null;
@@ -534,9 +550,6 @@ function onClick(key: string) {
     // Always a normal game: the guided one is the Tutorial, which Home puts first until you've played.
     if (raw === 'play') { startGame(); return; }
     if (raw in DIFFICULTY) { difficulty = raw as Difficulty; render(); return; }
-    // A deck: tapping one slides it to the middle, which chooses it (see deckCarouselMounted).
-    const card = [...app.querySelectorAll<HTMLElement>('.deck-choice')].find((el) => el.dataset.click === key);
-    if (card) centerDeck(card, 'smooth');
     return;
   }
   if (ONLINE && kind === 'pf') {
@@ -585,12 +598,14 @@ function onClick(key: string) {
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
+    if (raw === 'zoom') { toggleZoom(); return; }
+    if (raw === 'story') { toggleStory(); return; }
     // Settings closes, and opens fresh on its first section next time.
     if (raw === 'settings') { showSettings = !showSettings; settingsSection = null; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) { warmPawtraits(); warmOwner(render); } } }
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
     if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
-    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
+    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; showStory = false; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
@@ -749,6 +764,7 @@ function render() {
     if (screen === 'solo' || screen === 'friends') deckCarouselMounted(!scrolled.has('decks'));
     if (screen === 'friends') friendsMounted();
   }
+  handOverlap();
   renderedFoeUnits = new Set(game?.players[theirSeat].yard.map((u) => u.uid) ?? []);
   renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, mySeat); } else stopTutorial();
@@ -761,20 +777,57 @@ function render() {
  * The home screen's modes, in two groups with space between them: playing (Solo, Friend, Ranked), then
  * your cards (Collection, Store, Deck builder). Coming-soon modes say what they will be.
  */
+/**
+ * Home's tiles, each drawn as a card of one of the decks: in that deck's frame colours, with an illustration in its
+ * style of its folk at the tile's business (a domowik dealing a game for one; two paris playing over tea), a type line,
+ * and rules text: a keyword line on what the tile is, and a line of flavour.
+ */
+type ModeCard = { name: string; sub: string; deck: string; code: string; icon: string; type: string; key: string; kw: string; text: string; flavor: string };
 const MODE_GROUPS = [
   [
-    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '' },
-    { key: 'friend', name: 'Friend', sub: 'Online',
+    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '', deck: 'domowiki', code: 'FB-01', icon: 'one', type: 'Play · vs the AI',
+      kw: 'Play', text: 'any deck against the AI.', flavor: 'The stove is warm.' },
+    { key: 'friend', name: 'Friend', sub: 'Online', deck: 'pari', code: 'FB-02', icon: 'two', type: 'Play · Online',
+      kw: 'Play', text: 'a friend, each on your own device.', flavor: 'Paris are never alone.',
       soon: 'Play with a friend online: add each other with a code, then you each play on your own device.' },
-    { key: 'ranked', name: 'Ranked', sub: 'The ladder',
+    { key: 'ranked', name: 'Ranked', sub: 'The ladder', deck: 'huihai', code: 'FB-03', icon: 'crown', type: 'Play · Ranked',
+      kw: 'Climb', text: 'the ladder, game by game.', flavor: 'Stone upon stone.',
       soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   ],
   [
-    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '' },
-    { key: 'store', name: 'Store', sub: 'New cards', soon: 'A store for new decks and cards.' },
-    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '' },
+    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '', deck: 'jiaoren', code: 'FB-04', icon: 'pearl', type: 'Cards · Yours',
+      kw: 'Keep', text: 'every card you own, deck by deck.', flavor: 'Each pearl was once a tear.' },
+    { key: 'store', name: 'Store', sub: 'New cards', deck: 'aluxes', code: 'FB-05', icon: 'bag', type: 'Cards · New decks',
+      kw: 'Find', text: 'new decks and cards.', flavor: 'Fresh from the milpa.', soon: 'A store for new decks and cards.' },
+    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '', deck: 'domowiki', code: 'FB-06', icon: 'stack', type: 'Cards · Your decks',
+      kw: 'Build', text: 'a Hero and 50 cards of your own.', flavor: 'Every card in its place.' },
   ],
 ];
+const MODE_EXTRAS: ModeCard[] = [
+  { key: 'tutorial', name: 'Tutorial', sub: 'With tips', deck: 'pari', code: 'FB-07', icon: 'book', type: 'Learn · First game',
+    kw: 'Learn', text: 'your first game, with tips.', flavor: 'Every pari was little once.' },
+  { key: 'docs', name: 'Documentation', sub: 'The rules', deck: 'huihai', code: 'FB-08', icon: 'scroll', type: 'Learn · The rules',
+    kw: 'Read', text: 'the rules, in full.', flavor: 'Written down, just in case.' },
+];
+/** The decks the tiles borrow: their frames' colours (as the cards draw them) and their names for the footer. */
+const MODE_DECKS: Record<string, { name: string; main: string; dark: string; tint: string }> = {
+  domowiki: { name: 'Domowiki', main: '#5B3F9E', dark: '#2E1F5C', tint: '#EEE8FB' },
+  pari: { name: 'Pari', main: '#2E5C9E', dark: '#16305A', tint: '#E3ECF8' },
+  aluxes: { name: 'Aluxes', main: '#2E8FA3', dark: '#1A4D5C', tint: '#DCF1F5' },
+  jiaoren: { name: 'Jiaoren', main: '#D9735F', dark: '#7A2E2A', tint: '#FCE9E3' },
+  huihai: { name: 'Hui Hai', main: '#4E9A3A', dark: '#24501A', tint: '#E9F5E1' },
+};
+/** The small emblems in the cards' corner badges, drawn in the frame's colour. */
+const MODE_ICONS: Record<string, string> = {
+  one: '<rect x="8" y="4" width="10" height="15" rx="2"/>',
+  two: '<rect x="4" y="6" width="10" height="14" rx="2"/><rect x="10" y="3" width="10" height="14" rx="2"/>',
+  crown: '<path d="M4 17 L5 7 L9.5 11 L12 5 L14.5 11 L19 7 L20 17 Z"/>',
+  pearl: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.6" class="lit"/>',
+  bag: '<path d="M6 9 H18 L17 20 H7 Z"/><path d="M9 9 V7 a3 3 0 0 1 6 0 V9" fill="none"/>',
+  stack: '<rect x="5" y="9" width="12" height="11" rx="2"/><path d="M8 6 H19 V17" fill="none"/>',
+  book: '<path d="M3 6 C7 4 10 5 12 7 C14 5 17 4 21 6 V19 C17 17 14 18 12 20 C10 18 7 17 3 19 Z"/>',
+  scroll: '<path d="M6 5 H17 a2 2 0 0 1 0 4 H16 V19 H7 a2 2 0 0 1 0 -4 V5 Z"/>',
+};
 const MODES = MODE_GROUPS.flat();
 
 /** With accounts on, the tiles that need one, and the line on why that heads "Sign in or create account". */
@@ -819,6 +872,23 @@ function friendTileLine(): { line: string; badge: number; waiting: boolean } {
   return { line: '<span class="mode-sub">Online</span>', badge: 0, waiting: false };
 }
 
+/** One of Home's tiles as a card. `open` is the element's opening tag without its brackets (a button or a link). */
+function modeCard(open: string, m: ModeCard, status: string, badge: number): string {
+  const tag = open.split(' ')[0], d = MODE_DECKS[m.deck];
+  return `
+      <${open} style="--main:${d.main};--dark:${d.dark};--tint:${d.tint}">
+        ${badge ? `<span class="mode-badge" aria-label="${badge} waiting">${badge}</span>` : ''}
+        <span class="mc-frame"><span class="mc-face">
+          <span class="mc-bar"><span class="mc-gem" aria-hidden="true"><svg viewBox="0 0 24 24">${MODE_ICONS[m.icon]}</svg></span><span class="mc-name ${m.name.length > 8 ? 'long' : ''}">${m.name}</span></span>
+          <span class="mc-art"><img src="${BASE}ui/mode-${m.key}.webp" alt="" draggable="false"></span>
+          <span class="mc-type"><span>${m.type}</span><small>${m.code}</small></span>
+          <span class="mc-text"><span class="mc-rule"><b>${m.kw}:</b> ${m.text}</span>
+            ${status ? status.replace(/mode-sub/g, 'mc-state') : `<span class="mc-flavor">${m.flavor}</span><span class="mc-short">${m.sub}</span>`}</span>
+          <span class="mc-foot">Folkborn · ${d.name}</span>
+        </span></span>
+      </${tag}>`;
+}
+
 function renderHome(): string {
   const saved = savedGameLabel();
   return `
@@ -829,83 +899,96 @@ function renderHome(): string {
       <h1>Folkborn</h1>
       <p>Gentle legends from every corner of the world</p>
     </header>
-    <nav class="modes">
-      ${MODE_GROUPS.map((group) => `
-      <div class="mode-group">
-        ${group.map((mode) => {
-          // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
-          const m = (mode.key === 'store' && storeOpen()) || (mode.key === 'friend' && ONLINE) ? { ...mode, soon: '' } : mode;
-          // Every tile is the same: picture, name, and one line under it. That line says "Coming soon",
-          // or on Solo, that a game is waiting to be continued.
-          const resume = m.key === 'solo' && saved;
-          const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES && !(m.key === 'friend' && !ONLINE);
-          const friend = m.key === 'friend' && ONLINE && !needsAccount ? friendTileLine() : null;
-          const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
-            : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
-            : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
-            : friend ? friend.line
-            : `<span class="mode-sub">${m.sub}</span>`;
-          return `
-        <button class="mode-card ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
-          ${friend?.badge ? `<span class="mode-badge" aria-label="${friend.badge} waiting">${friend.badge}</span>` : ''}
-          <img src="${BASE}ui/place-${m.key}.webp" alt="">
-          <span class="mode-text"><span class="mode-name">${m.name}</span>${status}</span>
-        </button>`;
-        }).join('')}
-      </div>`).join('')}
-      <div class="mode-group mode-more">
-        <button class="mode-card mini" data-click="home:tutorial" title="A guided first game with tips">
-          <img src="${BASE}ui/place-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
-        <a class="mode-card mini" href="${BASE}docs.html">
-          <img src="${BASE}ui/place-docs.webp" alt=""><span class="mode-name">Documentation</span></a>
-      </div>
+    <nav class="modes card-grid">
+      ${MODES.map((mode) => {
+        // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
+        const m = (mode.key === 'store' && storeOpen()) || (mode.key === 'friend' && ONLINE) ? { ...mode, soon: '' } : mode;
+        // Under the card's line, only what's worth saying now: Coming soon, Sign in to open, a game to resume, or
+        // what's happening with a friend.
+        const resume = m.key === 'solo' && saved;
+        const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES && !(m.key === 'friend' && !ONLINE);
+        const friend = m.key === 'friend' && ONLINE && !needsAccount ? friendTileLine() : null;
+        const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
+          : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
+          : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
+          : friend?.waiting ? friend.line
+          : friend && !live.open ? friend.line : '';
+        return modeCard(`button class="mcard ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}"`,
+          m, status, friend?.badge ?? 0);
+      }).join('')}
+      ${modeCard('button class="mcard" data-click="home:tutorial" title="A guided first game with tips"', MODE_EXTRAS[0], '', 0)}
+      ${modeCard(`a class="mcard" href="${BASE}docs.html"`, MODE_EXTRAS[1], '', 0)}
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
   </div>`;
 }
 
+/** The decks to choose from: the ready-made ones you have (the starters, and any from the Store), then your own. */
+function deckChoices() {
+  return [
+    ...ownedDeckKeys().map((key) => {
+      const deck = DECKS[key], lore = SETS[CARDS[deck.hero]?.set ?? '']?.lore;
+      return { key, deck, ready: true, origin: lore?.eyebrow ?? lore?.from ?? '', blurb: esc(deckBlurb(key)) };
+    }),
+    ...listDecks().map((d) => {
+      const ready = isReady(d);
+      return { key: customKey(d.id), deck: d, ready, origin: 'Your own deck',
+        blurb: ready ? `Your own deck, led by ${esc(cardName(d.hero))}.`
+          : `<span class="deck-unready">Not finished: ${deckSize(d)} / ${DECK_RULES.size} cards</span>` };
+    }),
+  ];
+}
+type DeckChoice = ReturnType<typeof deckChoices>[number];
+
+/**
+ * Choosing a deck, as the Collection shows a deck's cards: one deck at a time, its Hero's card large, swiped (or turned
+ * with the arrows), with dots saying how many there are, and beside it what the deck is and how it plays. The deck
+ * showing is the one you play. Solo and Play a friend both use it.
+ */
 function renderDeckPicker(): string {
   // The chosen deck may have been deleted, or edited below 50 cards, since it was chosen.
   const chosen = deckForKey(myDeck);
   if (!chosen || !isReady(chosen)) myDeck = firstDeck();
   if (!deckForKey(deckInView)) deckInView = myDeck;
-  // Every deck is the same card in one carousel: the ready-made decks you have (the starters, and any taken from the
-  // Store), then your own. The one in the middle is your deck; one of yours still short of 50 cards can sit there,
-  // but you can't play it yet.
-  const decks = [
-    ...ownedDeckKeys().map((key) => ({ key, deck: DECKS[key], ready: true, blurb: deckBlurb(key) })),
-    ...listDecks().map((d) => {
-      const ready = isReady(d);
-      return { key: customKey(d.id), deck: d, ready,
-        blurb: ready ? `Your own deck, led by ${esc(cardName(d.hero))}.`
-          : `<span class="deck-unready">Not finished: ${deckSize(d)} / ${DECK_RULES.size} cards</span>` };
-    }),
-  ];
+  const decks = deckChoices();
+  const index = Math.max(0, decks.findIndex((d) => d.key === deckInView));
   return `
-    <section class="picker deck-picker">
-      <h2>Choose your deck</h2>
-      <div class="deck-carousel">
-        <div class="deck-track" data-keep-scroll="decks">
-          <div class="deck-choices">
-            ${decks.map(({ key, deck, ready, blurb }) => `
-              <button class="${deckChoiceClass(key, ready)}" data-click="solo:${key}" data-ready="${ready}">
-                <img src="${yourCardUrl(`${deck.hero}-kitten`)}" alt="${esc(CARDS[deck.hero].name)}">
-                <span class="deck-name">${esc(deck.name)}</span>
-                <span class="deck-class ${famClass(deck.hero)}">${esc(familyName(CARDS[deck.hero].family))} · ${esc(familyInfo(CARDS[deck.hero].family)?.mechanic ?? '')}</span>
-                <span class="deck-blurb">${blurb}</span>
-              </button>`).join('')}
-          </div>
+    <section class="picker deck-picker" aria-label="Choose your deck">
+      <div class="dk-carousel">
+        <div class="dk-track" data-keep-scroll="decks">
+          ${decks.map((d, i) => `
+            <div class="dk-slide ${i === index ? 'on' : ''}" data-deck="${esc(d.key)}" data-ready="${d.ready}">
+              <img class="dk-card" src="${yourCardUrl(`${d.deck.hero}-kitten`)}" alt="${esc(d.deck.name)}, led by ${esc(CARDS[d.deck.hero].name)}" draggable="false">
+            </div>`).join('')}
         </div>
-        <button class="deck-arrow prev" data-deck-scroll="-1" aria-label="Previous deck">‹</button>
-        <button class="deck-arrow next" data-deck-scroll="1" aria-label="Next deck">›</button>
+        <button class="dk-arrow prev" data-deck-scroll="-1" aria-label="Previous deck">‹</button>
+        <button class="dk-arrow next" data-deck-scroll="1" aria-label="Next deck">›</button>
+        ${renderDeckDots(decks.length, index)}
       </div>
+      ${renderDeckInfo(decks[index])}
     </section>`;
 }
 
-const deckChoiceClass = (key: string, ready: boolean) => ['deck-choice', key.startsWith('custom:') && 'mine',
-  key === deckInView && 'in-view', key === deckInView && ready && 'chosen', !ready && 'unready'].filter(Boolean).join(' ');
+function renderDeckDots(count: number, index: number): string {
+  if (count < 2) return '';
+  return `<span class="dk-dots" role="img" aria-label="Deck ${index + 1} of ${count}">${Array.from({ length: count }, (_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('')}</span>`;
+}
 
-/** What Play a friend needs from this file: Solo's deck carousel, and the deck in its middle. */
+/** Beside the card: where the deck's folk come from, its name, its way of playing, how it plays, and its Hero. */
+function renderDeckInfo(d: DeckChoice | undefined): string {
+  if (!d) return '<div class="dk-info"></div>';
+  const hero = CARDS[d.deck.hero];
+  return `
+      <div class="dk-info" aria-live="polite">
+        ${d.origin ? `<p class="dk-origin">${esc(d.origin)}</p>` : ''}
+        <h2 class="dk-name">${esc(d.deck.name)}</h2>
+        <p class="dk-tags"><span class="deck-class ${famClass(d.deck.hero)}">${esc(familyName(hero.family))} · ${esc(familyInfo(hero.family)?.mechanic ?? '')}</span></p>
+        <p class="dk-about">${d.blurb}</p>
+        <p class="dk-hero">Hero: <b>${esc(cardName(d.deck.hero))}</b></p>
+      </div>`;
+}
+
+/** What Play a friend needs from this file: Solo's deck picker, and the deck showing in it. */
 const friendsHost: FriendsHost = {
   render,
   deckPicker: renderDeckPicker,
@@ -917,43 +1000,52 @@ const friendsHost: FriendsHost = {
   hasPlayed,
 };
 
-/** Slides a deck in Solo's carousel to the middle. */
-function centerDeck(card: HTMLElement, behavior: ScrollBehavior) {
-  const track = card.closest<HTMLElement>('.deck-track')!;
-  const t = track.getBoundingClientRect(), c = card.getBoundingClientRect();
-  track.scrollTo({ left: track.scrollLeft + c.left + c.width / 2 - (t.left + t.width / 2), behavior });
+/** How far apart the decks in the picker are: a deck's width and the gap between two. */
+const deckPitch = (track: HTMLElement) => {
+  const [a, b] = track.querySelectorAll<HTMLElement>('.dk-slide');
+  return Math.max(1, b ? b.offsetLeft - a.offsetLeft : track.clientWidth);
+};
+
+/** Turns the deck picker by `step` decks (the arrows; fingers swipe). */
+function turnDeck(step: number) {
+  const track = app.querySelector<HTMLElement>('.dk-track');
+  if (!track) return;
+  const i = Math.round(track.scrollLeft / deckPitch(track)) + step;
+  track.scrollTo({ left: i * deckPitch(track), behavior: 'smooth' });
 }
 
 /**
- * The deck carousel, after each render. The deck in the middle is your deck: as you swipe, whichever
- * comes to the middle is chosen (in place, without redrawing the screen under your finger), and Play
- * says so. The arrows show only where there are more decks.
+ * The deck picker, after each render. Each deck fills the strip's width, so exactly one shows. As you swipe, the deck
+ * that settles is chosen in place, without redrawing the screen under your finger: its words, the dots and Play
+ * follow it.
  */
 function deckCarouselMounted(first: boolean) {
-  const track = app.querySelector<HTMLElement>('.deck-track');
+  const track = app.querySelector<HTMLElement>('.dk-track');
   if (!track) return;
-  const cards = [...track.querySelectorAll<HTMLElement>('.deck-choice')];
-  const inView = cards.find((el) => el.classList.contains('in-view'));
-  if (first && inView) centerDeck(inView, 'instant');
+  const slides = [...track.querySelectorAll<HTMLElement>('.dk-slide')];
   const carousel = track.parentElement!;
-  const keyOf = (el: HTMLElement) => el.dataset.click!.slice('solo:'.length);   // your own: custom:<id>
+  const start = slides.findIndex((el) => el.dataset.deck === deckInView);
+  if (first && start > 0) track.scrollTo({ left: start * deckPitch(track), behavior: 'instant' });
   let frame = 0;
   const update = () => {
     frame = 0;
-    carousel.classList.toggle('at-start', track.scrollLeft <= 4);
-    carousel.classList.toggle('at-end', track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
-    const t = track.getBoundingClientRect();
-    const off = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return Math.abs(r.left + r.width / 2 - t.left - t.width / 2); };
-    const nearest = cards.reduce((best, el) => (off(el) < off(best) ? el : best));
-    if (keyOf(nearest) === deckInView) return;
-    deckInView = keyOf(nearest);
-    if (nearest.dataset.ready === 'true') { myDeck = deckInView; saveChosenDeck(myDeck); }
-    for (const el of cards) el.className = deckChoiceClass(keyOf(el), el.dataset.ready === 'true');
+    const i = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / deckPitch(track))));
+    carousel.classList.toggle('at-start', i === 0);
+    carousel.classList.toggle('at-end', i === slides.length - 1);
+    const slide = slides[i], key = slide.dataset.deck!;
+    if (key === deckInView) return;
+    deckInView = key;
+    if (slide.dataset.ready === 'true') { myDeck = key; saveChosenDeck(myDeck); }
+    slides.forEach((el, k) => el.classList.toggle('on', k === i));
+    const dots = carousel.querySelector('.dk-dots');
+    if (dots) dots.outerHTML = renderDeckDots(slides.length, i);
+    const info = app.querySelector('.dk-info');
+    if (info) info.outerHTML = renderDeckInfo(deckChoices().find((d) => d.key === key));
     const footer = app.querySelector('.setup-footer');
     if (footer && screen === 'solo') footer.outerHTML = renderSoloFooter();
     // Play a friend: its button waits for a finished deck too.
     for (const b of app.querySelectorAll<HTMLButtonElement>('[data-click="pf:challenge"], [data-click^="pf:accept:"]'))
-      b.disabled = nearest.dataset.ready !== 'true' || !live.connected;
+      b.disabled = slide.dataset.ready !== 'true' || !live.connected;
   };
   update();
   track.addEventListener('scroll', () => { frame ||= requestAnimationFrame(update); }, { passive: true });
@@ -986,22 +1078,20 @@ function renderSolo(): string {
       <span></span>
       ${settingsButton()}
     </div>
-    <header class="scene-title"><h1>Solo game</h1></header>
-    <div class="setup-body">
+    <header class="scene-title"><h1 class="sr-only">Solo game</h1></header>
+    <div class="setup-body solo-stage">
       ${renderDeckPicker()}
-      <section class="picker difficulty-picker">
-        <h2>Difficulty</h2>
-        <div class="difficulty-choices">
+      <section class="dk-diff" aria-label="Difficulty">
+        <h2 class="dk-diff-title">Difficulty</h2>
+        <div class="dk-diff-choices" role="radiogroup" aria-label="Difficulty">
           ${Object.entries(DIFFICULTY).map(([key, d]) => `
-            <button class="difficulty-choice ${key === difficulty ? 'chosen' : ''}" data-click="solo:${key}" aria-pressed="${key === difficulty}">
-              <img src="${BASE}ui/${d.img}.webp" alt="">
-              <span class="diff-name">${d.label}</span>
-              <span class="diff-sub">${d.blurb}</span>
+            <button class="${key === difficulty ? 'chosen' : ''}" role="radio" aria-checked="${key === difficulty}" data-click="solo:${key}">
+              <span class="dk-diff-name">${d.label}</span><span class="dk-diff-sub">${d.blurb}</span>
             </button>`).join('')}
         </div>
       </section>
+      ${renderSoloFooter()}
     </div>
-    ${renderSoloFooter()}
   </div>`;
 }
 
@@ -1014,30 +1104,82 @@ function renderGame(): string {
   const attackers = new Set(legal.flatMap((a) => (a.t === 'attack' && a.attacker.kind === 'unit' ? [a.attacker.uid] : [])));
   const playable = new Set(legal.flatMap((a) => (a.t === 'play' || a.t === 'pounce' ? [a.uid] : [])));
 
+  const wide = drawnWide = WIDE.matches;
+  const foeBar = renderPlayer(s, theirSeat, targets);
+  const myBar = renderPlayer(s, mySeat, targets, legal);
   return `
   <div class="game">
-    <main class="board ${targets.size ? 'targeting' : ''}">
-      ${renderPlayer(s, theirSeat, targets)}
+    <main class="board ${targets.size ? 'targeting' : ''} ${wide ? 'wide' : ''}">
+      ${wide ? '' : foeBar}
       ${renderYard(s, theirSeat, targets, attackers)}
       ${renderMidbar(s, legal)}
       ${renderYard(s, mySeat, targets, attackers)}
-      ${renderPlayer(s, mySeat, targets, legal)}
+      ${wide ? '' : myBar}
       ${renderHand(s, playable)}
     </main>
-    <aside class="side">
-      <div class="inspector"><img id="zoom" src="${inspected ?? yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
-      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
+    <aside class="side ${wide ? 'wide' : ''}">
+      ${wide ? foeBar : ''}
+      <div class="inspector"><img id="zoom" src="${inspected?.url ?? yourCardUrl(heroKey(s, mySeat))}" alt="">
+        ${wide ? '<small class="inspector-hint">Tap a card to read it here · hold it or 🔍 for full size</small>' : ''}</div>
+      ${wide ? myBar : ''}
       <div class="side-buttons">
+        <button class="icon-button zoom-button" data-click="ui:zoom" title="Read the card full size" aria-label="Read the card full size"><img src="${BASE}ui/icon-zoom.webp" alt=""></button>
+        <button class="icon-button story-button" data-click="ui:story" title="Story so far" aria-label="Story so far" aria-pressed="${showStory}"><img src="${BASE}ui/icon-story.webp" alt=""></button>
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
         ${backButton(ol ? 'ol:home' : 'ui:quit', 'Home')}
         ${onlineSideButtons()}
       </div>
     </aside>
+    ${renderStory(s)}
     ${ol ? renderOnlineResult(s) : s.winner !== null ? renderGameOver(s) : ''}
     ${ol ? renderVersus(s as PlayerView) : ''}
     ${showRules ? renderRules() : ''}
   </div>`;
+}
+
+/**
+ * Whether the hand's cards overlap (or shrink) because there are more than fit side by side: then each card's
+ * printed Health, on the corner the next card covers, is repeated on its visible edge. Checked after every redraw and
+ * when the window changes size, since the answer depends on the width.
+ */
+function handOverlap() {
+  const hand = app.querySelector<HTMLElement>('.hand');
+  if (!hand) return;
+  const cards = hand.querySelectorAll<HTMLElement>('.hand-card');
+  const width = cards.length ? cards[0].getBoundingClientRect().width : 0;
+  hand.classList.toggle('overlapping', cards.length > 1 && cards.length * width + (cards.length - 1) * 8 > hand.clientWidth);
+}
+window.addEventListener('resize', handOverlap);
+
+/**
+ * Story so far: the game's transcript in a drawer that slides in from the board's edge (from the right beside the
+ * panel; up from the bottom on a narrow screen). It is part of the board, not a dialog: no backdrop, and the game
+ * goes on while it is out. Newest at the bottom, where the eye lands, and it keeps its scroll between redraws.
+ */
+function renderStory(s: GameState): string {
+  return `<aside class="story-drawer ${showStory ? 'open' : ''}" aria-hidden="${!showStory}" aria-label="Story so far">
+    <div class="story-head"><h3>Story so far</h3>
+      <button class="icon-button story-close" data-click="ui:story" title="Close" aria-label="Close">×</button></div>
+    <ul class="log" data-keep-scroll="story">${s.log.slice(-120).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul>
+  </aside>`;
+}
+
+/** The Story drawer slides rather than snapping: toggled on the drawn screen, and the next redraw keeps it. */
+function toggleStory() {
+  showStory = !showStory;
+  const drawer = app.querySelector<HTMLElement>('.story-drawer');
+  if (!drawer) { render(); return; }
+  drawer.classList.toggle('open', showStory);
+  drawer.setAttribute('aria-hidden', String(!showStory));
+  app.querySelector('.story-button')?.setAttribute('aria-pressed', String(showStory));
+}
+
+/** A card's rules text with its keywords in bold, for the unit tiles on a wide screen. */
+function rulesHtml(text: string): string {
+  let html = esc(text);
+  for (const k of glossary()) html = html.replace(new RegExp(`${k.test.source}:?`, 'g'), '<b>$&</b>');
+  return html.replace(/\n/g, '<br>');
 }
 
 /**
@@ -1107,7 +1249,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
         ${canAttack ? '<button class="primary" data-click="btn:heroattack">Hero attack</button>' : ''}
       </div>` : ''}
     </div>
-    ${p === theirSeat ? shownHand(s) ?? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
     ${ol ? `<div class="player-face online">${playerFace(p)}</div>`
       : ACCOUNTS ? `<div class="player-face">${boardFace(p === mySeat ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
@@ -1171,17 +1312,28 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
-    <div class="uname">${esc(cardName(u.id))}</div>
+    <div class="ubox">
+      <div class="uname">${esc(cardName(u.id))}</div>
+      ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
+      <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
+      <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
+    </div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
-    <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     ${u.exhausted ? `<div class="zzz ${resting.tag}">${resting.tag === 'new' ? 'new' : 'zzz'}</div>` : ''}
   </div>`;
 }
 
 function renderYard(s: GameState, p: PlayerId, targets: Set<string>, attackers: Set<number>): string {
   const yard = s.players[p].yard;
-  return `<section class="yard ${p === mySeat ? 'me' : 'foe'}">
+  // The opponent's hand (face-down backs, or face up in a teaching game) sits at the start of their Yard, across
+  // from their Offerings, so their bar holds only who they are. On the wide board the backs are left out (their
+  // plaque's count says as much, and the room is the Yard's), unless the hand is being shown.
+  const hand = s.players[p].hand.length;
+  const foeHand = p === theirSeat
+    ? `<div class="foe-hand-slot">${shownHand(s) ?? `<div class="foe-hand">${s.players[p].hand.map(() => '<div class="card-back"></div>').join('')}</div>`}
+      <div class="pantry-label foe-hand-label">${hand} in hand</div></div>` : '';
+  return `<section class="yard ${p === mySeat ? 'me' : 'foe'}" style="--n:${Math.max(1, yard.length)}">
+    ${foeHand}
     ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === mySeat ? 'Your' : 'Their'} Yard is empty</div>`}
     ${renderPantry(s, p)}
   </section>`;
@@ -1193,14 +1345,19 @@ function renderHand(s: GameState, playable: Set<number>): string {
   const planting = prompt?.kind === 'plant';
   const luckyUid = prompt?.kind === 'lucky' ? prompt.uid : -1;
   const selectedUid = selection?.options.find((a) => a.t === 'play' || a.t === 'pounce') as { uid?: number } | undefined;
-  return `<section class="hand">
+  const n = s.players[mySeat].hand.length;
+  return `<section class="hand" style="--n:${n};--gaps:${Math.max(1, n - 1)}">
     ${s.players[mySeat].hand.map((c) => {
       const zestOn = (s.players[mySeat].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
       const cls = [
         'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
-      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
+      // A unit's Health is printed on the card's bottom-right corner, which a bigger hand's overlap hides: it is
+      // repeated as a chip on the left edge, over the art, while the hand overlaps (see handOverlap).
+      const health = CARDS[c.id].health;
+      const hp = health !== undefined ? `<span class="hand-hp" aria-hidden="true">${health}</span>` : '';
+      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${hp}</button>`;
     }).join('')}
   </section>`;
 }
@@ -1409,7 +1566,7 @@ function renderRules(): string {
       <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
       <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
-      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
+      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again. The book button opens the story so far: everything that has happened in this game.</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
@@ -1454,11 +1611,9 @@ app.addEventListener('click', (event) => {
   if (suppressClick) { suppressClick = false; return; }
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-click]');
   if (el && !(el as HTMLButtonElement).disabled) onClick(el.dataset.click!);
-  // The deck carousel's arrows (for a mouse; fingers swipe): the next deck to the middle.
+  // The deck picker's arrows (for a mouse; fingers swipe).
   const arrow = (event.target as HTMLElement).closest<HTMLElement>('[data-deck-scroll]');
-  const cards = [...(arrow?.parentElement?.querySelectorAll<HTMLElement>('.deck-choice') ?? [])];
-  const next = cards[cards.findIndex((el) => el.classList.contains('in-view')) + Number(arrow?.dataset.deckScroll)];
-  if (next) centerDeck(next, 'smooth');
+  if (arrow) turnDeck(Number(arrow.dataset.deckScroll));
 });
 
 // ── Drag and drop ────────────────────────────────────────────────────────────────────────────────
@@ -1542,9 +1697,9 @@ window.addEventListener('pointerup', (event) => {
 // after the tap (the card gets selected) keeps showing it instead of snapping back to your Hero.
 function inspect(el: HTMLElement | null) {
   if (!el?.dataset.zoom) return;
-  inspected = el.dataset.zoom;
+  inspected = { url: el.dataset.zoom, key: el.dataset.zoomCard, state: el.dataset.zoomState };
   const zoom = document.getElementById('zoom') as HTMLImageElement | null;
-  if (zoom && zoom.src !== inspected) zoom.src = inspected;
+  if (zoom && zoom.src !== inspected.url) zoom.src = inspected.url;
 }
 app.addEventListener('mouseover', (event) => inspect((event.target as HTMLElement).closest<HTMLElement>('[data-zoom]')));
 
@@ -1581,7 +1736,7 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   const overlay = document.createElement('div');
   overlay.id = 'zoom-overlay';
   overlay.className = panel ? 'with-keys' : '';
-  overlay.innerHTML = `<img src="${url}" alt="">${panel}<span>Tap anywhere to close</span>`;
+  overlay.innerHTML = `<img src="${url}" alt="">${panel}<span class="zoom-hint">Tap anywhere to close</span>`;
   overlay.addEventListener('click', closeZoom);
   document.body.appendChild(overlay);
   tutorialCardZoomed();
@@ -1594,8 +1749,21 @@ function closeZoom() {
   tutorialZoomClosed();
 }
 
+/**
+ * The magnifier button in the bottom row: the card you last pointed at (the one in the inspector; your Hero before
+ * any) opens full size, and pressing it again closes it. For players who can't hold a card steady, or read the
+ * small print: the enlarged card is the biggest the screen allows.
+ */
+function toggleZoom() {
+  if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
+  if (!game) return;
+  const card = inspected ?? { url: yourCardUrl(heroKey(game, mySeat)), key: heroKey(game, mySeat) };
+  openZoom(card.url, card.key, card.state);
+}
+
 app.addEventListener('pointerdown', (event) => {
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
+  touchLog(event, el);
   if (!el || event.button !== 0) return;
   inspect(el);
   pressAt = { x: event.clientX, y: event.clientY };
@@ -1617,13 +1785,42 @@ window.addEventListener('pointermove', (event) => {
 }, true);
 
 for (const type of ['pointerup', 'pointercancel'] as const) {
-  window.addEventListener(type, () => {
+  window.addEventListener(type, (event) => {
+    touchLog(event, (event.target as HTMLElement).closest?.<HTMLElement>('[data-zoom]') ?? null);
     window.clearTimeout(pressTimer);
     pressAt = null;
     if (zoomHeld) { zoomHeld = false; closeZoom(); }
     // The click (if any) fires right after pointerup; afterwards stop swallowing clicks.
     if (suppressClick) window.setTimeout(() => { suppressClick = false; }, 0);
   }, true);
+}
+
+/**
+ * With ?debug in the address: a readout of what the cards hear from the finger, for checking taps and long presses
+ * on a device we can't test here (an iPad said the opponent's cards didn't answer, 2026-09-28).
+ */
+const TOUCH_DEBUG = /[?&]debug(&|=|$)/.test(location.search);
+const touchCounts: Record<string, number> = {};
+function touchLog(e: PointerEvent, el: HTMLElement | null) {
+  if (!TOUCH_DEBUG || screen !== 'game') return;
+  touchCounts[e.type] = (touchCounts[e.type] ?? 0) + 1;
+  let panel = document.getElementById('touch-debug');
+  if (!panel) {
+    panel = document.createElement('pre');
+    panel.id = 'touch-debug';
+    panel.style.cssText = 'position:fixed;left:8px;top:60px;z-index:999;margin:0;padding:8px;max-width:60vw;font:11px/1.35 monospace;'
+      + 'color:#0f0;background:rgba(0,0,0,.8);border-radius:6px;pointer-events:none;white-space:pre-wrap';
+    document.body.appendChild(panel);
+  }
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  panel.textContent = [
+    `build ${document.querySelector<HTMLScriptElement>('script[src*="main-"]')?.src.split('/').pop() ?? '?'}`,
+    `last ${e.type} (${e.pointerType}, button ${e.button}) at ${Math.round(e.clientX)},${Math.round(e.clientY)}`,
+    Object.entries(touchCounts).map(([k, n]) => `${k.replace('pointer', '')} ${n}`).join(' · '),
+    `card under it: ${el ? `${el.dataset.zoomCard ?? '?'} (${el.className.split(' ')[0]}, ${el.closest('.foe') ? 'theirs' : 'yours'})` : 'none'}`,
+    `inspector shows: ${inspected?.key ?? 'your Hero'} · enlarged: ${document.getElementById('zoom-overlay') ? 'yes' : 'no'}`,
+    `under finger: ${under ? `${under.tagName.toLowerCase()}.${[...under.classList].join('.')}` : 'nothing'}`,
+  ].join('\n');
 }
 
 app.addEventListener('contextmenu', (event) => {
@@ -1641,6 +1838,7 @@ document.addEventListener('keydown', (event) => {
   if (screen === 'collection' && !showSettings && showcaseArrow(event.key, { render })) return;
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
+    if (showStory && screen === 'game') { toggleStory(); return; }
     if (screen === 'collection' && showcaseEscape({ render })) return;
     if (STORE && screen === 'store' && storeEscape(storeHost)) return;
     if (selection) { selection = null; render(); }

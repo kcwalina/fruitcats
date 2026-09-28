@@ -55,7 +55,7 @@ export interface SetData {
   released?: string;
   /** Its decks are the starter decks everyone has for free, so its cards come with them (docs/store-plan.md). */
   starter?: boolean;
-  /** Its decks are from before the folklore re-theme: the Store shows them apart, in its Legacy tab. */
+  /** Its decks are from before the folklore re-theme: the Store shows them apart, in its Legacy decks. */
   legacy?: boolean;
   requires?: string[];
   families?: Record<string, FamilyDef>;
@@ -78,6 +78,12 @@ export interface SetLore {
   /** One belief per fact, plain and true; every card of the set comes from one of them. */
   facts?: string[];
   sources?: string[];
+  /** The painting across the top of the tale in the Collection: a picture's name in the set's art/illustrations
+   *  ('DW1-banner'). A place from the tale, never one of the cards (tools/draw_banners.py). Without one, the tale's
+   *  name stands alone. */
+  banner?: string;
+  /** Which part of the banner to keep in view when it's cropped, as CSS object-position ('62% 55%'); the middle if not given. */
+  bannerAt?: string;
 }
 
 // ── Plugins ──────────────────────────────────────────────────────────────────────────────────────

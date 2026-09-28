@@ -53,7 +53,7 @@ export function isStarterSet(set: string): boolean {
   return Object.values(SETS).some((x) => x.starter) ? !!s.starter : s.status === 'released';
 }
 
-/** Is this a set from before the folklore re-theme? The Store shows its decks and cards in the Legacy tab. */
+/** Is this a set from before the folklore re-theme? The Store shows its decks and cards in the Legacy decks. */
 export const isLegacySet = (set: string): boolean => !!SETS[set]?.legacy;
 
 /**

@@ -124,7 +124,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .game { padding: 16px; }
 
 /* Parchment panels */
-.player, .midbar, .log-panel {
+.player, .midbar {
   background: linear-gradient(var(--parchment), var(--parchment-2));
   border: 2px solid var(--parchment-edge); border-radius: 16px; box-shadow: var(--panel-shadow);
 }
@@ -229,11 +229,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 
 /* Side panel */
 .inspector img { border-radius: 16px; box-shadow: 0 0 0 3px var(--gold), 0 10px 24px rgba(0, 0, 0, 0.45); }
-.log-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 6px 4px 4px; }
-.log-panel h3 {
-  margin: 0 8px 4px; font: 600 14px Fredoka, Nunito, sans-serif; color: #8e4a12; text-align: center;
-  border-bottom: 1px dashed var(--parchment-edge); padding-bottom: 4px;
-}
 .log { background: none; box-shadow: none; border-radius: 0; padding: 2px 10px; }
 .log li.me { color: #1f5d85; }
 .log li.foe { color: #a02f2f; }
@@ -259,22 +254,27 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* Narrow screens: the side strip panels keep the parchment look */
 @media (max-width: 1000px) {
   .game { padding: 12px; }
-  .log-panel h3 { display: none; }
 }
 
-/* Long-press / right-click card preview */
+/* Long-press / right-click / magnifier-button card preview: the card as big as the screen allows (a player with
+   weak eyesight reads the small print here), with only the one-line hint under it. */
 #zoom-overlay {
-  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; align-content: center; gap: 12px;
-  background: rgba(30, 15, 5, 0.72); backdrop-filter: blur(3px); cursor: zoom-out; animation: fade-in 0.15s ease-out;
+  --zoom-hint-h: 30px;
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; align-content: center; justify-content: center;
+  gap: 8px 24px; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  background: rgba(30, 15, 5, 0.88); backdrop-filter: blur(6px); cursor: zoom-out; animation: fade-in 0.15s ease-out;
 }
 #zoom-overlay img {
-  max-height: calc(var(--vh, 1vh) * 84); max-width: 92vw; border-radius: 22px;
-  box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
+  max-height: calc(var(--vh, 1vh) * 100 - 16px - var(--zoom-hint-h)); max-width: calc(100vw - 20px); width: auto; height: auto;
+  border-radius: 22px; box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
 }
-#zoom-overlay span { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+#zoom-overlay .zoom-hint { color: #fff4dc; font: 600 16px/22px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
 @keyframes fade-in { from { opacity: 0; } }
 /* Stop the browser's own long-press menu / text selection on cards. */
-[data-zoom] { -webkit-touch-callout: none; user-select: none; }
+[data-zoom] { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+/* Nothing on the board scrolls, so the browser never takes a finger on a card for a pan (which would cancel the
+   press): units and hand cards say so (style.css), and so do the Hero portraits, their ability lines and the Offerings. */
+.hero, .ability, .treat { touch-action: none; }
 
 /* ── Treats tray: its own spot at the end of each Yard, with bigger cards and visible changes ── */
 
@@ -375,7 +375,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .game { padding: 6px; gap: 6px; }
   .board { padding: 4px 8px; gap: 3px; }
   .player { padding: 2px 8px; gap: 8px; }
-  .ability, .foe-hand, .counters, .who .deck, .pantry-label span, .log-panel h3 { display: none; }
+  .ability, .foe-hand, .counters, .who .deck, .pantry-label span { display: none; }
   .midbar { min-height: 0; padding: 2px 8px; }
   .round { width: 34px; height: 34px; }
   .round small { display: none; }
@@ -493,7 +493,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 /* Phone: there is no room for the Story, so drop it and let the three buttons share the bottom strip.
    (A rounded phone screen was clipping the Home button in the corner.) */
 @media (max-width: 640px) {
-  .log-panel { display: none; }
   .side { height: auto; min-height: 0; flex: none; align-items: stretch; }
   .side-buttons { flex: none; flex-direction: row; justify-content: center; gap: 8px; width: 100%; }
   .side-buttons button { flex: 1 1 0; max-width: 150px; padding: 8px 10px; font-size: 14px; }
@@ -524,9 +523,22 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 
 /* Enlarged card: what its keywords mean, because iOS has no hover for tooltips and long press is
-   already the way you enlarge a card. */
-#zoom-overlay.with-keys img { max-height: calc(var(--vh, 1vh) * 56); }
-.zoom-info { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+   already the way you enlarge a card. On a tall screen (a phone, an iPad held upright) they go under the card,
+   which keeps most of the height; on a wide one (an iPad sideways, a PC) they sit beside it, and the card keeps
+   its full height. */
+#zoom-overlay.with-keys img { max-height: calc(var(--vh, 1vh) * 60); }
+/* The explanations are one column of equal-width panels; when they don't all fit (a short phone screen), the
+   column scrolls rather than pushing the card off the top. */
+.zoom-info {
+  display: flex; flex-direction: column; gap: 8px; align-items: stretch; width: min(92vw, 460px); box-sizing: border-box;
+  max-height: calc(var(--vh, 1vh) * 40 - 32px - var(--zoom-hint-h)); overflow-y: auto; overscroll-behavior: contain;
+}
+@media (min-aspect-ratio: 1/1) {
+  #zoom-overlay.with-keys { grid-template-columns: auto minmax(220px, 500px); grid-template-rows: minmax(0, 1fr) auto; }
+  #zoom-overlay.with-keys img { grid-column: 1; grid-row: 1; max-height: calc(var(--vh, 1vh) * 100 - 16px - var(--zoom-hint-h)); }
+  #zoom-overlay.with-keys .zoom-info { grid-column: 2; grid-row: 1; align-self: center; width: 100%; max-height: calc(var(--vh, 1vh) * 100 - 16px - var(--zoom-hint-h)); }
+  #zoom-overlay.with-keys .zoom-hint { grid-column: 1; grid-row: 2; }
+}
 .zoom-cost {
   margin: 0; padding: 5px 16px; border-radius: 999px; font: 600 15px Fredoka, Nunito, sans-serif; color: #5a3413;
   background: linear-gradient(var(--parchment), var(--parchment-2)); border: 2px solid var(--gold);
@@ -536,13 +548,12 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .zoom-cost b { color: #2f8a46; }
 .zoom-cost.short b { color: #a5301d; }
 .zoom-state {
-  margin: 0; max-width: min(92vw, 460px); padding: 6px 14px; border-radius: 14px; text-align: center;
+  margin: 0; padding: 6px 14px; border-radius: 14px; text-align: center;
   font: 600 14px Nunito, sans-serif; color: #5a3413; background: rgba(255, 250, 240, 0.92);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .zoom-keys {
-  margin: 0; max-width: min(92vw, 460px); max-height: calc(var(--vh, 1vh) * 26); overflow-y: auto;
-  padding: 10px 14px; border-radius: 16px; text-align: left;
+  margin: 0; padding: 10px 14px; border-radius: 16px; text-align: left;
   background: linear-gradient(var(--parchment), var(--parchment-2));
   border: 2px solid var(--gold); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
@@ -550,9 +561,27 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .zoom-keys dt { font: 700 15px Fredoka, Nunito, sans-serif; color: #b4540f; }
 .zoom-keys dd { margin: 1px 0 0; font: 400 14px/1.35 Nunito, sans-serif; color: var(--ink); }
 @media (max-width: 640px) {
-  .zoom-keys { padding: 8px 12px; max-height: calc(var(--vh, 1vh) * 24); }
+  .zoom-keys { padding: 8px 12px; }
   .zoom-keys dt { font-size: 14px; }
   .zoom-keys dd { font-size: 13px; }
+}
+/* Bigger print beside the card where there is room for it: it is there for eyes the card's own print is too small for. */
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  .zoom-cost { font-size: 20px; padding: 7px 20px; }
+  .zoom-state { font-size: 19px; padding: 8px 16px; }
+  .zoom-keys { padding: 14px 20px; }
+  .zoom-keys div + div { margin-top: 10px; padding-top: 10px; }
+  .zoom-keys dt { font-size: 22px; }
+  .zoom-keys dd { font-size: 20px; }
+}
+/* An iPad held upright: room under the card for a wider column in bigger print too. */
+@media (min-width: 700px) and (max-aspect-ratio: 1/1) {
+  .zoom-info { width: min(92vw, 560px); }
+  .zoom-cost { font-size: 19px; padding: 7px 20px; }
+  .zoom-state { font-size: 18px; padding: 8px 16px; }
+  .zoom-keys { padding: 12px 18px; }
+  .zoom-keys dt { font-size: 20px; }
+  .zoom-keys dd { font-size: 18px; }
 }
 
 /* The rhythm of the game: one action each, back and forth. */
@@ -774,7 +803,7 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
   box-shadow: inset 0 0 0 2px rgba(130, 214, 228, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.45),
     0 0 0 6px var(--walnut), 0 0 0 7px var(--plaque-line), 0 0 0 10px var(--walnut-dark), 0 20px 40px rgba(0, 0, 0, 0.55);
 }
-.player, .midbar, .log-panel {
+.player, .midbar {
   --ink: var(--plaque-ink); --muted: var(--plaque-muted);
   color: var(--ink); background: var(--plaque); border: none; box-shadow: var(--plaque-edge);
 }
@@ -803,7 +832,6 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 .pantry-label { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
 .pantry-label b { color: var(--moss); }
 .inspector img { box-shadow: 0 0 0 3px var(--honey), 0 10px 24px rgba(0, 0, 0, 0.5); }
-.log-panel h3 { color: #f3cd7a; border-bottom-color: rgba(130, 214, 228, 0.35); }
 .log li.me { color: #a9d4ff; }
 .log li.foe { color: #ffb4a3; }
 .log li.sys { color: var(--plaque-muted); }
@@ -818,7 +846,7 @@ button.primary:active:not(:disabled), .play-button:active { box-shadow: 0 1px 0 
 .tut-arrow { background: var(--linen-2); border-color: var(--walnut); }
 .tut-balloon.above .tut-arrow { border-top-color: transparent; border-left-color: transparent; }
 .tut-balloon.below .tut-arrow { background: var(--linen); border-color: var(--walnut); border-bottom-color: transparent; border-right-color: transparent; }
-#zoom-overlay { background: rgba(25, 20, 15, 0.8); }
+#zoom-overlay { background: rgba(25, 20, 15, 0.9); }
 #zoom-overlay img { box-shadow: 0 0 0 3px var(--honey), 0 24px 60px rgba(0, 0, 0, 0.6); }
 /* Rules, Settings and Home beside the board: walnut plaques like the panels. */
 body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-button { color: var(--plaque-ink); background: var(--plaque); box-shadow: var(--plaque-edge); }
@@ -975,6 +1003,118 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
   :is(.solo) .setup-body { padding-top: 6px; gap: 12px; }
 }
 
+/* ── Choosing a deck (Solo, and Play a friend), 2026-09-28 ──────────────────────────────────────────
+   As the Collection shows a deck: one deck at a time, its Hero's card large, swiped or turned with the arrows, dots
+   under it, and beside it (under it on a phone) what the deck is: where its folk come from, its name, its way of
+   playing, how it plays and its Hero. Never a neighbour's card cut in half at the edge. Difficulty is one quiet
+   three-way choice in the same frosted glass as Home's tiles, then Play. */
+.dk-carousel { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.dk-track {
+  width: 100%; display: flex; gap: clamp(40px, 8vw, 96px); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.dk-track::-webkit-scrollbar { display: none; }
+/* Mid-swipe, a card leaving or arriving fades at the strip's edges instead of being cut off. */
+.dk-track { -webkit-mask: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+.dk-slide { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; justify-content: center; padding: 8px 0 12px; }
+.dk-card {
+  display: block; width: auto; height: auto; max-width: min(100%, 460px); max-height: var(--dk-card-h, min(46vh, 520px));
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 26px rgba(255, 206, 120, 0.18));
+  user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
+}
+.dk-arrow {
+  position: absolute; top: calc(50% - 30px); width: 44px; height: 44px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; font: 400 30px/1 var(--serif, serif); color: #f3e7cf; cursor: pointer;
+  border: 1px solid oklch(0.85 0.02 270 / 0.35);
+  background: linear-gradient(180deg, oklch(0.62 0.02 275 / 0.35), oklch(0.45 0.02 278 / 0.35));
+  -webkit-backdrop-filter: blur(12px) saturate(0.2); backdrop-filter: blur(12px) saturate(0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); transition: opacity 0.2s;
+}
+.dk-arrow.prev { left: 0; } .dk-arrow.next { right: 0; }
+.dk-carousel.at-start .dk-arrow.prev, .dk-carousel.at-end .dk-arrow.next { opacity: 0; pointer-events: none; }
+@media (hover: none) { .dk-arrow { display: none; } }   /* fingers swipe; the dots say there are more */
+.dk-dots { display: flex; gap: 8px; align-items: center; height: 10px; }
+.dk-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(243, 231, 207, 0.32); transition: transform 0.2s, background 0.2s; }
+.dk-dots i.on { background: #f3e7cf; transform: scale(1.25); }
+
+.deck-picker .dk-info { color: #f3e7cf; text-align: center; }
+.deck-picker .dk-origin {
+  margin: 0 0 6px; font: 700 11.5px/1.35 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #f0cd7c;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+.deck-picker .dk-info .dk-name {
+  margin: 0; font: 600 clamp(30px, 4.2vw, 46px)/1.02 Fredoka, Nunito, sans-serif; color: #fff7e8; letter-spacing: 0;
+  text-shadow: 0 2px 0 rgba(12, 13, 31, 0.9), 0 3px 24px rgba(0, 0, 0, 0.85);
+}
+.deck-picker .dk-tags { margin: 10px 0 0; }
+.deck-picker .dk-about { margin: 12px auto 0; max-width: 42ch; font: 600 16px/1.5 Nunito, sans-serif; color: rgba(243, 231, 207, 0.92); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.deck-picker .dk-hero { margin: 10px 0 0; font: 600 14px/1.4 Nunito, sans-serif; color: rgba(243, 231, 207, 0.7); }
+.deck-picker .dk-hero b { color: #f3e7cf; }
+
+.dk-diff-title {
+  margin: 0 0 8px; font: 700 11.5px/1.35 Nunito, sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(243, 231, 207, 0.65); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+.dk-diff-choices {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px;
+  border: 1px solid oklch(0.85 0.02 270 / 0.3);
+  background: linear-gradient(180deg, oklch(0.62 0.02 275 / 0.28), oklch(0.45 0.02 278 / 0.28));
+  -webkit-backdrop-filter: blur(18px) saturate(0.15) brightness(1.15); backdrop-filter: blur(18px) saturate(0.15) brightness(1.15);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.dk-diff-choices button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 56px; padding: 8px 4px; margin: 0;
+  border: 0; border-radius: 10px; background: none; box-shadow: none; color: #f3e7cf; cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.dk-diff-choices button:hover { background: rgba(243, 231, 207, 0.07); }
+.dk-diff-choices button.chosen { background: rgba(243, 231, 207, 0.14); box-shadow: inset 0 0 0 1px rgba(240, 205, 124, 0.75), 0 0 16px rgba(240, 205, 124, 0.15); }
+.dk-diff-name { font: 600 19px/1.1 var(--serif-sc, serif); letter-spacing: 0.05em; }
+.dk-diff-sub { font: italic 500 14px/1.2 var(--serif, serif); color: rgba(243, 231, 207, 0.75); }
+.dk-diff-choices button.chosen .dk-diff-sub { color: rgba(243, 231, 207, 0.95); }
+
+/* Solo: the card on the left, the deck's words, Difficulty and Play on the right; one column on a phone. */
+.menu.solo .solo-stage {
+  display: grid; width: 100%; max-width: 1040px; margin: 0 auto; flex: 1 0 auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-areas: "card ." "card info" "card diff" "card play" "card .";
+  grid-template-rows: 1fr auto auto auto 1fr; column-gap: clamp(24px, 4vw, 56px); row-gap: 24px;
+  align-content: center; padding: 8px clamp(16px, 3vw, 32px) 28px;
+}
+.solo-stage .deck-picker { display: contents; }
+.solo-stage .dk-carousel { grid-area: card; align-self: center; --dk-card-h: min(64vh, 660px); }
+.solo-stage .dk-info { grid-area: info; align-self: end; text-align: left; }
+.solo-stage .dk-about { margin-left: 0; }
+.solo-stage .dk-diff { grid-area: diff; }
+.solo-stage .setup-footer { grid-area: play; align-items: stretch; }
+.solo-stage .setup-footer .play-button { width: 100%; min-width: 0; }
+/* Tall tablets (an iPad upright): stacked like a phone, the card large. */
+@media (min-width: 701px) and (orientation: portrait) {
+  .menu.solo .solo-stage {
+    grid-template-columns: minmax(0, 620px); justify-content: center; grid-template-areas: "card" "info" "diff" "play";
+    grid-template-rows: auto; row-gap: 22px; align-content: center;
+  }
+  .solo-stage .dk-carousel { --dk-card-h: min(46vh, 600px); }
+  .solo-stage .dk-info { text-align: center; }
+  .solo-stage .dk-about { margin: 12px auto 0; }
+  .dk-diff-title { text-align: center; }
+}
+@media (max-width: 700px) {
+  .menu.solo .solo-stage {
+    grid-template-columns: minmax(0, 1fr); grid-template-areas: "card" "info" "diff" "play"; grid-template-rows: auto;
+    row-gap: 16px; align-content: start; padding: 0 16px 20px;
+  }
+  .solo-stage .dk-carousel { --dk-card-h: clamp(200px, calc(100dvh - 470px), 44vh); gap: 6px; }
+  .solo-stage .dk-slide { padding: 4px 0 8px; }
+  .solo-stage .dk-info { text-align: center; }
+  .solo-stage .dk-about { margin: 8px auto 0; font-size: 15px; }
+  .solo-stage .dk-tags { margin-top: 8px; }
+  .solo-stage .dk-hero { display: none; }   /* the card says who leads the deck */
+  .deck-picker .dk-info .dk-name { font-size: 30px; }
+  .dk-diff-title { text-align: center; }
+  .dk-diff-name { font-size: 17px; } .dk-diff-sub { font-size: 13px; }
+}
+
 /* The Collection: the painting scrolls with the covers; Home and the gear stay over it. */
 .collection-screen .decks-page { position: relative; isolation: isolate; padding-top: 0; }
 .collection-screen .collection-top.over-scene { position: absolute; z-index: 3; top: 0; left: 0; right: 0; }
@@ -982,13 +1122,34 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .decks-page .scene-title { max-width: 1000px; padding: calc(var(--corner-top) + 44px + clamp(56px, 20vw, 220px)) 4px clamp(32px, 4vw, 44px); }
 @media (max-width: 640px) { .decks-page .scene-bg { --scene-h: calc(var(--corner-top) + 250px); } .decks-page .scene-title { padding-top: calc(var(--corner-top) + 44px + 56px); } }
 @media (max-width: 640px) { .decks-page .scene-bg { --scene-at: 78% 55%; } }
+
+/* Friend and Deck builder open under their own paintings too (2026-09-28): a bench for two under two lanterns, and a
+   card maker's workbench. No screen repeats its name over its painting any more: the player just tapped a tile that
+   said it, and the painting says where they are. The name stays in the page for screen readers (.sr-only). */
+.scene-friend { --scene: url('/ui/scene-friend.webp'); }
+.scene-decks { --scene: url('/ui/scene-decks.webp'); }
+.menu.friends, .menu.decks { position: relative; isolation: isolate; }
+.menu.friends > :not(.scene-bg), .menu.decks > :not(.scene-bg) { position: relative; z-index: 1; }
+/* One band of painting between the header and the page on Collection, Friend and Deck builder: shorter on short
+   screens (iPad landscape), so the page keeps its room. Solo is full (decks, difficulty, Play on one screen): its
+   painting stands behind the decks instead. */
+:root { --scene-gap: clamp(64px, 14vh, 180px); }
+.menu.friends .scene-bg, .menu.decks .scene-bg { --scene-h: calc(var(--corner-top) + 44px + var(--scene-gap) + 120px); }
+.menu.friends > .setup-bar + *, .menu.decks > .setup-bar + * { margin-top: var(--scene-gap); }
+.collection-screen .decks-page .scene-title { padding: calc(var(--corner-top) + 44px + var(--scene-gap)) 4px 0; }
+.collection-screen .decks-page .scene-bg { --scene-h: calc(var(--corner-top) + 44px + var(--scene-gap) + 120px); }
+@media (max-width: 640px) {
+  .menu.friends .scene-bg, .menu.decks .scene-bg { --scene-size: 170% auto; --scene-at: 85% 70%; }
+}
+/* A hidden name in a header grid (back, name, gear) leaves the gear in its own column. */
+.setup-bar > .sr-only + * { grid-column: 3; justify-self: end; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 /* Its first screen shows the wood as Home does, lightly dimmed in night blue like the Store (the card pages keep their
    darker mat, so the cards lead). */
 .collection-screen.view-decks { background: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg) center / cover no-repeat, #0e1026; }
 @media (orientation: portrait) { .collection-screen.view-decks { background-image: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg-tall); } }
 .collection-screen.view-decks .deck-cover .cover-sub { color: rgba(246, 236, 220, 0.72); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 .collection-screen.view-decks .deck-cover .cover-name { text-shadow: 0 2px 0 #0c0d1f, 0 2px 10px rgba(0, 0, 0, 0.7); }
-.collection-screen .showcase-slot .painting.empty { background: radial-gradient(95% 95% at 50% 40%, #343a6c 0%, #252a52 60%, #1b1f40 100%); }
 
 /* ══ Painted places (2026-09-27) ══════════════════════════════════════════════════════════════════
    Home: each place is a small object painted like the Pari and Jiaoren decks (ink line, gouache, watercolour), set
@@ -1059,3 +1220,321 @@ body .setup-bar h2, body .picker h2 { font-family: var(--serif-sc); font-weight:
   .deck-tile .deck-name { font-size: 24px; }
   .deck-tile-sub { font-size: 14.5px; }
 }
+
+
+.home .modes .mode-card.mini img { width: 64%; }
+@media (max-width: 640px) {
+  .home .modes .mode-card { padding: 7px 6px 9px; border-radius: 10px; }
+  .home .modes .mode-card::after { inset: 4px; border-radius: 7px; }
+  .home .modes .mode-card.mini { width: 36%; padding: 6px 6px 8px; }
+  .home .modes .mode-card.mini img { width: 70%; }
+  .home .modes .mode-sub { font-size: max(12px, min(3.7vw, 16px)); font-weight: 600; }
+}
+@media (max-width: 520px) {
+  .home .modes .mode-name { font-size: clamp(13px, 3.9vw, 17px); letter-spacing: 0.02em; }
+  .home .modes .mode-card.mini .mode-name { font-size: 14px; letter-spacing: 0.02em; }
+}
+
+/* ── The Story drawer and the wide board ─────────────────────────────────────────────────────────
+   The game's transcript used to fill most of the panel beside the board and was seldom read, while the cards were
+   too small to read (the owner's eyes, 2026-09-28). Now the transcript is a drawer that slides in from the board's
+   edge when the book button is pressed, and on a wide screen (an iPad sideways, a PC) the panel holds the two
+   players' plaques with the card reader between them, so the board's whole height goes to bigger cards that carry
+   their rules text. Narrow screens keep the player bars on the board, as before. */
+
+/* The drawer: a plaque like the panels, over the panel's edge; up from the bottom on a narrow screen. It is not a
+   dialog: nothing behind it dims, and the game goes on while it is out. */
+.story-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: clamp(300px, 27vw, 400px);
+  display: flex; flex-direction: column; padding: 14px 14px max(14px, env(safe-area-inset-bottom));
+  color: var(--plaque-ink); background: var(--plaque), #101228; border-radius: 22px 0 0 22px;   /* opaque: it covers the panel */
+  box-shadow: var(--plaque-edge), -16px 0 36px rgba(0, 0, 0, 0.5); border-left: 1px solid var(--plaque-line);
+  transform: translateX(108%); visibility: hidden; transition: transform 0.28s ease, visibility 0s linear 0.28s;
+}
+.story-drawer.open { transform: none; visibility: visible; transition: transform 0.28s ease, visibility 0s; }
+.story-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.story-head h3 { margin: 0 0 0 6px; font: 600 21px Fredoka, Nunito, sans-serif; color: #f3cd7a; }
+.story-head .story-close { width: 40px; height: 40px; font-size: 26px; line-height: 1; color: var(--plaque-ink); background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px var(--plaque-line); }
+.story-drawer .log { flex: 1; min-height: 0; font-size: 15px; line-height: 1.3; padding: 4px 8px; }
+.story-drawer .log li { margin: 4px 0; }
+.story-drawer .log li.sys { margin: 8px 0 4px; }
+@media (max-width: 1000px) {
+  .story-drawer {
+    top: auto; left: 0; right: 0; width: auto; height: min(calc(var(--vh, 1vh) * 60), 520px); border-radius: 22px 22px 0 0;
+    box-shadow: var(--plaque-edge), 0 -16px 36px rgba(0, 0, 0, 0.5); transform: translateY(108%);
+  }
+  .story-drawer.open { transform: none; }
+}
+body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--honey), var(--plaque-edge); }
+
+/* Without the transcript, the bottom strip on a narrow screen is just the buttons, in one row. */
+@media (max-width: 1000px) {
+  .side { height: auto; min-height: 0; flex: none; align-items: stretch; }
+  .side-buttons { flex: none; flex-direction: row; justify-content: center; gap: 8px; width: 100%; }
+}
+
+/* A hand too big to lay side by side overlaps its cards, each covering the next one's right side and with it the
+   printed Health in that corner. While it does, the Health is repeated as a chip on the card's left edge, above the
+   printed Power, where it stays in view; the last card, wholly visible, has no need of it. */
+.hand-hp { display: none; }
+.hand.overlapping .hand-card:not(:last-child) .hand-hp {
+  position: absolute; left: 4%; bottom: 14%; z-index: 2; display: inline-flex; align-items: center; gap: 0.2em;
+  height: 1.45em; padding: 0 0.5em 0 0.4em; border-radius: 999px; font: 700 clamp(11px, 9cqw, 16px) Fredoka, Nunito, sans-serif;
+  color: #b3203f; background: #fde3ea; border: 1.5px solid #d9486c; box-shadow: 0 1px 3px rgba(40, 20, 5, 0.35); pointer-events: none;
+}
+.hand.overlapping .hand-card:not(:last-child) .hand-hp::before {
+  content: ''; width: 0.7em; height: 0.7em; background: #d9486c;
+  -webkit-mask: var(--img-heart) center / contain no-repeat; mask: var(--img-heart) center / contain no-repeat;
+}
+.hand-card { container-type: inline-size; }
+/* A unit's rules text shows only on the wide board, where the tile has room for it. */
+.utext { display: none; }
+/* The opponent's hand at the start of their Yard: card backs (face up in a teaching game) and how many. */
+.foe-hand-slot { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 1; }
+.foe-hand-slot .foe-hand { padding-left: 0; }
+.foe-hand-slot .foe-hand:not(.shown) .card-back { margin-left: -16px; }
+.foe-hand-slot .foe-hand:not(.shown) .card-back:first-child { margin-left: 0; }
+.foe-hand-label { font-size: 12px; }
+@media (max-width: 1000px) { .foe-hand-label { display: none; } }
+@media (max-width: 640px) { .foe-hand-slot { display: none; } }
+
+/* The wide board: the panel is a column of plaques and the reader; the board is Yards, midbar and hand only. */
+@media (min-width: 1001px) {
+  :root {
+    --unit-h: clamp(120px, calc(var(--vh, 1vh) * 25), 270px);
+    --card-h: clamp(120px, calc(var(--vh, 1vh) * 28.5), 310px);
+    --hero-h: 82px;
+  }
+  .game { grid-template-columns: minmax(0, 1fr) clamp(284px, 25vw, 340px); gap: 14px; }
+  .board.wide { grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: calc(var(--vh, 1vh) * 1); }
+  /* The Offerings bowl takes the Yard's right end. A few units sit centred on the board (the left end padded to match);
+     as more arrive the left padding gives way, down to a margin, and a full Yard of six then shrinks its tiles
+     together rather than spilling off the row. */
+  .board.wide .yard {
+    --need: calc(var(--n, 1) * var(--unit-h) * 0.76 + (var(--n, 1) - 1) * 16px);
+    padding-left: clamp(20px, calc(100% - var(--tray-w) - 16px - var(--need)), calc(var(--tray-w) + 16px));
+    padding-right: calc(var(--tray-w) + 16px); gap: 16px; container-type: inline-size;
+  }
+  .board.wide .unit { height: min(var(--unit-h), 100%, calc((100cqw - (var(--n, 1) - 1) * 16px) / var(--n, 1) / 0.76)); }
+  /* The opponent's card backs stay off the wide board (their plaque counts the hand), unless the hand is shown. */
+  .board.wide .foe-hand-slot:not(:has(.foe-hand.shown)) { display: none; }
+  .board.wide .prompt { font-size: 16px; }
+  .board.wide .prompt b { font-size: 17px; }
+  .board.wide .empty-yard { font-size: 17px; padding: 14px 28px; }
+
+  /* Units: the art fills the tile down to a box at the bottom that is only as tall as its name (up to two lines) and
+     the card's rules text need, with Power and Health as chips straddling the art's edge above it. */
+  .board.wide .unit { display: flex; flex-direction: column; justify-content: flex-end; }
+  .board.wide .unit .art { height: 100%; }
+  .board.wide .ubox { position: relative; flex: none; padding-top: 0; }
+  .board.wide .uname {
+    position: static; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    font-size: clamp(12px, 8.5cqw, 17px); line-height: 1.15; padding: 4px 8px 3px;
+  }
+  .board.wide .utext {
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; padding: 3px 8px 5px;
+    font: 600 clamp(10px, 7cqw, 14px) / 1.28 Nunito, sans-serif; color: #3b2513; text-align: center; background: #fffaf0;
+  }
+  .board.wide .utext b { color: var(--fam-dark, #5a3a1a); }
+  .board.wide .pow, .board.wide .hp { bottom: auto; top: -5px; transform: translateY(-100%); height: 22cqw; min-height: 22px; z-index: 1; }
+  .board.wide .chips span { font-size: clamp(9px, 7cqw, 12px); }
+  .board.wide .zzz { top: 34%; }
+  .board.wide .recap { color: #ffb4a3; font-size: 14px; }
+
+  /* The hand: full-size cards that overlap just enough to fit, rather than shrinking and cropping. */
+  .board.wide .hand { padding: 0 8px; }
+  .board.wide .hand-card { flex: 0 0 var(--card-w); margin: 0; }
+  .board.wide .hand-card + .hand-card {
+    margin-left: clamp(calc(var(--card-w) * -0.62), calc((100% - 16px - var(--card-w) * var(--n, 1)) / var(--gaps, 1)), 8px);
+  }
+  /* The opponent's face-up hand (teaching games) and their backs, at the Yard's start. */
+  .board.wide .foe-hand-slot { left: 12px; }
+  .board.wide .foe-hand:not(.shown) .card-back { width: 40px; height: 58px; margin-left: -24px; }
+  .board.wide .foe-hand.shown img { height: calc(var(--card-h) * 0.5); }
+  .board.wide .foe-hand.shown img + img { margin-left: calc(var(--card-w) * -0.32); }
+  .board.wide .foe-hand-label { font-size: 13px; }
+
+  /* The panel: opponent, the card reader (takes what is left), you, the buttons. */
+  .side.wide { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 10px; min-height: 0; }
+  .side.wide .inspector { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; gap: 4px; }
+  .side.wide .inspector img { max-height: 100%; max-width: 100%; width: auto; min-height: 0; }
+  .side.wide .inspector-hint { font-size: 13px; line-height: 1.3; text-align: center; color: rgba(243, 231, 207, 0.85); }
+  .side.wide .player {
+    position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 3px 10px; align-items: start;
+    padding: 10px 10px 10px; margin: 0;
+  }
+  .side.wide .player .stats { display: contents; }
+  .side.wide .player .hero-slot { grid-column: 1; grid-row: 1 / span 2; }
+  .side.wide .hero { width: var(--hero-h); height: var(--hero-h); }
+  .side.wide .player .who { grid-column: 2; grid-row: 1; font-size: 17px; white-space: normal; line-height: 1.15; align-self: end; }
+  .side.wide .player .stat-row { grid-column: 2; grid-row: 2; gap: 6px 10px; align-self: start; }
+  .side.wide .player .counters { gap: 6px; font-size: 13px; align-items: center; align-self: center; }
+  .side.wide .player .counters { flex-wrap: wrap; }
+  .side.wide .player .counters span { line-height: 22px; height: 22px; white-space: nowrap; flex: none; }
+  .side.wide .player .ability { grid-column: 1 / -1; grid-row: 3; font-size: 13.5px; line-height: 1.3; -webkit-line-clamp: 4; margin: 4px 0 0; }
+  .side.wide .player .hero-actions { grid-column: 1 / -1; grid-row: 4; margin-top: 4px; }
+  .side.wide .player .hero-actions button { flex: 1; }
+  .side.wide .player .player-face { grid-column: 3; grid-row: 1 / span 2; align-self: center; margin: 0; order: 0; }
+  .side.wide .side-buttons { align-self: end; }
+}
+
+/* ── Home's tiles as cards (2026-09-28) ─────────────────────────────────────────────────────────────
+   Each tile is drawn as a card of one of the decks (the owner: the card on Solo "frames the image, and it looks
+   awesome"), laid out as compose_cards.py lays out a real one: the deck's dark colour round an ivory face, a name bar in
+   its main colour with a round badge, an illustration of its folk at the tile's business in the deck's style, a tinted
+   type line with a card code, rules text (a keyword line and flavour, or the tile's state) and a footer naming the
+   deck. Measured in the card's own width (cqw), so it reads the same at every size. Three to a row upright (3, 3, 2),
+   four to a row on a wide screen (two rows), sized to fit the screen's height. */
+.home .modes.card-grid {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(10px, 2.6vw, 22px);
+  width: min(94vw, 760px, calc((100dvh - var(--home-head, 250px)) / 3 / 1.4 * 3 + 50px));
+  margin: 0 auto; padding: 0; flex: none; align-items: start;
+}
+.home .modes.card-grid > .mcard { grid-column: span 2; }
+.home .modes.card-grid > .mcard:nth-child(7) { grid-column: 2 / span 2; }
+.home .modes.card-grid > .mcard:nth-child(8) { grid-column: 4 / span 2; }
+@media (orientation: landscape) and (min-width: 700px) {
+  .home .modes.card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; width: min(92vw, 1000px, calc((100dvh - var(--home-head, 190px)) / 2 / 1.4 * 4 + 60px)); }
+  .home .modes.card-grid > .mcard, .home .modes.card-grid > .mcard:nth-child(7), .home .modes.card-grid > .mcard:nth-child(8) { grid-column: auto; }
+}
+.mcard {
+  --main: #5B3F9E; --dark: #2E1F5C; --tint: #EEE8FB;
+  container-type: inline-size; position: relative; display: block; aspect-ratio: 5 / 7; width: 100%;
+  margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; text-align: center;
+  text-decoration: none; cursor: pointer; transition: transform 0.18s, filter 0.18s; -webkit-tap-highlight-color: transparent;
+}
+.mcard:hover { transform: translateY(-5px) rotate(-0.4deg); }
+.mcard:active { transform: translateY(-1px) scale(0.985); }
+.mcard:focus-visible { outline: 2px solid rgba(243, 231, 207, 0.85); outline-offset: 4px; border-radius: 5cqw; }
+.mc-frame {
+  display: block; height: 100%; border-radius: 4.4cqw; padding: 2.9cqw; background: var(--dark);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+.mcard:hover .mc-frame { box-shadow: 0 18px 34px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.45), 0 0 26px color-mix(in srgb, var(--main) 45%, transparent); }
+.mc-face {
+  position: relative; height: 100%; border-radius: 2.8cqw; padding: 2.4cqw 2.6cqw 1.6cqw;
+  background: linear-gradient(180deg, #fdf8ee 45%, color-mix(in srgb, var(--tint) 70%, #fdf8ee));
+  display: flex; flex-direction: column; gap: 1.8cqw; overflow: hidden;
+}
+.mc-bar {
+  position: relative; display: flex; align-items: center; min-height: 12.4cqw; border-radius: 2.4cqw; padding: 0 3cqw 0 14.6cqw;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--main) 88%, #fff), var(--main) 55%, color-mix(in srgb, var(--main) 85%, #000));
+  box-shadow: inset 0 0 0 0.45cqw var(--dark);
+}
+.mc-gem {
+  position: absolute; left: -1.2cqw; top: 50%; translate: 0 -50%; width: 15cqw; height: 15cqw; border-radius: 50%;
+  display: grid; place-items: center; background: #fff; box-shadow: 0 0 0 1.1cqw var(--dark), 0 0.6cqw 1.2cqw rgba(0, 0, 0, 0.3);
+}
+.mc-gem svg { width: 9cqw; height: 9cqw; fill: var(--dark); stroke: var(--dark); stroke-width: 1.6; stroke-linejoin: round; }
+.mc-gem svg .lit { fill: #fff; stroke: none; }
+.mc-name {
+  display: block; min-width: 0; font: 800 8.6cqw/1.1 Nunito, sans-serif; color: #fff; letter-spacing: -0.01em; text-align: left;
+  text-shadow: 0 0.4cqw 0 rgba(0, 0, 0, 0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mc-name.long { font-size: 7.2cqw; }
+.mc-art { display: block; aspect-ratio: 3 / 2; border-radius: 1.6cqw; overflow: hidden; box-shadow: 0 0 0 0.7cqw var(--main); }
+.mc-art img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+.mcard:hover .mc-art img { transform: scale(1.04); }
+.mc-type {
+  display: flex; align-items: center; justify-content: space-between; gap: 2cqw; border-radius: 1.8cqw; padding: 1.3cqw 2.8cqw;
+  background: var(--tint); box-shadow: inset 0 0 0 0.45cqw var(--main);
+  font: 800 4.6cqw/1.15 Nunito, sans-serif; color: var(--dark); letter-spacing: 0.02em; text-transform: uppercase; text-align: left;
+}
+.mc-type span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-type small { flex: none; font: 600 3.8cqw/1 Nunito, sans-serif; color: color-mix(in srgb, var(--dark) 70%, #888); text-transform: none; letter-spacing: 0; }
+.mc-text {
+  flex: 1; min-height: 0; border-radius: 1.8cqw; background: #fff; box-shadow: inset 0 0 0 0.45cqw #e8dcc2;
+  padding: 2.2cqw 4cqw; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1.6cqw;
+}
+.mc-rule { font: 500 5.6cqw/1.3 Nunito, sans-serif; color: #2a2130; text-align: left; align-self: stretch; }
+.mc-rule b { font-weight: 800; }
+.mc-flavor, .mc-state {
+  display: block; align-self: stretch; margin: 0; padding-top: 1.6cqw; border-top: 0.35cqw solid #e8dcc2;
+  font: italic 500 5cqw/1.25 Nunito, sans-serif; color: #6b5f52; text-shadow: none; text-align: center;
+}
+.mc-state { font: italic 700 5.4cqw/1.2 Nunito, sans-serif; color: #9a4a12; }
+.mc-state.soon-line { color: #7b7163; }
+.mc-state.continue-line { color: #2f7a3f; }
+.mc-short { display: none; }
+.mc-foot { display: block; font: 600 3.3cqw/1 Nunito, sans-serif; color: #9a8f7e; padding-bottom: 0.3cqw; }
+/* Coming soon: the picture greys, and says so across it. */
+.mcard .mode-badge { z-index: 2; }
+/* Middle-sized cards (an iPad): the rules text grows so it stays easy to read; the flavour (on a card with no state to
+   show) keeps the card from ending in an empty band. */
+@container (min-width: 161px) and (max-width: 240px) {
+  .mc-flavor { font-size: 6.2cqw; }
+  .mc-rule { font-size: 7.2cqw; line-height: 1.25; }
+  .mc-state { font-size: 7cqw; }
+  .mc-type { font-size: 5.2cqw; }
+  .mc-name { font-size: 9.4cqw; } .mc-name.long { font-size: 7.8cqw; }
+}
+/* Small cards (a phone): the type line and footer go, and the words grow to stay readable. */
+@container (max-width: 160px) {
+  .mc-type, .mc-foot { display: none; }
+  .mc-face { gap: 2.6cqw; padding-bottom: 2.4cqw; }
+  .mc-bar { min-height: 15cqw; padding-left: 3.4cqw; }
+  .mc-gem { display: none; }
+  .mc-name { font-size: 11.5cqw; } .mc-name.long { font-size: 9.2cqw; }
+  /* One short line, large enough to read (the rules text would be too small here). */
+  .mc-rule, .mc-flavor { display: none; }
+  .mc-short { display: block; font: 800 10.5cqw/1.15 Nunito, sans-serif; color: var(--dark); }
+  .mc-state { border-top: 0; padding-top: 0; font-size: 10cqw; line-height: 1.12; }
+}
+
+/* ── The tile cards in gold foil (2026-09-28) ─────────────────────────────────────────────────────────
+   Legendary cards, as the Gold finish draws them (finish.css): a gold foil frame with a warm light sweeping across now
+   and then and a glow around it. The face is Home's deep navy glass, never white: ivory words, gold keywords, the
+   deck's colour on the name bar. Coming soon cards are in silver. These rules come after the card's first draft
+   above and override its colours. */
+.mcard { --foil: linear-gradient(135deg, #fbe9a8 0%, #c8952e 17%, #fff3c2 33%, #a8751b 50%, #f5d98a 67%, #9c6914 84%, #f1d487 100%);
+  --foil-line: #e2bd5f; --foil-glow: rgba(255, 196, 70, 0.34); }
+.mcard.soon { --foil: linear-gradient(135deg, #f1f3f7 0%, #9aa1b1 17%, #ffffff 33%, #7d8496 50%, #e3e6ee 67%, #737a8c 84%, #dfe2ea 100%);
+  --foil-line: #c3c8d4; --foil-glow: rgba(190, 205, 235, 0.22); }
+.mc-frame {
+  position: relative; overflow: hidden; isolation: isolate; padding: 2.4cqw; background: var(--foil);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), 0 0 18px var(--foil-glow), inset 0 0 0 0.35cqw rgba(255, 255, 255, 0.35);
+}
+.mcard:hover .mc-frame { box-shadow: 0 18px 34px rgba(0, 0, 0, 0.6), 0 0 30px color-mix(in srgb, var(--foil-glow) 100%, transparent), inset 0 0 0 0.35cqw rgba(255, 255, 255, 0.45); }
+/* The light sweeping across the whole card, now and then (finish.css, Gold). */
+.mc-frame::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 244, 200, 0.55) 48%, rgba(255, 214, 110, 0.3) 52%, transparent 62%);
+  background-size: 260% 100%; mix-blend-mode: screen; animation: mc-sweep 6.5s ease-in-out infinite;
+}
+.mcard:nth-child(2n) .mc-frame::after { animation-delay: 1.6s; } .mcard:nth-child(3n) .mc-frame::after { animation-delay: 3.1s; }
+.mcard.soon .mc-frame::after { background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%); background-size: 260% 100%; }
+@media (prefers-reduced-motion: reduce) { .mc-frame::after { animation: none; opacity: 0; } }
+.mc-face {
+  background: radial-gradient(120% 60% at 50% 0%, rgba(120, 110, 190, 0.22), transparent 60%), linear-gradient(180deg, #221d44, #120f27 70%);
+  box-shadow: inset 0 0 0 0.3cqw color-mix(in srgb, var(--foil-line) 55%, transparent);
+  gap: 2cqw; padding: 2.4cqw 2.4cqw 1.8cqw;
+}
+.mc-bar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--main) 80%, #fff), var(--main) 50%, color-mix(in srgb, var(--main) 70%, #000));
+  box-shadow: inset 0 0 0 0.45cqw var(--foil-line), 0 0.6cqw 1.2cqw rgba(0, 0, 0, 0.35);
+}
+.mc-gem { background: var(--foil); box-shadow: 0 0 0 0.9cqw #120f27, 0 0 0 1.4cqw var(--foil-line), 0 0.8cqw 1.6cqw rgba(0, 0, 0, 0.45); }
+.mc-gem svg { fill: #1b1636; stroke: #1b1636; }
+.mc-gem svg .lit { fill: #fff3c2; }
+.mc-art { aspect-ratio: 4 / 3; box-shadow: 0 0 0 0.6cqw var(--foil-line), 0 1cqw 2cqw rgba(0, 0, 0, 0.5); }
+.mc-type {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--main) 38%, transparent), color-mix(in srgb, var(--main) 12%, transparent));
+  box-shadow: inset 0 0 0 0.3cqw color-mix(in srgb, var(--foil-line) 70%, transparent); color: #f3dc9c;
+}
+.mc-type small { color: rgba(243, 220, 156, 0.7); }
+.mc-text { background: none; box-shadow: none; padding: 0.6cqw 3cqw 0; justify-content: flex-start; }
+.mc-rule { color: #f3e7cf; text-align: center; }
+.mc-rule b { color: #f0cd7c; }
+.mc-flavor, .mc-state { border-top-color: color-mix(in srgb, var(--foil-line) 35%, transparent); color: rgba(243, 231, 207, 0.62); }
+.mc-state { color: #f5b36b; }
+.mc-state.soon-line { color: rgba(220, 225, 240, 0.7); }
+.mc-state.continue-line { color: #9fe0a8; }
+.mc-short { color: #f3e7cf; }
+.mc-foot { color: color-mix(in srgb, var(--foil-line) 70%, transparent); margin-top: auto; }
+.mcard.soon .mc-art img { filter: saturate(0.8); }   /* silver foil and "Coming soon" say it; the picture stays lively */
+@container (max-width: 160px) {
+  .mc-text { justify-content: center; padding-top: 0; }
+  .mc-face { padding-bottom: 2.2cqw; }
+}
+@keyframes mc-sweep { 0%, 55% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
+.mc-flavor { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -351,9 +351,10 @@ function renderDeckList(): string {
   const mine = listDecks();
   return `
   <div class="menu decks">
+    <div class="scene-bg scene-decks" aria-hidden="true"></div>
     <div class="setup-bar">
       ${backButton()}
-      <h2>Deck builder</h2>
+      <h2 class="sr-only">Deck builder</h2>
       ${settingsButton()}
     </div>
     <div class="decks-body">

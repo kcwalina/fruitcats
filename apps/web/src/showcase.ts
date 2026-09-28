@@ -1,7 +1,8 @@
 // The Collection: a gallery for looking at cards, and for the folk tales behind them. It opens on covers: the
-// Showcase (your favourite cards) first, then each ready-made deck you have. A deck's page is its cards, one at a
-// time and large, swiped, beside the tale of its creatures (the set's `lore`), on a plain espresso ground that sets
-// the art off like a mat; on a phone the tale sits under the card. Tapping the card in the middle opens it full
+// Showcase (your favourite cards, behind a cabinet's glass doors) first, then each ready-made deck you have. A deck's
+// page is its cards, one at a time and large, swiped (dots under the card say there are more), beside the tale of its
+// creatures (the set's `lore`) under a banner painting, all on one dark ground with no panels; on a phone the tale sits
+// under the card. Tapping the card in the middle opens it full
 // screen, with Make wallpaper and Add to Showcase. The Showcase is only the cards; pressing and holding one offers
 // Make wallpaper and Take out of Showcase. All cards (from a deck's page) is the whole collection as a grid, cards
 // you don't have yet as shadows. What you own comes from collection.ts; every card shows its rarity mark, and your
@@ -16,7 +17,7 @@ import { CARDS, DECKS, SETS, RARITIES, TERMS, type Rarity } from '@fruitcats/eng
 import { finish, owned } from './collection';
 import { finishClasses, finishName, finishSparks, rarity, rarityMark, yourCardUrl } from './rarity';
 import { ownedDeckKeys } from './mydecks';
-import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
+import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, setArtUrl, settingsButton } from './ui';
 import { framedPainting } from './storefront';
 import { DEVICES, renderWallpaper, saveWallpaper, thisDevice, type Device } from './wallpaper';
 
@@ -135,11 +136,14 @@ function openDeck(key: string) {
 function loreOf(key: string) {
   const d = DECKS[key], set = SETS[CARDS[d.hero]?.set ?? ''], lore = set?.lore;
   const family = CARDS[d.hero]?.family ?? '';
+  // The banner: a painting of a place from the tale, drawn for it (never a card's); a deck without one has none.
+  const code = CARDS[d.hero]?.set;
+  const banner = lore?.banner && code ? setArtUrl(code, lore.banner) : '';
   if (lore?.story?.length) {
-    return { eyebrow: lore.eyebrow ?? lore.from ?? set.name, title: lore.title ?? set.name, story: lore.story, facts: lore.facts ?? [], sources: lore.sources ?? [] };
+    return { eyebrow: lore.eyebrow ?? lore.from ?? set.name, title: lore.title ?? set.name, banner, bannerAt: lore.bannerAt ?? '', story: lore.story, facts: lore.facts ?? [], sources: lore.sources ?? [] };
   }
   const blurb = (d as { blurb?: string }).blurb;
-  return { eyebrow: `${set?.name ?? ''} · ${family}`, title: d.name, story: [blurb ?? '', `A ${family} deck from Folkborn's early days, before the folk tales.`].filter(Boolean), facts: [] as string[], sources: [] as string[] };
+  return { eyebrow: `${set?.name ?? ''} · ${family}`, title: d.name, banner, bannerAt: '', story: [blurb ?? '', `A ${family} deck from Folkborn's early days, before the folk tales.`].filter(Boolean), facts: [] as string[], sources: [] as string[] };
 }
 const current = () => { const v = viewer(); return v ? v.list[v.index] : null; };
 /** The finish your copy of this card is in. */
@@ -374,7 +378,8 @@ export function renderShowcase(): string {
     top = `<div class="showcase-top">${back('decks', 'Collection')}</div>`;
     body = showcase.length ? renderViewer(showcase, showcaseIndex, false) : renderEmptyShowcase();
   } else if (view === 'deck' && deck) {
-    top = `<div class="collection-top">${back('decks', 'Collection')}<h1 class="col-title">${esc(DECKS[deck.key]?.name ?? '')}</h1>
+    // No title: the tale's own heading, on its banner, names the deck.
+    top = `<div class="collection-top">${back('decks', 'Collection')}<span></span>
       <button class="icon-button grid-button" data-click="col:tab:all" title="All cards" aria-label="All cards">${GRID_ICON}</button></div>`;
     body = renderDeckPage(deck.key, deck.faces, deck.index);
   } else if (view === 'all') {
@@ -410,22 +415,26 @@ const deckCover = (key: string, eager: boolean) => {
   return framedPainting({ art: artUrl(`${hero}-kitten`), fallback: artUrl(`${hero}-bigcat`), name: DECKS[key].name, eager });
 };
 
-/** The Collection's first screen: the Showcase, then each ready-made deck you have, as covers. */
+/** How many cards stand in the Showcase's cabinet on the covers page: two shelves of four. */
+const CABINET_SLOTS = 8;
+
+/** The Collection's first screen: the Showcase's cabinet, then each ready-made deck you have, as covers. */
 function renderDecks(): string {
-  // The Showcase: your first favourite's painting in the same frame. Empty, a lighter mat with a honey star and a line
-  // saying what goes there, so it reads as waiting for you, not as a picture that didn't load.
-  // The Showcase is your cards themselves, fanned out on a velvet mat: never a painting in a frame, so it can't be
-  // mistaken for a deck (the first favourite is often a deck's hero, whose painting is that deck's cover).
-  const fan = showcase.slice(0, 3);
-  const showcaseCover = fan.length
-    ? `<span class="slot deck-slot showcase-slot showcase-fan n${fan.length}" aria-hidden="true"><span class="fan-mat">${fan
-        .map((face, i) => `<img class="fan-card f${i}" src="${yourCardUrl(face)}" alt="" loading="eager" draggable="false">`).reverse().join('')}</span></span>`
-    : `<span class="slot deck-slot showcase-slot showcase-fan" aria-hidden="true"><span class="fan-mat"><span class="painting empty">${EMPTY_STAR}<small>Add cards you love</small></span></span></span>`;
+  // The Showcase is a glass-fronted cabinet (the owner's call, 2026-09-27), made of the same night plaque and fine line
+  // as the decks' frames beside it: behind its two glass doors, your first favourites stand small on two lit shelves,
+  // two to a door on each shelf, as cards are shown in a real cabinet. Empty, the shelves wait with a star.
+  const shown = showcase.slice(0, CABINET_SLOTS);
+  const cards = shown.map((face, i) => `<span class="cab-card s${i}"><img src="${yourCardUrl(face)}" alt="" loading="eager" draggable="false"></span>`).join('');
+  const showcaseCover = `<span class="showcase-cabinet" aria-hidden="true"><span class="cab-body">
+      <i class="cab-shelf top"></i><i class="cab-shelf floor"></i>
+      ${cards || `<span class="cab-empty">${EMPTY_STAR}<small>Add cards you love</small></span>`}
+      <i class="cab-glass"></i><i class="cab-door left"></i><i class="cab-door right"></i>
+    </span></span>`;
   const n = showcase.length;
   return `
     <div class="decks-page" data-keep-scroll="decks">
       <div class="scene-bg scene-collection" aria-hidden="true"></div>
-      <header class="scene-title"><h1>Collection</h1><p>Every card you have, deck by deck.</p></header>
+      <header class="scene-title"><h1 class="sr-only">Collection</h1></header>
       <div class="deck-covers">
         <button class="deck-cover" data-click="col:tab:showcase" aria-label="Showcase, ${n} ${n === 1 ? 'card' : 'cards'}">
           ${showcaseCover}
@@ -444,22 +453,41 @@ function renderDecks(): string {
     </div>`;
 }
 
-/** Under a deck page's card: its name, kind and rarity, and where it is in the deck. */
+/** At most this many dots show at once; a longer list's dots slide along, the ones at the ends smaller. */
+const DOTS = 9;
+/**
+ * The dots under swiped cards, saying there are more to swipe to and which one this is. A long deck shows a window of
+ * them around this card, as phones do: the dots at an end shrink when more lie beyond it.
+ */
+function renderDots(count: number, index: number): string {
+  if (count < 2) return '';
+  const from = Math.max(0, Math.min(index - (DOTS >> 1), count - DOTS)), to = Math.min(count, from + DOTS);
+  const size = (i: number) => {
+    const fromStart = i - from, fromEnd = to - 1 - i;
+    if ((fromStart === 0 && from > 0) || (fromEnd === 0 && to < count)) return 'xs';
+    if ((fromStart === 1 && from > 0) || (fromEnd === 1 && to < count)) return 'sm';
+    return '';
+  };
+  const dots = Array.from({ length: to - from }, (_, k) => from + k).map((i) => `<i class="${i === index ? 'on' : ''} ${size(i)}"></i>`).join('');
+  return `<span class="v-dots" role="img" aria-label="Card ${index + 1} of ${count}">${dots}</span>`;
+}
+
+/** Under a deck page's card: the dots saying there are more to swipe, then its name, kind and rarity. */
 function renderDeckCaption(faces: string[], index: number): string {
   const face = faces[index], card = CARDS[idOf(face)];
   const kind = sideOf(face) ? sideLabel(face) : TERMS.types[card.type as keyof typeof TERMS.types] ?? card.type;
-  const position = faces.length <= 12
-    ? `<span class="v-dots">${faces.map((_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('')}</span>`
-    : `<span class="v-count">${index + 1} / ${faces.length}</span>`;
   return `<div class="viewer-info deck-caption" aria-live="polite">
+          ${renderDots(faces.length, index)}
           <h2 class="v-name">${esc(faceName(face))}</h2>
           <p class="v-sub">${esc(kind)} · ${rarityMark(rarity(idOf(face)))} ${rarity(idOf(face))}</p>
-          ${position}
           <p class="deck-tap">Tap the card to see it large</p>
         </div>`;
 }
 
-/** A deck's page: its cards, one at a time and swiped, beside the tale of its creatures. */
+/**
+ * A deck's page: its cards, one at a time and swiped, beside the tale of its creatures. One ground for both, no panel:
+ * the tale opens under a banner, one of the deck's paintings melting into the dark, with the tale's name on it.
+ */
 function renderDeckPage(key: string, faces: string[], index: number): string {
   const lore = loreOf(key);
   const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
@@ -470,9 +498,14 @@ function renderDeckPage(key: string, faces: string[], index: number): string {
         ${renderDeckCaption(faces, index)}
       </div>
       <article class="deck-lore">
-        <p class="lore-eyebrow">${esc(lore.eyebrow)}</p>
-        <h2 class="lore-title">${esc(lore.title)}</h2>
-        ${lore.story.map((para, i) => `<p class="lore-para ${i === 0 ? 'first' : ''}">${esc(para)}</p>`).join('')}
+        <header class="lore-banner ${lore.banner ? '' : 'plain'}">
+          ${lore.banner ? `<img class="lore-banner-art" src="${lore.banner}" ${lore.bannerAt ? `style="object-position:${esc(lore.bannerAt)}"` : ''} alt="" draggable="false" onerror="this.parentNode.classList.add('plain');this.remove()">` : ''}
+          <div class="lore-banner-text">
+            <p class="lore-eyebrow">${esc(lore.eyebrow)}</p>
+            <h2 class="lore-title">${esc(lore.title)}</h2>
+          </div>
+        </header>
+        ${lore.story.map((para, i) => `<p class="lore-para ${i === 0 && !/^\S{1,2}\s/.test(para) ? 'first' : ''}">${esc(para)}</p>`).join('')}
         ${lore.facts.length ? `<h3 class="lore-facts-title">Did you know?</h3>
         <ul class="lore-facts">${lore.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
         ${lore.sources.length ? `<p class="lore-sources">From ${lore.sources.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(hostOf(u))}</a>`).join(', ')}.</p>` : ''}
@@ -530,9 +563,7 @@ function renderInfo(list: string[], index: number): string {
   const kind = sideOf(face) ? sideLabel(face) : TERMS.types[card.type as keyof typeof TERMS.types] ?? card.type;
   // The Showcase is only for looking. Adding and taking out cards happens in All cards, on a card opened there.
   const editing = !!browsing, inShowcase = showcase.includes(face);
-  const position = list.length <= 12
-    ? `<span class="v-dots">${list.map((_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('')}</span>`
-    : `<span class="v-count">${index + 1} / ${list.length}</span>`;
+  const position = renderDots(list.length, index);
   return `
       <div class="viewer-info" aria-live="polite">
         <h2 class="v-name">${esc(faceName(face))}</h2>

@@ -1,7 +1,7 @@
 {
   "set": "HH1",
   "name": "Hui Hai",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "status": "released",
   "families": {
     "Hui Hai": {
@@ -21,6 +21,13 @@
     "from": "Ba Na (Bahnar) folk belief, Central Highlands of Vietnam (Gia Lai, Kon Tum)",
     "title": "The Hui Hai",
     "eyebrow": "Ba Na folk belief · the Highland forest",
+    "banner": "HH1-banner",
+    "story": [
+      "Behave badly in the old forest of Vietnam's Central Highlands, and a small stone may land right beside you. Look around as much as you like. Nobody is there.",
+      "The Ba Na people, who live in these highlands, say the forests and the streams are home to the Hui Hai: a whole people so tiny that nobody can see them. The men are called Hui Hai, and the women Yă Hui Hai.",
+      "Being small does not make them weak. The Hui Hai are very strong. Anyone who behaves badly in their forest may hear a stone hit the ground at their feet, thrown by a hand nobody saw.",
+      "So walk gently among the ferns and by the streams. You will never see the Hui Hai. That doesn't mean they aren't there."
+    ],
     "facts": [
       "The Ba Na of Vietnam's Central Highlands tell of the Hui Hai, invisible people of miniature size.",
       "The men are called Hui Hai and the women Yă Hui Hai.",

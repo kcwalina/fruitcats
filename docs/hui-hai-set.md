@@ -25,6 +25,10 @@ bamboo, the waterfall, the hidden village, the rock that moved in the night) is 
 not further belief. Check the Guilleminet entry before adding lore. The Hui Hai are drawn as tiny spirits in leaf
 clothes, never as a picture of the Ba Na people.
 
+The tale on the deck's Collection page (`lore.story`) retells only those lines. Its banner (`HH1-banner`) is the forest
+they live in, a stream over pebbles among ferns and bamboo, with no figures (`tools/draw_banners.py`, then
+`tools/bleed_colour.py`).
+
 ## How it plays
 
 **Stone for stone.** The family keyword is **Stone for Stone** (🪨): *when this unit is damaged and survives, deal 1

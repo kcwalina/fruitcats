@@ -957,12 +957,18 @@ const friendsHost: FriendsHost = {
   hasPlayed,
 };
 
+/** How far apart the decks in the picker are: a deck's width and the gap between two. */
+const deckPitch = (track: HTMLElement) => {
+  const [a, b] = track.querySelectorAll<HTMLElement>('.dk-slide');
+  return Math.max(1, b ? b.offsetLeft - a.offsetLeft : track.clientWidth);
+};
+
 /** Turns the deck picker by `step` decks (the arrows; fingers swipe). */
 function turnDeck(step: number) {
   const track = app.querySelector<HTMLElement>('.dk-track');
   if (!track) return;
-  const i = Math.round(track.scrollLeft / track.clientWidth) + step;
-  track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+  const i = Math.round(track.scrollLeft / deckPitch(track)) + step;
+  track.scrollTo({ left: i * deckPitch(track), behavior: 'smooth' });
 }
 
 /**
@@ -976,11 +982,11 @@ function deckCarouselMounted(first: boolean) {
   const slides = [...track.querySelectorAll<HTMLElement>('.dk-slide')];
   const carousel = track.parentElement!;
   const start = slides.findIndex((el) => el.dataset.deck === deckInView);
-  if (first && start > 0) track.scrollTo({ left: start * track.clientWidth, behavior: 'instant' });
+  if (first && start > 0) track.scrollTo({ left: start * deckPitch(track), behavior: 'instant' });
   let frame = 0;
   const update = () => {
     frame = 0;
-    const i = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
+    const i = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / deckPitch(track))));
     carousel.classList.toggle('at-start', i === 0);
     carousel.classList.toggle('at-end', i === slides.length - 1);
     const slide = slides[i], key = slide.dataset.deck!;

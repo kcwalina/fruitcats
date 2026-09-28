@@ -434,7 +434,7 @@ function renderDecks(): string {
   return `
     <div class="decks-page" data-keep-scroll="decks">
       <div class="scene-bg scene-collection" aria-hidden="true"></div>
-      <header class="scene-title"><h1>Collection</h1><p>Every card you have, deck by deck.</p></header>
+      <header class="scene-title"><h1 class="sr-only">Collection</h1></header>
       <div class="deck-covers">
         <button class="deck-cover" data-click="col:tab:showcase" aria-label="Showcase, ${n} ${n === 1 ? 'card' : 'cards'}">
           ${showcaseCover}

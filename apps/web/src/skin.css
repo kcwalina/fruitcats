@@ -1010,6 +1010,28 @@ body.game-screen .side-buttons button:not(.primary), body.game-screen .icon-butt
 .decks-page .scene-title { max-width: 1000px; padding: calc(var(--corner-top) + 44px + clamp(56px, 20vw, 220px)) 4px clamp(32px, 4vw, 44px); }
 @media (max-width: 640px) { .decks-page .scene-bg { --scene-h: calc(var(--corner-top) + 250px); } .decks-page .scene-title { padding-top: calc(var(--corner-top) + 44px + 56px); } }
 @media (max-width: 640px) { .decks-page .scene-bg { --scene-at: 78% 55%; } }
+
+/* Friend and Deck builder open under their own paintings too (2026-09-28): a bench for two under two lanterns, and a
+   card maker's workbench. No screen repeats its name over its painting any more: the player just tapped a tile that
+   said it, and the painting says where they are. The name stays in the page for screen readers (.sr-only). */
+.scene-friend { --scene: url('/ui/scene-friend.webp'); }
+.scene-decks { --scene: url('/ui/scene-decks.webp'); }
+.menu.friends, .menu.decks { position: relative; isolation: isolate; }
+.menu.friends > :not(.scene-bg), .menu.decks > :not(.scene-bg) { position: relative; z-index: 1; }
+/* One band of painting between the header and the page on Collection, Friend and Deck builder: shorter on short
+   screens (iPad landscape), so the page keeps its room. Solo is full (decks, difficulty, Play on one screen): its
+   painting stands behind the decks instead. */
+:root { --scene-gap: clamp(64px, 14vh, 180px); }
+.menu.friends .scene-bg, .menu.decks .scene-bg { --scene-h: calc(var(--corner-top) + 44px + var(--scene-gap) + 120px); }
+.menu.friends > .setup-bar + *, .menu.decks > .setup-bar + * { margin-top: var(--scene-gap); }
+.collection-screen .decks-page .scene-title { padding: calc(var(--corner-top) + 44px + var(--scene-gap)) 4px 0; }
+.collection-screen .decks-page .scene-bg { --scene-h: calc(var(--corner-top) + 44px + var(--scene-gap) + 120px); }
+@media (max-width: 640px) {
+  .menu.friends .scene-bg, .menu.decks .scene-bg { --scene-size: 170% auto; --scene-at: 85% 70%; }
+}
+/* A hidden name in a header grid (back, name, gear) leaves the gear in its own column. */
+.setup-bar > .sr-only + * { grid-column: 3; justify-self: end; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 /* Its first screen shows the wood as Home does, lightly dimmed in night blue like the Store (the card pages keep their
    darker mat, so the cards lead). */
 .collection-screen.view-decks { background: linear-gradient(180deg, rgba(10, 11, 30, 0.35), rgba(10, 11, 30, 0.62)), var(--img-menu-bg) center / cover no-repeat, #0e1026; }

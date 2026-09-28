@@ -190,7 +190,8 @@ export function renderFriends(): string {
   // Only a state the player has to act on (or wait out) replaces the screen. Connecting doesn't: the list shows at once.
   return `
   <div class="menu friends">
-    <div class="setup-bar">${back}<h2>${title}</h2>${settingsButton()}</div>
+    ${view.kind === 'list' ? '<div class="scene-bg scene-friend" aria-hidden="true"></div>' : ''}
+    <div class="setup-bar">${back}<h2${view.kind === 'list' ? ' class="sr-only"' : ''}>${title}</h2>${settingsButton()}</div>
     ${notConnected() ?? body}
     ${adding ? renderAdd() : ''}
   </div>`;

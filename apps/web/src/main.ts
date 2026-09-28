@@ -1005,7 +1005,7 @@ function renderSolo(): string {
       <span></span>
       ${settingsButton()}
     </div>
-    <header class="scene-title"><h1>Solo game</h1></header>
+    <header class="scene-title"><h1 class="sr-only">Solo game</h1></header>
     <div class="setup-body">
       ${renderDeckPicker()}
       <section class="picker difficulty-picker">

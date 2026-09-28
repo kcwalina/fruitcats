@@ -377,8 +377,7 @@ export function renderStore(): string {
           ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>` : ''}
       </div>
       <div class="sb-inner">
-        <h1>${title}</h1>
-        ${view.kind === 'browse' ? '<p class="sb-tagline">Decks and cards for your collection.</p>' : ''}
+        <h1${view.kind === 'browse' ? ' class="sr-only"' : ''}>${title}</h1>
       </div>
     </header>
     ${notice ? `<p class="store-notice" role="status">${esc(notice)}</p>` : ''}

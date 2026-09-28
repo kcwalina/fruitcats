@@ -139,6 +139,18 @@ let aiTimer: number | undefined;
 let confirming: 'yarn' | null = null;
 let showRules = false;
 let showSettings = false;
+/** The Story so far drawer (the game's transcript) is out: it slides in beside the board and stays until closed. */
+let showStory = false;
+/**
+ * A wide screen (an iPad sideways, a PC): the two players' plaques sit in the panel beside the board with the card
+ * reader between them, so the board's whole height goes to bigger cards, with their rules text on them. Narrower
+ * screens keep the player bars on the board. Crossing the line redraws the game.
+ */
+const WIDE = window.matchMedia('(min-width: 1001px)');
+let drawnWide = WIDE.matches;
+const relayout = () => { if (screen === 'game' && WIDE.matches !== drawnWide) render(); };
+WIDE.addEventListener('change', relayout);
+window.addEventListener('resize', relayout);   // some browsers resize without a media-query change event
 /** Settings' sections (Gameplay, Sound, Account, Contact us). Null: none picked yet; a wide screen shows the first, a phone shows the list. */
 type SettingsSection = 'gameplay' | 'sound' | 'account' | 'contact';
 let settingsSection: SettingsSection | null = null;
@@ -590,12 +602,13 @@ function onClick(key: string) {
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
     if (raw === 'zoom') { toggleZoom(); return; }
+    if (raw === 'story') { toggleStory(); return; }
     // Settings closes, and opens fresh on its first section next time.
     if (raw === 'settings') { showSettings = !showSettings; settingsSection = null; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) { warmPawtraits(); warmOwner(render); } } }
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
     if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
-    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; }
+    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; showStory = false; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
@@ -1019,31 +1032,68 @@ function renderGame(): string {
   const attackers = new Set(legal.flatMap((a) => (a.t === 'attack' && a.attacker.kind === 'unit' ? [a.attacker.uid] : [])));
   const playable = new Set(legal.flatMap((a) => (a.t === 'play' || a.t === 'pounce' ? [a.uid] : [])));
 
+  const wide = drawnWide = WIDE.matches;
+  const foeBar = renderPlayer(s, theirSeat, targets);
+  const myBar = renderPlayer(s, mySeat, targets, legal);
   return `
   <div class="game">
-    <main class="board ${targets.size ? 'targeting' : ''}">
-      ${renderPlayer(s, theirSeat, targets)}
+    <main class="board ${targets.size ? 'targeting' : ''} ${wide ? 'wide' : ''}">
+      ${wide ? '' : foeBar}
       ${renderYard(s, theirSeat, targets, attackers)}
       ${renderMidbar(s, legal)}
       ${renderYard(s, mySeat, targets, attackers)}
-      ${renderPlayer(s, mySeat, targets, legal)}
+      ${wide ? '' : myBar}
       ${renderHand(s, playable)}
     </main>
-    <aside class="side">
-      <div class="inspector"><img id="zoom" src="${inspected?.url ?? yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
-      <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
+    <aside class="side ${wide ? 'wide' : ''}">
+      ${wide ? foeBar : ''}
+      <div class="inspector"><img id="zoom" src="${inspected?.url ?? yourCardUrl(heroKey(s, mySeat))}" alt="">
+        ${wide ? '<small class="inspector-hint">Tap a card to read it here · hold it or 🔍 for full size</small>' : ''}</div>
+      ${wide ? myBar : ''}
       <div class="side-buttons">
         <button class="icon-button zoom-button" data-click="ui:zoom" title="Read the card full size" aria-label="Read the card full size"><img src="${BASE}ui/icon-zoom.webp" alt=""></button>
+        <button class="icon-button story-button" data-click="ui:story" title="Story so far" aria-label="Story so far" aria-pressed="${showStory}"><img src="${BASE}ui/icon-story.webp" alt=""></button>
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
         ${backButton(ol ? 'ol:home' : 'ui:quit', 'Home')}
         ${onlineSideButtons()}
       </div>
     </aside>
+    ${renderStory(s)}
     ${ol ? renderOnlineResult(s) : s.winner !== null ? renderGameOver(s) : ''}
     ${ol ? renderVersus(s as PlayerView) : ''}
     ${showRules ? renderRules() : ''}
   </div>`;
+}
+
+/**
+ * Story so far: the game's transcript in a drawer that slides in from the board's edge (from the right beside the
+ * panel; up from the bottom on a narrow screen). It is part of the board, not a dialog: no backdrop, and the game
+ * goes on while it is out. Newest at the bottom, where the eye lands, and it keeps its scroll between redraws.
+ */
+function renderStory(s: GameState): string {
+  return `<aside class="story-drawer ${showStory ? 'open' : ''}" aria-hidden="${!showStory}" aria-label="Story so far">
+    <div class="story-head"><h3>Story so far</h3>
+      <button class="icon-button story-close" data-click="ui:story" title="Close" aria-label="Close">×</button></div>
+    <ul class="log" data-keep-scroll="story">${s.log.slice(-120).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul>
+  </aside>`;
+}
+
+/** The Story drawer slides rather than snapping: toggled on the drawn screen, and the next redraw keeps it. */
+function toggleStory() {
+  showStory = !showStory;
+  const drawer = app.querySelector<HTMLElement>('.story-drawer');
+  if (!drawer) { render(); return; }
+  drawer.classList.toggle('open', showStory);
+  drawer.setAttribute('aria-hidden', String(!showStory));
+  app.querySelector('.story-button')?.setAttribute('aria-pressed', String(showStory));
+}
+
+/** A card's rules text with its keywords in bold, for the unit tiles on a wide screen. */
+function rulesHtml(text: string): string {
+  let html = esc(text);
+  for (const k of glossary()) html = html.replace(new RegExp(`${k.test.source}:?`, 'g'), '<b>$&</b>');
+  return html.replace(/\n/g, '<br>');
 }
 
 /**
@@ -1113,7 +1163,6 @@ function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Ac
         ${canAttack ? '<button class="primary" data-click="btn:heroattack">Hero attack</button>' : ''}
       </div>` : ''}
     </div>
-    ${p === theirSeat ? shownHand(s) ?? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>` : ''}
     ${ol ? `<div class="player-face online">${playerFace(p)}</div>`
       : ACCOUNTS ? `<div class="player-face">${boardFace(p === mySeat ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
@@ -1178,6 +1227,7 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
        data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
     <div class="uname">${esc(cardName(u.id))}</div>
+    ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
     <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
     <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
@@ -1187,7 +1237,14 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
 
 function renderYard(s: GameState, p: PlayerId, targets: Set<string>, attackers: Set<number>): string {
   const yard = s.players[p].yard;
+  // The opponent's hand (face-down backs, or face up in a teaching game) sits at the start of their Yard, across
+  // from their Offerings, so their bar holds only who they are.
+  const hand = s.players[p].hand.length;
+  const foeHand = p === theirSeat
+    ? `<div class="foe-hand-slot">${shownHand(s) ?? `<div class="foe-hand">${s.players[p].hand.map(() => '<div class="card-back"></div>').join('')}</div>`}
+      <div class="pantry-label foe-hand-label">${hand} in hand</div></div>` : '';
   return `<section class="yard ${p === mySeat ? 'me' : 'foe'}">
+    ${foeHand}
     ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === mySeat ? 'Your' : 'Their'} Yard is empty</div>`}
     ${renderPantry(s, p)}
   </section>`;
@@ -1199,7 +1256,8 @@ function renderHand(s: GameState, playable: Set<number>): string {
   const planting = prompt?.kind === 'plant';
   const luckyUid = prompt?.kind === 'lucky' ? prompt.uid : -1;
   const selectedUid = selection?.options.find((a) => a.t === 'play' || a.t === 'pounce') as { uid?: number } | undefined;
-  return `<section class="hand">
+  const n = s.players[mySeat].hand.length;
+  return `<section class="hand" style="--n:${n};--gaps:${Math.max(1, n - 1)}">
     ${s.players[mySeat].hand.map((c) => {
       const zestOn = (s.players[mySeat].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
       const cls = [
@@ -1415,7 +1473,7 @@ function renderRules(): string {
       <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
       <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
-      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again.</p>
+      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again. The book button opens the story so far: everything that has happened in this game.</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
@@ -1689,6 +1747,7 @@ document.addEventListener('keydown', (event) => {
   if (screen === 'collection' && !showSettings && showcaseArrow(event.key, { render })) return;
   if (event.key === 'Escape') {
     if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
+    if (showStory && screen === 'game') { toggleStory(); return; }
     if (screen === 'collection' && showcaseEscape({ render })) return;
     if (STORE && screen === 'store' && storeEscape(storeHost)) return;
     if (selection) { selection = null; render(); }

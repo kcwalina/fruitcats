@@ -54,7 +54,7 @@ export const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&am
 export const familyName = (family?: string) => (family ? TERMS.families[family as keyof typeof TERMS.families] ?? family : '');
 
 /** Each fruit family is a class with its own signature mechanic. */
-export const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase()}`;
+export const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase().replace(/\s+/g, '-')}`;
 
 /** The gear that opens Settings: in Home's corner, in the menu headers, and beside Rules in a game. */
 export function settingsButton(extraClass = ''): string {

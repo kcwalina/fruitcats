@@ -25,15 +25,17 @@ from generate_art import API_VERSION, MODELS, ROOT, access_token, multipart, pos
 LEAD = ("Draw a NEW painting in exactly the same art style as this reference image (same technique, brushwork, "
         "colour treatment and mood), but of a completely different subject and scene.")
 FRAMING = ("A wide banner picture: keep everything important in the middle band of the picture, top to bottom about "
-           "20% to 75%, because the top and bottom will be cropped. Leave the lowest quarter calm and fairly dark, "
-           "like a floor, ground or water in shadow, because a title is written over it. No people, no creatures "
-           "of the tale, no text, no letters, no frame, no border.")
+           "20% to 75%, because the top and bottom will be cropped. Keep the reference's own ground and colour across "
+           "the whole picture, edge to edge, exactly as bright and as saturated: no sky gradient, no darker lower part, "
+           "no vignette, no realistic lighting or depth the reference doesn't have. No people, no creatures of the "
+           "tale, no text, no letters, no frame, no border.")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--only", nargs="*", help="set codes")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--out", help="write here instead of <SET>-banner.webp (to draw a second version to compare)")
     args = parser.parse_args()
     endpoint, deployment = MODELS["gpt-image-2"]
     todo = []
@@ -43,7 +45,7 @@ def main() -> int:
         prompts = json.loads(prompts_path.read_text(encoding="utf-8")) if prompts_path.exists() else {}
         if not prompts.get("banner") or (args.only and code.lower() not in [c.lower() for c in args.only]):
             continue
-        out = set_path.parent / "art" / "illustrations" / f"{code}-banner.webp"
+        out = Path(args.out) if args.out else set_path.parent / "art" / "illustrations" / f"{code}-banner.webp"
         if out.exists() and not args.force:
             continue
         todo.append((code, prompts, set_path.parent / "art" / "illustrations" / f"{prompts['bannerReference']}.webp", out))
@@ -56,7 +58,10 @@ def main() -> int:
         code, prompts, reference, out = job
         prompt = "\n\n".join(p for p in [prompts.get("referenceLead") or LEAD, prompts.get("bannerStyle") or prompts.get("style", ""),
                                          f"Subject: {prompts['banner']}", FRAMING] if p)
-        body, content_type = multipart({"prompt": prompt, "n": "1", "size": "1536x1024", "quality": "high"}, "image", reference)
+        fields = {"prompt": prompt, "n": "1", "size": "1536x1024", "quality": "high"}
+        if prompts.get("bannerFidelity"):   # "high": follow the reference's look closely (input_fidelity)
+            fields["input_fidelity"] = prompts["bannerFidelity"]
+        body, content_type = multipart(fields, "image", reference)
         url = f"{endpoint}/openai/deployments/{deployment}/images/edits?api-version={API_VERSION}"
         try:
             data = post(url, token, body, content_type)["data"][0]["b64_json"]
@@ -64,7 +69,7 @@ def main() -> int:
             print(f"  {code}: FAILED {error}", flush=True)
             return False
         Image.open(io.BytesIO(base64.b64decode(data))).convert("RGB").save(out, quality=90, method=6)
-        print(f"  {code}: {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB)", flush=True)
+        print(f"  {code}: {out} ({out.stat().st_size // 1024} KB)", flush=True)
         return True
 
     with ThreadPoolExecutor(max_workers=4) as pool:

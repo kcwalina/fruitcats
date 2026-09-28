@@ -20,6 +20,12 @@
       "size": "1024x1024",
       "resize": 256,
       "transparent": true
+    },
+    "icon-zoom": {
+      "prompt": "A single magnifying glass icon (a round lens in a thick ring with a short straight handle pointing to the lower right; the lens plain pale cream, empty), in warm caramel orange. Flat game icon: bold clean dark outline of even thickness, flat colour fill with one soft highlight, no gradients, no texture, no 3D, no drop shadow. Centred, filling the frame with a small even margin, on a fully transparent background. No text, no letters, no animals, no faces, no extra objects, no background shapes.",
+      "size": "1024x1024",
+      "resize": 256,
+      "transparent": true
     }
   }
 }

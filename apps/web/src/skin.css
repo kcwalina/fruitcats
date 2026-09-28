@@ -262,19 +262,25 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   .log-panel h3 { display: none; }
 }
 
-/* Long-press / right-click card preview */
+/* Long-press / right-click / magnifier-button card preview: the card as big as the screen allows (a player with
+   weak eyesight reads the small print here), with only the one-line hint under it. */
 #zoom-overlay {
-  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; align-content: center; gap: 12px;
+  --zoom-hint-h: 30px;
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; align-content: center; justify-content: center;
+  gap: 8px 24px; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   background: rgba(30, 15, 5, 0.72); backdrop-filter: blur(3px); cursor: zoom-out; animation: fade-in 0.15s ease-out;
 }
 #zoom-overlay img {
-  max-height: calc(var(--vh, 1vh) * 84); max-width: 92vw; border-radius: 22px;
-  box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
+  max-height: calc(var(--vh, 1vh) * 100 - 16px - var(--zoom-hint-h)); max-width: calc(100vw - 20px); width: auto; height: auto;
+  border-radius: 22px; box-shadow: 0 0 0 4px var(--gold), 0 24px 60px rgba(0, 0, 0, 0.6); animation: pop 0.2s ease-out;
 }
-#zoom-overlay span { color: #fff4dc; font: 600 14px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+#zoom-overlay .zoom-hint { color: #fff4dc; font: 600 14px/22px Fredoka, Nunito, sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
 @keyframes fade-in { from { opacity: 0; } }
 /* Stop the browser's own long-press menu / text selection on cards. */
-[data-zoom] { -webkit-touch-callout: none; user-select: none; }
+[data-zoom] { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+/* Nothing on the board scrolls, so the browser never takes a finger on a card for a pan (which would cancel the
+   press): units and hand cards say so (style.css), and so do the Hero portraits, their ability lines and the Offerings. */
+.hero, .ability, .treat { touch-action: none; }
 
 /* ── Treats tray: its own spot at the end of each Yard, with bigger cards and visible changes ── */
 
@@ -524,9 +530,25 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 }
 
 /* Enlarged card: what its keywords mean, because iOS has no hover for tooltips and long press is
-   already the way you enlarge a card. */
-#zoom-overlay.with-keys img { max-height: calc(var(--vh, 1vh) * 56); }
+   already the way you enlarge a card. On a tall screen (a phone, an iPad held upright) they go under the card,
+   which keeps most of the height; on a wide one (an iPad sideways, a PC) they sit beside it, and the card keeps
+   its full height. */
+#zoom-overlay.with-keys img { max-height: calc(var(--vh, 1vh) * 64); }
 .zoom-info { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+@media (min-aspect-ratio: 1/1) {
+  #zoom-overlay.with-keys { grid-template-columns: auto minmax(200px, 440px); grid-template-rows: minmax(0, 1fr) auto; }
+  #zoom-overlay.with-keys img { grid-column: 1; grid-row: 1; max-height: calc(var(--vh, 1vh) * 100 - 16px - var(--zoom-hint-h)); }
+  #zoom-overlay.with-keys .zoom-info { grid-column: 2; grid-row: 1; align-self: center; max-height: calc(var(--vh, 1vh) * 100 - 16px - var(--zoom-hint-h)); overflow-y: auto; }
+  #zoom-overlay.with-keys .zoom-hint { grid-column: 1 / -1; grid-row: 2; }
+  #zoom-overlay.with-keys .zoom-keys { max-height: none; overflow: visible; }
+}
+/* Bigger print beside the card where there is room for it. */
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  .zoom-cost, .zoom-state { font-size: 17px; }
+  .zoom-keys { padding: 12px 18px; }
+  .zoom-keys dt { font-size: 18px; }
+  .zoom-keys dd { font-size: 16.5px; }
+}
 .zoom-cost {
   margin: 0; padding: 5px 16px; border-radius: 999px; font: 600 15px Fredoka, Nunito, sans-serif; color: #5a3413;
   background: linear-gradient(var(--parchment), var(--parchment-2)); border: 2px solid var(--gold);

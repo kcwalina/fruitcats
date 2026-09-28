@@ -120,8 +120,12 @@ let myDeck = loadChosenDeck();
 let deckInView = myDeck;
 let difficulty: Difficulty = hasPlayed() ? 'cat' : 'kitten';   // meet the gentlest opponent first
 let game: GameState | null = null;
-/** The card the side panel's inspector shows enlarged: the last one hovered or tapped. Null: your Hero. */
-let inspected: string | null = null;
+/**
+ * The card the side panel's inspector shows: the last one hovered or tapped (your Hero before that). Kept on
+ * narrow screens too, where there is no inspector: it is what the magnifier button opens full size. `key` is
+ * the card's id (a Hero's side), and `state` why a unit is resting, for the enlarged view's explanations.
+ */
+let inspected: { url: string; key?: string; state?: string } | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
 let tutorialGame = false;
 let selection: Selection | null = null;
@@ -585,6 +589,7 @@ function onClick(key: string) {
   }
   if (kind === 'ui') {
     if (raw === 'rules') showRules = !showRules;
+    if (raw === 'zoom') { toggleZoom(); return; }
     // Settings closes, and opens fresh on its first section next time.
     if (raw === 'settings') { showSettings = !showSettings; settingsSection = null; if (ACCOUNTS) { closeAccountPanel(); if (showSettings) { warmPawtraits(); warmOwner(render); } } }
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
@@ -1025,9 +1030,10 @@ function renderGame(): string {
       ${renderHand(s, playable)}
     </main>
     <aside class="side">
-      <div class="inspector"><img id="zoom" src="${inspected ?? yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
+      <div class="inspector"><img id="zoom" src="${inspected?.url ?? yourCardUrl(heroKey(s, mySeat))}" alt=""></div>
       <div class="log-panel"><h3>Story so far</h3><ul class="log">${s.log.slice(-80).reverse().map((e) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : e.text.startsWith('—') ? 'sys' : ''}">${esc(humanize(e.text))}</li>`).join('')}</ul></div>
       <div class="side-buttons">
+        <button class="icon-button zoom-button" data-click="ui:zoom" title="Read the card full size" aria-label="Read the card full size"><img src="${BASE}ui/icon-zoom.webp" alt=""></button>
         <button data-click="ui:rules">Rules</button>
         ${settingsButton()}
         ${backButton(ol ? 'ol:home' : 'ui:quit', 'Home')}
@@ -1409,7 +1415,7 @@ function renderRules(): string {
       <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
       <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
-      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it).</p>
+      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again.</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
@@ -1542,9 +1548,9 @@ window.addEventListener('pointerup', (event) => {
 // after the tap (the card gets selected) keeps showing it instead of snapping back to your Hero.
 function inspect(el: HTMLElement | null) {
   if (!el?.dataset.zoom) return;
-  inspected = el.dataset.zoom;
+  inspected = { url: el.dataset.zoom, key: el.dataset.zoomCard, state: el.dataset.zoomState };
   const zoom = document.getElementById('zoom') as HTMLImageElement | null;
-  if (zoom && zoom.src !== inspected) zoom.src = inspected;
+  if (zoom && zoom.src !== inspected.url) zoom.src = inspected.url;
 }
 app.addEventListener('mouseover', (event) => inspect((event.target as HTMLElement).closest<HTMLElement>('[data-zoom]')));
 
@@ -1581,7 +1587,7 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   const overlay = document.createElement('div');
   overlay.id = 'zoom-overlay';
   overlay.className = panel ? 'with-keys' : '';
-  overlay.innerHTML = `<img src="${url}" alt="">${panel}<span>Tap anywhere to close</span>`;
+  overlay.innerHTML = `<img src="${url}" alt="">${panel}<span class="zoom-hint">Tap anywhere to close</span>`;
   overlay.addEventListener('click', closeZoom);
   document.body.appendChild(overlay);
   tutorialCardZoomed();
@@ -1594,8 +1600,21 @@ function closeZoom() {
   tutorialZoomClosed();
 }
 
+/**
+ * The magnifier button in the bottom row: the card you last pointed at (the one in the inspector; your Hero before
+ * any) opens full size, and pressing it again closes it. For players who can't hold a card steady, or read the
+ * small print: the enlarged card is the biggest the screen allows.
+ */
+function toggleZoom() {
+  if (document.getElementById('zoom-overlay')) { closeZoom(); return; }
+  if (!game) return;
+  const card = inspected ?? { url: yourCardUrl(heroKey(game, mySeat)), key: heroKey(game, mySeat) };
+  openZoom(card.url, card.key, card.state);
+}
+
 app.addEventListener('pointerdown', (event) => {
   const el = (event.target as HTMLElement).closest<HTMLElement>('[data-zoom]');
+  touchLog(event, el);
   if (!el || event.button !== 0) return;
   inspect(el);
   pressAt = { x: event.clientX, y: event.clientY };
@@ -1617,13 +1636,42 @@ window.addEventListener('pointermove', (event) => {
 }, true);
 
 for (const type of ['pointerup', 'pointercancel'] as const) {
-  window.addEventListener(type, () => {
+  window.addEventListener(type, (event) => {
+    touchLog(event, (event.target as HTMLElement).closest?.<HTMLElement>('[data-zoom]') ?? null);
     window.clearTimeout(pressTimer);
     pressAt = null;
     if (zoomHeld) { zoomHeld = false; closeZoom(); }
     // The click (if any) fires right after pointerup; afterwards stop swallowing clicks.
     if (suppressClick) window.setTimeout(() => { suppressClick = false; }, 0);
   }, true);
+}
+
+/**
+ * With ?debug in the address: a readout of what the cards hear from the finger, for checking taps and long presses
+ * on a device we can't test here (an iPad said the opponent's cards didn't answer, 2026-09-28).
+ */
+const TOUCH_DEBUG = /[?&]debug(&|=|$)/.test(location.search);
+const touchCounts: Record<string, number> = {};
+function touchLog(e: PointerEvent, el: HTMLElement | null) {
+  if (!TOUCH_DEBUG || screen !== 'game') return;
+  touchCounts[e.type] = (touchCounts[e.type] ?? 0) + 1;
+  let panel = document.getElementById('touch-debug');
+  if (!panel) {
+    panel = document.createElement('pre');
+    panel.id = 'touch-debug';
+    panel.style.cssText = 'position:fixed;left:8px;top:60px;z-index:999;margin:0;padding:8px;max-width:60vw;font:11px/1.35 monospace;'
+      + 'color:#0f0;background:rgba(0,0,0,.8);border-radius:6px;pointer-events:none;white-space:pre-wrap';
+    document.body.appendChild(panel);
+  }
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  panel.textContent = [
+    `build ${document.querySelector<HTMLScriptElement>('script[src*="main-"]')?.src.split('/').pop() ?? '?'}`,
+    `last ${e.type} (${e.pointerType}, button ${e.button}) at ${Math.round(e.clientX)},${Math.round(e.clientY)}`,
+    Object.entries(touchCounts).map(([k, n]) => `${k.replace('pointer', '')} ${n}`).join(' · '),
+    `card under it: ${el ? `${el.dataset.zoomCard ?? '?'} (${el.className.split(' ')[0]}, ${el.closest('.foe') ? 'theirs' : 'yours'})` : 'none'}`,
+    `inspector shows: ${inspected?.key ?? 'your Hero'} · enlarged: ${document.getElementById('zoom-overlay') ? 'yes' : 'no'}`,
+    `under finger: ${under ? `${under.tagName.toLowerCase()}.${[...under.classList].join('.')}` : 'nothing'}`,
+  ].join('\n');
 }
 
 app.addEventListener('contextmenu', (event) => {

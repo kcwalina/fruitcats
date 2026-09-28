@@ -189,8 +189,8 @@ plus image files), and `tcg cards` produces composed images and files ready for 
 
 In the fruitcats repo for now, because it is easier to develop both together, but kept
 separable: the platform does not depend on Folkborn, and Folkborn becomes an app on the
-platform. The platform folder is to be agreed with the TCG Alex session, most likely its
-`cardengine/`.
+platform. The platform lives in `cardengine/` at the repo root (agreed with the TCG Alex
+session).
 
 ## Order of work
 
@@ -231,25 +231,42 @@ drawing, scenarios, the rulebook as source, and a balance question for the playt
 ## Working with the TCG Alex session
 
 The TCG Alex session owns the design of the core and the libraries until its survey is done and
-the owner signs off. This session builds on them and sends gaps back. Things raised with it:
+the owner signs off. This session builds on them and sends gaps back.
 
-1. Where the platform folder lives, and getting `cardengine/` committed to main.
-2. Which core version the TypeScript runtime targets first, and when it freezes.
-3. What the walkthrough assumes that the core or libraries don't have yet (below).
+- **Location.** The platform builds on `cardengine/` at the repo root, on main since 4780d71. Read
+  `cardengine/decisions.md` (the full design record) and `README.md` (conventions) first.
+- **Core version.** Target `core = '1'` as the files on main have it. It is a draft: it may grow
+  but should not change shape. It freezes when a second, structurally different game
+  (Hearthstone-like or KeyForge-like) is built against the libraries with no core edits. The
+  broad survey's recommended additions (2-D coordinates, change of controller, ownerless objects,
+  dice as face lists, optional unit health and cost) are not approved yet.
+- **Conformance.** These files are the acceptance fixtures of Alex 0.4.0 in mochi
+  (`mochi.agents/alex`), so the C# Alex binds them today. The TS Alex must bind them identically;
+  the conformance suite is the mochi test project's fixture tests.
+- **Validation lives in both.** The host checks in C# (library use; every ability has its slot
+  handler and every handler its ability; one kind per object; holders) must exist in the TS
+  engine too, or the two implementations will accept different games.
+- **The DSL.** The body limits above match the program-layer brief. `each` over a selection is new
+  and goes into the Alex spec.
 
-### What the walkthrough assumes that doesn't exist yet
+### What the walkthrough needs from the core and libraries
 
-- **A `Rulebook` type** and `cites` as a reference to a section (`cites = @rulebook.combat`)
-  instead of free text, with the linker checking both directions.
-- **How libraries find the game's zones.** `draw` needs the deck and hand, combat needs the board.
-  The walkthrough gives zones a role (`role = deck`); the core has no such field yet.
-- **Shuffling at setup.** The `setup` library has no shuffle rule, and "no behaviour defaults"
-  means the engine shouldn't shuffle on its own. The walkthrough uses `ShuffleDeck {}`.
-- **Scenario setup vocabulary** (`given hand(me, [@spark])`, `energy(me, 2)`) beyond the
-  `controls(...)` the Folkborn fixtures use.
-- **A card's art** (`art = 'art/friend.png'`): no card field for it yet; it waits for the
+Agreed with the TCG Alex session on 2026-09-28, to be added:
+
+- **A `Rulebook` document** (core): `sections: [text: Section]`, a `Section` with a number and
+  its text. `Game.rulebook` becomes `Rulebook | text` (a path to markdown stays legal) and
+  `Rule.cites` becomes `Section | text`, so a game with a Rulebook gets checked references. The
+  walkthrough also gives each section a `title`, which a rendered rulebook needs; to confirm.
+- **Zone roles** (core): `role: ZoneRole?` on `Zone`, with `enum ZoneRole { deck, hand, discard,
+  board, life, resource, other }`, unique per player. `draw`, `discard` and the life stack use it
+  to find their zones.
+- **`ShuffleDeck`** (setup library): `ShuffleDeck { zone: Zone? }`, defaulting to the deck-role
+  zone.
+- **A `scenarios` library** for test vocabulary: `hand(me, [...])`, `deck(me, [...])`,
+  `zone(me, @Zone, [...])`, `counter(me, @Counter, n)`, `controls(me, @card, ...)`, and the
+  assertion forms. A game lists it in `uses`. Energy is a counter, not a special case.
+- **A card's art** (core): `art: text?` on `Card`, an asset reference. Its full shape waits for the
   card-look survey.
-- **Deck lists in the set** use `[[Card, int]]` as the core has; the walkthrough uses that form.
 
 ## Open questions
 

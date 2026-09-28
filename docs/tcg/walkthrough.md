@@ -153,7 +153,7 @@ rulebook = Rulebook
 
 title = 'Hello TCG'
 sections = [
-  winning = Section { title = 'Winning', text = @winning }
+  winning = Section { number = '1', title = 'Winning', text = @winning }
 ]
 
 @@@ winning
@@ -201,9 +201,9 @@ Now the parts of the table, how a game starts, and how a turn goes. First the ru
 three sections to `sections`:
 
 ```
-  setup = Section { title = 'Setting up', text = @setup }
-  your-turn = Section { title = 'Your turn', text = @your-turn }
-  energy = Section { title = 'Energy', text = @energy }
+  setup = Section { number = '3', title = 'Setting up', text = @setup }
+  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn }
+  energy = Section { number = '5', title = 'Energy', text = @energy }
 ```
 
 And their text, in the text table:
@@ -318,7 +318,7 @@ has: a cost, power and health.
 The rulebook section:
 
 ```
-  creatures = Section { title = 'Creatures', text = @creatures }
+  creatures = Section { number = '6', title = 'Creatures', text = @creatures }
 ```
 
 ```
@@ -417,7 +417,7 @@ Each rule is one sentence of the rulebook:
 The rulebook section:
 
 ```
-  attacking = Section { title = 'Attacking', text = @attacking }
+  attacking = Section { number = '7', title = 'Attacking', text = @attacking }
 ```
 
 ```
@@ -520,11 +520,13 @@ draw-a-card` attaches it to Hello. Handlers are short on purpose: they use the w
 libraries give you (`draw`, `damage`, `destroy`, `choose`…), and each one is a line or two.
 
 Now prove it works. A **scenario** sets up a situation, does something, and checks the result.
-Add one below the handler:
+The words scenarios use (`hand`, `deck`, `counter`, `controls`…) come from the `scenarios`
+library, so add `@scenarios` to `uses` in `hello-tcg.alex`. Then add a scenario below the
+handler:
 
 ```
 scenario 'Hello draws a card when it enters' {
-  given hand(me, [@hello]), deck(me, [@friend]), energy(me, 2)
+  given hand(me, [@hello]), deck(me, [@friend]), counter(me, @Energy, 2)
   when play(me, @hello)
   then hand(me) == [@friend]
 }
@@ -574,7 +576,7 @@ discard pile. Spells come from the `spells` library, and your game calls them **
 `hello-tcg.alex`:
 
 ```
-uses = [@common, @units, @spells, @combat, @life, @resources, @turns, @setup]
+uses = [@common, @units, @spells, @combat, @life, @resources, @turns, @setup, @scenarios]
 
 type Spell : SpellCard {}
 ```
@@ -617,7 +619,8 @@ A scenario with a choice in it:
 
 ```
 scenario 'Goodbye destroys the chosen Creature' {
-  given controls(them, @cheer), controls(them, @friend), hand(me, [@goodbye]), energy(me, 3)
+  given controls(them, @cheer), controls(them, @friend)
+  given hand(me, [@goodbye]), counter(me, @Energy, 3)
   when play(me, @goodbye), choose(@cheer)
   then not controls(them, @cheer), power(@friend) == 1
 }
@@ -641,7 +644,7 @@ hello-tcg: 2 scenarios, 2 passed
 Add a section:
 
 ```
-  spells = Section { title = 'Spells', text = @spells }
+  spells = Section { number = '8', title = 'Spells', text = @spells }
 ```
 
 ```
@@ -666,7 +669,7 @@ deck-rules = [
 ```
 
 ```
-  decks = Section { title = 'Your deck', text = @decks }
+  decks = Section { number = '2', title = 'Your deck', text = @decks }
 ```
 
 ```
@@ -876,7 +879,9 @@ hello-tcg = Game
 name = 'Hello TCG'
 core = '1'
 rulebook = @rulebook
-uses = [@common, @units, @spells, @combat, @life, @resources, @turns, @setup, @decks]
+uses = [
+  @common, @units, @spells, @combat, @life, @resources, @turns, @setup, @decks, @scenarios
+]
 players = Players { min = 2, max = 2 }
 sets = [@base-set]
 
@@ -955,14 +960,14 @@ rulebook = Rulebook
 
 title = 'Hello TCG'
 sections = [
-  winning = Section { title = 'Winning', text = @winning }
-  decks = Section { title = 'Your deck', text = @decks }
-  setup = Section { title = 'Setting up', text = @setup }
-  your-turn = Section { title = 'Your turn', text = @your-turn }
-  energy = Section { title = 'Energy', text = @energy }
-  creatures = Section { title = 'Creatures', text = @creatures }
-  attacking = Section { title = 'Attacking', text = @attacking }
-  spells = Section { title = 'Spells', text = @spells }
+  winning = Section { number = '1', title = 'Winning', text = @winning }
+  decks = Section { number = '2', title = 'Your deck', text = @decks }
+  setup = Section { number = '3', title = 'Setting up', text = @setup }
+  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn }
+  energy = Section { number = '5', title = 'Energy', text = @energy }
+  creatures = Section { number = '6', title = 'Creatures', text = @creatures }
+  attacking = Section { number = '7', title = 'Attacking', text = @attacking }
+  spells = Section { number = '8', title = 'Spells', text = @spells }
 ]
 
 @@@ winning
@@ -1061,13 +1066,14 @@ effect goodbye { choose(all).destroy() }
 @goodbye.on-play = goodbye
 
 scenario 'Hello draws a card when it enters' {
-  given hand(me, [@hello]), deck(me, [@friend]), energy(me, 2)
+  given hand(me, [@hello]), deck(me, [@friend]), counter(me, @Energy, 2)
   when play(me, @hello)
   then hand(me) == [@friend]
 }
 
 scenario 'Goodbye destroys the chosen Creature' {
-  given controls(them, @cheer), controls(them, @friend), hand(me, [@goodbye]), energy(me, 3)
+  given controls(them, @cheer), controls(them, @friend)
+  given hand(me, [@goodbye]), counter(me, @Energy, 3)
   when play(me, @goodbye), choose(@cheer)
   then not controls(them, @cheer), power(@friend) == 1
 }

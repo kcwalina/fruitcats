@@ -498,6 +498,24 @@ mochi scenarios.
   this round: documents see schema members; `AlexHost.Validate` diagnostics-only hook. Card-engine host
   checks with negative tests: library use, ability ⇔ slot both ways, one ability per kind per object,
   holders. The cardengine folder in this worktree is still uncommitted.
+- **Survey findings folded in (2026-09-28, owner: reap the survey before archiving)**. Core: `coords`,
+  `facing`, `die` object fields; `owner`/`controller` may be nothing; `turn`, `set-controller`,
+  `create-zone`, `roll-object` operations; `roll` takes a face list; `adjacent` query and selector; `Zone.role`
+  (`enum ZoneRole { deck, hand, discard, board, life, resource, exile, other }`), `width`/`height`;
+  `Rulebook`/`Section` types, `Rule.cites: Section | text | nic`, `Game.rulebook: Rulebook | text | nic`;
+  `Card.art`; `BlockKind.scenario`. Libraries: `UnitCard.cost`/`health` optional, `defense`, `level`,
+  DefensePosition/DualStatByConflict/PowerOnly/SizeCapacity, `OnUse` + `use` action, `stun`; combat
+  TeamAttack/TeamBlock/BlockWithHandCard/BlockersNeedKeyword/ZoneMatchedBlock/MutualStrikeExchange/
+  ReversalNegates/ComboWindow/PokerHandContest/RowRestrictedTargeting, `team-attack` event, Blocker/Stun
+  keywords; resources PerObjectResource/ProducedByUnits/DamageAsResource/SharedPool/ResourceCardsAttach and
+  policies SacrificeCost/ThresholdRequirement/PrerequisiteInPlay/CostReduction/CheckToPlay/ShapeCost/
+  AnyPoolPays; spells ClimaxCard; heroes PowerOncePerGame/Levels/PayToFlip/HeroIsUnit/HeroRespawns,
+  Face.health, WeaponCard; permanents health/capacity; turns ActionBudget/SimultaneousTurns/RoleByTurn/
+  ExtraSummonsUnlimited/NoDrawFirstTurn/KnownDeck; setup ShuffleDeck/SplitSharedPool; life LifeObjects/
+  DamageTiers/RuneThresholds; decks GroupCount/CardsPerGroup/FactionLock/ComposedCards; objects
+  LevelsOnReplay/MergeIntoOne, swap-card/merge verbs. New libraries: objectives, board, reveal, dice,
+  encounter, stat-cards, scenarios (26 libraries, ~245 types). Folkborn: zone roles, ShuffleDeck, uses
+  scenarios. Not re-verified by the Alex session (it is idle); additive only, no shape changes.
 - **Rule: quotes are for text humans read** (names, flavor, `rule = '§...'`). Anything the engine interprets is a
   reference or an enum member. Handler names are references too: `on-enter = @summon-ant` (the rules file's
   names join the game's namespace; the linker resolves them like `@ant`).

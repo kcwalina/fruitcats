@@ -1,0 +1,38 @@
+// encounter: a scripted opponent. Cooperative and solo games (Arkham Horror, Marvel Champions,
+// Lord of the Rings LCG) play against a deck whose cards say what they do; the deck acts through
+// hooks and never through input, so the core's loop hosts it unchanged. Depends on the core only.
+encounter = Library
+
+name = 'Encounter'
+version = '0.1'
+core = '1'
+
+type EncounterRule : Rule {}
+extension Game { encounter: [EncounterRule] = empty }
+
+type AutomatedOpponent : EncounterRule { deck: Zone, seat: int }   // a seat nobody plays
+type RevealPerTurn : EncounterRule { count: int }       // encounter cards revealed each turn
+type ThreatCounter : EncounterRule { counter: text, lose-at: int }  // doom, threat, schemes
+type ScenarioStages : EncounterRule { zone: Zone }      // an ordered quest or agenda deck
+type SkillTest : EncounterRule { modifier-zone: Zone? } // draw a modifier and compare a stat
+type EnemyEngagement : EncounterRule {}                 // enemies attach to players and attack
+
+type EncounterCard : Card { threat: int = 0 }
+type EnemyCard : EncounterCard { power: int, health: int }
+type StageCard : Card { steps: int = 1 }
+
+extension EncounterCard { when-revealed: effect?, forced: effect? }
+type WhenRevealed : Ability { holders = [nameof(EncounterCard)] }
+type Forced : Ability { holders = [nameof(EncounterCard)] }
+
+moments = [
+  encounter-phase = Moment { name = 'Encounter phase' }
+  villain-phase = Moment { name = 'Villain phase' }
+]
+
+verbs = [
+  reveal-encounter = Verb { on = player, optional = [count = int] }
+  engage = Verb { on = unit, params = [player = player] }
+  advance-stage = Verb { on = player }
+  test = Verb { on = player, params = [stat = text, difficulty = int], yields = bool }
+]

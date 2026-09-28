@@ -26,6 +26,12 @@ type GoAgainContinues : TurnRule {}                // an action flagged go-again
 type MemoryGauge : TurnRule { min: int, max: int, start: int, voluntary-pass: int }
 // Pick one of the game's groups each turn and act only with its cards (KeyForge houses).
 type ChooseGroupPerTurn : TurnRule { of: text }
+type ActionBudget : TurnRule { n: int }            // n actions a turn, any kind
+type SimultaneousTurns : TurnRule {}               // all players act at once (core require-actions)
+type RoleByTurn : TurnRule { roles: [text] }       // a seat plays different rules on its own turn
+type ExtraSummonsUnlimited : TurnRule {}           // no once-per-turn on the main play action
+type NoDrawFirstTurn : TurnRule {}
+type KnownDeck : TurnRule {}                       // no hand: the whole deck is playable, visible
 
 // Steps a phase may list. Each is a constructor; a form shows them as an ordered pick-list.
 type Step {}

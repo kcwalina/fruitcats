@@ -39,6 +39,16 @@ type ResourceCards : ResourceRule {
 }
 // Pay by discarding cards from hand for their printed pitch value (Flesh and Blood).
 type PitchFromHand : ResourceRule { name: text, zone: Zone, from: Zone }
+// A counter each object carries and spends for its own abilities (Vampire: The Eternal Struggle).
+type PerObjectResource : ResourceRule { name: text, counter: text }
+// Units in play produce the resource (Caster Chronicles, Doomtown deeds).
+type ProducedByUnits : ResourceRule { name: text, property: text }
+// The player's own damage pile is the resource (Raw Deal fortitude, UFS momentum).
+type DamageAsResource : ResourceRule { name: text, zone: Zone }
+// A shared pool both players push and pull (Decipher's Lord of the Rings twilight).
+type SharedPool : ResourceRule { name: text, start: int }
+// Dedicated resource cards that also attach to units as a buff (One Piece DON!!).
+type ResourceCardsAttach : ResourceRule { name: text, grant-power: int }
 enum PayBy { exhaust, discard, spend }
 
 type NoIdentityWhileResource : ResourcePolicy { resource: ResourceRule }
@@ -50,9 +60,24 @@ type OfferAtSetup : ResourcePolicy { resource: ResourceRule, count: int }
 type RequiresAttachedResources : ResourcePolicy { resource: ResourceRule, consumes: bool }
 // Pay a card's cost another way when a condition holds (sing a song, convoke, delve).
 type AlternateCost : ResourcePolicy { pays: PayBy, when: text }
+// Pay by destroying or releasing your own units (tribute, materials).
+type SacrificeCost : ResourcePolicy { of: CardType, count: int }
+// A colour or threshold that must be present among resources controlled, not spent (Hex, ink).
+type ThresholdRequirement : ResourcePolicy { resource: ResourceRule }
+// A card may be played only while named other cards are in play (prerequisite chains).
+type PrerequisiteInPlay : ResourcePolicy {}
+// Cards in play reduce a later card's cost by symbol (Battle Spirits).
+type CostReduction : ResourcePolicy { by: Keyword, amount: int }
+// A card is played by revealing a check card and comparing, not by paying (UniVersus).
+type CheckToPlay : ResourcePolicy { compare: text }
+// Combinations of resource cards rather than a count (Harry Potter lessons).
+type ShapeCost : ResourcePolicy { resource: ResourceRule }
+// Costs are paid from any of several pools at will (Genesis).
+type AnyPoolPays : ResourcePolicy { resources: [ResourceRule] }
 
 actions = [
   offer = ActionKind { name = 'Offer a card as a resource' }
+  sacrifice = ActionKind { name = 'Sacrifice a unit' }
   attach-resource = ActionKind { name = 'Attach a resource' }
 ]
 

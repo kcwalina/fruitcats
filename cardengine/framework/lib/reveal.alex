@@ -1,0 +1,38 @@
+// reveal: turning over cards from a deck as a game event. Drive checks and damage checks
+// (Cardfight!! Vanguard), trigger icons (Weiss Schwarz, Chaos), battle-card flips (Transformers),
+// "flip the top card as a check" (UniVersus). Depends on the core only.
+reveal = Library
+
+name = 'Reveal checks'
+version = '0.1'
+core = '1'
+
+type RevealRule : Rule {}
+extension Game { reveal: [RevealRule] = empty }
+
+// At a moment, reveal n cards from a zone; a card's trigger icon applies to the current action.
+type RevealCheck : RevealRule { zone: Zone, count: int, at: Moment }
+type RevealedGoesTo : RevealRule { zone: Zone }         // where the revealed card ends up
+type IconApplies : RevealRule {}                        // the printed icon's bonus fires
+type CheckToPlay : RevealRule { compare: text }         // reveal and compare to allow a play
+
+extension Card {
+  trigger-icon: text?             // the bonus this card grants when revealed by a check
+  check-value: int?               // what it counts for in a check-to-play comparison
+}
+
+moments = [
+  drive-check = Moment { name = 'Drive check' }
+  damage-check = Moment { name = 'Damage check' }
+]
+
+extension Card { on-revealed: effect? }
+type OnRevealed : Ability { holders = [nameof(Card)] }
+
+events = [
+  revealed-check = Event { fields = [card = unit, icon = text] }
+]
+
+verbs = [
+  reveal-top = Verb { on = player, params = [count = int], yields = units }
+]

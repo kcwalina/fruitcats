@@ -40,10 +40,11 @@ type CoreOperations {
 
 enum Arg {
   object, objects, zone, zones, player, players, face, token, text, int, bool, position, event
-  effect, options, action, outcome, actions, target, rules, pending, drain
+  effect, options, action, outcome, actions, target, rules, pending, drain, coords, faces, shape
 }
-// A `position` is `top`, `bottom`, or an integer index into an ordered zone. A `target` is an
-// object or a player.
+// A `position` is `top`, `bottom`, or an integer index into an ordered zone; in a grid zone it
+// is a `coords` pair (column, row). A `target` is an object or a player. `faces` is a list of
+// the faces of a die.
 enum HookKind {
   provide       // adds results to a query
   filter        // removes results from a query
@@ -70,11 +71,14 @@ type Field { type: Arg | text }
 object-fields = [
   id = Field { type = text }                 // stable within a game
   card = Field { type = text }               // the member path of its card or token (BP1.goose)
-  owner = Field { type = player }
-  controller = Field { type = player }
+  owner = Field { type = 'player or nothing' }      // nothing: a shared object (an objective)
+  controller = Field { type = 'player or nothing' }
   zone = Field { type = zone }
   position = Field { type = int }            // within an ordered zone
-  face = Field { type = int }                // which face is up
+  coords = Field { type = 'coords or nothing' }      // in a grid zone: column and row
+  facing = Field { type = 'int or nothing' }         // in a grid zone: a direction, 0 to 7
+  die = Field { type = 'faces or nothing' }          // an object that is also a die
+  face = Field { type = int }                // which face is up (of a card, or of its die)
   states = Field { type = 'set of text' }    // exhausted, face-down, ... ; a library names them
   counters = Field { type = 'map text to int' }
   attachments = Field { type = objects }     // objects attached to this one
@@ -102,6 +106,11 @@ game-fields = [
 
 operations = [
   move = Operation { params = [object = object, to = zone, at = position], emits = 'moved' }
+  turn = Operation { params = [object = object, facing = int], emits = 'turned' }
+  set-controller = Operation { params = [object = object, player = player], emits = 'controlled' }
+  create-zone = Operation {
+    params = [name = text, shape = shape, owner = player], emits = 'zone-created'
+  }
   shuffle = Operation { params = [zone = zone], emits = 'shuffled' }
   flip = Operation { params = [object = object, face = int], emits = 'flipped' }
   set-state = Operation { params = [object = object, state = text, on = bool], emits = 'state-set' }
@@ -138,6 +147,8 @@ queries = [
   // library may add objects stacked under others (inherited effects) or remove some.
   active-rules = Query { params = [object = object], yields = rules }
   drain-policy = Query { yields = drain }                // how the scheduler resolves (part 5)
+  // Objects within a range of an object in a grid or row zone, by coords or position.
+  adjacent = Query { params = [object = object, range = int], yields = objects }
 ]
 hook-points = [
   provide-actions = HookPoint { kind = provide, on = 'legal-actions' }
@@ -245,7 +256,8 @@ visibility-rules = [
 
 random = [
   shuffle = Operation { params = [zone = zone], emits = 'shuffled' }
-  roll = Operation { params = [faces = int], emits = 'rolled' }
+  roll = Operation { params = [faces = faces], emits = 'rolled' }     // a die: its face list
+  roll-object = Operation { params = [object = object], emits = 'rolled' }   // an object's die
   pick = Operation { params = [options = options], emits = 'picked' }
 ]
 
@@ -264,6 +276,9 @@ random = [
 //   Stack / Chain           provide-drain-policy: after-all-pass
 //   InheritedEffects        provide-rules: objects in `under` of a live object
 //   ZoneCapacity { n }      filter-actions: drop plays into a zone holding n objects
+//   Movement { range }      provide-actions: move to coords within range; after 'moved': adjacency
+//   Capture                 set-controller on a won contest; the object keeps its zone
+//   DiePool                 roll-object per die, resolve faces one by one as actions
 //   TriggersAfterStateCheck order-pending: state-check items first
 //   Swift (enters-ready)    after 'moved' into a unit zone: skip UnitsEnterExhausted for it
 //

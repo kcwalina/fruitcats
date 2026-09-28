@@ -1,0 +1,45 @@
+// scenarios: the vocabulary of `scenario` blocks in rules documents: how to set up a position,
+// what to do, and what to assert. A library rather than host code so every engine implements
+// the same words. Depends on the core only; other libraries add their own scenario words.
+scenarios = Library
+
+name = 'Scenario vocabulary'
+version = '0.1'
+core = '1'
+
+selectors = [
+  me = Selector { yields = player }
+]
+
+// given
+verbs = [
+  controls = Verb {
+    on = player, params = [card = card], optional = [ready = bool], only-in = scenario
+  }
+  hand = Verb { on = player, params = [cards = units], only-in = scenario }
+  deck = Verb { on = player, params = [cards = units], only-in = scenario }
+  zone = Verb { on = player, params = [zone = zone, cards = units], only-in = scenario }
+  counter-is = Verb { on = player, params = [counter = counter, n = int], only-in = scenario }
+  card-counter = Verb { on = unit, params = [counter = counter, n = int], only-in = scenario }
+  played-this-round = Verb { on = player, params = [n = int], only-in = scenario }
+  round = Verb { params = [n = int], only-in = scenario }
+  // when
+  play = Verb {
+    on = player, params = [card = card], optional = [target = unit], only-in = scenario
+  }
+  attack = Verb { params = [by = unit, target = target], only-in = scenario }
+  respond = Verb { on = player, params = [with = card], only-in = scenario }
+  activate = Verb { on = unit, only-in = scenario }
+  pass = Verb { on = player, only-in = scenario }
+  defeat = Verb { on = unit, only-in = scenario }
+  end-round = Verb { only-in = scenario }
+  // then
+  exhausted = Verb { on = unit, yields = bool, only-in = scenario }
+  ready = Verb { on = unit, yields = bool, only-in = scenario }
+  in-zone = Verb { on = unit, params = [zone = zone], yields = bool, only-in = scenario }
+  power = Verb { on = unit, yields = int, only-in = scenario }
+  damage = Verb { on = unit, yields = int, only-in = scenario }
+  counter = Verb { on = unit, params = [counter = counter], yields = int, only-in = scenario }
+  life = Verb { on = player, yields = int, only-in = scenario }
+  winner = Verb { yields = player, only-in = scenario }
+]

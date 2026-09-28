@@ -7,7 +7,10 @@ version = '0.1'
 core = '1'
 requires = [@common]
 
-type SpellCard : Card { cost: Cost }
+type SpellCard : Card { cost: Cost? }
+// A once-per-turn special card with its own single-capacity public zone (Weiss Schwarz, Chaos).
+type ClimaxCard : SpellCard {}
+type OneClimaxPerTurn : Rule { zone: Zone }
 
 extension SpellCard { on-play: effect }           // required: every spell must do something
 

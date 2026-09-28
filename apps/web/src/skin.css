@@ -1059,3 +1059,36 @@ body .setup-bar h2, body .picker h2 { font-family: var(--serif-sc); font-weight:
   .deck-tile .deck-name { font-size: 24px; }
   .deck-tile-sub { font-size: 14.5px; }
 }
+
+/* Home tiles as cards (2026-09-27): each painted vignette sits on a playing card of quiet warm paper (a soft neutral
+   ivory, faintly toned at the edges), with a thin printed inner border, rounded corners and a soft shadow, the name in
+   dark ink below the picture. Neutral, so every deck's style reads on it, and the cards stand apart from the
+   colourful wood behind. */
+.home .modes .mode-card, .home .modes .mode-card.mini {
+  position: relative; padding: 10px 10px 12px; border-radius: 12px;
+  background: radial-gradient(130% 110% at 50% 30%, #f6f1e7 0%, #ece4d4 70%, #e2d8c4 100%);
+  box-shadow: inset 0 0 0 5px rgba(246, 241, 231, 0.9), inset 0 0 0 6px rgba(120, 100, 70, 0.28), 0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 10px 24px rgba(0, 0, 0, 0.5), 0 2px 5px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.home .modes .mode-card:hover { transform: translateY(-4px); box-shadow: inset 0 0 0 5px rgba(246, 241, 231, 0.9), inset 0 0 0 6px rgba(120, 100, 70, 0.35),
+    0 16px 30px rgba(0, 0, 0, 0.55), 0 3px 6px rgba(0, 0, 0, 0.35); }
+.home .modes .mode-card img, .home .modes .mode-card.mini img { filter: drop-shadow(0 4px 5px rgba(60, 40, 20, 0.25)); }
+.home .modes .mode-card:hover img { transform: none; filter: drop-shadow(0 5px 6px rgba(60, 40, 20, 0.3)); }
+.home .modes .mode-text, .home .modes .mode-card.mini .mode-name { background: none; padding: 4px 2px 0; }
+.home .modes .mode-name { color: #2e241a; text-shadow: none; }
+.home .modes .mode-sub { color: #6f604c; text-shadow: none; }
+.home .modes .mode-sub.continue-line { color: #2f7a3f; }
+.home .modes .mode-sub.signin-line { color: #a4561e; }
+.home .modes .mode-card.soon { opacity: 0.92; }
+.home .modes .mode-card.soon img { filter: saturate(0.55) drop-shadow(0 4px 5px rgba(60, 40, 20, 0.2)); }
+.home .modes .mode-card.mini img { width: 64%; }
+@media (max-width: 640px) {
+  .home .modes .mode-card { padding: 7px 6px 9px; border-radius: 10px; }
+  .home .modes .mode-card.mini { width: 36%; padding: 6px 6px 8px; }
+  .home .modes .mode-card.mini img { width: 70%; }
+}
+@media (max-width: 520px) {
+  .home .modes .mode-name { font-size: clamp(13px, 3.9vw, 17px); letter-spacing: 0.02em; }
+  .home .modes .mode-card.mini .mode-name { font-size: 14px; letter-spacing: 0.02em; }
+}

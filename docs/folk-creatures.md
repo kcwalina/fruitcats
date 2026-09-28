@@ -4,11 +4,12 @@ The game is being re-themed so each deck is a family of creatures from folk myth
 [retheme-proposal.md](retheme-proposal.md)). This is the list of creatures for the first decks: one from every
 inhabited continent, plus backups.
 
-**In the game now: the Domowiki, the Pari, the Aluxes and the Jiaoren.** Since 2026-09-26 the Domowiki are the game's starter
+**In the game now: the Domowiki, the Pari, the Aluxes, the Jiaoren and the Hui Hai.** Since 2026-09-26 the Domowiki are the game's starter
 deck, the one every player has (content/2026/10/domowiki, [domowiki-set.md](domowiki-set.md)), and the Pari are the
 second starter deck (content/2026/10/pari, [pari-set.md](pari-set.md)), and the Aluxes the third
 (content/2026/11/aluxes, [aluxes-set.md](aluxes-set.md)). The Jiaoren (content/2026/12/jiaoren,
-[jiaoren-set.md](jiaoren-set.md)) are the first deck sold in the Store, since 2026-09-27. The other creatures below
+[jiaoren-set.md](jiaoren-set.md)) are the first deck sold in the Store, since 2026-09-27, and the Hui Hai of Vietnam (content/2027/01/hui-hai,
+[hui-hai-set.md](hui-hai-set.md)) the second, since 2026-09-28. The other creatures below
 are planned decks.
 
 Written 2026-09-26. The owner picked Domowiki, Kodama, Pari and Nuno sa punso. The other six are recommendations
@@ -319,7 +320,8 @@ undone until dawn chased them off, and that is how people learned to make fishin
 Researched 2026-09-27 at the owner's request: a Vietnamese deck that does not look like a slightly different take
 on the [Jiaoren](#jiaoren). Two research passes: one on the folklore of the Việt (Kinh) majority, one on the Central
 Highlands peoples (Ba Na, Jarai, Ê Đê and others), the northern peoples (Tày, Nùng, Thái, Mường, H'Mông) and the
-Cham. On 2026-09-27 the owner liked two of them in the style of two old paintings, and each has four prototype cards: the [Flower-Souls](vietnam-prototypes.md) in a red Dao ritual-painting style and the [Hui Hai](vietnam-prototypes.md) in the style of a Hàng Trống folk painting.
+Cham. On 2026-09-27 the owner liked two of them in the style of two old paintings, and each has four prototype cards: the [Flower-Souls](vietnam-prototypes.md) in a red Dao ritual-painting style and the [Hui Hai](vietnam-prototypes.md) in the style of a Hàng Trống folk painting. The owner picked the Hui Hai, and on 2026-09-28 they became a full deck
+in the Store at $9.99 ([hui-hai-set.md](hui-hai-set.md)).
 
 To stay clear of the Jiaoren, these leave out the sea, pearls, silk and weaving, and anything that is a Chinese
 figure with a Vietnamese name (dragons, the lân, the phoenix, fox spirits, the Jade Emperor's court, Chang'e). They
@@ -331,7 +333,7 @@ tree, the mountain peoples' Yàng spirits.
 | [Ông Bình Vôi](#ông-bình-vôi) | Việt (Kinh) | A lime pot so old its mouth has closed is never thrown away: it retires to the village banyan with all the other old pots and guards the village. |
 | [The rice that rolled home](#the-rice-that-rolled-home) | Việt, Ba Na, Jarai, Mường | Rice grains were once as big as pomelos and rolled home by themselves, until someone was rude to them. |
 | [Mẻ Bjoóc's flower-souls](#mẻ-bjoócs-flower-souls) | Tày, Nùng | Every child is a flower in Mother Flower's garden in the sky, gold for boys and silver for girls. |
-| [Hui Hai](#hui-hai) | Ba Na | Tiny, invisible, very strong forest folk; you know you have offended one when a pebble lands at your feet. |
+| [Hui Hai](#hui-hai) | Ba Na | **In the game (in the Store, $9.99).** Tiny, invisible, very strong forest folk; you know you have offended one when a pebble lands at your feet. |
 
 **Recommendation:** Ông Bình Vôi. It meets every criterion (many small beings, a real custom, gentle, mysterious,
 nothing like anything Chinese) and comes with a ready-made family from a 15th-century book. Second choice: the rice
@@ -417,6 +419,8 @@ at your feet. From the same source: the *Gơhlŏu*, "an imaginary thing that liv
 - Trade-off: one source only. Check the entry in Guilleminet's *Dictionnaire bahnar–français* (1959) before building
   a deck on it. It could also join the rice deck as the forest side of the Highland spirit world.
 - Source: [Trần et al., "Yang, forest animism… among the Bahnar"](https://pmc.ncbi.nlm.nih.gov/articles/PMC13513994/).
+- **In the game** since 2026-09-28, sold in the Store at $9.99. Its hero is Pebble, the littlest Hui Hai. Cards, lore
+  and art: [hui-hai-set.md](hui-hai-set.md). The owner went ahead on the one source; the Guilleminet check is still open.
 
 **Other finds for Vietnam:** the **Nghê**, the village's gentle mythical guard dog, which carries a lamp on its head
 where China puts fierce stone lions (very drawable, but it has almost no stories); **Tứ Pháp**, four rain-goddess

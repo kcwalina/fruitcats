@@ -242,7 +242,7 @@ around the payment work, which stays closed.
 ### On the live site: a preview for every playtester
 
 Since 2026-09-25 (the owner's call, after trying the whole test flow), the live API runs `STORE=preview`,
-`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,JR1` (SB1 since 2026-09-26: the old Starter Box decks, free; JR1 since 2026-09-27: the Jiaoren deck at $9.99, the first Folkborn deck on sale): every signed-in player can open the Store and see every deck, card and
+`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,JR1,HH1` (SB1 since 2026-09-26: the old Starter Box decks, free; JR1 since 2026-09-27: the Jiaoren deck at $9.99, the first Folkborn deck on sale; HH1 since 2026-09-28: the Hui Hai deck at $9.99): every signed-in player can open the Store and see every deck, card and
 price, but **Add to cart** says "Coming soon", and there's no cart. The free decks' **Get** works in preview too. The owner sees the same. Test orders placed during
 the tester test are kept but count for nothing (no cards, not listed).
 

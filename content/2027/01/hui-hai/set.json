@@ -2,7 +2,7 @@
   "set": "HH1",
   "name": "Hui Hai",
   "version": "0.1.0",
-  "status": "prototype",
+  "status": "released",
   "families": {
     "Hui Hai": {
       "colors": [
@@ -11,7 +11,9 @@
         "#E9F5E1"
       ],
       "personality": "Tiny, invisible, very strong keepers of the forest and its streams",
-      "playsLike": "Pebbles from nowhere: small, sudden damage to anyone who misbehaves"
+      "playsLike": "Stone for stone: hurt a Hui Hai and a pebble comes back from nowhere",
+      "mechanic": "Stone for Stone",
+      "hint": "hurt units throw stones"
     }
   },
   "lore": {
@@ -30,6 +32,27 @@
       "https://pmc.ncbi.nlm.nih.gov/articles/PMC13513994/"
     ]
   },
+  "mechanics": {
+    "Stone for Stone": {
+      "family": "Hui Hai",
+      "kind": "keyword",
+      "reminder": "When this unit is damaged and survives, deal 1 damage to an enemy unit.",
+      "abilities": [
+        {
+          "when": "damagedAndSurvives",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "icon": "🪨"
+    }
+  },
   "cards": [
     {
       "id": "HH1-H01",
@@ -44,28 +67,43 @@
           {
             "when": "exhaust",
             "target": {
-              "unit": "enemy"
+              "unit": "own"
             },
             "do": [
               {
-                "damage": 1
+                "buff": {
+                  "power": 1
+                }
               }
             ]
           }
         ],
         "growUp": {
           "if": {
-            "treats": {
-              "atLeast": 7
+            "unitsInComposts": {
+              "atLeast": 4
             }
           }
         },
-        "text": "Exhaust: Deal 1 damage to an enemy unit.\nAwaken: You have 7 or more Offerings."
+        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: 4 or more Fabled and Creatures are in the Mist."
       },
       "bigCat": {
         "name": "Pebble, Keeper of the Stream",
-        "power": 2,
+        "power": 3,
         "abilities": [
+          {
+            "static": {
+              "grant": {
+                "health": 1,
+                "keywords": [
+                  "Stone for Stone"
+                ]
+              },
+              "to": {
+                "each": "own"
+              }
+            }
+          },
           {
             "when": "exhaust",
             "target": {
@@ -78,7 +116,7 @@
             ]
           }
         ],
-        "text": "Exhaust: Deal 2 damage to an enemy unit."
+        "text": "Your units get +1 Health and Stone for Stone.\nExhaust: Deal 2 damage to an enemy unit."
       },
       "frame": "gold"
     },
@@ -160,6 +198,383 @@
         }
       ],
       "text": "Ambush. Deal 2 damage to an enemy unit."
+    },
+    {
+      "id": "HH1-D04",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Hui Hai in the Ferns",
+      "cost": 1,
+      "power": 1,
+      "health": 2,
+      "keywords": [
+        "Stone for Stone"
+      ],
+      "flavor": "The fern moved. There was no wind.",
+      "text": "Stone for Stone."
+    },
+    {
+      "id": "HH1-D05",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Pebble-Thrower",
+      "cost": 1,
+      "power": 2,
+      "health": 1,
+      "flavor": "No taller than your thumb. Throws harder than you do.",
+      "text": ""
+    },
+    {
+      "id": "HH1-D06",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Hui Hai at the Spring",
+      "cost": 2,
+      "power": 1,
+      "health": 3,
+      "keywords": [
+        "Guardian",
+        "Stone for Stone"
+      ],
+      "flavor": "Muddy the spring, and see what comes back out of it.",
+      "text": "Guardian. Stone for Stone."
+    },
+    {
+      "id": "HH1-D07",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Boulder-Pusher",
+      "cost": 3,
+      "power": 4,
+      "health": 2,
+      "flavor": "The boulder was on the path in the evening. In the morning it wasn't.",
+      "text": ""
+    },
+    {
+      "id": "HH1-D08",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Hui Hai in the Bamboo",
+      "cost": 2,
+      "power": 2,
+      "health": 2,
+      "keywords": [
+        "Zoomies"
+      ],
+      "flavor": "You hear the bamboo knock. You never see who knocked.",
+      "text": "Swift."
+    },
+    {
+      "id": "HH1-D09",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Keeper of the Old Forest",
+      "cost": 3,
+      "power": 2,
+      "health": 4,
+      "keywords": [
+        "Guardian",
+        "Stone for Stone"
+      ],
+      "flavor": "The forest is theirs to keep, and they keep it well.",
+      "text": "Guardian. Stone for Stone."
+    },
+    {
+      "id": "HH1-D10",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Gơhlŏu, the Sweet-Smelling",
+      "cost": 3,
+      "power": 2,
+      "health": 3,
+      "flavor": "Something lives in the trees. Nobody has seen it, but it smells wonderful.",
+      "abilities": [
+        {
+          "when": "hello",
+          "do": [
+            {
+              "draw": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Draw a card."
+    },
+    {
+      "id": "HH1-D11",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Moss-Mender Yă Hui Hai",
+      "cost": 4,
+      "power": 3,
+      "health": 5,
+      "flavor": "She tucks moss into every scrape, grumbling the whole time.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "own"
+          },
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Heal 2 from each unit you control."
+    },
+    {
+      "id": "HH1-D12",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Old One of the Waterfall",
+      "cost": 7,
+      "power": 6,
+      "health": 6,
+      "keywords": [
+        "Guardian",
+        "Fierce",
+        "Stone for Stone"
+      ],
+      "flavor": "The waterfall has been loud for a thousand years. Some of that is him.",
+      "text": "Guardian. Fierce. Stone for Stone."
+    },
+    {
+      "id": "HH1-D13",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Hui Hai",
+      "name": "Stones from Nowhere",
+      "cost": 4,
+      "flavor": "A whole hillside of pebbles, and not one hand to be seen.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "each": "enemy"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "text": "Deal 1 damage to each enemy unit."
+    },
+    {
+      "id": "HH1-D14",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Hui Hai",
+      "name": "The Forest Remembers",
+      "cost": 4,
+      "keywords": [
+        "Lucky"
+      ],
+      "flavor": "Cut a tree for nothing, and the forest will not forget your face.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "any"
+          },
+          "do": [
+            {
+              "damage": 4
+            }
+          ]
+        }
+      ],
+      "text": "Lucky. Deal 4 damage to a unit."
+    },
+    {
+      "id": "HH1-D15",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Hui Hai",
+      "name": "Nobody Threw It",
+      "cost": 1,
+      "keywords": [
+        "Lucky"
+      ],
+      "flavor": "The hunter turned around. The path behind him was empty.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "exhaust": true
+            }
+          ]
+        }
+      ],
+      "text": "Lucky. Exhaust an enemy unit."
+    },
+    {
+      "id": "HH1-D16",
+      "rarity": "Uncommon",
+      "type": "Toy",
+      "family": "Hui Hai",
+      "name": "A Pouch of River Pebbles",
+      "cost": 1,
+      "flavor": "Smooth, round, and exactly the right size for throwing.",
+      "abilities": [
+        {
+          "static": {
+            "grant": {
+              "power": 1,
+              "keywords": [
+                "Stone for Stone"
+              ]
+            },
+            "to": "attached"
+          }
+        }
+      ],
+      "text": "Attached unit gets +1 Power and Stone for Stone."
+    },
+    {
+      "id": "HH1-D17",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Hui Hai",
+      "name": "Grandfather Hui Hai, Mover of Rocks",
+      "cost": 5,
+      "power": 4,
+      "health": 5,
+      "keywords": [
+        "Guardian",
+        "Stone for Stone"
+      ],
+      "flavor": "The strongest of them, and the smallest beard in the forest.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "text": "Guardian. Stone for Stone. Hello: Deal 2 damage to an enemy unit."
+    },
+    {
+      "id": "HH1-D18",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Hui Hai",
+      "name": "The Hidden Village",
+      "cost": 4,
+      "power": 3,
+      "health": 3,
+      "flavor": "A whole village lives in this clearing. You are standing in it.",
+      "abilities": [
+        {
+          "when": "hello",
+          "target": {
+            "each": "enemy"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "text": "Hello: Deal 1 damage to each enemy unit."
+    },
+    {
+      "id": "HH1-D19",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Hui Hai",
+      "name": "The Rock That Moved in the Night",
+      "cost": 8,
+      "power": 8,
+      "health": 8,
+      "keywords": [
+        "Fierce",
+        "Stone for Stone"
+      ],
+      "flavor": "Everyone saw it on the hill. Nobody saw how it got there.",
+      "text": "Fierce. Stone for Stone."
+    },
+    {
+      "id": "HH1-D20",
+      "rarity": "Uncommon",
+      "type": "Trick",
+      "family": "Hui Hai",
+      "name": "Small but Strong",
+      "cost": 1,
+      "keywords": [
+        "Pounce"
+      ],
+      "flavor": "Tiny hands. Enormous shove.",
+      "abilities": [
+        {
+          "when": "play",
+          "target": {
+            "unit": "own"
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Ambush. A unit you control gets +2 Power this round."
     }
-  ]
+  ],
+  "decks": {
+    "hui-hai": {
+      "name": "Hui Hai",
+      "hero": "HH1-H01",
+      "cards": {
+        "HH1-D01": 3,
+        "HH1-D02": 1,
+        "HH1-D03": 2,
+        "HH1-D04": 3,
+        "HH1-D05": 3,
+        "HH1-D06": 3,
+        "HH1-D07": 3,
+        "HH1-D08": 3,
+        "HH1-D09": 3,
+        "HH1-D10": 3,
+        "HH1-D11": 3,
+        "HH1-D12": 3,
+        "HH1-D13": 2,
+        "HH1-D14": 3,
+        "HH1-D15": 3,
+        "HH1-D16": 3,
+        "HH1-D17": 1,
+        "HH1-D18": 1,
+        "HH1-D19": 1,
+        "HH1-D20": 3
+      },
+      "blurb": "Stone for stone. Hurt a Hui Hai and a pebble comes back from nowhere; led by Pebble, the Littlest Hui Hai.",
+      "price": 999
+    }
+  },
+  "released": "2027-01"
 }

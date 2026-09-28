@@ -63,6 +63,7 @@ Still to do is listed at the end.
 | Pari (PR1) | `content/2026/10/pari/` | released, a second starter (docs/pari-set.md) | none needed |
 | Aluxes (AL1) | `content/2026/11/aluxes/` | released, a third starter (docs/aluxes-set.md) | none needed |
 | Jiaoren (JR1) | `content/2026/12/jiaoren/` | released, sold in the Store at $9.99 (docs/jiaoren-set.md) | none needed |
+| Hui Hai (HH1) | `content/2027/01/hui-hai/` | released, sold in the Store at $9.99 (docs/hui-hai-set.md) | none needed |
 
 ## Cards as data: abilities
 

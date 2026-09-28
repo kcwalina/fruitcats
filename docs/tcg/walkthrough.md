@@ -520,15 +520,15 @@ draw-a-card` attaches it to Hello. Handlers are short on purpose: they use the w
 libraries give you (`draw`, `damage`, `destroy`, `choose`…), and each one is a line or two.
 
 Now prove it works. A **scenario** sets up a situation, does something, and checks the result.
-The words scenarios use (`hand`, `deck`, `counter`, `controls`…) come from the `scenarios`
+The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`…) come from the `scenarios`
 library, so add `@scenarios` to `uses` in `hello-tcg.alex`. Then add a scenario below the
 handler:
 
 ```
 scenario 'Hello draws a card when it enters' {
-  given hand(me, [@hello]), deck(me, [@friend]), counter(me, @Energy, 2)
+  given hand(me, [@hello]), deck(me, [@friend]), counter-is(me, @Energy, 2)
   when play(me, @hello)
-  then hand(me) == [@friend]
+  then in-zone(@friend, @Hand)
 }
 ```
 
@@ -619,10 +619,10 @@ A scenario with a choice in it:
 
 ```
 scenario 'Goodbye destroys the chosen Creature' {
-  given controls(them, @cheer), controls(them, @friend)
-  given hand(me, [@goodbye]), counter(me, @Energy, 3)
-  when play(me, @goodbye), choose(@cheer)
-  then not controls(them, @cheer), power(@friend) == 1
+  given controls(opponent, @cheer), controls(opponent, @friend)
+  given hand(me, [@goodbye]), counter-is(me, @Energy, 3)
+  when play(me, @goodbye, target: @cheer)
+  then in-zone(@cheer, @Discard), power(@friend) == 1
 }
 ```
 
@@ -1066,15 +1066,15 @@ effect goodbye { choose(all).destroy() }
 @goodbye.on-play = goodbye
 
 scenario 'Hello draws a card when it enters' {
-  given hand(me, [@hello]), deck(me, [@friend]), counter(me, @Energy, 2)
+  given hand(me, [@hello]), deck(me, [@friend]), counter-is(me, @Energy, 2)
   when play(me, @hello)
-  then hand(me) == [@friend]
+  then in-zone(@friend, @Hand)
 }
 
 scenario 'Goodbye destroys the chosen Creature' {
-  given controls(them, @cheer), controls(them, @friend)
-  given hand(me, [@goodbye]), counter(me, @Energy, 3)
-  when play(me, @goodbye), choose(@cheer)
-  then not controls(them, @cheer), power(@friend) == 1
+  given controls(opponent, @cheer), controls(opponent, @friend)
+  given hand(me, [@goodbye]), counter-is(me, @Energy, 3)
+  when play(me, @goodbye, target: @cheer)
+  then in-zone(@cheer, @Discard), power(@friend) == 1
 }
 ```

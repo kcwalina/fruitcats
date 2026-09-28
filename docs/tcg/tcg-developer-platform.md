@@ -251,22 +251,24 @@ the owner signs off. This session builds on them and sends gaps back.
 
 ### What the walkthrough needs from the core and libraries
 
-Agreed with the TCG Alex session on 2026-09-28, to be added:
+All five asks are in core 1 on main since f7a6845, when the whole 156-game survey was folded into
+the core and libraries (seven new libraries, among them `scenarios`, `objectives`, `board` and
+`dice`; the full list is in `cardengine/decisions.md`):
 
-- **A `Rulebook` document** (core): `sections: [text: Section]`, a `Section` with a number and
-  its text. `Game.rulebook` becomes `Rulebook | text` (a path to markdown stays legal) and
-  `Rule.cites` becomes `Section | text`, so a game with a Rulebook gets checked references. The
-  walkthrough also gives each section a `title`, which a rendered rulebook needs; to confirm.
-- **Zone roles** (core): `role: ZoneRole?` on `Zone`, with `enum ZoneRole { deck, hand, discard,
-  board, life, resource, other }`, unique per player. `draw`, `discard` and the life stack use it
-  to find their zones.
-- **`ShuffleDeck`** (setup library): `ShuffleDeck { zone: Zone? }`, defaulting to the deck-role
-  zone.
-- **A `scenarios` library** for test vocabulary: `hand(me, [...])`, `deck(me, [...])`,
-  `zone(me, @Zone, [...])`, `counter(me, @Counter, n)`, `controls(me, @card, ...)`, and the
-  assertion forms. A game lists it in `uses`. Energy is a counter, not a special case.
-- **A card's art** (core): `art: text?` on `Card`, an asset reference. Its full shape waits for the
-  card-look survey.
+- `Rulebook { title, sections: [text: Section] }`, `Section { number, text }`,
+  `Game.rulebook: Rulebook | text | nic`, and `cites: Section | text | nic` on rules and cards.
+- `Zone.role: ZoneRole` (`deck, hand, discard, board, life, resource, exile, other`).
+- `ShuffleDeck { zone: Zone? }` in `setup`.
+- The `scenarios` library: `hand`, `deck`, `controls`, `counter-is` to set up; `play`
+  (with `target:`), `attack`, `pass` to act; `in-zone`, `power`, `life`, `winner` to assert.
+- `Card.art: text?`, an asset reference.
+
+Still open: **a heading per rulebook section.** The walkthrough writes `Section { number, title,
+text }`; the core's `Section` has no `title` yet. Asked of the TCG Alex session.
+
+Also note: the C# Alex session that binds these files is archived, so the files added in f7a6845
+have not been re-bound by the C# Alex yet. Re-binding them is the first check when the TS Alex work
+starts, since both implementations are measured against the same fixtures.
 
 ## Open questions
 

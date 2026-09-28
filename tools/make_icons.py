@@ -2,15 +2,15 @@
 
     python tools/make_icons.py
 
-The drawn icon has a cream margin and a rounded frame around it; iOS and Android round the corners
-themselves, so the square is cropped to just inside that frame and the icons are filled edge to edge.
+A drawn icon with a cream margin and a rounded frame is cropped to just inside that frame (iOS and Android round the
+corners themselves); a full-bleed painting is used as it is.
 Maskable icon: the same picture inset to 80%, because Android crops icons to a circle.
 """
 
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "art" / "ui" / "app-icon.webp"
@@ -18,6 +18,12 @@ ICONS = ROOT / "art" / "icons"
 # Home screen (iOS), PWA, and the browser tab.
 SIZES = {"apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512, "favicon-32.png": 32}
 MASKABLE_SAFE = 0.8
+
+
+def full_bleed(image: Image.Image) -> bool:
+    """A painting that fills the square to its edges (no cream margin or drawn frame): used as it is."""
+    corners = [image.getpixel(c) for c in [(2, 2), (image.width - 3, 2), (2, image.height - 3), (image.width - 3, image.height - 3)]]
+    return not all(min(c) > 200 for c in corners)
 
 
 def square(image: Image.Image) -> Image.Image:
@@ -50,7 +56,8 @@ def square(image: Image.Image) -> Image.Image:
 def main() -> int:
     if not SOURCE.exists():
         sys.exit(f"{SOURCE} not found — draw it with: python tools/generate_art.py --ui --only app-icon")
-    icon = square(Image.open(SOURCE).convert("RGB"))
+    source = Image.open(SOURCE).convert("RGB")
+    icon = source if full_bleed(source) else square(source)
     ICONS.mkdir(parents=True, exist_ok=True)
 
     for name, size in SIZES.items():
@@ -60,8 +67,13 @@ def main() -> int:
     # Android crops maskable icons to a circle, so keep the cat inside the safe 80%.
     side = 512
     inner = round(side * MASKABLE_SAFE)
-    maskable = Image.new("RGB", (side, side), icon.getpixel((4, 4)))
-    maskable.paste(icon.resize((inner, inner), Image.LANCZOS), ((side - inner) // 2, (side - inner) // 2))
+    # Behind it, the same picture enlarged and blurred, so the margin continues the painting instead of a flat band;
+    # the inset picture's edge is feathered into it.
+    maskable = icon.resize((side, side), Image.LANCZOS).filter(ImageFilter.GaussianBlur(18))
+    feather = Image.new("L", (inner, inner), 0)
+    ImageDraw.Draw(feather).rectangle((0, 0, inner - 1, inner - 1), fill=255)
+    feather = ImageOps.expand(feather.crop((12, 12, inner - 12, inner - 12)), 12, 0).filter(ImageFilter.GaussianBlur(8))
+    maskable.paste(icon.resize((inner, inner), Image.LANCZOS), ((side - inner) // 2, (side - inner) // 2), feather)
     maskable.save(ICONS / "icon-maskable-512.png")
     print("  icon-maskable-512.png: 512x512 (80% safe zone)")
 

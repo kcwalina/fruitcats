@@ -1088,49 +1088,38 @@ body .setup-bar h2, body .picker h2 { font-family: var(--serif-sc); font-weight:
 }
 
 
-/* Home tiles as cards (2026-09-27): each painted vignette sits on a playing card with one face of warm stone, lit from
-   above (a soft highlight at the top, a gentle fall-off to the edges), a thin printed double rule inside the edge and
-   rounded corners, the name in dark ink below the picture. The stone sits between ivory and grey: bright paper cut
-   holes in the night wood, and a flat cool grey looked disabled and muddied the warm paintings. The paintings stay the
-   brightest thing on each card. Only the Coming soon tiles look disabled: a duller face and a faded painting. */
+/* Home tiles as frosted glass (2026-09-28): each painted vignette sits on a pane of smoked glass. The night wood shows
+   through it blurred and drained of nearly all colour, so the card shares the scene's light and never cuts a hole in it
+   (bright ivory did; warm stone sided with the warm figures; a flat mid-grey looked disabled). The figures are the only
+   warm, bright thing on each card. A thin double rule inside the edge; ivory names. Only Coming soon tiles look faded.
+   Chosen offline from seven faces measured against the background (OKLCH), before touching this file. */
 .home .modes {
-  --stone-top: #b1a798; --stone-bottom: #9b9184;
-  --ink: #2a1d14; --ink-sub: #4a3d33;
+  --ink: oklch(0.95 0.012 85); --ink-sub: oklch(0.82 0.015 85);
 }
 .home .modes .mode-card, .home .modes .mode-card.mini {
   position: relative; padding: 10px 10px 12px; border-radius: 12px;
-  background:
-    radial-gradient(120% 60% at 50% 0%, rgba(255, 248, 234, 0.28), rgba(255, 248, 234, 0) 55%),
-    radial-gradient(130% 110% at 50% 40%, rgba(40, 28, 18, 0) 55%, rgba(40, 28, 18, 0.2) 100%),
-    linear-gradient(180deg, var(--stone-top), var(--stone-bottom));
-  box-shadow: inset 0 1px 0 rgba(255, 250, 238, 0.55), inset 0 0 0 1px rgba(255, 244, 224, 0.16),
-    0 5px 12px rgba(0, 0, 0, 0.34), 0 1px 3px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, oklch(0.62 0.02 275 / 0.28), oklch(0.45 0.02 278 / 0.28));
+  -webkit-backdrop-filter: blur(18px) saturate(0.15) brightness(1.15);
+  backdrop-filter: blur(18px) saturate(0.15) brightness(1.15);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.35);
   transition: transform 0.15s, box-shadow 0.15s;
 }
-/* The printed double rule: a fine dark line with a warm light line just inside it. */
+/* The double rule: a fine light line with a dark line just inside it. */
 .home .modes .mode-card::after {
   content: ''; position: absolute; inset: 5px; border-radius: 8px; pointer-events: none;
-  box-shadow: 0 0 0 1px rgba(70, 48, 30, 0.34), inset 0 0 0 1px rgba(255, 244, 222, 0.34);
+  border: 1px solid oklch(0.85 0.02 270 / 0.35); box-shadow: inset 0 0 0 1px oklch(0.2 0.03 280 / 0.3);
 }
-.home .modes .mode-card:hover { transform: translateY(-4px);
-  box-shadow: inset 0 1px 0 rgba(255, 250, 238, 0.6), inset 0 0 0 1px rgba(255, 244, 224, 0.2),
-    0 9px 18px rgba(0, 0, 0, 0.38), 0 2px 4px rgba(0, 0, 0, 0.4); }
-.home .modes .mode-card img, .home .modes .mode-card.mini img { filter: drop-shadow(0 4px 5px rgba(50, 32, 18, 0.28)); }
-.home .modes .mode-card:hover img { transform: none; filter: drop-shadow(0 5px 6px rgba(50, 32, 18, 0.32)); }
+.home .modes .mode-card:hover { transform: translateY(-4px); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.4); }
+.home .modes .mode-card img, .home .modes .mode-card.mini img { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35)); }
+.home .modes .mode-card:hover img { transform: none; filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.4)); }
 .home .modes .mode-text, .home .modes .mode-card.mini .mode-name { background: none; padding: 4px 2px 0; }
-.home .modes .mode-name { color: var(--ink); text-shadow: none; }
-.home .modes .mode-sub { color: var(--ink-sub); text-shadow: none; }
-.home .modes .mode-sub.continue-line { color: #1f5a2c; }
-.home .modes .mode-sub.signin-line { color: #7c2a0a; }
-.home .modes .mode-card.soon {
-  background:
-    radial-gradient(130% 110% at 50% 40%, rgba(40, 28, 18, 0) 55%, rgba(40, 28, 18, 0.2) 100%),
-    linear-gradient(180deg, #a09a8e, #8b857a);
-  box-shadow: inset 0 1px 0 rgba(255, 250, 238, 0.3), inset 0 0 0 1px rgba(255, 244, 224, 0.1), 0 4px 10px rgba(0, 0, 0, 0.32);
-}
-.home .modes .mode-card.soon img { filter: saturate(0.35) opacity(0.78) drop-shadow(0 3px 4px rgba(50, 32, 18, 0.18)); }
-.home .modes .mode-card.soon .mode-name { color: #3a2e25; }
-.home .modes .mode-sub.soon-line { color: #4f463e; }
+.home .modes .mode-name { color: var(--ink); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45); }
+.home .modes .mode-sub { color: var(--ink-sub); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.home .modes .mode-sub.continue-line { color: oklch(0.85 0.1 150); }
+.home .modes .mode-sub.signin-line { color: oklch(0.82 0.1 70); }
+.home .modes .mode-card.soon img { filter: saturate(0.45) brightness(0.9) opacity(0.8) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); }
+.home .modes .mode-card.soon .mode-name { opacity: 0.75; }
+.home .modes .mode-sub.soon-line { color: var(--ink-sub); }
 .home .modes .mode-card.mini img { width: 64%; }
 @media (max-width: 640px) {
   .home .modes .mode-card { padding: 7px 6px 9px; border-radius: 10px; }

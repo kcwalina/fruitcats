@@ -1,0 +1,35 @@
+// responses: reacting to the opponent. Fixed windows after named events (Ambush), or a full
+// stack or chain where anyone may respond to anything (the core's after-all-pass drain policy).
+// Depends on the core only.
+responses = Library
+
+name = 'Responses'
+version = '0.1'
+core = '1'
+
+type ResponseRule : Rule {}
+extension Game { responses: [ResponseRule] = empty }
+
+// One reaction opportunity for the non-acting player after each listed event.
+type ResponseWindows : ResponseRule { name: text, after: [Event] }
+type OnePerWindow : ResponseRule { n: int }
+type NoNesting : ResponseRule {}                  // a response cannot be responded to
+type NotAnAction : ResponseRule {}                // responding does not use the player's action
+type NoWindowForFreePlays : ResponseRule {}
+// Every player may add to the queue or pass; it resolves newest first when all have passed.
+type Stack : ResponseRule {}
+type Chain : ResponseRule { speeds: bool }        // like Stack, with spell speeds gating replies
+// Priority flips to whoever was just targeted, until two passes in a row (a combat chain).
+type AlternatingPriority : ResponseRule {}
+
+// Playable in a response window (Ambush, Flash, Quick Effect); `only` restricts to one event.
+type Ambush : Keyword { only: Event? }
+
+actions = [
+  respond = ActionKind { name = 'Respond' }
+  decline = ActionKind { name = 'Decline to respond' }
+]
+
+filters = [
+  responding-to = Filter { params = [event = event] }
+]

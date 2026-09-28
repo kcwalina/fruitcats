@@ -1,0 +1,29 @@
+// life-stack: life as a face-down stack of the player's own cards (Candles, Prizes, Security,
+// Shields, One Piece life), with what happens to a lost card. Depends on life.
+life-stack = Library
+
+name = 'Life as a stack of cards'
+version = '0.1'
+core = '1'
+requires = [@life]
+
+type LifeStack : LifeRule {
+  name: text
+  zone: Zone
+  size: int
+  from: Zone
+}
+type LostCardGoesTo : LifeRule { zone: Zone }     // the lost card goes here (a hand, a discard)
+type LoseOneAtATime : LifeRule {}                 // several losses resolve one by one
+type LoseWhenEmpty : LifeRule {}
+type WinWhenEmpty : LifeRule {}                   // the stack is a goal, not a life (Prizes)
+type PrizesOnKnockout : LifeRule { property: text }   // take n cards, n read off the defeated card
+type RevealedCardEffectFires : LifeRule {}        // a lost card's security effect resolves first
+
+// A card lost as life may be played free (Lucky, shield trigger).
+type Lucky : Keyword {}
+
+extension Card { on-lost-as-life: effect? }
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type OnLostAsLife : Ability { holders = [nameof(Card)] }

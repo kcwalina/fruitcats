@@ -1,0 +1,265 @@
+records: 156 from 16 files
+
+== players
+  143  2
+   15  
+    9  asym
+    3  2-4
+    1  unknown
+
+== turns
+  120  full
+   19  alternating
+    6  simultaneous
+    5  other
+    4  unknown
+    3  shared-gauge
+
+== resources
+   36  resource-cards
+   36  other
+   33  growing
+   32  none
+   12  cards
+    7  pitch
+    3  unknown
+
+== life
+   65  counter
+   37  race
+   26  other
+   20  stack
+    4  none
+    4  unknown
+    2  keys
+
+== combat
+   52  attacker-chooses
+   47  defender-blocks
+   29  compare-stat
+   21  other
+    9  lanes
+    4  unknown
+    3  none
+
+== responses
+   73  windows
+   51  none
+   13  stack
+    6  chain
+    5  unknown
+    4  other
+    4  alternating
+
+== board
+   41  row
+   35  slots
+   21  none
+   19  other
+   19  lanes
+   17  grid
+    4  unknown
+
+== fit
+  129  framework
+   15  libraries
+    7  core
+    5  out
+
+== confidence
+   80  medium
+   45  low
+   31  high
+
+== fit x confidence
+   64  framework / medium
+   41  framework / low
+   24  framework / high
+    9  libraries / medium
+    6  libraries / high
+    4  core / medium
+    3  out / medium
+    2  out / low
+    2  core / low
+    1  core / high
+
+== core verdicts (fit = core)
+  Sorcery: Contested Realm [high]: 2D grid coordinates and dynamic zone construction — object-fields.position is a single int for an ordered zone, and Game.zones is a fixed list set onc
+  Genesis: Battle of Champions [medium]: 2D grid coordinates, facing/rotation, and pattern-based adjacency — the same gap family as Sorcery's dynamic grid, but here the grid is fixed-size and
+  Eikonic TCG [low]: core.alex's `Shape` enum already includes `grid`, but core-operations.alex's object
+  Perry Rhodan Sammelkartenspiel [low]: multi-record cards / a mid-game ruleset change — `Game` has one fixed `uses`/rules set
+  Faeria [medium]: zones are declared once in Game.zones; Faeria needs grid cells created and to change
+  Artifact [medium]: three lanes with their own local deployment order and life pool, resolved concurrently
+  Duelyst [medium]: an object's `position` is a single int, not a 2-D coordinate, and there is no move-within-zone or adjacency query for a `grid`-shaped zone, so pathing
+
+== out
+  Void Academy [low]
+  Ragnarok: Dawn of the Heavens' Massacre [low]
+  Alternate Souls [medium]
+  Bella Sara [medium]
+  Warhammer Underworlds [medium]
+
+== libraries (fit = libraries)
+  BattleTech [medium]
+  Epic Card Game [medium]
+  Pokémon Trading Card Game [high]
+  Digimon Card Game [high]
+  Duel Masters [high]
+  Battle Spirits [medium]
+  WIXOSS [medium]
+  Force of Will [medium]
+  Final Fantasy Trading Card Game [medium]
+  One Piece Card Game [high]
+  Union Arena [medium]
+  Kaijudo: Rise of the Duel Masters [high]
+  Myths and Legends [medium]
+  Gods Unchained [high]
+  Kards: The WWII Card Game [medium]
+
+== core gaps mentioned (any fit), top 40
+    8  unknown
+    2  possibly
+    1  other: multi-record cards (split cards
+    1  modal double-faced cards
+    1  Adventure)
+    1  other: a challenge card attached to a zone/location rather than to a unit
+    1  zone adjacency
+    1  other: a directed graph of control over objects that can sit in another player's
+    1  zone adjacency (shared with Middle-earth CCG: both need a movable graph of zones)
+    1  possible
+    1  game-over currently is a query hook a rule answers
+    1  and summing counters
+    1  ranking a drawn set of cards as a poker hand stretches the Property/Filter model (a
+    1  zone adjacency with a movement cost is not an explicit core-operations primitive
+    1  a resource or rule set keyed to "whoever's turn it is" rather than to a fixed player may need core support if 
+    1  filter-rules) already expresses it
+    1  core already anticipates `die` as a RandomSource and a per-object `face`
+    1  but a zone shaped as a random-draw bag and a shared cross-player purchase pool may need new Shape/zone or quer
+    1  a genuinely open question — Story cards belong to neither player
+    1  but
+    1  other: a card with two independent combat-relevant stats
+    1  one selected per instance of combat
+    1  isn't expressible with UnitCard's single `power`
+    1  other: `position` is a single int per object
+    1  not 2D coordinates
+    1  so range and line-of-sight over a grid with terrain cannot be expressed without a library convention or a core
+    1  other: the same grid-position limitation as Mage Wars (int position
+    1  no 2D coordinate/adjacency primitive)
+    1  the `Shape` enum (pile
+    1  set
+    1  row
+    1  slot
+    1  slots
+    1  lanes
+    1  grid) has no notion of a unit's position moving turn over turn into adjacency with another unit
+    1  `position` is only an index in an ordered zone
+    1  not 2-D placement
+    1  pending a primary source
+    1  the check-to-play mechanic may need a core-level query (a randomized legality gate before an action is taken)
+    1  not just a library verb
+
+== missing rules, top 80
+    9  unknown
+    3  GridMovement
+    3  Movement
+    3  ZoneMatchedBlock
+    2  not
+    2  StatCard record
+    2  AdjacencyRange
+    2  unknown pending rulebook
+    1  PlaneswalkerLoyalty
+    1  ColorIdentity
+    1  PerObjectCounterResource
+    1  Spaceline
+    1  Dilemma
+    1  RegionMap
+    1  Corruption
+    1  RealmPyramid
+    1  Razed
+    1  ControlAttempt
+    1  EdgeInterrupt
+    1  DualCounterEconomy
+    1  one spent
+    1  ProvinceRow
+    1  LocationGraph
+    1  ForceDrain
+    1  icon-based
+    1  ordered-obstacle traversal per zone
+    1  a mirrored second zone reachable by a paid crossing
+    1  a per-unit
+    1  an open multi-party tally CombatRule
+    1  a CaptureSite verb that changes a permanent's controller on a won attack — owning
+    1  a grid-cell attack/block matching CombatRule
+    1  a Mission/Plot/Discovery "episode" phase sequence
+    1  a poker-hand-draw-and-rank combat resolution
+    1  it needs a
+    1  a bidding/auction ActionKind and Verb
+    1  a multi-output "tack for any one of N stats" resource rule
+    1  a crew-as-life-buffer
+    1  DiceTriggeredEffect
+    1  DangerRoomLevelGate
+    1  TeamKO win condition
+    1  ArenaControlWin
+    1  a Mission-card record distinct from spells/permanents
+    1  ShapePuzzleCost
+    1  a Lesson card record
+    1  PowerOncePerGame
+    1  unlike heroes.alex's PowerOncePerRound)
+    1  a Quest record with step tracking
+    1  FactionLock deck rule
+    1  SharedLocationControl
+    1  Location/Challenge card records
+    1  SharedAdversarialResource
+    1  SitePath
+    1  RoleSwapsByTurn
+    1  DamageAsResource
+    1  Reversal-as-negate-verb
+    1  PinSubmission win condition
+    1  CompareCardValue
+    1  HitCounterKO
+    1  MissionCompletionWin
+    1  multi-attack Teamwork/Tactic verbs
+    1  RowRestrictedTargeting
+    1  a Stun state distinct from exhausted
+    1  SharedMarketPurchase
+    1  BagZone
+    1  not sequential)
+    1  RerollForFace
+    1  an objective/quest-completion win condition
+    1  would
+    1  a Mission record and its skill-total contest resolution
+    1  and a "declared
+    1  a StatCard record
+    1  no persistence)
+    1  formation-based squad
+    1  roster/line-up construction rule
+    1  a paired-card "Combo" bonus
+    1  lineup-slot squad construction
+    1  distinct per-challenge-type consequences
+    1  a PlotCard record and a "simultaneous reveal sets this round's parameters" rule
+    1  a StoryCard record
+    1  a dual-Domain typed-resource rule
+
+== card kinds that fit no record
+  Harry Potter Trading Card Game: spells (Spell cards), units (Creature cards); Lesson cards match no existing record (a resource card with a shape/color that must combine wi
+  Buffy the Vampire Slayer CCG: units (characters, both Hero/Companion and Villain/Minion), attachments (Skills & Items); Location and Challenge cards fit no existing kind 
+  The Lord of the Rings Trading Card Game: units (Companion/Minion characters), spells (Event cards), attachments (Possession/item cards); the Site itself (a progress-track record wit
+  WWE Raw Deal: heroes (the single always-in-play Superstar card); Maneuver/Reversal/Action cards act like one-shot spells but also feed the player's own re
+  Marvel OverPower: units (characters as hit-counter targets); Power/Universe/Tactic/Special cards act as raw combat-value cards played from hand rather than pe
+  Dice Masters: units (characters, as dice with cost/power/abilities on a reference card); Basic Action cards fit spells; the dice themselves, a shared purc
+  Match Attax: none of units/spells/attachments/permanents/heroes fit well — cards never enter
+  NBA Adrenalyn XL: same gap as Match Attax — no existing kind fits a one-shot two-stat comparison
+  Legend of the Five Rings: The Card Game (LCG): units (character, with dual military/political skill instead of one power stat), permanents (holding), spells (event), attachments; Province
+  Weiss Schwarz: units (Characters, with Level/Power/Soul), spells (Events); Climax cards are a once-per-turn public card type that fits no existing record.
+  My Little Pony Collectible Card Game: units (Friends: power stat, no health/exhaust — closest fit); heroes (Mane character: two-sided flip card matches TwoFaces exactly); no reco
+  Disney Lorcana: units (Character maps to UnitCard, but needs added lore/inkable fields UnitCard can't gain by subtyping); spells (Action/Song map to SpellCa
+  Star Wars: Unlimited: units (ground/space Unit cards); spells (Event cards); attachments (Upgrade cards); heroes (Leader: two-sided, deployed from a fixed pregame
+  Elestrals: units (Elestrals), spells (Runes); resource cards (Spirits) fit none of unit/spell/attachment/permanent/hero and are instead covered by the 
+  Redemption: units (Heroes/Evil Characters with Strength/Toughness), spells (Enhancements as combat tricks), permanents (Sites/Artifacts); Lost Souls fit
+  Warhammer Age of Sigmar: Champions: heroes (the 4 Champions, each with a personal quest and Blessing), units/spells (the 30 action cards); Quest/Blessing (a hidden per-Champion
+  The Simpsons Trading Card Game: none of units/spells/attachments/permanents/heroes fit cleanly; needs a shared, scored "Scene" objective record and Characters that are trai
+  Bella Sara: none of ours fit; cards are collectibles/online-unlock tokens, not battle pieces
+  The Eye of Judgment: units (Creatures, with Attack/Hit Points), spells (Sorcery/Conjuration/Dominion); field elemental alignment (a per-zone stat modifier) fits 
+  Codex: Card-Time Strategy: units, spells, heroes (level up via XP through 3+ discrete levels rather than HeroCard's two faces), permanents (Tech buildings); a Patrol Z
+  Warhammer Underworlds: attachments (Upgrades, reasonably), spells (Ploys, one-shot); Fighter cards (physical miniatures with a profile) and Objective cards (scorin
+  Chaos TCG: units (characters), spells (events); one kind fits none of ours: Climax — a once-per-turn card whose play is a condition characters' static 

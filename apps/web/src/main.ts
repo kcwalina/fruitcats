@@ -777,20 +777,57 @@ function render() {
  * The home screen's modes, in two groups with space between them: playing (Solo, Friend, Ranked), then
  * your cards (Collection, Store, Deck builder). Coming-soon modes say what they will be.
  */
+/**
+ * Home's tiles, each drawn as a card of one of the decks: in that deck's frame colours, with an illustration in its
+ * style of its folk at the tile's business (a domowik dealing a game for one; two paris playing over tea), a type line,
+ * and rules text: a keyword line on what the tile is, and a line of flavour.
+ */
+type ModeCard = { name: string; sub: string; deck: string; code: string; icon: string; type: string; key: string; kw: string; text: string; flavor: string };
 const MODE_GROUPS = [
   [
-    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '' },
-    { key: 'friend', name: 'Friend', sub: 'Online',
+    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '', deck: 'domowiki', code: 'FB-01', icon: 'one', type: 'Play · vs the AI',
+      kw: 'Play', text: 'any deck against the AI.', flavor: 'The stove is warm.' },
+    { key: 'friend', name: 'Friend', sub: 'Online', deck: 'pari', code: 'FB-02', icon: 'two', type: 'Play · Online',
+      kw: 'Play', text: 'a friend, each on your own device.', flavor: 'Paris are never alone.',
       soon: 'Play with a friend online: add each other with a code, then you each play on your own device.' },
-    { key: 'ranked', name: 'Ranked', sub: 'The ladder',
+    { key: 'ranked', name: 'Ranked', sub: 'The ladder', deck: 'huihai', code: 'FB-03', icon: 'crown', type: 'Play · Ranked',
+      kw: 'Climb', text: 'the ladder, game by game.', flavor: 'Stone upon stone.',
       soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   ],
   [
-    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '' },
-    { key: 'store', name: 'Store', sub: 'New cards', soon: 'A store for new decks and cards.' },
-    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '' },
+    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '', deck: 'jiaoren', code: 'FB-04', icon: 'pearl', type: 'Cards · Yours',
+      kw: 'Keep', text: 'every card you own, deck by deck.', flavor: 'Each pearl was once a tear.' },
+    { key: 'store', name: 'Store', sub: 'New cards', deck: 'aluxes', code: 'FB-05', icon: 'bag', type: 'Cards · New decks',
+      kw: 'Find', text: 'new decks and cards.', flavor: 'Fresh from the milpa.', soon: 'A store for new decks and cards.' },
+    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '', deck: 'domowiki', code: 'FB-06', icon: 'stack', type: 'Cards · Your decks',
+      kw: 'Build', text: 'a Hero and 50 cards of your own.', flavor: 'Every card in its place.' },
   ],
 ];
+const MODE_EXTRAS: ModeCard[] = [
+  { key: 'tutorial', name: 'Tutorial', sub: 'With tips', deck: 'pari', code: 'FB-07', icon: 'book', type: 'Learn · First game',
+    kw: 'Learn', text: 'your first game, with tips.', flavor: 'Every pari was little once.' },
+  { key: 'docs', name: 'Documentation', sub: 'The rules', deck: 'huihai', code: 'FB-08', icon: 'scroll', type: 'Learn · The rules',
+    kw: 'Read', text: 'the rules, in full.', flavor: 'Written down, just in case.' },
+];
+/** The decks the tiles borrow: their frames' colours (as the cards draw them) and their names for the footer. */
+const MODE_DECKS: Record<string, { name: string; main: string; dark: string; tint: string }> = {
+  domowiki: { name: 'Domowiki', main: '#5B3F9E', dark: '#2E1F5C', tint: '#EEE8FB' },
+  pari: { name: 'Pari', main: '#2E5C9E', dark: '#16305A', tint: '#E3ECF8' },
+  aluxes: { name: 'Aluxes', main: '#2E8FA3', dark: '#1A4D5C', tint: '#DCF1F5' },
+  jiaoren: { name: 'Jiaoren', main: '#D9735F', dark: '#7A2E2A', tint: '#FCE9E3' },
+  huihai: { name: 'Hui Hai', main: '#4E9A3A', dark: '#24501A', tint: '#E9F5E1' },
+};
+/** The small emblems in the cards' corner badges, drawn in the frame's colour. */
+const MODE_ICONS: Record<string, string> = {
+  one: '<rect x="8" y="4" width="10" height="15" rx="2"/>',
+  two: '<rect x="4" y="6" width="10" height="14" rx="2"/><rect x="10" y="3" width="10" height="14" rx="2"/>',
+  crown: '<path d="M4 17 L5 7 L9.5 11 L12 5 L14.5 11 L19 7 L20 17 Z"/>',
+  pearl: '<circle cx="12" cy="12" r="6"/><circle cx="10" cy="10" r="1.6" class="lit"/>',
+  bag: '<path d="M6 9 H18 L17 20 H7 Z"/><path d="M9 9 V7 a3 3 0 0 1 6 0 V9" fill="none"/>',
+  stack: '<rect x="5" y="9" width="12" height="11" rx="2"/><path d="M8 6 H19 V17" fill="none"/>',
+  book: '<path d="M3 6 C7 4 10 5 12 7 C14 5 17 4 21 6 V19 C17 17 14 18 12 20 C10 18 7 17 3 19 Z"/>',
+  scroll: '<path d="M6 5 H17 a2 2 0 0 1 0 4 H16 V19 H7 a2 2 0 0 1 0 -4 V5 Z"/>',
+};
 const MODES = MODE_GROUPS.flat();
 
 /** With accounts on, the tiles that need one, and the line on why that heads "Sign in or create account". */
@@ -835,6 +872,23 @@ function friendTileLine(): { line: string; badge: number; waiting: boolean } {
   return { line: '<span class="mode-sub">Online</span>', badge: 0, waiting: false };
 }
 
+/** One of Home's tiles as a card. `open` is the element's opening tag without its brackets (a button or a link). */
+function modeCard(open: string, m: ModeCard, status: string, badge: number): string {
+  const tag = open.split(' ')[0], d = MODE_DECKS[m.deck];
+  return `
+      <${open} style="--main:${d.main};--dark:${d.dark};--tint:${d.tint}">
+        ${badge ? `<span class="mode-badge" aria-label="${badge} waiting">${badge}</span>` : ''}
+        <span class="mc-frame"><span class="mc-face">
+          <span class="mc-bar"><span class="mc-gem" aria-hidden="true"><svg viewBox="0 0 24 24">${MODE_ICONS[m.icon]}</svg></span><span class="mc-name ${m.name.length > 8 ? 'long' : ''}">${m.name}</span></span>
+          <span class="mc-art"><img src="${BASE}ui/mode-${m.key}.webp" alt="" draggable="false"></span>
+          <span class="mc-type"><span>${m.type}</span><small>${m.code}</small></span>
+          <span class="mc-text"><span class="mc-rule"><b>${m.kw}:</b> ${m.text}</span>
+            ${status ? status.replace(/mode-sub/g, 'mc-state') : `<span class="mc-flavor">${m.flavor}</span><span class="mc-short">${m.sub}</span>`}</span>
+          <span class="mc-foot">Folkborn · ${d.name}</span>
+        </span></span>
+      </${tag}>`;
+}
+
 function renderHome(): string {
   const saved = savedGameLabel();
   return `
@@ -845,36 +899,25 @@ function renderHome(): string {
       <h1>Folkborn</h1>
       <p>Gentle legends from every corner of the world</p>
     </header>
-    <nav class="modes">
-      ${MODE_GROUPS.map((group) => `
-      <div class="mode-group">
-        ${group.map((mode) => {
-          // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
-          const m = (mode.key === 'store' && storeOpen()) || (mode.key === 'friend' && ONLINE) ? { ...mode, soon: '' } : mode;
-          // Every tile is the same: picture, name, and one line under it. That line says "Coming soon",
-          // or on Solo, that a game is waiting to be continued.
-          const resume = m.key === 'solo' && saved;
-          const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES && !(m.key === 'friend' && !ONLINE);
-          const friend = m.key === 'friend' && ONLINE && !needsAccount ? friendTileLine() : null;
-          const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
-            : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
-            : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
-            : friend ? friend.line
-            : `<span class="mode-sub">${m.sub}</span>`;
-          return `
-        <button class="mode-card ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}">
-          ${friend?.badge ? `<span class="mode-badge" aria-label="${friend.badge} waiting">${friend.badge}</span>` : ''}
-          <img src="${BASE}ui/place-${m.key}.webp" alt="">
-          <span class="mode-text"><span class="mode-name">${m.name}</span>${status}</span>
-        </button>`;
-        }).join('')}
-      </div>`).join('')}
-      <div class="mode-group mode-more">
-        <button class="mode-card mini" data-click="home:tutorial" title="A guided first game with tips">
-          <img src="${BASE}ui/place-tutorial.webp" alt=""><span class="mode-name">Tutorial</span></button>
-        <a class="mode-card mini" href="${BASE}docs.html">
-          <img src="${BASE}ui/place-docs.webp" alt=""><span class="mode-name">Documentation</span></a>
-      </div>
+    <nav class="modes card-grid">
+      ${MODES.map((mode) => {
+        // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
+        const m = (mode.key === 'store' && storeOpen()) || (mode.key === 'friend' && ONLINE) ? { ...mode, soon: '' } : mode;
+        // Under the card's line, only what's worth saying now: Coming soon, Sign in to open, a game to resume, or
+        // what's happening with a friend.
+        const resume = m.key === 'solo' && saved;
+        const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES && !(m.key === 'friend' && !ONLINE);
+        const friend = m.key === 'friend' && ONLINE && !needsAccount ? friendTileLine() : null;
+        const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
+          : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
+          : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
+          : friend?.waiting ? friend.line
+          : friend && !live.open ? friend.line : '';
+        return modeCard(`button class="mcard ${m.soon ? 'soon' : ''} ${resume || friend?.waiting ? 'has-save' : ''}" data-click="${m.soon ? `home:soon:${m.key}` : `home:${m.key}`}"`,
+          m, status, friend?.badge ?? 0);
+      }).join('')}
+      ${modeCard('button class="mcard" data-click="home:tutorial" title="A guided first game with tips"', MODE_EXTRAS[0], '', 0)}
+      ${modeCard(`a class="mcard" href="${BASE}docs.html"`, MODE_EXTRAS[1], '', 0)}
     </nav>
     <p class="home-note" aria-live="polite">${esc(homeNote)}</p>
   </div>`;

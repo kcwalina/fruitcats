@@ -1,0 +1,68 @@
+// resources: what pays for cards. A game names each resource it has and lists policies about
+// them. Depends on common for Cost.
+resources = Library
+
+name = 'Resources'
+version = '0.1'
+core = '1'
+requires = [@common]
+
+type ResourceRule : Rule {}
+type ResourcePolicy : Rule {}
+extension Game {
+  resources: [text: ResourceRule] = empty
+  resource-rules: [ResourcePolicy] = empty
+  cost-resource: ResourceRule?          // what a bare `cost = n` is paid in
+}
+
+// Any card played face down becomes a resource (Offerings, ink, Duel Masters mana).
+type CardsAsResources : ResourceRule {
+  name: text
+  zone: Zone
+  from: Zone
+  start: int
+  per-round: int
+  worth: int
+  pay-by: PayBy
+}
+// A number that rises to a cap (mana crystals).
+type GrowingCounter : ResourceRule {
+  name: text
+  start: int
+  max: int
+  pay-by: PayBy
+}
+// Dedicated resource cards in the deck (lands; energy attached to a unit).
+type ResourceCards : ResourceRule {
+  name: text
+  attaches-to-units: bool
+}
+// Pay by discarding cards from hand for their printed pitch value (Flesh and Blood).
+type PitchFromHand : ResourceRule { name: text, zone: Zone, from: Zone }
+enum PayBy { exhaust, discard, spend }
+
+type NoIdentityWhileResource : ResourcePolicy { resource: ResourceRule }
+type GrowsAt : ResourcePolicy { resource: ResourceRule, moment: Moment, by: int }
+type RefillsAt : ResourcePolicy { resource: ResourceRule, moment: Moment }
+type MayOfferAt : ResourcePolicy { resource: ResourceRule, moment: Moment, count: int }
+type OfferAtSetup : ResourcePolicy { resource: ResourceRule, count: int }
+// A cost is met by resources attached to the acting unit and is not spent (Pokémon energy).
+type RequiresAttachedResources : ResourcePolicy { resource: ResourceRule, consumes: bool }
+// Pay a card's cost another way when a condition holds (sing a song, convoke, delve).
+type AlternateCost : ResourcePolicy { pays: PayBy, when: text }
+
+actions = [
+  offer = ActionKind { name = 'Offer a card as a resource' }
+  attach-resource = ActionKind { name = 'Attach a resource' }
+]
+
+properties = [
+  resources = Property { on = player, yields = units }   // .count
+]
+
+verbs = [
+  ready-resources = Verb { on = player, params = [count = int], optional = [resource = resource] }
+  offer-from-deck = Verb {
+    on = player, params = [count = int], optional = [exhausted = bool, resource = resource]
+  }
+]

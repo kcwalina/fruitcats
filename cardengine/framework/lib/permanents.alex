@@ -1,0 +1,26 @@
+// permanents: cards that stay in play, fight nothing and attach to nothing (Items, Locations,
+// Tamers, Artifacts, Stadiums, Secrets). Depends on common for Cost.
+permanents = Library
+
+name = 'Permanents'
+version = '0.1'
+core = '1'
+requires = [@common]
+
+type PermanentCard : Card {
+  cost: Cost
+  shared: bool = false            // one in play for both players, replaced when another is played
+}
+
+extension PermanentCard {
+  on-enter: effect?
+  on-leave: effect?
+  static: static?
+}
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type OnPermanentEnter : Ability { holders = [nameof(PermanentCard)] }
+type OnLeave : Ability { holders = [nameof(PermanentCard)] }
+type PermanentStatic : Ability { holders = [nameof(PermanentCard)], kind = static }
+// Fires on its event without a window and reveals itself (secrets, traps).
+type OnEvent : Ability { holders = [nameof(PermanentCard)], hidden = true }

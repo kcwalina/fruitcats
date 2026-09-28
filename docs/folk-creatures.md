@@ -97,7 +97,7 @@ Winged beings of Persian poetry and fairy tales. In the oldest Zoroastrian texts
 centuries they became the image of beauty and goodness, and "pari" is still a word for a beautiful person. Many
 tales are about a pari and a mortal falling in love.
 
-**In the game** (a starter deck since 2026-09-26): a fast, flying deck whose rules come from the tales: paris come in
+**In the game** (a starter deck since 2026-09-26): a fast, flying deck whose rules come from the tales: pari come in
 companies (Company), slip away as doves (Feather Coat), and only the third Orange-Peri lives. Its hero is
 Parijan, the littlest pari. Cards, lore and art: [pari-set.md](pari-set.md).
 

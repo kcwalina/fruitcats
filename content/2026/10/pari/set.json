@@ -52,33 +52,33 @@
     }
   },
   "lore": {
-    "creature": "Pari (plural paris; also peri)",
+    "creature": "Pari (the same word for one or many; also peri)",
     "from": "Persian folklore, and the lands its tales reached: Turkey, Kurdistan, Central Asia, Afghanistan, Pakistan and India",
-    "title": "The Paris",
+    "title": "The Pari",
     "eyebrow": "Persian folklore · Iran and its neighbours",
     "banner": "PR1-banner",
     "story": [
       "If a white dove lands beside a mountain pool and looks at you a little too long, be polite. It may be a pari.",
-      "Paris are the winged folk of Persian tales. They live in Paristan, the land around Mount Qāf, a mountain of emerald so big it circles the whole world, and its green glow tints the sky. Paris were so beautiful and so kind that people in Persia called them “those who are better than we”. Even today, calling someone a pari means they are lovely.",
-      "Paris never travel alone. They come in companies of three, seven or forty, on bright wings or in the shape of doves. When they stop to bathe in a hidden pool, they take off their coats of feathers and leave them on the grass. In one old tale a young man hid a pari's feather coat. Years later she found it, put it on, and flew home.",
-      "Paris help the people they like. In a Kurdish tale they carried a sleeping girl across the land to meet her friend, and had her home before morning. High in the mountains of Chitral, people say the fairies own the wild goats, and hunters ask them kindly: “Mother, give me one of your goats.”"
+      "Pari are the winged folk of Persian tales. They live in Paristan, the land around Mount Qāf, a mountain of emerald so big it circles the whole world, and its green glow tints the sky. Pari were so beautiful and so kind that people in Persia called them “those who are better than we”. Even today, calling someone a pari means they are lovely.",
+      "Pari never travel alone. They come in companies of three, seven or forty, on bright wings or in the shape of doves. When they stop to bathe in a hidden pool, they take off their coats of feathers and leave them on the grass. In one old tale a young man hid a pari's feather coat. Years later she found it, put it on, and flew home.",
+      "Pari help the people they like. In a Kurdish tale they carried a sleeping girl across the land to meet her friend, and had her home before morning. High in the mountains of Chitral, people say the fairies own the wild goats, and hunters ask them kindly: “Mother, give me one of your goats.”"
     ],
     "facts": [
-      "Pari may come from the Persian word for 'wing'. Paris are winged, and so beautiful that 'pari' is still a word for a lovely person.",
+      "The word pari may come from the Persian word for 'wing'. Pari are winged, and so beautiful that 'pari' is still a word for a lovely person.",
       "In the oldest Persian books the pairikas were shooting stars, and not kind at all. Over the centuries they became the kindest and most beautiful beings in the tales.",
-      "Persians called the paris 'those who are better than we'.",
-      "Paris live in Paristan, the land of the paris, around Mount Qāf, a mountain of emerald that rings the whole world. Its green glow tints the sky.",
-      "In Turkish tales paris come in companies of three, seven or forty, and can take the shape of doves.",
-      "People usually met paris while they were bathing. A pari could put on a coat of feathers and fly away as a bird.",
+      "Persians called the pari 'those who are better than we'.",
+      "Pari live in Paristan, the land of the pari, around Mount Qāf, a mountain of emerald that rings the whole world. Its green glow tints the sky.",
+      "In Turkish tales pari come in companies of three, seven or forty, and can take the shape of doves.",
+      "People usually met pari while they were bathing. A pari could put on a coat of feathers and fly away as a bird.",
       "In a tale from the Thousand and One Nights, Hassan hid a bird-maiden's feather robe by a pool. When Manar al-Sana found it again, she flew home.",
-      "In a Turkish tale, peris step out of oranges and ask for water. The first two are not given it in time; only the third lives.",
-      "The divs, the hairy giants of Persian tales, caught paris and hung them in iron cages on the highest trees. Their friends brought them sweet scents. (As English writers of the 1700s and 1800s told it.)",
+      "In a Turkish tale, pari step out of oranges and ask for water. The first two are not given it in time; only the third lives.",
+      "The divs, the hairy giants of Persian tales, caught pari and hung them in iron cages on the highest trees. Their friends brought them sweet scents. (As English writers of the 1700s and 1800s told it.)",
       "In the mountains of Chitral, the fairies own the ibex and the wild goats, and live in palaces on the peaks. Hunters ask them: 'Mother, adopt me, and give me one of your goats.'",
       "Chitral's house fairies, the khangi, help with chores like picking fruit, and families set food aside for them.",
-      "In a Kurdish tale, paris carried the sleeping Zin across the land to meet Mem, and had her home before morning.",
+      "In a Kurdish tale, pari carried the sleeping Zin across the land to meet Mem, and had her home before morning.",
       "The pari Pari Banu had a tent that folds small enough to hold in one hand and opens big enough to shelter an army. Her brother Schaibar was a foot and a half tall, with a thirty-foot beard and an iron bar.",
-      "In the Hamzanama, Asman Pari (asman means 'sky') is the queen of the paris of Mount Qāf.",
-      "Girls in Iran are still named after paris: Parisa (like a pari), Parichehr (pari-faced), Parizad (pari-born). Jan, 'dear', is how Persians say it with love."
+      "In the Hamzanama, Asman Pari (asman means 'sky') is the queen of the pari of Mount Qāf.",
+      "Girls in Iran are still named after pari: Parisa (like a pari), Parichehr (pari-faced), Parizad (pari-born). Jan, 'dear', is how Persians say it with love."
     ],
     "sources": [
       "https://en.wikipedia.org/wiki/Par%C4%AB",
@@ -100,7 +100,7 @@
       "type": "Hero Cat",
       "family": "Pari",
       "name": "Parijan, the Littlest Pari",
-      "flavor": "Persians called the paris 'those who are better than we'.",
+      "flavor": "Persians called the pari 'those who are better than we'.",
       "kitten": {
         "name": "Parijan, the Littlest Pari",
         "text": "Exhaust: A unit you control gains Sneaky this round.\nAwaken: You control 3 or more units.",
@@ -248,7 +248,7 @@
       "power": 3,
       "health": 2,
       "text": "Swift. Sneaky.",
-      "flavor": "Unseen paris bathe in the high mountain lakes, and bring the gales and the rain.",
+      "flavor": "Unseen pari bathe in the high mountain lakes, and bring the gales and the rain.",
       "keywords": [
         "Zoomies",
         "Sneaky"
@@ -312,7 +312,7 @@
       "power": 4,
       "health": 4,
       "text": "Swift. Sneaky.",
-      "flavor": "Old Persian paintings show paris riding camels made of many creatures.",
+      "flavor": "Old Persian paintings show pari riding camels made of many creatures.",
       "keywords": [
         "Zoomies",
         "Sneaky"
@@ -328,7 +328,7 @@
       "power": 2,
       "health": 1,
       "text": "",
-      "flavor": "The mountain paris keep the ibex as their herds."
+      "flavor": "The mountain pari keep the ibex as their herds."
     },
     {
       "id": "PR1-D10",
@@ -376,7 +376,7 @@
       "name": "Falling Star",
       "cost": 1,
       "text": "Ambush. Lucky. Deal 2 damage to a unit.",
-      "flavor": "The oldest Persian books call the paris shooting stars.",
+      "flavor": "The oldest Persian books call the pari shooting stars.",
       "keywords": [
         "Pounce",
         "Lucky"
@@ -403,7 +403,7 @@
       "name": "Mountain Gale",
       "cost": 3,
       "text": "Deal 3 damage to a unit. Company: deal 5 instead.",
-      "flavor": "When the paris ride the wind, the whole valley bends.",
+      "flavor": "When the pari ride the wind, the whole valley bends.",
       "abilities": [
         {
           "when": "play",
@@ -491,7 +491,7 @@
       "name": "Carried Off Asleep",
       "cost": 1,
       "text": "Lucky. Exhaust an enemy unit.",
-      "flavor": "The paris carried sleeping Zin away, and had her home before morning.",
+      "flavor": "The pari carried sleeping Zin away, and had her home before morning.",
       "keywords": [
         "Lucky"
       ],
@@ -570,7 +570,7 @@
       "power": 3,
       "health": 4,
       "text": "Hello: Deal 1 damage to each enemy unit.",
-      "flavor": "Asman means 'sky'. She ruled the paris of Mount Qāf.",
+      "flavor": "Asman means 'sky'. She ruled the pari of Mount Qāf.",
       "abilities": [
         {
           "when": "hello",
@@ -654,7 +654,7 @@
         "PR1-D19": 1,
         "PR1-D20": 1
       },
-      "blurb": "Winged and never alone. Fly past the guards; with 3 or more in the Yard, the paris are in Company."
+      "blurb": "Winged and never alone. Fly past the guards; with 3 or more in the Yard, the pari are in Company."
     }
   }
 }

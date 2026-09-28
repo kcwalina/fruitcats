@@ -786,7 +786,7 @@ type ModeCard = { name: string; sub: string; deck: string; code: string; icon: s
 const MODE_GROUPS = [
   [
     { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '', deck: 'domowiki', code: 'FB-01', icon: 'one', type: 'Play · vs the AI',
-      kw: 'Play', text: 'any deck against the AI.', flavor: 'The stove is warm, the cards are dealt.' },
+      kw: 'Play', text: 'any deck against the AI.', flavor: 'The stove is warm.' },
     { key: 'friend', name: 'Friend', sub: 'Online', deck: 'pari', code: 'FB-02', icon: 'two', type: 'Play · Online',
       kw: 'Play', text: 'a friend, each on your own device.', flavor: 'Paris are never alone.',
       soon: 'Play with a friend online: add each other with a code, then you each play on your own device.' },

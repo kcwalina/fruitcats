@@ -1,0 +1,161 @@
+// Starter Box rules: a program document. Effects, statics and conditions, then the wiring that
+// attaches them to the set's cards, faces and mechanics. `this` is the object a declaration is
+// attached to. Code points at data; the set file knows nothing about this document.
+starter-box-rules = Rules
+
+for = @starter-box
+
+// Conditions (§850, §9.4).
+condition zest-on { own.played-this-round >= 2 }          // §850.1 counts the Zest card itself
+condition lush-on { own.resources.count >= 7 }            // §850.4 ready or exhausted
+condition opponent-five-candles { opponent.life.count <= 5 }
+condition six-candles { own.life.count <= 6 }
+condition eight-offerings { own.resources.count >= 8 }
+
+// Mechanics.
+effect ripen-tick { this.counter(@Ripeness) += 1 }        // §850.2, the counter's max caps it
+effect sprout-one { offer-from-deck(1, exhausted: true) } // §850.3
+effect sprout-two { offer-from-deck(2, exhausted: true) }
+
+// Zest cards.
+effect zest-plus-one { if @zest-on { this.buff(power: +1, until: this-round) } }
+effect zest-enters-ready { if @zest-on { this.ready() } }
+// Citron Fox: "Deal 1 damage to a unit. Zest: deal 2 instead."
+effect zing {
+  target = choose(all)
+  if @zest-on { target.damage(2) } else { target.damage(1) }
+}
+// Zest Burst: "Deal 3 damage to a unit. Zest: deal 5 instead."
+effect zest-burst {
+  target = choose(all)
+  if @zest-on { target.damage(5) } else { target.damage(3) }
+}
+
+// Damage.
+effect ping-any { choose(all).damage(1) }
+effect two-damage-any { choose(all).damage(2) }
+effect five-damage-any { choose(all).damage(5) }
+effect four-to-exhausted { choose(all, exhausted).damage(4) }
+effect one-to-each-enemy { units(opponents).damage(1) }
+
+// Ready and exhaust.
+effect ready-own { choose(own).ready() }
+effect ready-another { choose(own, other).ready() }
+effect ready-this { this.ready() }
+effect exhaust-an-enemy { choose(opponents).exhaust() }
+
+// Draw.
+effect draw-one { draw(1) }
+effect draw-if-guardian { if units(own, guardian).any { draw(1) } }
+effect lush-draw-two { if @lush-on { draw(2) } }
+
+// Heal.
+effect heal-two-any { choose(all).heal(2) }
+effect heal-two { choose(own).heal(2) }
+effect heal-one-each-own { units(own).heal(1) }
+effect heal-two-each-own { units(own).heal(2) }
+// Pippin awakened: "Heal 3 from a unit you control. It gains Guardian this round."
+effect heal-three-and-guard {
+  target = choose(own)
+  target.heal(3)
+  target.buff(guardian, until: this-round)
+}
+
+// Buffs.
+effect plus-one-power { choose(own).buff(power: +1, until: this-round) }
+effect plus-two-power { choose(own).buff(power: +2, until: this-round) }
+effect plus-two-and-sneaky { choose(own).buff(power: +2, sneaky, until: this-round) }
+
+// Offerings.
+effect ready-one-offering { ready-resources(1) }
+effect ready-two-offerings { ready-resources(2) }
+
+// Hiss!: §600.3 the attacker stays exhausted.
+effect cancel-the-attack { event.cancel() }
+
+// Warm Cider: the heal is optional, the draw is not.
+effect cider {
+  target = choose(own, optional)
+  target.heal(3)
+  draw(1)
+}
+
+// Mango Smoothie.
+effect smoothie {
+  choose(own).buff(power: +2, until: this-round)
+  ready-resources(1)
+}
+
+// Lychee Sloth: "Can't attack unless you're Lush."
+static sloth-rule { if not @lush-on { this.cant(attack) } }
+
+// Wiring: mechanics.
+@Zest.mechanic-condition = zest-on
+@Ripen.mechanic-round-start = ripen-tick
+@Lush.mechanic-condition = lush-on
+
+// Wiring: heroes.
+@sunny.face1.exhaust = plus-one-power
+@sunny.face1.awaken = opponent-five-candles
+@sunny.face2.exhaust = plus-two-and-sneaky
+@pippin.face1.exhaust = heal-two
+@pippin.face1.awaken = six-candles
+@pippin.face2.exhaust = heal-three-and-guard
+@tango.face1.exhaust = ready-one-offering
+@tango.face1.awaken = eight-offerings
+@tango.face2.exhaust = ready-two-offerings
+
+// Wiring: Citrus.
+@zest-mouse.on-enter = zest-plus-one
+@chick.on-defeated = ping-any
+@gecko.on-enter = zest-plus-one
+@corgi.on-enter = zest-enters-ready
+@ferret.on-enter = zest-plus-one
+@citron-fox.on-enter = zing
+@sour-spray.on-play = two-damage-any
+@zest-burst.on-play = zest-burst
+@peel-out.on-play = ready-own
+@clementine.on-enter = ready-another
+@bergamot.on-enter = one-to-each-enemy
+@sanguine.on-defeats-in-combat = ready-this          // once per round is on the card
+
+// Wiring: Orchard.
+@peach-bunny.on-enter = heal-two-any
+@cherry-robin.on-enter = draw-if-guardian
+@apricot-owl.on-enter = exhaust-an-enemy
+@hiss.on-play = cancel-the-attack                    // ambush-only is on the card
+@warm-cider.on-play = cider
+@falling-apple.on-play = four-to-exhausted
+@sakura.on-you-heal = draw-one                              // once per round: on the card
+@granny-smith.on-round-start = heal-one-each-own
+
+// Wiring: Tropical.
+@monkey.on-enter = ready-one-offering
+@kiwi.on-enter = sprout-one
+@sloth.static = sloth-rule
+@capybara.on-enter = heal-two-each-own
+@tapir.on-enter = lush-draw-two
+@tropical-rain.on-play = sprout-two
+@coconut-drop.on-play = five-damage-any
+@smoothie.on-play = smoothie
+@papaya.on-enter = sprout-one
+@coconut.on-enter = ready-two-offerings
+
+// Wiring: Wildfolk.
+@mail-duck.on-enter = draw-one
+@catnip.on-play = plus-two-power
+@nap-time.on-play = exhaust-an-enemy
+
+// §850.1
+scenario 'Zest counts the card itself' {
+  given played-this-round(me, 1)
+  when play(me, @zest-mouse)
+  then power(@zest-mouse) == 2
+}
+
+// §600.3
+scenario 'Hiss leaves the attacker exhausted' {
+  given controls(me, @hedgehog), controls(opponent, @corgi, ready: true)
+  when attack(by: @corgi, target: @hedgehog), respond(me, with: @hiss)
+  then exhausted(@corgi), damage(@hedgehog) == 0
+}

@@ -1,0 +1,89 @@
+// combat: units attacking units, heroes or life, and everything that decides who may attack
+// what and what damage results. Depends on units.
+combat = Library
+
+name = 'Combat'
+version = '0.1'
+core = '1'
+requires = [@units]
+
+type CombatRule : Rule {}
+extension Game { combat: [CombatRule] = empty }
+
+enum CombatTarget { unit, hero, life, permanent }
+
+// Who chooses.
+type AttackerChooses : CombatRule { targets: [CombatTarget] }
+type DefenderBlocks : CombatRule { targets: [CombatTarget], max-per-attacker: int? }
+type Lanes : CombatRule { count: int }
+type Retreat : CombatRule { pay: Cost, once-per-turn: bool }
+
+// Who may attack, and whom.
+type AttackerMustBeReady : CombatRule {}
+type GuardiansFirst : CombatRule {}               // must-be-attacked-first keywords are honoured
+type SneakyIgnoresGuardians : CombatRule {}
+type CancelledAttackerStaysExhausted : CombatRule {}
+type NoRetarget : CombatRule {}
+
+// How damage works.
+type SimultaneousDamage : CombatRule {}
+type AttackerOnlyDamage : CombatRule {}
+type TwoCombatDamageSteps : CombatRule {}         // first strike, then the rest
+type DamagePersists : CombatRule {}
+type DamageClearsAt : CombatRule { moment: Moment }
+type LifeDamage : CombatRule { n: int }           // a hit on a hero or life costs n
+type LifeDamageEqualsPower : CombatRule {}
+type CombatDamageEqualsPower : CombatRule {}
+type CompareStatDeletes : CombatRule {}           // higher power deletes lower, no damage pool
+type TieDeletesBoth : CombatRule {}
+type BattleDamageByStatDifference : CombatRule {}
+type WeaknessResistance : CombatRule {}           // per-card type multipliers before damage
+
+// Keywords with built-in meaning. A game names each one it uses.
+type Guardian : Keyword {}                        // must be attacked first (Taunt, Bodyguard)
+type Sneaky : Keyword {}                          // ignores Guardians (Evasive)
+type Fierce : Keyword { value: int }              // a hit costs `value` life instead of 1
+type FirstStrike : Keyword {}
+type DoubleStrike : Keyword {}
+type Trample : Keyword {}                         // excess damage past lethal goes through
+type Windfury : Keyword {}                        // may attack twice
+type Poisonous : Keyword {}                       // any damage it deals destroys
+type Lifesteal : Keyword {}                       // damage it deals heals its controller
+type Stealth : Keyword {}                         // cannot be targeted until it acts
+type DivineShield : Keyword {}                    // negates the next hit, then is gone
+type Elusive : Keyword {}                         // cannot be attacked unless the only target
+type BlockableOnlyBy : Keyword { quality: text }  // flying and reach as one rule
+type Ward : Keyword {}                            // cannot be chosen by an opponent's effect
+
+actions = [
+  attack = ActionKind { name = 'Attack' }
+]
+
+events = [
+  attack = Event { fields = [attacker = unit, target = target], cancellable = true }
+  combat = Event { fields = [attacker = unit, defender = unit] }
+  hero-hit = Event {
+    fields = [attacker = unit, defender = player, amount = int], cancellable = true
+  }
+]
+
+extension UnitCard {
+  on-attack: effect?
+  on-attacked: effect?
+  on-defeats-in-combat: effect?
+  on-you-heal: effect?
+}
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type OnAttack : Ability { holders = [nameof(UnitCard)], event = nameof(events.attack) }
+type OnAttacked : Ability { holders = [nameof(UnitCard)], event = nameof(events.attack) }
+type OnDefeatsInCombat : Ability { holders = [nameof(UnitCard)], event = nameof(events.combat) }
+type OnYouHeal : Ability { holders = [nameof(UnitCard)] }
+
+filters = [
+  guardian = Filter {}
+]
+
+selectors = [
+  adjacent = Selector { yields = units, params = [to = unit] }   // neighbours in a row zone
+]

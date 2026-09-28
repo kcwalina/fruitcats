@@ -1,0 +1,28 @@
+// objects: what happens to objects that change zones, stack under others, or are tokens.
+// Depends on the core only.
+objects = Library
+
+name = 'Objects'
+version = '0.1'
+core = '1'
+
+type ObjectRule : Rule {}
+extension Game { objects: [ObjectRule] = empty }
+
+enum Reset { damage, attachments, this-round, counters }
+
+type TokensVanishOffBoard : ObjectRule {}
+type ZoneChangeResets : ObjectRule { what: [Reset] }
+// A card stacked under another keeps its statics and triggers live (digivolution, evolution).
+type InheritedEffects : ObjectRule {}
+// Stacking onto a unit keeps the unit's damage, counters and attachments (evolve, shift).
+type StackPreservesState : ObjectRule {}
+type StackLeavesTogether : ObjectRule {}          // the whole stack leaves play as one
+
+actions = [
+  stack-onto = ActionKind { name = 'Stack onto a unit' }   // evolve, digivolve, shift
+]
+
+verbs = [
+  stack-onto = Verb { on = player, params = [card = card, onto = unit] }
+]

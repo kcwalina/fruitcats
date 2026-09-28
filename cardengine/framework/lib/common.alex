@@ -1,0 +1,57 @@
+// common: helpers almost every card game wants, none of which presume a kind of game. Costs,
+// rarity, drawing, summoning, destroying, discarding, searching, looking at the top of a deck,
+// player counters, and a zone capacity rule. Depends on the core only.
+common = Library
+
+name = 'Common helpers'
+version = '0.1'
+core = '1'
+
+enum Rarity { common, uncommon, rare, epic, legendary, mythic }
+
+// A number is paid in the game's cost resource (see the resources library). A map names
+// resources or a resource's kinds: [credits = 3, clicks = 1], [red = 1, any = 2].
+type Cost = int | [text: int]
+
+extension Card { rarity: Rarity = common }
+extension Token { cost: Cost = 0 }                 // tokens cost nothing unless a card says so
+
+// A zone that holds at most n objects; plays into a full zone are not legal actions.
+type ZoneCapacity : Rule { zone: Zone, n: int }
+
+actions = [
+  play = ActionKind { name = 'Play a card' }
+]
+
+selectors = [
+  hand = Selector { yields = units, params = [of = player] }
+  permanents = Selector {
+    yields = units, params = [from = players], optional = [filters = filters]
+  }
+  // Sample n cards from the printed pool (not the deck), show them to the acting player, they
+  // keep one. Built on the core's `pick` random operation and player-only visibility.
+  discover = Selector { yields = unit, params = [count = int], optional = [filters = filters] }
+]
+
+verbs = [
+  draw = Verb { on = player, optional = [count = int] }
+  summon = Verb { on = player, params = [token = token], optional = [count = int] }
+  destroy = Verb { on = units }
+  move = Verb { on = units, params = [to = zone], optional = [at = text] }
+  discard = Verb { on = units }
+  discard-from-hand = Verb { on = player, params = [count = int], optional = [optional = bool] }
+  discard-hand = Verb { on = player }
+  // Look through a hidden zone by filter and take one card privately.
+  search = Verb {
+    on = player, params = [zone = zone], optional = [filters = filters], yields = unit
+  }
+  // Look at the top n cards; the effect then places them with move (hand, bottom, discard).
+  look-top = Verb { on = player, params = [count = int], yields = units }
+  gain = Verb { on = player, params = [counter = counter, amount = int] }
+  // Take up to `amount` of a counter from another player, clamped to what they have.
+  capture = Verb { on = player, params = [counter = counter, amount = int, from = player] }
+  adjust-game = Verb { params = [counter = counter, delta = int] }
+  play-free = Verb { on = player, params = [card = card] }
+  // Reduce a pending event's numeric field (prevent damage); built on replace-operation.
+  reduce = Verb { on = event, params = [field = text, by = int] }
+]

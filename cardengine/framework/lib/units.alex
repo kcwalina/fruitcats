@@ -1,0 +1,94 @@
+// units: cards that sit in play with power and health, take damage and can be exhausted. The
+// record, its stat counters and grants, the verbs that act on units, and the rules about
+// entering play and being defeated. Depends on common for Cost.
+units = Library
+
+name = 'Units'
+version = '0.1'
+core = '1'
+requires = [@common]
+
+type UnitCard : Card {
+  cost: Cost
+  power: int
+  health: int
+  unique: bool = false            // fixed to true by a game's legendary-like type
+  once-per-round: bool = false    // applies to every trigger the rules attach to this card
+}
+extension Token { power: int, health: int }
+
+// A bundle of stat changes and keywords, granted permanently or for a duration.
+type Grant {
+  power: int = 0
+  health: int = 0
+  keywords: [Keyword] = empty
+}
+enum Duration { this-round, this-turn, permanent }
+
+// A counter that changes a unit's stats; `full-at` makes the `full` filter true.
+type StatCounter : Counter {
+  power: int
+  health: int
+  full-at: int?
+}
+
+// Rules about units, listed in the game's `units` area.
+type UnitRule : Rule {}
+extension Game { units: [UnitRule] = empty }
+
+type UnitsEnterExhausted : UnitRule {}
+// A generalisation: a unit enters with a status that blocks some actions until a moment.
+type EntersWithStatus : UnitRule { status: text, blocks: [ActionKind], clears: Moment }
+type DefeatAtHealth : UnitRule {}                 // damage >= health defeats, on state check
+type DefeatAtZero : UnitRule {}                   // health counts down instead
+type LegendRule : UnitRule {}                     // two `unique` units of one name: keep one
+
+// Keywords with built-in meaning. A game names each one it uses.
+type Swift : Keyword {}                           // enters ready (Haste, Rush)
+type Tough : Keyword {}                           // reduces each damage dealt to it by n (Armor)
+
+extension UnitCard {
+  on-enter: effect?
+  on-defeated: effect?
+  on-round-start: effect?
+  static: static?
+}
+
+moments = [
+  unit-enters = Moment { name = 'A unit enters play' }
+  unit-defeated = Moment { name = 'A unit is defeated' }
+]
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type OnEnter : Ability { holders = [nameof(UnitCard)] }            // Hello, Battlecry, ETB
+type OnDefeated : Ability { holders = [nameof(UnitCard)] }         // Goodbye, Deathrattle
+type OnRoundStart : Ability { holders = [nameof(UnitCard)] }
+type Static : Ability { holders = [nameof(UnitCard)], kind = static }
+
+properties = [
+  power = Property { on = unit, yields = int }
+  health = Property { on = unit, yields = int }
+  damage = Property { on = unit, yields = int }
+]
+
+filters = [
+  other = Filter {}
+  exhausted = Filter {}
+  ready = Filter {}
+  full = Filter {}                                      // a StatCounter at its full-at
+  of-type = Filter { params = [type = card] }           // units(own, of-type(@Rookie))
+]
+
+// A parameter of type `grant` absorbs any number of keyword words and stat arguments
+// (`power: +1`, `health: +2`).
+verbs = [
+  damage = Verb { on = units, params = [amount = int] }
+  heal = Verb { on = units, params = [amount = int] }
+  exhaust = Verb { on = units }
+  ready = Verb { on = units }
+  buff = Verb { on = units, params = [grant = grant, until = duration] }
+  grant = Verb { on = units, params = [grant = grant], only-in = static }
+  cant = Verb { on = units, params = [action = action], only-in = static }
+  must = Verb { on = units, params = [action = action], only-in = static }
+  move-largest-counter = Verb { on = unit, params = [from = unit, to = unit, as = counter] }
+]

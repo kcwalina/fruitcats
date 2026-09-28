@@ -1,0 +1,185 @@
+// Berry Picnic (BP1). Requires the Starter Box for its Wildfolk cards.
+berry-picnic = Set
+
+id = 'BP1'
+name = 'Berry Picnic'
+core = '1'
+status = released
+requires = [@starter-box]
+
+families = [
+  Berry = Family {
+    name = nameof(Berry), colors = ['#D6336C', '#8F1D46', '#FBDDE7']
+    mechanic = @Leftovers, personality = 'Sweet, social, a little chaotic'
+    plays-like = 'Nobody leaves the picnic hungry: every defeated friend feeds another'
+    hint = 'units that feed their friends when they go, so every trade makes the Yard stronger'
+  }
+]
+
+// The set's only new things.
+counters = [
+  Crumb = StatCounter { name = nameof(Crumb), power = 1, health = 1, max = 3, full-at = 3 }
+]
+mechanics = [
+  Leftovers = Mechanic {
+    name = nameof(Leftovers), family = @Berry, kind = keyword
+    icon = '🍪', reminder = @leftovers-reminder
+    abilities = [
+      MechanicDefeated {
+        text = 'When this unit is defeated, put a Crumb on a unit you control.'
+      }
+    ]
+  }
+]
+tokens = [
+  Ant = Token {
+    type = @Creature, name = nameof(Ant), family = @Berry
+    cost = 0, power = 1, health = 1, keywords = [@Leftovers]   // §200.4 tokens cost 0
+    flavor = 'It brought friends.'
+  }
+]
+
+cards = [
+  jam = Hero {
+    name = 'Jam, the Strawberry Tabby', family = @Berry, rarity = legendary
+    face1 = Face {
+      name = 'Jam, Sticky Kit'
+      abilities = [
+        Exhaust { text = 'Exhaust: Put a Crumb on an exhausted unit you control.' }
+        Awaken { text = 'Awaken: You control 5 or more units.' }
+      ]
+    }
+    face2 = Face {
+      name = 'Jam, Club President', power = 2
+      abilities = [Exhaust { text = 'Exhaust: Your units get +1 Power this round.' }]
+    }
+    flavor = 'Made the plans. Made the group chat. Forgot the forks.'
+  }
+
+  ladybug = Creature {
+    name = 'Lingonberry Ladybug', family = @Berry
+    cost = 1, power = 1, health = 1
+    keywords = [@Leftovers, @Lucky]
+    flavor = 'Lucky for you. Unlucky for your sandwich.'
+  }
+  squirrel = Creature {
+    name = 'Salmonberry Squirrel', family = @Berry
+    cost = 1, power = 1, health = 1
+    flavor = 'Dropped a snack. Gained a following.'
+    abilities = [OnEnter { text = 'Hello: Summon an Ant.' }]
+  }
+  lamb = Creature {
+    name = 'Cloudberry Lamb', family = @Berry
+    cost = 2, power = 2, health = 2
+    flavor = 'Shares everything. Especially the blanket.'
+    abilities = [OnEnter { text = 'Hello: Put a Crumb on another unit you control.' }]
+  }
+  possum = Creature {
+    name = 'Dewberry Possum', family = @Berry
+    cost = 2, power = 1, health = 2
+    flavor = 'It''s fine. It''s just resting.'
+    keywords = [@Guardian]
+    abilities = [OnDefeated { text = 'Goodbye: Summon an Ant.' }]
+  }
+  goose = Creature {
+    name = 'Gooseberry Goose', family = @Berry, pronoun = 'the Goose'
+    cost = 3, power = 3, health = 2
+    flavor = 'Honk.'
+    abilities = [
+      OnEnter {
+        text = @goose-text
+      }
+    ]
+  }
+  moose = Creature {
+    name = 'Mulberry Moose', family = @Berry, rarity = uncommon
+    cost = 4, power = 4, health = 4
+    flavor = 'Won the fight. Kept the cake.'
+    abilities = [
+      OnDefeatsInCombat {
+        text = 'After Mulberry Moose defeats a unit in combat, put a Crumb on it.'
+      }
+    ]
+  }
+  alpaca = Creature {
+    name = 'Bilberry Alpaca', family = @Berry, rarity = uncommon
+    cost = 5, power = 2, health = 4
+    flavor = 'Everyone''s favourite pillow.'
+    keywords = [@Guardian]
+    abilities = [OnEnter { text = 'Hello: Put a Crumb on each other unit you control.' }]
+  }
+  milk-cow = Creature {
+    name = 'Strawberry Milk Cow', family = @Berry, rarity = uncommon
+    cost = 5, power = 3, health = 4
+    flavor = 'Strawberry milk for everyone. Mostly for you.'
+    abilities = [OnEnter { text = 'Hello: Put 2 Crumbs on another unit you control.' }]
+  }
+  ant-parade = Charm {
+    name = 'Ant Parade', family = @Berry, rarity = uncommon
+    cost = 2
+    flavor = 'Left, right, left, right, sandwich.'
+    abilities = [OnPlay { text = 'Summon two Ants.' }]
+  }
+  pass-the-plate = Charm {
+    name = 'Pass the Plate', family = @Berry, rarity = uncommon
+    cost = 1
+    flavor = 'Everyone gets a slice. Yes, even them.'
+    abilities = [OnPlay { text = 'Put a Crumb on each unit. (Yours and theirs.)' }]
+  }
+  second-helping = Charm {
+    name = 'Second Helping', family = @Berry, rarity = uncommon
+    cost = 1
+    flavor = 'Room for more? Always.'
+    keywords = [@Ambush]
+    abilities = [
+      OnPlay { text = 'Put a Crumb on a unit you control. It gets +1 Power this round.' }
+    ]
+  }
+  bracelet = Talisman {
+    name = 'Friendship Bracelet', family = @Berry, rarity = uncommon
+    cost = 1
+    attached = Grant { power = 1, keywords = [@Leftovers] }
+    flavor = 'Made one for everyone. Even the goose.'
+  }
+  bleu = Fabled {
+    name = 'Bleu, the Blueberry Blanket Hog', family = @Berry, rarity = rare
+    cost = 3, power = 2, health = 3
+    flavor = 'Floppy on purpose.'
+    abilities = [
+      OnEnter { text = 'Hello: Put a Crumb on another unit you control.' }
+      Static { text = 'Your Full units have Sneaky.' }
+    ]
+  }
+  razz = Fabled {
+    name = 'Razz, the Raspberry DJ', family = @Berry, rarity = rare
+    cost = 4, power = 3, health = 3
+    flavor = 'Takes requests. Ignores them.'
+    abilities = [Static { text = 'Your other units get +1 Power.' }]
+  }
+  bramble = Fabled {
+    name = 'Bramble, the Blackberry Maine Coon', family = @Berry, rarity = rare
+    cost = 6, power = 5, health = 7
+    flavor = 'Packed snacks, sunscreen and a spare cardigan.'
+    keywords = [@Guardian]
+    abilities = [Static { text = 'Your Full units have Fierce.' }]
+  }
+]
+
+decks = [
+  picnic-club = Deck {
+    name = 'Picnic Club', hero = @jam
+    blurb = 'Nobody leaves hungry. When a friend heads home, they pass their plate on. Led by Jam.'
+    cards = [
+      [@ladybug, 3], [@squirrel, 3], [@lamb, 3], [@possum, 3], [@goose, 3], [@moose, 3]
+      [@alpaca, 2], [@milk-cow, 2], [@ant-parade, 3], [@pass-the-plate, 2]
+      [@second-helping, 3], [@bracelet, 3], [@bleu, 1], [@razz, 1], [@bramble, 1]
+      [@pocket-hamster, 3], [@garden-snail, 3], [@mail-duck, 3], [@catnip, 3], [@nap-time, 2]
+    ]
+  }
+]
+
+@@@ leftovers-reminder
+When this unit is defeated, put a Crumb on a unit you control. (A Crumb is +1 Power and +1 Health. A unit holds up to 3; with 3 it is Full.)
+@@@ goose-text
+Hello: Exhaust an enemy unit. Take a counter from it and put it on the Goose as a Crumb.
+@@@

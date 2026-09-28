@@ -1,0 +1,19 @@
+// spells: one-shot cards that resolve and leave play (Charms, instants, Trainers, actions).
+// Depends on common for Cost.
+spells = Library
+
+name = 'Spells'
+version = '0.1'
+core = '1'
+requires = [@common]
+
+type SpellCard : Card { cost: Cost }
+
+extension SpellCard { on-play: effect }           // required: every spell must do something
+
+events = [
+  play = Event { fields = [card = unit] }
+]
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type OnPlay : Ability { holders = [nameof(SpellCard)], responding = [nameof(events.play)] }

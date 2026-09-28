@@ -1,0 +1,271 @@
+// The core's runtime contract: the other half of the core, beside core.alex. core.alex says what
+// the engine holds; this file says what the engine does and where a library may plug in. It is
+// the interop layer. The engine implements exactly this; a library is code written against it
+// and nothing else; a game is data the libraries interpret. If a library needs something that
+// is not here, that is a core change, made under the core's evolution rules (append-only, never
+// renamed, old behaviour preserved), or it is not possible.
+//
+// The engine is a headless simulation. Its input is a stream of actions, one per player, from
+// whatever produces them: a deterministic bot, an LLM, a human at a client, a recorded game.
+// Its output is a log of events saying what happened. Nothing in this contract knows what a
+// screen, a window, a button or a prompt is; a client is one more consumer of the log and one
+// more producer of actions. Replaying a game is feeding the same action stream to the same
+// engine and comparing logs.
+//
+// Seven parts: the state model, operations, queries and hooks, input, the scheduler, the loop
+// skeleton, and the log with its visibility. Randomness closes it.
+core-operations = CoreOperations
+
+core = '1'
+
+// The root type of this document.
+type CoreOperations {
+  core: text
+  object-fields: [text: Field]
+  player-fields: [text: Field]
+  game-fields: [text: Field]
+  operations: [text: Operation]
+  queries: [text: Query]
+  hook-points: [text: HookPoint]
+  input: [text: Input]
+  scheduler: [text: Operation]
+  scheduler-hooks: [text: HookPoint]
+  loop-events: [text]
+  visibility-rules: [text]
+  random: [text: Operation]
+}
+
+// -------------------------------------------------------------------------------------------
+// Vocabulary of the contract.
+
+enum Arg {
+  object, objects, zone, zones, player, players, face, token, text, int, bool, position, event
+  effect, options, action, outcome, actions, target, rules, pending, drain
+}
+// A `position` is `top`, `bottom`, or an integer index into an ordered zone. A `target` is an
+// object or a player.
+enum HookKind {
+  provide       // adds results to a query
+  filter        // removes results from a query
+  before        // runs before an operation; may cancel it
+  after         // runs after an operation completed
+  replace       // substitutes an operation's effect with another operation
+}
+// When the scheduler resolves what has been queued.
+enum Drain {
+  immediately       // after each action, oldest first, a state check between items
+  after-all-pass    // only once every player has passed in turn; newest first (a stack or chain)
+}
+
+type Operation { params: [text: Arg] = empty, emits: text? }   // emits: the event name
+type Query { params: [text: Arg] = empty, yields: Arg }
+type HookPoint { kind: HookKind, on: text }                     // an operation or query name
+type Input { params: [text: Arg], emits: text }
+type Field { type: Arg | text }
+
+// -------------------------------------------------------------------------------------------
+// 1. State model. What every object, player and game carries. Libraries read all of it and
+// change it only through the operations in part 2.
+
+object-fields = [
+  id = Field { type = text }                 // stable within a game
+  card = Field { type = text }               // the member path of its card or token (BP1.goose)
+  owner = Field { type = player }
+  controller = Field { type = player }
+  zone = Field { type = zone }
+  position = Field { type = int }            // within an ordered zone
+  face = Field { type = int }                // which face is up
+  states = Field { type = 'set of text' }    // exhausted, face-down, ... ; a library names them
+  counters = Field { type = 'map text to int' }
+  attachments = Field { type = objects }     // objects attached to this one
+  under = Field { type = objects }           // objects stacked beneath this one
+  visible-to = Field { type = players }      // overrides the zone's visibility when set
+]
+player-fields = [
+  seat = Field { type = int }
+  team = Field { type = int }
+  counters = Field { type = 'map text to int' }   // life totals, mana, lore, aember, ...
+  flags = Field { type = 'set of text' }          // initiative, passed, eliminated, ...
+  zones = Field { type = zones }                  // this player's instance of each per-player zone
+]
+game-fields = [
+  round = Field { type = int }
+  turn = Field { type = int }
+  actor = Field { type = player }
+  counters = Field { type = 'map text to int' }   // shared counters (a memory gauge)
+  flags = Field { type = 'set of text' }          // day, night, ...
+  pending = Field { type = 'list of effect' }     // the scheduler's queue (part 5)
+]
+
+// -------------------------------------------------------------------------------------------
+// 2. Operations. The only ways state changes. Each emits one event into the log.
+
+operations = [
+  move = Operation { params = [object = object, to = zone, at = position], emits = 'moved' }
+  shuffle = Operation { params = [zone = zone], emits = 'shuffled' }
+  flip = Operation { params = [object = object, face = int], emits = 'flipped' }
+  set-state = Operation { params = [object = object, state = text, on = bool], emits = 'state-set' }
+  add-counter = Operation {
+    params = [object = object, counter = text, n = int], emits = 'counter-changed'
+  }
+  attach = Operation { params = [object = object, to = object], emits = 'attached' }
+  detach = Operation { params = [object = object], emits = 'detached' }
+  stack-under = Operation { params = [object = object, beneath = object], emits = 'stacked' }
+  create = Operation { params = [token = token, owner = player, zone = zone], emits = 'created' }
+  destroy = Operation { params = [object = object], emits = 'destroyed' }
+  reveal = Operation { params = [object = object, to = players], emits = 'revealed' }
+  conceal = Operation { params = [object = object], emits = 'concealed' }
+  adjust = Operation { params = [player = player, counter = text, delta = int], emits = 'adjusted' }
+  set-flag = Operation { params = [player = player, flag = text, on = bool], emits = 'flag-set' }
+  adjust-game = Operation { params = [counter = text, delta = int], emits = 'game-adjusted' }
+  set-game-flag = Operation { params = [flag = text, on = bool], emits = 'game-flag-set' }
+  eliminate = Operation { params = [player = player], emits = 'eliminated' }
+  end-game = Operation { params = [outcome = outcome], emits = 'game-over' }
+]
+
+// -------------------------------------------------------------------------------------------
+// 3. Queries and hooks. The engine asks; libraries answer through hooks. A rule registers hooks
+// when the game loads; hooks run in the order rules are listed in the game document, which
+// makes every game deterministic and every ordering question the game author's to settle.
+
+queries = [
+  legal-actions = Query { params = [player = player], yields = actions }
+  next-actor = Query { yields = player }
+  round-over = Query { yields = bool }
+  game-over = Query { yields = outcome }                 // nic while the game continues
+  state-check = Query { yields = actions }               // what must happen now, unprompted
+  // Which objects' statics and triggers are live. By default the occupants of every zone; a
+  // library may add objects stacked under others (inherited effects) or remove some.
+  active-rules = Query { params = [object = object], yields = rules }
+  drain-policy = Query { yields = drain }                // how the scheduler resolves (part 5)
+]
+hook-points = [
+  provide-actions = HookPoint { kind = provide, on = 'legal-actions' }
+  filter-actions = HookPoint { kind = filter, on = 'legal-actions' }
+  provide-actor = HookPoint { kind = provide, on = 'next-actor' }
+  provide-round-over = HookPoint { kind = provide, on = 'round-over' }
+  provide-game-over = HookPoint { kind = provide, on = 'game-over' }
+  provide-state-check = HookPoint { kind = provide, on = 'state-check' }
+  provide-rules = HookPoint { kind = provide, on = 'active-rules' }
+  filter-rules = HookPoint { kind = filter, on = 'active-rules' }
+  provide-drain-policy = HookPoint { kind = provide, on = 'drain-policy' }
+  before-operation = HookPoint { kind = before, on = '*' }     // any operation, by name
+  after-operation = HookPoint { kind = after, on = '*' }
+  replace-operation = HookPoint { kind = replace, on = '*' }
+]
+
+// -------------------------------------------------------------------------------------------
+// 4. Input. The one way a player's will enters the game. The engine never asks anyone anything:
+// it logs that a player must act and what their legal actions are, then reads that player's
+// next action from the stream. Whoever feeds the stream decides how to pick: a bot searches,
+// an LLM reads the log, a client shows the options to a human. An action that is not legal is
+// rejected and logged; the engine waits for another.
+
+input = [
+  require-action = Input {
+    params = [player = player, options = actions], emits = 'action-required'
+  }
+  require-actions = Input {
+    params = [players = players, options = actions], emits = 'actions-required'
+  }
+  // Under `after-all-pass`, each player in turn is asked to add to the queue or pass.
+  require-response = Input {
+    params = [player = player, options = actions], emits = 'response-required'
+  }
+]
+// `require-actions` collects one action from each listed player before continuing, in any
+// order of arrival; the log records them in seat order. Simultaneous decisions are this.
+
+// -------------------------------------------------------------------------------------------
+// 5. Scheduler. Effects do not run when raised; they are queued, and the engine drains the queue
+// according to the game's drain policy, with a state check between items. Under `immediately`
+// the queue resolves oldest first after each action. Under `after-all-pass` every player is
+// asked in turn (`require-response`) to add a response or pass, and the queue resolves newest
+// first only when all have passed in a row; a response may itself be responded to. That is a
+// stack, a chain and a combat chain. The queue is visible (`pending`), so a response may target
+// an item in it.
+
+scheduler = [
+  enqueue = Operation { params = [effect = effect, source = object], emits = 'enqueued' }
+]
+scheduler-hooks = [
+  order-pending = HookPoint { kind = filter, on = 'pending' }   // reorder the queue
+  before-drain = HookPoint { kind = before, on = 'drain' }
+]
+
+// -------------------------------------------------------------------------------------------
+// 6. Loop skeleton. Fixed in the core; every slot is filled by hooks from part 3.
+//
+//   setup                                  (after-operation hooks on 'setup')
+//   repeat
+//     round-start                          (emits 'round-started')
+//     repeat
+//       actor   = next-actor
+//       actions = legal-actions(actor)     provide, then filter
+//       action  = require-action(actor, actions)
+//       apply the action                   operations, each possibly replaced
+//       drain the scheduler                per drain-policy; state-check between items
+//     until round-over
+//     round-end                            (emits 'round-ended')
+//   until game-over != nic
+//
+// A library with full turns fills next-actor and round-over one way; one with alternating
+// actions fills them another; a trick-taking game fills them a third. A response window is not
+// a primitive: after a play or an attack, a library's provide-actor names the defender and its
+// filter-actions leaves only responses and "decline"; a game with a stack chooses the
+// after-all-pass drain policy instead. The skeleton is the same.
+
+loop-events = [
+  'setup', 'round-started', 'round-ended', 'turn-started', 'turn-ended', 'action-required'
+  'action-received', 'action-rejected', 'action-applied', 'response-required', 'drained'
+]
+
+// -------------------------------------------------------------------------------------------
+// 7. The log and its visibility. The log is the engine's only output. Every event carries who
+// may see its payload; an observer's log is the events whose payload they may see, with the
+// rest reduced to the fact that something happened ("a card was drawn"). A player's view of
+// the game is the fold of their log, and so is a bot's; the engine offers that fold as a
+// convenience, computed the same way. Every event also names the rule (and its `cites`) that
+// caused it, which is the answer to "why did that happen" and the input to replays.
+
+visibility-rules = [
+  'an event about an object in a zone visible to none carries the object identity to no one'
+  'an event about an object in a zone visible to owner carries it to the owner only'
+  'a face-down object carries its identity only to players in its visible-to'
+  'reveal adds players to what later events about the object carry; conceal removes them'
+  'counters, states, attachments and zone changes are carried to everyone the object is'
+  'action-required carries the options to the acting player only'
+  'a hidden trigger firing carries the card identity to its controller only'
+  'a library may narrow what an event carries; it may never widen it'
+]
+
+// -------------------------------------------------------------------------------------------
+// 8. Randomness. Seeded once per game; every draw of randomness is an event, so a replay from
+// the log needs no seed and a replay from the seed reproduces the log.
+
+random = [
+  shuffle = Operation { params = [zone = zone], emits = 'shuffled' }
+  roll = Operation { params = [faces = int], emits = 'rolled' }
+  pick = Operation { params = [options = options], emits = 'picked' }
+]
+
+// -------------------------------------------------------------------------------------------
+// How library rules map onto this contract, so the separation is visible:
+//
+//   GuardiansFirst          filter-actions: drop attacks on non-guardians while a guardian exists
+//   SneakyIgnoresGuardians  filter-actions: exempt attackers with the ignores-guardian keyword
+//   UnitsEnterExhausted     after 'moved' into a unit zone: set-state exhausted
+//   DamagePersists          absence of an after 'round-ended' hook that clears the damage counter
+//   LifeDamage { n }        replace 'hit-hero' (built by the library from adjust/move): n times
+//   LifeStack               provide-game-over: stack empty; before 'lose-life': move its top card
+//   AlternatingActions      provide-actor (the other player unless passed), provide-round-over
+//   ResponseWindows         provide-actor: the defender, once, after a play or attack;
+//                           filter-actions: only responses and decline
+//   Stack / Chain           provide-drain-policy: after-all-pass
+//   InheritedEffects        provide-rules: objects in `under` of a live object
+//   ZoneCapacity { n }      filter-actions: drop plays into a zone holding n objects
+//   TriggersAfterStateCheck order-pending: state-check items first
+//   Swift (enters-ready)    after 'moved' into a unit zone: skip UnitsEnterExhausted for it
+//
+// None of these need anything the core does not already offer, which is the test the core must
+// keep passing for every library written on it.

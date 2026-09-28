@@ -1,0 +1,18 @@
+// setup: what happens before round 1. Depends on the core only.
+setup = Library
+
+name = 'Setup'
+version = '0.1'
+core = '1'
+
+type SetupRule : Rule {}
+extension Game { setup: [SetupRule] = empty }
+
+type StartsInZone : SetupRule { type: CardType, zone: Zone, face: int = 1 }
+type OpeningHand : SetupRule { n: int }
+type AsymmetricOpeningHand : SetupRule { first: int, second: int }
+type Mulligan : SetupRule { times: int, up-to: int }
+type MulliganUntil : SetupRule { filter: text }    // redraw until the hand meets a condition
+type ChooseToZone : SetupRule { zone: Zone, count: int }   // put n cards from hand somewhere
+type RandomInitiative : SetupRule {}
+type LoserOfLastStarts : SetupRule {}

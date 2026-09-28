@@ -1,0 +1,52 @@
+// families: colours, classes, houses, types: a grouping of cards with display data, and a set's
+// signature mechanics. Depends on the core only.
+families = Library
+
+name = 'Families and mechanics'
+version = '0.1'
+core = '1'
+
+type Family {
+  name: text
+  colors: [text]
+  mechanic: Mechanic?
+  neutral: bool = false
+  personality: text?
+  plays-like: text?
+  hint: text?
+}
+enum MechanicKind { condition, keyword, action }
+// A set's signature mechanic: display data here, behaviour in the set's rules document.
+type Mechanic : Keyword {
+  family: Family?
+  kind: MechanicKind
+  label: bool = false
+  icon: text?
+  badge: text?
+  reminder: text?
+  abilities: [Ability] = empty
+}
+
+extension Set {
+  families: [text: Family] = empty
+  mechanics: [text: Mechanic] = empty
+}
+extension Card { family: Family? }
+
+extension Mechanic {
+  mechanic-condition: condition?
+  mechanic-round-start: effect?
+  mechanic-defeated: effect?
+}
+
+// Deck building may mix at most n families (two ink colours, a hero's family plus one).
+type FamilyLimit : Rule { n: int }
+
+filters = [
+  of-family = Filter { params = [family = keyword] }
+]
+
+// Ability kinds this library declares; a card constructs one to say it has the ability.
+type MechanicCondition : Ability { holders = [nameof(Mechanic)], kind = condition }
+type MechanicRoundStart : Ability { holders = [nameof(Mechanic)] }
+type MechanicDefeated : Ability { holders = [nameof(Mechanic)] }

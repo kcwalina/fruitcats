@@ -1,0 +1,23 @@
+// decks: deck construction rules. Depends on common for Rarity.
+decks = Library
+
+name = 'Deck construction'
+version = '0.1'
+core = '1'
+requires = [@common]
+
+type DeckRule : Rule {}
+extension Game { deck-rules: [DeckRule] = empty }
+
+type DeckSize : DeckRule { n: int }
+type DeckSizeRange : DeckRule { min: int, max: int }
+type CopiesMax : DeckRule { n: int }
+type CopyLimit : DeckRule { type: CardType, copies: int, total: int? }
+type CopyLimitByRarity : DeckRule { rarity: Rarity, copies: int }
+type TypeCount : DeckRule { type: CardType, min: int, max: int }   // exactly one Hero: 1, 1
+// A second pool with its own size (extra deck, egg deck, sideboard).
+type DeckPool : DeckRule { name: text, zone: Zone, min: int, max: int }
+type ZoneMinimum : DeckRule { zone: Zone, n: int }
+
+extension Card { copies-max: int? }               // a card's own copy limit overrides CopiesMax
+extension Deck { hero: Card?, price: int? }

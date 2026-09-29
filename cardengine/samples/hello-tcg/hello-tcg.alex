@@ -4,9 +4,20 @@ name = 'Hello TCG'
 engine-version = 1
 rulebook = @rulebook
 uses = [
-  @common, @units, @spells, @combat, @life, @resources, @turns, @setup, @decks, @scenarios
+  @common
+  @units
+  @spells
+  @combat
+  @life
+  @resources
+  @turns
+  @setup
+  @decks
+  @scenarios
 ]
-sets = [@base-set]
+sets = [
+  @base-set
+]
 
 numbers = [
   starting-life = 10
@@ -28,29 +39,48 @@ zones = [
 ]
 
 life = [
-  LifeCounter { name = 'Life', start = @starting-life, lose-at = 0, cites = @rulebook.winning }
+  LifeCounter {
+    name = 'Life'
+    start = @starting-life
+    lose-at = 0
+    cites = @rulebook.sections.winning
+  }
 ]
 
 setup = [
-  ShuffleDeck { cites = @rulebook.setup }
-  OpeningHand { n = @opening-hand, cites = @rulebook.setup }
+  ShuffleDeck { cites = @rulebook.sections.setup }
+  OpeningHand { n = @opening-hand, cites = @rulebook.sections.setup }
 ]
 
 turns = [
-  FullTurns { first = random, cites = @rulebook.your-turn }
+  FullTurns { first = random, cites = @rulebook.sections.your-turn }
   Phases {
     phases = [
       Phase {
         name = 'Start'
-        steps = [ReadyAll {}, Draw { count = 1, skip-very-first-turn = true }]
+        steps = [
+          ReadyAll {}
+          Draw { count = 1, skip-very-first-turn = true }
+        ]
       }
     ]
   }
-  Actions { allowed = [@common.actions.play, @combat.actions.attack, @pass] }
+  Actions {
+    allowed = [
+      @common.actions.play
+      @combat.actions.attack
+      @pass
+    ]
+  }
 ]
 
 resources = [
-  Energy = GrowingCounter { start = 0, max = @max-energy, pay-by = spend, cites = @rulebook.energy }
+  Energy = GrowingCounter {
+    start = 0
+    max = @max-energy
+    pay-by = spend
+    cites = @rulebook.sections.energy
+  }
 ]
 resource-rules = [
   GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
@@ -59,13 +89,13 @@ resource-rules = [
 cost-resource = @Energy
 
 units = [
-  UnitsEnterExhausted { cites = @rulebook.creatures }
-  DefeatAtHealth { cites = @rulebook.creatures }
+  UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
 
 combat = [
-  AttackerChooses { targets = [unit, life], cites = @rulebook.attacking }
-  AttackerMustBeReady { cites = @rulebook.attacking }
+  AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
+  AttackerMustBeReady { cites = @rulebook.sections.attacking }
   CombatDamageEqualsPower {}
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
@@ -73,6 +103,6 @@ combat = [
 ]
 
 deck-rules = [
-  DeckSize { n = @deck-size, cites = @rulebook.decks }
-  CopiesMax { n = @max-copies, cites = @rulebook.decks }
+  DeckSize { n = @deck-size, cites = @rulebook.sections.decks }
+  CopiesMax { n = @max-copies, cites = @rulebook.sections.decks }
 ]

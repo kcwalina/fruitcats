@@ -175,7 +175,7 @@ loader gathers the rules documents of the game's sets and checks abilities and h
 ways. Assets are referred to by their path in the folder.
 
 **The rulebook is source.** Its sections are Alex, and every rule cites the section that explains
-it (`cites = @rulebook.combat`). The checker looks both ways, as the linker already does for
+it (`cites = @rulebook.sections.combat`). The checker looks both ways, as the linker already does for
 cards and their handlers: a citation of a missing section is an error; a rule with no citation,
 or a section no rule cites, is a note. `tcg rulebook` renders the same file to HTML and PDF, as
 LaTeX does for documents, with a card list generated from the card data.

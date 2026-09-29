@@ -2,38 +2,38 @@
 
 title = 'Hello TCG'
 sections = [
-  winning = Section { number = '1', title = 'Winning', text = @winning }
-  decks = Section { number = '2', title = 'Your deck', text = @decks }
-  setup = Section { number = '3', title = 'Setting up', text = @setup }
-  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn }
-  energy = Section { number = '5', title = 'Energy', text = @energy }
-  creatures = Section { number = '6', title = 'Creatures', text = @creatures }
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking }
-  spells = Section { number = '8', title = 'Spells', text = @spells }
+  winning = Section { number = '1', title = 'Winning', text = @winning-text }
+  decks = Section { number = '2', title = 'Your deck', text = @decks-text }
+  setup = Section { number = '3', title = 'Setting up', text = @setup-text }
+  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
+  energy = Section { number = '5', title = 'Energy', text = @energy-text }
+  creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
+  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
+  spells = Section { number = '8', title = 'Spells', text = @spells-text }
 ]
 
-@@@ winning
+@@@ winning-text
 Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
-@@@ decks
+@@@ decks-text
 A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
-@@@ setup
+@@@ setup-text
 Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
-@@@ your-turn
+@@@ your-turn-text
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
 and pass when you are done.
-@@@ energy
+@@@ energy-text
 Cards cost Energy. You start with none. At the start of each of your turns, your Energy grows by
 {@energy-growth}, up to {@max-energy}, and refills.
-@@@ creatures
+@@@ creatures-text
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
 discard pile.
-@@@ attacking
+@@@ attacking-text
 On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
 attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
 equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
 other. Damage is removed at the end of the turn.
-@@@ spells
+@@@ spells-text
 A Spell does what its text says, once, and then goes to your discard pile.
 @@@

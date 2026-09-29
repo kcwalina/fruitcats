@@ -22,7 +22,7 @@ assets they refer to (images in `art/`). Nothing about the game lives anywhere e
 - **An ability's numbers go on the ability** (`numbers = [damage = 2]`). Its text shows them
   (`'Deal {damage} damage'`) and its handler reads them (`ability.damage`). Never type a number
   into card text or a handler.
-- **Every rule cites the rulebook section that explains it** (`cites = @rulebook.winning`). When
+- **Every rule cites the rulebook section that explains it** (`cites = @rulebook.sections.winning`). When
   you add a rule, add or update its section.
 - **Every ability printed on a card has a handler**, and every handler belongs to a printed
   ability. Keep handlers to a line or two, using the libraries' words.

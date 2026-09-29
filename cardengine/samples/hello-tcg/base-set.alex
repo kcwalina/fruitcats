@@ -16,7 +16,9 @@ cards = [
   }
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
-    abilities = [OnEnter { text = 'When Hello enters, draw a card.' }]
+    abilities = [
+      OnEnter { text = 'When Hello enters, draw a card.' }
+    ]
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
@@ -30,20 +32,37 @@ cards = [
   spark = Spell {
     name = 'Spark', cost = 1
     abilities = [
-      OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }
+      OnPlay {
+        text = 'Deal {damage} damage to your opponent.'
+        numbers = [damage = 2]
+      }
     ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
-    abilities = [OnPlay { text = 'Destroy a Creature.' }]
+    abilities = [
+      OnPlay { text = 'Destroy a Creature.' }
+    ]
   }
 ]
 
 decks = [
   swarm = Deck {
-    name = 'Swarm', cards = [[@friend, 3], [@cheer, 3], [@hello, 3], [@spark, 3]]
+    name = 'Swarm',
+    cards = [
+      [@friend, 3],
+      [@cheer, 3],
+      [@hello, 3],
+      [@spark, 3]
+    ]
   }
   big = Deck {
-    name = 'Big', cards = [[@big-friend, 3], [@hello, 3], [@goodbye, 3], [@spark, 3]]
+    name = 'Big',
+    cards = [
+      [@big-friend, 3],
+      [@hello, 3],
+      [@goodbye, 3],
+      [@spark, 3]
+    ]
   }
 ]

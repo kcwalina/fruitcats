@@ -103,7 +103,9 @@ Next: cd hello-tcg, then tcg check
 name = 'Hello TCG'
 engine-version = 1
 rulebook = @rulebook
-sets = [@base-set]
+sets = [
+  @base-set
+]
 ```
 
 Two things to notice:
@@ -202,10 +204,10 @@ Open `rulebook.alex` and add a section:
 
 title = 'Hello TCG'
 sections = [
-  winning = Section { number = '1', title = 'Winning', text = @winning }
+  winning = Section { number = '1', title = 'Winning', text = @winning-text }
 ]
 
-@@@ winning
+@@@ winning-text
 Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
 @@@
 ```
@@ -231,7 +233,12 @@ uses = [@life]
 
 ```
 life = [
-  LifeCounter { name = 'Life', start = @starting-life, lose-at = 0, cites = @rulebook.winning }
+  LifeCounter {
+    name = 'Life'
+    start = @starting-life
+    lose-at = 0
+    cites = @rulebook.sections.winning
+  }
 ]
 ```
 
@@ -240,7 +247,7 @@ starts with 12 Life." There is nothing else to update. If the rulebook names a n
 doesn't exist, or a rule uses one, `tcg check` says so. It also notes digits written straight into
 rulebook text, since those are the numbers that drift.
 
-`cites = @rulebook.winning` connects the rule to the text that explains it. When a game is
+`cites = @rulebook.sections.winning` connects the rule to the text that explains it. When a game is
 played, every event this rule causes carries that reference, so a player can always ask "why did
 that happen?" and get the rulebook's answer.
 
@@ -264,21 +271,21 @@ Now the parts of the table, how a game starts, and how a turn goes. First the ru
 three sections to `sections`:
 
 ```
-  setup = Section { number = '3', title = 'Setting up', text = @setup }
-  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn }
-  energy = Section { number = '5', title = 'Energy', text = @energy }
+  setup = Section { number = '3', title = 'Setting up', text = @setup-text }
+  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
+  energy = Section { number = '5', title = 'Energy', text = @energy-text }
 ```
 
 And their text, in the text table:
 
 ```
-@@@ setup
+@@@ setup-text
 Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
-@@@ your-turn
+@@@ your-turn-text
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
 and pass when you are done.
-@@@ energy
+@@@ energy-text
 Cards cost Energy. You start with none. At the start of each of your turns, your Energy grows by
 {@energy-growth}, up to {@max-energy}, and refills.
 @@@
@@ -298,7 +305,13 @@ numbers = [
 Add the libraries:
 
 ```
-uses = [@common, @life, @resources, @turns, @setup]
+uses = [
+  @common
+  @life
+  @resources
+  @turns
+  @setup
+]
 ```
 
 The zones. Each has a `role` that tells the libraries what it is for: `draw` takes cards from
@@ -321,25 +334,37 @@ Setup, turns and Energy:
 
 ```
 setup = [
-  ShuffleDeck { cites = @rulebook.setup }
-  OpeningHand { n = @opening-hand, cites = @rulebook.setup }
+  ShuffleDeck { cites = @rulebook.sections.setup }
+  OpeningHand { n = @opening-hand, cites = @rulebook.sections.setup }
 ]
 
 turns = [
-  FullTurns { first = random, cites = @rulebook.your-turn }
+  FullTurns { first = random, cites = @rulebook.sections.your-turn }
   Phases {
     phases = [
       Phase {
         name = 'Start'
-        steps = [ReadyAll {}, Draw { count = 1, skip-very-first-turn = true }]
+        steps = [
+          ReadyAll {}
+          Draw { count = 1, skip-very-first-turn = true }
+        ]
       }
     ]
   }
-  Actions { allowed = [@common.actions.play, @pass] }
+  Actions {
+    allowed = [
+      @common.actions.play
+      @pass
+    ]
+  }
 ]
 
 resources = [
-  Energy = GrowingCounter { start = 0, max = @max-energy, pay-by = spend }
+  Energy = GrowingCounter {
+    start = 0
+    max = @max-energy
+    pay-by = spend
+  }
 ]
 resource-rules = [
   GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
@@ -362,7 +387,7 @@ hello-tcg: 0 errors, 2 notes
 ```
 
 The first note is the rulebook check at work: a section that explains no rule is probably a
-mistake. Add `cites = @rulebook.energy` to the `GrowingCounter` rule and the note goes away.
+mistake. Add `cites = @rulebook.sections.energy` to the `GrowingCounter` rule and the note goes away.
 
 > [!TIP]
 > **Ask your agent:** "Add the setup, turn and Energy rules from the rulebook sections I just
@@ -374,13 +399,20 @@ Cards that stay on the board, with power and health, come from the `units` libra
 gives them its own name, **Creature**. In `hello-tcg.alex`:
 
 ```
-uses = [@common, @units, @life, @resources, @turns, @setup]
+uses = [
+  @common
+  @units
+  @life
+  @resources
+  @turns
+  @setup
+]
 
 type Creature : UnitCard {}
 
 units = [
-  UnitsEnterExhausted { cites = @rulebook.creatures }
-  DefeatAtHealth { cites = @rulebook.creatures }
+  UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
 ```
 
@@ -392,11 +424,11 @@ card types are the types it declares.
 The rulebook section:
 
 ```
-  creatures = Section { number = '6', title = 'Creatures', text = @creatures }
+  creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
 ```
 
 ```
-@@@ creatures
+@@@ creatures-text
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
 discard pile.
@@ -483,17 +515,31 @@ Creatures that can't attack don't do much. Attacking comes from the `combat` lib
 `uses`, allow the attack action, and pick the rules:
 
 ```
-uses = [@common, @units, @combat, @life, @resources, @turns, @setup]
+uses = [
+  @common
+  @units
+  @combat
+  @life
+  @resources
+  @turns
+  @setup
+]
 ```
 
 ```
-  Actions { allowed = [@common.actions.play, @combat.actions.attack, @pass] }
+  Actions {
+    allowed = [
+      @common.actions.play
+      @combat.actions.attack
+      @pass
+    ]
+  }
 ```
 
 ```
 combat = [
-  AttackerChooses { targets = [unit, life], cites = @rulebook.attacking }
-  AttackerMustBeReady { cites = @rulebook.attacking }
+  AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
+  AttackerMustBeReady { cites = @rulebook.sections.attacking }
   CombatDamageEqualsPower {}
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
@@ -514,11 +560,11 @@ Each rule is one sentence of the rulebook:
 The rulebook section:
 
 ```
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking }
+  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
 ```
 
 ```
-@@@ attacking
+@@@ attacking-text
 On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
 attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
 equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
@@ -536,7 +582,13 @@ You need a deck to play. Decks are listed in the set. Add this to `base-set.alex
 
 ```
 decks = [
-  first-deck = Deck { name = 'First Deck', cards = [[@friend, 6], [@big-friend, 6]] }
+  first-deck = Deck {
+    name = 'First Deck',
+    cards = [
+      [@friend, 6],
+      [@big-friend, 6]
+    ]
+  }
 ]
 ```
 
@@ -577,7 +629,9 @@ Now a card with an ability. Add **Hello** to `cards` in `base-set.alex`:
 ```
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
-    abilities = [OnEnter { text = 'When Hello enters, draw a card.' }]
+    abilities = [
+      OnEnter { text = 'When Hello enters, draw a card.' }
+    ]
   }
 ```
 
@@ -622,7 +676,9 @@ handler:
 
 ```
 scenario 'Hello draws a card when it enters' {
-  given hand(me, [@hello]), deck(me, [@friend]), counter-is(me, @Energy, 2)
+  given hand(me, @hello)
+  given deck(me, @friend)
+  given counter-is(me, @Energy, 2)
   when play(me, @hello)
   then in-zone(@friend, @Hand)
 }
@@ -687,7 +743,17 @@ discard pile. Spells come from the `spells` library, and your game calls them **
 `hello-tcg.alex`:
 
 ```
-uses = [@common, @units, @spells, @combat, @life, @resources, @turns, @setup, @scenarios]
+uses = [
+  @common
+  @units
+  @spells
+  @combat
+  @life
+  @resources
+  @turns
+  @setup
+  @scenarios
+]
 
 type Spell : SpellCard {}
 ```
@@ -698,12 +764,17 @@ The cards:
   spark = Spell {
     name = 'Spark', cost = 1
     abilities = [
-      OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }
+      OnPlay {
+        text = 'Deal {damage} damage to your opponent.'
+        numbers = [damage = 2]
+      }
     ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
-    abilities = [OnPlay { text = 'Destroy a Creature.' }]
+    abilities = [
+      OnPlay { text = 'Destroy a Creature.' }
+    ]
   }
 ```
 
@@ -713,8 +784,8 @@ Their handlers:
 effect damage-opponent { opponent.damage-life(ability.damage) }
 @spark.on-play = damage-opponent
 
-effect goodbye { choose(all).destroy() }
-@goodbye.on-play = goodbye
+effect destroy-a-creature { choose(all).destroy() }
+@goodbye.on-play = destroy-a-creature
 ```
 
 `choose(all)` asks the player who played Goodbye to pick a Creature, any player's. You don't
@@ -725,10 +796,13 @@ A scenario with a choice in it:
 
 ```
 scenario 'Goodbye destroys the chosen Creature' {
-  given controls(opponent, @cheer), controls(opponent, @friend)
-  given hand(me, [@goodbye]), counter-is(me, @Energy, 3)
+  given controls(opponent, @cheer)
+  given controls(opponent, @friend)
+  given hand(me, @goodbye)
+  given counter-is(me, @Energy, 3)
   when play(me, @goodbye, target: @cheer)
-  then in-zone(@cheer, @Discard), power(@friend) == 1
+  then in-zone(@cheer, @Discard)
+  then power(@friend) == 1
 }
 ```
 
@@ -750,11 +824,11 @@ hello-tcg: 2 scenarios, 2 passed
 Add a section:
 
 ```
-  spells = Section { number = '8', title = 'Spells', text = @spells }
+  spells = Section { number = '8', title = 'Spells', text = @spells-text }
 ```
 
 ```
-@@@ spells
+@@@ spells-text
 A Spell does what its text says, once, and then goes to your discard pile.
 @@@
 ```
@@ -776,17 +850,17 @@ Add the `decks` library to `uses`, and:
 
 ```
 deck-rules = [
-  DeckSize { n = @deck-size, cites = @rulebook.decks }
-  CopiesMax { n = @max-copies, cites = @rulebook.decks }
+  DeckSize { n = @deck-size, cites = @rulebook.sections.decks }
+  CopiesMax { n = @max-copies, cites = @rulebook.sections.decks }
 ]
 ```
 
 ```
-  decks = Section { number = '2', title = 'Your deck', text = @decks }
+  decks = Section { number = '2', title = 'Your deck', text = @decks-text }
 ```
 
 ```
-@@@ decks
+@@@ decks-text
 A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
 @@@
 ```
@@ -808,10 +882,22 @@ Your new rule caught your old deck. Replace `decks` in `base-set.alex` with two 
 ```
 decks = [
   swarm = Deck {
-    name = 'Swarm', cards = [[@friend, 3], [@cheer, 3], [@hello, 3], [@spark, 3]]
+    name = 'Swarm',
+    cards = [
+      [@friend, 3],
+      [@cheer, 3],
+      [@hello, 3],
+      [@spark, 3]
+    ]
   }
   big = Deck {
-    name = 'Big', cards = [[@big-friend, 3], [@hello, 3], [@goodbye, 3], [@spark, 3]]
+    name = 'Big',
+    cards = [
+      [@big-friend, 3],
+      [@hello, 3],
+      [@goodbye, 3],
+      [@spark, 3]
+    ]
   }
 ]
 ```
@@ -1026,9 +1112,20 @@ name = 'Hello TCG'
 engine-version = 1
 rulebook = @rulebook
 uses = [
-  @common, @units, @spells, @combat, @life, @resources, @turns, @setup, @decks, @scenarios
+  @common
+  @units
+  @spells
+  @combat
+  @life
+  @resources
+  @turns
+  @setup
+  @decks
+  @scenarios
 ]
-sets = [@base-set]
+sets = [
+  @base-set
+]
 
 numbers = [
   starting-life = 10
@@ -1050,29 +1147,48 @@ zones = [
 ]
 
 life = [
-  LifeCounter { name = 'Life', start = @starting-life, lose-at = 0, cites = @rulebook.winning }
+  LifeCounter {
+    name = 'Life'
+    start = @starting-life
+    lose-at = 0
+    cites = @rulebook.sections.winning
+  }
 ]
 
 setup = [
-  ShuffleDeck { cites = @rulebook.setup }
-  OpeningHand { n = @opening-hand, cites = @rulebook.setup }
+  ShuffleDeck { cites = @rulebook.sections.setup }
+  OpeningHand { n = @opening-hand, cites = @rulebook.sections.setup }
 ]
 
 turns = [
-  FullTurns { first = random, cites = @rulebook.your-turn }
+  FullTurns { first = random, cites = @rulebook.sections.your-turn }
   Phases {
     phases = [
       Phase {
         name = 'Start'
-        steps = [ReadyAll {}, Draw { count = 1, skip-very-first-turn = true }]
+        steps = [
+          ReadyAll {}
+          Draw { count = 1, skip-very-first-turn = true }
+        ]
       }
     ]
   }
-  Actions { allowed = [@common.actions.play, @combat.actions.attack, @pass] }
+  Actions {
+    allowed = [
+      @common.actions.play
+      @combat.actions.attack
+      @pass
+    ]
+  }
 ]
 
 resources = [
-  Energy = GrowingCounter { start = 0, max = @max-energy, pay-by = spend, cites = @rulebook.energy }
+  Energy = GrowingCounter {
+    start = 0
+    max = @max-energy
+    pay-by = spend
+    cites = @rulebook.sections.energy
+  }
 ]
 resource-rules = [
   GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
@@ -1081,13 +1197,13 @@ resource-rules = [
 cost-resource = @Energy
 
 units = [
-  UnitsEnterExhausted { cites = @rulebook.creatures }
-  DefeatAtHealth { cites = @rulebook.creatures }
+  UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
 
 combat = [
-  AttackerChooses { targets = [unit, life], cites = @rulebook.attacking }
-  AttackerMustBeReady { cites = @rulebook.attacking }
+  AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
+  AttackerMustBeReady { cites = @rulebook.sections.attacking }
   CombatDamageEqualsPower {}
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
@@ -1095,8 +1211,8 @@ combat = [
 ]
 
 deck-rules = [
-  DeckSize { n = @deck-size, cites = @rulebook.decks }
-  CopiesMax { n = @max-copies, cites = @rulebook.decks }
+  DeckSize { n = @deck-size, cites = @rulebook.sections.decks }
+  CopiesMax { n = @max-copies, cites = @rulebook.sections.decks }
 ]
 ```
 
@@ -1107,39 +1223,39 @@ deck-rules = [
 
 title = 'Hello TCG'
 sections = [
-  winning = Section { number = '1', title = 'Winning', text = @winning }
-  decks = Section { number = '2', title = 'Your deck', text = @decks }
-  setup = Section { number = '3', title = 'Setting up', text = @setup }
-  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn }
-  energy = Section { number = '5', title = 'Energy', text = @energy }
-  creatures = Section { number = '6', title = 'Creatures', text = @creatures }
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking }
-  spells = Section { number = '8', title = 'Spells', text = @spells }
+  winning = Section { number = '1', title = 'Winning', text = @winning-text }
+  decks = Section { number = '2', title = 'Your deck', text = @decks-text }
+  setup = Section { number = '3', title = 'Setting up', text = @setup-text }
+  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
+  energy = Section { number = '5', title = 'Energy', text = @energy-text }
+  creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
+  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
+  spells = Section { number = '8', title = 'Spells', text = @spells-text }
 ]
 
-@@@ winning
+@@@ winning-text
 Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
-@@@ decks
+@@@ decks-text
 A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
-@@@ setup
+@@@ setup-text
 Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
-@@@ your-turn
+@@@ your-turn-text
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
 and pass when you are done.
-@@@ energy
+@@@ energy-text
 Cards cost Energy. You start with none. At the start of each of your turns, your Energy grows by
 {@energy-growth}, up to {@max-energy}, and refills.
-@@@ creatures
+@@@ creatures-text
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
 discard pile.
-@@@ attacking
+@@@ attacking-text
 On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
 attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
 equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
 other. Damage is removed at the end of the turn.
-@@@ spells
+@@@ spells-text
 A Spell does what its text says, once, and then goes to your discard pile.
 @@@
 ```
@@ -1165,7 +1281,9 @@ cards = [
   }
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
-    abilities = [OnEnter { text = 'When Hello enters, draw a card.' }]
+    abilities = [
+      OnEnter { text = 'When Hello enters, draw a card.' }
+    ]
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
@@ -1179,21 +1297,38 @@ cards = [
   spark = Spell {
     name = 'Spark', cost = 1
     abilities = [
-      OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }
+      OnPlay {
+        text = 'Deal {damage} damage to your opponent.'
+        numbers = [damage = 2]
+      }
     ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
-    abilities = [OnPlay { text = 'Destroy a Creature.' }]
+    abilities = [
+      OnPlay { text = 'Destroy a Creature.' }
+    ]
   }
 ]
 
 decks = [
   swarm = Deck {
-    name = 'Swarm', cards = [[@friend, 3], [@cheer, 3], [@hello, 3], [@spark, 3]]
+    name = 'Swarm',
+    cards = [
+      [@friend, 3],
+      [@cheer, 3],
+      [@hello, 3],
+      [@spark, 3]
+    ]
   }
   big = Deck {
-    name = 'Big', cards = [[@big-friend, 3], [@hello, 3], [@goodbye, 3], [@spark, 3]]
+    name = 'Big',
+    cards = [
+      [@big-friend, 3],
+      [@hello, 3],
+      [@goodbye, 3],
+      [@spark, 3]
+    ]
   }
 ]
 ```
@@ -1214,19 +1349,24 @@ static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
 effect damage-opponent { opponent.damage-life(ability.damage) }
 @spark.on-play = damage-opponent
 
-effect goodbye { choose(all).destroy() }
-@goodbye.on-play = goodbye
+effect destroy-a-creature { choose(all).destroy() }
+@goodbye.on-play = destroy-a-creature
 
 scenario 'Hello draws a card when it enters' {
-  given hand(me, [@hello]), deck(me, [@friend]), counter-is(me, @Energy, 2)
+  given hand(me, @hello)
+  given deck(me, @friend)
+  given counter-is(me, @Energy, 2)
   when play(me, @hello)
   then in-zone(@friend, @Hand)
 }
 
 scenario 'Goodbye destroys the chosen Creature' {
-  given controls(opponent, @cheer), controls(opponent, @friend)
-  given hand(me, [@goodbye]), counter-is(me, @Energy, 3)
+  given controls(opponent, @cheer)
+  given controls(opponent, @friend)
+  given hand(me, @goodbye)
+  given counter-is(me, @Energy, 3)
   when play(me, @goodbye, target: @cheer)
-  then in-zone(@cheer, @Discard), power(@friend) == 1
+  then in-zone(@cheer, @Discard)
+  then power(@friend) == 1
 }
 ```

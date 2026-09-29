@@ -298,7 +298,8 @@ session).
 ## Folkborn's game folder
 
 Folkborn is the platform's first real game (2026-09-28). `games/folkborn/` holds only its sources: `folkborn.alex`
-(the game and its card types), `card-layout.alex` (its card design), `art/frames/` and `art/icons/`, and for each
+(the game and its card types), `card-layout.alex` (its card design, drawn from shapes), `art/icons/` and
+`art/finishes/` (the foil, gold and prismatic textures), and for each
 released set `sets/<set>/<set>.alex` (its cards) with the paintings they name (`sets/<set>/art/`). Nothing in it
 is generated. `npm run cards` renders every card into `out/cards/<set>/` (ignored by git), and `publish-pack` renders
 a set into a fresh folder and uploads that; copying `games/folkborn/` anywhere and running `tcg cards` there makes

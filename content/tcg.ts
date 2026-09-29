@@ -1,5 +1,5 @@
 // Sets whose finished cards tcg renders (cardengine/tcg). Their cards are defined in the game folder,
-// games/folkborn/: the game and its card layout (folkborn.alex, card-layout.alex), its frames and icons (art/), and
+// games/folkborn/: the game and its card layout (folkborn.alex, card-layout.alex), its icons and finish textures (art/), and
 // for each set its cards (sets/<set>/<set>.alex) and the paintings they name (sets/<set>/art/). That folder holds
 // sources only. The finished cards are build output, never committed: tcg makes them from the sources, so what's
 // published can only be what the sources say.

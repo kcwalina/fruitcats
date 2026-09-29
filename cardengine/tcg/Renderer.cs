@@ -83,8 +83,19 @@ internal sealed class Renderer
     private void Draw(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
     {
         if (part.Value("if-keyword") is AlexReference keyword && !face.HasKeyword(keyword.Path[^1])) { return; }
+        if (part.Value("only-types") is AlexArray types)
+        {
+            if (types.Any(t => t is AlexInvalid))
+            {
+                throw new TcgException("card-layout.alex: only-types names card types as references: [@Hero, @Awakened].");
+            }
+
+            if (!types.Any(t => IsType(face, Project.Scalar(t)))) { return; }
+        }
+        if (Bool(part.Value("only-with-finish")) && face.Finish == "standard") { return; }
         switch (part.TypeName)
         {
+            case "Shape": Shape(canvas, face, frame, part); break;
             case "Picture": Picture(canvas, face, part); break;
             case "Label": Label(canvas, face, frame, part, Box(part)); break;
             case "Title": Title(canvas, face, frame, part); break;
@@ -109,7 +120,92 @@ internal sealed class Renderer
             source = SKRect.Create((image.Width - w) / 2, (image.Height - h) / 2, w, h);
         }
 
+        int saved = canvas.Save();
+        if (Float(part.Value("corner-radius"), 0) is var corner and > 0)
+        {
+            canvas.ClipRoundRect(new SKRoundRect(box, corner), antialias: false);
+        }
+
         canvas.DrawImage(image, source, box, new SKSamplingOptions(SKCubicResampler.CatmullRom));
+        canvas.RestoreToCount(saved);
+    }
+
+    private bool IsType(Face face, string type) =>
+        face.TypeName == type || _project.TypeChain(face.TypeName).Any(t => t.Name == type);
+
+    /// <summary>
+    /// A rectangle (rounded with <c>radius</c>), a circle or a star: filled, outlined, or both. An outline is drawn
+    /// inside the box, <c>outline-width</c> wide. With <c>chrome = true</c>, a card printed in a finish has the shape's
+    /// fill (or, when it has one, its outline, <c>chrome-width</c> wide) painted with the finish's texture instead.
+    /// Edges are hard, as the old composer drew them.
+    /// </summary>
+    private void Shape(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
+    {
+        SKRect box = Box(part);
+        string kind = Word(part.Value("kind")) ?? "rounded-rect";
+        float radius = Float(part.Value("radius"), 0);
+        SKShader? chrome = Bool(part.Value("chrome")) ? FinishTexture(face) : null;
+        bool hasOutline = part.Value("outline") is not null;
+        float outlineWidth = Float(part.Value("outline-width"), 1);
+
+        if (kind == "star")
+        {
+            using SKPaint paint = new() { IsAntialias = false, Color = Color(face, frame, part.Value("fill"), SKColors.Black) };
+            canvas.DrawPath(Star(box), paint);
+            return;
+        }
+
+        if (part.Value("fill") is { } fillValue)
+        {
+            using SKPaint fill = new() { IsAntialias = false, Color = Color(face, frame, fillValue, SKColors.Black) };
+            if (chrome is not null && !hasOutline) { fill.Shader = chrome; }
+            canvas.DrawRoundRect(Rounded(box, kind, radius), fill);
+        }
+
+        if (hasOutline)
+        {
+            float width = chrome is null ? outlineWidth : Float(part.Value("chrome-width"), outlineWidth);
+            using SKPaint ring = new() { IsAntialias = false, Color = Color(face, frame, part.Value("outline"), SKColors.Black) };
+            if (chrome is not null) { ring.Shader = chrome; }
+            SKRect inner = SKRect.Inflate(box, -width, -width);
+            using SKPath path = new() { FillType = SKPathFillType.EvenOdd };
+            path.AddRoundRect(Rounded(box, kind, radius));
+            path.AddRoundRect(Rounded(inner, kind, Math.Max(radius - width, 0)));
+            canvas.DrawPath(path, ring);
+        }
+    }
+
+    private static SKRoundRect Rounded(SKRect box, string kind, float radius) =>
+        kind == "circle" ? new SKRoundRect(box, box.Width / 2, box.Height / 2) : new SKRoundRect(box, radius, radius);
+
+    /// <summary>A five-pointed star filling the box's circle, point up, its inner points at 45% of the radius.</summary>
+    private static SKPath Star(SKRect box)
+    {
+        SKPath path = new();
+        float r = box.Width / 2;
+        for (int i = 0; i < 10; i++)
+        {
+            float radius = i % 2 == 0 ? r : r * 0.45f;
+            double angle = Math.PI / 2 + i * Math.PI / 5;
+            SKPoint point = new(box.MidX + radius * (float)Math.Cos(angle), box.MidY - radius * (float)Math.Sin(angle));
+            if (i == 0) { path.MoveTo(point); } else { path.LineTo(point); }
+        }
+
+        path.Close();
+        return path;
+    }
+
+    /// <summary>The texture of the card's finish (the layout's <c>finishes</c>), card-sized; none for a standard card.</summary>
+    private SKShader? FinishTexture(Face face)
+    {
+        if (face.Finish == "standard" || _root.Value("finishes") is not AlexObject finishes || finishes.Value(face.Finish) is not AlexObject finish)
+        {
+            return null;
+        }
+
+        string file = Project.Scalar(finish.Value("texture"));
+        SKImage image = Image(Path.GetFullPath(file, _layout.Directory)) ?? throw new TcgException($"The texture {file} doesn't exist.");
+        return SKShader.CreateImage(image, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp);
     }
 
     private void Icon(SKCanvas canvas, Face face, AlexObject part, SKRect box)
@@ -414,6 +510,12 @@ internal sealed class Renderer
         if (text is "ink" or "accent" or "tint")
         {
             return frame?.Value(text) is { } frameColor ? Color(face, null, frameColor, fallback) : fallback;
+        }
+
+        if (text == "finish-ink")
+        {
+            return _root.Value("finishes") is AlexObject finishes && finishes.Value(face.Finish) is AlexObject finish
+                ? Color(face, null, finish.Value("ink"), fallback) : fallback;
         }
 
         return SKColor.TryParse(text, out SKColor color) ? color : fallback;

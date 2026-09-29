@@ -244,6 +244,7 @@ internal sealed class Project
         AlexEnumValue e => e.Member,
         AlexIdentifier id => id.Name,
         AlexReference r => r.Name,
+        AlexTypeValue t => t.Name,
         _ => value.ToString() ?? "",
     };
 }

@@ -12,22 +12,25 @@ fonts = [
   italic = 'segoeuii.ttf'
 ]
 
+finishes = [
+  foil = Finish { texture = 'art/finishes/foil.png', ink = '#4A5362' }
+  gold = Finish { texture = 'art/finishes/gold.png', ink = '#5A3A04' }
+  prismatic = Finish { texture = 'art/finishes/prismatic.png', ink = '#3A2A5A' }
+]
+
 frames = [
   Printed = Frame {
-    image = 'art/frames/{set}/{finish}.png'
     ink = '{set.colors.dark}'
     accent = '{set.colors.main}'
     tint = '{set.colors.tint}'
   }
   Hero = Frame {
-    image = 'art/frames/hero/{finish}.png'
     ink = '#7A5A0C'
     accent = '#C8961E'
     tint = '#FFF3CF'
     file = '{number}-kitten'
   }
   Awakened = Frame {
-    image = 'art/frames/hero/{finish}.png'
     ink = '#7A5A0C'
     accent = '#C8961E'
     tint = '#FFF3CF'
@@ -36,11 +39,116 @@ frames = [
 ]
 
 parts = [
+  border = Shape {
+    box = Box { x = 0, y = 0, width = 750, height = 1050 }
+    radius = 42
+    fill = ink
+    chrome = true
+  }
+  panel = Shape {
+    box = Box { x = 21, y = 21, width = 708, height = 1008 }
+    radius = 30
+    fill = '#FFF8EC'
+  }
   art = Picture {
     show = '{art}'
     box = Box { x = 42, y = 138, width = 666, height = 444 }
     fit = cover
-    under-frame = true
+    corner-radius = 18
+  }
+  art-border = Shape {
+    box = Box { x = 42, y = 138, width = 667, height = 445 }
+    radius = 18
+    outline = accent
+    outline-width = 6
+    chrome = true
+    chrome-width = 7
+  }
+  banner = Shape {
+    box = Box { x = 36, y = 30, width = 679, height = 97 }
+    radius = 26
+    fill = accent
+    outline = ink
+    outline-width = 4
+    chrome = true
+    chrome-width = 5
+  }
+  cost-circle = Shape {
+    kind = circle
+    box = Box { x = 30, y = 26, width = 103, height = 103 }
+    fill = '#FFFFFF'
+  }
+  cost-ring = Shape {
+    kind = circle
+    box = Box { x = 30, y = 26, width = 103, height = 103 }
+    outline = ink
+    outline-width = 8
+    chrome = true
+    chrome-width = 9
+  }
+  star = Shape {
+    kind = star
+    box = Box { x = 43, y = 41, width = 76, height = 76 }
+    fill = accent
+    only-types = [@Hero, @Awakened]
+  }
+  type-strip = Shape {
+    box = Box { x = 42, y = 596, width = 667, height = 53 }
+    radius = 14
+    fill = tint
+    outline = accent
+    outline-width = 3
+    chrome = true
+    chrome-width = 4
+  }
+  panel-edge = Shape {
+    box = Box { x = 21, y = 21, width = 708, height = 1008 }
+    radius = 30
+    outline = finish-ink
+    outline-width = 2
+    only-with-finish = true
+  }
+  outer-edge = Shape {
+    box = Box { x = 1, y = 1, width = 748, height = 1048 }
+    radius = 41
+    outline = finish-ink
+    outline-width = 2
+    only-with-finish = true
+  }
+  cost-edge = Shape {
+    kind = circle
+    box = Box { x = 30, y = 26, width = 103, height = 103 }
+    outline = finish-ink
+    outline-width = 2
+    only-with-finish = true
+  }
+  cost-inner-edge = Shape {
+    kind = circle
+    box = Box { x = 38, y = 34, width = 87, height = 87 }
+    outline = finish-ink
+    outline-width = 2
+    only-with-finish = true
+  }
+  art-edge = Shape {
+    box = Box { x = 42, y = 138, width = 667, height = 445 }
+    radius = 18
+    outline = finish-ink
+    outline-width = 1
+    only-with-finish = true
+  }
+  art-inner-edge = Shape {
+    box = Box { x = 49, y = 145, width = 653, height = 431 }
+    radius = 12
+    outline = finish-ink
+    outline-width = 1
+    only-with-finish = true
+  }
+  text-panel = Shape {
+    box = Box { x = 42, y = 660, width = 667, height = 253 }
+    radius = 18
+    fill = '#FFFFFF'
+    outline = '#E2D3BA'
+    outline-width = 3
   }
   cost = Label {
     show = '{cost}'

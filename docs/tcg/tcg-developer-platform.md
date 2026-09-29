@@ -430,12 +430,64 @@ foil, two-faced cards) and the layout parts they need.
 - **Services (later):** cloud playtests for Studio users, online hosting of playable games,
   printing partners.
 
+## Products and names (owner, 2026-09-29)
+
+Five products. The names below are **code names** for talking and planning. The real names come
+from one brand word, not yet chosen, over plain descriptive names: `<Brand> Platform`,
+`<Brand> Studio`, `<Brand> Designer`, `<Brand> Playtest`. "TCG" is not a brand: it is a generic
+term, and it undersells the scope.
+
+| Code name | Product | For |
+|---|---|---|
+| **Folkborn** | the game: Steam, web, iOS and Android | players; the platform's first real game |
+| **TDP**, the TCG Developer Platform | the free, low-level tools: the core, `tcg.exe`, Alex, the framework and libraries | anyone, and agents |
+| **TPS**, the TCG Programmer Studio | the local IDE on TDP (Studio, above) | digital game designers |
+| **TDS**, the TCG Designer Studio | the online IDE on TDP (the online designer, above; what the Artist Studio grows into) | physical game designers and their artists |
+| **TPA**, the TCG Playtesting App | the online playtesting service: the core run in the cloud, bots overnight, reports | anyone with a game: TDS users, TPS users, and people who use only the free tools with an LLM |
+
+TPA is sold on its own as well as with the studios. Someone can write a game with the free tools
+and an LLM, and pay only for playtesting.
+
+**Scope: TCGs first, card games in general next, and the door stays open.** The owner's
+favourites are card-driven board games such as *Race for the Galaxy*, and supporting a game like
+that is a goal. But describing TCGs in an Alex simple enough for designers is already hard, so
+TCGs come first, until they work end to end. Nothing in names, folders or the core should assume
+"trading" card games. Anything TCG-specific belongs in a library, never in the core, which is
+already the rule for the libraries.
+
+**Brand candidates.** These had quick web searches only, not a trademark or domain search.
+
+- **Talon**: the pile of undealt cards in many European card games, the stock the game is drawn
+  from. It is about card games without being about TCGs, short, and says "the thing a game comes
+  out of". No card-design or playtest product of that name turned up. The word is common elsewhere
+  in software, so it needs a real trademark check.
+- **Kibitzer**: the onlooker at a card table who comments on the play. It is apt for TPA, where
+  bots play and an LLM comments, and is perhaps better as TPA's own name under the brand than as
+  the brand itself. Small chess and Go apps use "Kibitz".
+- **Tabula**: an ancient Roman board game, Latin for "board" and "table". It leaves the most room
+  for board games, but a game studio called Tabula Gaming exists.
+- Ruled out: Deckwright (a D&D card maker), Cardwright (a proxy printer), Tablewright (a virtual
+  tabletop), ProtoPlay (a festival), Foundry (Foundry VTT), Forge (the MTG engine).
+- **Competitors seen while searching** that aim at the same value (design plus automatic
+  playtesting): Decklab AI (decklab.ai, "AI card game design, prototyping and playtesting") and
+  ShuffleKit. Board Game Lab, Dextrous and Tabletop Creator do design and manual play. Worth a
+  proper look before committing to TPA's positioning.
+
+**The command-line tool's name follows the brand.** `tcg` is a code name too. Rename it once, when
+the brand is chosen, before anyone outside uses it.
+
 ## Where it lives
 
 In the fruitcats repo for now, because it is easier to develop both together, but kept
 separable: the platform does not depend on Folkborn, and Folkborn becomes an app on the
 platform. The platform lives in `cardengine/` at the repo root (agreed with the TCG Alex
 session).
+
+**When it moves to its own repo (owner, 2026-09-29):** once the engine can play Folkborn from its
+Alex rules. Until then the separation is by folder, with the dependency rule written where every
+session reads it (`cardengine/README.md`, "Dependencies", and fruitcats' `CLAUDE.md`). Folkborn's
+own LLM playtester (`playtest/`) stays until then too. Afterwards it is replaced by TPA, which
+Folkborn uses like any other game.
 
 ## Folkborn's game folder
 

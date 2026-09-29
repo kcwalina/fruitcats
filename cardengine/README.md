@@ -47,6 +47,27 @@ discussed by editing them instead of re-pasting them into chat.
   byte for byte. It is also the first C# host of the module (Wasmtime).
 - `tcg/`: the `tcg` command-line tool (C#).
 
+## Dependencies: the platform never depends on Folkborn
+
+`cardengine/` is the platform (TDP; see "Products and names" in
+`docs/tcg/tcg-developer-platform.md`). It moves to its own repository once the engine plays
+Folkborn from its Alex rules, so it must be movable as a folder today:
+
+- **Nothing in `cardengine/` refers to Folkborn's code or data:** not `packages/`, `apps/`,
+  `content/`, `playtest/`, `games/` or `art/`, and no Folkborn numbers, names or conventions in
+  the tools. A game is always an input (`tcg cards --project games/folkborn`), never something
+  built in.
+- **Folkborn depends on the platform, only through its public surface:** the `tcg` command, and
+  later the core's `.wasm` and its documented interface. It never reaches into the platform's
+  source.
+- **The one outside dependency is mochi's C# Alex** (`mochi.agents/alex`), until the core's Alex
+  replaces it for the platform.
+- **Known exceptions, to move before the split:** `folkborn/` here is Folkborn written against the
+  libraries as a design reference, and belongs in `games/folkborn/`. It is also used by mochi's
+  Alex tests as fixtures (`mochi.agents/alex/tests/Alex.Tests/Fixtures/cardengine`). Hello TCG
+  (`samples/`) borrows six Folkborn cards and their paintings, which is fine: a sample may copy
+  content, but it may not refer to it.
+
 ## Principles
 
 - **Libraries are composable blocks, not a framework.** A game takes `units` without `combat`,

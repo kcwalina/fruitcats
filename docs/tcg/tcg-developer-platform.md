@@ -272,6 +272,24 @@ Core changes the owner asked for on 2026-09-28, from reading the walkthrough:
 - **Defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to `empty`, and
   `players` to `Players {}` (two players), so a new game file doesn't list empty fields.
 
+An Alex change the owner asked for on 2026-09-28: **a file says what it is with a directive, not
+a named variable.** Today a file starts `hello-tcg = Game`, a name that only repeats the file
+name and means nothing. Instead, directives at the top of a file declare things about the whole
+file, as `using` does in C#. The first is `#type`:
+
+```
+#type Game
+
+name = 'Hello TCG'
+```
+
+The fields that follow belong to the file's value. Other files refer to it by its file name
+(`@rulebook`, `@base-set.friend`), and the engine finds the game by type: a folder has exactly one
+`Game`. `#` starts a directive only when a word follows it with no space: the retired hash
+dialect's headers were `# name`, with a space, so the two can't be confused. The named form stays
+legal for other projects that use Alex until nothing needs it. To settle in the Alex spec: how a
+text table fills one of the file's own fields (today `@@@ root-name.field`).
+
 Still open: **a heading per rulebook section.** The walkthrough writes `Section { number, title,
 text }`; the core's `Section` has no `title` yet. Asked of the TCG Alex session.
 

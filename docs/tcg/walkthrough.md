@@ -99,7 +99,7 @@ Next: cd hello-tcg, then tcg check
 
 ```
 // Hello TCG: the game. Which libraries it uses, its zones and the rules it plays by.
-hello-tcg = Game
+#type Game
 
 name = 'Hello TCG'
 engine-version = 1
@@ -151,7 +151,7 @@ Open `rulebook.alex` and add a section:
 
 ```
 // Hello TCG rulebook. Each section is text for players; rules in hello-tcg.alex cite them.
-rulebook = Rulebook
+#type Rulebook
 
 title = 'Hello TCG'
 sections = [
@@ -334,7 +334,7 @@ Now open `base-set.alex` and add two cards:
 ```
 // Base Set: Hello TCG's cards and decks. What each card is; what its abilities do is in
 // base-set-rules.alex.
-base-set = Set
+#type Set
 
 id = 'BASE'
 name = 'Base Set'
@@ -532,7 +532,7 @@ Open `base-set-rules.alex` and write the handler:
 
 ```
 // Base Set rules: what the cards' abilities do, and scenarios that test them.
-base-set-rules = Rules
+#type Rules
 
 for = @base-set
 
@@ -933,7 +933,7 @@ These are the complete Alex files. The two images are whatever pictures you chos
 
 ```
 // Hello TCG: the game. Which libraries it uses, its zones and the rules it plays by.
-hello-tcg = Game
+#type Game
 
 name = 'Hello TCG'
 engine-version = 1
@@ -1014,7 +1014,7 @@ deck-rules = [
 
 ```
 // Hello TCG rulebook. Each section is text for players; rules in hello-tcg.alex cite them.
-rulebook = Rulebook
+#type Rulebook
 
 title = 'Hello TCG'
 sections = [
@@ -1060,7 +1060,7 @@ A Spell does what its text says, once, and then goes to your discard pile.
 ```
 // Base Set: Hello TCG's cards and decks. What each card is; what its abilities do is in
 // base-set-rules.alex.
-base-set = Set
+#type Set
 
 id = 'BASE'
 name = 'Base Set'
@@ -1108,7 +1108,7 @@ decks = [
 
 ```
 // Base Set rules: what the cards' abilities do, and scenarios that test them.
-base-set-rules = Rules
+#type Rules
 
 for = @base-set
 

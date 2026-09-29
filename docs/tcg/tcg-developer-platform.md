@@ -133,17 +133,37 @@ a new library rule, not a more powerful language.
 
 `tcg new <name>` creates a skeleton, like `dotnet new`. It knows nothing about any game: no cards,
 no rules. The designer grows the game one piece at a time, by asking an agent, by editing files,
-or in Studio: add, check, test, play, repeat.
+or in Studio.
+
+**Two stages, one folder (decided 2026-09-28).** Many designers start with cards and a rulebook
+only, to print a physical game, and make it playable by the computer later or never. So a project
+has two goals, and `tcg check` reports progress toward each:
+
+- **Printable:** card types (library card shapes under the game's names, e.g. `type Creature :
+  UnitCard {}`; using a library for its card shapes brings in none of its rules), cards with their
+  art and printed ability text, decks, the rulebook with its numbers, and the card back. `tcg cards
+  --print` and `tcg rulebook` need only this.
+- **Playable:** zones, rules picked from the libraries (each citing its rulebook section), and a
+  handler for every printed ability, in a rules file next to the set. `tcg sim`, `test`,
+  `playtest`, `play` and `push` need this.
+
+Errors are real mistakes only (a broken reference, a missing image, an unknown number). What a game
+still lacks to be playable is a list, not errors: missing handlers don't fail a printable game.
 
 ```
 my-game/
-  my-game.alex        the game: libraries, zones, rules (starts empty)
+  my-game.alex        the game: name, card types, numbers, card back; later zones and rules
   rulebook.alex       the rulebook, as source (starts with a title)
   base-set.alex       the first set: cards and decks (starts empty)
-  base-set-rules.alex what the cards do, and scenarios (tests)
-  art/                card images
+  art/                images: card art, the card back
   AGENTS.md           for Claude, Codex and other agents: the spec, the commands, the conventions
 ```
+
+A rules file (`base-set-rules.alex`, what the cards' abilities do, and scenarios) is added when
+the game is made playable.
+
+Samples: `cardengine/samples/hello-tcg-print/` is Hello TCG at the end of the walkthrough's Part 1
+(printable only), and `cardengine/samples/hello-tcg/` is the finished, playable game.
 
 **One source for every number.** Rulebooks and games drift apart most often over numbers. So a
 game names the numbers that shape it in one place, `numbers = [starting-life = 10, ...]` on
@@ -191,7 +211,7 @@ LaTeX does for documents, with a card list generated from the card data.
 | `tcg playtest` | play many bot games and report win rates, game length, card stats |
 | `tcg play` | open the game table locally for hot-seat play |
 | `tcg rulebook` | render the rulebook to HTML and PDF |
-| `tcg cards` | render composed card images and printer-ready files |
+| `tcg cards` | render composed card images; `--print --printer <name>` makes printer-ready files |
 | `tcg login`, `tcg push`, `tcg invite` | the online service: host the game, invite players |
 | `tcg studio` | open the IDE on this folder (paid) |
 

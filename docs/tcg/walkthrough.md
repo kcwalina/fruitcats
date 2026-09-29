@@ -1,17 +1,26 @@
 # Walkthrough: your first card game
 
-In this walkthrough you build **Hello TCG**, a very small two-player card game, from an empty
-folder to a game you can playtest with bots, play online with a friend, and print: a rulebook,
-and real, physical cards you can shuffle and play at a table. It takes about an hour.
+In this walkthrough you build **Hello TCG**, a very small two-player card game, in two parts:
+
+- **Part 1: cards on a table.** You design the cards and write the rulebook, and `tcg` turns them
+  into files a card printer can print, plus a rulebook PDF. At the end you can order a real,
+  physical copy of your game and play it with people in the same room. No programming.
+- **Part 2: a game the computer can play.** You teach the engine the rules your rulebook already
+  describes. Then bots can playtest it thousands of times, and you can play it online with
+  friends anywhere.
+
+Many designers only need Part 1, or do Part 1 first and come back to Part 2 once the printed game
+has been played a few times. Both parts work on the same folder: Part 2 adds to what Part 1
+made, and changes nothing about it.
 
 Hello TCG is deliberately simple: six cards, one page of rules. It is not meant to be fun. It
 is meant to show every part of the toolkit once, so that when you build your own game you know
-where everything goes.
+where everything goes. Each part takes about half an hour.
 
 ## What you need
 
-- **The `tcg` tool**, free. It creates projects, checks them, runs tests, plays games with bots,
-  and renders rulebooks and cards.
+- **The `tcg` tool**, free. It creates projects, checks them, renders cards and rulebooks, and
+  plays games with bots.
 - **Some Alex.** Games are written in Alex, and this walkthrough assumes you can read it. If
   you haven't used it, the Alex getting-started guide takes about ten minutes.
 - **A text editor.** Any will do. VS Code with the Alex extension colours the files and underlines
@@ -30,26 +39,17 @@ where everything goes.
 A game is a folder. It holds two kinds of thing:
 
 - **Alex files**, plain text written in **Alex**, a small language for describing things. They
-  say what the game is: its rules, its rulebook, its cards.
-- **Assets**: the files the Alex files point at. Mostly images (card art, card frames, icons,
-  pictures for the rulebook), and other media your game uses.
+  say what the game is: its cards, its rulebook and, once you want the computer to play it, its
+  rules.
+- **Assets**: the files the Alex files point at. Mostly images (card art, the card back, card
+  frames, icons, pictures for the rulebook), and other media your game uses.
 
 Nothing about your game lives anywhere else: not in a database, not on a website. You can keep
 the folder on your laptop, in Git, on GitHub, or all three.
 
-There are three kinds of Alex file:
-
-- **The game** says what the game is made of: which zones there are, how a turn goes, how you win.
-  You rarely write rules from scratch. You pick them from **libraries** of rules that card games
-  commonly use (life totals, attacking, drawing, energy…) and set their numbers.
-- **The rulebook** is the text players read. Every rule in the game points at the rulebook section
-  that explains it, so the two can't drift apart.
-- **The cards**: a *set* file says what each card is (name, cost, power, the text printed on it,
-  its picture), and a *rules* file says what the card's abilities do.
-
-And the assets live next to them, in `art/`.
-
 ---
+
+# Part 1: Cards on a table
 
 ## 1. Install
 
@@ -72,7 +72,7 @@ tcg --version
 ```
 
 ```
-tcg 1.0.0 (Alex 1.0, core 1)
+tcg 1.0.0 (Alex 1.0, engine 1)
 ```
 
 In VS Code, install the **Alex** extension from the Extensions view.
@@ -88,14 +88,13 @@ Created hello-tcg/
   hello-tcg.alex          the game
   rulebook.alex           the rulebook
   base-set.alex           your first set of cards
-  base-set-rules.alex     what those cards do
   art/                    your game's images
   AGENTS.md               instructions for coding agents
 
 Next: cd hello-tcg, then tcg check
 ```
 
-`tcg new` never makes up a game for you. Every file starts almost empty. Open `hello-tcg.alex`:
+`tcg new` never makes up a game for you. Every file starts almost empty. `hello-tcg.alex`:
 
 ```
 #type Game
@@ -108,14 +107,11 @@ sets = [
 ]
 ```
 
-Two things to notice:
+`engine-version = 1` says which version of the game engine your game is written for, so a later
+engine keeps treating it exactly the same way. Anything you don't write has a default: no card
+types, no numbers, two players. You add those as the game grows.
 
-- `engine-version = 1` says which version of the game engine your game is written for, so a
-  later engine keeps playing it exactly the same way.
-- Anything you don't write has a default: no libraries, no card types, no zones, two players.
-  You add those as the game grows.
-
-The other three files. `rulebook.alex`, a rulebook with a title and no sections yet:
+`rulebook.alex`, a rulebook with a title and no sections yet:
 
 ```
 #type Rulebook
@@ -132,13 +128,11 @@ id = 'BASE'
 name = 'Base Set'
 ```
 
-`base-set-rules.alex`, where the abilities of the set's cards will be programmed:
+`art/` is empty. It is where your game's images go.
 
-```
-#type Rules
-
-for = @base-set
-```
+`AGENTS.md` is for coding agents. It tells them where the Alex and library references are, which
+commands to run after every change, and the conventions in this walkthrough. You don't need to
+read it, but you may.
 
 ### How the files fit together
 
@@ -152,27 +146,13 @@ The folder holds exactly one `Game`. That is your game, and everything else join
 reference:
 
 ```
-hello-tcg.alex       Game       rulebook = @rulebook   ──▶  rulebook.alex        Rulebook
-                                sets = [@base-set]     ──▶  base-set.alex        Set
-base-set-rules.alex  Rules      for = @base-set        ──▶  base-set.alex
-base-set.alex        (a card)   art = 'art/friend.png' ──▶  art/friend.png
+hello-tcg.alex   Game       rulebook = @rulebook      ──▶  rulebook.alex   Rulebook
+                            sets = [@base-set]        ──▶  base-set.alex   Set
+base-set.alex    (a card)   art = 'art/friend.png'    ──▶  art/friend.png
 ```
 
-- **The game lists its sets.** A folder may hold sets you're still working on; a set is in the
-  game only when `sets` lists it.
-- **A rules file names the set it programs.** The set itself never mentions its rules file, so the
-  cards read the same whether or not their abilities are programmed yet. When `tcg` loads the
-  game, it gathers every rules file whose `for` names one of the game's sets, and checks that
-  every ability printed on a card has its program, and every program belongs to a printed
-  ability.
-- **Assets are referred to by their path** in the folder.
-
-`art/` is empty. It is where your game's images go: card art now, and later card frames, icons
-and pictures for the rulebook.
-
-`AGENTS.md` is for coding agents. It tells them where the Alex and library references are, which
-commands to run after every change (`tcg check`, then `tcg test`), and the conventions in this
-walkthrough. You don't need to read it, but you may.
+A folder may hold sets you're still working on; a set is in the game only when `sets` lists it.
+Assets are referred to by their path in the folder.
 
 Check the project:
 
@@ -182,22 +162,180 @@ tcg check
 ```
 
 ```
-hello-tcg: 0 errors, 1 note
-  note  The game has no way to end yet. Add a rule that decides who wins, for example a
-        life total: see the `life` library.
+hello-tcg: 0 errors
+  Printable   not yet: no cards
+  Playable    not yet: no cards, no rules
 ```
 
-A project always checks cleanly as it grows. The notes tell you what's still missing.
+`tcg check` tells you two things. **Errors** are real mistakes, like a reference to something
+that doesn't exist; there are none. And it tells you how far the game is from two goals:
+**printable**, where you can print cards and a rulebook, and **playable**, where the computer can
+play it. Part 1 is about the first.
 
 > [!NOTE]
 > **In Studio:** run `tcg studio` in the folder. Studio opens in your browser with the files on
-> the left, the rulebook in the middle, and an empty game table on the right. Everything you do
-> in the rest of this walkthrough shows up there as you save.
+> the left, your cards in the middle and the rulebook on the right. Everything you do in the rest
+> of this walkthrough shows up there as you save.
 
-## 3. Write down how to win
+## 3. Card types
 
-Designers usually know their rules in words before anything else. So start in the rulebook.
-Open `rulebook.alex` and add a section:
+Hello TCG has two kinds of card:
+
+- **Creatures** stay on the table. They have a cost, Power and Health.
+- **Spells** are played once and discarded. They have a cost.
+
+You don't describe what a Creature has field by field. Card games share a small number of card
+shapes, and the libraries define them: a *unit card* has a cost, power and health; a *spell card*
+has a cost. Your game uses those shapes under its own names. In `hello-tcg.alex`:
+
+```
+uses = [
+  @units
+  @spells
+]
+
+type Creature : UnitCard {}
+type Spell : SpellCard {}
+```
+
+Games name their card types freely (Monsters, Allies, Characters, Tricks); the library supplies
+the shape. Using a library for its card shapes doesn't bring in any of its rules: a library's
+rules apply only once you list them, which you'll do in Part 2.
+
+> [!TIP]
+> **Ask your agent:** "My game has two card types: Creatures, with a cost, Power and Health, and
+> Spells, with a cost."
+
+## 4. Your first cards
+
+Open `base-set.alex` and add two Creatures. Any image works for their pictures for now, like a
+sketch or a photo of a drawing: save two images as `art/friend.png` and `art/big-friend.png`.
+
+```
+#type Set
+
+id = 'BASE'
+name = 'Base Set'
+
+cards = [
+  friend = Creature {
+    name = 'Friend', cost = 1, power = 1, health = 1
+    art = 'art/friend.png'
+    flavor = 'Always there.'
+  }
+  big-friend = Creature {
+    name = 'Big Friend', cost = 3, power = 3, health = 3
+    art = 'art/big-friend.png'
+    flavor = 'Bigger hugs.'
+  }
+]
+```
+
+`friend` is the card's identifier, the name everything else refers to it by (`@friend`).
+`name = 'Friend'` is the name printed on the card.
+
+See what they look like:
+
+```bash
+tcg cards friend big-friend
+```
+
+```
+Rendered 2 cards to out/cards/ (default frame)
+  out/cards/friend.png
+  out/cards/big-friend.png
+```
+
+Until you design your own card frame, cards use a plain default frame that shows the picture,
+name, cost, Power, Health, text and flavor.
+
+The images are part of your game just as the Alex files are: they go into Git with everything
+else, and `tcg check` tells you if a card points at a picture that isn't there:
+
+```
+hello-tcg: 1 error
+  error  base-set.alex:15  Big Friend's art 'art/big-friend.png' doesn't exist.
+```
+
+> [!NOTE]
+> **In Studio:** click `friend` in `base-set.alex`. The card appears as it will look, with a
+> property grid beside it. Change **Cost** from 1 to 2 in the grid, and the line in
+> `base-set.alex` changes to `cost = 2`. Change it back in the file, and the grid follows. The
+> file is always the truth; the grid is a view of it.
+
+> [!TIP]
+> **Ask your agent:** "Add two Creatures: Friend (cost 1, 1/1, 'Always there.') and Big Friend
+> (cost 3, 3/3, 'Bigger hugs.'), with their pictures in art/."
+
+## 5. Cards with abilities
+
+Most cards do something, and say so in their text. Add four more cards to `cards`, each with its
+picture in `art/`:
+
+```
+  hello = Creature {
+    name = 'Hello', cost = 2, power = 1, health = 1
+    art = 'art/hello.png'
+    flavor = 'Nice to meet you.'
+    abilities = [
+      OnEnter { text = 'When Hello enters, draw a card.' }
+    ]
+  }
+  cheer = Creature {
+    name = 'Cheer', cost = 2, power = 1, health = 2
+    art = 'art/cheer.png'
+    flavor = 'Louder together.'
+    abilities = [
+      Static {
+        text = 'Your other Creatures have +{bonus} Power.'
+        numbers = [bonus = 1]
+      }
+    ]
+  }
+  spark = Spell {
+    name = 'Spark', cost = 1
+    art = 'art/spark.png'
+    flavor = 'Small, bright, rude.'
+    abilities = [
+      OnPlay {
+        text = 'Deal {damage} damage to your opponent.'
+        numbers = [damage = 2]
+      }
+    ]
+  }
+  goodbye = Spell {
+    name = 'Goodbye', cost = 3
+    art = 'art/goodbye.png'
+    flavor = 'See you around.'
+    abilities = [
+      OnPlay { text = 'Destroy a Creature.' }
+    ]
+  }
+```
+
+An ability is written as what kind of ability it is and the text printed on the card:
+
+- `OnEnter`: something that happens when the card enters play.
+- `Static`: something that is true while the card is in play.
+- `OnPlay`: what a Spell does when you play it.
+
+Saying the kind now costs nothing, and it is what lets Part 2 connect each ability to what it
+does.
+
+Some abilities have numbers in them. Those are written as the ability's `numbers`, and the text
+shows them in braces: Cheer's card reads "Your other Creatures have +1 Power." because `bonus`
+is 1. That seems like a detour for a printed card. It pays off in Part 2, where the engine reads
+the same number the card prints, so the card and what it does can never disagree. `tcg check`
+holds the text and the numbers together: a `{name}` the ability doesn't have is an error, and so
+is a number the text never shows.
+
+> [!TIP]
+> **Ask your agent:** "Add Hello, Cheer, Spark and Goodbye as in chapter 5 of the walkthrough."
+
+## 6. The rulebook
+
+Players need to know how to play. The rulebook is a list of sections, each with a number, a title
+and its text. Open `rulebook.alex`:
 
 ```
 #type Rulebook
@@ -205,80 +343,19 @@ Open `rulebook.alex` and add a section:
 title = 'Hello TCG'
 sections = [
   winning = Section { number = '1', title = 'Winning', text = @winning-text }
+  decks = Section { number = '2', title = 'Your deck', text = @decks-text }
+  setup = Section { number = '3', title = 'Setting up', text = @setup-text }
+  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
+  energy = Section { number = '5', title = 'Energy', text = @energy-text }
+  creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
+  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
+  spells = Section { number = '8', title = 'Spells', text = @spells-text }
 ]
 
 @@@ winning-text
 Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
-@@@
-```
-
-`{@starting-life}` is a number the game defines. Numbers like this are where rulebooks and
-games usually drift apart: the designer changes starting Life to 12 while playtesting, and the
-rulebook still says 10. So every number that shapes the game lives in one place, `numbers` in
-`hello-tcg.alex`, and both the rules and the rulebook read it from there. In
-`hello-tcg.alex`, add:
-
-```
-numbers = [
-  starting-life = 10
-]
-```
-
-Now the rule itself. Life totals are in the `life` library. Add the library to `uses` and add
-the rule, taking its starting Life from `numbers`:
-
-```
-uses = [@life]
-```
-
-```
-life = [
-  LifeCounter {
-    name = 'Life'
-    start = @starting-life
-    lose-at = 0
-    cites = @rulebook.sections.winning
-  }
-]
-```
-
-Change `starting-life` to 12, and the game starts at 12 Life and `tcg rulebook` prints "Each player
-starts with 12 Life." There is nothing else to update. If the rulebook names a number that
-doesn't exist, or a rule uses one, `tcg check` says so. It also notes digits written straight into
-rulebook text, since those are the numbers that drift.
-
-`cites = @rulebook.sections.winning` connects the rule to the text that explains it. When a game is
-played, every event this rule causes carries that reference, so a player can always ask "why did
-that happen?" and get the rulebook's answer.
-
-```bash
-tcg check
-```
-
-```
-hello-tcg: 0 errors, 1 note
-  note  The game has no zones yet, so nothing can be played. Add zones for the deck, the hand
-        and the board.
-```
-
-> [!TIP]
-> **Ask your agent:** "Players start with 10 Life and lose when it reaches 0. Add that to the
-> rulebook and the game."
-
-## 4. Set up the table
-
-Now the parts of the table, how a game starts, and how a turn goes. First the rulebook. Add
-three sections to `sections`:
-
-```
-  setup = Section { number = '3', title = 'Setting up', text = @setup-text }
-  your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
-  energy = Section { number = '5', title = 'Energy', text = @energy-text }
-```
-
-And their text, in the text table:
-
-```
+@@@ decks-text
+A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
 @@@ setup-text
 Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
 @@@ your-turn-text
@@ -288,10 +365,24 @@ and pass when you are done.
 @@@ energy-text
 Cards cost Energy. You start with none. At the start of each of your turns, your Energy grows by
 {@energy-growth}, up to {@max-energy}, and refills.
+@@@ creatures-text
+Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
+play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
+discard pile.
+@@@ attacking-text
+On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
+attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
+equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
+other. Damage is removed at the end of the turn.
+@@@ spells-text
+A Spell does what its text says, once, and then goes to your discard pile.
 @@@
 ```
 
-Now the game. The new numbers go next to `starting-life`:
+`{@starting-life}` and the others are the game's **numbers**. Numbers are where rulebooks and
+games usually drift apart: the designer changes starting Life to 12 while playtesting, and the
+rulebook still says 10. So every number that shapes the game lives in one place, `numbers` in
+`hello-tcg.alex`, and the rulebook reads it from there. Add them:
 
 ```
 numbers = [
@@ -299,22 +390,145 @@ numbers = [
   opening-hand = 3
   energy-growth = 1
   max-energy = 3
+  deck-size = 12
+  max-copies = 3
 ]
 ```
 
-Add the libraries:
+Change `starting-life` to 12, and the rulebook says "Each player starts with 12 Life." There is
+nothing else to update. In Part 2 the engine reads the same numbers, so the printed rulebook and
+the game the computer plays always agree. If the rulebook names a number that doesn't exist,
+`tcg check` says so. It also notes digits typed straight into rulebook text, since those are the
+numbers that drift.
+
+Render it:
+
+```bash
+tcg rulebook
+```
+
+```
+Rendered the rulebook:
+  out/rulebook/index.html
+  out/rulebook/hello-tcg-rulebook.pdf
+```
+
+It contains every section, in order, and a card list made from `base-set.alex`: each card as it
+looks, with its text. You never copy a card's text into the rulebook, so the two can't disagree.
+
+> [!TIP]
+> **Ask your agent:** "Write the rulebook for Hello TCG: players start with 10 Life, decks are 12
+> cards with at most 3 copies, … Put every number in the game's numbers."
+
+## 7. Decks
+
+A printed game comes with decks to play. Add two to `base-set.alex`:
+
+```
+decks = [
+  swarm = Deck {
+    name = 'Swarm',
+    cards = [
+      [@friend, 3],
+      [@cheer, 3],
+      [@hello, 3],
+      [@spark, 3]
+    ]
+  }
+  big = Deck {
+    name = 'Big',
+    cards = [
+      [@big-friend, 3],
+      [@hello, 3],
+      [@goodbye, 3],
+      [@spark, 3]
+    ]
+  }
+]
+```
+
+```bash
+tcg check
+```
+
+```
+hello-tcg: 0 errors
+  Printable   yes: 6 cards, 2 decks, a rulebook with 8 sections
+  Playable    not yet: no zones, no turns, no way to win, 4 abilities with no program
+```
+
+The game is printable. It isn't playable by the computer yet, and it doesn't need to be: none of
+what's missing is an error. It's Part 2's list of things to do.
+
+## 8. Print it
+
+Printed cards need a back, the same for every card in the game. Save an image as
+`art/card-back.png` and name it in `hello-tcg.alex`:
+
+```
+card-back = 'art/card-back.png'
+```
+
+Then make the print files:
+
+```bash
+tcg cards --print --decks swarm big --printer makeplayingcards
+```
+
+```
+Rendered 24 cards (2 decks × 12) for MakePlayingCards, poker size (63 × 88 mm):
+  out/print/fronts/*.png      one image per card, 300 dpi, with 3 mm bleed
+  out/print/back.png          the card back, 300 dpi, with 3 mm bleed
+  out/print/order.txt         what to choose on the order page
+  out/print/hello-tcg-cards.pdf   the same cards for home printing, with crop marks
+```
+
+These are the files an online card printer asks for: each card at print resolution with the
+extra margin (bleed) the cutter needs, and the back. `order.txt` lists the choices to make on
+the printer's order page (card size, stock, number of cards) so the files fit. Or print the PDF
+at home and cut along the marks.
+
+With the rulebook PDF from chapter 6, that's a copy of your game you can play at a table. That's
+the end of Part 1. Play it with people, change what doesn't work, and print again.
+
+---
+
+# Part 2: A game the computer can play
+
+A printed game is played by people who read the rulebook. For bots to playtest it, or for people
+to play it online, the engine has to know the rules too. Your rulebook already says what they
+are; Part 2 tells the engine the same thing.
+
+You rarely write rules from scratch. The libraries hold the rules card games commonly use (life
+totals, attacking, drawing, energy…), and you pick the ones your game uses and set their numbers.
+Each rule you pick *cites* the rulebook section that explains it, so the rules and the rulebook
+stay connected.
+
+`tcg check` already listed what's missing:
+
+```
+  Playable    not yet: no zones, no turns, no way to win, 4 abilities with no program
+```
+
+The chapters below work through that list.
+
+## 9. The table
+
+The engine needs to know the parts of the table, how a game starts, and how a turn goes. Add the
+libraries to `uses` in `hello-tcg.alex`:
 
 ```
 uses = [
   @common
-  @life
+  @units
+  @spells
   @resources
   @turns
   @setup
 ]
 ```
 
-The zones. Each has a `role` that tells the libraries what it is for: `draw` takes cards from
+The zones. Each has a `role` that tells the libraries what it is for: drawing takes cards from
 the `deck` zone into the `hand` zone.
 
 ```
@@ -330,7 +544,8 @@ Each zone's name is the one you give it here: players see "Deck", "Hand", "Board
 `visible` decides who may see the cards in a zone. Nobody sees the deck; only you see your hand.
 The engine enforces this everywhere: in bots, in online play, in replays.
 
-Setup, turns and Energy:
+Setup, turns and Energy, each rule citing the section of your rulebook that says the same thing,
+and taking its numbers from `numbers`:
 
 ```
 setup = [
@@ -364,6 +579,7 @@ resources = [
     start = 0
     max = @max-energy
     pay-by = spend
+    cites = @rulebook.sections.energy
   }
 ]
 resource-rules = [
@@ -375,156 +591,18 @@ cost-resource = @Energy
 
 `cost-resource` says that when a card shows `cost = 2`, it means 2 Energy.
 
-```bash
-tcg check
-```
-
-```
-hello-tcg: 0 errors, 2 notes
-  note  rulebook.alex:9  Section 'energy' is cited by no rule's `cites`. GrowsAt and
-        RefillsAt could cite it.
-  note  There are no cards yet. Add some to base-set.alex.
-```
-
-The first note is the rulebook check at work: a section that explains no rule is probably a
-mistake. Add `cites = @rulebook.sections.energy` to the `GrowingCounter` rule and the note goes away.
+`cites = @rulebook.sections.setup` connects a rule to the text that explains it. When a game is
+played, every event a rule causes carries that reference, so a player can always ask "why did
+that happen?" and get the rulebook's answer.
 
 > [!TIP]
-> **Ask your agent:** "Add the setup, turn and Energy rules from the rulebook sections I just
-> wrote."
+> **Ask your agent:** "Make the game playable: add the zones, setup, turn and Energy rules that
+> rulebook sections 3 to 5 describe."
 
-## 5. Your first cards
+## 10. Creatures, attacking and winning
 
-Cards that stay on the board, with power and health, come from the `units` library. Your game
-gives them its own name, **Creature**. In `hello-tcg.alex`:
-
-```
-uses = [
-  @common
-  @units
-  @life
-  @resources
-  @turns
-  @setup
-]
-
-type Creature : UnitCard {}
-
-units = [
-  UnitsEnterExhausted { cites = @rulebook.sections.creatures }
-  DefeatAtHealth { cites = @rulebook.sections.creatures }
-]
-```
-
-Your game's Creatures are the library's unit cards under your own name, so they have everything
-a unit card has: a cost, power and health. Games name their card types freely (Monsters, Allies,
-Characters); the library supplies what they do. Declaring the type is all it takes: your game's
-card types are the types it declares.
-
-The rulebook section:
-
-```
-  creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
-```
-
-```
-@@@ creatures-text
-Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
-play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
-discard pile.
-@@@
-```
-
-Now open `base-set.alex` and add two cards:
-
-```
-#type Set
-
-id = 'BASE'
-name = 'Base Set'
-
-cards = [
-  friend = Creature {
-    name = 'Friend', cost = 1, power = 1, health = 1
-    flavor = 'Always there.'
-  }
-  big-friend = Creature {
-    name = 'Big Friend', cost = 3, power = 3, health = 3
-    flavor = 'Bigger hugs.'
-  }
-]
-```
-
-`friend` is the card's identifier, the name everything else refers to it by (`@friend`).
-`name = 'Friend'` is the name printed on the card.
-
-See what they look like:
-
-```bash
-tcg cards friend big-friend
-```
-
-```
-Rendered 2 cards to out/cards/ (default frame)
-  out/cards/friend.png
-  out/cards/big-friend.png
-```
-
-Until you design your own card frame, cards use a plain default frame that shows the name, cost,
-power, health and text.
-
-Now give them pictures. Any image works for now: a sketch, a photo of a drawing. Save two images
-as `art/friend.png` and `art/big-friend.png`, and point each card at its picture:
-
-```
-  friend = Creature {
-    name = 'Friend', cost = 1, power = 1, health = 1
-    art = 'art/friend.png'
-    flavor = 'Always there.'
-  }
-  big-friend = Creature {
-    name = 'Big Friend', cost = 3, power = 3, health = 3
-    art = 'art/big-friend.png'
-    flavor = 'Bigger hugs.'
-  }
-```
-
-The images are part of your game just as the Alex files are: they go into Git with everything
-else, and `tcg check` tells you if a card points at a picture that isn't there:
-
-```
-hello-tcg: 1 error
-  error  base-set.alex:15  Big Friend's art 'art/big-friend.png' doesn't exist.
-```
-
-Render the cards again with `tcg cards friend big-friend`, and the pictures are in the frame.
-
-> [!NOTE]
-> **In Studio:** click `friend` in `base-set.alex`. The card appears as it will look, with a
-> property grid beside it. Change **Cost** from 1 to 2 in the grid, and the line in
-> `base-set.alex` changes to `cost = 2`. Change it back in the file, and the grid follows. The
-> file is always the truth; the grid is a view of it.
-
-> [!TIP]
-> **Ask your agent:** "Add a Creature type, and two vanilla Creatures: Friend (cost 1, 1/1) and
-> Big Friend (cost 3, 3/3)."
-
-## 6. Attacking
-
-Creatures that can't attack don't do much. Attacking comes from the `combat` library. Add it to
-`uses`, allow the attack action, and pick the rules:
-
-```
-uses = [
-  @common
-  @units
-  @combat
-  @life
-  @resources
-  @turns
-  @setup
-]
-```
+The rest of the rulebook: Creatures, attacks and Life. Add `@combat` and `@life` to `uses`, and
+`@combat.actions.attack` to the allowed actions:
 
 ```
   Actions {
@@ -536,7 +614,14 @@ uses = [
   }
 ```
 
+Then the rules:
+
 ```
+units = [
+  UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  DefeatAtHealth { cites = @rulebook.sections.creatures }
+]
+
 combat = [
   AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
   AttackerMustBeReady { cites = @rulebook.sections.attacking }
@@ -545,10 +630,20 @@ combat = [
   LifeDamageEqualsPower {}
   DamageClearsAt { moment = @turn-end }
 ]
+
+life = [
+  LifeCounter {
+    name = 'Life'
+    start = @starting-life
+    lose-at = 0
+    cites = @rulebook.sections.winning
+  }
+]
 ```
 
 Each rule is one sentence of the rulebook:
 
+- `UnitsEnterExhausted`, `DefeatAtHealth`: section 6, Creatures.
 - `AttackerChooses { targets = [unit, life] }`: the attacker picks either a Creature or the
   opponent.
 - `AttackerMustBeReady`: only ready Creatures attack, and attacking exhausts them.
@@ -556,60 +651,157 @@ Each rule is one sentence of the rulebook:
   other at the same time.
 - `LifeDamageEqualsPower`: attacking the opponent costs them Life equal to the attacker's Power.
 - `DamageClearsAt`: damage heals at the end of the turn.
-
-The rulebook section:
-
-```
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
-```
-
-```
-@@@ attacking-text
-On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
-attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
-equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
-other. Damage is removed at the end of the turn.
-@@@
-```
-
-> [!TIP]
-> **Ask your agent:** "Creatures can attack the opponent or a Creature. Use the usual rules:
-> both deal their Power, damage heals at the end of the turn."
-
-## 7. Your first game
-
-You need a deck to play. Decks are listed in the set. Add this to `base-set.alex`:
-
-```
-decks = [
-  first-deck = Deck {
-    name = 'First Deck',
-    cards = [
-      [@friend, 6],
-      [@big-friend, 6]
-    ]
-  }
-]
-```
-
-Now watch two bots play it:
+- `LifeCounter`: section 1, starting at `@starting-life`, the same number the rulebook prints.
 
 ```bash
-tcg sim --decks first-deck first-deck --seed 7
+tcg check
 ```
 
 ```
-Hello TCG · seed 7 · First Deck (Player 1, random bot) vs First Deck (Player 2, random bot)
+hello-tcg: 0 errors
+  Printable   yes
+  Playable    not yet: 4 abilities with no program
+  note  rulebook.alex  Section 'decks' is cited by no rule.
+```
+
+The note is the rulebook check at work: a section that explains no rule is either a rule you
+haven't added yet or a mistake. Deck rules come in chapter 13.
+
+> [!TIP]
+> **Ask your agent:** "Add the rules for Creatures, attacking and winning from rulebook sections
+> 1, 6 and 7."
+
+## 11. What the cards do
+
+Each ability on a card says what kind it is and what its text says. What it *does* is a small
+program called its **handler**. Handlers live in a rules file next to the set. Create
+`base-set-rules.alex`:
+
+```
+#type Rules
+
+for = @base-set
+
+effect draw-a-card { draw() }
+@hello.on-enter = draw-a-card
+```
+
+`for = @base-set` says which set's cards this file programs. The set never mentions its rules
+file, so the cards read the same, and print the same, whether or not their abilities are
+programmed. When `tcg` loads the game, it gathers every rules file whose `for` names one of the
+game's sets.
+
+`effect draw-a-card { draw() }` is the ability's program: draw a card. `@hello.on-enter =
+draw-a-card` attaches it to Hello's `OnEnter` ability. Handlers are short on purpose: they use the
+words the libraries give you (`draw`, `damage`, `destroy`, `choose`…), and each one is a line or
+two.
+
+The other three:
+
+```
+static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+@cheer.static = others-get-bonus
+
+effect damage-opponent { opponent.damage-life(ability.damage) }
+@spark.on-play = damage-opponent
+
+effect destroy-a-creature { choose(all).destroy() }
+@goodbye.on-play = destroy-a-creature
+```
+
+- Cheer's handler reads as: "my units, other than this one, are granted the ability's bonus in
+  power". `ability.bonus` is the number printed on the card. A static isn't something that
+  happens; it's something that is true while the card is in play. When Cheer leaves the board,
+  the bonus goes away by itself.
+- Spark's handler deals `ability.damage`, the same number the card prints.
+- `choose(all)` asks the player who played Goodbye to pick a Creature, any player's. You don't
+  write any screen or button for that. The engine asks whoever is playing that seat: a person
+  sees the Creatures highlighted on the table, a bot weighs its options, an LLM player reads a
+  list.
+
+Every ability printed on a card must have a handler, and every handler must belong to an ability
+printed on a card, so the card and what it does can't disagree silently. `tcg check` also notes a
+digit typed straight into a handler, like `grant(power: +1)`: that's a number the card's text
+doesn't know about.
+
+### Scenarios
+
+Prove the handlers work. A **scenario** sets up a situation, does something, and checks the
+result. The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`…) come from the
+`scenarios` library, so add `@scenarios` to `uses`. Then add two scenarios to
+`base-set-rules.alex`:
+
+```
+scenario 'Hello draws a card when it enters' {
+  given hand(me, @hello)
+    deck(me, @friend)
+    counter-is(me, @Energy, 2)
+  when play(me, @hello)
+  then in-zone(@friend, @Hand)
+}
+
+scenario 'Goodbye destroys the chosen Creature' {
+  given controls(opponent, @cheer)
+    controls(opponent, @friend)
+    hand(me, @goodbye)
+    counter-is(me, @Energy, 3)
+  when play(me, @goodbye, target: @cheer)
+  then in-zone(@cheer, @Discard)
+    power(@friend) == 1
+}
+```
+
+The second also checks that Friend loses Cheer's bonus once Cheer is gone.
+
+```bash
+tcg test
+```
+
+```
+hello-tcg: 2 scenarios, 2 passed
+  ✓ Hello draws a card when it enters
+  ✓ Goodbye destroys the chosen Creature
+```
+
+Scenarios are your game's tests. Every time you or your agent changes something, `tcg test` tells
+you whether a card still does what its text says.
+
+> [!TIP]
+> **Ask your agent:** "Write the handlers for Hello, Cheer, Spark and Goodbye, and a scenario for
+> each."
+
+## 12. Your first game
+
+```bash
+tcg check
+```
+
+```
+hello-tcg: 0 errors
+  Printable   yes
+  Playable    yes
+  note  rulebook.alex  Section 'decks' is cited by no rule.
+```
+
+Watch two bots play:
+
+```bash
+tcg sim --decks swarm big --seed 7
+```
+
+```
+Hello TCG · seed 7 · Swarm (Player 1, random bot) vs Big (Player 2, random bot)
 
 Setup    Both decks are shuffled. Each player draws 3.              [Setting up]
          Player 2 goes first.                                        [Your turn]
-Round 1  Player 2: Energy 1. Plays Friend.
+Round 1  Player 2: Energy 1. Plays Spark: Player 1's Life 10 → 8.
          Player 1: draws. Energy 1. Plays Friend.
-Round 2  Player 2: draws. Energy 2. Friend attacks Player 1: Life 10 → 9.   [Attacking]
-         Player 1: draws. Energy 2. Friend attacks Friend: both defeated.   [Creatures]
+Round 2  Player 2: draws. Energy 2. Plays Hello, draws a card.
+         Player 1: draws. Energy 2. Plays Cheer. Friend attacks Player 2: Life 10 → 8.
+                                                                     [Attacking]
 ...
-Round 9  Player 2: Big Friend attacks Player 1: Life 2 → 0.
-Game over: Player 2 wins in round 9.                                 [Winning]
+Round 9  Player 1: Friend attacks Player 2: Life 2 → 0.
+Game over: Player 1 wins in round 9.                                 [Winning]
 ```
 
 The words in brackets are the rulebook sections the rules cite. When something in a game
@@ -622,240 +814,10 @@ game, from a bot run or from online play, can be replayed this way.
 > **In Studio:** press **Play** above the table. The two bots play in front of you, and you can
 > step through the game one action at a time. Click any event to jump to the rule that caused it.
 
-## 8. A card that does something
+## 13. Deck rules and a playtest
 
-Now a card with an ability. Save a picture for it as `art/hello.png`, and add **Hello** to `cards`
-in `base-set.alex`:
-
-```
-  hello = Creature {
-    name = 'Hello', cost = 2, power = 1, health = 1
-    art = 'art/hello.png'
-    flavor = 'Nice to meet you.'
-    abilities = [
-      OnEnter { text = 'When Hello enters, draw a card.' }
-    ]
-  }
-```
-
-`OnEnter { text = '...' }` says two things: the card has an ability that happens when it enters
-play, and this is the text printed on the card. It doesn't say what the ability *does*. Check:
-
-```bash
-tcg check
-```
-
-```
-hello-tcg: 1 error
-  error  base-set.alex:17  Hello has an OnEnter ability, but nothing says what it does.
-         Add a handler to base-set-rules.alex, for example:
-
-           effect hello-draws { draw(1) }
-           @hello.on-enter = hello-draws
-```
-
-Every ability printed on a card must have a handler, and every handler must belong to an ability
-printed on a card. So the card and what it does can never disagree silently.
-
-Open `base-set-rules.alex` and write the handler:
-
-```
-#type Rules
-
-for = @base-set
-
-effect draw-a-card { draw() }
-@hello.on-enter = draw-a-card
-```
-
-`effect draw-a-card { draw() }` is the ability's program: draw a card. `@hello.on-enter =
-draw-a-card` attaches it to Hello. Handlers are short on purpose: they use the words the
-libraries give you (`draw`, `damage`, `destroy`, `choose`…), and each one is a line or two.
-
-Now prove it works. A **scenario** sets up a situation, does something, and checks the result.
-The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`…) come from the `scenarios`
-library, so add `@scenarios` to `uses` in `hello-tcg.alex`. Then add a scenario below the
-handler:
-
-```
-scenario 'Hello draws a card when it enters' {
-  given hand(me, @hello)
-    deck(me, @friend)
-    counter-is(me, @Energy, 2)
-  when play(me, @hello)
-  then in-zone(@friend, @Hand)
-}
-```
-
-```bash
-tcg test
-```
-
-```
-hello-tcg: 1 scenario, 1 passed
-  ✓ Hello draws a card when it enters
-```
-
-Scenarios are your game's tests. Every time you or your agent changes something, `tcg test` tells
-you whether a card still does what its text says.
-
-> [!TIP]
-> **Ask your agent:** "Add Hello: a Creature, cost 2, 1/1, 'When Hello enters, draw a card.'
-> Write its handler and a scenario for it."
-
-## 9. Three more cards
-
-**Cheer** makes your other Creatures stronger for as long as it is on the board. That is a
-*static* ability. Save its picture as `art/cheer.png`, and add it to `cards`:
-
-```
-  cheer = Creature {
-    name = 'Cheer', cost = 2, power = 1, health = 2
-    art = 'art/cheer.png'
-    flavor = 'Louder together.'
-    abilities = [
-      Static {
-        text = 'Your other Creatures have +{bonus} Power.'
-        numbers = [bonus = 1]
-      }
-    ]
-  }
-```
-
-The ability has a number, `bonus`, and its printed text shows it as `{bonus}`. It's the same idea
-as the game's `numbers`, for one ability: the card says "+1 Power" because `bonus` is 1, so the
-text on the card and what the card does can't disagree.
-
-And its handler to `base-set-rules.alex`:
-
-```
-static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
-@cheer.static = others-get-bonus
-```
-
-Read it as: "my units, other than this one, are granted the ability's bonus in power".
-`ability.bonus` is the number from the card. A static isn't something that happens; it's
-something that is true while the card is in play. When Cheer leaves the board, the bonus goes
-away by itself.
-
-`tcg check` holds the two together: a `{name}` in the text that the ability doesn't have is an
-error, and so is a number the text never shows, because players would be playing with a number
-they can't see. It also notes a digit written straight into a handler, like `grant(power: +1)`:
-that's a number the card's text doesn't know about.
-
-**Spark** and **Goodbye** are spells: you play them, they do something once, and they go to the
-discard pile. Spells come from the `spells` library, and your game calls them **Spell**. In
-`hello-tcg.alex`:
-
-```
-uses = [
-  @common
-  @units
-  @spells
-  @combat
-  @life
-  @resources
-  @turns
-  @setup
-  @scenarios
-]
-
-type Spell : SpellCard {}
-```
-
-The cards, with their pictures in `art/spark.png` and `art/goodbye.png`:
-
-```
-  spark = Spell {
-    name = 'Spark', cost = 1
-    art = 'art/spark.png'
-    flavor = 'Small, bright, rude.'
-    abilities = [
-      OnPlay {
-        text = 'Deal {damage} damage to your opponent.'
-        numbers = [damage = 2]
-      }
-    ]
-  }
-  goodbye = Spell {
-    name = 'Goodbye', cost = 3
-    art = 'art/goodbye.png'
-    flavor = 'See you around.'
-    abilities = [
-      OnPlay { text = 'Destroy a Creature.' }
-    ]
-  }
-```
-
-Their handlers:
-
-```
-effect damage-opponent { opponent.damage-life(ability.damage) }
-@spark.on-play = damage-opponent
-
-effect destroy-a-creature { choose(all).destroy() }
-@goodbye.on-play = destroy-a-creature
-```
-
-`choose(all)` asks the player who played Goodbye to pick a Creature, any player's. You don't
-write any screen or button for that. The engine asks whoever is playing that seat: a person
-sees the Creatures highlighted on the table, a bot weighs its options, an LLM player reads a list.
-
-A scenario with a choice in it:
-
-```
-scenario 'Goodbye destroys the chosen Creature' {
-  given controls(opponent, @cheer)
-    controls(opponent, @friend)
-    hand(me, @goodbye)
-    counter-is(me, @Energy, 3)
-  when play(me, @goodbye, target: @cheer)
-  then in-zone(@cheer, @Discard)
-    power(@friend) == 1
-}
-```
-
-It also checks that Friend loses Cheer's bonus once Cheer is gone.
-
-```bash
-tcg check
-tcg test
-```
-
-```
-hello-tcg: 0 errors, 1 note
-  note  rulebook.alex  No section explains spells. The rulebook's card list will show
-        Spark and Goodbye, but players won't know what a Spell is.
-
-hello-tcg: 2 scenarios, 2 passed
-```
-
-Add a section:
-
-```
-  spells = Section { number = '8', title = 'Spells', text = @spells-text }
-```
-
-```
-@@@ spells-text
-A Spell does what its text says, once, and then goes to your discard pile.
-@@@
-```
-
-> [!TIP]
-> **Ask your agent:** "Add Cheer, Spark and Goodbye as described in the walkthrough's chapter 9,
-> with scenarios."
-
-## 10. Two decks and a playtest
-
-A real game has rules about decks. Add two numbers:
-
-```
-  deck-size = 12
-  max-copies = 3
-```
-
-Add the `decks` library to `uses`, and:
+Section 2 of the rulebook says how decks are built; the engine doesn't know it yet. Add `@decks`
+to `uses`, and:
 
 ```
 deck-rules = [
@@ -864,54 +826,9 @@ deck-rules = [
 ]
 ```
 
-```
-  decks = Section { number = '2', title = 'Your deck', text = @decks-text }
-```
+Now `tcg check` checks every deck against them, and the note about section 2 is gone.
 
-```
-@@@ decks-text
-A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
-@@@
-```
-
-```bash
-tcg check
-```
-
-```
-hello-tcg: 2 errors
-  error  base-set.alex:34  First Deck has 6 copies of Friend. A deck may have at most 3.
-                           [Your deck]
-  error  base-set.alex:34  First Deck has 6 copies of Big Friend. A deck may have at most 3.
-                           [Your deck]
-```
-
-Your new rule caught your old deck. Replace `decks` in `base-set.alex` with two real ones:
-
-```
-decks = [
-  swarm = Deck {
-    name = 'Swarm',
-    cards = [
-      [@friend, 3],
-      [@cheer, 3],
-      [@hello, 3],
-      [@spark, 3]
-    ]
-  }
-  big = Deck {
-    name = 'Big',
-    cards = [
-      [@big-friend, 3],
-      [@hello, 3],
-      [@goodbye, 3],
-      [@spark, 3]
-    ]
-  }
-]
-```
-
-Now the question every designer asks: is it fair? Let bots play a thousand games:
+Then the question every designer asks: is it fair? Let bots play a thousand games:
 
 ```bash
 tcg playtest --decks swarm big --games 1000
@@ -959,7 +876,9 @@ Big         455     45.5%    42.4 – 48.6
 Draws        13      1.3%
 ```
 
-That's the loop you'll use most: change a card, playtest, read the report, repeat.
+That's the loop you'll use most: change a card, playtest, read the report, repeat. When you're
+happy, `tcg cards --print` makes new print files: the printed Cheer shows the new cost, because
+it's the same card.
 
 > [!NOTE]
 > **In Studio:** the **Playtests** tab lists every run with its report, and shows two runs side by
@@ -970,7 +889,7 @@ That's the loop you'll use most: change a card, playtest, read the report, repea
 > tell me which brings the decks closest to even." Agents are good at this: they can run many
 > playtests while you do something else. Review what they changed before you keep it.
 
-## 11. Play it
+## 14. Play it
 
 With a person:
 
@@ -1016,54 +935,7 @@ it and games in progress finish on the version they started with.
 Every online game is saved as its seed and its actions, so you can watch it again with
 `tcg replay`, or turn a surprising moment into a scenario.
 
-## 12. The rulebook
-
-```bash
-tcg rulebook
-```
-
-```
-Rendered the rulebook:
-  out/rulebook/index.html
-  out/rulebook/hello-tcg-rulebook.pdf
-```
-
-It contains every section you wrote, in order, and a card list made from `base-set.alex`: each
-card as it looks, with its text. You never copy a card's text into the rulebook, so the two can't
-disagree.
-
-`tcg check` keeps the rulebook honest: a rule that cites a section that doesn't exist is an error,
-and a rule with no citation, or a section no rule cites, is a note.
-
-## 13. Print your cards
-
-When you want the game on a table, not just on a screen. Printed cards need a back, the same
-for every card in the game. Save an image as `art/card-back.png` and name it in
-`hello-tcg.alex`:
-
-```
-card-back = 'art/card-back.png'
-```
-
-Then:
-
-```bash
-tcg cards --print --decks swarm big
-```
-
-```
-Rendered 24 cards (2 decks × 12) for printing:
-  out/print/hello-tcg-cards.pdf      fronts and backs, with bleed and crop marks
-  out/print/fronts/*.png             one image per card, at print resolution
-  out/print/backs/back.png
-```
-
-These are the files online card printers ask for: each card at print resolution with the extra
-margin (bleed) the cutter needs, plus a card back. Upload them to a printer, or print the PDF at
-home and cut along the marks. Together with the rulebook PDF from chapter 12, that's a copy of
-your game you can play with people in the same room.
-
-## 14. Starting from rules you already have
+## 15. Starting from rules you already have
 
 You may already have a rulebook, in a document or in your head. Instead of building step by step,
 you can give it to your agent and let it write the whole game.
@@ -1071,10 +943,13 @@ you can give it to your agent and let it write the whole game.
 Put your rules in the project folder, say `my-rules.md`, and ask:
 
 > [!TIP]
-> **Ask your agent:** "Read my-rules.md and write this game: the rulebook sections, the game's
-> rules, the cards and a scenario for every card ability. Use library rules wherever you can.
-> Run tcg check and tcg test until both pass, then run a short playtest and tell me what you
-> found."
+> **Ask your agent:** "Read my-rules.md and write this game: the rulebook sections, the cards,
+> the game's rules and a handler and scenario for every card ability. Use library rules wherever
+> you can. Run tcg check and tcg test until both pass, then run a short playtest and tell me what
+> you found."
+
+Or only the first half, for a printed game: "Read my-rules.md and write the cards and the
+rulebook, ready to print."
 
 Your agent reads `AGENTS.md`, picks rules from the libraries, and runs the same commands you've
 used here until everything checks. What comes back won't be the same every time, so review it
@@ -1092,8 +967,8 @@ more than 150 published card games.
 
 ## Where next
 
-- **Your own game.** `tcg new my-game`, and grow it the same way: rulebook, rules, cards,
-  scenarios, playtests.
+- **Your own game.** `tcg new my-game`: cards and a rulebook first, rules when you want the
+  computer to play it.
 - **How cards look.** Designing your own card frames and card backs, and the sizes and finishes
   printers offer, have their own guide.
 - **The library reference.** Every library, every rule, and what its numbers mean.

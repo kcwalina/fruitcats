@@ -1,0 +1,25 @@
+#type Game
+
+name = 'Hello TCG'
+engine-version = 1
+rulebook = @rulebook
+card-back = 'art/card-back.png'
+uses = [
+  @units
+  @spells
+]
+sets = [
+  @base-set
+]
+
+numbers = [
+  starting-life = 10
+  opening-hand = 3
+  energy-growth = 1
+  max-energy = 3
+  deck-size = 12
+  max-copies = 3
+]
+
+type Creature : UnitCard {}
+type Spell : SpellCard {}

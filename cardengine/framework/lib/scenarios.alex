@@ -18,7 +18,10 @@ verbs = [
   hand = Verb { on = player, params = [cards = units], only-in = scenario }
   deck = Verb { on = player, params = [cards = units], only-in = scenario }
   zone = Verb { on = player, params = [zone = zone, cards = units], only-in = scenario }
-  counter-is = Verb { on = player, params = [counter = counter, n = int], only-in = scenario }
+  // Sets a player's counter or resource (`counter-is(me, @Energy, 3)`).
+  counter-is = Verb {
+    on = player, params = [counter = counter-or-resource, n = int], only-in = scenario
+  }
   card-counter = Verb { on = unit, params = [counter = counter, n = int], only-in = scenario }
   played-this-round = Verb { on = player, params = [n = int], only-in = scenario }
   round = Verb { params = [n = int], only-in = scenario }

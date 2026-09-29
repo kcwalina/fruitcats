@@ -837,7 +837,10 @@ before, still mean the same. Where a change isn't additive, it says so.
   `AttachmentRule` / `Game.attachments`, `PermanentRule` / `Game.permanents`);
   `OneClimaxPerTurn` stays a plain `Rule` in `rules`.
   Conformance is structural: the mapped type declares or inherits every required field of the
-  record with the same type, and reads the record's optional fields it lacks as their defaults
+  record, each field it shares with the record has a type the record's field accepts (Hello
+  TCG's `cost: int` conforms to `UnitCard.cost: Cost?`, where `Cost = int | [text: int]`;
+  inclusion, not identity, as the Alex 0.6.0 session implemented it), and it reads the
+  record's optional fields it lacks as their defaults
   (a Hello TCG Creature has no `unique`, so it is `false`). A mapped type gains the record's
   extension members from every loaded library (`on-enter` from units, `on-attack` from combat),
   so its cards have the handler slots and the library's rules apply to them. A type may be
@@ -871,12 +874,116 @@ before, still mean the same. Where a change isn't additive, it says so.
   samples do; a deck entry `[@card, 3]` is one item; a comment that described several items on
   one line now sits above them. Records and lists that were already split over lines stay split.
   Rules documents were not reformatted: their bodies are code.
-- To do, left as checker notes: Folkborn's card text and handlers still type their numbers
-  ('Deal 2 damage to a unit.', `damage(2)`); moving them into card constants is a content change
-  to its cards and rules files. Folkborn names no `card-back` yet.
+- Done since (see "Folkborn's card numbers are constants" below): Folkborn's cards moved their
+  numbers into constants. Folkborn names no `card-back` yet.
 - The planning branch isn't merged into main here. Its `docs/tcg/tcg-developer-platform.md`
   conflicts with main's (both rewrote the "Core changes" list); the TCG Developer Platform
   session owns that file and resolves the conflict when it next merges main.
+
+### Folkborn's card numbers are constants (2026-09-28)
+
+The follow-up left open above. In `starter-box.alex` and `berry-picnic.alex`, every card whose
+`text` typed a digit now shows it as `{name}` and lists it in `constants` (one per line when a
+card has two, as the formatting rule asks); the handlers in `starter-box-rules.alex` and
+`berry-picnic-rules.alex` read it as `card.name`. The printed text is unchanged word for word.
+
+- **Names.** `damage`, `zest-damage` (the Zest amount on Citron Fox and Zest Burst), `heal`,
+  `boost` (a Power bonus), `sprout`, `draw` (Mangosteen Tapir) and `crumbs` (Strawberry Milk
+  Cow). `boost` rather than `power`, because `card.power` is already the card's printed stat.
+- **Shared handlers.** A handler used by cards with different numbers reads each card's own, so
+  handlers that differed only in their number became one: `damage-any` (Tangerine Chick 1, Sour
+  Spray 2, Coconut Drop 5; was `ping-any`, `two-damage-any`, `five-damage-any`), `zest-damage`
+  (Citron Fox 1/2, Zest Burst 3/5; was `zing` and `zest-burst`), `heal-each-own` (Granny Smith
+  1, Guava Capybara 2), `sprout` (Kiwi Bird and Papaya 1, Tropical Rain 2; was `sprout-one`,
+  `sprout-two`). The Zest +1 on Zest Mouse, Lime Gecko and Grapefruit Ferret is `zest-boost`
+  with `boost = 1` on each card. Handlers renamed because their names said the number:
+  `damage-exhausted`, `damage-each-enemy`, `heal-any`, `lush-draw`, `boost-own` (Catnip),
+  `give-crumbs` (Milk Cow), `others-boost` (Razz, a static reading `card.boost`).
+- **Left alone.**
+  - Hero faces. `Hero` is a `HeroCard : Card`, so a hero card does have `constants`, but the
+    numbers are printed on its faces' abilities (`Face.abilities`), and the core only defines
+    `{name}` for a card's `text` and its own `abilities`. Whether a face's text may show the hero
+    card's constants, and whether `card` in a face handler (`@sunny.face1.exhaust`) and in an
+    Awaken condition is the hero card, is a core question to settle first. Until then the heroes'
+    handlers (`plus-one-power`, `heal-two`, `heal-three-and-guard`, `opponent-five-candles`,
+    `six-candles`, `eight-offerings`, `five-units`, `rally-plus-one`) keep their digits.
+  - Mechanics. `Mechanic` is a `Keyword`, not a card, and has no `constants`: Ripen's +1/+1 up
+    to +2/+2 and the Crumb's max are counter data (`StatCounter`), and Lush's 7 is typed in
+    `lush-on`. A mechanic-level constant would be a core change.
+  - Numbers spelled as words or implied by "a": "Draw a card" (`draw(1)`), "Put a Crumb"
+    (`+= 1`), "Ready two of your Offerings", "Summon two Ants". A constant must show in the text
+    as a digit, so moving these would change the printed words; they stay as the designer wrote
+    them, and their handler digits stay as checker notes.
+  - Sakura's "when you heal 1 or more damage": the 1 says what triggers the ability, it is not an
+    amount a handler uses or a playtest would vary.
+  - `Applied { keyword = @Tough, n = 1 }` and Talismans' `attached = Grant { ... }`: already data,
+    not text.
+
+### Card layouts, and keyword rules that take the game's own keyword (owner, 2026-09-28)
+
+Asked through the TCG Developer Platform session, from the samples' six real Domowiki cards
+(`cardengine/samples/hello-tcg-print/card-layout.alex` is the target; the design is the plan's
+"How cards look"). Both changes are additive.
+
+- **`CardLayout`, a document type in the core** (`#type CardLayout`), named by
+  `Game.card-layout: CardLayout?`. It is in the core rather than a library because a printable
+  game uses no libraries, and the engine never reads it: the card renderer and the print files
+  do. Fields: `width`, `height`, `dpi = 300`, `bleed = 0` (pixels at `dpi`, measured from the
+  card's top-left corner at the trim line), `fonts: [text: text]` (name = font file),
+  `frames: [text: text]` (card type = frame image) and `parts: [text: Part]`, drawn in order.
+  `Part { box: Box }` with `Box { x, y, width, height }`; kinds `Label` (one line: `show`,
+  `font`, `size`, `smallest`, `color`, `outline`, `align`, `capitals`), `Picture` (`show`,
+  `fit = cover | contain`, `under-frame`) and `TextBox` (`paragraphs`, `font`, `size`,
+  `smallest`, `color`), whose items are `Paragraph` (`show`, `join`, `font`, `bold-font`,
+  `color`, `align`, `rule-above`). New enums `Align { left, center, right }` and
+  `Fit { cover, contain }`.
+- **`show` is a template of the card's data**: `{cost}` or any field its type declares, `{type}`
+  the card type's display name, `{text}` the card's text with its constants filled in,
+  `{keywords}` the keywords' names joined by `join`, and any other words as written. A part
+  shows only on cards that have what it shows. This is a renderer convention on text, like
+  `{@name}` in the rulebook, not Alex syntax.
+- **Fonts are referenced, not repeated**: `font = @bold` is a reference to the `fonts` entry,
+  accepted where a text is (references are orthogonal to types), so a font's file is written
+  once. The field is `text?`, so a path also binds; the checker wants a `fonts` entry.
+- **`frames` is keyed by the card type's identifier** (`Creature = 'art/frames/creature.png'`).
+  A map keyed by type (`[type Card: text]`) would need another Alex change, so the key is text
+  and the checker requires it to name a card type the game declares.
+- **Checker**: a `{field}` no card type has; a box that runs past the bleed; a missing font,
+  frame, art or back file; an image with fewer pixels than its box needs at `dpi` (for printing,
+  naming the card); a text box that can't fit a card's text at its `smallest` size (naming the
+  card).
+- **Keyword rules that take the game's own keyword.** A printable game declares plain keywords,
+  `keywords = [Guardian = Keyword {}, Swift = Keyword {}]`: a keyword on a printed card is a word
+  with no engine meaning. The playable game gives each its meaning with a library rule that names
+  it: `EntersReady { keyword = @Swift }` in `units`, `GuardiansFirst { keyword = @Guardian }` in
+  `combat`. It is the keyword counterpart of `UnitCards { types }`, and needs no language change:
+  `@Swift` is a reference to the game's keyword entry, and the field is typed `Keyword`.
+  Added, one per keyword type the libraries define: units `EntersReady` (Swift),
+  `DamageReduction` (Tough, n from `Applied`); combat `HitCostsLife { n }` (Fierce),
+  `StrikesFirst`, `StrikesTwice`, `ExcessDamageGoesThrough` (Trample), `AttacksTwice`
+  (Windfury), `AnyDamageDestroys` (Poisonous), `DamageHealsController` (Lifesteal),
+  `UntargetableUntilItActs` (Stealth), `NegatesNextHit` (Divine Shield), `AttackedOnlyWhenAlone`
+  (Elusive), `BlockedOnlyBy { by: [Keyword] }` (flying and reach), `OpponentsCantChoose` (Ward),
+  `MayBlockForOthers` (Blocker), `StunSkipsReady` (Stun); life-stack `PlayFreeWhenLost` (Lucky);
+  responses `PlayableInResponse { only }` (Ambush). `GuardiansFirst` and
+  `SneakyIgnoresGuardians` existed, so they gained an optional `keyword`; without it they mean
+  the keywords of type Guardian and Sneaky, as before. The rule names differ from the keyword
+  type names because type names are one namespace.
+- **The keyword types stay**, as the other way: a game that names a library's keyword type
+  (`Swift = Swift {}`) gets its meaning without a rule. Folkborn keeps that form. The same
+  keyword given meaning both ways (a `Swift`-typed keyword also named by `EntersReady`) is a
+  checker note, since the rule adds nothing. `Mechanic` (families) is a keyword whose meaning is
+  its own handlers, unchanged.
+
+### Scenario words for resources (2026-09-28)
+
+Found by the Alex 0.6.0 session binding Hello TCG: `counter-is(me, @Energy, 3)` failed, because
+`counter-is` took a core `Counter` and `Energy = GrowingCounter` is a resource. A scenario sets
+a player's resource as often as a counter, and to a designer both are "a number the player
+has". So the core's `ParamType` gained `counter-or-resource` (appended, as the enum's rules
+allow) and `counter-is` takes it. Rejected: a second word (`resource-is`), which makes the
+designer know which kind of number Energy is, and changing the parameter to `resource`, which
+would lose player counters that aren't resources (poison, lore).
 
 ## Open
 

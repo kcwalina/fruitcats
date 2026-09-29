@@ -108,7 +108,11 @@ describe('a request, from the page to PC2024', () => {
     const put = (caller: Parameters<typeof api.request>[0], body: unknown) => api.request(caller, 'PUT', '/v1/playtests/library', async () => body);
     expect(await api.library()).toEqual({ decks: { old: {} } });
     expect((await put(OWNER, { decks: { a: {} } }))[0]).toBe(403);
-    expect((await put(PC, { decks: {} }))[0]).toBe(400);
+    expect((await put(PC, { decks: [] }))[0]).toBe(400);
+    expect((await put(PC, {}))[0]).toBe(400);
+    // Every deck unplayable after a set retired: the night's empty library is kept, not refused on every sync.
+    expect((await put(PC, { decks: {}, lastNightly: '2026-09-28' }))[0]).toBe(200);
+    expect(await api.library()).toMatchObject({ decks: {} });
     expect((await put(PC, { decks: { fort: { name: 'Fruit Fortress' } }, lastNightly: '2026-09-26' }))[0]).toBe(200);
     expect(await api.library()).toMatchObject({ decks: { fort: { name: 'Fruit Fortress' } }, lastNightly: '2026-09-26' });
   });

@@ -19,8 +19,10 @@ type WinWhenEmpty : LifeRule {}                   // the stack is a goal, not a 
 type PrizesOnKnockout : LifeRule { property: text }   // take n cards, n read off the defeated card
 type RevealedCardEffectFires : LifeRule {}        // a lost card's security effect resolves first
 
-// A card lost as life may be played free (Lucky, shield trigger).
+// A card lost as life may be played free (Lucky, shield trigger). A game's own keyword gets the
+// meaning with `PlayFreeWhenLost { keyword = @Lucky }`.
 type Lucky : Keyword {}
+type PlayFreeWhenLost : LifeRule { keyword: Keyword }
 
 extension Card { on-lost-as-life: effect? }
 

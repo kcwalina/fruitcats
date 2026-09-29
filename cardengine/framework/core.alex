@@ -27,7 +27,8 @@
 // `Game` and on each card (`constants`); cards live in `Cards` documents that join the game by
 // being in its folder, and `Set` is for games that publish expansions; a card prints its rules
 // text (`Card.text`) and its handlers attach by slot; a game declares its own card types on
-// `Card` and maps them onto the libraries' card records; a game names its card back.
+// `Card` and maps them onto the libraries' card records; a game names its card back and its card
+// layout; library rules give a game's own plain keywords their meaning.
 #type Core
 
 schema-version = 1
@@ -122,6 +123,7 @@ type Game : data {
   engine-version: int?            // deprecated: see schema-version
   core: text?                     // deprecated: see schema-version
   card-back: text?                // an asset reference: the back every printed card shares
+  card-layout: CardLayout?        // how the cards look when rendered and printed
   uses: [Library] = empty         // the libraries whose rules, records and vocabulary it may use
   players: Players = Players {}   // two players, clockwise
   sets: [Set] = empty             // only a game that publishes expansions has sets
@@ -217,7 +219,10 @@ type Counter {
 }
 
 // A keyword is a tag on a card. The core only knows it is a tag; a library gives it meaning by
-// declaring a subtype (`type Guardian : Keyword {}`) or by attaching behaviour in a rules document.
+// declaring a subtype (`type Guardian : Keyword {}`), by a rule that names the game's own keyword
+// (`GuardiansFirst { keyword = @Guardian }`, so a printable game declares plain
+// `Guardian = Keyword {}` and the playable one gives it meaning), or by attaching behaviour in a
+// rules document.
 type Keyword {
   name: text?
   cites: text?
@@ -279,8 +284,9 @@ type Token : Card { type: CardType | text }
 // area whose `types` field lists the game's types for that record, typed `[type UnitCard]` (a
 // reference to a type declaration, `@Creature`, that must conform to the record):
 // `units = [UnitCards { types = [@Creature] }]`. Conformance is structural: the mapped type
-// declares or inherits every required field of the record, with the same type, and reads the
-// record's optional fields it lacks as their defaults. A mapped type gains the record's
+// declares or inherits every required field of the record, each field it shares with the record
+// has a type the record's field accepts (`cost: int` conforms to `cost: Cost?`), and it reads
+// the record's optional fields it lacks as their defaults. A mapped type gains the record's
 // extension members, so its cards have the record's handler slots (`on-enter`, `static`,
 // `on-play`) and the library's rules apply to them. A type may be mapped onto several records
 // whose slots don't clash. `type R` fields are an Alex language change, proposed 2026-09-28.
@@ -289,6 +295,83 @@ type Deck {
   name: text?
   cards: [[Card, int]]
   blurb: text?
+}
+
+// -------------------------------------------------------------------------------------------
+// How cards look: a card layout, named by `Game.card-layout`. The engine never reads it; the card
+// renderer and print files do. The look has two halves: frames, images the designer draws with a
+// transparent window for the painting and blank spaces for the data, and the parts drawn on the
+// frame, in order, each showing a template of the card's data.
+//
+// Sizes are pixels at `dpi`, measured from the card's top-left corner at the trim line, not
+// counting bleed; frames and the back are drawn at the size plus `bleed` on every side (poker
+// size at 300 dpi: 750 x 1050, plus 36 each side). `fonts` names font files; a part refers to
+// one by reference (`font = @bold`). `frames` gives each card type its frame, keyed by the card
+// type's identifier (`Creature = 'art/frames/creature.png'`); the checker requires each key to
+// name a card type the game declares.
+//
+// `show` is a template: `{name}` is a field of the card (`{cost}`, `{power}`, a field its type
+// declares), `{type}` the card type's display name, `{text}` the card's text with its `{constants}`
+// filled in, `{keywords}` the card's keywords' names joined by the paragraph's `join`, and other
+// words are drawn as they are (`show = 'Hello TCG'`). A part shows only on cards that have what it
+// shows: a Charm has no `power`, so no Power is drawn; a card with no text has no text paragraph.
+//
+// Checker: a `{field}` that no card type has is an error; a box that runs off the card (past the
+// bleed) is an error; a missing font, frame, art or back file is an error; an image with fewer
+// pixels than its box needs at `dpi` is an error for printing and names the card; a text box that
+// can't fit a card's text at its `smallest` size is an error naming the card.
+type CardLayout : data {
+  width: int
+  height: int
+  dpi: int = 300
+  bleed: int = 0
+  fonts: [text: text] = empty     // name = font file
+  frames: [text: text] = empty    // card type = frame image
+  parts: [text: Part] = empty
+}
+type Box {
+  x: int
+  y: int
+  width: int
+  height: int
+}
+enum Align { left, center, right }
+enum Fit { cover, contain }       // cover fills the box and trims; contain shows it whole
+type Part { box: Box }
+// One line of text. With `smallest`, text too long for the box shrinks to fit, down to that size.
+type Label : Part {
+  show: text
+  font: text?                     // a `fonts` entry (`@bold`); the renderer's default without one
+  size: int
+  smallest: int?
+  color: text = '#000000'
+  outline: text?
+  align: Align = left
+  capitals: bool = false
+}
+type Picture : Part {
+  show: text                      // an asset: '{art}', or a fixed image
+  fit: Fit = cover
+  under-frame: bool = false       // drawn below the frame, showing through its window
+}
+// Paragraphs that shrink together to fit the box, down to `smallest`.
+type TextBox : Part {
+  paragraphs: [Paragraph]
+  font: text?
+  size: int
+  smallest: int?
+  color: text = '#000000'
+}
+type Paragraph {
+  show: text
+  join: text = ', '               // between the items of a list field (`{keywords}`)
+  font: text?                     // the text box's font without one
+  // For the bold runs of the card's text: an ability word before a colon ('Hello:') and the
+  // names of keywords.
+  bold-font: text?
+  color: text?                    // the text box's color without one
+  align: Align = left
+  rule-above: text?               // a thin line of this color above the paragraph
 }
 
 // -------------------------------------------------------------------------------------------
@@ -309,6 +392,7 @@ enum ParamType {
   card                            // a card definition, not an object in play
   moment, pending, rules, zone, coords, object, objects, faces
   ability                         // deprecated with `Ability.numbers`: see the `card` selector
+  counter-or-resource             // a named number a player holds: a counter or a resource
 }
 enum BlockKind { effect, condition, static, scenario }
 

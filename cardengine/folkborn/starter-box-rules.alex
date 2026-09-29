@@ -14,29 +14,21 @@ condition eight-offerings { own.resources.count >= 8 }
 
 // Mechanics.
 effect ripen-tick { this.counter(@Ripeness) += 1 }        // §850.2, the counter's max caps it
-effect sprout-one { offer-from-deck(1, exhausted: true) } // §850.3
-effect sprout-two { offer-from-deck(2, exhausted: true) }
+effect sprout { offer-from-deck(card.sprout, exhausted: true) } // §850.3
 
 // Zest cards.
-effect zest-plus-one { if @zest-on { this.buff(power: +1, until: this-round) } }
+effect zest-boost { if @zest-on { this.buff(power: card.boost, until: this-round) } }
 effect zest-enters-ready { if @zest-on { this.ready() } }
-// Citron Fox: "Deal 1 damage to a unit. Zest: deal 2 instead."
-effect zing {
+// Citron Fox and Zest Burst: "Deal {damage} damage to a unit. Zest: deal {zest-damage} instead."
+effect zest-damage {
   target = choose(all)
-  if @zest-on { target.damage(2) } else { target.damage(1) }
-}
-// Zest Burst: "Deal 3 damage to a unit. Zest: deal 5 instead."
-effect zest-burst {
-  target = choose(all)
-  if @zest-on { target.damage(5) } else { target.damage(3) }
+  if @zest-on { target.damage(card.zest-damage) } else { target.damage(card.damage) }
 }
 
 // Damage.
-effect ping-any { choose(all).damage(1) }
-effect two-damage-any { choose(all).damage(2) }
-effect five-damage-any { choose(all).damage(5) }
-effect four-to-exhausted { choose(all, exhausted).damage(4) }
-effect one-to-each-enemy { units(opponents).damage(1) }
+effect damage-any { choose(all).damage(card.damage) }
+effect damage-exhausted { choose(all, exhausted).damage(card.damage) }
+effect damage-each-enemy { units(opponents).damage(card.damage) }
 
 // Ready and exhaust.
 effect ready-own { choose(own).ready() }
@@ -47,13 +39,12 @@ effect exhaust-an-enemy { choose(opponents).exhaust() }
 // Draw.
 effect draw-one { draw(1) }
 effect draw-if-guardian { if units(own, guardian).any { draw(1) } }
-effect lush-draw-two { if @lush-on { draw(2) } }
+effect lush-draw { if @lush-on { draw(card.draw) } }
 
 // Heal.
-effect heal-two-any { choose(all).heal(2) }
+effect heal-any { choose(all).heal(card.heal) }
 effect heal-two { choose(own).heal(2) }
-effect heal-one-each-own { units(own).heal(1) }
-effect heal-two-each-own { units(own).heal(2) }
+effect heal-each-own { units(own).heal(card.heal) }
 // Pippin awakened: "Heal 3 from a unit you control. It gains Guardian this round."
 effect heal-three-and-guard {
   target = choose(own)
@@ -63,7 +54,7 @@ effect heal-three-and-guard {
 
 // Buffs.
 effect plus-one-power { choose(own).buff(power: +1, until: this-round) }
-effect plus-two-power { choose(own).buff(power: +2, until: this-round) }
+effect boost-own { choose(own).buff(power: card.boost, until: this-round) }
 effect plus-two-and-sneaky { choose(own).buff(power: +2, sneaky, until: this-round) }
 
 // Offerings.
@@ -76,13 +67,13 @@ effect cancel-the-attack { event.cancel() }
 // Warm Cider: the heal is optional, the draw is not.
 effect cider {
   target = choose(own, optional)
-  target.heal(3)
+  target.heal(card.heal)
   draw(1)
 }
 
 // Mango Smoothie.
 effect smoothie {
-  choose(own).buff(power: +2, until: this-round)
+  choose(own).buff(power: card.boost, until: this-round)
   ready-resources(1)
 }
 
@@ -106,44 +97,44 @@ static sloth-rule { if not @lush-on { this.cant(attack) } }
 @tango.face2.exhaust = ready-two-offerings
 
 // Wiring: Citrus.
-@zest-mouse.on-enter = zest-plus-one
-@chick.on-defeated = ping-any
-@gecko.on-enter = zest-plus-one
+@zest-mouse.on-enter = zest-boost
+@chick.on-defeated = damage-any
+@gecko.on-enter = zest-boost
 @corgi.on-enter = zest-enters-ready
-@ferret.on-enter = zest-plus-one
-@citron-fox.on-enter = zing
-@sour-spray.on-play = two-damage-any
-@zest-burst.on-play = zest-burst
+@ferret.on-enter = zest-boost
+@citron-fox.on-enter = zest-damage
+@sour-spray.on-play = damage-any
+@zest-burst.on-play = zest-damage
 @peel-out.on-play = ready-own
 @clementine.on-enter = ready-another
-@bergamot.on-enter = one-to-each-enemy
+@bergamot.on-enter = damage-each-enemy
 @sanguine.on-defeats-in-combat = ready-this          // once per round is on the card
 
 // Wiring: Orchard.
-@peach-bunny.on-enter = heal-two-any
+@peach-bunny.on-enter = heal-any
 @cherry-robin.on-enter = draw-if-guardian
 @apricot-owl.on-enter = exhaust-an-enemy
 @hiss.on-play = cancel-the-attack                    // ambush-only is on the card
 @warm-cider.on-play = cider
-@falling-apple.on-play = four-to-exhausted
+@falling-apple.on-play = damage-exhausted
 @sakura.on-you-heal = draw-one                              // once per round: on the card
-@granny-smith.on-round-start = heal-one-each-own
+@granny-smith.on-round-start = heal-each-own
 
 // Wiring: Tropical.
 @monkey.on-enter = ready-one-offering
-@kiwi.on-enter = sprout-one
+@kiwi.on-enter = sprout
 @sloth.static = sloth-rule
-@capybara.on-enter = heal-two-each-own
-@tapir.on-enter = lush-draw-two
-@tropical-rain.on-play = sprout-two
-@coconut-drop.on-play = five-damage-any
+@capybara.on-enter = heal-each-own
+@tapir.on-enter = lush-draw
+@tropical-rain.on-play = sprout
+@coconut-drop.on-play = damage-any
 @smoothie.on-play = smoothie
-@papaya.on-enter = sprout-one
+@papaya.on-enter = sprout
 @coconut.on-enter = ready-two-offerings
 
 // Wiring: Wildfolk.
 @mail-duck.on-enter = draw-one
-@catnip.on-play = plus-two-power
+@catnip.on-play = boost-own
 @nap-time.on-play = exhaust-an-enemy
 
 // §850.1

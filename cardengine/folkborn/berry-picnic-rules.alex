@@ -13,9 +13,9 @@ effect summon-two-ants { summon(@Ant, 2) }
 // Leftovers: "put a Crumb on a unit you control".
 effect feed-a-friend { choose(own).counter(@Crumb) += 1 }
 
-// "Put a Crumb on another unit you control." / "Put 2 Crumbs on another unit you control."
+// "Put a Crumb on another unit you control." / "Put {crumbs} Crumbs on another unit you control."
 effect give-crumb { choose(own, other).counter(@Crumb) += 1 }
-effect give-two-crumbs { choose(own, other).counter(@Crumb) += 2 }
+effect give-crumbs { choose(own, other).counter(@Crumb) += card.crumbs }
 
 // Moose: "After Mulberry Moose defeats a unit in combat, put a Crumb on it." §800.2
 effect crumb-on-this { this.counter(@Crumb) += 1 }
@@ -39,19 +39,19 @@ effect steal-a-snack {
   move-largest-counter(from: target, to: this, as: @Crumb)
 }
 
-// Second Helping: "Put a Crumb on a unit you control. It gets +1 Power this round."
+// Second Helping: "Put a Crumb on a unit you control. It gets +{boost} Power this round."
 effect second-helping {
   target = choose(own)
   target.counter(@Crumb) += 1
-  target.buff(power: +1, until: this-round)
+  target.buff(power: card.boost, until: this-round)
 }
 
 // Bleu: "Your Full units have Sneaky." Bramble: "Your Full units have Fierce."
 static full-units-sneaky { units(own, full).grant(sneaky) }
 static full-units-fierce { units(own, full).grant(fierce) }
 
-// Razz: "Your other units get +1 Power."
-static others-plus-one { units(own, other).grant(power: +1) }
+// Razz: "Your other units get +{boost} Power."
+static others-boost { units(own, other).grant(power: card.boost) }
 
 // Wiring.
 @Leftovers.mechanic-defeated = feed-a-friend
@@ -64,13 +64,13 @@ static others-plus-one { units(own, other).grant(power: +1) }
 @goose.on-enter = steal-a-snack
 @moose.on-defeats-in-combat = crumb-on-this
 @alpaca.on-enter = crumb-for-others
-@milk-cow.on-enter = give-two-crumbs
+@milk-cow.on-enter = give-crumbs
 @ant-parade.on-play = summon-two-ants
 @pass-the-plate.on-play = crumb-for-everyone
 @second-helping.on-play = second-helping
 @bleu.on-enter = give-crumb
 @bleu.static = full-units-sneaky
-@razz.static = others-plus-one
+@razz.static = others-boost
 @bramble.static = full-units-fierce
 
 scenario 'Goose steals a Crumb' {

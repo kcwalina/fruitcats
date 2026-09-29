@@ -8,7 +8,7 @@ than the starter decks, and LLM players look for what the bots can't.
 | Command | What it does | Time |
 |---|---|---|
 | `npm run balance:check` | Starter decks against each other, 300 games a pair. The deploy gate. | ~20 s |
-| `npm run balance` | The full bot gauntlet: starters, random decks for every Hero Cat and partner family, starters with cards swapped, per-card impact, bot sanity check. `--scale N` for more games, `--deck DECK` or `--library` to add custom decks (see below). | ~5 min |
+| `npm run balance` | The full bot gauntlet: starters, random decks for every Hero Cat and partner family, starters with cards swapped, bot sanity check, then removal tests for the cards that look strongest (see below). `--scale N` for more games, `--deck DECK` or `--library` to add custom decks (see below). | ~5 min |
 | `npm run deploy` | Type-check, tests, the balance check, engine check, build, bundle check, upload, live check. `--dry-run` stops before the upload; `--force-balance` deploys past a blocking balance problem (say why). | ~1 min |
 | `npm run play -- new` / `do <n>` / `show` | A game against the bot, one decision per command: for a Claude Code session doing a deep playtest, or for you. `--deck`, `--vs` take any deck (see below). | — |
 | `npm run llm-playtest` | LLM players (`--persona exploit\|aggro\|newcomer\|all`) against the bot, each game with a transcript and a playtester report. `--deck`, `--vs` take lists of decks. `--bench` times a provider's models first. | 3–4 min a game on PC2024 |
@@ -25,8 +25,36 @@ library night removes it. Add a new set's code to the list when it joins.
 
 Every run writes `reports/<kind>-<date>/summary.json` and `report.md` (git-ignored) and ends **pass**,
 **warn** or **block**. The limits are in `balance.config.json`: a starter deck outside 40–60% overall, or
-below 30% against another starter, blocks; outside 45–55% warns, as do cards whose decks win 10+ points
-more often when they are played, and generated decks that beat the starters.
+below 30% against another starter, blocks; outside 45–55% warns, as do cards worth more than 10 points of
+their deck's win rate (below), and generated decks that beat the starters.
+
+## How strong is a card
+
+A card is too strong when its deck leans on it: take it out and the deck wins much less. The full run measures
+exactly that, for the few cards most likely to be too strong:
+
+1. **The screen** (`stats.ts` `cardImpact`) picks the candidates. For every game a deck played a card in, it
+   compares the result with the deck's win rate in the games that were still going in the round the card first came
+   down. The old measure compared it with the deck's rate over all games, and that rewards late cards: an 8-cost
+   card is only played in long games the player was already surviving. It had Elder of the South Sea at +23
+   points, Dvorovoi +13, Quanxian +12 and Dragon Silk +10, while taking each out of its deck costs 6–8, 2–6, 5–6
+   and 2.5–3.5 points (the removal tests of 2026-09-29 and the first run of this one). The new screen puts them at
+   +13, +12, +10 and +7; the report shows both numbers. Some bias remains (affording an 8-cost card early says the game
+   is going well), so the screen never warns about a starter's card itself.
+2. **The removal test** (`removal.ts`) takes the top `removalCandidates` (4) cards out of their starter deck,
+   every copy replaced by the deck's plain 1-cost 2/1 (Hearth Cricket, Ibex Kid, the Alux's Dog, Ice Silkworm,
+   Pebble-Thrower), and plays it against the other starters, `removalGamesPerPair` (800) games a pairing, times
+   `--scale`. The games use the starters' own seeds and seats, so each is compared with the same game with the
+   card and some of the luck cancels. The ± in the report is two standard errors: about 2 points at scale 1, 1.2
+   at the nightly's scale 3. The swap is
+   made in the deck list, never to the card, so no card changes in any worker.
+3. It **warns** when a card is worth more than `cardWorth` (10 points) to its deck. For scale: the strongest
+   cards measured so far are Elder of the South Sea (6–8), Quanxian (5–6.5) and The House Snake (6), strong cards
+   doing their job that Jiaoren and Domowiki need, and each Hero's ability is worth about 7. Above 10, one card
+   carries its deck; a lower line would warn about Elder some nights and not others, from noise alone.
+
+A card no starter deck holds can't be removal-tested; for those the screen warns at 10 points (`cardDelta`).
+The tests add about 15% to the full run's games (12,800 at scale 1).
 
 ## Custom decks
 

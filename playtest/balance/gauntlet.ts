@@ -2,7 +2,8 @@
 //
 //   quick (the deploy gate)  the starter decks against each other
 //   full  (nightly)          + random decks for every Hero Cat and partner family, starters with cards
-//                            swapped, per-card impact, and a check that the bot is strong enough to trust
+//                            swapped, per-card impact, and a check that the bot is strong enough to trust;
+//                            then removal tests for the cards the per-card screen points at (removal.ts)
 
 import config from '../balance.config.json';
 import { CARDS, DECKS, cardName, type DeckList } from '../lib/engine';
@@ -11,16 +12,17 @@ import { mulberry, seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { families, mutateDeck, playableHeroes, randomDeck } from './decks';
 import type { Contestant, GameRecord, MatchJob } from './match';
-import { cardImpact, gameShape, matchups } from './stats';
+import { removalResult, removalTest, type RemovalResult } from './removal';
+import { cardImpact, gameShape, matchups, type CardStat } from './stats';
 
 export interface BalanceConfig {
   block: { starterOverall: [number, number]; starterMatchupMin: number };
   warn: {
     starterOverall: [number, number]; starterMatchupMin: number; firstPlayer: [number, number];
-    cardDelta: number; cardMinGames: number; deckVsStarters: number; botSanityMin: number;
+    cardDelta: number; cardMinGames: number; cardWorth: number; deckVsStarters: number; botSanityMin: number;
   };
   quick: { gamesPerPair: number };
-  full: { gamesPerPair: number; randomDecksPerCombo: number; mutatedPerStarter: number; swaps: number; gamesVsStarter: number; sanityGames: number };
+  full: { gamesPerPair: number; randomDecksPerCombo: number; mutatedPerStarter: number; swaps: number; gamesVsStarter: number; sanityGames: number; removalCandidates: number; removalGamesPerPair: number };
 }
 
 // Imported, not read from disk, so the single-file runner bundle carries it.
@@ -106,6 +108,34 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
   let j = 0;
   for (const s of sections) records[s.name] = s.jobs.flatMap(() => byJob[j++]);
   const all = Object.values(records).flat();
+  const starterRecords = (job: MatchJob) => byJob[sections[0].jobs.indexOf(job)];
+
+  // The screen picks which starter cards to take out; the removal tests then say what each is worth.
+  const cards = cardImpact(all);
+  const removals: RemovalResult[] = [];
+  if (!o.quick) {
+    const scale = o.scale ?? 1;
+    const tests = cards
+      .filter((c) => c.games >= cfg.warn.cardMinGames)
+      .map((c) => removalTest(c.id, sections[0].jobs, Math.max(2, Math.round(cfg.full.removalGamesPerPair * scale))))
+      .filter((t) => t !== undefined)
+      .slice(0, cfg.full.removalCandidates);
+    const removalJobs = tests.flatMap((t) => t.jobs);
+    const total = removalJobs.reduce((n, job) => n + job.to - job.from, 0);
+    reportProgress(run, kind, 'removal tests', 0, total);
+    const removed = await runJobs(removalJobs, {
+      threads: o.threads,
+      progress: (done) => {
+        reportProgress(run, kind, 'removal tests', done, total);
+        if (o.quiet || Date.now() - lastShown < 2000) return;
+        lastShown = Date.now();
+        process.stderr.write(`\r  removal tests ${done}/${total} games`);
+      },
+    });
+    if (!o.quiet) process.stderr.write('\r');
+    let k = 0;
+    for (const t of tests) removals.push(removalResult(t, t.base.map(starterRecords), t.jobs.map(() => removed[k++])));
+  }
 
   const problems: Problem[] = [];
   const keys = Object.keys(DECKS);
@@ -126,9 +156,13 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
   const [flo, fhi] = cfg.warn.firstPlayer;
   if (shape.firstPlayer < flo || shape.firstPlayer > fhi) problems.push({ level: 'warn', text: `Whoever holds the Lantern first wins ${pct(shape.firstPlayer)} of games.` });
 
-  const cards = cardImpact(all);
-  const outliers = cards.filter((c) => c.games >= cfg.warn.cardMinGames && Math.abs(c.delta) > cfg.warn.cardDelta);
-  for (const c of outliers.filter((c) => c.delta > 0)) problems.push({ level: 'warn', text: `${cardName(c.id)}: decks win ${pct(c.winRate)} of games they play it in, ${c.delta > 0 ? '+' : ''}${(100 * c.delta).toFixed(0)} points over their usual rate.` });
+  for (const r of removals.filter((r) => r.worth > cfg.warn.cardWorth)) {
+    problems.push({ level: 'warn', text: `${cardName(r.card)}: ${DECKS[r.deck].name} wins ${pts(r.worth)} points more often with it than with a plain 2/1 in its place (${pct(r.withCard)} against ${pct(r.without)}), more than any one card should carry.` });
+  }
+  // A card no starter holds can't be taken out of one: the screen alone speaks for it.
+  const inStarters = new Set(Object.values(DECKS).flatMap((d) => Object.keys(d.cards)));
+  const outliers = cards.filter((c) => !inStarters.has(c.id) && c.games >= cfg.warn.cardMinGames && c.delta > cfg.warn.cardDelta);
+  for (const c of outliers) problems.push({ level: 'warn', text: `${cardName(c.id)}: decks win ${pct(c.winRate)} of games they play it in, ${pts(c.delta)} points over their rate in games that reached the round it came down (no starter holds it, so it had no removal test).` });
 
   const suspicious: { name: string; hero: string; vsStarters: number; cards: Record<string, number> }[] = [];
   const generatedDecks = new Map<string, DeckList>();
@@ -157,6 +191,7 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
   const matrix = Object.fromEntries(keys.map((a) => [a, Object.fromEntries(keys.filter((b) => b !== a).map((b) => [b, st.rate(a, b)]))]));
   const details = {
     starters: { overall, matrix, ...shape },
+    cardRemovals: removals.map((r) => ({ ...r, name: cardName(r.card) })),
     cardOutliers: outliers.map((c) => ({ ...c, name: cardName(c.id) })),
     topCards: cards.slice(0, 8).map((c) => ({ ...c, name: cardName(c.id) })),
     suspiciousDecks: suspicious,
@@ -164,13 +199,15 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
     sanity,
     sections: Object.fromEntries(Object.entries(records).map(([k, v]) => [k, v.length])),
   };
-  const md = markdown(kind, keys, st, shape, problems, outliers, suspicious, sanity, extraRates, records);
+  const md = markdown(kind, keys, st, shape, problems, cards.filter((c) => c.games >= cfg.warn.cardMinGames).slice(0, 8), removals, cfg.warn.cardWorth, suspicious, sanity, extraRates, records);
   return finishRun(run, kind, all.length, problems, details, md);
 }
 
+const pts = (x: number) => `${x > 0 ? '+' : ''}${(100 * x).toFixed(1)}`;
+
 function markdown(
   kind: string, keys: string[], st: ReturnType<typeof matchups>, shape: ReturnType<typeof gameShape>, problems: Problem[],
-  outliers: ReturnType<typeof cardImpact>, suspicious: { name: string; vsStarters: number; cards: Record<string, number> }[],
+  screened: CardStat[], removals: RemovalResult[], worthWarn: number, suspicious: { name: string; vsStarters: number; cards: Record<string, number> }[],
   sanity: Record<string, number>, extra: { name: string; vsStarters: number }[], records: Record<string, GameRecord[]>,
 ): string {
   const lines: string[] = [];
@@ -183,9 +220,15 @@ function markdown(
   lines.push('', `Whoever holds the Lantern first wins ${pct(shape.firstPlayer)}. Average game: ${shape.avgRounds.toFixed(1)} rounds, ${shape.avgActions.toFixed(0)} actions.`, '');
   lines.push('| Deck | Awakened | Awakened in round | Cards in hand at the end |', '|---|---|---|---|');
   for (const k of keys) lines.push(`| ${DECKS[k].name} | ${pct(shape.grewUp[k] ?? 0)} | ${(shape.grewUpRound[k] ?? 0).toFixed(1)} | ${(shape.handEnd[k] ?? 0).toFixed(1)} |`);
-  if (outliers.length) {
-    lines.push('', '## Card outliers', '', "| Card | Games played in | Win rate | Points above its deck's usual rate |", '|---|---|---|---|');
-    for (const c of outliers) lines.push(`| ${cardName(c.id)} | ${c.games} | ${pct(c.winRate)} | ${c.delta > 0 ? '+' : ''}${(100 * c.delta).toFixed(0)} |`);
+  if (removals.length) {
+    lines.push('', '## Card strength', '', `Each card taken out of its starter deck (every copy a plain 1-cost 2/1), against the other starters in the same games. Warns above ${(100 * worthWarn).toFixed(0)} points.`, '');
+    lines.push('| Card | Deck | Games | With it | Without it | Worth to its deck |', '|---|---|---|---|---|---|');
+    for (const r of removals) lines.push(`| ${cardName(r.card)} | ${DECKS[r.deck].name} | ${r.games} | ${pct(r.withCard)} | ${pct(r.without)} | ${pts(r.worth)} ± ${(200 * r.error).toFixed(1)} |`);
+  }
+  if (screened.length) {
+    lines.push('', '## Cards the screen points at', '', "Win rate in games a deck played the card, against its rate in games that reached the round it came down (and, for comparison, against its rate over all games, which rewards late cards). The top cards get a removal test.", '');
+    lines.push('| Card | Games played in | Win rate | Against games that reached its round | Against all games |', '|---|---|---|---|---|');
+    for (const c of screened) lines.push(`| ${cardName(c.id)} | ${c.games} | ${pct(c.winRate)} | ${pts(c.delta)} | ${pts(c.raw)} |`);
   }
   if (extra.length) {
     lines.push('', '## Submitted decks', '');

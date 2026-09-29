@@ -21,8 +21,8 @@ export interface GameRecord {
   actions: number;
   /** Round each seat's Hero Cat Grew Up in, or 0 if it never did. */
   grewUp: [number, number];
-  /** Card ids each seat played (from hand, as a Pounce, or as a Lucky Life), once per game. */
-  played: [string[], string[]];
+  /** Card ids each seat played (from hand, as a Pounce, or as a Lucky Life), with the round it first played each. */
+  played: [Record<string, number>, Record<string, number>];
   /** Cards left in each hand at the end: a hand that piles up means a deck starved for Treats. */
   handEnd: [number, number];
 }
@@ -41,7 +41,7 @@ export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord
   const seats: [Contestant, Contestant] = seed % 2 ? [b, a] : [a, b];
   const s = createGame({ decks: [seats[0].deck, seats[1].deck], seed, names: [seats[0].key, seats[1].key] });
   const rnd = mulberry(seed ^ 0x9e3779b9);
-  const played: [Set<string>, Set<string>] = [new Set(), new Set()];
+  const played: [Record<string, number>, Record<string, number>] = [{}, {}];
   const grewUp: [number, number] = [0, 0];
   while (s.winner === null) {
     const prompt = s.prompt!;
@@ -49,7 +49,7 @@ export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord
     const action = chooseAction(s, { skill: seats[p].skill ?? 1, random: rnd });
     const uid = action.t === 'play' || action.t === 'pounce' ? action.uid : action.t === 'lucky' && prompt.kind === 'lucky' ? prompt.uid : null;
     const card = uid === null ? undefined : s.players[p].hand.find((c) => c.uid === uid);
-    if (card) played[p].add(card.id);
+    if (card) played[p][card.id] ??= s.round;
     apply(s, action);
     for (const q of [0, 1] as PlayerId[]) if (!grewUp[q] && s.players[q].hero.grown) grewUp[q] = s.round;
   }
@@ -60,7 +60,7 @@ export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord
     rounds: s.round,
     actions: s.actions,
     grewUp,
-    played: [[...played[0]], [...played[1]]],
+    played,
     handEnd: [s.players[0].hand.length, s.players[1].hand.length],
   };
 }

@@ -9,6 +9,7 @@
     "firstPlayer": [0.45, 0.55],
     "cardDelta": 0.10,
     "cardMinGames": 80,
+    "cardWorth": 0.10,
     "deckVsStarters": 0.62,
     "botSanityMin": 0.65
   },
@@ -19,6 +20,8 @@
     "mutatedPerStarter": 6,
     "swaps": 6,
     "gamesVsStarter": 100,
-    "sanityGames": 200
+    "sanityGames": 200,
+    "removalCandidates": 4,
+    "removalGamesPerPair": 800
   }
 }

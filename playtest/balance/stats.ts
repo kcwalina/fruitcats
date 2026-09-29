@@ -56,27 +56,56 @@ export function gameShape(records: GameRecord[]) {
   };
 }
 
-export interface CardStat { id: string; games: number; winRate: number; delta: number }
+export interface CardStat {
+  id: string;
+  games: number;
+  winRate: number;
+  /** Wins in games the card was played in, less its deck's rate in the games that reached the round it came down. */
+  delta: number;
+  /** Less its deck's rate over all games: the old number, which rewards late cards. */
+  raw: number;
+}
 
 /**
- * How much more often a deck wins in games where it played a card than it wins overall. A card far above
- * its deck's own win rate is doing too much (Jackfruit Elephant: +20 points before its nerf). This is a
- * pointer, not a verdict: cards that come down late show up in games that were going well anyway.
+ * A screen for the cards worth a removal test (removal.ts), not a verdict. A deck's win rate in games where it
+ * played a card, against its usual rate, rewards late cards: an 8-cost card comes down only in long games the
+ * player was already surviving (Elder of the South Sea: +23 points that way, yet its deck wins 5.9 points more
+ * with it than without). So each game is compared with the deck's rate in the games that were still going in
+ * the round the card first came down. Some bias is left (affording an 8-cost card in round 6 says the game is
+ * going well), which is why only the removal test warns about a starter's card.
  */
 export function cardImpact(records: GameRecord[]): CardStat[] {
   const { rate: wr } = matchups(records);
-  const acc: Record<string, { games: number; wins: number; delta: number }> = {};
+  // By deck: wins and games among the games that lasted at least r rounds, for every r.
+  const ended: Record<string, Tally[]> = {};
+  for (const r of records) {
+    for (const p of [0, 1] as PlayerId[]) {
+      const t = ((ended[r.seats[p]] ??= [])[r.rounds] ??= { wins: 0, games: 0 });
+      t.wins += r.winner === 'draw' ? 0.5 : r.winner === p ? 1 : 0; t.games++;
+    }
+  }
+  const reached: Record<string, Tally[]> = {};
+  for (const [k, byRound] of Object.entries(ended)) {
+    const out: Tally[] = [];
+    let acc: Tally = { wins: 0, games: 0 };
+    for (let round = byRound.length - 1; round >= 0; round--) {
+      acc = { wins: acc.wins + (byRound[round]?.wins ?? 0), games: acc.games + (byRound[round]?.games ?? 0) };
+      out[round] = acc;
+    }
+    reached[k] = out;
+  }
+  const acc: Record<string, { games: number; wins: number; delta: number; raw: number }> = {};
   for (const r of records) {
     for (const p of [0, 1] as PlayerId[]) {
       const won = r.winner === 'draw' ? 0.5 : r.winner === p ? 1 : 0;
-      const base = wr(r.seats[p]);
-      for (const id of r.played[p]) {
-        const a = (acc[id] ??= { games: 0, wins: 0, delta: 0 });
-        a.games++; a.wins += won; a.delta += won - base;
+      const k = r.seats[p];
+      for (const [id, round] of Object.entries(r.played[p])) {
+        const a = (acc[id] ??= { games: 0, wins: 0, delta: 0, raw: 0 });
+        a.games++; a.wins += won; a.delta += won - rate(reached[k][round]); a.raw += won - wr(k);
       }
     }
   }
   return Object.entries(acc)
-    .map(([id, a]) => ({ id, games: a.games, winRate: a.wins / a.games, delta: a.delta / a.games }))
+    .map(([id, a]) => ({ id, games: a.games, winRate: a.wins / a.games, delta: a.delta / a.games, raw: a.raw / a.games }))
     .sort((x, y) => y.delta - x.delta);
 }

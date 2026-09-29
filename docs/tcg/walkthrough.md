@@ -1,8 +1,8 @@
 # Walkthrough: your first card game
 
 In this walkthrough you build **Hello TCG**, a very small two-player card game, from an empty
-folder to a game you can playtest with bots, play online with a friend, and print a rulebook
-for. It takes about an hour.
+folder to a game you can playtest with bots, play online with a friend, and print: a rulebook,
+and real, physical cards you can shuffle and play at a table. It takes about an hour.
 
 Hello TCG is deliberately simple: six cards, one page of rules. It is not meant to be fun. It
 is meant to show every part of the toolkit once, so that when you build your own game you know
@@ -858,7 +858,27 @@ disagree.
 `tcg check` keeps the rulebook honest: a rule that cites a section that doesn't exist is an error,
 and a rule with no citation, or a section no rule cites, is a note.
 
-## 13. Starting from rules you already have
+## 13. Print your cards
+
+When you want the game on a table, not just on a screen:
+
+```bash
+tcg cards --print --decks swarm big
+```
+
+```
+Rendered 24 cards (2 decks × 12) for printing:
+  out/print/hello-tcg-cards.pdf      fronts and backs, with bleed and crop marks
+  out/print/fronts/*.png             one image per card, at print resolution
+  out/print/backs/back.png
+```
+
+These are the files online card printers ask for: each card at print resolution with the extra
+margin (bleed) the cutter needs, plus a card back. Upload them to a printer, or print the PDF at
+home and cut along the marks. Together with the rulebook PDF from chapter 12, that's a copy of
+your game you can play with people in the same room.
+
+## 14. Starting from rules you already have
 
 You may already have a rulebook, in a document or in your head. Instead of building step by step,
 you can give it to your agent and let it write the whole game.
@@ -889,8 +909,8 @@ more than 150 published card games.
 
 - **Your own game.** `tcg new my-game`, and grow it the same way: rulebook, rules, cards,
   scenarios, playtests.
-- **How cards look.** Designing your own card frames and printing files for online printers
-  (`tcg cards --print`) have their own guide.
+- **How cards look.** Designing your own card frames and card backs, and the sizes and finishes
+  printers offer, have their own guide.
 - **The library reference.** Every library, every rule, and what its numbers mean.
 - **Folkborn.** A complete, published game built with this toolkit, as an example of a bigger
   project.

@@ -785,29 +785,29 @@ function render() {
 type ModeCard = { name: string; sub: string; deck: string; code: string; icon: string; type: string; key: string; kw: string; text: string; flavor: string };
 const MODE_GROUPS = [
   [
-    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '', deck: 'domowiki', code: 'FB-01', icon: 'one', type: 'Play · vs the AI',
-      kw: 'Play', text: 'any deck against the AI.', flavor: 'The stove is warm.' },
-    { key: 'friend', name: 'Friend', sub: 'Online', deck: 'pari', code: 'FB-02', icon: 'two', type: 'Play · Online',
-      kw: 'Play', text: 'a friend, each on your own device.', flavor: 'Paris are never alone.',
+    { key: 'solo', name: 'Solo', sub: 'vs the AI', soon: '', deck: 'domowiki', code: 'FB-01', icon: 'one', type: 'Game mode · 1 player',
+      kw: 'Play', text: 'any deck against the AI.', flavor: 'No one to blame but the AI.' },
+    { key: 'friend', name: 'Friend', sub: 'Online', deck: 'pari', code: 'FB-02', icon: 'two', type: 'Game mode · 2 players',
+      kw: 'Play', text: 'a friend, each on your own device.', flavor: 'Still friends after. Mostly.',
       soon: 'Play with a friend online: add each other with a code, then you each play on your own device.' },
-    { key: 'ranked', name: 'Ranked', sub: 'The ladder', deck: 'huihai', code: 'FB-03', icon: 'crown', type: 'Play · Ranked',
-      kw: 'Climb', text: 'the ladder, game by game.', flavor: 'Stone upon stone.',
+    { key: 'ranked', name: 'Ranked', sub: 'The ladder', deck: 'huihai', code: 'FB-03', icon: 'crown', type: 'Game mode · Rated',
+      kw: 'Climb', text: 'the ladder, game by game.', flavor: 'Humility sold separately.',
       soon: 'Ranked games against other players, with an Elo rating and a ladder to climb.' },
   ],
   [
-    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '', deck: 'jiaoren', code: 'FB-04', icon: 'pearl', type: 'Cards · Yours',
-      kw: 'Keep', text: 'every card you own, deck by deck.', flavor: 'Each pearl was once a tear.' },
-    { key: 'store', name: 'Store', sub: 'New cards', deck: 'aluxes', code: 'FB-05', icon: 'bag', type: 'Cards · New decks',
-      kw: 'Find', text: 'new decks and cards.', flavor: 'Fresh from the milpa.', soon: 'A store for new decks and cards.' },
-    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '', deck: 'domowiki', code: 'FB-06', icon: 'stack', type: 'Cards · Your decks',
-      kw: 'Build', text: 'a Hero and 50 cards of your own.', flavor: 'Every card in its place.' },
+    { key: 'collection', name: 'Collection', sub: 'Your cards', soon: '', deck: 'jiaoren', code: 'FB-04', icon: 'pearl', type: 'Cards · Library',
+      kw: 'Keep', text: 'every card you own, deck by deck.', flavor: 'Hoarding, but make it art.' },
+    { key: 'store', name: 'Store', sub: 'New cards', deck: 'aluxes', code: 'FB-05', icon: 'bag', type: 'Cards · Shop',
+      kw: 'Find', text: 'new decks and cards.', flavor: 'The alux takes exact change.', soon: 'A store for new decks and cards.' },
+    { key: 'decks', name: 'Deck builder', sub: 'Your decks', soon: '', deck: 'domowiki', code: 'FB-06', icon: 'stack', type: 'Cards · Workshop',
+      kw: 'Build', text: 'a Hero and 50 cards of your own.', flavor: 'Fifty cards. Zero regrets.' },
   ],
 ];
 const MODE_EXTRAS: ModeCard[] = [
-  { key: 'tutorial', name: 'Tutorial', sub: 'With tips', deck: 'pari', code: 'FB-07', icon: 'book', type: 'Learn · First game',
-    kw: 'Learn', text: 'your first game, with tips.', flavor: 'Every pari was little once.' },
-  { key: 'docs', name: 'Documentation', sub: 'The rules', deck: 'huihai', code: 'FB-08', icon: 'scroll', type: 'Learn · The rules',
-    kw: 'Read', text: 'the rules, in full.', flavor: 'Written down, just in case.' },
+  { key: 'tutorial', name: 'Tutorial', sub: 'With tips', deck: 'pari', code: 'FB-07', icon: 'book', type: 'Lessons · Guided',
+    kw: 'Learn', text: 'your first game, with tips.', flavor: 'Nobody is born knowing this.' },
+  { key: 'docs', name: 'Documentation', sub: 'The rules', deck: 'huihai', code: 'FB-08', icon: 'scroll', type: 'Lessons · Reference',
+    kw: 'Read', text: 'the rules, in full.', flavor: 'Legends read the manual.' },
 ];
 /** The decks the tiles borrow: their frames' colours (as the cards draw them) and their names for the footer. */
 const MODE_DECKS: Record<string, { name: string; main: string; dark: string; tint: string }> = {
@@ -880,7 +880,7 @@ function modeCard(open: string, m: ModeCard, status: string, badge: number): str
         ${badge ? `<span class="mode-badge" aria-label="${badge} waiting">${badge}</span>` : ''}
         <span class="mc-frame"><span class="mc-face">
           <span class="mc-bar"><span class="mc-gem" aria-hidden="true"><svg viewBox="0 0 24 24">${MODE_ICONS[m.icon]}</svg></span><span class="mc-name ${m.name.length > 8 ? 'long' : ''}">${m.name}</span></span>
-          <span class="mc-art"><img src="${BASE}ui/mode-${m.key}-v3.webp" alt="" draggable="false"></span>
+          <span class="mc-art"><img src="${BASE}ui/mode-${m.key}-v4.webp" alt="" draggable="false"></span>
           <span class="mc-type"><span>${m.type}</span><small>${m.code}</small></span>
           <span class="mc-text"><span class="mc-rule"><b>${m.kw}:</b> ${m.text}</span>
             ${status ? status.replace(/mode-sub/g, 'mc-state') : `<span class="mc-flavor">${m.flavor}</span><span class="mc-short">${m.sub}</span>`}</span>

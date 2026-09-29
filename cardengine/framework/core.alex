@@ -284,8 +284,9 @@ type Token : Card { type: CardType | text }
 // area whose `types` field lists the game's types for that record, typed `[type UnitCard]` (a
 // reference to a type declaration, `@Creature`, that must conform to the record):
 // `units = [UnitCards { types = [@Creature] }]`. Conformance is structural: the mapped type
-// declares or inherits every required field of the record, with the same type, and reads the
-// record's optional fields it lacks as their defaults. A mapped type gains the record's
+// declares or inherits every required field of the record, each field it shares with the record
+// has a type the record's field accepts (`cost: int` conforms to `cost: Cost?`), and it reads
+// the record's optional fields it lacks as their defaults. A mapped type gains the record's
 // extension members, so its cards have the record's handler slots (`on-enter`, `static`,
 // `on-play`) and the library's rules apply to them. A type may be mapped onto several records
 // whose slots don't clash. `type R` fields are an Alex language change, proposed 2026-09-28.
@@ -391,6 +392,7 @@ enum ParamType {
   card                            // a card definition, not an object in play
   moment, pending, rules, zone, coords, object, objects, faces
   ability                         // deprecated with `Ability.numbers`: see the `card` selector
+  counter-or-resource             // a named number a player holds: a counter or a resource
 }
 enum BlockKind { effect, condition, static, scenario }
 

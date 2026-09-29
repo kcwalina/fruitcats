@@ -837,7 +837,10 @@ before, still mean the same. Where a change isn't additive, it says so.
   `AttachmentRule` / `Game.attachments`, `PermanentRule` / `Game.permanents`);
   `OneClimaxPerTurn` stays a plain `Rule` in `rules`.
   Conformance is structural: the mapped type declares or inherits every required field of the
-  record with the same type, and reads the record's optional fields it lacks as their defaults
+  record, each field it shares with the record has a type the record's field accepts (Hello
+  TCG's `cost: int` conforms to `UnitCard.cost: Cost?`, where `Cost = int | [text: int]`;
+  inclusion, not identity, as the Alex 0.6.0 session implemented it), and it reads the
+  record's optional fields it lacks as their defaults
   (a Hello TCG Creature has no `unique`, so it is `false`). A mapped type gains the record's
   extension members from every loaded library (`on-enter` from units, `on-attack` from combat),
   so its cards have the handler slots and the library's rules apply to them. A type may be
@@ -971,6 +974,16 @@ Asked through the TCG Developer Platform session, from the samples' six real Dom
   keyword given meaning both ways (a `Swift`-typed keyword also named by `EntersReady`) is a
   checker note, since the rule adds nothing. `Mechanic` (families) is a keyword whose meaning is
   its own handlers, unchanged.
+
+### Scenario words for resources (2026-09-28)
+
+Found by the Alex 0.6.0 session binding Hello TCG: `counter-is(me, @Energy, 3)` failed, because
+`counter-is` took a core `Counter` and `Energy = GrowingCounter` is a resource. A scenario sets
+a player's resource as often as a counter, and to a designer both are "a number the player
+has". So the core's `ParamType` gained `counter-or-resource` (appended, as the enum's rules
+allow) and `counter-is` takes it. Rejected: a second word (`resource-is`), which makes the
+designer know which kind of number Energy is, and changing the parameter to `resource`, which
+would lose player counters that aren't resources (poison, lore).
 
 ## Open
 

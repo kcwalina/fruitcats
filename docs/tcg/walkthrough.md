@@ -12,6 +12,8 @@ where everything goes.
 
 - **The `tcg` tool**, free. It creates projects, checks them, runs tests, plays games with bots,
   and renders rulebooks and cards.
+- **Some Alex.** Games are written in Alex, and this walkthrough assumes you can read it. If
+  you haven't used it, the Alex getting-started guide takes about ten minutes.
 - **A text editor.** Any will do. VS Code with the Alex extension colours the files and underlines
   mistakes as you type.
 - **Optional: a coding agent**, such as Claude Code or Codex. Every step in this walkthrough shows
@@ -105,12 +107,8 @@ rulebook = @rulebook
 sets = [@base-set]
 ```
 
-A few things to notice, since every Alex file works the same way:
+Two things to notice:
 
-- The first real line names the file's one value and says what it is: `hello-tcg = Game`.
-- Each following line sets one field: `name = 'Hello TCG'`.
-- Quotes are only for text people read. Anything the tools understand is a number, a name, or a
-  reference to something else, written with `@` (`@rulebook`, `@base-set`).
 - `engine-version = 1` says which version of the game engine your game is written for, so a
   later engine keeps playing it exactly the same way.
 - Anything you don't write has a default: no libraries, no card types, no zones, two players.
@@ -164,9 +162,6 @@ sections = [
 Each player starts with 10 Life. When your opponent's Life reaches 0, you win.
 @@@
 ```
-
-Long text goes in a *text table* at the end of the file: `@@@ winning` starts the text named
-`winning`, and a bare `@@@` ends the table.
 
 Now the rule itself. Life totals are in the `life` library. In `hello-tcg.alex`, add the library
 to `uses` and add the rule:
@@ -316,8 +311,9 @@ units = [
 ]
 ```
 
-`type Creature : UnitCard {}` means "a Creature is a unit card". It has everything a unit card
-has: a cost, power and health.
+Your game's Creatures are the library's unit cards under your own name, so they have everything
+a unit card has: a cost, power and health. Games name their card types freely (Monsters, Allies,
+Characters); the library supplies what they do.
 
 The rulebook section:
 

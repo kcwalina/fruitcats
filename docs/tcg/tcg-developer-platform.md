@@ -151,9 +151,20 @@ game names the numbers that shape it in one place, `numbers = [starting-life = 1
 (`Each player starts with {@starting-life} Life.`). `tcg rulebook` fills them in, and `tcg check`
 reports an unknown name in text and notes digits written straight into rulebook text. Named
 numbers are also the knobs a playtest can vary. Needs: `Game.numbers: [text: int]`, rule fields
-that accept a number reference, and `{@name}` in rulebook text. Next, the same for card text:
-Spark's printed "Deal 2 damage" and its handler's `damage-life(2)` are two copies of one number;
-an ability should carry its numbers, used by both the printed text and the handler.
+that accept a number reference, and `{@name}` in rulebook text. The same holds for card
+abilities: an ability carries its own numbers, and both its printed text and its handler read
+them:
+
+```
+Static { text = 'Your other Creatures have +{bonus} Power.', numbers = [bonus = 1] }
+static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+```
+
+`{name}` (no `@`) is the ability's own number; `{@name}` is the game's. `ability.name` reads it in
+a handler. `tcg check`: a `{name}` the ability lacks is an error, a number the text never shows is
+an error (players would play with a number they can't see), and a digit written into a handler is
+a note. Needs: `numbers: [text: int] = empty` on `Ability`, `{name}` in ability text, and an
+`ability` selector in handler bodies.
 
 **How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name

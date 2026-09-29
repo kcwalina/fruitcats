@@ -19,6 +19,9 @@ assets they refer to (images in `art/`). Nothing about the game lives anywhere e
   so instead of working around it.
 - **Numbers go in `numbers`.** Rules take them (`start = @starting-life`) and rulebook text embeds
   them (`{@starting-life}`). Never type a number into rulebook text.
+- **An ability's numbers go on the ability** (`numbers = [damage = 2]`). Its text shows them
+  (`'Deal {damage} damage'`) and its handler reads them (`ability.damage`). Never type a number
+  into card text or a handler.
 - **Every rule cites the rulebook section that explains it** (`cites = @rulebook.winning`). When
   you add a rule, add or update its section.
 - **Every ability printed on a card has a handler**, and every handler belongs to a printed

@@ -2,14 +2,14 @@
 
 for = @base-set
 
-effect draw-a-card { draw(1) }
+effect draw-a-card { draw() }
 @hello.on-enter = draw-a-card
 
-static others-plus-one { units(own, other).grant(power: +1) }
-@cheer.static = others-plus-one
+static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+@cheer.static = others-get-bonus
 
-effect spark { opponent.damage-life(2) }
-@spark.on-play = spark
+effect damage-opponent { opponent.damage-life(ability.damage) }
+@spark.on-play = damage-opponent
 
 effect goodbye { choose(all).destroy() }
 @goodbye.on-play = goodbye

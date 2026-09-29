@@ -20,11 +20,18 @@ cards = [
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
-    abilities = [Static { text = 'Your other Creatures have +1 Power.' }]
+    abilities = [
+      Static {
+        text = 'Your other Creatures have +{bonus} Power.'
+        numbers = [bonus = 1]
+      }
+    ]
   }
   spark = Spell {
     name = 'Spark', cost = 1
-    abilities = [OnPlay { text = 'Deal 2 damage to your opponent.' }]
+    abilities = [
+      OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }
+    ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3

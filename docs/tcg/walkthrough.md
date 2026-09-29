@@ -607,11 +607,11 @@ Open `base-set-rules.alex` and write the handler:
 
 for = @base-set
 
-effect draw-a-card { draw(1) }
+effect draw-a-card { draw() }
 @hello.on-enter = draw-a-card
 ```
 
-`effect draw-a-card { draw(1) }` is the ability's program: draw one card. `@hello.on-enter =
+`effect draw-a-card { draw() }` is the ability's program: draw a card. `@hello.on-enter =
 draw-a-card` attaches it to Hello. Handlers are short on purpose: they use the words the
 libraries give you (`draw`, `damage`, `destroy`, `choose`…), and each one is a line or two.
 
@@ -652,20 +652,35 @@ you whether a card still does what its text says.
 ```
   cheer = Creature {
     name = 'Cheer', cost = 2, power = 1, health = 2
-    abilities = [Static { text = 'Your other Creatures have +1 Power.' }]
+    abilities = [
+      Static {
+        text = 'Your other Creatures have +{bonus} Power.'
+        numbers = [bonus = 1]
+      }
+    ]
   }
 ```
+
+The ability has a number, `bonus`, and its printed text shows it as `{bonus}`. It's the same idea
+as the game's `numbers`, for one ability: the card says "+1 Power" because `bonus` is 1, so the
+text on the card and what the card does can't disagree.
 
 And its handler to `base-set-rules.alex`:
 
 ```
-static others-plus-one { units(own, other).grant(power: +1) }
-@cheer.static = others-plus-one
+static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+@cheer.static = others-get-bonus
 ```
 
-Read it as: "my units, other than this one, are granted +1 power". A static isn't something that
-happens; it's something that is true while the card is in play. When Cheer leaves the board, the
-bonus goes away by itself.
+Read it as: "my units, other than this one, are granted the ability's bonus in power".
+`ability.bonus` is the number from the card. A static isn't something that happens; it's
+something that is true while the card is in play. When Cheer leaves the board, the bonus goes
+away by itself.
+
+`tcg check` holds the two together: a `{name}` in the text that the ability doesn't have is an
+error, and so is a number the text never shows, because players would be playing with a number
+they can't see. It also notes a digit written straight into a handler, like `grant(power: +1)`:
+that's a number the card's text doesn't know about.
 
 **Spark** and **Goodbye** are spells: you play them, they do something once, and they go to the
 discard pile. Spells come from the `spells` library, and your game calls them **Spell**. In
@@ -682,7 +697,9 @@ The cards:
 ```
   spark = Spell {
     name = 'Spark', cost = 1
-    abilities = [OnPlay { text = 'Deal 2 damage to your opponent.' }]
+    abilities = [
+      OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }
+    ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
@@ -693,8 +710,8 @@ The cards:
 Their handlers:
 
 ```
-effect spark { opponent.damage-life(2) }
-@spark.on-play = spark
+effect damage-opponent { opponent.damage-life(ability.damage) }
+@spark.on-play = damage-opponent
 
 effect goodbye { choose(all).destroy() }
 @goodbye.on-play = goodbye
@@ -1152,11 +1169,18 @@ cards = [
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
-    abilities = [Static { text = 'Your other Creatures have +1 Power.' }]
+    abilities = [
+      Static {
+        text = 'Your other Creatures have +{bonus} Power.'
+        numbers = [bonus = 1]
+      }
+    ]
   }
   spark = Spell {
     name = 'Spark', cost = 1
-    abilities = [OnPlay { text = 'Deal 2 damage to your opponent.' }]
+    abilities = [
+      OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }
+    ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
@@ -1181,14 +1205,14 @@ decks = [
 
 for = @base-set
 
-effect draw-a-card { draw(1) }
+effect draw-a-card { draw() }
 @hello.on-enter = draw-a-card
 
-static others-plus-one { units(own, other).grant(power: +1) }
-@cheer.static = others-plus-one
+static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+@cheer.static = others-get-bonus
 
-effect spark { opponent.damage-life(2) }
-@spark.on-play = spark
+effect damage-opponent { opponent.damage-life(ability.damage) }
+@spark.on-play = damage-opponent
 
 effect goodbye { choose(all).destroy() }
 @goodbye.on-play = goodbye

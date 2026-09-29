@@ -13,6 +13,12 @@ type PermanentCard : Card {
   capacity: int?                  // how many units may be at it
 }
 
+// Rules about permanents, listed in the game's `permanents` area. `PermanentCards` says which of
+// the game's card types are permanents; see core.alex on mapping.
+type PermanentRule : Rule {}
+extension Game { permanents: [PermanentRule] = empty }
+type PermanentCards : PermanentRule { types: [type PermanentCard] }
+
 extension PermanentCard {
   on-enter: effect?
   on-leave: effect?

@@ -22,14 +22,21 @@
 // a game names its numbers once (`Game.numbers`) and rules and rulebook text refer to them;
 // rulebook sections have titles; card types are the game's declared types, not a `types` list;
 // a record under a key takes its name from the key; files say their type with `#type`.
+// From the owner's second pass (2026-09-28): a game states its `schema-version`, the version of
+// the file format, not of an engine, since a printed game has none; a game's constants live on
+// `Game` and on each card (`constants`); cards live in `Cards` documents that join the game by
+// being in its folder, and `Set` is for games that publish expansions; a card prints its rules
+// text (`Card.text`) and its handlers attach by slot; a game declares its own card types on
+// `Card` and maps them onto the libraries' card records; a game names its card back.
 #type Core
 
-engine-version = 1
+schema-version = 1
 
 // The root type of this document.
 type Core {
-  version: text?                  // deprecated: was '1'; the engine version is `engine-version`
-  engine-version: int?
+  version: text?                  // deprecated: was '1'; see schema-version
+  engine-version: int?            // deprecated: see schema-version
+  schema-version: int?
   actions: [text: ActionKind]
   moments: [text: Moment]
   selectors: [text: Selector]
@@ -58,25 +65,25 @@ enum ZoneRole     { deck, hand, discard, board, life, resource, exile, other }
 type Rule { cites: Section | text | nic }
 
 // A rulebook as a document, so citations can be checked and shown.
-// Section text may embed the game's named numbers as `{@name}` (`{@starting-life} Life`); the
-// renderer fills them in from `Game.numbers`. `{{` is a literal brace. The checker errors on a
-// name `Game.numbers` lacks and notes digits written straight into section text, since a digit
+// Section text may embed the game's constants as `{@name}` (`{@starting-life} Life`); the
+// renderer fills them in from `Game.constants`. `{{` is a literal brace. The checker errors on a
+// name `Game.constants` lacks and notes digits written straight into section text, since a digit
 // there is a number that can drift from the rules.
 type Rulebook : data { title: text, sections: [text: Section] = empty }
 type Section {
   number: text
-  title: text?                    // the heading; without it the section renders by number alone
+  title: text                     // the heading
   text: text
 }
 
 // A library: a set of helpers over the core that a game may use or ignore. It declares the rule
 // types, card records, keywords and vocabulary it owns, and the other libraries it builds on. A
 // library depends on the core and on what it lists in `requires`, and on nothing else. It ships
-// with the engine and has the engine's version, so it does not state one.
+// with the engine and has the core's schema version, so it does not state one.
 type Library {
   name: text
   version: text
-  core: text?                     // deprecated: libraries take the engine's version
+  core: text?                     // deprecated: libraries take the core's schema-version
   requires: [Library] = empty
   actions: [text: ActionKind] = empty
   moments: [text: Moment] = empty
@@ -95,20 +102,29 @@ type Moment { name: text }
 // -------------------------------------------------------------------------------------------
 // The game and its structure.
 
-// A new game needs only `name`, `engine-version`, `rulebook` and `sets`; every other field has
-// a default. A game's card types are the subtypes of a card record its file declares
-// (`type Creature : UnitCard {}`); no list repeats them.
+// A new game needs only `name` and `schema-version`; every other field has a default. The folder
+// is the game: its one `Game` document, every `Cards` document in it that isn't a draft, the
+// sets `sets` lists, the rulebook it references, and every `Rules` document whose `for` is one
+// of those. A game's card types are the card types its file declares: on the core `Card` for
+// what the cards print (`type Creature : Card { cost: int, power: int, health: int }`), mapped
+// onto the libraries' card records by their rules once the game is playable
+// (`UnitCards { types = [@Creature] }`), or as a subtype of a library's record
+// (`type Creature : UnitCard {}`). No list repeats them.
 type Game : data {
   name: text
   rulebook: Rulebook | text | nic  // a Rulebook document, or a path to one outside Alex
-  // The engine version the game is written for; a later engine plays it the same way. Required
-  // unless the deprecated `core` is set: `core = '1'` reads as `engine-version = 1`, and a game
-  // setting both, or neither, is an error.
-  engine-version: int?
-  core: text?                     // deprecated: see engine-version
+  // The version of the file format the game is written in, like a .NET project's target
+  // framework; a later toolchain reads it the same way. It says nothing about an engine, since
+  // a printed game has none. `Cards` and `Set` documents take their game's. Required unless a
+  // deprecated `engine-version` or `core` is set, which reads as `schema-version = 1`; a game
+  // setting more than one of them, or none, is an error.
+  schema-version: int?
+  engine-version: int?            // deprecated: see schema-version
+  core: text?                     // deprecated: see schema-version
+  card-back: text?                // an asset reference: the back every printed card shares
   uses: [Library] = empty         // the libraries whose rules, records and vocabulary it may use
   players: Players = Players {}   // two players, clockwise
-  sets: [Set] = empty
+  sets: [Set] = empty             // only a game that publishes expansions has sets
   types: [text: CardType] = empty // deprecated: the declared card types are the list
   zones: [text: Zone] = empty
   keywords: [text: Keyword] = empty   // tags cards may carry; libraries give them meaning
@@ -119,7 +135,8 @@ type Game : data {
   // (`LifeCounter { start = @starting-life }`): the entry is an int member of the game, and a
   // reference to an int member is accepted wherever an int is, as any reference is. Rulebook
   // text embeds them as `{@starting-life}`. A playtest may vary them.
-  numbers: [text: int] = empty
+  constants: [text: int] = empty
+  numbers: [text: int] = empty    // deprecated: see constants; a game may not set both
 }
 
 type Players {
@@ -158,13 +175,29 @@ type Zone {
 }
 
 // -------------------------------------------------------------------------------------------
-// Sets: a card pool. Libraries extend this with what their cards need (families, mechanics).
+// Cards and sets.
 
-// A set has its game's engine version; it does not state one.
+// A game's cards: a document with no id and no name, taking its game's schema version. Every
+// `Cards` document in the game's folder is part of the game without being listed, so cards can
+// be split across files freely; `draft = true` holds one out (a card being designed, a variant
+// being tried). Its cards and decks join the game's namespace like any set's.
+type Cards : data {
+  draft: bool = false
+  cards: [text: Card] = empty
+  decks: [text: Deck] = empty
+}
+
+// A set in the TCG sense: a named release of cards, for a game that publishes expansions. It
+// joins the game through `Game.sets`, so a release is a decision, not a file in a folder.
+// Libraries extend it with what their cards need (families, mechanics). A set has its game's
+// schema version; it does not state one. Collector numbers and boosters are to be designed
+// when a game needs them.
 type Set : data {
   id: text
   name: text
-  core: text?                     // deprecated: a set takes its game's engine-version
+  core: text?                     // deprecated: a set takes its game's schema-version
+  code: text?                     // the short code printed on its cards ('SB1')
+  symbol: text?                   // an asset reference: the set symbol printed on its cards
   version: text?
   status: Status = prototype
   released: text?
@@ -195,14 +228,38 @@ type Applied {
   n: int
 }
 
-// The card the core knows: a named object of a game-declared type, with faces and tags. Stats
-// (cost, power, health) belong to library card records that extend this one.
+// The card the core knows: a named object of a game-declared type, with faces and tags. What a
+// card prints beyond this (cost, power, health) is a field of the game's own type
+// (`type Creature : Card { cost: int, power: int, health: int }`) or of a library record the
+// type extends.
 // A card's name defaults to its key like any keyed record's, but cards keep lowercase keys
 // (`citron-fox`) and set their printed name ('Citron Fox'). `type-name` and `type-cites` are
 // fixed by the game's type declaration when the type's display name is not its identifier
 // (`type Spirit : UnitCard { type-name = 'Nature Spirit' }`).
+//
+// Rules text and handlers. `text` is the card's printed rules text, the designer's words. What
+// it does is a handler in a rules document, attached to one of the card's slots
+// (`@hello.on-enter = draw-a-card`, `@cheer.static = ...`); the slot says when it runs, and
+// the slots are the extension members of the library records the card's type is, or is mapped
+// onto. The linker requires every card with text to have at least one handler, and every
+// handler to belong to a card with text: the first is the IDE's fill-in-the-blank, the second
+// keeps code from giving a card behaviour it doesn't print.
+// `abilities` is the other way to say the same, kept for what a slot can't carry: an ability's
+// own data (`once-per-round`, and what its kind fixes: `responding`, `hidden`) and a card with
+// several abilities each printed on its own line. A card uses one way or the other: with
+// `abilities`, each ability has exactly its handler and each handler its ability, and the
+// card's printed text is its abilities' texts in order, so setting `text` too is an error.
+//
+// Constants. The numbers a card's text prints are its `constants` (`constants = [damage = 2]`),
+// shown in `text` or in its abilities' texts as `{damage}` (`{@name}` is the game's constants)
+// and read by its handlers as `card.damage`. The checker errors on a `{name}` the card lacks and
+// on a constant its text never shows (players would play with a number they can't see), and
+// notes a digit typed into card text or a handler body. A playtest or patch varies a card by its
+// constants, and the printed text follows.
 type Card : data {
   name: text?
+  text: text?                     // the printed rules text
+  constants: [text: int] = empty
   flavor: text?
   pronoun: text?
   art: text?                      // an asset reference, never inline image data
@@ -216,6 +273,18 @@ type Card : data {
 // deprecated form.
 type Token : Card { type: CardType | text }
 
+// Mapping a game's card types onto a library's card record. A library's card records
+// (`UnitCard`, `SpellCard`) are engine concepts; a printable game's types are its own, on `Card`.
+// Making the game playable maps them: each library with a card record declares a rule in its
+// area whose `types` field lists the game's types for that record, typed `[type UnitCard]` (a
+// reference to a type declaration, `@Creature`, that must conform to the record):
+// `units = [UnitCards { types = [@Creature] }]`. Conformance is structural: the mapped type
+// declares or inherits every required field of the record, with the same type, and reads the
+// record's optional fields it lacks as their defaults. A mapped type gains the record's
+// extension members, so its cards have the record's handler slots (`on-enter`, `static`,
+// `on-play`) and the library's rules apply to them. A type may be mapped onto several records
+// whose slots don't clash. `type R` fields are an Alex language change, proposed 2026-09-28.
+
 type Deck {
   name: text?
   cards: [[Card, int]]
@@ -228,7 +297,9 @@ type Deck {
 
 // A rules document. Its members are declarations of the registered kinds (`effect`, `static`,
 // `condition`, `scenario`) and assignments to extension members of the objects it references.
-type Rules { for: Set }
+// It is for the cards of one `Cards` document or one set (`for = @cards`); the cards never name
+// their rules document, since code points at data.
+type Rules { for: Cards | Set }
 
 enum ParamType {
   int, bool, text, unit, units, token, counter, resource, player, players, keyword, grant
@@ -237,7 +308,7 @@ enum ParamType {
   targets
   card                            // a card definition, not an object in play
   moment, pending, rules, zone, coords, object, objects, faces
-  ability                         // the ability a handler is attached to; `.name` reads a number
+  ability                         // deprecated with `Ability.numbers`: see the `card` selector
 }
 enum BlockKind { effect, condition, static, scenario }
 
@@ -245,21 +316,17 @@ enum BlockKind { effect, condition, static, scenario }
 // be given by name; `optional` parameters follow `params` in call order and may be omitted. A
 // verb with `on = player` called without a receiver acts on `own`; one with `on = unit` acts on
 // `this`. A filter is a call too: `units(own, power >= 3)` passes a predicate as its argument.
-// An ability a card declares as data: that it has one, of what kind, with its printed text.
-// The kinds are types a library declares, for example
-// `type OnEnter : Ability { holders = [nameof(UnitCard)] }`, and a card constructs one
-// (`abilities = [OnEnter { text = '...' }]`). What the ability does is a
-// handler in a rules document, assigned to the holder's slot named after the kind
+// An ability a card declares as data (see `Card` for when a card uses `abilities` rather than
+// `text`): that it has one, of what kind, with its printed text. The kinds are types a library
+// declares, for example `type OnEnter : Ability { holders = [nameof(UnitCard)] }`, and a card
+// constructs one (`abilities = [OnEnter { text = '...' }]`). What the ability does is a handler
+// in a rules document, assigned to the holder's slot named after the kind
 // (`OnEnter` -> `on-enter`). The linker requires each declared ability to have its handler and
-// each handler to have its declared ability.
-// An ability carries the numbers its text prints, so the text and the handler share one copy:
-// `OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }` and
-// `effect damage-opponent { opponent.damage-life(ability.damage) }`. The text embeds them as
-// `{name}` (`{@name}` is the game's `numbers`); the handler reads them through the `ability`
-// selector. The checker errors on a `{name}` the ability lacks and on a number its text never
-// shows (a hidden number), and notes a digit written straight into a handler body.
+// each handler to have its declared ability. Its text shows the card's constants as `{name}`.
 type Ability {
   text: text?                     // the printed text; the designer's, not generated
+  // Deprecated: the card's `constants`, read as `card.name`. Still read as `ability.name`; a
+  // name may not be both an ability number and a card constant.
   numbers: [text: int] = empty
   once-per-round: bool = false
   holders: [text]                 // fixed by the kind: record types it may sit on
@@ -305,7 +372,11 @@ selectors = [
   this = Selector { yields = unit }
   target = Selector { yields = unit }             // the one binding an effect may make
   event = Selector { yields = event }
-  // The ability the running handler is attached to; `ability.damage` is one of its numbers.
+  // The card the running handler is attached to, as printed: `card.bonus` is one of its
+  // constants. A handler shared by several cards reads each card's own.
+  card = Selector { yields = card }
+  // Deprecated: the ability the running handler is attached to; `ability.damage` is one of its
+  // numbers.
   ability = Selector { yields = ability }
   own = Selector { yields = player }
   opponent = Selector { yields = player }         // legal only when players.max == 2

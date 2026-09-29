@@ -22,6 +22,11 @@ type MissionCard : ObjectiveCard { steps: int = 1, hidden: bool = false }
 // A plot or scheme revealed simultaneously that sets this round's parameters (Game of Thrones).
 type PlotCard : Card { initiative: int = 0 }
 
+// Which of the game's card types are objectives, missions and plots; see core.alex on mapping.
+type ObjectiveCards : ObjectiveRule { types: [type ObjectiveCard] }
+type MissionCards : ObjectiveRule { types: [type MissionCard] }
+type PlotCards : ObjectiveRule { types: [type PlotCard] }
+
 type WinOnObjectives : ObjectiveRule { n: int }               // control or complete n objectives
 type ClaimInOrder : ObjectiveRule { n: int, of: int }          // claim n of m ordered objectives
 type ZoneControlWin : ObjectiveRule { zone: Zone, turns: int } // hold a zone for n turns straight

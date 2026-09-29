@@ -20,6 +20,12 @@ type EncounterCard : Card { threat: int = 0 }
 type EnemyCard : EncounterCard { power: int, health: int }
 type StageCard : Card { steps: int = 1 }
 
+// Which of the game's card types are encounter cards, enemies and stages; see core.alex on
+// mapping.
+type EncounterCards : EncounterRule { types: [type EncounterCard] }
+type EnemyCards : EncounterRule { types: [type EnemyCard] }
+type StageCards : EncounterRule { types: [type StageCard] }
+
 extension EncounterCard { when-revealed: effect?, forced: effect? }
 type WhenRevealed : Ability { holders = [nameof(EncounterCard)] }
 type Forced : Ability { holders = [nameof(EncounterCard)] }

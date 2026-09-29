@@ -26,6 +26,10 @@ type WeaponCard : Card { cost: Cost, power: int, durability: int }
 type HeroRule : Rule {}
 extension Game { hero: [HeroRule] = empty }
 
+// Which of the game's card types are heroes and weapons; see core.alex on mapping.
+type HeroCards : HeroRule { types: [type HeroCard] }
+type WeaponCards : HeroRule { types: [type WeaponCard] }
+
 type TwoFaces : HeroRule {}                           // face 2 is reached by awakening
 type AwakenOnStateCheck : HeroRule {}                 // flip as soon as the condition holds
 type AwakenedKeepsExhaustedState : HeroRule {}

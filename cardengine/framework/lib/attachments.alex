@@ -12,6 +12,12 @@ type AttachmentCard : Card {
   attached: Grant
 }
 
+// Rules about attachments, listed in the game's `attachments` area. `AttachmentCards` says which
+// of the game's card types are attachments; see core.alex on mapping.
+type AttachmentRule : Rule {}
+extension Game { attachments: [AttachmentRule] = empty }
+type AttachmentCards : AttachmentRule { types: [type AttachmentCard] }
+
 extension AttachmentCard {
   on-attach: effect?
   on-detach: effect?

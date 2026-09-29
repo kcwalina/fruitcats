@@ -10,19 +10,39 @@ legacy = true
 
 families = [
   Citrus = Family {
-    colors = ['#F29F05', '#A86400', '#FFF1CC']
-    mechanic = @Zest, hint = 'bonuses when it isn''t your first card this round'
+    colors = [
+      '#F29F05'
+      '#A86400'
+      '#FFF1CC'
+    ]
+    mechanic = @Zest
+    hint = 'bonuses when it isn''t your first card this round'
   }
   Orchard = Family {
-    colors = ['#D64545', '#8E2A2A', '#FBE0DA']
-    mechanic = @Ripen, hint = 'units grow +1/+1 every round'
+    colors = [
+      '#D64545'
+      '#8E2A2A'
+      '#FBE0DA'
+    ]
+    mechanic = @Ripen
+    hint = 'units grow +1/+1 every round'
   }
   Tropical = Family {
-    colors = ['#F2780C', '#A24E05', '#FFE6CC']
-    mechanic = @Sprout, hint = 'extra Offerings now, Lush payoffs at 7+'
+    colors = [
+      '#F2780C'
+      '#A24E05'
+      '#FFE6CC'
+    ]
+    mechanic = @Sprout
+    hint = 'extra Offerings now, Lush payoffs at 7+'
   }
   Garden = Family {
-    name = 'Wildfolk', colors = ['#5FA84D', '#3B7430', '#E3F2DC']
+    name = 'Wildfolk'
+    colors = [
+      '#5FA84D'
+      '#3B7430'
+      '#E3F2DC'
+    ]
     neutral = true
   }
 ]
@@ -33,7 +53,8 @@ counters = [
 ]
 mechanics = [
   Zest = Mechanic {
-    family = @Citrus, kind = condition
+    family = @Citrus
+    kind = condition
     label = true
     reminder = 'A bonus if this is not the first card you have played this round.'
     abilities = [
@@ -43,7 +64,8 @@ mechanics = [
     ]
   }
   Ripen = Mechanic {
-    family = @Orchard, kind = keyword
+    family = @Orchard
+    kind = keyword
     icon = '🍎'
     reminder = 'At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2.'
     abilities = [
@@ -53,13 +75,15 @@ mechanics = [
     ]
   }
   Lush = Mechanic {
-    family = @Tropical, kind = condition
+    family = @Tropical
+    kind = condition
     badge = '🌴'
     reminder = 'This bonus is on while you have 7 or more Offerings.'
     abilities = [MechanicCondition { text = 'Lush: while you have 7 or more Offerings.' }]
   }
   Sprout = Mechanic {
-    family = @Tropical, kind = action
+    family = @Tropical
+    kind = action
     reminder = 'Put that many cards from the top of your deck into your Offerings.'
   }
 ]
@@ -110,7 +134,8 @@ cards = [
       ]
     }
     face2 = Face {
-      name = 'Tango, Jungle Monarch', power = 4, keywords = [@Fierce]
+      name = 'Tango, Jungle Monarch', power = 4
+      keywords = [@Fierce]
       abilities = [Exhaust { text = '' }]
     }
     flavor = 'Lazes all morning. Rules all afternoon.'
@@ -122,39 +147,42 @@ cards = [
     cost = 1, power = 1, health = 1
     flavor = 'Blink and it''s already nibbled your rind.'
     keywords = [@Swift]
-    abilities = [OnEnter { text = 'Zest: gets +1 Power this round.' }]
+    text = 'Zest: gets +1 Power this round.'
   }
   chick = Creature {
     name = 'Tangerine Chick', family = @Citrus
     cost = 1, power = 1, health = 1
     flavor = 'Small, fluffy, and extremely petty.'
-    abilities = [OnDefeated { text = 'Goodbye: Deal 1 damage to a unit.' }]
+    text = 'Goodbye: Deal 1 damage to a unit.'
   }
   gecko = Creature {
     name = 'Lime Gecko', family = @Citrus
     cost = 1, power = 2, health = 1
     flavor = 'The wall was green. So was the gecko.'
     keywords = [@Sneaky]
-    abilities = [OnEnter { text = 'Zest: gets +1 Power this round.' }]
+    text = 'Zest: gets +1 Power this round.'
   }
   corgi = Creature {
     name = 'Orange Corgi', family = @Citrus
     cost = 2, power = 3, health = 2
     flavor = 'Short legs. Big plans.'
-    abilities = [OnEnter { text = 'Zest: enters ready.' }]
+    text = 'Zest: enters ready.'
   }
   ferret = Creature {
     name = 'Grapefruit Ferret', family = @Citrus
     cost = 3, power = 3, health = 2
     flavor = 'Sproing! Sproing! Sproing!'
-    keywords = [@Swift, @Sneaky]
-    abilities = [OnEnter { text = 'Zest: gets +1 Power this round.' }]
+    keywords = [
+      @Swift
+      @Sneaky
+    ]
+    text = 'Zest: gets +1 Power this round.'
   }
   citron-fox = Creature {
     name = 'Citron Fox', family = @Citrus
     cost = 3, power = 3, health = 3
     flavor = 'Always arrives with a little zing.'
-    abilities = [OnEnter { text = 'Hello: Deal 1 damage to a unit. Zest: deal 2 instead.' }]
+    text = 'Hello: Deal 1 damage to a unit. Zest: deal 2 instead.'
   }
   pomelo-ram = Creature {
     name = 'Pomelo Ram', family = @Citrus, rarity = uncommon
@@ -166,26 +194,32 @@ cards = [
     name = 'Yuzu Hawk', family = @Citrus, rarity = uncommon
     cost = 5, power = 4, health = 4
     flavor = 'It saw your Guardian. It didn''t care.'
-    keywords = [@Swift, @Sneaky]
+    keywords = [
+      @Swift
+      @Sneaky
+    ]
   }
   sour-spray = Charm {
     name = 'Sour Spray', family = @Citrus, rarity = uncommon
     cost = 1
     flavor = 'Right in the eye. Every time.'
-    keywords = [@Lucky, @Ambush]
-    abilities = [OnPlay { text = 'Deal 2 damage to a unit.' }]
+    keywords = [
+      @Lucky
+      @Ambush
+    ]
+    text = 'Deal 2 damage to a unit.'
   }
   zest-burst = Charm {
     name = 'Zest Burst', family = @Citrus, rarity = uncommon
     cost = 3
     flavor = 'Squeeze responsibly.'
-    abilities = [OnPlay { text = 'Deal 3 damage to a unit. Zest: deal 5 instead.' }]
+    text = 'Deal 3 damage to a unit. Zest: deal 5 instead.'
   }
   peel-out = Charm {
     name = 'Peel Out', family = @Citrus, rarity = uncommon
     cost = 2
     flavor = 'Round two? Round two.'
-    abilities = [OnPlay { text = 'Ready a unit you control.' }]
+    text = 'Ready a unit you control.'
   }
   zester = Talisman {
     name = 'Citrus Zester', family = @Citrus, rarity = uncommon
@@ -198,13 +232,13 @@ cards = [
     cost = 3, power = 3, health = 3
     flavor = '"Keep up, slowpokes!"'
     keywords = [@Swift]
-    abilities = [OnEnter { text = 'Hello: Ready another unit you control.' }]
+    text = 'Hello: Ready another unit you control.'
   }
   bergamot = Fabled {
     name = 'Bergamot, the Whirlwind', family = @Citrus, rarity = rare
     cost = 4, power = 3, health = 4
     flavor = 'She doesn''t enter a room. She happens to it.'
-    abilities = [OnEnter { text = 'Hello: Deal 1 damage to each enemy unit.' }]
+    text = 'Hello: Deal 1 damage to each enemy unit.'
   }
   sanguine = Fabled {
     name = 'Sanguine, Blood Orange Panther', family = @Citrus, rarity = rare, pronoun = 'her'
@@ -224,7 +258,7 @@ cards = [
     name = 'Peach Bunny', family = @Orchard
     cost = 1, power = 1, health = 2
     flavor = 'Softest paws in the orchard.'
-    abilities = [OnEnter { text = 'Hello: Heal 2 from a unit.' }]
+    text = 'Hello: Heal 2 from a unit.'
   }
   hedgehog = Creature {
     name = 'Pear Hedgehog', family = @Orchard
@@ -237,7 +271,7 @@ cards = [
     cost = 2, power = 2, health = 2
     keywords = [@Ripen]
     flavor = 'Sings loudest when friends are near.'
-    abilities = [OnEnter { text = 'Hello: If you control a Guardian, draw a card.' }]
+    text = 'Hello: If you control a Guardian, draw a card.'
   }
   plum-mole = Creature {
     name = 'Plum Mole', family = @Orchard
@@ -249,7 +283,7 @@ cards = [
     name = 'Apricot Owl', family = @Orchard
     cost = 3, power = 2, health = 3
     flavor = 'One stern look and everyone sits down.'
-    abilities = [OnEnter { text = 'Hello: Exhaust an enemy unit.' }]
+    text = 'Hello: Exhaust an enemy unit.'
   }
   apple-badger = Creature {
     name = 'Apple Badger', family = @Orchard, rarity = uncommon
@@ -261,33 +295,39 @@ cards = [
     name = 'Quince Tortoise', family = @Orchard, rarity = uncommon
     cost = 4, power = 2, health = 5
     flavor = 'Has been guarding this spot for ninety years.'
-    keywords = [@Guardian, Applied { keyword = @Tough, n = 1 }]
+    keywords = [
+      @Guardian
+      Applied { keyword = @Tough, n = 1 }
+    ]
   }
   fig-bear = Creature {
     name = 'Fig Bear', family = @Orchard, rarity = uncommon
     cost = 6, power = 5, health = 6
     flavor = 'Big hugs. Bigger swipes.'
-    keywords = [@Guardian, @Fierce]
+    keywords = [
+      @Guardian
+      @Fierce
+    ]
   }
   hiss = Charm {
     name = 'Hiss!', family = @Orchard, rarity = uncommon
     cost = 1
     flavor = 'The universal language of "no."'
     keywords = [@AmbushOnAttack]
-    abilities = [OnPlay { text = 'Cancel an attack. (The attacker stays exhausted.)' }]
+    text = 'Cancel an attack. (The attacker stays exhausted.)'
   }
   warm-cider = Charm {
     name = 'Warm Cider', family = @Orchard, rarity = uncommon
     cost = 2
     flavor = 'Best served by the fire, with a blanket.'
     keywords = [@Lucky]
-    abilities = [OnPlay { text = 'Heal 3 from a unit you control. Draw a card.' }]
+    text = 'Heal 3 from a unit you control. Draw a card.'
   }
   falling-apple = Charm {
     name = 'Falling Apple', family = @Orchard, rarity = uncommon
     cost = 3
     flavor = 'Gravity always picks a side.'
-    abilities = [OnPlay { text = 'Deal 4 damage to an exhausted unit.' }]
+    text = 'Deal 4 damage to an exhausted unit.'
   }
   apple-crate = Talisman {
     name = 'Apple Crate', family = @Orchard, rarity = uncommon
@@ -312,15 +352,16 @@ cards = [
     cost = 4, power = 3, health = 5
     flavor = '"Sit. Eat. You look thin."'
     keywords = [@Guardian]
-    abilities = [
-      OnRoundStart { text = 'At the start of each round, heal 1 from each unit you control.' }
-    ]
+    text = 'At the start of each round, heal 1 from each unit you control.'
   }
   honeycrisp = Fabled {
     name = 'Honeycrisp, the Gentle Giant', family = @Orchard, rarity = rare
     cost = 6, power = 6, health = 7
     flavor = 'The whole orchard naps in his shadow.'
-    keywords = [@Guardian, Applied { keyword = @Tough, n = 1 }]
+    keywords = [
+      @Guardian
+      Applied { keyword = @Tough, n = 1 }
+    ]
   }
 
   // Tropical
@@ -328,13 +369,13 @@ cards = [
     name = 'Banana Monkey', family = @Tropical
     cost = 1, power = 1, health = 2
     flavor = 'Always has a snack to share.'
-    abilities = [OnEnter { text = 'Hello: Ready one of your Offerings.' }]
+    text = 'Hello: Ready one of your Offerings.'
   }
   kiwi = Creature {
     name = 'Kiwi Bird', family = @Tropical
     cost = 1, power = 1, health = 1
     flavor = 'Buries a seed wherever it naps.'
-    abilities = [OnEnter { text = 'Hello: Sprout 1.' }]
+    text = 'Hello: Sprout 1.'
   }
   parrot = Creature {
     name = 'Passionfruit Parrot', family = @Tropical
@@ -352,47 +393,48 @@ cards = [
     name = 'Lychee Sloth', family = @Tropical
     cost = 2, power = 2, health = 3
     flavor = 'Will get to it. Eventually.'
-    abilities = [Static { text = 'Can''t attack unless you''re Lush.' }]
+    text = 'Can''t attack unless you''re Lush.'
   }
   capybara = Creature {
     name = 'Guava Capybara', family = @Tropical, rarity = uncommon
     cost = 4, power = 3, health = 5
     flavor = 'Everyone relaxes when the capybara arrives.'
-    abilities = [OnEnter { text = 'Hello: Heal 2 from each unit you control.' }]
+    text = 'Hello: Heal 2 from each unit you control.'
   }
   tapir = Creature {
     name = 'Mangosteen Tapir', family = @Tropical, rarity = uncommon
     cost = 5, power = 5, health = 5
     flavor = 'Snuffles up every fallen fruit.'
-    abilities = [OnEnter { text = 'Hello: If you''re Lush, draw 2 cards.' }]
+    text = 'Hello: If you''re Lush, draw 2 cards.'
   }
   elephant = Creature {
     name = 'Jackfruit Elephant', family = @Tropical, rarity = uncommon
     cost = 8, power = 7, health = 8
     flavor = 'The jungle rearranges itself around her.'
-    keywords = [@Guardian, @Fierce]
+    keywords = [
+      @Guardian
+      @Fierce
+    ]
   }
   tropical-rain = Charm {
     name = 'Tropical Rain', family = @Tropical, rarity = uncommon
     cost = 3
     flavor = 'Everything grows twice as fast after the rain.'
-    abilities = [OnPlay { text = 'Sprout 2.' }]
+    text = 'Sprout 2.'
   }
   coconut-drop = Charm {
     name = 'Coconut Drop', family = @Tropical, rarity = uncommon
     cost = 4
     flavor = 'Look up. Too late.'
     keywords = [@Lucky]
-    abilities = [OnPlay { text = 'Deal 5 damage to a unit.' }]
+    text = 'Deal 5 damage to a unit.'
   }
   smoothie = Charm {
     name = 'Mango Smoothie', family = @Tropical, rarity = uncommon
     cost = 1
     flavor = 'Refreshing, and a little bit dangerous.'
     keywords = [@Ambush]
-    abilities = [
-      OnPlay { text = 'A unit you control gets +2 Power this round. Ready one of your Offerings.' }
-    ]
+    text = 'A unit you control gets +2 Power this round. Ready one of your Offerings.'
   }
   sun-hat = Talisman {
     name = 'Sun Hat', family = @Tropical, rarity = uncommon
@@ -404,20 +446,23 @@ cards = [
     name = 'Papaya, Beach Bum', family = @Tropical, rarity = rare
     cost = 3, power = 2, health = 4
     flavor = '"Tomorrow is also a beach day."'
-    abilities = [OnEnter { text = 'Hello: Sprout 1.' }]
+    text = 'Hello: Sprout 1.'
   }
   coconut = Fabled {
     name = 'Coconut, Island Guardian', family = @Tropical, rarity = rare
     cost = 5, power = 4, health = 5
     flavor = 'Hard shell. Soft heart.'
     keywords = [@Guardian]
-    abilities = [OnEnter { text = 'Hello: Ready two of your Offerings.' }]
+    text = 'Hello: Ready two of your Offerings.'
   }
   durian = Fabled {
     name = 'Durian, the Mighty Stink', family = @Tropical, rarity = rare
     cost = 8, power = 8, health = 8
     flavor = 'You smell her long before you see her. Then it''s too late.'
-    keywords = [@Sneaky, @Fierce]
+    keywords = [
+      @Sneaky
+      @Fierce
+    ]
   }
 
   // Wildfolk
@@ -430,58 +475,115 @@ cards = [
     name = 'Garden Snail', family = @Garden
     cost = 2, power = 1, health = 4
     flavor = 'Slow and steady holds the line.'
-    keywords = [@Guardian, @Lucky]
+    keywords = [
+      @Guardian
+      @Lucky
+    ]
   }
   mail-duck = Creature {
     name = 'Mail Duck', family = @Garden
     cost = 3, power = 2, health = 3
     flavor = 'Neither rain nor snow nor grumpy cats.'
-    abilities = [OnEnter { text = 'Hello: Draw a card.' }]
+    text = 'Hello: Draw a card.'
   }
   catnip = Charm {
     name = 'Catnip', family = @Garden, rarity = uncommon
     cost = 1
     flavor = 'One sniff and anything is possible.'
     keywords = [@Ambush]
-    abilities = [OnPlay { text = 'A unit you control gets +2 Power this round.' }]
+    text = 'A unit you control gets +2 Power this round.'
   }
   nap-time = Charm {
     name = 'Nap Time', family = @Garden, rarity = uncommon
     cost = 1
     flavor = 'Resistance is futile. Yawn.'
     keywords = [@Lucky]
-    abilities = [OnPlay { text = 'Exhaust an enemy unit.' }]
+    text = 'Exhaust an enemy unit.'
   }
 ]
 
 decks = [
   zest-rush = Deck {
-    name = 'Zest Rush', hero = @sunny, price = 0
+    name = 'Zest Rush'
+    hero = @sunny
+    price = 0
     blurb = 'Fast and fierce. Swarm the yard, dodge Guardians, and finish before they recover.'
     cards = [
-      [@zest-mouse, 3], [@chick, 3], [@gecko, 3], [@corgi, 3], [@ferret, 3], [@citron-fox, 3]
-      [@pomelo-ram, 3], [@yuzu-hawk, 2], [@sour-spray, 3], [@zest-burst, 2], [@peel-out, 2]
-      [@zester, 3], [@clementine, 1], [@bergamot, 1], [@sanguine, 1]
-      [@pocket-hamster, 3], [@garden-snail, 3], [@mail-duck, 3], [@catnip, 3], [@nap-time, 2]
+      [@zest-mouse, 3]
+      [@chick, 3]
+      [@gecko, 3]
+      [@corgi, 3]
+      [@ferret, 3]
+      [@citron-fox, 3]
+      [@pomelo-ram, 3]
+      [@yuzu-hawk, 2]
+      [@sour-spray, 3]
+      [@zest-burst, 2]
+      [@peel-out, 2]
+      [@zester, 3]
+      [@clementine, 1]
+      [@bergamot, 1]
+      [@sanguine, 1]
+      [@pocket-hamster, 3]
+      [@garden-snail, 3]
+      [@mail-duck, 3]
+      [@catnip, 3]
+      [@nap-time, 2]
     ]
   }
   orchard-guard = Deck {
-    name = 'Orchard Guard', hero = @pippin, price = 0
+    name = 'Orchard Guard'
+    hero = @pippin
+    price = 0
     blurb = 'Patient and sturdy. Wall up with Guardians, heal, punish attackers, win the long game.'
     cards = [
-      [@peach-bunny, 3], [@hedgehog, 3], [@cherry-robin, 3], [@plum-mole, 3], [@apricot-owl, 3]
-      [@apple-badger, 3], [@tortoise, 3], [@fig-bear, 3], [@hiss, 3], [@warm-cider, 3]
-      [@falling-apple, 3], [@apple-crate, 2], [@sakura, 1], [@granny-smith, 1], [@honeycrisp, 1]
-      [@pocket-hamster, 3], [@mail-duck, 3], [@catnip, 3], [@nap-time, 3]
+      [@peach-bunny, 3]
+      [@hedgehog, 3]
+      [@cherry-robin, 3]
+      [@plum-mole, 3]
+      [@apricot-owl, 3]
+      [@apple-badger, 3]
+      [@tortoise, 3]
+      [@fig-bear, 3]
+      [@hiss, 3]
+      [@warm-cider, 3]
+      [@falling-apple, 3]
+      [@apple-crate, 2]
+      [@sakura, 1]
+      [@granny-smith, 1]
+      [@honeycrisp, 1]
+      [@pocket-hamster, 3]
+      [@mail-duck, 3]
+      [@catnip, 3]
+      [@nap-time, 3]
     ]
   }
   mango-tango = Deck {
-    name = 'Mango Tango', hero = @tango, blurb = @mango-tango-blurb, price = 0
+    name = 'Mango Tango'
+    hero = @tango
+    blurb = @mango-tango-blurb
+    price = 0
     cards = [
-      [@monkey, 3], [@kiwi, 3], [@parrot, 3], [@armadillo, 3], [@sloth, 3], [@capybara, 3]
-      [@tapir, 3], [@elephant, 2], [@tropical-rain, 3], [@coconut-drop, 2], [@smoothie, 3]
-      [@sun-hat, 2], [@papaya, 1], [@coconut, 1], [@durian, 1]
-      [@pocket-hamster, 3], [@garden-snail, 3], [@mail-duck, 3], [@catnip, 3], [@nap-time, 2]
+      [@monkey, 3]
+      [@kiwi, 3]
+      [@parrot, 3]
+      [@armadillo, 3]
+      [@sloth, 3]
+      [@capybara, 3]
+      [@tapir, 3]
+      [@elephant, 2]
+      [@tropical-rain, 3]
+      [@coconut-drop, 2]
+      [@smoothie, 3]
+      [@sun-hat, 2]
+      [@papaya, 1]
+      [@coconut, 1]
+      [@durian, 1]
+      [@pocket-hamster, 3]
+      [@garden-snail, 3]
+      [@mail-duck, 3]
+      [@catnip, 3]
+      [@nap-time, 2]
     ]
   }
 ]

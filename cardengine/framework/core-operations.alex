@@ -16,9 +16,9 @@
 // skeleton, and the log with its visibility. Randomness closes it.
 #type CoreOperations
 
-// The root type of this document. It has the engine version core.alex states.
+// The root type of this document. It has the schema version core.alex states.
 type CoreOperations {
-  core: text?                     // deprecated: the contract has core.alex's engine-version
+  core: text?                     // deprecated: the contract has core.alex's schema-version
   object-fields: [text: Field]
   player-fields: [text: Field]
   game-fields: [text: Field]

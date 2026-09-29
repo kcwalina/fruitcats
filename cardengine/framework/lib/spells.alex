@@ -11,6 +11,13 @@ type SpellCard : Card { cost: Cost? }
 type ClimaxCard : SpellCard {}
 type OneClimaxPerTurn : Rule { zone: Zone }
 
+// Rules about spells, listed in the game's `spells` area. The first say which of the game's card
+// types are spells (`SpellCards { types = [@Spell] }`); see core.alex on mapping.
+type SpellRule : Rule {}
+extension Game { spells: [SpellRule] = empty }
+type SpellCards : SpellRule { types: [type SpellCard] }
+type ClimaxCards : SpellRule { types: [type ClimaxCard] }
+
 extension SpellCard { on-play: effect }           // required: every spell must do something
 
 events = [

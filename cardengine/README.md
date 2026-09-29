@@ -31,6 +31,9 @@ discussed by editing them instead of re-pasting them into chat.
   document, five cards, a gap table and a verdict; `summary.md` consolidates the gaps by layer.
   `survey/broad/`: 156 TCGs classified against the libraries with a fixed record per game
   (`games.md` is the sourced list, `batch-*.md` the records, `summary.md` the aggregate).
+- `samples/`: Hello TCG, the walkthrough's game. `hello-tcg-print/` is printable only (a game
+  file with its constants and card types, a rulebook, a `Cards` file, art); `hello-tcg/` is the
+  same game made playable (libraries, rules, and a rules document with handlers and scenarios).
 - `folkborn/`: Folkborn written against the libraries. `folkborn.alex` is the game (it lists the
   libraries it `uses`, declares its card types as subtypes of their records, and fills each
   library's area with rules), `starter-box.alex` and `berry-picnic.alex` are sets (pure data),
@@ -47,13 +50,22 @@ discussed by editing them instead of re-pasting them into chat.
 - **A game is a selection.** Every area is a list of rules from the catalogue; absent means off;
   there are no behaviour defaults. A different behaviour is a new rule beside the old one, never
   an edit. Rules carry a `cites` field, a rulebook citation copied into logs and never parsed.
-- **A card's abilities are data; what they do is code.** A card lists `abilities = [OnEnter { text =
-  '...' }]`: that it has one, of what kind, with its printed text and its once-per-round flag.
-  Ability kinds are types a library declares (`type OnEnter : Ability { holders = [nameof(UnitCard)]
-  }`), so two cards share a type and no value. The handler lives in a rules document, assigned to
-  the holder's slot named after the kind (`@citron-fox.on-enter = zing`). The linker requires each
-  declared ability to have its handler and each handler its declared ability; the first error is
-  the IDE's fill-in-the-blank, the second keeps code from giving a card behaviour it does not show.
+- **Printing comes first; the engine is added.** A printable game is cards, decks, a rulebook
+  and a card back, with its own card types on the core `Card`
+  (`type Creature : Card { cost: int, power: int, health: int }`). Making it playable adds
+  libraries and maps its types onto their card records (`UnitCards { types = [@Creature] }`).
+  The libraries' card records are engine concepts a printed game never sees.
+- **A card's text is data; what it does is code.** A card prints `text = '...'`; its handler lives
+  in a rules document, attached to one of the card's slots (`@hello.on-enter = draw-a-card`), and
+  the slot says when it runs. The linker requires every card with text to have a handler and every
+  handler to belong to a card with text; the first is the IDE's fill-in-the-blank, the second keeps
+  code from giving a card behaviour it doesn't print. A card whose ability needs data of its own
+  (`once-per-round`), or that prints several abilities, lists `abilities = [OnEnter { ... }]`
+  instead, and each ability then has exactly its handler.
+- **Every number has one source.** The numbers that shape a game are its `constants`, used by
+  rules (`start = @starting-life`) and shown in the rulebook (`{@starting-life}`); a card's numbers
+  are the card's `constants`, shown in its text (`{damage}`) and read by its handlers
+  (`card.damage`).
 - **Open sets are values, not enums.** Action kinds, moments and keywords are values a library
   declares (`attack = ActionKind {}`, `type Guardian : Keyword {}`), so a new library adds to them
   without touching anything shared.
@@ -61,7 +73,8 @@ discussed by editing them instead of re-pasting them into chat.
 ## Language conventions, as settled
 
 - A file holds one value and says its type with a directive on its first statement line:
-  `#type Game`, `#type Set`, `#type Rules`, `#type Library`, `#type Core`. The value is an open
+  `#type Game`, `#type Cards`, `#type Rulebook`, `#type Rules`, `#type Set`, `#type Library`,
+  `#type Core`. The value is an open
   instance of that type whose fields follow as `field = value` lines, and the file's base name is
   its name (`@folkborn` is `folkborn.alex`). A text table filling one of the file's own fields is
   `@@@ .field`. A file that only declares types needs no directive. The older named root
@@ -86,14 +99,20 @@ discussed by editing them instead of re-pasting them into chat.
 - A record under a key in a keyed map takes its `name` from the key: `Deck = Zone { role = deck }`
   is named 'Deck'. Such members are written in Title Case; an explicit `name` wins
   (`AmbushOnAttack = Ambush { name = 'Ambush' }`). Cards keep lowercase keys and string names.
-- A game's card types are the subtypes of card records its game file declares
-  (`type Creature : UnitCard {}`); there is no list of them.
-- The engine version is `engine-version = 1` on the game only; sets and libraries take it.
-- Numbers that shape a game are named once in `numbers = [starting-life = 10, ...]` on the game.
-  Rules refer to them (`start = @starting-life`) and rulebook text embeds them
-  (`{@starting-life}`); the checker notes digits written straight into rulebook text.
-- An ability names the numbers its text prints: `numbers = [damage = 2]`, embedded in the text
-  as `{damage}` and read by its handler as `ability.damage`.
+- A game's card types are the card types its game file declares, on `Card`
+  (`type Creature : Card { ... }`) and mapped onto library records by rules, or as subtypes of a
+  library's record (`type Creature : UnitCard {}`); there is no list of them.
+- A game's folder is the game: one `Game` document, every `Cards` document that isn't
+  `draft = true`, the sets `Game.sets` lists (only for games that publish expansions), the
+  rulebook, and the `Rules` documents whose `for` names those cards (`for = @cards`).
+- The game states its file-format version, `schema-version = 1`; cards files, sets and libraries
+  take it. It names no engine: a printed game has none.
+- Numbers that shape a game are named once in `constants = [starting-life = 10, ...]` on the
+  game. Rules refer to them (`start = @starting-life`) and rulebook text embeds them
+  (`{@starting-life}`). A card's own numbers are its `constants = [damage = 2]`, shown in its text
+  as `{damage}` and read by its handler as `card.damage`. The checker errors on an unknown name
+  in text and on a card constant its text never shows, and notes a digit typed into rulebook
+  text, card text or a handler.
 - `nic` (Polish for "nothing") is the no-value. A field is required exactly when its type doesn't
   include `nic`; `T?` is sugar for `T | nic` on a single type; a union with nothing is spelled
   out, never parenthesised. Omitted means `nic` in a document and unchanged in a patch.
@@ -110,7 +129,9 @@ discussed by editing them instead of re-pasting them into chat.
   across the whole game. A game declares its card types as subtypes with fixed fields
   (`type Fabled : UnitCard { unique = true }`).
 - Layout: no line over 100 characters. A type declaration lists one field per line unless it is
-  short; a value lists one field or one natural group per line; a long comment goes on its own
-  line above what it describes. Text-table bodies are exempt.
+  short. A collection that isn't on one line inside a one-line record lists one item per line; a
+  record that doesn't fit on one line lists one field per line, except that a card keeps its
+  identity and its stats on a line each. A deck entry `[@card, 3]` is one item. A long comment
+  goes on its own line above what it describes. Text-table bodies are exempt.
 - The design record is the plan file for this session; decisions there win over anything stale
   here.

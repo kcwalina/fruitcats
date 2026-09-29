@@ -38,6 +38,9 @@ type StatCounter : Counter {
 type UnitRule : Rule {}
 extension Game { units: [UnitRule] = empty }
 
+// The game's card types that are units (`UnitCards { types = [@Creature] }`); see core.alex on
+// mapping a game's types onto a library's card records.
+type UnitCards : UnitRule { types: [type UnitCard] }
 type UnitsEnterExhausted : UnitRule {}
 type DefensePosition : UnitRule {}                // a unit is in attack or defence position
 type DualStatByConflict : UnitRule {}             // power or defense is used per conflict type

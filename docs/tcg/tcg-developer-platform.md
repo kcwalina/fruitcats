@@ -265,6 +265,13 @@ the core and libraries (seven new libraries, among them `scenarios`, `objectives
   (with `target:`), `attack`, `pass` to act; `in-zone`, `power`, `life`, `winner` to assert.
 - `Card.art: text?`, an asset reference.
 
+Core changes the owner asked for on 2026-09-28, from reading the walkthrough:
+
+- **`core = '1'` becomes `engine-version = 1`** on `Game`: readable, and a number. Sets take the
+  game's engine version and don't repeat it.
+- **Defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to `empty`, and
+  `players` to `Players {}` (two players), so a new game file doesn't list empty fields.
+
 Still open: **a heading per rulebook section.** The walkthrough writes `Section { number, title,
 text }`; the core's `Section` has no `title` yet. Asked of the TCG Alex session.
 

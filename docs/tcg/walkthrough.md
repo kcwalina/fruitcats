@@ -100,22 +100,21 @@ Next: cd hello-tcg, then tcg check
 hello-tcg = Game
 
 name = 'Hello TCG'
-core = '1'
+engine-version = 1
 rulebook = @rulebook
-uses = empty
-players = Players { min = 2, max = 2 }
 sets = [@base-set]
-types = empty
-zones = empty
 ```
 
 A few things to notice, since every Alex file works the same way:
 
 - The first real line names the file's one value and says what it is: `hello-tcg = Game`.
 - Each following line sets one field: `name = 'Hello TCG'`.
-- Quotes are only for text people read. Anything the tools understand is a name (`empty`) or a
+- Quotes are only for text people read. Anything the tools understand is a number, a name, or a
   reference to something else, written with `@` (`@rulebook`, `@base-set`).
-- `empty` means an empty list.
+- `engine-version = 1` says which version of the game engine your game is written for, so a
+  later engine keeps playing it exactly the same way.
+- Anything you don't write has a default: no libraries, no card types, no zones, two players.
+  You add those as the game grows.
 
 `rulebook.alex` has a title and no sections yet. `base-set.alex` is a set with no cards.
 `base-set-rules.alex` has nothing in it but a line saying it belongs to `@base-set`.
@@ -272,10 +271,10 @@ resources = [
   Energy = GrowingCounter { name = nameof(Energy), start = 0, max = 3, pay-by = spend }
 ]
 resource-rules = [
-  GrowsAt { resource = @hello-tcg.resources.Energy, moment = @turn-start, by = 1 }
-  RefillsAt { resource = @hello-tcg.resources.Energy, moment = @turn-start }
+  GrowsAt { resource = @Energy, moment = @turn-start, by = 1 }
+  RefillsAt { resource = @Energy, moment = @turn-start }
 ]
-cost-resource = @hello-tcg.resources.Energy
+cost-resource = @Energy
 ```
 
 `cost-resource` says that when a card shows `cost = 2`, it means 2 Energy.
@@ -343,7 +342,6 @@ base-set = Set
 
 id = 'BASE'
 name = 'Base Set'
-core = '1'
 
 cards = [
   friend = Creature {
@@ -942,12 +940,11 @@ These are the complete Alex files. The two images are whatever pictures you chos
 hello-tcg = Game
 
 name = 'Hello TCG'
-core = '1'
+engine-version = 1
 rulebook = @rulebook
 uses = [
   @common, @units, @spells, @combat, @life, @resources, @turns, @setup, @decks, @scenarios
 ]
-players = Players { min = 2, max = 2 }
 sets = [@base-set]
 
 type Creature : UnitCard {}
@@ -992,10 +989,10 @@ resources = [
   }
 ]
 resource-rules = [
-  GrowsAt { resource = @hello-tcg.resources.Energy, moment = @turn-start, by = 1 }
-  RefillsAt { resource = @hello-tcg.resources.Energy, moment = @turn-start }
+  GrowsAt { resource = @Energy, moment = @turn-start, by = 1 }
+  RefillsAt { resource = @Energy, moment = @turn-start }
 ]
-cost-resource = @hello-tcg.resources.Energy
+cost-resource = @Energy
 
 units = [
   UnitsEnterExhausted { cites = @rulebook.creatures }
@@ -1071,7 +1068,6 @@ base-set = Set
 
 id = 'BASE'
 name = 'Base Set'
-core = '1'
 
 cards = [
   friend = Creature {

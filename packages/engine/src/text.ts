@@ -57,7 +57,10 @@ export const STRATEGY_PRIMER = `BASIC STRATEGY
 - Take the Lantern only as your LAST action of a round, when there is nothing useful left to do. Taking it means you may only pass for the rest of the round.
 - Before attacking, read the predicted result next to each attack: trade when you come out ahead (their unit dies, or yours survives), and hit the Hero when there's no good trade. Each hit blows out one of their Candles, but the Candle card goes to their hand.
 - Guardians must be attacked first unless your attacker is Sneaky. A Guardian with high Health can absorb a whole turn: remove it with damage Charms, or go around it with Sneaky units.
-- Pass only when you have nothing worth doing. If your opponent then acts, you get to act again.`;
+- Pass only when you have nothing worth doing. If your opponent then acts, you get to act again.
+- Respect their ready Offerings: every deck has cheap Ambushes, most often one that gives a unit +2 Power this round. Before attacking a unit while they have an Offering ready, check the trade still works if it is 2 stronger.
+- Keep your own Ambush cards: don't offer them, and when you hold one, end your turn with enough ready Offerings to pay for it.
+- Damage is for enemy units and healing for your damaged ones: never aim damage at your own units, or heal a unit with no damage.`;
 
 /** How much a choice's label tells: `detail` adds stats, what a play does, and each attack's predicted result. */
 export interface ChoiceOptions { detail?: boolean }

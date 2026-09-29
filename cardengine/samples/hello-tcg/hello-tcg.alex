@@ -1,0 +1,78 @@
+#type Game
+
+name = 'Hello TCG'
+engine-version = 1
+rulebook = @rulebook
+uses = [
+  @common, @units, @spells, @combat, @life, @resources, @turns, @setup, @decks, @scenarios
+]
+sets = [@base-set]
+
+numbers = [
+  starting-life = 10
+  opening-hand = 3
+  energy-growth = 1
+  max-energy = 3
+  deck-size = 12
+  max-copies = 3
+]
+
+type Creature : UnitCard {}
+type Spell : SpellCard {}
+
+zones = [
+  Deck = Zone { role = deck, shape = pile, visible = none }
+  Hand = Zone { role = hand, shape = set, visible = owner }
+  Board = Zone { role = board, shape = row, visible = all }
+  Discard = Zone { role = discard, shape = pile, visible = all }
+]
+
+life = [
+  LifeCounter { name = 'Life', start = @starting-life, lose-at = 0, cites = @rulebook.winning }
+]
+
+setup = [
+  ShuffleDeck { cites = @rulebook.setup }
+  OpeningHand { n = @opening-hand, cites = @rulebook.setup }
+]
+
+turns = [
+  FullTurns { first = random, cites = @rulebook.your-turn }
+  Phases {
+    phases = [
+      Phase {
+        name = 'Start'
+        steps = [ReadyAll {}, Draw { count = 1, skip-very-first-turn = true }]
+      }
+    ]
+  }
+  Actions { allowed = [@common.actions.play, @combat.actions.attack, @pass] }
+]
+
+resources = [
+  Energy = GrowingCounter { start = 0, max = @max-energy, pay-by = spend, cites = @rulebook.energy }
+]
+resource-rules = [
+  GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
+  RefillsAt { resource = @Energy, moment = @turn-start }
+]
+cost-resource = @Energy
+
+units = [
+  UnitsEnterExhausted { cites = @rulebook.creatures }
+  DefeatAtHealth { cites = @rulebook.creatures }
+]
+
+combat = [
+  AttackerChooses { targets = [unit, life], cites = @rulebook.attacking }
+  AttackerMustBeReady { cites = @rulebook.attacking }
+  CombatDamageEqualsPower {}
+  SimultaneousDamage {}
+  LifeDamageEqualsPower {}
+  DamageClearsAt { moment = @turn-end }
+]
+
+deck-rules = [
+  DeckSize { n = @deck-size, cites = @rulebook.decks }
+  CopiesMax { n = @max-copies, cites = @rulebook.decks }
+]

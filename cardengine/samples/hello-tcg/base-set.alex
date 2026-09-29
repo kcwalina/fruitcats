@@ -1,0 +1,42 @@
+#type Set
+
+id = 'BASE'
+name = 'Base Set'
+
+cards = [
+  friend = Creature {
+    name = 'Friend', cost = 1, power = 1, health = 1
+    art = 'art/friend.png'
+    flavor = 'Always there.'
+  }
+  big-friend = Creature {
+    name = 'Big Friend', cost = 3, power = 3, health = 3
+    art = 'art/big-friend.png'
+    flavor = 'Bigger hugs.'
+  }
+  hello = Creature {
+    name = 'Hello', cost = 2, power = 1, health = 1
+    abilities = [OnEnter { text = 'When Hello enters, draw a card.' }]
+  }
+  cheer = Creature {
+    name = 'Cheer', cost = 3, power = 1, health = 2
+    abilities = [Static { text = 'Your other Creatures have +1 Power.' }]
+  }
+  spark = Spell {
+    name = 'Spark', cost = 1
+    abilities = [OnPlay { text = 'Deal 2 damage to your opponent.' }]
+  }
+  goodbye = Spell {
+    name = 'Goodbye', cost = 3
+    abilities = [OnPlay { text = 'Destroy a Creature.' }]
+  }
+]
+
+decks = [
+  swarm = Deck {
+    name = 'Swarm', cards = [[@friend, 3], [@cheer, 3], [@hello, 3], [@spark, 3]]
+  }
+  big = Deck {
+    name = 'Big', cards = [[@big-friend, 3], [@hello, 3], [@goodbye, 3], [@spark, 3]]
+  }
+]

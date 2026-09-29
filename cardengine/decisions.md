@@ -1012,6 +1012,9 @@ TypeScript front end draws. The first piece, Alex's parser, is identical to the 
 fruitcats and mochi and on 8,000 broken copies (`cardengine/conformance`). The full record is in
 `docs/tcg/tcg-developer-platform.md`, "The core".
 
+The Artist Studio moves to the core too (Stage 1): it and `content/tcg.ts` load the `.wasm` instead of
+`cardengine/alex/alex.ts`, which is then deleted. Everything stays in this repository.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

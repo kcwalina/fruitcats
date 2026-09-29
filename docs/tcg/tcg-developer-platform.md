@@ -77,13 +77,15 @@ renderer. Every host runs that same file: the browser (Studio, the game table, t
   runtime inside `tcg.exe` to run `tcg sim` and `tcg playtest`, and native Node add-ons to render
   cards.
 
-**The TypeScript reader on main is interim.** `cardengine/alex/alex.ts` (31d7bbc) reads Alex's data
-layer in the browser for the Artist Studio (`apps/web/src/studio/`), checked against the C# Alex by
-`cardengine/alex/conformance/`. It was written the same morning, before this decision. It stays
-while the Artist Studio needs it, and grows no further: no binder and no program layer. When the
-core loads a project (Stage 1), the Artist Studio loads the core's `.wasm` instead and the reader is
-deleted. Merging the spike's `cardengine/conformance/` beside `cardengine/alex/conformance/` needs one
-of the two renamed.
+**The TypeScript reader on main is interim, and the Artist Studio moves to the core.**
+`cardengine/alex/alex.ts` (31d7bbc) reads Alex's data layer for the Artist Studio
+(`apps/web/src/studio/`) and for the build that lists its projects (`content/tcg.ts`), checked
+against the C# Alex by `cardengine/alex/conformance/`. It was written the same morning, before this
+decision. It grows no further: no binder and no program layer. The Artist Studio is ported to the
+core's `.wasm` (parsing, binding and everything after), in the browser and in the build, as part of
+Stage 1, and `alex.ts` with its tests and conformance folder is then deleted. Everything stays in
+this repository: nothing moves to a separate one. Merging the spike's `cardengine/conformance/`
+beside `cardengine/alex/conformance/` needs one of the two renamed.
 
 **The spike (2026-09-29)** proved it on Alex's parser, ported to Rust from `AlexParser.cs`:
 
@@ -571,6 +573,13 @@ which is verified on Linux but not yet on Windows.
 3. **Interface calls** in `abi.rs` for these: `load_project` (many files in, diagnostics and a
    handle out) and queries on the loaded project (cards, card types, the layout). Bytes in, bytes
    out, with no host imports. The module must still instantiate with an empty linker.
+
+4. **The Artist Studio on the core.** `apps/web/src/studio/` and `content/tcg.ts` load the core's
+   `.wasm` (through a small host like `web/engine.js`, in the browser and in Node) and read their
+   projects with the queries from step 3, instead of `cardengine/alex/alex.ts`. Then delete
+   `alex.ts`, `alex.test.ts` and `cardengine/alex/conformance/`.
+   *Done when* the live Studio shows every project and picture exactly as before, and no file
+   imports `cardengine/alex/alex`.
 
 ### Stage 2: `tcg.exe` runs the core
 

@@ -1369,7 +1369,7 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 
 /* ── Home's tiles as cards (2026-09-28) ─────────────────────────────────────────────────────────────
    Each tile is drawn as a card of one of the decks (the owner: the card on Solo "frames the image, and it looks
-   awesome"), laid out as compose_cards.py lays out a real one: the deck's dark colour round an ivory face, a name bar in
+   awesome"), laid out as a real one is (games/folkborn/card-layout.alex): the deck's dark colour round an ivory face, a name bar in
    its main colour with a round badge, an illustration of its folk at the tile's business in the deck's style, a tinted
    type line with a card code, rules text (a keyword line and flavour, or the tile's state) and a footer naming the
    deck. Measured in the card's own width (cqw), so it reads the same at every size. Three to a row upright (3, 3, 2),

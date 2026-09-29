@@ -110,7 +110,7 @@ small old man in a rust-red cap. (The first art, a violet night with glowing bok
 
 Direction and one scene per card in `art/prompts.json`; drawn with `tools/generate_art.py --set dw1 --model gpt-image-2
 --quality high --fidelity high --reference <the church painting, frame cropped off>` and composed with
-`tools/compose_cards.py --set dw1`. What made it work: one reference at a time (three at once were averaged into a
+`tools/compose_cards.py`, since retired (tcg renders the cards now, from `games/folkborn/sets/<set>/<set>.alex`: `npm run cards`). What made it work: one reference at a time (three at once were averaged into a
 blander style), a short lead that points at the reference instead of describing a style in words, and asking for its
 colour outright (without that the model painted it nearly monochrome).
 

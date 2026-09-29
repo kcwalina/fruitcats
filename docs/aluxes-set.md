@@ -129,7 +129,8 @@ was retired: it read like a video game, and the owner wants the decks to look li
 
 Direction and one subject per card in `art/prompts.json`; drawn with
 `python tools/generate_art.py --set al1 --model gpt-image-2 --quality high --jobs 1 --reference <the owner's image>`
-(one at a time; the rate limit refuses anything faster) and composed with `python tools/compose_cards.py --set al1`.
+(one at a time; the rate limit refuses anything faster) and composed with `tools/compose_cards.py`, since retired
+(tcg renders the cards now, from `games/folkborn/sets/<set>/<set>.alex`: `npm run cards`).
 
 ## Everyone has it
 

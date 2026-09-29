@@ -40,7 +40,7 @@ export interface CardDef {
   /** A unit that cards summon (never in a deck). */
   token?: boolean;
   /**
-   * A Signature card: designed to exist only as its Signature print, never as a standard copy (compose_cards.py).
+   * A Signature card: designed to exist only as its Signature print, never as a standard copy.
    * 'rainbow' is the Signature stone with rainbow cracks (Mochi). No effect on the rules.
    */
   signature?: boolean | 'rainbow';

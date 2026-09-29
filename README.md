@@ -33,17 +33,19 @@ npm run dev        # http://localhost:5173 — play against the AI
   [docs/card-data-architecture.md](docs/card-data-architecture.md)
 - `content/…/<set>/art/prompts.json` — each set's art direction: its style plus one subject per illustration
   (`art/prompts.json` holds the interface art)
-- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into the set's `art/illustrations/`
-- `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into the set's `art/cards/`; the build publishes each set's art at `/<set>/` and
-  `/cards/<set>/`, and its announcement at `/announcements/<set-folder>/`
+- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into the set's `games/folkborn/sets/<set>/art/`
+- `games/folkborn/sets/<set>/<set>.alex` — each set's cards as printed. `tcg` (`cardengine/tcg`) renders the finished
+  cards from them and `games/folkborn/card-layout.alex` (`npm run cards`, into `out/cards/<set>/`); `npm run publish-pack`
+  renders them (and the Artist Studio's frames) when it publishes a set. The build publishes each set's art at `/<set>/`
+  and `/cards/<set>/`, and its announcement at `/announcements/<set-folder>/`
 - `art/ui/stat-paw.svg`, `stat-heart.svg` — the Power and Health icons (Phosphor Icons, MIT), with PNG masks beside
   them for the Python tools; cards, wallpapers and the game draw them as small chips in the family's tint
 - `tools/make_icons.py` — cuts the home-screen, PWA, maskable and favicon icons from `art/ui/app-icon.webp`
 
 ```bash
-python tools/generate_art.py          # only draws cards that have no art yet
-python tools/generate_art.py --ui     # interface art: backgrounds, card back, icons
-python tools/compose_cards.py         # re-run after any card data change; no redraw needed
+python tools/generate_art.py --set dw1   # only draws cards that have no art yet
+python tools/generate_art.py --ui        # interface art: backgrounds, card back, icons
+npm run cards                            # re-render after any card change; no redraw needed
 ```
 
 ## Roadmap

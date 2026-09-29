@@ -6,7 +6,7 @@ import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
 import { artPaths, artPublished } from '../../content/pack-storage';
-import { pictureFolders, renderedByTcg } from '../../content/tcg';
+import { pictureFolders } from '../../content/tcg';
 import { CONTENT as GAME_SETS } from '../../content/index';
 import { isShellFile, precacheProblems } from './src/sw-rules';
 
@@ -257,14 +257,10 @@ function contentMounts(): { url: string; dir: string; build: boolean }[] {
   const mounts: { url: string; dir: string; build: boolean }[] = [];
   for (const { root, folder, code, registered } of contentSets())
     mounts.push(
-      // A set whose cards tcg renders has its card paintings in the game folder, and its finished cards are build
-      // output in out/cards/<set>/ (npm run cards; content/tcg.ts).
+      // A set's card paintings are in the game folder, and its finished cards are build output in out/cards/<set>/
+      // (npm run cards; content/tcg.ts).
       ...pictureFolders(root).map((dir) => ({ url: `/${code}/`, dir, build: LOCAL_ART || !registered })),
-      {
-        url: `/cards/${code}/`,
-        dir: renderedByTcg(root) ? join(REPO_ROOT, 'out', 'cards', basename(root)) : join(root, 'art', 'cards'),
-        build: LOCAL_ART || !registered,
-      },
+      { url: `/cards/${code}/`, dir: join(REPO_ROOT, 'out', 'cards', basename(root)), build: LOCAL_ART || !registered },
       { url: `/announcements/${folder}/`, dir: join(root, 'announcement'), build: true },
       // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
       { url: '/avatars/', dir: join(root, 'avatars'), build: true },

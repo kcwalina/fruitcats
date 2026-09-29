@@ -260,7 +260,7 @@ printed card come from the Alex files. The look has two halves:
 frame, a text box too small for a card's text at its smallest size (naming the card), and images
 below print resolution. `tcg cards` renders every card; `--print --printer <name>` adds bleed-sized
 files, the back and the printer's order choices. The layout is Folkborn's own card anatomy
-(`tools/compose_cards.py`) moved out of a Python script and into data a designer owns.
+(once `tools/compose_cards.py`, now removed) moved out of a Python script and into data a designer owns.
 
 Added after comparing with the live game's cards (2026-09-28), so the layout reproduces Folkborn's
 card design exactly:

@@ -93,5 +93,5 @@ lilac-grey hair); colour spilling over the lines; folk faces of a few strokes; n
 leaf green (#4E9A3A).
 
 Drawn with `python tools/generate_art.py --set hh1 --model gpt-image-2 --quality high --jobs 2 --reference <the tiger>`,
-then `python tools/bleed_colour.py` on each new picture, then `python tools/compose_cards.py --set hh1`. Each picture
+then `python tools/bleed_colour.py` on each new picture, then `tools/compose_cards.py` (since retired: tcg renders the cards now, from `games/folkborn/sets/<set>/<set>.alex`: `npm run cards`). Each picture
 was compared with the tiger (cream about a third, green a few percent, mean brightness near 189) and redrawn if not.

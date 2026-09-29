@@ -21,7 +21,7 @@
 }
 @keyframes holo-drift { 50% { background-position: calc(var(--mx, 50%) + 40%) calc(var(--my, 50%) + 30%); } }
 
-/* The frame is printed on the card itself (compose_cards.py: holographic silver, gold or a rainbow).
+/* The frame is printed on the card itself (tcg, games/folkborn/card-layout.alex: holographic silver, gold or a rainbow).
    Here each finish only adds light: a glow around the card, and the sheen over it. */
 .finish-foil { box-shadow: 0 0 14px rgba(190, 220, 255, 0.45); }
 .finish-foil::before { opacity: 0.55; }

@@ -150,8 +150,9 @@ How the pictures are made:
   Use `--jobs 1`: parallel requests hit the rate limit and fail. Expect about a minute per picture.
 - For the hero, draw two versions of each side and pick the cuter one. For any card that comes out wrong, rewrite the
   subject and redraw with `--only <id> --force`.
-- Compose the cards: `python tools/compose_cards.py --set <code>` (about three minutes a set; if it stops with
-  `OSError: [Errno 22]`, a Windows file lock, just run it again).
+- Write the set's cards in Alex, `games/folkborn/sets/<set>/<set>.alex` (the card paintings go in its `art/`), and
+  render them with tcg: `npm run cards` (into `out/cards/<set>/`). `npm run publish-pack -- <set>` renders them again
+  when it publishes the set, with the Artist Studio's frames.
 - Look at the result. Make a contact sheet of the composed cards and read it as a whole: does the hero stand out?
   Does any picture look weaker than its neighbours? Are the same creature and clothes drawn consistently? Fix before
   showing the owner. Both hero sides get checked side by side with two ordinary cards.

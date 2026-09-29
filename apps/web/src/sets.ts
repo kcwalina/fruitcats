@@ -11,7 +11,7 @@ export function familyInfo(family: string): { mechanic: string; hint: string } |
   return f?.mechanic ? { mechanic: f.mechanic, hint: f.hint ?? '' } : undefined;
 }
 
-/** Colours of a family (main, dark, tint), as compose_cards.py prints them; a plain green when unknown. */
+/** Colours of a family (main, dark, tint), as the card's frame prints them (games/folkborn/card-layout.alex); a plain green when unknown. */
 export function familyColors(family: string): [string, string, string] {
   const c = FAMILIES[family]?.colors ?? ['#5FA84D', '#3B7430', '#E3F2DC'];
   return [c[0], c[1], c[2]];

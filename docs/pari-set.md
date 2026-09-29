@@ -123,7 +123,7 @@ How it was drawn:
 - Direction and one subject per card are in `art/prompts.json`.
 - The pictures were drawn with `tools/generate_art.py --set pr1 --model gpt-image-2 --quality high --jobs 1
   --reference <the owner's image>`. Every picture is drawn from the reference, never from a description alone.
-- The cards were composed with `tools/compose_cards.py --set pr1`.
+- The cards were composed with `tools/compose_cards.py`, since retired: tcg renders the cards now, from `games/folkborn/sets/<set>/<set>.alex`: `npm run cards`.
 - The reference image isn't in the repo.
 
 ## Released

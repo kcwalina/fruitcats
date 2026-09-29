@@ -7,7 +7,7 @@
 //   npm run studio -- get <set> <picture> [version]    download a version (default: the newest) to look at it
 //   npm run studio -- comment <set> <picture> "<text>" [--at x,y] [--reply <id>]
 //                                                      comment on the newest version; --at pins it (0–1 across, down)
-//   npm run studio -- pull <set>                       copy the approved pictures into the set's folder, then compose the cards
+//   npm run studio -- pull <set>                       copy the approved pictures into the game folder, then render the cards
 //   npm run studio -- key <name>                       make an agent key (prints what the API's STUDIO_AGENTS needs)
 //
 // The agent key is read from ~/.fruitcats-studio/agent.key (or STUDIO_AGENT_KEY). Add --dev to use the local
@@ -17,9 +17,9 @@ import { createHash, randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gameSet, renderedByTcg } from '../content/tcg';
+import { gameSet, renderCards } from '../content/tcg';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const args = process.argv.slice(2);
@@ -165,12 +165,11 @@ async function main() {
       if (pic?.state !== 'approved') continue;
       const v = [...pic.versions].reverse().find((x) => x.kind === 'final') ?? pic.versions.at(-1)!;
       const bytes = Buffer.from(await (await call(`${set}/pictures/${key}/${v.id}`)).arrayBuffer());
-      // Where each kind of picture lives: Pawtraits and the announcement in the set's folder; card pictures there
-      // too, or in the game folder for a set whose cards tcg renders (content/tcg.ts).
+      // Where each kind of picture lives: Pawtraits and the announcement in the set's folder; card pictures in the game
+      // folder, where tcg finds them (content/tcg.ts).
       const out = p.kind === 'pawtrait' ? join(folder, 'avatars', p.file)
         : p.kind === 'announcement' ? join(folder, 'announcement', p.file)
-          : renderedByTcg(folder) ? join(gameSet(folder), 'art', `${key}.webp`)
-            : join(folder, 'art', 'illustrations', `${key}.webp`);
+          : join(gameSet(folder), 'art', `${key}.webp`);
       mkdirSync(dirname(out), { recursive: true });
       if (v.format === 'webp') writeFileSync(out, bytes);
       else {
@@ -207,7 +206,7 @@ async function main() {
     }
     if (framesChanged) writeFileSync(setFile, `${JSON.stringify(setData, null, 2)}\n`);
     if (!count) { console.log('No approved pictures yet.'); return; }
-    execFileSync('python', [join(ROOT, 'tools', 'compose_cards.py'), '--set', set], { stdio: 'inherit' });
+    renderCards(folder, join(ROOT, 'out', 'cards', basename(folder)));
     console.log(`\n${count} picture(s) pulled. Review with git diff, then npm run check-set -- ${set}.`);
     return;
   }

@@ -1,5 +1,5 @@
 // Rarity and finishes. Rarity is printed on the card, the same on every copy: a bronze circle, a silver
-// diamond, a gold star or a crown, as tools/compose_cards.py draws it. A finish is how one copy shines
+// diamond, a gold star or a crown, in the collector line (games/folkborn/card-layout.alex). A finish is how one copy shines
 // (collection.ts): Foil, Gold, or Prismatic, the rarest, with a turning rainbow border.
 
 import './finish.css';
@@ -7,7 +7,7 @@ import { CARDS, type Rarity } from '@fruitcats/engine';
 import { FINISH_NAMES, finish, type Finish } from './collection';
 import { cardUrl, finishUrl } from './ui';
 
-/** Each rarity's metal: light, dark, outline (compose_cards.py's RARITY_MARKS). */
+/** Each rarity's metal, for the marks the game draws itself: light, dark, outline. */
 const METAL: Record<Rarity, [string, string, string]> = {
   Common: ['#F2B880', '#8A4A1C', '#4A2408'],
   Uncommon: ['#F4F6FA', '#7F8B9C', '#2F3842'],
@@ -68,8 +68,8 @@ export function drawRarityMark(ctx: CanvasRenderingContext2D, r: Rarity, cx: num
 }
 
 /**
- * The picture of your copy of a card, printed in its finish (compose_cards.py prints every card in each
- * finish, its chrome in holographic silver, gold or a rainbow). `key` is a card id, or a Hero Cat's
+ * The picture of your copy of a card, printed in its finish (tcg renders every card in each finish of
+ * games/folkborn/card-layout.alex, its chrome in holographic silver, gold or a rainbow). `key` is a card id, or a Hero Cat's
  * `<id>-kitten` / `<id>-bigcat`. The opponent's cards are always the standard print: use cardUrl.
  */
 export function yourCardUrl(key: string): string {

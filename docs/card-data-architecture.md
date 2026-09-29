@@ -44,8 +44,7 @@ Still to do is listed at the end.
     set.json                   cards, tokens, families, mechanics, decks
     plugin.ts                  optional
     art/prompts.json           art direction
-    art/illustrations/<id>.webp        text-free art (Hero Cats: <id>-kitten / <id>-bigcat)
-    art/cards/<id>.webp, art/cards/<finish>/<id>.webp   composed by tools/compose_cards.py
+    art/illustrations/<id>.webp        pictures that aren't card art (the tale banner)
     announcement/              its announcement page (index.html, share.jpg)
     avatars/legend-<name>.webp the Legend Pawtraits that come with its cards (tools/generate_avatars.py)
   ```
@@ -154,7 +153,8 @@ on purpose, re-record with `npx tsx packages/engine/scripts/golden.ts` and say w
   apart. For wording the templater can't infer, the data carries it: a card's `pronoun`, an ability's
   `note` (a reminder in parentheses) and a mechanic's `label` (it reads as "Company: …").
 - **Decks:** every deck follows the deckbuilding rules.
-- **Art:** every card has an illustration and a composed card.
+- **Art:** every card has an illustration, and the set's cards are in Alex (`games/folkborn/sets/<set>/<set>.alex`),
+  which tcg renders (`npm run cards`; publish-pack renders them when it publishes the set).
 - **Budget report:** stats and keywords against each card's cost.
 - **Bots (with `--games`):** a first bot run against the released decks.
 

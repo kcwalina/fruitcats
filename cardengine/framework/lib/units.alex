@@ -53,9 +53,14 @@ type DefeatAtHealth : UnitRule {}                 // damage >= health defeats (h
 type DefeatAtZero : UnitRule {}                   // health counts down instead
 type LegendRule : UnitRule {}                     // two `unique` units of one name: keep one
 
-// Keywords with built-in meaning. A game names each one it uses.
+// Keywords with built-in meaning, two ways. A game that names this library's keyword type gets
+// its meaning (`Swift = Swift {}`). A game that declares plain keywords (`Swift = Keyword {}`, as
+// a printable game does) gives one its meaning with the rule that takes it
+// (`EntersReady { keyword = @Swift }`), the keyword counterpart of `UnitCards { types }`.
 type Swift : Keyword {}                           // enters ready (Haste, Rush)
 type Tough : Keyword {}                           // reduces each damage dealt to it by n (Armor)
+type EntersReady : UnitRule { keyword: Keyword }                  // Swift
+type DamageReduction : UnitRule { keyword: Keyword }              // Tough; n from `Applied`
 
 extension UnitCard {
   on-enter: effect?

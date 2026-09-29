@@ -30,8 +30,10 @@ type RowRestrictedTargeting : CombatRule {}       // front row shields the back 
 // Who may attack, and whom.
 type AttackerMustBeReady : CombatRule {}
 type AttackTargetsPermanents : CombatRule {}     // permanents (a base, a tamer) may be attacked
-type GuardiansFirst : CombatRule {}               // must-be-attacked-first keywords are honoured
-type SneakyIgnoresGuardians : CombatRule {}
+// Units with the keyword must be attacked first. Without `keyword`: keywords of type Guardian.
+type GuardiansFirst : CombatRule { keyword: Keyword? }
+// Units with the keyword ignore Guardians. Without `keyword`: keywords of type Sneaky.
+type SneakyIgnoresGuardians : CombatRule { keyword: Keyword? }
 type CancelledAttackerStaysExhausted : CombatRule {}
 type NoRetarget : CombatRule {}
 
@@ -49,7 +51,10 @@ type TieDeletesBoth : CombatRule {}
 type BattleDamageByStatDifference : CombatRule {}
 type WeaknessResistance : CombatRule {}           // per-card type multipliers before damage
 
-// Keywords with built-in meaning. A game names each one it uses.
+// Keywords with built-in meaning, two ways. A game that names this library's keyword type gets
+// its meaning (`Swift = Swift {}`). A game that declares plain keywords (`Swift = Keyword {}`, as
+// a printable game does) gives one its meaning with the rule that takes it
+// (`GuardiansFirst { keyword = @Guardian }`), the keyword counterpart of `UnitCards { types }`.
 type Guardian : Keyword {}                        // must be attacked first (Taunt, Bodyguard)
 type Sneaky : Keyword {}                          // ignores Guardians (Evasive)
 type Fierce : Keyword { value: int }              // a hit costs `value` life instead of 1
@@ -66,6 +71,22 @@ type BlockableOnlyBy : Keyword { quality: text }  // flying and reach as one rul
 type Ward : Keyword {}                            // cannot be chosen by an opponent's effect
 type Blocker : Keyword {}                         // may block for another unit (intercept)
 type Stun : Keyword {}                            // stunned: cannot ready next round either
+// The rules that give a game's own keyword the meaning of the type named in the comment.
+type HitCostsLife : CombatRule { keyword: Keyword, n: int }          // Fierce
+type StrikesFirst : CombatRule { keyword: Keyword }                  // FirstStrike
+type StrikesTwice : CombatRule { keyword: Keyword }                  // DoubleStrike
+type ExcessDamageGoesThrough : CombatRule { keyword: Keyword }       // Trample
+type AttacksTwice : CombatRule { keyword: Keyword }                  // Windfury
+type AnyDamageDestroys : CombatRule { keyword: Keyword }             // Poisonous
+type DamageHealsController : CombatRule { keyword: Keyword }         // Lifesteal
+type UntargetableUntilItActs : CombatRule { keyword: Keyword }       // Stealth
+type NegatesNextHit : CombatRule { keyword: Keyword }                // DivineShield
+type AttackedOnlyWhenAlone : CombatRule { keyword: Keyword }         // Elusive
+// BlockableOnlyBy: flying is `BlockedOnlyBy { keyword = @Flying, by = [@Flying, @Reach] }`.
+type BlockedOnlyBy : CombatRule { keyword: Keyword, by: [Keyword] }
+type OpponentsCantChoose : CombatRule { keyword: Keyword }           // Ward
+type MayBlockForOthers : CombatRule { keyword: Keyword }             // Blocker
+type StunSkipsReady : CombatRule { keyword: Keyword }                // Stun
 
 actions = [
   attack = ActionKind { name = 'Attack' }

@@ -985,6 +985,10 @@ allow) and `counter-is` takes it. Rejected: a second word (`resource-is`), which
 designer know which kind of number Energy is, and changing the parameter to `resource`, which
 would lose player counters that aren't resources (poison, lore).
 
+**Status (2026-09-28):** Alex 0.6.0 (type-valued fields, mapped card types) binds the whole
+framework, Folkborn and both Hello TCG samples as of fruitcats 49bb669, with 382 of 382 Alex tests
+passing; the Alex session is landing it to mochi main.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

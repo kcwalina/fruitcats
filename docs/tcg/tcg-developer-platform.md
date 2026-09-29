@@ -25,11 +25,13 @@ cloud playtests, online hosting, storage and printing.
 
 ## Principles
 
-- **Source is the only truth.** A game is a set of files in a repo: Alex files and images. Every
-  tool reads and writes those files. Nothing lives elsewhere.
+- **Source is the only truth.** A game is a folder of files in a repo: **Alex files plus assets**.
+  The Alex files describe the game (rules, rulebook, cards, decks); the assets are the files they
+  point at: images at least (card art, frames, icons, rulebook pictures), possibly other media
+  later. Every tool reads and writes those files. Nothing lives elsewhere.
 - **Layers, not a ball of twine.** Each layer depends only on the layers below it and is simple on
   its own. The bottom is a command-line toolchain; everything else builds on it.
-- **Games are data, written in Alex.** Custom TypeScript is not supported at first. A future escape
+- **A game's logic and data are written in Alex,** next to its assets. Custom TypeScript is not supported at first. A future escape
   hatch, like interop in .NET, is for the rare very advanced developer.
 - **Built-in rules first.** A game is mostly a selection of rules from the libraries. A custom rule
   written in Alex should be extremely rare.

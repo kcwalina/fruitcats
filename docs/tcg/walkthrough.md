@@ -1,11 +1,5 @@
 # Walkthrough: your first card game
 
-> **About this document.** This is the tutorial as it will read when the TCG developer platform
-> is released. Nothing in it works yet: it describes the experience we are building toward, and
-> each step will become an acceptance test. The plan behind it is
-> [tcg-developer-platform.md](tcg-developer-platform.md). Command output and playtest numbers
-> are illustrative.
-
 In this walkthrough you build **Hello TCG**, a very small two-player card game, from an empty
 folder to a game you can playtest with bots, play online with a friend, and print a rulebook
 for. It takes about an hour.
@@ -31,19 +25,27 @@ where everything goes.
 
 ## How a game is made
 
-A game is a folder of plain text files written in **Alex**, a small language for describing
-things. Nothing about your game lives anywhere else: not in a database, not on a website. You
-can keep the folder on your laptop, in Git, on GitHub, or all three.
+A game is a folder. It holds two kinds of thing:
 
-There are three kinds of file:
+- **Alex files**, plain text written in **Alex**, a small language for describing things. They
+  say what the game is: its rules, its rulebook, its cards.
+- **Assets**: the files the Alex files point at. Mostly images (card art, card frames, icons,
+  pictures for the rulebook), and other media your game uses.
+
+Nothing about your game lives anywhere else: not in a database, not on a website. You can keep
+the folder on your laptop, in Git, on GitHub, or all three.
+
+There are three kinds of Alex file:
 
 - **The game** says what the game is made of: which zones there are, how a turn goes, how you win.
   You rarely write rules from scratch. You pick them from **libraries** of rules that card games
   commonly use (life totals, attacking, drawing, energy…) and set their numbers.
 - **The rulebook** is the text players read. Every rule in the game points at the rulebook section
   that explains it, so the two can't drift apart.
-- **The cards**: a *set* file says what each card is (name, cost, power, the text printed on it),
-  and a *rules* file says what the card's abilities do.
+- **The cards**: a *set* file says what each card is (name, cost, power, the text printed on it,
+  its picture), and a *rules* file says what the card's abilities do.
+
+And the assets live next to them, in `art/`.
 
 ---
 
@@ -85,7 +87,7 @@ Created hello-tcg/
   rulebook.alex           the rulebook
   base-set.alex           your first set of cards
   base-set-rules.alex     what those cards do
-  art/                    card images
+  art/                    your game's images
   AGENTS.md               instructions for coding agents
 
 Next: cd hello-tcg, then tcg check
@@ -117,6 +119,9 @@ A few things to notice, since every Alex file works the same way:
 
 `rulebook.alex` has a title and no sections yet. `base-set.alex` is a set with no cards.
 `base-set-rules.alex` has nothing in it but a line saying it belongs to `@base-set`.
+
+`art/` is empty. It is where your game's images go: card art now, and later card frames, icons
+and pictures for the rulebook.
 
 `AGENTS.md` is for coding agents. It tells them where the Alex and library references are, which
 commands to run after every change (`tcg check`, then `tcg test`), and the conventions in this
@@ -369,6 +374,32 @@ Rendered 2 cards to out/cards/ (default frame)
 
 Until you design your own card frame, cards use a plain default frame that shows the name, cost,
 power, health and text.
+
+Now give them pictures. Any image works for now: a sketch, a photo of a drawing. Save two images
+as `art/friend.png` and `art/big-friend.png`, and point each card at its picture:
+
+```
+  friend = Creature {
+    name = 'Friend', cost = 1, power = 1, health = 1
+    art = 'art/friend.png'
+    flavor = 'Always there.'
+  }
+  big-friend = Creature {
+    name = 'Big Friend', cost = 3, power = 3, health = 3
+    art = 'art/big-friend.png'
+    flavor = 'Bigger hugs.'
+  }
+```
+
+The images are part of your game just as the Alex files are: they go into Git with everything
+else, and `tcg check` tells you if a card points at a picture that isn't there:
+
+```
+hello-tcg: 1 error
+  error  base-set.alex:15  Big Friend's art 'art/big-friend.png' doesn't exist.
+```
+
+Render the cards again with `tcg cards friend big-friend`, and the pictures are in the frame.
 
 > [!NOTE]
 > **In Studio:** click `friend` in `base-set.alex`. The card appears as it will look, with a
@@ -858,17 +889,31 @@ more than 150 published card games.
 
 - **Your own game.** `tcg new my-game`, and grow it the same way: rulebook, rules, cards,
   scenarios, playtests.
-- **How cards look.** Designing your own card frames, adding art, and printing files for online
-  printers (`tcg cards --print`) have their own guide.
+- **How cards look.** Designing your own card frames and printing files for online printers
+  (`tcg cards --print`) have their own guide.
 - **The library reference.** Every library, every rule, and what its numbers mean.
 - **Folkborn.** A complete, published game built with this toolkit, as an example of a bigger
   project.
 
 ---
 
-## The finished files
+## The finished game
 
-These are the complete files at the end of the walkthrough.
+At the end of the walkthrough, your folder holds:
+
+```
+hello-tcg/
+  hello-tcg.alex
+  rulebook.alex
+  base-set.alex
+  base-set-rules.alex
+  art/
+    friend.png
+    big-friend.png
+  AGENTS.md
+```
+
+These are the complete Alex files. The two images are whatever pictures you chose.
 
 ### hello-tcg.alex
 
@@ -1011,10 +1056,12 @@ core = '1'
 cards = [
   friend = Creature {
     name = 'Friend', cost = 1, power = 1, health = 1
+    art = 'art/friend.png'
     flavor = 'Always there.'
   }
   big-friend = Creature {
     name = 'Big Friend', cost = 3, power = 3, health = 3
+    art = 'art/big-friend.png'
     flavor = 'Bigger hugs.'
   }
   hello = Creature {

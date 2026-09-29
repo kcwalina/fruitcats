@@ -35,12 +35,12 @@ Still to do is listed at the end.
   from the engine: the caller passes in `registerSet`, so the sets always land in the caller's engine.
 - **Released and prototype sets.** A set's `status` is `released` or `prototype`. The public game loads
   released sets only; playtests, simulations and tests load prototypes too. So a designed but unreleased
-  deck (Berry Picnic today) can be playtested by bots and agents without appearing in the game.
-- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/12/berry-picnic/`. Everything a
+  set (Mochi today) can be playtested by bots and agents without appearing in the game.
+- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/12/jiaoren/`. Everything a
   set owns lives in its folder:
 
   ```
-  content/2026/12/berry-picnic/
+  content/2026/12/jiaoren/
     set.json                   cards, tokens, families, mechanics, decks
     plugin.ts                  optional
     art/prompts.json           art direction
@@ -141,7 +141,7 @@ with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
 
 ## Validation: check-set
 
-`npm run check-set` (or `npm run check-set -- berry-picnic --games 40`) checks a set before it can be played:
+`npm run check-set` (or `npm run check-set -- jiaoren --games 40`) checks a set before it can be played:
 
 - **Structure:** ids start with the set code, and no card appears twice or in another set.
 - **Card basics:** types and rarities are valid, units have stats, and every family is defined.
@@ -167,7 +167,7 @@ is also where the site's card art comes from: **a build carries no card art**, a
 art isn't in the storage yet (see below).
 
 ```
-npm run publish-pack -- berry-picnic         # check-set, then upload; --dry-run to only check
+npm run publish-pack -- jiaoren              # check-set, then upload; --dry-run to only check
 npm run publish-pack -- hw1 --unpublish      # take a set out of the pack index, by code; its files stay on the storage
 ```
 
@@ -217,7 +217,7 @@ saved.
 - **Plugins:** a pack whose cards need plugin code the game doesn't have is skipped with a console warning
   (the engine's `missingPieces` names what's missing). Code only arrives with a new build of the game.
 - **Prototypes:** prototype packs are taken only with `?prototypes` in the address, so a playtester can
-  play an unreleased set on the real site. Berry Picnic is published this way.
+  play an unreleased set on the real site. Mochi is published this way.
 
 ## The Studio (future: not to build yet)
 

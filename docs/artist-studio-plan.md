@@ -122,7 +122,7 @@ called `studio`, in the `fruitcatsdata` account, reached with the API's managed 
 
 | # | Phase | Result | Depends on |
 |---|---|---|---|
-| S1 | Preview studio | Frames with a see-through window; `brief.json` for Berry Picnic; the Studio page with the guided steps, card previews and checks, working on files the artist picks (no sign-in, no upload) | nothing |
+| S1 | Preview studio | Frames with a see-through window; `brief.json` for a set; the Studio page with the guided steps, card previews and checks, working on files the artist picks (no sign-in, no upload) | nothing |
 | S2 | Sign-in and uploads | Via Mochi sign-in, artist list, uploads kept as versions, previews from stored files | the accounts branch merged and deployed |
 | S3 | Comments and review | Comment threads with pins and AI labels, the agent command (`status`, `get`, `comment`), approve / ask for changes, progress, suggestions, `npm run studio -- pull` | S2 |
 | S4 | Helper chat | A chat beside the work that answers from the guide and brief | S3 |
@@ -179,9 +179,6 @@ accents use the `ink` colours). Paid prints keep their own frame material, with 
 **When pictures are approved.** `npm run studio -- pull <set>` copies each approved picture into the set's folder
 (Pawtraits into its `avatars/`, key art into its `announcement/`) and composes the cards. Review the result with `git
 diff`, then commit and deploy as usual.
-
-**Studio Practice (SP1)** is a pretend set for trying the Studio. It isn't in `content/index.ts`, so the game, the
-bots and `check-set` never load it.
 
 ## Repairing the Studio's data
 

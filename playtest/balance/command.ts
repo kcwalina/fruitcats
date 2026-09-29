@@ -3,7 +3,7 @@
 // --deck adds decks against the starters: a library key, a deck code, a DeckList file (see decks/library.ts).
 // --library adds every deck in the deck library. Neither changes the verdict on the starters: extra decks warn
 // when they beat them, never block.
-// --prototypes adds the decks of prototype sets (Berry Picnic's Picnic Club, …) as extra decks against the starters.
+// --prototypes adds the decks of prototype sets as extra decks against the starters.
 //
 // Exit codes: 0 pass or warnings, 2 a blocking balance problem (the deploy gate stops on it).
 

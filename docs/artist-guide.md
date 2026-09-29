@@ -32,8 +32,8 @@ chance to show off, too. The brief marks all of these.
 
 | Picture | Size (pixels) | Shape | File |
 |---|---|---|---|
-| Card picture (including Hero Cats and tokens) | 1536 × 1024 | landscape | WebP, named as in the brief (for example `BP1-B04.webp`) |
-| Pawtrait | 512 × 512 | square, shown as a circle | WebP, named as in the brief (for example `legend-noelle.webp`) |
+| Card picture (including Hero Cats and tokens) | 1536 × 1024 | landscape | WebP, named as in the brief (for example `PR1-D04.webp`) |
+| Pawtrait | 512 × 512 | square, shown as a circle | WebP, named as in the brief (for example `legend-parijan.webp`) |
 | Announcement picture | 2400 × 1260 | wide | WebP, `key-art.webp` |
 
 The game needs two things to work: **these sizes and shapes, and the file names from the brief**. Everything
@@ -329,8 +329,8 @@ phone wallpaper, which is fine: the card is what matters.
 
 ## Style notes
 
-- **Keep each character the same on every card it appears on.** For example, Jam, the Berry Picnic Hero Cat,
-  also appears on her Pawtrait and in the announcement picture.
+- **Keep each character the same on every card it appears on.** For example, Parijan, the Pari Hero Cat,
+  also appears on the Pawtrait and in the announcement picture.
 - **Make the fruit easy to recognise.** For example, a strawberry is pointed, with seeds and a green leafy
   cap. A plain round red hood looks like a tomato.
 - **The house style is drawn, not photographic.** Photo-realism and a 3D-render look don't match the other cards.
@@ -362,7 +362,7 @@ we both want them, this is the point where we would stop, before you've put time
 Upload each picture in the Studio, which keeps every version. If the Studio isn't working for you, an email, a
 zip or a shared folder is fine too. Then please use the file names from the brief exactly, because our tools
 find each picture by its name. Capitals and dashes matter:
-`BP1-B04.webp`, not `bp1_b04.webp` or `Dewberry Possum.webp`.
+`PR1-D04.webp`, not `pr1_d04.webp` or `Pari at the Pool.webp`.
 
 ## Suggesting changes
 
@@ -387,10 +387,10 @@ The brief gives the size and file name of every picture. This is the same inform
 
 | Picture | Size (pixels) | Shape | File name |
 |---|---|---|---|
-| Card picture | 1536 × 1024 | landscape, 3:2 | the card's ID: `BP1-B04.webp` |
-| Hero Cat, Kitten and Big Cat faces | 1536 × 1024 each | landscape, 3:2 | `BP1-H01-kitten.webp`, `BP1-H01-bigcat.webp` |
-| Token | 1536 × 1024 | landscape, 3:2 | the token's ID: `BP1-K01.webp` |
-| Pawtrait | 512 × 512 | square, shown as a circle | `legend-<name>.webp`: `legend-noelle.webp` |
+| Card picture | 1536 × 1024 | landscape, 3:2 | the card's ID: `PR1-D04.webp` |
+| Hero Cat, Kitten and Big Cat faces | 1536 × 1024 each | landscape, 3:2 | `PR1-H01-kitten.webp`, `PR1-H01-bigcat.webp` |
+| Token | 1536 × 1024 | landscape, 3:2 | the token's ID: `PR1-K01.webp` |
+| Pawtrait | 512 × 512 | square, shown as a circle | `legend-<name>.webp`: `legend-parijan.webp` |
 
 - **Format:** WebP, quality 90 or more. If your software can't save WebP, send PNG with the same name and
   we'll convert it.

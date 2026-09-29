@@ -3,7 +3,7 @@
 // follows. check-set fails if a set's text and data disagree.
 //
 //   npm run write-text                 # every set
-//   npm run write-text -- berry-picnic # one set, by folder name or code (bp1)
+//   npm run write-text -- jiaoren      # one set, by folder name or code (jr1)
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

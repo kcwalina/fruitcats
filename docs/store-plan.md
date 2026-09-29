@@ -250,7 +250,7 @@ To go back to the full test flow for someone (cart, test checkout, reveal, "Remo
 `STORE_TEST_CHECKOUT=on`, their id in `STORE_TESTERS`. Tell the artist tool session first: a settings change restarts
 the API.
 
-**Signature cards** (`"signature"` in the card's data, like Noelle, BP1-X03) exist only as their Signature print: the Store
+**Signature cards** (`"signature"` in the card's data, like Mochi, MC1-X01) exist only as their Signature print: the Store
 shows that print, labels them "Signature" and prices them at `SIGNATURE_PRICE` ($19.99), never as a standard copy.
 
 ## Making it real: what is left
@@ -285,7 +285,7 @@ source of truth for money, and ours can always be rebuilt from it.
 
 **What Paddle gets, and why ownership can't be faked.**
 
-- **Paddle gets no cards.** It gets a line item and price ("Picnic Club deck, $9.99", or "3 single cards") and our
+- **Paddle gets no cards.** It gets a line item and price ("Jiaoren deck, $9.99", or "3 single cards") and our
   order id and account id as custom data. It sells the right to have those items in the player's Via Mochi account,
   and gives back its own transaction id (`txn_…`).
 - **Owning a card is a row in our database:** account A has 2 copies of `DW1-D04`, from order O. `DW1-D04` is the

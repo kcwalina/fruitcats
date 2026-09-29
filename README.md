@@ -10,7 +10,7 @@ A trading card game about fruit-themed cats and their cute critter crews. Easy t
 - [Starter Box card images](content/2026/09/starter-box/art/cards/README.md) — every card, rendered
 - [Designing a good deck](docs/designing-good-deck.md) — how to make a folklore deck: research, the hero, a varied cast, proven rules, art, checks
 - [Folk creatures](docs/folk-creatures.md) — the creatures chosen for the coming decks, one per continent
-- [Artist guide](docs/artist-guide.md) — what art a new deck needs, for the artists who draw it; with an [art brief template](docs/art-brief-template.md) and the [Berry Picnic brief](docs/art-brief-berry-picnic.md)
+- [Artist guide](docs/artist-guide.md) — what art a new deck needs, for the artists who draw it; with an [art brief template](docs/art-brief-template.md)
 
 ## Play it
 

@@ -3,7 +3,7 @@
     python tools/compose_cards.py            # every card of the Starter Box (content/2026/09/starter-box/set.json)
     python tools/compose_cards.py --only SB1-C04
     python tools/compose_cards.py --finish gold     # only one finish (standard, foil, gold, prismatic)
-    python tools/compose_cards.py --set bp1 --frames   # frames with a see-through picture window (Artist Studio)
+    python tools/compose_cards.py --set mc1 --frames   # frames with a see-through picture window (Artist Studio)
 
 Reads art from art/<set>/<key>.webp (see tools/generate_art.py) and writes 750x1050 WebP images
 (2.5" x 3.5" at 300 dpi) to the set's art/cards/, plus a README.md gallery grouped by deck. Every card is

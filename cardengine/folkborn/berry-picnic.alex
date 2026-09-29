@@ -114,7 +114,8 @@ cards = [
     name = 'Strawberry Milk Cow', family = @Berry, rarity = uncommon
     cost = 5, power = 3, health = 4
     flavor = 'Strawberry milk for everyone. Mostly for you.'
-    text = 'Hello: Put 2 Crumbs on another unit you control.'
+    text = 'Hello: Put {crumbs} Crumbs on another unit you control.'
+    constants = [crumbs = 2]
   }
   ant-parade = Charm {
     name = 'Ant Parade', family = @Berry, rarity = uncommon
@@ -133,7 +134,8 @@ cards = [
     cost = 1
     flavor = 'Room for more? Always.'
     keywords = [@Ambush]
-    text = 'Put a Crumb on a unit you control. It gets +1 Power this round.'
+    text = 'Put a Crumb on a unit you control. It gets +{boost} Power this round.'
+    constants = [boost = 1]
   }
   bracelet = Talisman {
     name = 'Friendship Bracelet', family = @Berry, rarity = uncommon
@@ -154,7 +156,8 @@ cards = [
     name = 'Razz, the Raspberry DJ', family = @Berry, rarity = rare
     cost = 4, power = 3, health = 3
     flavor = 'Takes requests. Ignores them.'
-    text = 'Your other units get +1 Power.'
+    text = 'Your other units get +{boost} Power.'
+    constants = [boost = 1]
   }
   bramble = Fabled {
     name = 'Bramble, the Blackberry Maine Coon', family = @Berry, rarity = rare

@@ -871,12 +871,50 @@ before, still mean the same. Where a change isn't additive, it says so.
   samples do; a deck entry `[@card, 3]` is one item; a comment that described several items on
   one line now sits above them. Records and lists that were already split over lines stay split.
   Rules documents were not reformatted: their bodies are code.
-- To do, left as checker notes: Folkborn's card text and handlers still type their numbers
-  ('Deal 2 damage to a unit.', `damage(2)`); moving them into card constants is a content change
-  to its cards and rules files. Folkborn names no `card-back` yet.
+- Done since (see "Folkborn's card numbers are constants" below): Folkborn's cards moved their
+  numbers into constants. Folkborn names no `card-back` yet.
 - The planning branch isn't merged into main here. Its `docs/tcg/tcg-developer-platform.md`
   conflicts with main's (both rewrote the "Core changes" list); the TCG Developer Platform
   session owns that file and resolves the conflict when it next merges main.
+
+### Folkborn's card numbers are constants (2026-09-28)
+
+The follow-up left open above. In `starter-box.alex` and `berry-picnic.alex`, every card whose
+`text` typed a digit now shows it as `{name}` and lists it in `constants` (one per line when a
+card has two, as the formatting rule asks); the handlers in `starter-box-rules.alex` and
+`berry-picnic-rules.alex` read it as `card.name`. The printed text is unchanged word for word.
+
+- **Names.** `damage`, `zest-damage` (the Zest amount on Citron Fox and Zest Burst), `heal`,
+  `boost` (a Power bonus), `sprout`, `draw` (Mangosteen Tapir) and `crumbs` (Strawberry Milk
+  Cow). `boost` rather than `power`, because `card.power` is already the card's printed stat.
+- **Shared handlers.** A handler used by cards with different numbers reads each card's own, so
+  handlers that differed only in their number became one: `damage-any` (Tangerine Chick 1, Sour
+  Spray 2, Coconut Drop 5; was `ping-any`, `two-damage-any`, `five-damage-any`), `zest-damage`
+  (Citron Fox 1/2, Zest Burst 3/5; was `zing` and `zest-burst`), `heal-each-own` (Granny Smith
+  1, Guava Capybara 2), `sprout` (Kiwi Bird and Papaya 1, Tropical Rain 2; was `sprout-one`,
+  `sprout-two`). The Zest +1 on Zest Mouse, Lime Gecko and Grapefruit Ferret is `zest-boost`
+  with `boost = 1` on each card. Handlers renamed because their names said the number:
+  `damage-exhausted`, `damage-each-enemy`, `heal-any`, `lush-draw`, `boost-own` (Catnip),
+  `give-crumbs` (Milk Cow), `others-boost` (Razz, a static reading `card.boost`).
+- **Left alone.**
+  - Hero faces. `Hero` is a `HeroCard : Card`, so a hero card does have `constants`, but the
+    numbers are printed on its faces' abilities (`Face.abilities`), and the core only defines
+    `{name}` for a card's `text` and its own `abilities`. Whether a face's text may show the hero
+    card's constants, and whether `card` in a face handler (`@sunny.face1.exhaust`) and in an
+    Awaken condition is the hero card, is a core question to settle first. Until then the heroes'
+    handlers (`plus-one-power`, `heal-two`, `heal-three-and-guard`, `opponent-five-candles`,
+    `six-candles`, `eight-offerings`, `five-units`, `rally-plus-one`) keep their digits.
+  - Mechanics. `Mechanic` is a `Keyword`, not a card, and has no `constants`: Ripen's +1/+1 up
+    to +2/+2 and the Crumb's max are counter data (`StatCounter`), and Lush's 7 is typed in
+    `lush-on`. A mechanic-level constant would be a core change.
+  - Numbers spelled as words or implied by "a": "Draw a card" (`draw(1)`), "Put a Crumb"
+    (`+= 1`), "Ready two of your Offerings", "Summon two Ants". A constant must show in the text
+    as a digit, so moving these would change the printed words; they stay as the designer wrote
+    them, and their handler digits stay as checker notes.
+  - Sakura's "when you heal 1 or more damage": the 1 says what triggers the ability, it is not an
+    amount a handler uses or a playtest would vary.
+  - `Applied { keyword = @Tough, n = 1 }` and Talismans' `attached = Grant { ... }`: already data,
+    not text.
 
 ### Card layouts, and keyword rules that take the game's own keyword (owner, 2026-09-28)
 

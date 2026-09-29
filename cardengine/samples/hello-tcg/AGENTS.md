@@ -12,14 +12,19 @@ wants to print, unless they ask.
 
 ## The files
 
-- `hello-tcg.alex` (`#type Game`): the game's name, card back, constants and card types. Once the
-  game is playable, also the libraries it uses, its zones and the rules it picks from them.
+- `hello-tcg.alex` (`#type Game`): the game's name, card layout, card back, constants, keywords and
+  card types. Once the game is playable, also the libraries it uses, its zones and the rules it
+  picks from them.
+- `card-layout.alex` (`#type CardLayout`): how printed cards look. Frames per card type, and the
+  parts drawn on them: where each piece of a card's data goes (`show = '{cost}'`), in which font.
 - `rulebook.alex` (`#type Rulebook`): the text players read.
 - `cards.alex` (`#type Cards`): the cards and the decks. Every cards file in the folder is part of
   the game.
 - `card-rules.alex` (`#type Rules`, `for = @cards`), once the game is playable: what the cards' text
   does (handlers), and scenarios that test them.
-- `art/`: images, referred to by path (`art = 'art/friend.png'`, `card-back = ...`).
+- `art/`: images, referred to by path: card paintings, the card back, and frames in `art/frames/`.
+  Frames are 822 × 1122 (750 × 1050 plus 36 px bleed each side) with a transparent art window.
+- `fonts/`: font files the card layout uses.
 
 ## How to work
 
@@ -35,6 +40,8 @@ wants to print, unless they ask.
   handlers to a line or two, using the libraries' words. Every handler gets a scenario.
 - **One item per line** in collections; a record that doesn't fit on one line gets one field per
   line.
+- **Layout boxes are measured on the card**, in pixels from its top-left corner at the trim line,
+  not counting bleed. Check a changed layout by rendering the cards (`tcg cards`) and looking.
 - **Comments only when they say something the code doesn't.**
 
 After every change, run:

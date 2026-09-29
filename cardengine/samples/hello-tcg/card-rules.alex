@@ -3,31 +3,26 @@
 for = @cards
 
 effect draw-a-card { draw() }
-@hello.on-enter = draw-a-card
+@klobuk.on-enter = draw-a-card
 
-static others-get-bonus { units(own, other).grant(power: +card.bonus) }
-@cheer.static = others-get-bonus
+effect heal-own-creatures { units(own).heal(card.heal) }
+@bread-and-salt-greeter.on-enter = heal-own-creatures
 
-effect damage-opponent { opponent.damage-life(card.damage) }
-@spark.on-play = damage-opponent
+effect damage-a-creature { choose(all).damage(card.damage) }
+@domowiks-temper.on-play = damage-a-creature
 
-effect destroy-a-creature { choose(all).destroy() }
-@goodbye.on-play = destroy-a-creature
-
-scenario 'Hello draws a card when it enters' {
-  given hand(me, @hello)
-    deck(me, @friend)
-    counter-is(me, @Energy, 2)
-  when play(me, @hello)
-  then in-zone(@friend, @Hand)
+scenario 'Kłobuk draws a card when it enters' {
+  given hand(me, @klobuk)
+    deck(me, @hearth-cricket)
+    counter-is(me, @Energy, 3)
+  when play(me, @klobuk)
+  then in-zone(@hearth-cricket, @Hand)
 }
 
-scenario 'Goodbye destroys the chosen Creature' {
-  given controls(opponent, @cheer)
-    controls(opponent, @friend)
-    hand(me, @goodbye)
-    counter-is(me, @Energy, 3)
-  when play(me, @goodbye, target: @cheer)
-  then in-zone(@cheer, @Discard)
-    power(@friend) == 1
+scenario 'A Domowik''s Temper defeats the chosen Creature' {
+  given controls(opponent, @bread-and-salt-greeter)
+    hand(me, @domowiks-temper)
+    counter-is(me, @Energy, 4)
+  when play(me, @domowiks-temper, target: @bread-and-salt-greeter)
+  then in-zone(@bread-and-salt-greeter, @Discard)
 }

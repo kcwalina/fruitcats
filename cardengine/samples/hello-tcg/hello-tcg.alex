@@ -3,15 +3,21 @@
 name = 'Hello TCG'
 schema-version = 1
 rulebook = @rulebook
+card-layout = @card-layout
 card-back = 'art/card-back.png'
 
 constants = [
   starting-life = 10
   opening-hand = 3
   energy-growth = 1
-  max-energy = 3
+  max-energy = 4
   deck-size = 12
   max-copies = 3
+]
+
+keywords = [
+  Guardian = Keyword {}
+  Swift = Keyword {}
 ]
 
 type Creature : Card {
@@ -19,7 +25,7 @@ type Creature : Card {
   power: int
   health: int
 }
-type Spell : Card {
+type Charm : Card {
   cost: int
 }
 
@@ -87,16 +93,18 @@ cost-resource = @Energy
 units = [
   UnitCards { types = [@Creature] }
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  EntersReady { keyword = @Swift, cites = @rulebook.sections.keywords }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
 
 spells = [
-  SpellCards { types = [@Spell], cites = @rulebook.sections.spells }
+  SpellCards { types = [@Charm], cites = @rulebook.sections.charms }
 ]
 
 combat = [
   AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
   AttackerMustBeReady { cites = @rulebook.sections.attacking }
+  GuardiansFirst { keyword = @Guardian, cites = @rulebook.sections.keywords }
   CombatDamageEqualsPower {}
   SimultaneousDamage {}
   LifeDamageEqualsPower {}

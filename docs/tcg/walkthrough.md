@@ -2,9 +2,10 @@
 
 In this walkthrough you build **Hello TCG**, a very small two-player card game, in two parts:
 
-- **Part 1: cards on a table.** You design the cards and write the rulebook, and `tcg` turns them
-  into files a card printer can print, plus a rulebook PDF. At the end you can order a real,
-  physical copy of your game and play it with people in the same room. No programming.
+- **Part 1: cards on a table.** You design the cards and how they look, write the rulebook, and
+  `tcg` turns them into files a card printer can print, plus a rulebook PDF. At the end you can
+  order a real, physical copy of your game and play it with people in the same room. No
+  programming.
 - **Part 2: a game the computer can play.** You teach the engine the rules your rulebook already
   describes. Then bots can playtest it thousands of times, and you can play it online with
   friends anywhere.
@@ -13,9 +14,10 @@ Many designers only need Part 1, or do Part 1 first and come back to Part 2 once
 has been played a few times. Both parts work on the same folder: Part 2 adds to what Part 1
 made, and changes nothing about it.
 
-Hello TCG is deliberately simple: six cards, one page of rules. It is not meant to be fun. It
-is meant to show every part of the toolkit once, so that when you build your own game you know
-where everything goes. Each part takes about half an hour.
+Hello TCG is deliberately small: six cards, one page of rules. Its cards are real ones, borrowed
+from **Folkborn**, a published game built with this toolkit: five Creatures and a Charm from its
+Domowiki deck, the house spirits of Slavic folklore, with their original paintings. Each part
+takes about half an hour.
 
 ## What you need
 
@@ -25,6 +27,8 @@ where everything goes. Each part takes about half an hour.
   you haven't used it, the Alex getting-started guide takes about ten minutes.
 - **A text editor.** Any will do. VS Code with the Alex extension colours the files and underlines
   mistakes as you type.
+- **The Hello TCG images.** `tcg new --sample-art hello-tcg` puts them in the project for you: the
+  six paintings, two card frames and a card back. With your own game, these are your own images.
 - **Optional: a coding agent**, such as Claude Code or Codex. Every step in this walkthrough shows
   the exact change to make by hand, so everyone ends up with the same game. Most people end up
   asking an agent to make these changes instead. Look for the boxes that say *Ask your agent*:
@@ -39,10 +43,10 @@ where everything goes. Each part takes about half an hour.
 A game is a folder. It holds two kinds of thing:
 
 - **Alex files**, plain text written in **Alex**, a small language for describing things. They
-  say what the game is: its cards, its rulebook and, once you want the computer to play it, its
-  rules.
-- **Assets**: the files the Alex files point at. Mostly images (card art, the card back, card
-  frames, icons, pictures for the rulebook), and other media your game uses.
+  say what the game is: its cards, how they look, its rulebook and, once you want the computer to
+  play it, its rules.
+- **Assets**: the files the Alex files point at. Card paintings, card frames, the card back, fonts,
+  pictures for the rulebook.
 
 Nothing about your game lives anywhere else: not in a database, not on a website. You can keep
 the folder on your laptop, in Git, on GitHub, or all three.
@@ -80,7 +84,7 @@ In VS Code, install the **Alex** extension from the Extensions view.
 ## 2. Create the project
 
 ```bash
-tcg new hello-tcg
+tcg new --sample-art hello-tcg
 ```
 
 ```
@@ -88,13 +92,15 @@ Created hello-tcg/
   hello-tcg.alex          the game
   rulebook.alex           the rulebook
   cards.alex              your cards
-  art/                    your game's images
+  art/                    your game's images (with the Hello TCG sample art)
+  fonts/                  fonts for your cards
   AGENTS.md               instructions for coding agents
 
 Next: cd hello-tcg, then tcg check
 ```
 
-`tcg new` never makes up a game for you. Every file starts almost empty. `hello-tcg.alex`:
+`tcg new` never makes up a game for you. Every file starts almost empty; `--sample-art` only
+fills `art/` with the images this walkthrough uses. `hello-tcg.alex`:
 
 ```
 #type Game
@@ -123,7 +129,8 @@ title = 'Hello TCG'
 #type Cards
 ```
 
-`art/` is empty. It is where your game's images go.
+`fonts/` holds a few free fonts (Nunito, under the SIL Open Font License) so cards look the same
+on every computer. Add any font you have the right to use.
 
 `AGENTS.md` is for coding agents. It tells them where the Alex and library references are, which
 commands to run after every change, and the conventions in this walkthrough. You don't need to
@@ -133,20 +140,19 @@ read it, but you may.
 
 `tcg` reads every `.alex` file in the project folder. Each file holds one thing, of the type its
 `#type` line names, and the file's name is how other files refer to it: `@rulebook` is the
-rulebook in `rulebook.alex`, and `@friend` is a card in `cards.alex`. There are no other
-names to keep in step. Rename a file, and `tcg check` lists the references to update (Studio and
-agents update them for you).
+rulebook in `rulebook.alex`, and `@klobuk` is a card in `cards.alex`. There are no other names to
+keep in step. Rename a file, and `tcg check` lists the references to update (Studio and agents
+update them for you).
 
 The folder holds exactly one `Game`: that is your game. Every `Cards` file in the folder is part
 of it, so you can keep all your cards in `cards.alex` or split them into several files, as you
-like. Everything else is joined by a reference:
+like. Everything else is joined by a reference, and images and fonts by their path in the
+folder:
 
 ```
-hello-tcg.alex   Game       rulebook = @rulebook      ──▶  rulebook.alex   Rulebook
-cards.alex       (a card)   art = 'art/friend.png'    ──▶  art/friend.png
+hello-tcg.alex   Game       rulebook = @rulebook       ──▶  rulebook.alex   Rulebook
+cards.alex       (a card)   art = 'art/klobuk.webp'    ──▶  art/klobuk.webp
 ```
-
-Assets are referred to by their path in the folder.
 
 Check the project:
 
@@ -171,12 +177,12 @@ play it. Part 1 is about the first.
 > the left, your cards in the middle and the rulebook on the right. Everything you do in the rest
 > of this walkthrough shows up there as you save.
 
-## 3. Card types
+## 3. Card types and keywords
 
 Hello TCG has two kinds of card:
 
 - **Creatures** stay on the table. They have a cost, Power and Health.
-- **Spells** are played once and discarded. They have a cost.
+- **Charms** are played once and discarded. They have a cost.
 
 Say what each type of card has printed on it. In `hello-tcg.alex`:
 
@@ -186,123 +192,254 @@ type Creature : Card {
   power: int
   health: int
 }
-type Spell : Card {
+type Charm : Card {
   cost: int
 }
 ```
 
-`: Card` means these are cards, so they also have what every card has: a name, a picture, text
-and flavor text, all optional. The fields you add are the ones your game prints; `int` means a
-whole number. Games name their card types freely (Monsters, Allies, Characters, Tricks) and give
-them whatever fields they print.
+`: Card` means these are cards, so they also have what every card has: a name, a picture, text,
+keywords, flavor text and constants, all optional. The fields you add are the ones your game
+prints; `int` means a whole number. Games name their card types freely (Monsters, Allies,
+Spells, Tricks) and give them whatever fields they print.
+
+Some cards carry a **keyword**: a word that stands for a rule the rulebook explains once, so the
+card doesn't have to. Hello TCG has two:
+
+```
+keywords = [
+  Guardian = Keyword {}
+  Swift = Keyword {}
+]
+```
 
 > [!TIP]
 > **Ask your agent:** "My game has two card types: Creatures, with a cost, Power and Health, and
-> Spells, with a cost."
+> Charms, with a cost. It has two keywords, Guardian and Swift."
 
 ## 4. Your first cards
 
-Open `cards.alex` and add two Creatures. Any image works for their pictures for now, like a
-sketch or a photo of a drawing: save two images as `art/friend.png` and `art/big-friend.png`.
+Open `cards.alex` and add two Creatures:
 
 ```
 #type Cards
 
 cards = [
-  friend = Creature {
-    name = 'Friend', cost = 1, power = 1, health = 1
-    art = 'art/friend.png'
-    flavor = 'Always there.'
+  hearth-cricket = Creature {
+    name = 'Hearth Cricket', cost = 1, power = 2, health = 1
+    art = 'art/hearth-cricket.webp'
+    flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
-  big-friend = Creature {
-    name = 'Big Friend', cost = 3, power = 3, health = 3
-    art = 'art/big-friend.png'
-    flavor = 'Bigger hugs.'
+  keeper-of-the-door = Creature {
+    name = 'Keeper of the Door', cost = 3, power = 2, health = 6
+    art = 'art/keeper-of-the-door.webp'
+    keywords = [@Guardian]
+    flavor = 'Nothing crosses the threshold without his nod.'
   }
 ]
 ```
 
-`friend` is the card's identifier, the name everything else refers to it by (`@friend`).
-`name = 'Friend'` is the name printed on the card.
+`hearth-cricket` is the card's identifier, the name everything else refers to it by
+(`@hearth-cricket`). `name = 'Hearth Cricket'` is the name printed on the card.
 
 See what they look like:
 
 ```bash
-tcg cards friend big-friend
+tcg cards hearth-cricket keeper-of-the-door
 ```
 
 ```
-Rendered 2 cards to out/cards/ (default frame)
-  out/cards/friend.png
-  out/cards/big-friend.png
+Rendered 2 cards to out/cards/ (default layout)
+  out/cards/hearth-cricket.png
+  out/cards/keeper-of-the-door.png
 ```
 
-Until you design your own card frame, cards use a plain default frame that shows the picture,
-name, cost, Power, Health, text and flavor.
+Until you design how your cards look (chapter 6), they use a plain default layout that shows the
+picture, name, cost, Power, Health, keywords, text and flavor.
 
 The images are part of your game just as the Alex files are: they go into Git with everything
 else, and `tcg check` tells you if a card points at a picture that isn't there:
 
 ```
 hello-tcg: 1 error
-  error  cards.alex:11  Big Friend's art 'art/big-friend.png' doesn't exist.
+  error  cards.alex:11  Keeper of the Door's art 'art/keeper-of-the-door.webp' doesn't exist.
 ```
 
 > [!NOTE]
-> **In Studio:** click `friend` in `cards.alex`. The card appears as it will look, with a
-> property grid beside it. Change **Cost** from 1 to 2 in the grid, and the line in
-> `cards.alex` changes to `cost = 2`. Change it back in the file, and the grid follows. The
-> file is always the truth; the grid is a view of it.
+> **In Studio:** click `hearth-cricket` in `cards.alex`. The card appears as it will look, with a
+> property grid beside it. Change **Cost** from 1 to 2 in the grid, and the line in `cards.alex`
+> changes to `cost = 2`. Change it back in the file, and the grid follows. The file is always the
+> truth; the grid is a view of it.
 
 > [!TIP]
-> **Ask your agent:** "Add two Creatures: Friend (cost 1, 1/1, 'Always there.') and Big Friend
-> (cost 3, 3/3, 'Bigger hugs.'), with their pictures in art/."
+> **Ask your agent:** "Add two Creatures: Hearth Cricket (cost 1, 2/1) and Keeper of the Door
+> (cost 3, 2/6, Guardian), with their pictures and flavor text."
 
 ## 5. Cards with text
 
-Most cards do something, and say so in their text. Add four more cards to `cards`, each with its
-picture in `art/`:
+Most cards do something, and say so in their text. Add the other four cards to `cards`:
 
 ```
-  hello = Creature {
-    name = 'Hello', cost = 2, power = 1, health = 1
-    art = 'art/hello.png'
-    text = 'When Hello enters, draw a card.'
-    flavor = 'Nice to meet you.'
+  mane-braiding-domowik = Creature {
+    name = 'Mane-Braiding Domowik', cost = 2, power = 2, health = 2
+    art = 'art/mane-braiding-domowik.webp'
+    keywords = [@Swift]
+    flavor = 'The horse he favours wakes with braids in its mane.'
   }
-  cheer = Creature {
-    name = 'Cheer', cost = 2, power = 1, health = 2
-    art = 'art/cheer.png'
-    text = 'Your other Creatures have +{bonus} Power.'
-    constants = [bonus = 1]
-    flavor = 'Louder together.'
+  klobuk = Creature {
+    name = 'Kłobuk, the Soggy Chick', cost = 3, power = 2, health = 3
+    art = 'art/klobuk.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
-  spark = Spell {
-    name = 'Spark', cost = 1
-    art = 'art/spark.png'
-    text = 'Deal {damage} damage to your opponent.'
-    constants = [damage = 2]
-    flavor = 'Small, bright, rude.'
+  bread-and-salt-greeter = Creature {
+    name = 'Bread-and-Salt Greeter', cost = 4, power = 3, health = 5
+    art = 'art/bread-and-salt-greeter.webp'
+    text = 'Hello: Heal {heal} from each Creature you control.'
+    constants = [heal = 2]
+    flavor = 'Every guest is welcome. Every crumb is counted.'
   }
-  goodbye = Spell {
-    name = 'Goodbye', cost = 3
-    art = 'art/goodbye.png'
-    text = 'Destroy a Creature.'
-    flavor = 'See you around.'
+  domowiks-temper = Charm {
+    name = 'A Domowik''s Temper', cost = 4
+    art = 'art/domowiks-temper.webp'
+    text = 'Deal {damage} damage to a Creature.'
+    constants = [damage = 5]
+    flavor = 'Slam a door in his house and he slams back.'
   }
 ```
 
 When a card's text has a number in it, the number is one of the card's **constants**, and the text
-shows it in braces: Cheer's card reads "Your other Creatures have +1 Power." because `bonus` is 1.
-That seems like a detour for a printed card. It pays off in Part 2, where the engine reads the
-same number the card prints, so the card and what it does can never disagree. `tcg check` holds
-the text and its constants together: a `{name}` the card doesn't have is an error, and so is a
-constant the text never shows.
+shows it in braces: the Greeter's card reads "Hello: Heal 2 from each Creature you control."
+because `heal` is 2. That seems like a detour for a printed card. It pays off in Part 2, where the
+engine reads the same number the card prints, so the card and what it does can never disagree.
+`tcg check` holds the text and its constants together: a `{name}` the card doesn't have is an
+error, and so is a constant the text never shows.
 
 > [!TIP]
-> **Ask your agent:** "Add Hello, Cheer, Spark and Goodbye as in chapter 5 of the walkthrough."
+> **Ask your agent:** "Add Mane-Braiding Domowik, Kłobuk, Bread-and-Salt Greeter and A Domowik's
+> Temper as in chapter 5 of the walkthrough."
 
-## 6. The rulebook
+## 6. How your cards look
+
+A printed card is a picture: a frame, the painting, and the card's data (name, cost, text, Power,
+Health) drawn in the right places, in the right fonts. You design the look once, and every card
+gets it, so changing a card's cost in `cards.alex` changes the printed card, with nothing redrawn
+by hand.
+
+The look has two halves:
+
+- **Frames**, images you draw in any drawing program: everything on the card that is the same on
+  every card of a type. Hello TCG's are in `art/frames/`: `creature.png` and `charm.png`. A frame
+  leaves a transparent window where the painting shows through, and blank spaces where the data
+  goes: a circle for the cost, a banner for the name, a box for the text, and, on the Creature
+  frame only, two chips for Power and Health.
+- **A card layout**, an Alex file that says which frame each card type uses, and where each piece
+  of the card's data goes on it.
+
+The frames are drawn at the card's printed size, 750 × 1050 pixels (2.5 × 3.5 inches at 300
+dots per inch), plus 36 pixels of **bleed** on every side: the frame's edge carries on past where
+the printer cuts, so no card ends up with a white sliver when the cut is slightly off. So the
+frame images are 822 × 1122 pixels.
+
+Create `card-layout.alex`:
+
+```
+#type CardLayout
+
+width = 750
+height = 1050
+dpi = 300
+bleed = 36
+
+fonts = [
+  black = 'fonts/Nunito-Black.ttf'
+  bold = 'fonts/Nunito-Bold.ttf'
+  regular = 'fonts/Nunito-Regular.ttf'
+  italic = 'fonts/Nunito-Italic.ttf'
+]
+
+frames = [
+  Creature = 'art/frames/creature.png'
+  Charm = 'art/frames/charm.png'
+]
+
+parts = [
+  art = Picture {
+    show = '{art}'
+    box = Box { x = 42, y = 138, width = 666, height = 444 }
+    fit = cover
+    under-frame = true
+  }
+  cost = Label {
+    show = '{cost}'
+    box = Box { x = 30, y = 26, width = 102, height = 102 }
+    font = @black
+    size = 60
+    color = '#2E1F5C'
+    align = center
+  }
+  name = Label {
+    show = '{name}'
+    box = Box { x = 150, y = 42, width = 540, height = 72 }
+    font = @bold
+    size = 42
+    smallest = 26
+    color = '#FFFFFF'
+    outline = '#2E1F5C'
+  }
+  ...
+]
+```
+
+(The complete file, with the type line, the text box, Power, Health and the footer, is at the end
+of the walkthrough.)
+
+How to read it:
+
+- **`frames`** gives each card type its frame. A Charm has no Power or Health, so its frame has
+  no chips for them.
+- **`parts`** are the pieces drawn on the card, in order. Each has a **box**: where it goes,
+  measured in pixels from the card's top-left corner, where the printer cuts, not counting bleed.
+  Designers usually measure them in their drawing program: the box of the name is the name banner
+  in the frame.
+- **`show`** says what the part shows. `'{cost}'` is the card's `cost`, `'{name}'` its name. It
+  can mix in words of its own: `show = 'Hello TCG'` on the footer is the same on every card.
+- **A `Label`** is one line of text. `size` is its font size; with `smallest`, a long name shrinks
+  to fit its box instead of spilling out ("Kłobuk, the Soggy Chick" is long).
+- **A `Picture`** shows an image. `fit = cover` fills the box and trims what doesn't fit;
+  `under-frame = true` draws it below the frame, so it shows through the frame's window.
+- **A `TextBox`** holds paragraphs: the keywords in bold, then the card's text, then the flavor in
+  italics under a thin line. Its text shrinks to fit the box. The `{heal}` in the Greeter's text is
+  filled in with its constant before it's drawn.
+- **A part shows only on cards that have what it shows.** A Charm has no `power`, so its card has
+  no Power. A card with no text has no text paragraph.
+
+```bash
+tcg cards
+```
+
+```
+Rendered 6 cards to out/cards/ (card-layout.alex)
+```
+
+Open `out/cards/`: every card in its frame, with its painting, name, cost, text and stats in
+place. Change `size = 42` on the name to 38 and render again, and every card's name is smaller.
+Change the Greeter's `heal` to 3, and its card reads "Heal 3".
+
+`tcg check` checks the layout too: a `{field}` no card type has, a box that runs off the card, a
+font file or frame that isn't there, and a text box too small for a card's text at its smallest
+size, which names the card.
+
+> [!NOTE]
+> **In Studio:** open `card-layout.alex`, and the layout editor shows a card with every part's box
+> drawn on it. Drag a box, and its `x` and `y` change in the file. Pick any card to see it in the
+> layout, or show all six side by side.
+
+> [!TIP]
+> **Ask your agent:** "Write a card layout for my frames in art/frames: the cost in the circle,
+> the name in the banner, the text in the box, Power and Health in the chips." Agents can read the
+> frame images to find where the spaces are, but check their boxes against a rendered card.
+
+## 7. The rulebook
 
 Players need to know how to play. The rulebook is a list of sections, each with a number, a title
 and its text. Open `rulebook.alex`:
@@ -318,8 +455,9 @@ sections = [
   your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
   energy = Section { number = '5', title = 'Energy', text = @energy-text }
   creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
-  spells = Section { number = '8', title = 'Spells', text = @spells-text }
+  keywords = Section { number = '7', title = 'Keywords', text = @keywords-text }
+  attacking = Section { number = '8', title = 'Attacking', text = @attacking-text }
+  charms = Section { number = '9', title = 'Charms', text = @charms-text }
 ]
 
 @@@ winning-text
@@ -338,14 +476,19 @@ Cards cost Energy. You start with none. At the start of each of your turns, your
 @@@ creatures-text
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
-discard pile.
+discard pile. "Hello:" on a Creature means: when this Creature enters play, do what follows.
+"Heal" removes damage from a Creature.
+@@@ keywords-text
+Guardian: while you control a Creature with Guardian, your opponent's Creatures must attack a
+Creature with Guardian if they attack.
+Swift: this Creature enters ready, so it can attack on the turn you play it.
 @@@ attacking-text
 On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
 attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
 equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
 other. Damage is removed at the end of the turn.
-@@@ spells-text
-A Spell does what its text says, once, and then goes to your discard pile.
+@@@ charms-text
+A Charm does what its text says, once, and then goes to your discard pile.
 @@@
 ```
 
@@ -359,7 +502,7 @@ constants = [
   starting-life = 10
   opening-hand = 3
   energy-growth = 1
-  max-energy = 3
+  max-energy = 4
   deck-size = 12
   max-copies = 3
 ]
@@ -371,7 +514,13 @@ and the game the computer plays always agree. If the rulebook names a constant t
 `tcg check` says so. It also notes digits typed straight into rulebook text, since those are the
 numbers that drift.
 
-Render it:
+Name the layout in `hello-tcg.alex`, so the rulebook's card list uses it too:
+
+```
+card-layout = @card-layout
+```
+
+Render the rulebook:
 
 ```bash
 tcg rulebook
@@ -383,35 +532,35 @@ Rendered the rulebook:
   out/rulebook/hello-tcg-rulebook.pdf
 ```
 
-It contains every section, in order, and a card list made from your cards: each card as it
-looks, with its text. You never copy a card's text into the rulebook, so the two can't disagree.
+It contains every section, in order, and a card list: each card as it will be printed. You never
+copy a card's text into the rulebook, so the two can't disagree.
 
 > [!TIP]
 > **Ask your agent:** "Write the rulebook for Hello TCG: players start with 10 Life, decks are 12
 > cards with at most 3 copies, … Put every number in the game's constants."
 
-## 7. Decks
+## 8. Decks
 
 A printed game comes with decks to play. Add two to `cards.alex`:
 
 ```
 decks = [
-  swarm = Deck {
-    name = 'Swarm',
+  hearth = Deck {
+    name = 'Hearth',
     cards = [
-      [@friend, 3],
-      [@cheer, 3],
-      [@hello, 3],
-      [@spark, 3]
+      [@hearth-cricket, 3],
+      [@mane-braiding-domowik, 3],
+      [@klobuk, 3],
+      [@domowiks-temper, 3]
     ]
   }
-  big = Deck {
-    name = 'Big',
+  threshold = Deck {
+    name = 'Threshold',
     cards = [
-      [@big-friend, 3],
-      [@hello, 3],
-      [@goodbye, 3],
-      [@spark, 3]
+      [@keeper-of-the-door, 3],
+      [@bread-and-salt-greeter, 3],
+      [@klobuk, 3],
+      [@domowiks-temper, 3]
     ]
   }
 ]
@@ -422,18 +571,22 @@ tcg check
 ```
 
 ```
-hello-tcg: 0 errors
-  Printable   yes: 6 cards, 2 decks, a rulebook with 8 sections
-  Playable    not yet: no zones, no turns, no way to win, 4 cards' text has no handler
+hello-tcg: 0 errors, 1 warning
+  warning  hello-tcg.alex:7  The card back is 600 × 840 pixels; printing needs 822 × 1122
+           (300 dpi with bleed). It will look soft when printed.
+  Printable   yes: 6 cards, 2 decks, a rulebook with 9 sections
+  Playable    not yet: no zones, no turns, no way to win, 2 keywords with no rule,
+              3 cards' text has no handler
 ```
 
 The game is printable. It isn't playable by the computer yet, and it doesn't need to be: none of
-what's missing is an error. It's Part 2's list of things to do.
+what's missing is an error. It's Part 2's list of things to do. (The warning is about the card
+back, which chapter 9 adds.)
 
-## 8. Print it
+## 9. Print it
 
-Printed cards need a back, the same for every card in the game. Save an image as
-`art/card-back.png` and name it in `hello-tcg.alex`:
+Printed cards need a back, the same for every card in the game. Hello TCG's is
+`art/card-back.png`; name it in `hello-tcg.alex`:
 
 ```
 card-back = 'art/card-back.png'
@@ -442,23 +595,23 @@ card-back = 'art/card-back.png'
 Then make the print files:
 
 ```bash
-tcg cards --print --decks swarm big --printer makeplayingcards
+tcg cards --print --decks hearth threshold --printer makeplayingcards
 ```
 
 ```
 Rendered 24 cards (2 decks × 12) for MakePlayingCards, poker size (63 × 88 mm):
-  out/print/fronts/*.png      one image per card, 300 dpi, with 3 mm bleed
-  out/print/back.png          the card back, 300 dpi, with 3 mm bleed
-  out/print/order.txt         what to choose on the order page
+  out/print/fronts/*.png          one image per card, 822 × 1122, 300 dpi, with bleed
+  out/print/back.png              the card back, 822 × 1122
+  out/print/order.txt             what to choose on the order page
   out/print/hello-tcg-cards.pdf   the same cards for home printing, with crop marks
 ```
 
 These are the files an online card printer asks for: each card at print resolution with the
-extra margin (bleed) the cutter needs, and the back. `order.txt` lists the choices to make on
-the printer's order page (card size, stock, number of cards) so the files fit. Or print the PDF
-at home and cut along the marks.
+bleed the cutter needs, and the back. `order.txt` lists the choices to make on the printer's order
+page (card size, stock, number of cards) so the files fit. Or print the PDF at home and cut along
+the marks.
 
-With the rulebook PDF from chapter 6, that's a copy of your game you can play at a table. That's
+With the rulebook PDF from chapter 7, that's a copy of your game you can play at a table. That's
 the end of Part 1. Play it with people, change what doesn't work, and print again.
 
 ---
@@ -470,19 +623,20 @@ to play it online, the engine has to know the rules too. Your rulebook already s
 are; Part 2 tells the engine the same thing.
 
 You rarely write rules from scratch. The libraries hold the rules card games commonly use (life
-totals, attacking, drawing, energy…), and you pick the ones your game uses and set their numbers.
-Each rule you pick *cites* the rulebook section that explains it, so the rules and the rulebook
-stay connected.
+totals, attacking, drawing, energy, keywords like Guardian…), and you pick the ones your game uses
+and set their numbers. Each rule you pick *cites* the rulebook section that explains it, so the
+rules and the rulebook stay connected.
 
 `tcg check` already listed what's missing:
 
 ```
-  Playable    not yet: no zones, no turns, no way to win, 4 cards' text has no handler
+  Playable    not yet: no zones, no turns, no way to win, 2 keywords with no rule,
+              3 cards' text has no handler
 ```
 
 The chapters below work through that list.
 
-## 9. The table
+## 10. The table
 
 The engine needs to know the parts of the table, how a game starts, and how a turn goes. From
 here on, everything you add to `hello-tcg.alex` goes below what Part 1 wrote; nothing there
@@ -500,8 +654,9 @@ uses = [
 ```
 
 Tell the libraries what your card types are: your Creatures are what the `units` library calls
-unit cards (cards that stay in play with power and health), and your Spells are its spell cards.
-`tcg check` confirms that your types have the fields the library needs.
+unit cards (cards that stay in play with power and health), and your Charms are what the `spells`
+library calls spell cards. `tcg check` confirms that your types have the fields the library
+needs.
 
 ```
 units = [
@@ -509,7 +664,7 @@ units = [
 ]
 
 spells = [
-  SpellCards { types = [@Spell], cites = @rulebook.sections.spells }
+  SpellCards { types = [@Charm], cites = @rulebook.sections.charms }
 ]
 ```
 
@@ -584,10 +739,10 @@ that happen?" and get the rulebook's answer.
 > **Ask your agent:** "Make the game playable: add the zones, setup, turn and Energy rules that
 > rulebook sections 3 to 5 describe."
 
-## 10. Creatures, attacking and winning
+## 11. Creatures, keywords, attacking and winning
 
-The rest of the rulebook: Creatures, attacks and Life. Add `@combat` and `@life` to `uses`, and
-`@combat.actions.attack` to the allowed actions:
+The rest of the rulebook: Creatures, keywords, attacks and Life. Add `@combat` and `@life` to
+`uses`, and `@combat.actions.attack` to the allowed actions:
 
 ```
   Actions {
@@ -605,12 +760,14 @@ Then the rules:
 units = [
   UnitCards { types = [@Creature] }
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  EntersReady { keyword = @Swift, cites = @rulebook.sections.keywords }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
 
 combat = [
   AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
   AttackerMustBeReady { cites = @rulebook.sections.attacking }
+  GuardiansFirst { keyword = @Guardian, cites = @rulebook.sections.keywords }
   CombatDamageEqualsPower {}
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
@@ -630,6 +787,10 @@ life = [
 Each rule is one sentence of the rulebook:
 
 - `UnitsEnterExhausted`, `DefeatAtHealth`: section 6, Creatures.
+- `EntersReady { keyword = @Swift }`: section 7. A keyword means nothing to the engine until a rule
+  gives it meaning; this is the library's "enters ready" rule, applied to your keyword.
+- `GuardiansFirst { keyword = @Guardian }`: section 7 again, the library's "must be attacked
+  first" rule, applied to Guardian.
 - `AttackerChooses { targets = [unit, life] }`: the attacker picks either a Creature or the
   opponent.
 - `AttackerMustBeReady`: only ready Creatures attack, and attacking exhausts them.
@@ -646,18 +807,18 @@ tcg check
 ```
 hello-tcg: 0 errors
   Printable   yes
-  Playable    not yet: 4 cards' text has no handler
+  Playable    not yet: 3 cards' text has no handler
   note  rulebook.alex  Section 'decks' is cited by no rule.
 ```
 
 The note is the rulebook check at work: a section that explains no rule is either a rule you
-haven't added yet or a mistake. Deck rules come in chapter 13.
+haven't added yet or a mistake. Deck rules come in chapter 14.
 
 > [!TIP]
-> **Ask your agent:** "Add the rules for Creatures, attacking and winning from rulebook sections
-> 1, 6 and 7."
+> **Ask your agent:** "Add the rules for Creatures, keywords, attacking and winning from rulebook
+> sections 1, 6, 7 and 8."
 
-## 11. What the cards do
+## 12. What the cards do
 
 Each card's text says what it does, in words. For the engine, that needs a small program: a
 **handler**. Handlers live in a rules file next to your cards. Create `card-rules.alex`:
@@ -668,44 +829,37 @@ Each card's text says what it does, in words. For the engine, that needs a small
 for = @cards
 
 effect draw-a-card { draw() }
-@hello.on-enter = draw-a-card
+@klobuk.on-enter = draw-a-card
 ```
 
 `for = @cards` says which cards this file programs. The cards file never mentions its rules file,
 so the cards read the same, and print the same, whether or not they're programmed.
 
-`effect draw-a-card { draw() }` is the program: draw a card. `@hello.on-enter = draw-a-card`
-attaches it to Hello, and says when it runs: when Hello enters play. Handlers are short on
-purpose: they use the words the libraries give you (`draw`, `damage`, `destroy`, `choose`…), and
-each one is a line or two.
+`effect draw-a-card { draw() }` is the program: draw a card. `@klobuk.on-enter = draw-a-card`
+attaches it to Kłobuk, and says when it runs: when Kłobuk enters play, which is what "Hello:"
+means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
+`damage`, `choose`…), and each one is a line or two.
 
-The other three:
+The other two:
 
 ```
-static others-get-bonus { units(own, other).grant(power: +card.bonus) }
-@cheer.static = others-get-bonus
+effect heal-own-creatures { units(own).heal(card.heal) }
+@bread-and-salt-greeter.on-enter = heal-own-creatures
 
-effect damage-opponent { opponent.damage-life(card.damage) }
-@spark.on-play = damage-opponent
-
-effect destroy-a-creature { choose(all).destroy() }
-@goodbye.on-play = destroy-a-creature
+effect damage-a-creature { choose(all).damage(card.damage) }
+@domowiks-temper.on-play = damage-a-creature
 ```
 
-- Cheer's handler is a `static`: not something that happens, but something that is true while the
-  card is in play. It reads as: "my units, other than this one, are granted the card's bonus in
-  power". `card.bonus` is the constant printed on the card. When Cheer leaves the board, the
-  bonus goes away by itself.
-- `@spark.on-play` runs when Spark is played, and deals `card.damage`, the same number the card
-  prints.
-- `choose(all)` asks the player who played Goodbye to pick a Creature, any player's. You don't
-  write any screen or button for that. The engine asks whoever is playing that seat: a person
-  sees the Creatures highlighted on the table, a bot weighs its options, an LLM player reads a
-  list.
+- The Greeter heals each of your Creatures by `card.heal`, the constant printed on the card.
+- `@domowiks-temper.on-play` runs when the Charm is played. `choose(all)` asks the player who
+  played it to pick a Creature, any player's. You don't write any screen or button for that. The
+  engine asks whoever is playing that seat: a person sees the Creatures highlighted on the table,
+  a bot weighs its options, an LLM player reads a list. Then it deals `card.damage` to it.
 
 Every card with text must have a handler, and every handler must belong to a card with text, so
-the card and what it does can't disagree silently. `tcg check` also notes a digit typed straight
-into a handler, like `grant(power: +1)`: that's a number the card's text doesn't know about.
+the card and what it does can't disagree silently. Cards whose only rules are keywords, like
+Keeper of the Door, need none: the keyword's rule covers them. `tcg check` also notes a digit
+typed straight into a handler, like `heal(2)`: that's a number the card's text doesn't know about.
 
 ### Scenarios
 
@@ -715,26 +869,22 @@ result. The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`…) com
 `card-rules.alex`:
 
 ```
-scenario 'Hello draws a card when it enters' {
-  given hand(me, @hello)
-    deck(me, @friend)
-    counter-is(me, @Energy, 2)
-  when play(me, @hello)
-  then in-zone(@friend, @Hand)
+scenario 'Kłobuk draws a card when it enters' {
+  given hand(me, @klobuk)
+    deck(me, @hearth-cricket)
+    counter-is(me, @Energy, 3)
+  when play(me, @klobuk)
+  then in-zone(@hearth-cricket, @Hand)
 }
 
-scenario 'Goodbye destroys the chosen Creature' {
-  given controls(opponent, @cheer)
-    controls(opponent, @friend)
-    hand(me, @goodbye)
-    counter-is(me, @Energy, 3)
-  when play(me, @goodbye, target: @cheer)
-  then in-zone(@cheer, @Discard)
-    power(@friend) == 1
+scenario 'A Domowik''s Temper defeats the chosen Creature' {
+  given controls(opponent, @bread-and-salt-greeter)
+    hand(me, @domowiks-temper)
+    counter-is(me, @Energy, 4)
+  when play(me, @domowiks-temper, target: @bread-and-salt-greeter)
+  then in-zone(@bread-and-salt-greeter, @Discard)
 }
 ```
-
-The second also checks that Friend loses Cheer's bonus once Cheer is gone.
 
 ```bash
 tcg test
@@ -742,18 +892,17 @@ tcg test
 
 ```
 hello-tcg: 2 scenarios, 2 passed
-  ✓ Hello draws a card when it enters
-  ✓ Goodbye destroys the chosen Creature
+  ✓ Kłobuk draws a card when it enters
+  ✓ A Domowik's Temper defeats the chosen Creature
 ```
 
 Scenarios are your game's tests. Every time you or your agent changes something, `tcg test` tells
 you whether a card still does what its text says.
 
 > [!TIP]
-> **Ask your agent:** "Write the handlers for Hello, Cheer, Spark and Goodbye, and a scenario for
-> each."
+> **Ask your agent:** "Write the handlers for the cards with text, and a scenario for each."
 
-## 12. Your first game
+## 13. Your first game
 
 ```bash
 tcg check
@@ -769,22 +918,27 @@ hello-tcg: 0 errors
 Watch two bots play:
 
 ```bash
-tcg sim --decks swarm big --seed 7
+tcg sim --decks hearth threshold --seed 7
 ```
 
 ```
-Hello TCG · seed 7 · Swarm (Player 1, random bot) vs Big (Player 2, random bot)
+Hello TCG · seed 7 · Hearth (Player 1, random bot) vs Threshold (Player 2, random bot)
 
 Setup    Both decks are shuffled. Each player draws 3.              [Setting up]
-         Player 2 goes first.                                        [Your turn]
-Round 1  Player 2: Energy 1. Plays Spark: Player 1's Life 10 → 8.
-         Player 1: draws. Energy 1. Plays Friend.
-Round 2  Player 2: draws. Energy 2. Plays Hello, draws a card.
-         Player 1: draws. Energy 2. Plays Cheer. Friend attacks Player 2: Life 10 → 8.
-                                                                     [Attacking]
+         Player 1 goes first.                                        [Your turn]
+Round 1  Player 1: Energy 1. Plays Hearth Cricket.
+         Player 2: draws. Energy 1. Passes.
+Round 2  Player 1: draws. Energy 2. Plays Mane-Braiding Domowik, which enters ready.
+                                                                     [Keywords]
+         Hearth Cricket attacks Player 2: Life 10 → 8.              [Attacking]
+         Mane-Braiding Domowik attacks Player 2: Life 8 → 6.
+         Player 2: draws. Energy 2. Passes.
+Round 3  Player 1: draws. Energy 3. Plays Kłobuk, draws a card.
+         Player 2: draws. Energy 3. Plays Keeper of the Door.
+Round 4  Player 1: Hearth Cricket must attack Keeper of the Door.    [Keywords]
 ...
-Round 9  Player 1: Friend attacks Player 2: Life 2 → 0.
-Game over: Player 1 wins in round 9.                                 [Winning]
+Round 11 Player 2: Bread-and-Salt Greeter attacks Player 1: Life 3 → 0.
+Game over: Player 2 wins in round 11.                                [Winning]
 ```
 
 The words in brackets are the rulebook sections the rules cite. When something in a game
@@ -797,7 +951,7 @@ game, from a bot run or from online play, can be replayed this way.
 > **In Studio:** press **Play** above the table. The two bots play in front of you, and you can
 > step through the game one action at a time. Click any event to jump to the rule that caused it.
 
-## 13. Deck rules and a playtest
+## 14. Deck rules and a playtest
 
 Section 2 of the rulebook says how decks are built; the engine doesn't know it yet. Add `@decks`
 to `uses`, and:
@@ -814,53 +968,54 @@ Now `tcg check` checks every deck against them, and the note about section 2 is 
 Then the question every designer asks: is it fair? Let bots play a thousand games:
 
 ```bash
-tcg playtest --decks swarm big --games 1000
+tcg playtest --decks hearth threshold --games 1000
 ```
 
 ```
-Hello TCG · 1000 games · Swarm vs Big · search bots · seats alternate · 14 s
+Hello TCG · 1000 games · Hearth vs Threshold · search bots · seats alternate · 16 s
 
-           Wins   Win rate   likely range
-Swarm       641     64.1%    61.1 – 67.0
-Big         347     34.7%    31.8 – 37.7
-Draws        12      1.2%
+             Wins   Win rate   likely range
+Hearth        352     35.2%    32.3 – 38.2
+Threshold     633     63.3%    60.3 – 66.2
+Draws          15      1.5%
 
-Game length: median 8 rounds (most games 5 – 13)
+Game length: median 10 rounds (most games 7 – 14)
 
 Cards (win rate in games where the card was played):
-  Cheer        71%   played in 82% of Swarm's games
-  Friend       66%
-  Spark        58%
-  Hello        55%
-  Goodbye      49%   Big played it on Cheer in 61% of those games
-  Big Friend   44%
+  Keeper of the Door        72%   A Domowik's Temper couldn't defeat it: 6 Health
+  Bread-and-Salt Greeter    61%
+  Kłobuk                    52%
+  A Domowik's Temper        50%
+  Mane-Braiding Domowik     44%
+  Hearth Cricket            38%
 
-Swarm wins 64% of games. Evenly matched decks usually land between 45% and 55%.
+Threshold wins 63% of games. Evenly matched decks usually land between 45% and 55%.
 Report saved to out/playtests/2026-09-28-1412.md
 ```
 
 The search bots aren't written for your game. They try out their legal moves and keep the ones
 that tend to win, so they play any game the engine can run, including yours as soon as it checks.
 
-Cheer looks strong. Make it cost 3 in `cards.alex`:
+Keeper of the Door walls Hearth's small Creatures out, and Hearth's one answer, A Domowik's
+Temper, deals 5: one short of its Health. Make it 5 in `cards.alex`:
 
 ```
-    name = 'Cheer', cost = 3, power = 1, health = 2
+    name = 'Keeper of the Door', cost = 3, power = 2, health = 5
 ```
 
 ```bash
-tcg playtest --decks swarm big --games 1000
+tcg playtest --decks hearth threshold --games 1000
 ```
 
 ```
-           Wins   Win rate   likely range
-Swarm       532     53.2%    50.1 – 56.3
-Big         455     45.5%    42.4 – 48.6
-Draws        13      1.3%
+             Wins   Win rate   likely range
+Hearth        509     50.9%    47.8 – 54.0
+Threshold     477     47.7%    44.6 – 50.8
+Draws          14      1.4%
 ```
 
 That's the loop you'll use most: change a card, playtest, read the report, repeat. When you're
-happy, `tcg cards --print` makes new print files: the printed Cheer shows the new cost, because
+happy, `tcg cards --print` makes new print files: the printed Keeper shows its new Health, because
 it's the same card.
 
 > [!NOTE]
@@ -868,28 +1023,28 @@ it's the same card.
 > side, so you can see what a change did.
 
 > [!TIP]
-> **Ask your agent:** "Swarm wins too often. Try a few changes to Cheer, playtest each one, and
-> tell me which brings the decks closest to even." Agents are good at this: they can run many
-> playtests while you do something else. Review what they changed before you keep it.
+> **Ask your agent:** "Threshold wins too often. Try a few changes, playtest each one, and tell me
+> which brings the decks closest to even." Agents are good at this: they can run many playtests
+> while you do something else. Review what they changed before you keep it.
 
-## 14. Play it
+## 15. Play it
 
 With a person:
 
 ```bash
-tcg play --decks swarm big
+tcg play --decks hearth threshold
 ```
 
 This opens the game table in your browser for two players on one screen (hot-seat). Or
 play against a bot:
 
 ```bash
-tcg play --decks swarm big --opponent bot
+tcg play --decks hearth threshold --opponent bot
 ```
 
-The table is laid out from your zones, and the cards are rendered from your card data. The
-engine enforces every rule. You can only do what's legal, and when it's your opponent's turn,
-their hand is hidden.
+The table is laid out from your zones, and the cards are drawn with your card layout. The engine
+enforces every rule. You can only do what's legal, and when it's your opponent's turn, their hand
+is hidden.
 
 With a friend somewhere else, use the online service. You need an account:
 
@@ -904,7 +1059,7 @@ Invite a player:  tcg invite
 ```
 
 ```bash
-tcg invite --deck swarm
+tcg invite --deck hearth
 ```
 
 ```
@@ -918,7 +1073,7 @@ it and games in progress finish on the version they started with.
 Every online game is saved as its seed and its actions, so you can watch it again with
 `tcg replay`, or turn a surprising moment into a scenario.
 
-## 15. Starting from rules you already have
+## 16. Starting from rules you already have
 
 You may already have a rulebook, in a document or in your head. Instead of building step by step,
 you can give it to your agent and let it write the whole game.
@@ -927,9 +1082,9 @@ Put your rules in the project folder, say `my-rules.md`, and ask:
 
 > [!TIP]
 > **Ask your agent:** "Read my-rules.md and write this game: the rulebook sections, the cards,
-> the game's rules and a handler and scenario for every card with text. Use library rules wherever
-> you can. Run tcg check and tcg test until both pass, then run a short playtest and tell me what
-> you found."
+> the game's rules and a handler and scenario for every card with text. Use library rules
+> wherever you can. Run tcg check and tcg test until both pass, then run a short playtest and tell
+> me what you found."
 
 Or only the first half, for a printed game: "Read my-rules.md and write the cards and the
 rulebook, ready to print."
@@ -950,13 +1105,12 @@ more than 150 published card games.
 
 ## Where next
 
-- **Your own game.** `tcg new my-game`: cards and a rulebook first, rules when you want the
-  computer to play it.
-- **How cards look.** Designing your own card frames and card backs, and the sizes and finishes
-  printers offer, have their own guide.
+- **Your own game.** `tcg new my-game`: cards, their look and a rulebook first, rules when you want
+  the computer to play it.
+- **Card layouts.** Every kind of part, several frames per type (by rarity, by faction), foil and
+  other finishes, and the sizes printers offer.
 - **The library reference.** Every library, every rule, and what its numbers mean.
-- **Folkborn.** A complete, published game built with this toolkit, as an example of a bigger
-  project.
+- **Folkborn.** The complete game Hello TCG's cards come from, as an example of a bigger project.
 
 ---
 
@@ -969,21 +1123,30 @@ hello-tcg/
   hello-tcg.alex
   rulebook.alex
   cards.alex
+  card-layout.alex
   card-rules.alex
   art/
-    friend.png
-    big-friend.png
-    hello.png
-    cheer.png
-    spark.png
-    goodbye.png
+    hearth-cricket.webp
+    mane-braiding-domowik.webp
+    klobuk.webp
+    keeper-of-the-door.webp
+    bread-and-salt-greeter.webp
+    domowiks-temper.webp
     card-back.png
+    frames/
+      creature.png
+      charm.png
+  fonts/
+    Nunito-Black.ttf
+    Nunito-Bold.ttf
+    Nunito-Regular.ttf
+    Nunito-Italic.ttf
   AGENTS.md
 ```
 
-These are the complete Alex files. The images are whatever pictures you chose. At the end of
-Part 1 the folder is the same without `card-rules.alex`, with only the first part of
-`hello-tcg.alex` (down to the card types), and with Cheer still costing 2.
+These are the complete Alex files. At the end of Part 1 the folder is the same without
+`card-rules.alex`, with only the first part of `hello-tcg.alex` (down to the card types), and
+with Keeper of the Door's Health still 6.
 
 ### hello-tcg.alex
 
@@ -993,15 +1156,21 @@ Part 1 the folder is the same without `card-rules.alex`, with only the first par
 name = 'Hello TCG'
 schema-version = 1
 rulebook = @rulebook
+card-layout = @card-layout
 card-back = 'art/card-back.png'
 
 constants = [
   starting-life = 10
   opening-hand = 3
   energy-growth = 1
-  max-energy = 3
+  max-energy = 4
   deck-size = 12
   max-copies = 3
+]
+
+keywords = [
+  Guardian = Keyword {}
+  Swift = Keyword {}
 ]
 
 type Creature : Card {
@@ -1009,7 +1178,7 @@ type Creature : Card {
   power: int
   health: int
 }
-type Spell : Card {
+type Charm : Card {
   cost: int
 }
 
@@ -1077,16 +1246,18 @@ cost-resource = @Energy
 units = [
   UnitCards { types = [@Creature] }
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
+  EntersReady { keyword = @Swift, cites = @rulebook.sections.keywords }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
 
 spells = [
-  SpellCards { types = [@Spell], cites = @rulebook.sections.spells }
+  SpellCards { types = [@Charm], cites = @rulebook.sections.charms }
 ]
 
 combat = [
   AttackerChooses { targets = [unit, life], cites = @rulebook.sections.attacking }
   AttackerMustBeReady { cites = @rulebook.sections.attacking }
+  GuardiansFirst { keyword = @Guardian, cites = @rulebook.sections.keywords }
   CombatDamageEqualsPower {}
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
@@ -1121,8 +1292,9 @@ sections = [
   your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
   energy = Section { number = '5', title = 'Energy', text = @energy-text }
   creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
-  spells = Section { number = '8', title = 'Spells', text = @spells-text }
+  keywords = Section { number = '7', title = 'Keywords', text = @keywords-text }
+  attacking = Section { number = '8', title = 'Attacking', text = @attacking-text }
+  charms = Section { number = '9', title = 'Charms', text = @charms-text }
 ]
 
 @@@ winning-text
@@ -1141,14 +1313,19 @@ Cards cost Energy. You start with none. At the start of each of your turns, your
 @@@ creatures-text
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
-discard pile.
+discard pile. "Hello:" on a Creature means: when this Creature enters play, do what follows.
+"Heal" removes damage from a Creature.
+@@@ keywords-text
+Guardian: while you control a Creature with Guardian, your opponent's Creatures must attack a
+Creature with Guardian if they attack.
+Swift: this Creature enters ready, so it can attack on the turn you play it.
 @@@ attacking-text
 On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
 attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
 equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
 other. Damage is removed at the end of the turn.
-@@@ spells-text
-A Spell does what its text says, once, and then goes to your discard pile.
+@@@ charms-text
+A Charm does what its text says, once, and then goes to your discard pile.
 @@@
 ```
 
@@ -1158,62 +1335,159 @@ A Spell does what its text says, once, and then goes to your discard pile.
 #type Cards
 
 cards = [
-  friend = Creature {
-    name = 'Friend', cost = 1, power = 1, health = 1
-    art = 'art/friend.png'
-    flavor = 'Always there.'
+  hearth-cricket = Creature {
+    name = 'Hearth Cricket', cost = 1, power = 2, health = 1
+    art = 'art/hearth-cricket.webp'
+    flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
-  big-friend = Creature {
-    name = 'Big Friend', cost = 3, power = 3, health = 3
-    art = 'art/big-friend.png'
-    flavor = 'Bigger hugs.'
+  mane-braiding-domowik = Creature {
+    name = 'Mane-Braiding Domowik', cost = 2, power = 2, health = 2
+    art = 'art/mane-braiding-domowik.webp'
+    keywords = [@Swift]
+    flavor = 'The horse he favours wakes with braids in its mane.'
   }
-  hello = Creature {
-    name = 'Hello', cost = 2, power = 1, health = 1
-    art = 'art/hello.png'
-    text = 'When Hello enters, draw a card.'
-    flavor = 'Nice to meet you.'
+  klobuk = Creature {
+    name = 'Kłobuk, the Soggy Chick', cost = 3, power = 2, health = 3
+    art = 'art/klobuk.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
-  cheer = Creature {
-    name = 'Cheer', cost = 3, power = 1, health = 2
-    art = 'art/cheer.png'
-    text = 'Your other Creatures have +{bonus} Power.'
-    constants = [bonus = 1]
-    flavor = 'Louder together.'
+  keeper-of-the-door = Creature {
+    name = 'Keeper of the Door', cost = 3, power = 2, health = 5
+    art = 'art/keeper-of-the-door.webp'
+    keywords = [@Guardian]
+    flavor = 'Nothing crosses the threshold without his nod.'
   }
-  spark = Spell {
-    name = 'Spark', cost = 1
-    art = 'art/spark.png'
-    text = 'Deal {damage} damage to your opponent.'
-    constants = [damage = 2]
-    flavor = 'Small, bright, rude.'
+  bread-and-salt-greeter = Creature {
+    name = 'Bread-and-Salt Greeter', cost = 4, power = 3, health = 5
+    art = 'art/bread-and-salt-greeter.webp'
+    text = 'Hello: Heal {heal} from each Creature you control.'
+    constants = [heal = 2]
+    flavor = 'Every guest is welcome. Every crumb is counted.'
   }
-  goodbye = Spell {
-    name = 'Goodbye', cost = 3
-    art = 'art/goodbye.png'
-    text = 'Destroy a Creature.'
-    flavor = 'See you around.'
+  domowiks-temper = Charm {
+    name = 'A Domowik''s Temper', cost = 4
+    art = 'art/domowiks-temper.webp'
+    text = 'Deal {damage} damage to a Creature.'
+    constants = [damage = 5]
+    flavor = 'Slam a door in his house and he slams back.'
   }
 ]
 
 decks = [
-  swarm = Deck {
-    name = 'Swarm',
+  hearth = Deck {
+    name = 'Hearth',
     cards = [
-      [@friend, 3],
-      [@cheer, 3],
-      [@hello, 3],
-      [@spark, 3]
+      [@hearth-cricket, 3],
+      [@mane-braiding-domowik, 3],
+      [@klobuk, 3],
+      [@domowiks-temper, 3]
     ]
   }
-  big = Deck {
-    name = 'Big',
+  threshold = Deck {
+    name = 'Threshold',
     cards = [
-      [@big-friend, 3],
-      [@hello, 3],
-      [@goodbye, 3],
-      [@spark, 3]
+      [@keeper-of-the-door, 3],
+      [@bread-and-salt-greeter, 3],
+      [@klobuk, 3],
+      [@domowiks-temper, 3]
     ]
+  }
+]
+```
+
+### card-layout.alex
+
+```
+#type CardLayout
+
+width = 750
+height = 1050
+dpi = 300
+bleed = 36
+
+fonts = [
+  black = 'fonts/Nunito-Black.ttf'
+  bold = 'fonts/Nunito-Bold.ttf'
+  regular = 'fonts/Nunito-Regular.ttf'
+  italic = 'fonts/Nunito-Italic.ttf'
+]
+
+frames = [
+  Creature = 'art/frames/creature.png'
+  Charm = 'art/frames/charm.png'
+]
+
+parts = [
+  art = Picture {
+    show = '{art}'
+    box = Box { x = 42, y = 138, width = 666, height = 444 }
+    fit = cover
+    under-frame = true
+  }
+  cost = Label {
+    show = '{cost}'
+    box = Box { x = 30, y = 26, width = 102, height = 102 }
+    font = @black
+    size = 60
+    color = '#2E1F5C'
+    align = center
+  }
+  name = Label {
+    show = '{name}'
+    box = Box { x = 150, y = 42, width = 540, height = 72 }
+    font = @bold
+    size = 42
+    smallest = 26
+    color = '#FFFFFF'
+    outline = '#2E1F5C'
+  }
+  type-line = Label {
+    show = '{type}'
+    box = Box { x = 62, y = 600, width = 626, height = 44 }
+    font = @bold
+    size = 25
+    color = '#2E1F5C'
+    capitals = true
+  }
+  rules = TextBox {
+    box = Box { x = 66, y = 678, width = 618, height = 216 }
+    size = 31
+    smallest = 18
+    color = '#2B211B'
+    paragraphs = [
+      Paragraph { show = '{keywords}.', join = '. ', font = @bold }
+      Paragraph { show = '{text}', font = @regular, bold-font = @bold }
+      Paragraph {
+        show = '{flavor}'
+        font = @italic
+        color = '#7A6A5C'
+        align = center
+        rule-above = '#E2D3BA'
+      }
+    ]
+  }
+  power = Label {
+    show = '{power}'
+    box = Box { x = 98, y = 930, width = 52, height = 62 }
+    font = @black
+    size = 40
+    color = '#2E1F5C'
+  }
+  health = Label {
+    show = '{health}'
+    box = Box { x = 642, y = 930, width = 52, height = 62 }
+    font = @black
+    size = 40
+    color = '#2E1F5C'
+  }
+  footer = Label {
+    show = 'Hello TCG'
+    box = Box { x = 0, y = 988, width = 750, height = 24 }
+    font = @regular
+    size = 17
+    color = '#7A6A5C'
+    align = center
   }
 ]
 ```
@@ -1226,32 +1500,27 @@ decks = [
 for = @cards
 
 effect draw-a-card { draw() }
-@hello.on-enter = draw-a-card
+@klobuk.on-enter = draw-a-card
 
-static others-get-bonus { units(own, other).grant(power: +card.bonus) }
-@cheer.static = others-get-bonus
+effect heal-own-creatures { units(own).heal(card.heal) }
+@bread-and-salt-greeter.on-enter = heal-own-creatures
 
-effect damage-opponent { opponent.damage-life(card.damage) }
-@spark.on-play = damage-opponent
+effect damage-a-creature { choose(all).damage(card.damage) }
+@domowiks-temper.on-play = damage-a-creature
 
-effect destroy-a-creature { choose(all).destroy() }
-@goodbye.on-play = destroy-a-creature
-
-scenario 'Hello draws a card when it enters' {
-  given hand(me, @hello)
-    deck(me, @friend)
-    counter-is(me, @Energy, 2)
-  when play(me, @hello)
-  then in-zone(@friend, @Hand)
+scenario 'Kłobuk draws a card when it enters' {
+  given hand(me, @klobuk)
+    deck(me, @hearth-cricket)
+    counter-is(me, @Energy, 3)
+  when play(me, @klobuk)
+  then in-zone(@hearth-cricket, @Hand)
 }
 
-scenario 'Goodbye destroys the chosen Creature' {
-  given controls(opponent, @cheer)
-    controls(opponent, @friend)
-    hand(me, @goodbye)
-    counter-is(me, @Energy, 3)
-  when play(me, @goodbye, target: @cheer)
-  then in-zone(@cheer, @Discard)
-    power(@friend) == 1
+scenario 'A Domowik''s Temper defeats the chosen Creature' {
+  given controls(opponent, @bread-and-salt-greeter)
+    hand(me, @domowiks-temper)
+    counter-is(me, @Energy, 4)
+  when play(me, @domowiks-temper, target: @bread-and-salt-greeter)
+  then in-zone(@bread-and-salt-greeter, @Discard)
 }
 ```

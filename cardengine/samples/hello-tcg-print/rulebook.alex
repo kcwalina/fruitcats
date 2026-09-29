@@ -8,8 +8,9 @@ sections = [
   your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
   energy = Section { number = '5', title = 'Energy', text = @energy-text }
   creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
-  attacking = Section { number = '7', title = 'Attacking', text = @attacking-text }
-  spells = Section { number = '8', title = 'Spells', text = @spells-text }
+  keywords = Section { number = '7', title = 'Keywords', text = @keywords-text }
+  attacking = Section { number = '8', title = 'Attacking', text = @attacking-text }
+  charms = Section { number = '9', title = 'Charms', text = @charms-text }
 ]
 
 @@@ winning-text
@@ -28,12 +29,17 @@ Cards cost Energy. You start with none. At the start of each of your turns, your
 @@@ creatures-text
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
-discard pile.
+discard pile. "Hello:" on a Creature means: when this Creature enters play, do what follows.
+"Heal" removes damage from a Creature.
+@@@ keywords-text
+Guardian: while you control a Creature with Guardian, your opponent's Creatures must attack a
+Creature with Guardian if they attack.
+Swift: this Creature enters ready, so it can attack on the turn you play it.
 @@@ attacking-text
 On your turn, each of your ready Creatures may attack once. Exhaust it and choose what it
 attacks: your opponent, or one of their Creatures. If it attacks your opponent, they lose Life
 equal to its Power. If it attacks a Creature, both deal damage equal to their Power to each
 other. Damage is removed at the end of the turn.
-@@@ spells-text
-A Spell does what its text says, once, and then goes to your discard pile.
+@@@ charms-text
+A Charm does what its text says, once, and then goes to your discard pile.
 @@@

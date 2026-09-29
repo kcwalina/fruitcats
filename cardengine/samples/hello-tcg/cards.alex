@@ -1,61 +1,62 @@
 #type Cards
 
 cards = [
-  friend = Creature {
-    name = 'Friend', cost = 1, power = 1, health = 1
-    art = 'art/friend.png'
-    flavor = 'Always there.'
+  hearth-cricket = Creature {
+    name = 'Hearth Cricket', cost = 1, power = 2, health = 1
+    art = 'art/hearth-cricket.webp'
+    flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
-  big-friend = Creature {
-    name = 'Big Friend', cost = 3, power = 3, health = 3
-    art = 'art/big-friend.png'
-    flavor = 'Bigger hugs.'
+  mane-braiding-domowik = Creature {
+    name = 'Mane-Braiding Domowik', cost = 2, power = 2, health = 2
+    art = 'art/mane-braiding-domowik.webp'
+    keywords = [@Swift]
+    flavor = 'The horse he favours wakes with braids in its mane.'
   }
-  hello = Creature {
-    name = 'Hello', cost = 2, power = 1, health = 1
-    art = 'art/hello.png'
-    text = 'When Hello enters, draw a card.'
-    flavor = 'Nice to meet you.'
+  klobuk = Creature {
+    name = 'Kłobuk, the Soggy Chick', cost = 3, power = 2, health = 3
+    art = 'art/klobuk.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
-  cheer = Creature {
-    name = 'Cheer', cost = 3, power = 1, health = 2
-    art = 'art/cheer.png'
-    text = 'Your other Creatures have +{bonus} Power.'
-    constants = [bonus = 1]
-    flavor = 'Louder together.'
+  keeper-of-the-door = Creature {
+    name = 'Keeper of the Door', cost = 3, power = 2, health = 5
+    art = 'art/keeper-of-the-door.webp'
+    keywords = [@Guardian]
+    flavor = 'Nothing crosses the threshold without his nod.'
   }
-  spark = Spell {
-    name = 'Spark', cost = 1
-    art = 'art/spark.png'
-    text = 'Deal {damage} damage to your opponent.'
-    constants = [damage = 2]
-    flavor = 'Small, bright, rude.'
+  bread-and-salt-greeter = Creature {
+    name = 'Bread-and-Salt Greeter', cost = 4, power = 3, health = 5
+    art = 'art/bread-and-salt-greeter.webp'
+    text = 'Hello: Heal {heal} from each Creature you control.'
+    constants = [heal = 2]
+    flavor = 'Every guest is welcome. Every crumb is counted.'
   }
-  goodbye = Spell {
-    name = 'Goodbye', cost = 3
-    art = 'art/goodbye.png'
-    text = 'Destroy a Creature.'
-    flavor = 'See you around.'
+  domowiks-temper = Charm {
+    name = 'A Domowik''s Temper', cost = 4
+    art = 'art/domowiks-temper.webp'
+    text = 'Deal {damage} damage to a Creature.'
+    constants = [damage = 5]
+    flavor = 'Slam a door in his house and he slams back.'
   }
 ]
 
 decks = [
-  swarm = Deck {
-    name = 'Swarm',
+  hearth = Deck {
+    name = 'Hearth',
     cards = [
-      [@friend, 3],
-      [@cheer, 3],
-      [@hello, 3],
-      [@spark, 3]
+      [@hearth-cricket, 3],
+      [@mane-braiding-domowik, 3],
+      [@klobuk, 3],
+      [@domowiks-temper, 3]
     ]
   }
-  big = Deck {
-    name = 'Big',
+  threshold = Deck {
+    name = 'Threshold',
     cards = [
-      [@big-friend, 3],
-      [@hello, 3],
-      [@goodbye, 3],
-      [@spark, 3]
+      [@keeper-of-the-door, 3],
+      [@bread-and-salt-greeter, 3],
+      [@klobuk, 3],
+      [@domowiks-temper, 3]
     ]
   }
 ]

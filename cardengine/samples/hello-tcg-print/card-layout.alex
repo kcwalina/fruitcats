@@ -1,0 +1,91 @@
+#type CardLayout
+
+width = 750
+height = 1050
+dpi = 300
+bleed = 36
+
+fonts = [
+  black = 'fonts/Nunito-Black.ttf'
+  bold = 'fonts/Nunito-Bold.ttf'
+  regular = 'fonts/Nunito-Regular.ttf'
+  italic = 'fonts/Nunito-Italic.ttf'
+]
+
+frames = [
+  Creature = 'art/frames/creature.png'
+  Charm = 'art/frames/charm.png'
+]
+
+parts = [
+  art = Picture {
+    show = '{art}'
+    box = Box { x = 42, y = 138, width = 666, height = 444 }
+    fit = cover
+    under-frame = true
+  }
+  cost = Label {
+    show = '{cost}'
+    box = Box { x = 30, y = 26, width = 102, height = 102 }
+    font = @black
+    size = 60
+    color = '#2E1F5C'
+    align = center
+  }
+  name = Label {
+    show = '{name}'
+    box = Box { x = 150, y = 42, width = 540, height = 72 }
+    font = @bold
+    size = 42
+    smallest = 26
+    color = '#FFFFFF'
+    outline = '#2E1F5C'
+  }
+  type-line = Label {
+    show = '{type}'
+    box = Box { x = 62, y = 600, width = 626, height = 44 }
+    font = @bold
+    size = 25
+    color = '#2E1F5C'
+    capitals = true
+  }
+  rules = TextBox {
+    box = Box { x = 66, y = 678, width = 618, height = 216 }
+    size = 31
+    smallest = 18
+    color = '#2B211B'
+    paragraphs = [
+      Paragraph { show = '{keywords}.', join = '. ', font = @bold }
+      Paragraph { show = '{text}', font = @regular, bold-font = @bold }
+      Paragraph {
+        show = '{flavor}'
+        font = @italic
+        color = '#7A6A5C'
+        align = center
+        rule-above = '#E2D3BA'
+      }
+    ]
+  }
+  power = Label {
+    show = '{power}'
+    box = Box { x = 98, y = 930, width = 52, height = 62 }
+    font = @black
+    size = 40
+    color = '#2E1F5C'
+  }
+  health = Label {
+    show = '{health}'
+    box = Box { x = 642, y = 930, width = 52, height = 62 }
+    font = @black
+    size = 40
+    color = '#2E1F5C'
+  }
+  footer = Label {
+    show = 'Hello TCG'
+    box = Box { x = 0, y = 988, width = 750, height = 24 }
+    font = @regular
+    size = 17
+    color = '#7A6A5C'
+    align = center
+  }
+]

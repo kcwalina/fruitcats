@@ -44,8 +44,11 @@ parts = [
     smallest = 26
     subtitle-font = @bold-italic
     subtitle-size = 25
+    baseline = 34
+    subtitle-baseline = 70
     color = '#FFFFFF'
     outline = ink
+    outline-width = 2
   }
   type-line = Label {
     show = '{type} · {family}'
@@ -84,7 +87,10 @@ parts = [
         show = '{text}'
         font = @regular
         bold-font = @bold
-        bold = [keywords, labels]
+        emphasis = [
+          Bold { words = keywords }
+          Bold { up-to = ':' }
+        ]
         same-line = true
       }
       Paragraph {

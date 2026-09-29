@@ -3,6 +3,7 @@
 width = 750
 height = 1050
 dpi = 300
+text-spacing = whole-pixels
 
 fonts = [
   black = 'seguibl.ttf'
@@ -177,6 +178,7 @@ parts = [
     subtitle-indent = 2
     color = '#FFFFFF'
     outline = ink
+    outline-width = 2
   }
   type-line = Label {
     show = '{type} · {set.name}'
@@ -227,8 +229,11 @@ parts = [
         font = @regular
         bold-font = @bold
         italic-font = @italic
-        bold = [keywords, labels]
-        italic = [reminders]
+        emphasis = [
+          Bold { words = keywords, with-number = true }
+          Bold { up-to = ':' }
+          Italic { between = '()' }
+        ]
         color = '#2B211B'
       }
       Paragraph {
@@ -240,6 +245,8 @@ parts = [
         align = center
         rule-above = '#E2D3BA'
         rule-inset = 150
+        rule-offset = 7
+        rule-width = 2
         rule-gap = 18
       }
     ]
@@ -253,8 +260,12 @@ parts = [
     font = @black
     size = 40
     color = ink
+    padding = 14
+    icon-size = 34
+    gap = 8
     fill = tint
     outline = accent
+    outline-width = 2
     text-offset = 1
   }
   health = Chip {
@@ -266,8 +277,12 @@ parts = [
     font = @black
     size = 40
     color = ink
+    padding = 14
+    icon-size = 34
+    gap = 8
     fill = tint
     outline = accent
+    outline-width = 2
     text-offset = 1
   }
   footer = Label {

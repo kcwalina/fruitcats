@@ -466,8 +466,11 @@ parts = [
     smallest = 26
     subtitle-font = @bold-italic
     subtitle-size = 25
+    baseline = 34
+    subtitle-baseline = 70
     color = '#FFFFFF'
     outline = ink
+    outline-width = 2
   }
   type-line = Label {
     show = '{type} · {family}'
@@ -501,8 +504,10 @@ How to read it:
   `under-frame = true` draws it below the frame, so it shows through the frame's window.
 - **An `Icon`** shows one of a few images, picked by a field: the rarity mark, by `{rarity}`.
 - **A `TextBox`** holds paragraphs that shrink together to fit the box: the keywords in bold, then
-  the card's text on the same line (`same-line = true`), with its keywords and labels such as
-  "Hello:" and "Exhaust:" in bold, then the flavor in italics under a thin line. The `{heal}` in
+  the card's text on the same line (`same-line = true`), then the flavor in italics under a thin
+  line. A paragraph's `emphasis` says what's bold or italic in it: `Bold { words = keywords }` for
+  the game's keywords, and `Bold { up-to = ':' }` for a sentence's opening up to a colon, such as
+  "Hello:" and "Exhaust:". The `{heal}` in
   the Greeter's text is filled in with its constant before it's drawn.
 - **A part shows only on cards that have what it shows.** A Charm has no `power`, so its card has
   no Power; a Hero has no `cost`, so its circle keeps the frame's star.
@@ -1688,8 +1693,11 @@ parts = [
     smallest = 26
     subtitle-font = @bold-italic
     subtitle-size = 25
+    baseline = 34
+    subtitle-baseline = 70
     color = '#FFFFFF'
     outline = ink
+    outline-width = 2
   }
   type-line = Label {
     show = '{type} · {family}'
@@ -1728,7 +1736,10 @@ parts = [
         show = '{text}'
         font = @regular
         bold-font = @bold
-        bold = [keywords, labels]
+        emphasis = [
+          Bold { words = keywords }
+          Bold { up-to = ':' }
+        ]
         same-line = true
       }
       Paragraph {

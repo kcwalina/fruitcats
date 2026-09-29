@@ -54,14 +54,14 @@ export function cardSources(root: string, game = GAME): [string, string][] {
   const shared: [string, string][] = [
     ...readdirSync(game).filter((f) => f.endsWith('.alex')).map((f): [string, string] => [`game/${f}`, join(game, f)]),
     ...walk(join(game, 'art')).map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
-    ...walk(TCG, (f) => /\.(cs|csproj)$/.test(f)).map((f): [string, string] => [`tcg/${relative(TCG, f).replace(/\\/g, '/')}`, f]),
+    ...walk(TCG, (f) => /\.(cs|csproj|nupkg|config)$/.test(f)).map((f): [string, string] => [`tcg/${relative(TCG, f).replace(/\\/g, '/')}`, f]),
     ['core.alex', join(REPO, 'cardengine', 'framework', 'core.alex')],
   ];
   return [[own, join(gameSet(root, game), own)], ...shared.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))];
 }
 
 /** Text a checkout may store with either line ending; its fingerprint mustn't depend on which. */
-export const isText = (file: string) => /\.(alex|cs|csproj|json|md)$/.test(file);
+export const isText = (file: string) => /\.(alex|cs|csproj|config|json|md)$/.test(file);
 
 /**
  * Renders the finished cards of the set in `root` into `out` (card faces there; finishes in subfolders), with a
@@ -72,6 +72,6 @@ export function renderCards(root: string, out: string): void {
     '--out', out], { cwd: REPO, encoding: 'utf8' });
   if (r.status !== 0) {
     throw new Error(`tcg couldn't render ${basename(root)}'s cards: ${(r.stderr || r.stdout).trim()}\n`
-      + '(tcg needs the .NET SDK and the C# Alex; see cardengine/tcg/Tcg.csproj.)');
+      + '(tcg needs the .NET SDK; see cardengine/tcg/Tcg.csproj.)');
   }
 }

@@ -24,6 +24,7 @@ internal sealed class Renderer
 
         _layout = layout.Owner;
         _root = root;
+        Text.WholePixels = Project.Scalar(root.Value("text-spacing")) == "whole-pixels";
         Width = Int(root.Value("width"), 750);
         Height = Int(root.Value("height"), 1050);
         Bleed = Int(root.Value("bleed"), 0);
@@ -221,11 +222,11 @@ internal sealed class Renderer
         string text = face.Template(part.Value("show"));
         if (text.Length == 0) { return; }
         if (Bool(part.Value("capitals"))) { text = text.ToUpperInvariant(); }
-        SKFont font = Font(part, "font", Float(part.Value("size"), 20));
+        SKFont font = Font(part, "font", Need(part, "size"));
         string align = Word(part.Value("align")) ?? "left";
         float x = align switch { "center" => box.MidX, "right" => box.Right, _ => box.Left };
         Text.Draw(canvas, text, font, x, box.MidY, align, Middle: true, Color(face, frame, part.Value("color"), SKColors.Black),
-            Color(face, frame, part.Value("outline"), SKColors.Empty), Float(part.Value("outline-width"), 2));
+            Color(face, frame, part.Value("outline"), SKColors.Empty), Float(part.Value("outline-width"), 1));
     }
 
     private void Title(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
@@ -234,21 +235,21 @@ internal sealed class Renderer
         if (title.Length == 0) { return; }
         string subtitle = face.Template(part.Value("subtitle"));
         SKRect box = Box(part);
-        float size = Float(part.Value("size"), 42), smallest = Float(part.Value("smallest"), size);
+        float size = Need(part, "size"), smallest = Float(part.Value("smallest"), size);
         SKFont font = Font(part, "font", size);
         while (Text.Width(title, font) > box.Width && font.Size > smallest) { font = Font(part, "font", font.Size - 2); }
         SKColor color = Color(face, frame, part.Value("color"), SKColors.White);
         SKColor outline = Color(face, frame, part.Value("outline"), SKColors.Empty);
-        float outlineWidth = Float(part.Value("outline-width"), 2);
+        float outlineWidth = Float(part.Value("outline-width"), 1);
         if (subtitle.Length == 0)
         {
             Text.Draw(canvas, title, font, box.Left, box.MidY, "left", Middle: true, color, outline, outlineWidth);
             return;
         }
 
-        Text.Draw(canvas, title, font, box.Left, box.Top + Float(part.Value("baseline"), 34), "left", Middle: false, color, outline, outlineWidth);
-        SKFont sub = Font(part, "subtitle-font", Float(part.Value("subtitle-size"), 25));
-        Text.Draw(canvas, subtitle, sub, box.Left + Float(part.Value("subtitle-indent"), 0), box.Top + Float(part.Value("subtitle-baseline"), 70),
+        Text.Draw(canvas, title, font, box.Left, box.Top + Need(part, "baseline"), "left", Middle: false, color, outline, outlineWidth);
+        SKFont sub = Font(part, "subtitle-font", Need(part, "subtitle-size"));
+        Text.Draw(canvas, subtitle, sub, box.Left + Float(part.Value("subtitle-indent"), 0), box.Top + Need(part, "subtitle-baseline"),
             "left", Middle: false, color, SKColors.Empty, 0);
     }
 
@@ -265,7 +266,7 @@ internal sealed class Renderer
             {
                 string key = face.Template(item.Value("show"));
                 if (key.Length == 0 || item.Value("images") is not AlexObject images || images.Value(key) is null) { continue; }
-                float w = Float(item.Value("width"), 24), h = Float(item.Value("height"), 24);
+                float w = Need(item, "width"), h = Need(item, "height");
                 float left = MathF.Round(right - w), top = MathF.Round(box.MidY - h / 2);
                 Icon(canvas, face, item, SKRect.Create(left, top, w, h));
                 width = right - left;
@@ -274,7 +275,7 @@ internal sealed class Renderer
             {
                 string text = face.Template(item.Value("show"));
                 if (text.Length == 0) { continue; }
-                SKFont font = Font(item, "font", Float(item.Value("size"), 20));
+                SKFont font = Font(item, "font", Need(item, "size"));
                 Text.Draw(canvas, text, font, right, box.MidY, "right", Middle: true, Color(face, frame, item.Value("color"), SKColors.Black),
                     SKColors.Empty, 0);
                 width = Text.Width(text, font);
@@ -289,8 +290,8 @@ internal sealed class Renderer
         string text = face.Template(part.Value("show"));
         if (text.Length == 0) { return; }
         SKRect box = Box(part);
-        SKFont font = Font(part, "font", Float(part.Value("size"), 40));
-        float pad = Float(part.Value("padding"), 14), iconSize = Float(part.Value("icon-size"), 34), gap = Float(part.Value("gap"), 8);
+        SKFont font = Font(part, "font", Need(part, "size"));
+        float pad = Float(part.Value("padding"), 0), iconSize = Float(part.Value("icon-size"), box.Height), gap = Float(part.Value("gap"), 0);
         float width = MathF.Round(pad + iconSize + gap + Text.Width(text, font) + pad + 2);
         float x0 = Word(part.Value("align")) == "right" ? box.Right - width : box.Left;
         float h = box.Height;
@@ -299,7 +300,7 @@ internal sealed class Renderer
             canvas.DrawRoundRect(SKRect.Create(x0, box.Top, width, h), h / 2, h / 2, fill);
         }
 
-        float stroke = Float(part.Value("outline-width"), 2);
+        float stroke = Float(part.Value("outline-width"), 1);
         using (SKPaint outline = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = stroke, Color = Color(face, frame, part.Value("outline"), SKColors.Black) })
         {
             SKRect r = SKRect.Create(x0 + stroke / 2, box.Top + stroke / 2, width - stroke, h - stroke);
@@ -320,9 +321,9 @@ internal sealed class Renderer
     private void TextBox(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
     {
         SKRect box = Box(part);
-        float padding = Float(part.Value("padding"), 24), paddingTop = Float(part.Value("padding-top"), padding);
-        float lineHeight = Float(part.Value("line-height"), 1.3f);
-        int largest = (int)Float(part.Value("size"), 31), smallest = (int)Float(part.Value("smallest"), 18);
+        float padding = Float(part.Value("padding"), 0), paddingTop = Float(part.Value("padding-top"), padding);
+        float lineHeight = Float(part.Value("line-height"), 1.2f);
+        int largest = (int)Need(part, "size"), smallest = (int)Float(part.Value("smallest"), largest);
         float inner = box.Width - 2 * padding;
         List<(AlexObject Paragraph, string Text)> paragraphs = new();
         if (part.Value("paragraphs") is AlexArray list)
@@ -334,7 +335,6 @@ internal sealed class Renderer
         }
 
         if (paragraphs.Count == 0) { return; }
-        Regex bold = BoldPattern(face);
         List<Laid> laid = new();
         float total = 0;
         for (int size = largest; size >= smallest; size--)
@@ -346,8 +346,8 @@ internal sealed class Renderer
                 int psize = Math.Max(size + (int)Float(p.Value("size-change"), 0), (int)Float(p.Value("smallest"), 0));
                 Styles styles = new(Font(p, "font", psize), p.Value("bold-font") is null ? null : Font(p, "bold-font", psize),
                     p.Value("italic-font") is null ? null : Font(p, "italic-font", psize));
-                List<List<(string Piece, SKFont Font)>> lines = Wrap(Runs(text, p, bold, styles), inner);
-                float rule = laid.Count > 0 && lines.Count > 0 && p.Value("rule-above") is not null ? Float(p.Value("rule-gap"), 18) : 0;
+                List<List<(string Piece, SKFont Font)>> lines = Wrap(Runs(text, p, face, styles), inner);
+                float rule = laid.Count > 0 && lines.Count > 0 && p.Value("rule-above") is not null ? Float(p.Value("rule-gap"), 0) : 0;
                 int lh = (int)(psize * lineHeight);
                 laid.Add(new Laid(p, lines, psize, lh, rule));
                 total += rule + lines.Count * lh;
@@ -362,8 +362,14 @@ internal sealed class Renderer
             if (l.Rule > 0)
             {
                 float inset = Float(l.Paragraph.Value("rule-inset"), 0);
-                using SKPaint rule = new() { IsAntialias = false, StrokeWidth = 2, Color = Color(face, frame, l.Paragraph.Value("rule-above"), SKColors.Gray) };
-                canvas.DrawLine(box.Left + inset, y + 6 + 1, box.Right - inset, y + 6 + 1, rule);
+                float ruleY = y + Float(l.Paragraph.Value("rule-offset"), 0);
+                using SKPaint rule = new()
+                {
+                    IsAntialias = false,
+                    StrokeWidth = Float(l.Paragraph.Value("rule-width"), 1),
+                    Color = Color(face, frame, l.Paragraph.Value("rule-above"), SKColors.Gray),
+                };
+                canvas.DrawLine(box.Left + inset, ruleY, box.Right - inset, ruleY, rule);
                 y += l.Rule;
             }
 
@@ -396,8 +402,8 @@ internal sealed class Renderer
 
     private sealed record Styles(SKFont Regular, SKFont? Bold, SKFont? Italic);
 
-    /// <summary>The game's keywords and the card's set's, and "Label:" openers, in bold.</summary>
-    private Regex BoldPattern(Face face)
+    /// <summary>The words a <c>Bold { words = keywords }</c> means: the game's keywords and the card's set's.</summary>
+    private List<string> Keywords(Face face)
     {
         List<string> words = new();
         foreach (Document d in new[] { _project.Game, face.Document })
@@ -411,33 +417,50 @@ internal sealed class Renderer
             }
         }
 
-        string alternatives = string.Join("|", words.OrderByDescending(w => w.Length).Select(Regex.Escape));
-        return new Regex(@"\b(" + (alternatives.Length > 0 ? alternatives : "(?!)") + @")(?: \d+)?\b");
+        return words;
     }
 
-    private static readonly Regex LabelPattern = new(@"(?:(?<=^)|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)");
-    private static readonly Regex ReminderPattern = new(@"\([^)]*\)");
-
-    private static List<(string Text, SKFont Font)> Runs(string text, AlexObject paragraph, Regex bold, Styles styles)
+    /// <summary>
+    /// A paragraph's text as runs of regular, bold and italic text, by its <c>emphasis</c>:
+    /// <c>Bold { words = keywords }</c> or a list of words (with <c>with-number</c>, a number after the word too);
+    /// <c>Bold { up-to = ':' }</c>, a sentence's opening up to and including that character, when it's a capital
+    /// letter followed by letters, digits, spaces and commas ("Hello:"); <c>Italic { between = '()' }</c>, from the
+    /// first character to the second, both included. A sentence starts the text, a line, or follows ". ".
+    /// </summary>
+    private List<(string Text, SKFont Font)> Runs(string text, AlexObject paragraph, Face face, Styles styles)
     {
         int[] marks = new int[text.Length];                 // 0 regular, 1 bold, 2 italic
-        HashSet<string> boldKinds = WordSet(paragraph.Value("bold")), italicKinds = WordSet(paragraph.Value("italic"));
-        if (styles.Bold is not null)
+        void Mark(int from, int length, int style) { for (int i = from; i < from + length; i++) { marks[i] = style; } }
+        if (paragraph.Value("emphasis") is AlexArray rules)
         {
-            if (boldKinds.Contains("keywords"))
+            foreach (AlexValue value in rules)
             {
-                foreach (Match m in bold.Matches(text)) { for (int i = m.Index; i < m.Index + m.Length; i++) { marks[i] = 1; } }
-            }
+                if (value is not AlexObject rule) { continue; }
+                int style = rule.TypeName == "Italic" ? 2 : 1;
+                if ((style == 1 ? styles.Bold : styles.Italic) is null)
+                {
+                    throw new TcgException($"card-layout.alex: a paragraph with {rule.TypeName} emphasis needs a {(style == 1 ? "bold-font" : "italic-font")}.");
+                }
 
-            if (boldKinds.Contains("labels"))
-            {
-                foreach (Match m in LabelPattern.Matches(text)) { for (int i = m.Groups[1].Index; i < m.Groups[1].Index + m.Groups[1].Length; i++) { marks[i] = 1; } }
+                if (rule.Value("words") is { } words)
+                {
+                    IEnumerable<string> list = words is AlexArray explicitWords ? explicitWords.Select(Project.Scalar) : Keywords(face);
+                    string alternatives = string.Join("|", list.OrderByDescending(w => w.Length).Select(Regex.Escape));
+                    if (alternatives.Length == 0) { continue; }
+                    string number = Bool(rule.Value("with-number")) ? @"(?: \d+)?" : "";
+                    foreach (Match m in Regex.Matches(text, @"\b(?:" + alternatives + ")" + number + @"\b")) { Mark(m.Index, m.Length, style); }
+                }
+                else if (Project.Scalar(rule.Value("up-to")) is { Length: 1 } end)
+                {
+                    Regex opening = new(@"(?:(?<=^)|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?" + Regex.Escape(end) + ")");
+                    foreach (Match m in opening.Matches(text)) { Mark(m.Groups[1].Index, m.Groups[1].Length, style); }
+                }
+                else if (Project.Scalar(rule.Value("between")) is { Length: 2 } pair)
+                {
+                    Regex between = new(Regex.Escape(pair[..1]) + "[^" + Regex.Escape(pair[1..]) + "]*" + Regex.Escape(pair[1..]));
+                    foreach (Match m in between.Matches(text)) { Mark(m.Index, m.Length, style); }
+                }
             }
-        }
-
-        if (styles.Italic is not null && italicKinds.Contains("reminders"))
-        {
-            foreach (Match m in ReminderPattern.Matches(text)) { for (int i = m.Index; i < m.Index + m.Length; i++) { marks[i] = 2; } }
         }
 
         List<(string, SKFont)> runs = new();
@@ -561,6 +584,14 @@ internal sealed class Renderer
         _ => fallback,
     };
 
+    /// <summary>A number the part must give: there's no neutral default for it.</summary>
+    private static float Need(AlexObject part, string field) => part.Value(field) switch
+    {
+        AlexInteger i => i.Value,
+        AlexFloat f => (float)f.Value,
+        _ => throw new TcgException($"card-layout.alex: a {part.TypeName} needs {field}."),
+    };
+
     private static int Int(AlexValue? value, int fallback) => value is AlexInteger i ? (int)i.Value : fallback;
 
     private static bool Bool(AlexValue? value) => value is AlexBoolean { Value: true };
@@ -575,11 +606,14 @@ internal sealed class Renderer
 internal static class Text
 {
     /// <summary>
-    /// The text's width with each glyph's advance rounded to a whole pixel, as FreeType's hinted layout (and so the
-    /// old composer) sets text. Glyphs are placed at these rounded steps too.
+    /// Whether glyphs step by whole pixels (the layout's <c>text-spacing = whole-pixels</c>), as FreeType's hinted
+    /// layout sets text; otherwise they're placed at their exact advances.
     /// </summary>
+    public static bool WholePixels { get; set; }
+
     public static float Width(string text, SKFont font)
     {
+        if (!WholePixels) { return font.MeasureText(text); }
         float width = 0;
         foreach (float w in font.GetGlyphWidths(font.GetGlyphs(text))) { width += MathF.Round(w); }
         return width;
@@ -595,7 +629,7 @@ internal static class Text
         for (int i = 0; i < glyphs.Length; i++)
         {
             points[i] = new SKPoint(x, baseline);
-            x += MathF.Round(widths[i]);
+            x += WholePixels ? MathF.Round(widths[i]) : widths[i];
         }
 
         using SKTextBlobBuilder builder = new();

@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- tcg: the TCG developer platform's command-line tool. It reads a game's Alex files with the C# Alex
-       from the mochi repository (AlexSrc; override with -p:AlexSrc=... or the TCG_ALEX_SRC variable). -->
+  <!-- tcg: the TCG developer platform's command-line tool. It reads a game's Alex files with the C# Alex, taken as
+       NuGet packages from packages/ (nuget.config), so tcg builds from this repository alone. To move to a newer
+       Alex, pack it from the mochi repository into packages/ and change the version here:
+         dotnet pack <mochi>/mochi.agents/alex/src/Alex/ViaMochi.Alex.csproj -c Release -o packages
+         dotnet pack <mochi>/mochi.agents/alex/src/Alex.Model/ViaMochi.Alex.Model.csproj -c Release -o packages -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -10,13 +13,11 @@
     <AssemblyName>tcg</AssemblyName>
     <RootNamespace>Tcg</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <AlexSrc Condition="'$(AlexSrc)' == '' AND '$(TCG_ALEX_SRC)' != ''">$(TCG_ALEX_SRC)</AlexSrc>
-    <AlexSrc Condition="'$(AlexSrc)' == ''">C:\git\mochi\.claude\worktrees\tcg-alex\mochi.agents\alex\src</AlexSrc>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(AlexSrc)\Alex\ViaMochi.Alex.csproj" />
-    <ProjectReference Include="$(AlexSrc)\Alex.Model\ViaMochi.Alex.Model.csproj" />
+    <PackageReference Include="ViaMochi.Alex" Version="0.6.0" />
+    <PackageReference Include="ViaMochi.Alex.Model" Version="0.6.0" />
     <PackageReference Include="SkiaSharp" Version="3.119.1" />
   </ItemGroup>
 

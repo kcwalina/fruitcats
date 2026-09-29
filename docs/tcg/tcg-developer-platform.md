@@ -269,8 +269,14 @@ card design exactly:
   text on Domowiki frames, dark gold on the Hero's).
 - `Title { show, subtitle }`: a name with its epithet under it, or alone and centred.
 - `Icon { show = '{rarity}', images = [...] }`: one of a few images picked by a field.
-- In a `TextBox`, `bold = [keywords, labels]` bolds the game's keywords and "Label:" openers, and
-  `same-line = true` runs a paragraph on from the one before ("Guardian. Hello: …").
+- In a `TextBox`, a paragraph's `emphasis` lists what's bold or italic: `Bold { words = keywords }`
+  (the game's keywords; `with-number` bolds "Tough 1"), `Bold { up-to = ':' }` (a sentence's opening
+  up to a colon: "Hello:"), `Italic { between = '()' }` (reminder text). `same-line = true` runs a
+  paragraph on from the one before ("Guardian. Hello: …").
+- `tcg` has no Folkborn numbers in it: sizes, paddings and baselines are in the layout, required where
+  there's no neutral default. `text-spacing = whole-pixels` sets text the way the old composer did.
+- `tcg` takes the C# Alex as NuGet packages committed beside it (`cardengine/tcg/packages/`), so it builds
+  from this repository alone.
 - **Two-faced cards:** `Card.back` holds a second face (the Hero's Awakened side). It prints on the
   card's back instead of the game's card back, with its own type's frame; it shows its own fields
   and the front's for the ones its type doesn't have (number, rarity, family).

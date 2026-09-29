@@ -384,23 +384,111 @@ art prompts, tale banners); engine files move into the game folder as Alex-based
 
 ## Order of work
 
-1. **The walkthrough** ([walkthrough.md](walkthrough.md)): the tutorial as it will read on release
-   day. Nothing in it works yet; it is the spec, and each of its steps later becomes an acceptance
-   test. The product is done when the walkthrough is true.
-2. **Alex in the core** (Rust, compiled to WebAssembly): the parser is done and identical to the C# Alex
-   (2026-09-29); next the binder, then the round-trip editing Studio's designers need.
-3. **The runtime** plays Hello TCG from its Alex source.
-4. **`tcg` basics:** `new`, `check`, `test`, `sim` with a random bot.
-5. **Search bot and `tcg playtest`.**
-6. **The game table:** `tcg play` hot-seat, then online through the match host.
-7. **`tcg rulebook`.**
-8. **The card layout and `tcg cards`**, including print files. The owner's next step.
-9. **Studio.**
-10. **Services.**
+**Revised 2026-09-29** for the core and Studio decisions above. The first thing a designer needs
+is to *see* their folder of Alex files and art, so a read-only local Studio comes early, straight
+after the core can load a game. It no longer waits until the end. The work runs on the owner's
+machine (Windows, with mochi checked out beside fruitcats), not in a cloud session.
+
+The walkthrough ([walkthrough.md](walkthrough.md)) stays the spec: each step becomes an
+acceptance test, and the product is done when the walkthrough is true.
+
+### Stage 0: the core's first piece (done, 2026-09-29)
+
+In place on branch `claude/tcg-developer-ide-architecture-xy9f9d` (commit `2ecc808`):
+
+- `cardengine/engine/`: Alex's lexer, parser and byte-exact writer in Rust, 98 KB of WebAssembly.
+- `cardengine/conformance/`: the C# Alex and the core agree on 8,320 of 8,320 dumps (every `.alex`
+  file in both repos, plus seeded broken copies).
+- `cardengine/engine/web/`: the module parsing a game folder in a browser.
+
+First, on the owner's machine: `cargo test --release` and
+`cargo build --release --target wasm32-unknown-unknown` in `cardengine/engine`, then
+`dotnet run -c Release` in `cardengine/conformance` (expect 0 different), and
+`dotnet build -c Release` in `cardengine/tcg`. Its project now finds mochi with forward slashes,
+which is verified on Linux but not yet on Windows.
+
+### Stage 1: the core loads a game
+
+1. **The binder in the core.** Port `ViaMochi.Alex.Model` (`AlexBinder*.cs`, `AlexCompilation`,
+   `AlexType`, `AlexValue`, `AlexDocument`, `AlexHost`) the same way the parser was ported: the
+   same rules and the same diagnostic messages. Add a canonical dump of the bound model (types,
+   values, references resolved, diagnostics) to both sides and to `cardengine/conformance`.
+   *Done when* the framework, Folkborn and both Hello TCG samples bind identically in C# and in the
+   core, broken copies included.
+2. **The project loader** (L1): a folder's files handed in as bytes (the core does no I/O), one
+   `Game`, every `Cards` file, `Rules` by their `for`, the checks `tcg check` promises (unknown
+   `{name}`, unused card constants, handler and text both ways, citations). Errors carry file and
+   span.
+3. **Interface calls** in `abi.rs` for these: `load_project` (many files in, diagnostics and a
+   handle out) and queries on the loaded project (cards, card types, the layout). Bytes in, bytes
+   out, with no host imports. The module must still instantiate with an empty linker.
+
+### Stage 2: `tcg.exe` runs the core
+
+1. Move `EngineModule` (the Wasmtime host) from `cardengine/conformance` into `tcg`, and embed
+   `tcg_engine.wasm` as a resource.
+2. `tcg check` runs through the core.
+3. **Publish `tcg.exe` as NativeAOT, trimmed and single-file on Windows, with Wasmtime's native
+   library inside it.** This is the unproven piece of the design; if Wasmtime's .NET package won't
+   go single-file, decide between a second file beside the exe and another host.
+   *Done when* a fresh machine with nothing installed runs `tcg check` on `games/folkborn`.
+
+### Stage 3: `tcg studio`, read-only
+
+1. **The local host** in `tcg`: an explicit HTTP server on localhost (`HttpListener`, or Kestrel
+   configured in code with no conventions) that serves the front end from inside `tcg.exe`, the
+   workspace protocol (list, read and write files, diagnostics), and a push channel (a WebSocket
+   or server-sent events) fed by a `FileSystemWatcher`.
+2. **The front end:** plain TypeScript, no framework, bundled by esbuild into one file that is
+   embedded in `tcg.exe`. It shows the files on the left, the selected card or file in the middle,
+   and diagnostics, and it loads `tcg_engine.wasm` itself, so previews run in the page.
+3. Until the core renders cards (Stage 4), the page shows each card's data and art as the layout
+   places them, or cards `tcg cards` rendered.
+   *Done when* walkthrough §2 is true: `tcg studio` in a folder opens the browser, and an edit
+   saved in any editor shows within a second.
+
+### Stage 4: the card renderer in the core
+
+Needs the open question on font and drawing libraries answered first.
+
+1. Layout (boxes, templates, text fitting, emphasis, frames, icons, two faces, finishes) and
+   drawing, from `card-layout.alex`, ported from `cardengine/tcg/Renderer.cs` and `Faces.cs`.
+2. *Done when* the core draws every released Folkborn card pixel for pixel like `tcg cards` does
+   today (a per-card image diff, with a stated tolerance if antialiasing differs). Then `tcg cards`
+   draws through the core, and SkiaSharp leaves `tcg`.
+3. Studio shows finished cards drawn in the page.
+
+### Stage 5: Studio edits
+
+1. **Edits in the core:** requests such as "set this field", "add this card", "attach a handler",
+   applied as the smallest text change through the round trip. The core returns the new bytes and
+   the host writes the file.
+2. **The property grid** (walkthrough §4) and **the layout editor** (§6: drag a part's box and its
+   `x`/`y` change in the file, with the card redrawn on every move).
+
+### Stage 6 onwards: playing
+
+The earlier order continues on the core:
+
+1. **The runtime** plays Hello TCG from its Alex source.
+2. **`tcg` basics:** `new`, `test`, `sim` with a random bot.
+3. **Search bot and `tcg playtest`.**
+4. **The game table:** Studio's Play tab (§13, with events linked to their rules) and `tcg play`
+   hot-seat, then online through the match host (a C# server running the core).
+5. **`tcg rulebook`.**
+6. **Print files** from `tcg cards --print`.
+7. **The hosted workspace and the Artist Studio as a mode of it**, after the open questions on
+   hosting are answered.
+8. **Services.**
 
 Then **Folkborn in Alex**, compared against today's hard-coded engine (`packages/engine`): win
 rates and game lengths should match statistically. That is the proof the platform can carry a
 real game.
+
+**Rules for every stage:** the core stays pure (no I/O, no host imports) and dependency-free
+unless the platform doc records otherwise. Anything the C# Alex also does stays identical and is
+checked by `cardengine/conformance`. Every stage ends with its *done when* shown working, not
+reasoned about.
 
 ## Hello TCG
 

@@ -144,7 +144,9 @@ describe('the index running games read', () => {
   });
 });
 
-describe('only a set that is on origin/main goes into the index', () => {
+// These make real git repositories and run git dozens of times: on Windows, while other sessions build and test on the
+// same machine, that takes 5-8 s, and the default 5 s limit failed deploys with nothing wrong.
+describe('only a set that is on origin/main goes into the index', { timeout: 30_000 }, () => {
   const git = (repo: string, ...args: string[]) => {
     const r = spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...args], { cwd: repo, encoding: 'utf8' });
     if (r.status !== 0) throw new Error(r.stderr);

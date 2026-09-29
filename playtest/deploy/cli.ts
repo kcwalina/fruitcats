@@ -269,7 +269,8 @@ async function deploy(): Promise<number> {
   writeFileSync(join(DIST, 'version.json'), JSON.stringify({ commit, time: new Date().toISOString() }));
   const token = deploymentToken();
   try {
-    run('npx', ['-y', '@azure/static-web-apps-cli@latest', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
+    // A pinned version from npm's cache starts in ~3 s; "@latest" asked the registry every time and took ~24 s.
+    run('npx', ['-y', '--prefer-offline', '@azure/static-web-apps-cli@2.0.10', 'deploy', 'apps/web/dist', '--deployment-token', token, '--env', 'production']);
   } catch (e) {
     // The uploader's own message ("The deployment binary exited with code 1") says nothing. It is almost never Azure:
     // it has been a site too big for the upload window. Find the real reason before trying again.

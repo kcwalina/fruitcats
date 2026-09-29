@@ -22,6 +22,8 @@ public sealed class Core : IDisposable
     private readonly Func<int, int, int> _projectLoad;
     private readonly Func<int, int, int, long> _projectQuery;
     private readonly Action<int> _projectFree;
+    private readonly Func<int, int, int, long> _projectPng;
+    private readonly Func<int, int, int, int> _projectAdd;
 
     private Core(Engine engine, Module module)
     {
@@ -38,6 +40,8 @@ public sealed class Core : IDisposable
         _projectLoad = instance.GetFunction<int, int, int>("project_load") ?? throw Missing("project_load");
         _projectQuery = instance.GetFunction<int, int, int, long>("project_query") ?? throw Missing("project_query");
         _projectFree = instance.GetAction<int>("project_free") ?? throw Missing("project_free");
+        _projectPng = instance.GetFunction<int, int, int, long>("project_png") ?? throw Missing("project_png");
+        _projectAdd = instance.GetFunction<int, int, int, int>("project_add") ?? throw Missing("project_add");
     }
 
     /// <summary>The core kardix carries.</summary>
@@ -88,6 +92,16 @@ public sealed class Core : IDisposable
     /// <summary>Loads a project from its files: each one's path within the project's folder, and its bytes.</summary>
     public CoreProject LoadProject(IReadOnlyList<(string Path, byte[] Bytes)> files)
     {
+        byte[] all = Files(files);
+        int address = CopyIn(all);
+        int handle = _projectLoad(address, all.Length);
+        _free(address, all.Length);
+        return new CoreProject(this, handle);
+    }
+
+    /// <summary>Files in the core's format: a u32 count, then each file's path and bytes, each after its u32 length.</summary>
+    private static byte[] Files(IReadOnlyList<(string Path, byte[] Bytes)> files)
+    {
         using MemoryStream input = new();
         using (BinaryWriter writer = new(input, Encoding.UTF8, leaveOpen: true))
         {
@@ -102,11 +116,24 @@ public sealed class Core : IDisposable
             }
         }
 
-        byte[] all = input.ToArray();
+        return input.ToArray();
+    }
+
+    internal void Add(int handle, IReadOnlyList<(string Path, byte[] Bytes)> files)
+    {
+        byte[] all = Files(files);
         int address = CopyIn(all);
-        int handle = _projectLoad(address, all.Length);
+        _projectAdd(handle, address, all.Length);
         _free(address, all.Length);
-        return new CoreProject(this, handle);
+    }
+
+    internal byte[] Png(int handle, string question)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(question);
+        int address = CopyIn(bytes);
+        long result = _projectPng(handle, address, bytes.Length);
+        _free(address, bytes.Length);
+        return TakeResult(result);
     }
 
     internal string Query(int handle, string question)
@@ -162,6 +189,25 @@ public sealed class CoreProject : IDisposable
     /// <summary>The answer to <paramref name="question"/>, as JSON: <c>diagnostics</c>, <c>documents</c>, <c>cards</c>, or
     /// <c>value &lt;document&gt;</c>.</summary>
     public string Query(string question) => _core.Query(_handle, question);
+
+    /// <summary>Adds fonts and pictures to the project, for drawing its cards.</summary>
+    public void Add(IReadOnlyList<(string Path, byte[] Bytes)> files) => _core.Add(_handle, files);
+
+    /// <summary>
+    /// A face drawn as a PNG (<c>&lt;set&gt; &lt;card&gt; &lt;front|back&gt; &lt;finish&gt;</c>, then <c>bleed</c>,
+    /// <c>frame=&lt;name&gt;</c> or <c>no-art</c>), or a draw list drawn. Throws with the core's message when it can't be drawn.
+    /// </summary>
+    public byte[] Png(string question)
+    {
+        byte[] bytes = _core.Png(_handle, question);
+        if (bytes.Length > 0 && bytes[0] == (byte)'{')
+        {
+            using System.Text.Json.JsonDocument error = System.Text.Json.JsonDocument.Parse(bytes);
+            throw new KardixException(error.RootElement.GetProperty("error").GetString() ?? "The core couldn't draw it.");
+        }
+
+        return bytes;
+    }
 
     public void Dispose() => _core.Free(_handle);
 }

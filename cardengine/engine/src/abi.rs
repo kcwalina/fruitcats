@@ -192,6 +192,7 @@ pub unsafe extern "C" fn project_add(handle: u32, pointer: *const u8, length: u3
         let Some(project) = projects.get_mut((handle as usize).wrapping_sub(1)).and_then(|p| p.as_mut()) else { return 0 };
         for file in files.into_iter().filter(|f| !f.path.ends_with(".alex")) {
             project.assets.retain(|a| a.path != file.path);
+            project.decoded.borrow_mut().remove(&file.path);
             project.assets.push(file);
         }
         1

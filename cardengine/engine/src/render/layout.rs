@@ -196,6 +196,11 @@ impl<'p> Layout<'p> {
         if number.is_empty() { face.key.clone() } else { number }
     }
 
+    /// A face's collector number, or nothing.
+    pub fn collector_number(&self, face: &Face) -> String {
+        self.text(face, "number")
+    }
+
     pub fn document_name(&self, face: &Face) -> String {
         self.project.compilation.documents[face.document].name.clone().unwrap_or_default()
     }

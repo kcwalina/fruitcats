@@ -60,9 +60,8 @@ renderer. Every host runs that same file: the browser (Studio, the game table, t
   above it changing.
 - **C# for everything around it:** `kardix.exe` (NativeAOT, trimmed, one file, with the module and
   the Studio front end embedded), file watching, the local Studio host, printing jobs, the servers.
-  `kardix cards` draws with SkiaSharp in C# today; the core's renderer replaces it once it draws the
-  same cards pixel for pixel, so the card in Studio, on the table and in the print files is one
-  drawing.
+  `kardix cards` draws through the core's renderer (since 2026-09-29), so the card in Studio, on the
+  table and in the print files is one drawing.
 - **A thin front end** for Studio and the player app: plain TypeScript bundled into one file, no
   framework and no runtime dependencies. It draws and handles input; the core decides everything.
 - **No compiled intermediate format.** The core reads `.alex` source directly: converting Alex to
@@ -394,9 +393,9 @@ card design exactly:
   paragraph on from the one before ("Guardian. Hello: …").
 - `kardix` has no Folkborn numbers in it: sizes, paddings and baselines are in the layout, required where
   there's no neutral default. `text-spacing = whole-pixels` sets text the way the old composer did.
-- `kardix` references the C# Alex's projects directly, as source in the mochi repository checked out beside
-  this one (`C:/git/mochi` next to `C:/git/fruitcats`, kept on main): one copy of Alex, no packages. `kardix`
-  moves onto the core (the WebAssembly module) as the core grows past the parser.
+- `kardix` reads games only through the core (the WebAssembly module it carries). It used to read them with
+  the C# Alex, referenced as source from the mochi repository; since 2026-09-29 only the conformance tool
+  does.
 - **Two-faced cards:** `Card.back` holds a second face (the Hero's Awakened side). It prints on the
   card's back instead of the game's card back, with its own type's frame; it shows its own fields
   and the front's for the ones its type doesn't have (number, rarity, family).
@@ -671,6 +670,14 @@ As decided in "Text looks the same whatever language the core is written in":
    `kardix cards` draws today, and differs from it only by antialiasing within a stated tolerance.
    Then the core's draw lists are committed as goldens, `kardix cards` draws through the core, and
    SkiaSharp leaves `kardix`.
+   *Done 2026-09-29.* `kardix cards` asks the core for each face's draw list and PNG (`project_png`), handing it
+   the pictures the list names, and writes PNGs; the site's build (`content/kardix.ts`) keeps them as WebP at
+   quality 90 with `sharp` (the owner's choice: the platform draws, the game's own build compresses). kardix no
+   longer references SkiaSharp or the C# Alex: `Renderer.cs`, `Faces.cs`, `Project.cs` and `DrawList.cs` are gone.
+   The module is built with WebAssembly SIMD (`.cargo/config.toml`), and PNGs are compressed quickly (the build
+   compresses again): all 442 Folkborn faces take 48 s, SkiaSharp took 51 s. The pixels are the ones measured in
+   step 3. The art fingerprint (`cardSources`) now covers the core's source and the framework instead of the C#
+   Alex.
    *Goldens committed 2026-09-29:* `content/draw-lists/<set>.txt`, every face of every Folkborn set, prototypes
    included (462). `content/draw-lists.test.ts` runs with every deploy and fails when the core draws a card
    differently; `npm run draw-lists` writes them again when a change to a card, the layout or the renderer is meant.

@@ -88,6 +88,7 @@ name = "kardix-core"
 version = "0.1.0"
 dependencies = [
  "image-webp",
+ "png",
  "tiny-skia",
 ]
 

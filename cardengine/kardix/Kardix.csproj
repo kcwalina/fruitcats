@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- kardix: the Kardix platform's command-line tool. kardix check runs the core (cardengine/engine), which it carries
-       inside it and runs through Wasmtime. kardix cards still reads a game's Alex files with the C# Alex, referenced
-       as source from the mochi repository checked out beside this one (C:\git\mochi next to C:\git\fruitcats; found
-       by looking upward, so it works from any worktree). Keep that checkout on main. -->
+  <!-- kardix: the Kardix platform's command-line tool. Everything it knows about games is the core's
+       (cardengine/engine), which it carries inside it and runs through Wasmtime. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -12,25 +10,14 @@
     <AssemblyName>kardix</AssemblyName>
     <RootNamespace>Kardix</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <MochiRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), 'mochi/mochi.agents/alex/src/Alex/ViaMochi.Alex.csproj'))</MochiRoot>
-    <AlexSrc>$(MochiRoot)/mochi/mochi.agents/alex/src</AlexSrc>
   </PropertyGroup>
 
-  <Target Name="RequireAlex" BeforeTargets="ResolveProjectReferences" Condition="'$(MochiRoot)' == ''">
-    <Error Text="kardix needs the mochi repository checked out beside this one (for example C:\git\mochi next to C:\git\fruitcats): it builds the C# Alex from mochi.agents\alex." />
-  </Target>
-
   <ItemGroup>
-    <ProjectReference Include="$(AlexSrc)/Alex/ViaMochi.Alex.csproj" />
-    <ProjectReference Include="$(AlexSrc)/Alex.Model/ViaMochi.Alex.Model.csproj" />
-    <PackageReference Include="SkiaSharp" Version="3.119.1" />
     <PackageReference Include="Wasmtime" Version="48.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The core schema the game files are written against (schema-version 1). -->
-    <EmbeddedResource Include="../framework/core.alex" LogicalName="core.alex" />
-    <!-- The core (cardengine/engine), built from its Rust source before kardix is compiled: kardix check runs it. -->
+    <!-- The core (cardengine/engine), built from its Rust source before kardix is compiled. -->
     <EmbeddedResource Include="../engine/target/wasm32-unknown-unknown/release/kardix.wasm" LogicalName="kardix.wasm" />
     <!-- Studio's page (cardengine/studio), bundled by esbuild before kardix is compiled: kardix studio serves it. -->
     <EmbeddedResource Include="../studio/studio.html" LogicalName="studio.html" />

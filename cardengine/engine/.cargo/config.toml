@@ -1,0 +1,3 @@
+# The module uses WebAssembly SIMD (every browser since 2021, and Wasmtime): tiny-skia fills pixels four at a time.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128"]

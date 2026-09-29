@@ -1,4 +1,5 @@
-// kardix (cardengine/kardix) renders every set's finished cards. The cards are defined in the game folder,
+// kardix (cardengine/kardix) draws every set's finished cards, with the core (cardengine/engine), as PNGs; the build
+// keeps them as WebP. The cards are defined in the game folder,
 // games/folkborn/: the game and its card layout (folkborn.alex, card-layout.alex), its icons and finish textures (art/), and
 // for each set its cards (sets/<set>/<set>.alex) and the paintings they name (sets/<set>/art/); a set that isn't part
 // of the game yet is in prototypes/<set>/ instead. A set's folder may hold its art brief for the Artist Studio
@@ -10,15 +11,17 @@
 // generator's prompts, and pictures that aren't card art (the tale banner).
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 import { briefFrom, type Brief } from '../apps/web/src/studio/brief';
 import { core } from './core';
 
 const CONTENT = dirname(fileURLToPath(import.meta.url));
 const REPO = dirname(CONTENT);
 const KARDIX = join(REPO, 'cardengine', 'kardix');
+const ENGINE = join(REPO, 'cardengine', 'engine');
 
 /** Folkborn's game folder: its cards, card layout and the assets they're made from. */
 export const GAME = join(REPO, 'games', 'folkborn');
@@ -82,32 +85,33 @@ export function cardSources(root: string, game = GAME): [string, string][] {
     ...readdirSync(game).filter((f) => f.endsWith('.alex')).map((f): [string, string] => [`game/${f}`, join(game, f)]),
     ...walk(join(game, 'art')).map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
     ...walk(KARDIX, (f) => /\.(cs|csproj)$/.test(f)).map((f): [string, string] => [`kardix/${relative(KARDIX, f).replace(/\\/g, '/')}`, f]),
-    ['core.alex', join(REPO, 'cardengine', 'framework', 'core.alex')],
-    // The C# Alex kardix builds against, by its projects (their version): source in the mochi repository beside this one.
-    ...['Alex/ViaMochi.Alex.csproj', 'Alex.Model/ViaMochi.Alex.Model.csproj'].map((f): [string, string] => [`alex/${f}`, join(alexSource(), f)]),
+    // The core draws the cards: its source, the crates it builds with, and the framework it binds games against.
+    ...[...walk(join(ENGINE, 'src'), (f) => f.endsWith('.rs')), ...['Cargo.toml', 'Cargo.lock', '.cargo/config.toml', 'build.rs'].map((f) => join(ENGINE, f))]
+      .map((f): [string, string] => [`engine/${relative(ENGINE, f).replace(/\\/g, '/')}`, f]),
+    ...walk(join(REPO, 'cardengine', 'framework')).map((f): [string, string] => [`framework/${relative(join(REPO, 'cardengine', 'framework'), f).replace(/\\/g, '/')}`, f]),
   ];
   return [...own.map((f): [string, string] => [f, join(dir, f)]), ...shared.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))];
 }
 
-/** The C# Alex's source folder, in the mochi repository checked out beside this one (as cardengine/kardix/Kardix.csproj finds it). */
-export function alexSource(): string {
-  for (let dir = REPO; dirname(dir) !== dir; dir = dirname(dir)) {
-    const src = join(dir, 'mochi', 'mochi.agents', 'alex', 'src');
-    if (existsSync(join(src, 'Alex', 'ViaMochi.Alex.csproj'))) return src;
-  }
-  throw new Error('kardix needs the mochi repository checked out beside this one (for example C:/git/mochi next to C:/git/fruitcats).');
-}
-
 /** Text a checkout may store with either line ending; its fingerprint mustn't depend on which. */
-export const isText = (file: string) => /\.(alex|cs|csproj|json|md)$/.test(file);
+export const isText = (file: string) => /\.(alex|cs|csproj|json|md|rs|toml|lock)$/.test(file);
 
 /**
  * Renders the finished cards of the set in `root` into `out` (card faces there; finishes in subfolders), with a
  * fresh build of kardix. Throws with kardix's own message when it fails.
  */
-export function renderCards(root: string, out: string): void {
+export async function renderCards(root: string, out: string): Promise<void> {
   kardix(root, out);
   if (briefFile(root)) renderStudioFrames(root, join(out, 'frames'));
+  await asWebp(out);
+}
+
+/** Every PNG kardix drew under `out` as WebP (quality 90), the PNG removed. */
+async function asWebp(out: string): Promise<void> {
+  for (const png of walk(out, (f) => f.endsWith('.png'))) {
+    await sharp(png).webp({ quality: 90 }).toFile(`${png.slice(0, -'.png'.length)}.webp`);
+    unlinkSync(png);
+  }
 }
 
 /**

@@ -10,6 +10,7 @@ publish = false
 # are pure Rust. Layout never uses them.
 [dependencies]
 image-webp = "0.2.4"
+png = "0.18.1"
 tiny-skia = "0.12.0"
 
 [lib]

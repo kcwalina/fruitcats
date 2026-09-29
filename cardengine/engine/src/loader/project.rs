@@ -49,6 +49,8 @@ pub struct Project {
     pub diagnostics: Vec<ProjectDiagnostic>,
     /// The project's other files the host passed in (fonts), by path.
     pub assets: Vec<ProjectFile>,
+    /// Pictures the rasteriser decoded, by path; a file added again drops its picture.
+    pub decoded: std::cell::RefCell<std::collections::HashMap<String, std::rc::Rc<tiny_skia::Pixmap>>>,
 }
 
 impl Project {
@@ -256,7 +258,7 @@ pub fn load(files: Vec<ProjectFile>) -> Project {
         }
     }
 
-    Project { compilation, paths, sources: bytes, game, diagnostics, assets }
+    Project { compilation, paths, sources: bytes, game, diagnostics, assets, decoded: Default::default() }
 }
 
 /// The one-based line and column of a byte offset, counting characters rather than bytes.

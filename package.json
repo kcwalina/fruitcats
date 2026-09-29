@@ -36,13 +36,14 @@
     "write-text": "tsx content/write-text.ts"
   },
   "devDependencies": {
+    "@azure/identity": "^4.13.3",
+    "@azure/storage-blob": "^12.34.0",
     "@types/node": "^26.6.2",
+    "esbuild": "^0.28.2",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
-    "vitest": "^5.0.1",
-    "esbuild": "^0.28.2",
-    "@azure/identity": "^4.13.3",
-    "@azure/storage-blob": "^12.34.0"
+    "vitest": "^5.0.1"
   }
 }

@@ -2,6 +2,7 @@
 //! their outlines in the project's fonts, unhinted; images are the project's PNG and WebP files.
 
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use tiny_skia::{
     BlendMode, Color, FillRule, FilterQuality, LineCap, LineJoin, Mask, Paint, Path, PathBuilder, Pattern, Pixmap, PixmapPaint,
@@ -15,12 +16,19 @@ type Result<T> = std::result::Result<T, String>;
 /// What a draw list needs besides itself: the project's files, by path.
 pub trait Files {
     fn file(&self, path: &str) -> Option<&[u8]>;
+
+    /// A picture decoded before, kept so a project drawing many cards decodes each of its pictures once.
+    fn decoded(&self, _path: &str) -> Option<Rc<Pixmap>> {
+        None
+    }
+
+    fn keep_decoded(&self, _path: &str, _picture: Rc<Pixmap>) {}
 }
 
 pub struct Raster<'f> {
     files: &'f dyn Files,
     fonts: HashMap<String, Font>,
-    images: HashMap<String, Pixmap>,
+    images: HashMap<String, Rc<Pixmap>>,
 }
 
 fn q(text: &str) -> Result<f32> {
@@ -35,8 +43,15 @@ impl<'f> Raster<'f> {
     /// Reads a picture the first time it is drawn.
     fn load_image(&mut self, path: &str) -> Result<()> {
         if !self.images.contains_key(path) {
-            let bytes = self.files.file(path).ok_or_else(|| format!("The picture {} is not in the project.", path))?;
-            let pixmap = decode(bytes).map_err(|e| format!("The picture {}: {}.", path, e))?;
+            let pixmap = match self.files.decoded(path) {
+                Some(kept) => kept,
+                None => {
+                    let bytes = self.files.file(path).ok_or_else(|| format!("The picture {} is not in the project.", path))?;
+                    let pixmap = Rc::new(decode(bytes).map_err(|e| format!("The picture {}: {}.", path, e))?);
+                    self.files.keep_decoded(path, pixmap.clone());
+                    pixmap
+                }
+            };
             self.images.insert(path.to_string(), pixmap);
         }
         Ok(())
@@ -157,7 +172,7 @@ impl<'f> Raster<'f> {
             }
             "image" if w[2] == "natural" => {
                 let (x, y) = (q(w[3])?, q(w[4])?);
-                let image = &self.images[w[1]];
+                let image: &Pixmap = &self.images[w[1]];
                 let placed = at.pre_translate(x, y);
                 pixmap.draw_pixmap(0, 0, image.as_ref(), &PixmapPaint { quality: FilterQuality::Nearest, ..PixmapPaint::default() }, placed, None);
                 Ok(())
@@ -165,7 +180,7 @@ impl<'f> Raster<'f> {
             "image" => {
                 let (x, y, width, height) = rect(3)?;
                 let radius = if w.get(7) == Some(&"radius") { q(w[8])? } else { 0.0 };
-                let image = &self.images[w[1]];
+                let image: &Pixmap = &self.images[w[1]];
                 let (iw, ih) = (image.width() as f32, image.height() as f32);
                 let place = match w[2] {
                     "cover" | "contain" => {
@@ -185,7 +200,7 @@ impl<'f> Raster<'f> {
             }
             "tinted" => {
                 let (x, y, width, height) = rect(2)?;
-                let image = &self.images[w[1]];
+                let image: &Pixmap = &self.images[w[1]];
                 let color = color(w[6])?;
                 let mut tinted = (*image).clone();
                 for pixel in tinted.pixels_mut() {
@@ -217,10 +232,10 @@ impl<'f> Raster<'f> {
         if paint == "clear" {
             result.blend_mode = BlendMode::Clear;
         } else if let Some(path) = paint.strip_prefix("finish:") {
-            let image = &self.images[path];
+            let image: &Pixmap = &self.images[path];
             result.shader = Pattern::new(image.as_ref(), SpreadMode::Pad, FilterQuality::Bicubic, 1.0, Transform::identity());
         } else if let Some(path) = paint.strip_prefix("texture:") {
-            let image = &self.images[path];
+            let image: &Pixmap = &self.images[path];
             let (iw, ih) = (image.width() as f32, image.height() as f32);
             let scale = (card.0 / iw).max(card.1 / ih);
             let place = Transform::from_scale(scale, scale).post_translate((card.0 - iw * scale) / 2.0, (card.1 - ih * scale) / 2.0);
@@ -332,6 +347,23 @@ fn color(text: &str) -> Result<Color> {
     let hex = text.strip_prefix('#').filter(|h| h.len() == 8).ok_or_else(|| format!("'{}' is not a colour (#AARRGGBB).", text))?;
     let v = u32::from_str_radix(hex, 16).map_err(|_| format!("'{}' is not a colour (#AARRGGBB).", text))?;
     Ok(Color::from_rgba8((v >> 16) as u8, (v >> 8) as u8, v as u8, (v >> 24) as u8))
+}
+
+/// The card as a PNG, compressed quickly: a host that keeps it compresses it again (the site's build makes WebP of it).
+pub fn png(pixmap: &Pixmap) -> std::result::Result<Vec<u8>, String> {
+    let mut out = Vec::new();
+    let mut encoder = png::Encoder::new(&mut out, pixmap.width(), pixmap.height());
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder.set_compression(png::Compression::Fast);
+    let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
+    let rgba: Vec<u8> = pixmap.pixels().iter().flat_map(|p| {
+        let c = p.demultiply();
+        [c.red(), c.green(), c.blue(), c.alpha()]
+    }).collect();
+    writer.write_image_data(&rgba).map_err(|e| e.to_string())?;
+    writer.finish().map_err(|e| e.to_string())?;
+    Ok(out)
 }
 
 /// A PNG or WebP picture, premultiplied.

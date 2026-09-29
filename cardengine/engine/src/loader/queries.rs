@@ -137,12 +137,13 @@ fn faces(project: &Project, only_set: &str) -> String {
         .iter()
         .map(|f| {
             format!(
-                "{{\"set\":{},\"card\":{},\"face\":{},\"finish\":{},\"file\":{}}}",
+                "{{\"set\":{},\"card\":{},\"face\":{},\"finish\":{},\"file\":{},\"number\":{}}}",
                 string(&layout.document_name(f)),
                 string(&f.key),
                 string(if f.is_back { "back" } else { "front" }),
                 string(&f.finish),
-                string(&layout.file_name(f))
+                string(&layout.file_name(f)),
+                string(&layout.collector_number(f))
             )
         })
         .collect();
@@ -183,7 +184,7 @@ fn draw(project: &Project, what: &str) -> String {
 /// face uses.
 pub fn png(project: &Project, what: &str) -> Result<Vec<u8>, String> {
     if what.starts_with("kardix draw list ") {
-        return Raster::new(project).draw(what, false)?.encode_png().map_err(|e| e.to_string());
+        return crate::render::raster::png(&Raster::new(project).draw(what, false)?);
     }
     let bleed = what.split_whitespace().any(|w| w == "bleed");
     let rest: Vec<&str> = what.split_whitespace().filter(|w| *w != "bleed").collect();
@@ -193,12 +194,20 @@ pub fn png(project: &Project, what: &str) -> Result<Vec<u8>, String> {
     }
     let mut raster = Raster::new(project);
     let pixmap = raster.draw(&list, bleed)?;
-    pixmap.encode_png().map_err(|e| e.to_string())
+    crate::render::raster::png(&pixmap)
 }
 
 impl crate::render::raster::Files for Project {
     fn file(&self, path: &str) -> Option<&[u8]> {
         self.asset(path)
+    }
+
+    fn decoded(&self, path: &str) -> Option<std::rc::Rc<tiny_skia::Pixmap>> {
+        self.decoded.borrow().get(path).cloned()
+    }
+
+    fn keep_decoded(&self, path: &str, picture: std::rc::Rc<tiny_skia::Pixmap>) {
+        self.decoded.borrow_mut().insert(path.to_string(), picture);
     }
 }
 

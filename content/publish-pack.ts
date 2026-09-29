@@ -122,7 +122,7 @@ async function main(): Promise<void> {
     // and they're uploaded from there (content/kardix.ts).
     const cards = join(temp, 'cards');
     console.log('  · rendering the cards with kardix');
-    renderCards(root, cards);
+    await renderCards(root, cards);
     for (const dir of pictureFolders(root)) if (existsSync(dir)) uploadDir(dir, paths.art.slice(0, -1), FOREVER);
     if (existsSync(cards)) uploadDir(cards, paths.cards.slice(0, -1), FOREVER);
     // A Studio project (a set with an art brief) as its folder: its Alex files and paintings, which the Studio reads.

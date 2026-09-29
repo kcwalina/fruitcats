@@ -213,7 +213,7 @@ async function main() {
     }
     if (framesChanged) writeFileSync(setFile, `${JSON.stringify(setData, null, 2)}\n`);
     if (!count) { console.log('No approved pictures yet.'); return; }
-    renderCards(folder, join(ROOT, 'out', 'cards', basename(folder)));
+    await renderCards(folder, join(ROOT, 'out', 'cards', basename(folder)));
     console.log(`\n${count} picture(s) pulled. Review with git diff, then npm run check-set -- ${set}.`);
     return;
   }

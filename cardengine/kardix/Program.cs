@@ -1,8 +1,8 @@
-using SkiaSharp;
+using System.Text.Json;
 using Kardix;
-using ViaMochi.Alex.Model;
 
-// kardix: the Kardix platform's command-line tool.
+// kardix: the Kardix platform's command-line tool. Everything it knows about games is the core's (kardix.wasm), which
+// it carries inside it and runs through Wasmtime.
 //
 //   kardix check [--project <folder>]
 //
@@ -14,20 +14,21 @@ using ViaMochi.Alex.Model;
 // Opens Studio on the project in the browser: its files, its cards and its rulebook, read again each time a file is
 // saved. It serves on localhost only, until Ctrl+C.
 //
-//   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed] [--draw-list]
+//   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--bleed] [--draw-list]
 //
-// Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
+// Draws every card face of the project, in each finish it's printed in, as PNGs into --out (default out/cards/{set}):
 // a folder relative to where kardix runs, where {set} is the name of the file the cards are written in. Finishes
 // other than standard go into a subfolder. --frame draws every card in the layout's frame of that name; --no-art
 // leaves the pictures see-through (the art's window and a frame's texture), for a tool that shows an artist's
-// picture under the card.
+// picture under the card. --draw-list writes each face's draw list (the core's description of it) instead.
+// A font the card layout names that isn't in the project is read from the system's fonts.
 try
 {
     if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     {
         Console.WriteLine("kardix check [--project <folder>]");
         Console.WriteLine("kardix studio [--project <folder>] [--port <number>] [--no-open]");
-        Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed] [--draw-list]");
+        Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--bleed] [--draw-list]");
         return 0;
     }
 
@@ -45,6 +46,27 @@ catch (KardixException e)
     return 1;
 }
 
+static string ProjectFolder(string projectDir)
+{
+    string root = Path.GetFullPath(projectDir);
+    return Directory.Exists(root) ? root : throw new KardixException($"There is no folder {projectDir}.");
+}
+
+// The project's Alex files, by their paths within its folder.
+static List<(string Path, byte[] Bytes)> AlexFiles(string root)
+{
+    List<(string Path, byte[] Bytes)> files = new();
+    foreach (string path in Directory.EnumerateFiles(root, "*.alex", SearchOption.AllDirectories))
+    {
+        string relative = Path.GetRelativePath(root, path);
+        if (relative.Split(Path.DirectorySeparatorChar).Any(p => p is "node_modules" or "bin" or "obj" or ".git")) { continue; }
+        files.Add((relative.Replace(Path.DirectorySeparatorChar, '/'), File.ReadAllBytes(path)));
+    }
+
+    files.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
+    return files;
+}
+
 static int Check(string[] args)
 {
     string projectDir = Directory.GetCurrentDirectory();
@@ -57,22 +79,12 @@ static int Check(string[] args)
         }
     }
 
-    string root = Path.GetFullPath(projectDir);
-    if (!Directory.Exists(root)) { throw new KardixException($"There is no folder {projectDir}."); }
-    List<(string Path, byte[] Bytes)> files = new();
-    foreach (string path in Directory.EnumerateFiles(root, "*.alex", SearchOption.AllDirectories))
-    {
-        string relative = Path.GetRelativePath(root, path);
-        if (relative.Split(Path.DirectorySeparatorChar).Any(p => p is "node_modules" or "bin" or "obj" or ".git")) { continue; }
-        files.Add((relative.Replace(Path.DirectorySeparatorChar, '/'), File.ReadAllBytes(path)));
-    }
-
-    files.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
+    List<(string Path, byte[] Bytes)> files = AlexFiles(ProjectFolder(projectDir));
     using Core core = Core.Load();
     using CoreProject project = core.LoadProject(files);
-    using System.Text.Json.JsonDocument diagnostics = System.Text.Json.JsonDocument.Parse(project.Query("diagnostics"));
+    using JsonDocument diagnostics = JsonDocument.Parse(project.Query("diagnostics"));
     int errors = 0;
-    foreach (System.Text.Json.JsonElement d in diagnostics.RootElement.EnumerateArray())
+    foreach (JsonElement d in diagnostics.RootElement.EnumerateArray())
     {
         string file = d.GetProperty("file").GetString() ?? string.Empty;
         string severity = d.GetProperty("severity").GetString() ?? "error";
@@ -88,21 +100,19 @@ static int Check(string[] args)
 static int Cards(string[] args)
 {
     string projectDir = Directory.GetCurrentDirectory(), outDir = Path.Combine("out", "cards", "{set}");
-    string? onlyFinish = null, onlySet = null;
+    string? onlyFinish = null, onlySet = null, frame = null;
     HashSet<string>? only = null;
-    string? frame = null;
-    bool png = false, bleed = false, noArt = false, drawList = false;
+    bool bleed = false, noArt = false, drawList = false;
     for (int i = 0; i < args.Length; i++)
     {
         switch (args[i])
         {
-            case "--project": projectDir = args[++i]; break;
-            case "--out": outDir = args[++i]; break;
-            case "--finish": onlyFinish = args[++i]; break;
-            case "--set": onlySet = args[++i]; break;
-            case "--png": png = true; break;
+            case "--project" when i + 1 < args.Length: projectDir = args[++i]; break;
+            case "--out" when i + 1 < args.Length: outDir = args[++i]; break;
+            case "--finish" when i + 1 < args.Length: onlyFinish = args[++i]; break;
+            case "--set" when i + 1 < args.Length: onlySet = args[++i]; break;
+            case "--frame" when i + 1 < args.Length: frame = args[++i]; break;
             case "--bleed": bleed = true; break;
-            case "--frame": frame = args[++i]; break;
             case "--no-art": noArt = true; break;
             case "--draw-list": drawList = true; break;
             case "--only":
@@ -113,52 +123,93 @@ static int Cards(string[] args)
         }
     }
 
-    Project project = Project.Load(projectDir);
-    Renderer renderer = new(project) { FrameOverride = frame, NoArt = noArt };
-    int written = 0;
-    List<Document> documents = project.CardDocuments().Where(d => onlySet is null || d.Name == onlySet).ToList();
-    // A set the game doesn't list (a prototype) is rendered only when asked for by name.
-    if (onlySet is not null && documents.Count == 0 && project.Documents.TryGetValue(onlySet, out Document? unlisted)
-        && project.TypeChain(unlisted.DeclaredType).Any(t => t.Name is "Set" or "Cards"))
+    string root = ProjectFolder(projectDir);
+    using Core core = Core.Load();
+    using CoreProject project = core.LoadProject(AlexFiles(root));
+    project.Add(Fonts(root, Answer(project, "fonts").EnumerateArray().Select(f => f.GetString()!)));
+
+    string options = (frame is null ? "" : " frame=" + frame) + (noArt ? " no-art" : "");
+    List<JsonElement> faces = Answer(project, "faces " + (onlySet ?? "")).EnumerateArray()
+        .Where(f => onlyFinish is null || f.GetProperty("finish").GetString() == onlyFinish)
+        .Where(f => only is null || only.Contains(f.GetProperty("number").GetString()!) || only.Contains(f.GetProperty("card").GetString()!))
+        .ToList();
+    if (onlySet is not null && faces.Count == 0) { throw new KardixException($"No set or cards file in the game named {onlySet} has cards to draw."); }
+
+    HashSet<string> given = new(StringComparer.Ordinal);
+    foreach (JsonElement face in faces)
     {
-        documents.Add(unlisted);
+        string set = face.GetProperty("set").GetString()!, finish = face.GetProperty("finish").GetString()!;
+        string words = $"{set} {face.GetProperty("card").GetString()} {face.GetProperty("face").GetString()} {finish}{options}";
+        string list = project.Query("draw " + words);
+        if (list.StartsWith('{')) { throw new KardixException(JsonDocument.Parse(list).RootElement.GetProperty("error").GetString()!); }
+
+        string folder = Path.Combine(Path.GetFullPath(outDir.Replace("{set}", set)), finish == "standard" ? "" : finish);
+        Directory.CreateDirectory(folder);
+        string file = Path.Combine(folder, face.GetProperty("file").GetString()!);
+        if (drawList)
+        {
+            File.WriteAllText(file + ".txt", list);
+            continue;
+        }
+
+        List<(string Path, byte[] Bytes)> pictures = new();
+        foreach (string path in DrawnFiles(list).Where(given.Add))
+        {
+            string full = Path.Combine(root, path);
+            if (File.Exists(full)) { pictures.Add((path, File.ReadAllBytes(full))); }
+        }
+
+        project.Add(pictures);
+        File.WriteAllBytes(file + ".png", project.Png(words + (bleed ? " bleed" : "")));
     }
 
-    if (onlySet is not null && documents.Count == 0) { throw new KardixException($"No set or cards file in the game is named {onlySet}."); }
-    foreach (Document document in documents)
-    {
-        if (document.Alex.Root.Value("cards") is not AlexObject cards) { continue; }
-        foreach (AlexProperty entry in cards)
-        {
-            if (entry.Value is not AlexObject card) { continue; }
-            string number = Project.Scalar(card.Value("number"));
-            if (only is not null && !only.Contains(number) && !only.Contains(entry.Name)) { continue; }
-            foreach (string finish in Face.Finishes(project, card))
-            {
-                if (onlyFinish is not null && finish != onlyFinish) { continue; }
-                List<Face> faces = new() { new Face(project, document, entry.Name, card, card, isBack: false, finish) };
-                if (card.Value("back") is AlexObject back) { faces.Add(new Face(project, document, entry.Name, card, back, isBack: true, finish)); }
-                foreach (Face face in faces)
-                {
-                    string folder = Path.Combine(Path.GetFullPath(outDir.Replace("{set}", document.Name)), finish == "standard" ? "" : finish);
-                    Directory.CreateDirectory(folder);
-                    if (drawList)
-                    {
-                        File.WriteAllText(Path.Combine(folder, renderer.FileName(face) + ".txt"), renderer.DrawListOf(face));
-                        written++;
-                        continue;
-                    }
+    Console.WriteLine($"Drew {faces.Count} card face(s).");
+    return 0;
+}
 
-                    using SKImage image = renderer.Render(face, bleed);
-                    string path = Path.Combine(folder, renderer.FileName(face) + (png ? ".png" : ".webp"));
-                    using SKData data = image.Encode(png ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Webp, png ? 100 : 90);
-                    File.WriteAllBytes(path, data.ToArray());
-                    written++;
-                }
-            }
+static JsonElement Answer(CoreProject project, string question)
+{
+    JsonElement answer = JsonDocument.Parse(project.Query(question)).RootElement;
+    if (answer.ValueKind == JsonValueKind.Object && answer.TryGetProperty("error", out JsonElement error))
+    {
+        throw new KardixException(error.GetString()!);
+    }
+
+    return answer;
+}
+
+// The fonts the card layout names: from the project's folder, or else the system's fonts.
+static List<(string Path, byte[] Bytes)> Fonts(string root, IEnumerable<string> paths)
+{
+    List<(string Path, byte[] Bytes)> fonts = new();
+    foreach (string path in paths)
+    {
+        string local = Path.Combine(root, path);
+        string system = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), Path.GetFileName(path));
+        string found = File.Exists(local) ? local : File.Exists(system) ? system
+            : throw new KardixException($"The font {path} is neither in the project nor installed.");
+        fonts.Add((path, File.ReadAllBytes(found)));
+    }
+
+    return fonts;
+}
+
+// The pictures a draw list names (cardengine/engine/src/render/draw-list.md).
+static IEnumerable<string> DrawnFiles(string list)
+{
+    foreach (string line in list.Split('\n'))
+    {
+        string[] words = line.Split(' ');
+        if (words[0] is "image" or "tinted" && words.Length > 1) { yield return words[1]; }
+        foreach (string word in words)
+        {
+            if (word.StartsWith("finish:", StringComparison.Ordinal)) { yield return word["finish:".Length..]; }
+            if (word.StartsWith("texture:", StringComparison.Ordinal)) { yield return word["texture:".Length..]; }
         }
     }
+}
 
-    Console.WriteLine($"Rendered {written} card face(s).");
-    return 0;
+namespace Kardix
+{
+    internal sealed class KardixException(string message) : Exception(message);
 }

@@ -63,8 +63,8 @@ Folkborn from its Alex rules, so it must be movable as a folder today:
 - **Folkborn depends on the platform, only through its public surface:** the `kardix` command, and
   later the core's `.wasm` and its documented interface. It never reaches into the platform's
   source.
-- **The one outside dependency is mochi's C# Alex** (`mochi.agents/alex`), until the core's Alex
-  replaces it for the platform.
+- **The one outside dependency is mochi's C# Alex** (`mochi.agents/alex`), and only the conformance
+  tool uses it, to check that the core's Alex matches it. `kardix` reads games only through the core.
 - **Known exceptions, to move before the split:** `folkborn/` here is Folkborn written against the
   libraries as a design reference, and belongs in `games/folkborn/`. It is also used by mochi's
   Alex tests as fixtures (`mochi.agents/alex/tests/Alex.Tests/Fixtures/cardengine`). Hello TCG

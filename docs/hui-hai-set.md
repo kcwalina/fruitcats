@@ -40,11 +40,19 @@ Balance (balance:check, bots, 300 games a pair, 2026-09-28): 55% overall; Domowi
 one-point pings: Pebble's first side lost its every-round ping and her Stone for Stone aura, and Stones from Nowhere
 went to cost 4 and two copies.
 
+**0.1.2 (2026-09-28): Pebble Awakens at 5 or more in the Mist (was 4).** The first nightly run with all five folk
+decks had Hui Hai at 57% overall, Pari at 34% and Aluxes at 37% against it. Pebble Awakened in 96% of games, by
+round 4.5, and her Awakened side (every unit +1 Health and Stone for Stone) walls off Pari's and Aluxes' small
+attackers. At 900 games a pairing: Hui Hai 56% → 52%, Pari against it 35% → 42%, Aluxes 38% → 42%, Jiaoren 47% →
+50%, Domowiki 57% → 60%. Tried and dropped: her Awakened ping at 1 damage, Stones from Nowhere at cost 5, Hui Hai of
+the Stream as a 1/1, The Hidden Village at cost 5, Old One of the Waterfall as a 5/6 (none moved the Pari or Aluxes
+matchup by more than a point or two).
+
 ## Hero: Pebble (HH1-H01, Legendary, gold frame)
 
 | Side | Name | Power | Text |
 |---|---|---|---|
-| first | Pebble, the Littlest Hui Hai | – | Exhaust: A unit you control gets +1 Power this round. Awaken: 4 or more Fabled and Creatures are in the Mist. |
+| first | Pebble, the Littlest Hui Hai | – | Exhaust: A unit you control gets +1 Power this round. Awaken: 5 or more Fabled and Creatures are in the Mist. |
 | Awakened | Pebble, Keeper of the Stream | 3 | Your units get +1 Health and Stone for Stone. Exhaust: Deal 2 damage to an enemy unit. |
 
 ## The cards

@@ -914,12 +914,12 @@ function renderHome(): string {
       ${MODES.map((mode) => {
         // The Store tile opens when the Store is built in and open to you (store-plan.md, Hidden until launch).
         const m = (mode.key === 'store' && storeOpen()) || (mode.key === 'friend' && ONLINE) ? { ...mode, soon: '' } : mode;
-        // Under the card's line, only what's worth saying now: Coming soon, Sign in to open, a game to resume, or
-        // what's happening with a friend.
+        // Under the card's line, only what's worth saying now: Sign in to open, a game to resume, or what's happening
+        // with a friend. A Coming soon card says so across its picture (skin.css).
         const resume = m.key === 'solo' && saved;
         const needsAccount = ACCOUNTS && !signedIn() && m.key in ACCOUNT_TILES && !(m.key === 'friend' && !ONLINE);
         const friend = m.key === 'friend' && ONLINE && !needsAccount ? friendTileLine() : null;
-        const status = m.soon ? '<span class="mode-sub soon-line">Coming soon</span>'
+        const status = m.soon ? ''
           : needsAccount ? '<span class="mode-sub signin-line">Sign in to open</span>'
           : resume ? `<span class="mode-sub continue-line">Resume · Round ${loadGame()!.game.round}</span>`
           : friend?.waiting ? friend.line

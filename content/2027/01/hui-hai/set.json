@@ -1,7 +1,7 @@
 {
   "set": "HH1",
   "name": "Hui Hai",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "status": "released",
   "families": {
     "Hui Hai": {
@@ -88,11 +88,11 @@
         "growUp": {
           "if": {
             "unitsInComposts": {
-              "atLeast": 4
+              "atLeast": 5
             }
           }
         },
-        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: 4 or more Fabled and Creatures are in the Mist."
+        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: 5 or more Fabled and Creatures are in the Mist."
       },
       "bigCat": {
         "name": "Pebble, Keeper of the Stream",

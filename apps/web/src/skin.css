@@ -1533,7 +1533,21 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 .mc-state.continue-line { color: #9fe0a8; }
 .mc-short { color: #f3e7cf; }
 .mc-foot { color: color-mix(in srgb, var(--foil-line) 70%, transparent); margin-top: auto; }
-.mcard.soon .mc-art img { filter: saturate(0.8); }   /* silver foil and "Coming soon" say it; the picture stays lively */
+/* A card that doesn't open yet (Ranked; the Store before launch) is greyed out whole, sits still under the pointer and
+   says "Coming soon" across its picture, so no one takes it for a card that should work. Tapping it still says what it
+   will be. Cards that ask you to sign in do open, so they keep their colour. */
+.mcard.soon .mc-frame { filter: grayscale(1) brightness(0.6) contrast(0.9); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); }
+.mcard.soon:hover, .mcard.soon:active { transform: none; }
+.mcard.soon:hover .mc-frame { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); }
+.mcard.soon:hover .mc-art img { transform: none; }
+.mcard.soon .mc-frame::after { animation: none; opacity: 0; }
+.mcard.soon .mc-art { position: relative; }
+.mcard.soon .mc-art::after {
+  content: 'Coming soon'; position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; padding: 2.2cqw 0;
+  background: rgba(10, 10, 16, 0.78); color: #fff; font: 800 6.4cqw/1 Nunito, sans-serif; letter-spacing: 0.04em;
+  text-transform: uppercase; box-shadow: 0 0 0 0.4cqw rgba(255, 255, 255, 0.5);
+}
+@container (max-width: 160px) { .mcard.soon .mc-art::after { font-size: 9cqw; padding: 3cqw 0; } }
 @container (max-width: 160px) {
   .mc-text { justify-content: center; padding-top: 0; }
   .mc-face { padding-bottom: 2.2cqw; }

@@ -233,6 +233,9 @@ real game.
 
 ## Hello TCG
 
+Its finished sources are in `cardengine/samples/hello-tcg/`, the same files as the walkthrough's
+"The finished game". Keep the two in step: when the walkthrough changes, the sample changes.
+
 The game the walkthrough builds. It is deliberately boring and uses each core idea once, with only
 built-in library rules, in the survey's most common shape: full turns (77% of games), life as a
 counter, a growing resource, attacker-chooses combat, no responses.

@@ -33,7 +33,6 @@ The guide stays, as the reference behind the Studio's short in-page tips.
   - an upload box
   - their picture on the real card, in every finish the card is sold in
   - their picture small, as the game shows it on the board and as a hero portrait (these crop the sides)
-  - their picture as a wallpaper on a phone, a tablet and a computer, with the lock-screen clock drawn on
   - automatic checks: size (1536 × 1024, or 512 × 512 for a Pawtrait), shape and format
   - the picture's status: *with us*, *changes asked*, *sketch approved* or *approved*
   - comments (see below)
@@ -85,9 +84,10 @@ local script, `npm run studio -- pull <set>`, which copies the approved version 
 where the picture goes (the art box, 666 × 444) and saves it with transparency, for every finish; publish-pack
 renders these frames with the cards (`content/tcg.ts`). The site publishes them next to
 the finished cards (`/cards/<set>/frames/<id>.webp`). The Studio puts the artist's picture behind the frame,
-so the border, rounded corners and Lucky clover sit on top exactly as on the real card. The board, hero and
-wallpaper views copy the few size rules the game uses (`apps/web/src/style.css` `.unit`, `.hero`;
-`apps/web/src/wallpaper.ts`).
+so the border, rounded corners and Lucky clover sit on top exactly as on the real card. The board and hero
+views copy the few size rules the game uses (`apps/web/src/style.css` `.unit`, `.hero`). The Studio shows no
+wallpapers (the owner, 2026-09-29): a wallpaper is Folkborn's own feature, which the game makes from a card's
+picture, so any image an artist sends can become one.
 
 **A Studio project is Alex files plus assets (2026-09-29).** A project is one set's folder in the game folder,
 `games/folkborn/sets/<set>/`: its cards (`<set>.alex`), its brief (`<set>-brief.alex`, `#type ArtBrief`, declared in
@@ -98,8 +98,7 @@ game rules: `apps/web/src/studio/brief.ts` (`briefFromAlex`) and `cards.ts` read
 `publish-pack` uploads the folder as `project/` in the set's fingerprinted folder on the pack storage, next to the
 finished cards and the Studio's frames (`cards/frames/`, drawn by tcg), so nothing a project was published with is
 ever replaced. `npm run check-set` checks the brief: every card face has a picture, and every reference is to
-something in the set. The wallpaper previews are the one part still drawn from the game's own card data
-(`src/wallpaper.ts`).
+something in the set.
 
 **The site.** A new page in `apps/web` (`studio.html`, its own entry in `vite.config.ts`), styled like the
 game. It's published with the rest of the site; the page itself holds nothing private.

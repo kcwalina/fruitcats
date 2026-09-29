@@ -2,7 +2,7 @@
 // password (src/auth.ts). A new artist creates their account here. In development (?dev), pick a pretend account.
 
 import { AuthError, accountExists, codeDigits, invitesRequired, oneTap, resend, startSignIn, startSignUp, submitCode, useInvite, type Pending } from '../auth';
-import { artBases, esc, BASE } from '../ui';
+import { artBases, esc, BASE } from '../site';
 import { DEV, DEV_ACCOUNTS, setDevUser } from './api';
 
 type Step = 'email' | 'invite' | 'details' | 'code';

@@ -1,18 +1,16 @@
 // The Artist Studio (docs/artist-studio-plan.md): where artists upload the pictures they make for Folkborn. For each set it shows the steps
-// in order (the brief's milestones), what each picture needs, and the artist's pictures on their cards, in the game
-// and as wallpapers. Artists upload each version; nothing is ever overwritten. Comments from the Folkborn team,
+// in order (the brief's milestones), what each picture needs, and the artist's pictures on their cards and in the
+// game. (Wallpapers are the game's own: it makes them from a card's picture, so the Studio doesn't show them.) Artists upload each version; nothing is ever overwritten. Comments from the Folkborn team,
 // from AI agents and from the artist sit beside each picture, each labelled with who wrote it.
 //
 // Pages (in the address's #): a project's home (#/mc1; for a reviewer it also assigns the artist), a picture
 // (#/mc1/MC1-X01), and the list of projects (#/). One render() draws the page from `S`; clicks and typing are handled by
 // data-click and data-in attributes, as in the game.
 
-// The game's cards, for the wallpaper previews only (src/wallpaper.ts draws a card from the game's own data).
-import '../content';
 import { AlexFolder, parseAlex } from '../../../../cardengine/alex/alex';
 import { session, signOut } from '../auth';
 import { apiPolicy, fetchRetry } from '../net';
-import { BASE, esc } from '../ui';
+import { BASE, esc } from '../site';
 import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
 import {
@@ -20,7 +18,7 @@ import {
   briefFromAlex, type Brief, type BriefPicture, type State,
 } from './brief';
 import { cardsOf, type StudioCard } from './cards';
-import { DEVICES, LOCK_CLOCK, PALETTES, announcementPreview, cardPreview, finishesOf, frameImages, framePalettes, gamePreview, pawtraitPreview, wallpaper } from './previews';
+import { PALETTES, announcementPreview, cardPreview, finishesOf, frameImages, framePalettes, gamePreview, pawtraitPreview } from './previews';
 import { renderSignIn, signInClick, signInEnter, signInInput } from './signin';
 import { STUDIO_TERMS, STUDIO_TERMS_VERSION } from './terms';
 import './studio.css';
@@ -28,7 +26,7 @@ import './studio.css';
 /** A Studio project: a set with an art brief, and where its folder (its Alex files and paintings) is published. */
 interface SetEntry { set: string; code: string; name: string; status: string; folder: string; project: string }
 interface LocalPicture { url: string; file: File; width: number; height: number; format: string }
-type Tab = 'card' | 'picture' | 'game' | 'wallpaper';
+type Tab = 'card' | 'picture' | 'game';
 type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'all'; code: string } | { page: 'comments'; code: string } | { page: 'picture'; code: string; key: string };
 
 const S = {
@@ -347,7 +345,6 @@ function render() {
     const el = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-in="${focus.id}"]`);
     if (el) { el.focus(); try { el.setSelectionRange(focus.start, focus.end); } catch { /* not a text field */ } }
   }
-  void fillWallpapers();
 }
 
 /** For cards whose artist chooses the frame colour: the colour to show, picked or saved or the brief's starting one. */
@@ -933,7 +930,7 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
   const key = keyOf(p);
   const tabs: [Tab, string][] = p.kind === 'pawtrait' ? [['card', 'Portrait'], ['picture', 'Image']]
     : p.kind === 'announcement' ? [['card', 'Announcement'], ['picture', 'Image']]
-      : [['card', 'On the card'], ['game', 'In the game'], ['wallpaper', 'Wallpapers'], ['picture', 'Image']];
+      : [['card', 'On the card'], ['game', 'In the game'], ['picture', 'Image']];
   const tab = tabs.some(([t]) => t === S.tab) ? S.tab : 'card';
   const url = pic.url;
   let body = '';
@@ -947,17 +944,7 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
     body = `${finishes.length > 1 ? `<div class="seg small">${finishes.map((f) => `<button class="${f.finish === finish ? 'on' : ''}" data-click="finish:${key}:${f.finish}">${f.label}</button>`).join('')}</div>` : ''}
       ${frameChooser(code, p)}<div class="card-stage">${cardPreview(code, key, finish, url, 420, pinsFor(code, key, pic.version))}</div>
       <p class="pv-note">The card shows your whole image, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
-  } else if (tab === 'game') body = gamePreview(p, cardData(p), url, code, key);
-  else {
-    // The phone comes first and largest: most wallpapers are made for a phone's lock screen.
-    const wall = ([d, label]: [string, string]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`;
-    body = url ? `<div class="walls">${wall(DEVICES[0])}<div class="walls-more">${DEVICES.slice(1).map(wall).join('')}</div></div>
-      <p class="pv-note">Players can make any card they own into a wallpaper. A phone keeps only the middle of your image, with the clock over its upper part.</p>`
-      // No image yet: the same devices, phone first, empty, so the tab looks as it will.
-      : `<div class="walls">${[DEVICES[0]].map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img wall-empty"><span>Your image here</span>${LOCK_CLOCK}</div><figcaption>${label}</figcaption></figure>`).join('')}
-        <div class="walls-more">${DEVICES.slice(1).map(([d, label]) => `<figure class="wall wall-${d}"><div class="wall-img wall-empty"><span>Your image here</span></div><figcaption>${label}</figcaption></figure>`).join('')}</div></div>
-        <p class="pv-note">Upload an image to see it as a wallpaper. The phone’s lock screen is the one players use most.</p>`;
-  }
+  } else body = gamePreview(p, cardData(p), url, code, key);
   return `<div class="tabs" role="tablist">${tabs.map(([t, label]) => `<button role="tab" aria-selected="${t === tab}" class="${t === tab ? 'on' : ''}" data-click="tab:${t}">${label}</button>`).join('')}</div>
     <div class="preview tab-${tab} ${url ? '' : 'is-empty'}" data-preview="${key}">${body}</div>`;
 }
@@ -1009,33 +996,6 @@ function commentsPanel(code: string, p: BriefPicture, version: Version | null): 
         <button class="btn primary small" data-click="comment:${key}">Post</button></div>
     </div>`}
   </section>`;
-}
-
-// ── Wallpapers are drawn after the page, as they take a moment ───────────────────────────────────
-
-async function fillWallpapers() {
-  const holders = root.querySelectorAll<HTMLElement>('[data-wall]');
-  if (!holders.length || S.route.page !== 'picture') return;
-  const { code, key } = S.route;
-  const p = S.briefs.get(code)?.pictures.find((x) => keyOf(x) === key);
-  const pic = shown(code, key);
-  if (!p || !pic.url) return;
-  const artId = pic.local ? `local-${pic.local.file.name}-${pic.local.file.lastModified}` : `${code}/${key}/${pic.version?.id}`;
-  for (const el of holders) {
-    const made = wallpaper(p, pic.url, artId, el.dataset.wall as 'phone' | 'tablet' | 'computer');
-    if (!made) { el.innerHTML = '<p class="pv-empty">No wallpaper for this image.</p>'; continue; }
-    made.then((src) => {
-      if (!el.isConnected) return;
-      el.querySelector('.spinner')?.remove();
-      if (el.querySelector('img.wall-made')) return;
-      const img = new Image();
-      img.className = 'wall-made';
-      img.alt = '';
-      img.onload = () => { el.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`; el.classList.add('ready'); };
-      img.src = src;
-      el.prepend(img);
-    }).catch(() => { el.innerHTML = '<p class="pv-empty">Couldn’t draw this wallpaper.</p>'; });
-  }
 }
 
 // ── Choosing a picture on this computer ──────────────────────────────────────────────────────────

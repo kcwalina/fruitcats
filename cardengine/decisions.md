@@ -878,6 +878,62 @@ before, still mean the same. Where a change isn't additive, it says so.
   conflicts with main's (both rewrote the "Core changes" list); the TCG Developer Platform
   session owns that file and resolves the conflict when it next merges main.
 
+### Card layouts, and keyword rules that take the game's own keyword (owner, 2026-09-28)
+
+Asked through the TCG Developer Platform session, from the samples' six real Domowiki cards
+(`cardengine/samples/hello-tcg-print/card-layout.alex` is the target; the design is the plan's
+"How cards look"). Both changes are additive.
+
+- **`CardLayout`, a document type in the core** (`#type CardLayout`), named by
+  `Game.card-layout: CardLayout?`. It is in the core rather than a library because a printable
+  game uses no libraries, and the engine never reads it: the card renderer and the print files
+  do. Fields: `width`, `height`, `dpi = 300`, `bleed = 0` (pixels at `dpi`, measured from the
+  card's top-left corner at the trim line), `fonts: [text: text]` (name = font file),
+  `frames: [text: text]` (card type = frame image) and `parts: [text: Part]`, drawn in order.
+  `Part { box: Box }` with `Box { x, y, width, height }`; kinds `Label` (one line: `show`,
+  `font`, `size`, `smallest`, `color`, `outline`, `align`, `capitals`), `Picture` (`show`,
+  `fit = cover | contain`, `under-frame`) and `TextBox` (`paragraphs`, `font`, `size`,
+  `smallest`, `color`), whose items are `Paragraph` (`show`, `join`, `font`, `bold-font`,
+  `color`, `align`, `rule-above`). New enums `Align { left, center, right }` and
+  `Fit { cover, contain }`.
+- **`show` is a template of the card's data**: `{cost}` or any field its type declares, `{type}`
+  the card type's display name, `{text}` the card's text with its constants filled in,
+  `{keywords}` the keywords' names joined by `join`, and any other words as written. A part
+  shows only on cards that have what it shows. This is a renderer convention on text, like
+  `{@name}` in the rulebook, not Alex syntax.
+- **Fonts are referenced, not repeated**: `font = @bold` is a reference to the `fonts` entry,
+  accepted where a text is (references are orthogonal to types), so a font's file is written
+  once. The field is `text?`, so a path also binds; the checker wants a `fonts` entry.
+- **`frames` is keyed by the card type's identifier** (`Creature = 'art/frames/creature.png'`).
+  A map keyed by type (`[type Card: text]`) would need another Alex change, so the key is text
+  and the checker requires it to name a card type the game declares.
+- **Checker**: a `{field}` no card type has; a box that runs past the bleed; a missing font,
+  frame, art or back file; an image with fewer pixels than its box needs at `dpi` (for printing,
+  naming the card); a text box that can't fit a card's text at its `smallest` size (naming the
+  card).
+- **Keyword rules that take the game's own keyword.** A printable game declares plain keywords,
+  `keywords = [Guardian = Keyword {}, Swift = Keyword {}]`: a keyword on a printed card is a word
+  with no engine meaning. The playable game gives each its meaning with a library rule that names
+  it: `EntersReady { keyword = @Swift }` in `units`, `GuardiansFirst { keyword = @Guardian }` in
+  `combat`. It is the keyword counterpart of `UnitCards { types }`, and needs no language change:
+  `@Swift` is a reference to the game's keyword entry, and the field is typed `Keyword`.
+  Added, one per keyword type the libraries define: units `EntersReady` (Swift),
+  `DamageReduction` (Tough, n from `Applied`); combat `HitCostsLife { n }` (Fierce),
+  `StrikesFirst`, `StrikesTwice`, `ExcessDamageGoesThrough` (Trample), `AttacksTwice`
+  (Windfury), `AnyDamageDestroys` (Poisonous), `DamageHealsController` (Lifesteal),
+  `UntargetableUntilItActs` (Stealth), `NegatesNextHit` (Divine Shield), `AttackedOnlyWhenAlone`
+  (Elusive), `BlockedOnlyBy { by: [Keyword] }` (flying and reach), `OpponentsCantChoose` (Ward),
+  `MayBlockForOthers` (Blocker), `StunSkipsReady` (Stun); life-stack `PlayFreeWhenLost` (Lucky);
+  responses `PlayableInResponse { only }` (Ambush). `GuardiansFirst` and
+  `SneakyIgnoresGuardians` existed, so they gained an optional `keyword`; without it they mean
+  the keywords of type Guardian and Sneaky, as before. The rule names differ from the keyword
+  type names because type names are one namespace.
+- **The keyword types stay**, as the other way: a game that names a library's keyword type
+  (`Swift = Swift {}`) gets its meaning without a rule. Folkborn keeps that form. The same
+  keyword given meaning both ways (a `Swift`-typed keyword also named by `EntersReady`) is a
+  checker note, since the rule adds nothing. `Mechanic` (families) is a keyword whose meaning is
+  its own handlers, unchanged.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

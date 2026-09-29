@@ -22,7 +22,9 @@ type Chain : ResponseRule { speeds: bool }        // like Stack, with spell spee
 type AlternatingPriority : ResponseRule {}
 
 // Playable in a response window (Ambush, Flash, Quick Effect); `only` restricts to one event.
+// A game's own keyword gets the meaning with `PlayableInResponse { keyword = @Ambush }`.
 type Ambush : Keyword { only: Event? }
+type PlayableInResponse : ResponseRule { keyword: Keyword, only: Event? }
 
 actions = [
   respond = ActionKind { name = 'Respond' }

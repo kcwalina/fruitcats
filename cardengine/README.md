@@ -62,6 +62,12 @@ discussed by editing them instead of re-pasting them into chat.
   code from giving a card behaviour it doesn't print. A card whose ability needs data of its own
   (`once-per-round`), or that prints several abilities, lists `abilities = [OnEnter { ... }]`
   instead, and each ability then has exactly its handler.
+- **A printed keyword is a word; a rule gives it meaning.** A printable game declares plain
+  keywords (`Swift = Keyword {}`); the playable game names each in the library rule that gives it
+  meaning (`EntersReady { keyword = @Swift }`), as it maps card types with `UnitCards`.
+- **How cards look is data.** A `#type CardLayout` document (named by `Game.card-layout`) gives
+  the card size, fonts, a frame per card type, and the parts drawn on it, each a box showing a
+  template of the card's data (`show = '{cost}'`).
 - **Every number has one source.** The numbers that shape a game are its `constants`, used by
   rules (`start = @starting-life`) and shown in the rulebook (`{@starting-life}`); a card's numbers
   are the card's `constants`, shown in its text (`{damage}`) and read by its handlers
@@ -73,8 +79,8 @@ discussed by editing them instead of re-pasting them into chat.
 ## Language conventions, as settled
 
 - A file holds one value and says its type with a directive on its first statement line:
-  `#type Game`, `#type Cards`, `#type Rulebook`, `#type Rules`, `#type Set`, `#type Library`,
-  `#type Core`. The value is an open
+  `#type Game`, `#type Cards`, `#type Rulebook`, `#type CardLayout`, `#type Rules`, `#type Set`,
+  `#type Library`, `#type Core`. The value is an open
   instance of that type whose fields follow as `field = value` lines, and the file's base name is
   its name (`@folkborn` is `folkborn.alex`). A text table filling one of the file's own fields is
   `@@@ .field`. A file that only declares types needs no directive. The older named root

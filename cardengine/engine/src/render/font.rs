@@ -1,5 +1,5 @@
 //! A TrueType font, read by the tables text layout needs (text-layout.md, "The font"): glyph lookup, advances and the
-//! vertical metrics.
+//! vertical metrics; and its glyphs' outlines (`glyf`), which the rasteriser fills.
 
 pub struct Font {
     pub upem: i64,
@@ -7,6 +7,17 @@ pub struct Font {
     pub descender: i64,
     advances: Vec<u16>,
     map: CharMap,
+    glyf: Vec<u8>,
+    /// Where each glyph's outline starts in `glyf`, and where the next one does.
+    loca: Vec<u32>,
+}
+
+/// A point of a glyph's outline, in font units, y up: on the curve, or a quadratic control point.
+#[derive(Clone, Copy)]
+pub struct OutlinePoint {
+    pub x: f32,
+    pub y: f32,
+    pub on: bool,
 }
 
 enum CharMap {
@@ -70,7 +81,134 @@ impl Font {
         if upem == 0 {
             return Err("the font's unitsPerEm is 0".to_string());
         }
-        Ok(Font { upem, ascender, descender, advances, map })
+        let long = i16_at(head, 50).unwrap_or(0) == 1;
+        let loca_table = table(b"loca").unwrap_or(&[]);
+        let mut loca = Vec::with_capacity(glyphs + 1);
+        for g in 0..=glyphs {
+            let offset = if long { u32_at(loca_table, 4 * g) } else { u16_at(loca_table, 2 * g).map(|v| 2 * v as u32) };
+            loca.push(offset.unwrap_or(0));
+        }
+        let glyf = table(b"glyf").unwrap_or(&[]).to_vec();
+        Ok(Font { upem, ascender, descender, advances, map, glyf, loca })
+    }
+
+    /// A glyph's outline: its contours, each a closed list of points. Empty for a glyph with none (a space).
+    pub fn outline(&self, glyph: u16) -> Vec<Vec<OutlinePoint>> {
+        let mut contours = Vec::new();
+        self.add_outline(glyph, [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], 0, &mut contours);
+        contours
+    }
+
+    /// Adds a glyph's contours, each point mapped by `m` (`[a, b, c, d, e, f]`: x' = a·x + c·y + e, y' = b·x + d·y + f).
+    fn add_outline(&self, glyph: u16, m: [f32; 6], depth: u32, contours: &mut Vec<Vec<OutlinePoint>>) {
+        let g = glyph as usize;
+        let (Some(&start), Some(&end)) = (self.loca.get(g), self.loca.get(g + 1)) else { return };
+        if end <= start || depth > 8 {
+            return;
+        }
+        let Some(data) = self.glyf.get(start as usize..end as usize) else { return };
+        let Some(count) = i16_at(data, 0) else { return };
+        let map = |x: f32, y: f32| (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
+        if count >= 0 {
+            let count = count as usize;
+            let ends: Vec<usize> = (0..count).filter_map(|i| u16_at(data, 10 + 2 * i).map(|e| e as usize)).collect();
+            let points = ends.last().map(|e| e + 1).unwrap_or(0);
+            let instructions = u16_at(data, 10 + 2 * count).unwrap_or(0) as usize;
+            let mut at = 12 + 2 * count + instructions;
+            let mut flags = Vec::with_capacity(points);
+            while flags.len() < points {
+                let Some(&flag) = data.get(at) else { return };
+                at += 1;
+                flags.push(flag);
+                if flag & 8 != 0 {
+                    let Some(&repeat) = data.get(at) else { return };
+                    at += 1;
+                    for _ in 0..repeat {
+                        flags.push(flag);
+                    }
+                }
+            }
+            flags.truncate(points);
+            let mut read = |short: u8, same: u8| -> Vec<i32> {
+                let mut values = Vec::with_capacity(points);
+                let mut value = 0i32;
+                for &flag in &flags {
+                    if flag & short != 0 {
+                        let delta = *data.get(at).unwrap_or(&0) as i32;
+                        at += 1;
+                        value += if flag & same != 0 { delta } else { -delta };
+                    } else if flag & same == 0 {
+                        value += i16_at(data, at).unwrap_or(0) as i32;
+                        at += 2;
+                    }
+                    values.push(value);
+                }
+                values
+            };
+            let xs = read(2, 16);
+            let ys = read(4, 32);
+            let mut first = 0;
+            for end in ends {
+                let contour: Vec<OutlinePoint> = (first..=end.min(points.saturating_sub(1)))
+                    .map(|i| {
+                        let (x, y) = map(xs[i] as f32, ys[i] as f32);
+                        OutlinePoint { x, y, on: flags[i] & 1 != 0 }
+                    })
+                    .collect();
+                if !contour.is_empty() {
+                    contours.push(contour);
+                }
+                first = end + 1;
+            }
+            return;
+        }
+        // A composite: other glyphs, each moved, and maybe scaled.
+        let mut at = 10;
+        loop {
+            let (Some(flags), Some(component)) = (u16_at(data, at), u16_at(data, at + 2)) else { return };
+            at += 4;
+            let (dx, dy) = if flags & 1 != 0 {
+                let v = (i16_at(data, at).unwrap_or(0) as f32, i16_at(data, at + 2).unwrap_or(0) as f32);
+                at += 4;
+                v
+            } else {
+                let v = (*data.get(at).unwrap_or(&0) as i8 as f32, *data.get(at + 1).unwrap_or(&0) as i8 as f32);
+                at += 2;
+                v
+            };
+            let f2dot14 = |at: usize| i16_at(data, at).unwrap_or(0) as f32 / 16384.0;
+            let (mut a, mut b, mut c, mut d) = (1.0, 0.0, 0.0, 1.0);
+            if flags & 8 != 0 {
+                a = f2dot14(at);
+                d = a;
+                at += 2;
+            } else if flags & 0x40 != 0 {
+                a = f2dot14(at);
+                d = f2dot14(at + 2);
+                at += 4;
+            } else if flags & 0x80 != 0 {
+                a = f2dot14(at);
+                b = f2dot14(at + 2);
+                c = f2dot14(at + 4);
+                d = f2dot14(at + 6);
+                at += 8;
+            }
+            // Offsets are x and y (ARGS_ARE_XY_VALUES); matching points is not supported and leaves the offset at 0.
+            let (dx, dy) = if flags & 2 != 0 { (dx, dy) } else { (0.0, 0.0) };
+            let inner = [a, b, c, d, dx, dy];
+            let combined = [
+                m[0] * inner[0] + m[2] * inner[1],
+                m[1] * inner[0] + m[3] * inner[1],
+                m[0] * inner[2] + m[2] * inner[3],
+                m[1] * inner[2] + m[3] * inner[3],
+                m[0] * inner[4] + m[2] * inner[5] + m[4],
+                m[1] * inner[4] + m[3] * inner[5] + m[5],
+            ];
+            self.add_outline(component, combined, depth + 1, contours);
+            if flags & 0x20 == 0 {
+                return;
+            }
+        }
     }
 
     /// The glyph for a character, or 0 (.notdef).

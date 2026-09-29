@@ -1,6 +1,6 @@
 //! Writes the draw list of every face of a game's cards, as `kardix cards` names its files:
-//! `cargo run --release --example draw -- <folder> <out> [--set <name>] [frame=<name>] [no-art]` writes
-//! `<out>/<set>/[<finish>/]<file>.txt`. A font the card layout names that isn't in the folder is read from the system's
+//! `cargo run --release --example draw -- <folder> <out> [--set <name>] [--png] [frame=<name>] [no-art]` writes
+//! `<out>/<set>/[<finish>/]<file>.txt`, or with `--png` the card drawn. A font the card layout names that isn't in the folder is read from the system's
 //! fonts, as kardix does.
 
 use std::fs;
@@ -42,13 +42,20 @@ fn main() {
             face[start..start + face[start..].find('"').unwrap()].to_string()
         };
         let (set, card, side, finish, file) = (field("set"), field("card"), field("face"), field("finish"), field("file"));
-        let list = queries::answer(&loaded, &format!("draw {} {} {} {} {}", set, card, side, finish, options));
+        let question = format!("{} {} {} {} {}", set, card, side, finish, options);
         let mut folder = out.join(&set);
         if finish != "standard" {
             folder = folder.join(&finish);
         }
         fs::create_dir_all(&folder).unwrap();
-        fs::write(folder.join(format!("{}.txt", file)), list).unwrap();
+        if rest.iter().any(|a| a == "--png") {
+            match queries::png(&loaded, &question) {
+                Ok(bytes) => fs::write(folder.join(format!("{}.png", file)), bytes).unwrap(),
+                Err(e) => eprintln!("{}: {}", question, e),
+            }
+        } else {
+            fs::write(folder.join(format!("{}.txt", file)), queries::answer(&loaded, &format!("draw {}", question))).unwrap();
+        }
         written += 1;
     }
     println!("Wrote {} draw list(s).", written);
@@ -63,7 +70,7 @@ fn collect(root: &Path, at: &Path, files: &mut Vec<ProjectFile>) {
         let path = entry.unwrap().path();
         if path.is_dir() {
             collect(root, &path, files);
-        } else if path.extension().is_some_and(|e| e == "alex") {
+        } else if path.extension().is_some_and(|e| e == "alex" || e == "png" || e == "webp") {
             let relative = path.strip_prefix(root).unwrap().to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/");
             files.push(ProjectFile { path: relative, bytes: fs::read(&path).unwrap() });
         }

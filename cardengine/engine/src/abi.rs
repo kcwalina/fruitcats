@@ -158,6 +158,25 @@ pub unsafe extern "C" fn project_query(handle: u32, pointer: *const u8, length: 
     hand_out(answer.into_bytes())
 }
 
+/// Draws a face of a loaded project as a PNG (`loader::queries::png`): `<set> <card> <front|back> <finish>`, then
+/// `bleed`, `frame=<name>` or `no-art`. The answer is the PNG's bytes, or, when the face can't be drawn, UTF-8 JSON
+/// `{"error": ...}`, which a PNG never starts with.
+///
+/// # Safety
+/// `pointer` and `length` must describe readable memory in this module.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn project_png(handle: u32, pointer: *const u8, length: u32) -> u64 {
+    let question = String::from_utf8_lossy(unsafe { std::slice::from_raw_parts(pointer, length as usize) }).into_owned();
+    let answer = PROJECTS.with(|projects| {
+        let projects = projects.borrow();
+        match projects.get((handle as usize).wrapping_sub(1)).and_then(|p| p.as_ref()) {
+            Some(project) => queries::png(project, &question).unwrap_or_else(|e| format!("{{\"error\":{}}}", queries::string(&e)).into_bytes()),
+            None => b"{\"error\":\"No project has that handle.\"}".to_vec(),
+        }
+    });
+    hand_out(answer)
+}
+
 /// Frees a loaded project.
 #[unsafe(no_mangle)]
 pub extern "C" fn project_free(handle: u32) {

@@ -661,6 +661,12 @@ As decided in "Text looks the same whatever language the core is written in":
    glyph's position differs by at most half of 1/64 pixel (SkiaSharp keeps the middle-line baseline's fraction; the
    spec rounds it).
 3. **Rasterise the draw list** with `tiny-skia`.
+   *Done 2026-09-29:* `src/render/raster.rs` fills the draw list with tiny-skia: glyphs from their `glyf` outlines,
+   unhinted; PNG and WebP pictures decoded in the core (`image-webp`, pure Rust). The module exports `project_png`, a
+   face as a PNG. **Tolerance:** against `kardix cards` on all 442 Folkborn faces, at most 1% of the channel samples
+   may differ by more than 32 of 255, and the mean difference may be at most 2 of 255. Measured: 0.89% at worst,
+   means from 0.5 to 1.1. The differences are glyph edges (SkiaSharp hints Segoe UI's outlines) and picture
+   resampling (tiny-skia's bicubic filter is Mitchell's, SkiaSharp's was Catmull-Rom).
 4. *Done when:* every released Folkborn card has the same font sizes and line breaks as
    `kardix cards` draws today, and differs from it only by antialiasing within a stated tolerance.
    Then the core's draw lists are committed as goldens, `kardix cards` draws through the core, and

@@ -11,6 +11,7 @@ use std::collections::HashSet;
 use super::project::{declared_type, Project};
 use crate::alex::model::{TypeId, ValueId, ValueKind};
 use crate::render::layout::Layout;
+use crate::render::raster::Raster;
 
 /// Answers `question`: `diagnostics`, `documents`, `cards`, or `value <document>`.
 pub fn answer(project: &Project, question: &str) -> String {
@@ -174,6 +175,26 @@ fn draw(project: &Project, what: &str) -> String {
     match found {
         Some(face) => layout.draw(&face).unwrap_or_else(|e| error(&e)),
         None => error(&format!("{} has no card {} with a {} face in the {} finish.", words[0], words[1], words[2], words[3])),
+    }
+}
+
+/// A face drawn as a PNG (`project_png`): `<set> <card> <front|back> <finish>`, with `draw`'s options and `bleed` to
+/// draw the card with its bleed. The project must hold the pictures and fonts the face uses.
+pub fn png(project: &Project, what: &str) -> Result<Vec<u8>, String> {
+    let bleed = what.split_whitespace().any(|w| w == "bleed");
+    let rest: Vec<&str> = what.split_whitespace().filter(|w| *w != "bleed").collect();
+    let list = draw(project, &rest.join(" "));
+    if list.starts_with("{\"error\"") {
+        return Err(list[10..list.len() - 2].to_string());
+    }
+    let mut raster = Raster::new(project);
+    let pixmap = raster.draw(&list, bleed)?;
+    pixmap.encode_png().map_err(|e| e.to_string())
+}
+
+impl crate::render::raster::Files for Project {
+    fn file(&self, path: &str) -> Option<&[u8]> {
+        self.asset(path)
     }
 }
 

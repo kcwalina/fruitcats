@@ -5,8 +5,12 @@ edition = "2024"
 description = "The TCG platform's core: Alex, and in time the game loader, the runtime and the card renderer, as one WebAssembly module."
 publish = false
 
-# The core depends on nothing. Every host (the browser, kardix.exe through Wasmtime, a server) runs the same module.
+# Every host (the browser, kardix.exe through Wasmtime, a server) runs the same module. Its only dependencies are the
+# rasteriser's (src/render/raster.rs): tiny-skia to fill shapes and glyphs, and image-webp to read WebP pictures; both
+# are pure Rust. Layout never uses them.
 [dependencies]
+image-webp = "0.2.4"
+tiny-skia = "0.12.0"
 
 [lib]
 name = "kardix"

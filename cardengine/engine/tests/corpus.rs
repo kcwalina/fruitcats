@@ -4,8 +4,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use tcg_engine::alex::parser::{self, ParseMode};
-use tcg_engine::alex::writer;
+use kardix::alex::parser::{self, ParseMode};
+use kardix::alex::writer;
 
 #[test]
 fn every_alex_file_round_trips() {

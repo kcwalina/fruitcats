@@ -1,14 +1,15 @@
 [package]
-name = "tcg-engine"
+name = "kardix-core"
 version = "0.1.0"
 edition = "2024"
 description = "The TCG platform's core: Alex, and in time the game loader, the runtime and the card renderer, as one WebAssembly module."
 publish = false
 
-# The core depends on nothing. Every host (the browser, tcg.exe through Wasmtime, a server) runs the same module.
+# The core depends on nothing. Every host (the browser, kardix.exe through Wasmtime, a server) runs the same module.
 [dependencies]
 
 [lib]
+name = "kardix"
 crate-type = ["cdylib", "rlib"]
 
 [profile.release]

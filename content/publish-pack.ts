@@ -23,7 +23,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artHash } from './art-hash';
-import { briefFile, gameSet, pictureFolders, renderCards } from './tcg';
+import { briefFile, gameSet, pictureFolders, renderCards } from './kardix';
 import { runChecks } from './check-set';
 import { PACKS_URL, artPaths, artPublished, dataPath, differsFrom, updateIndex, withEntry, type IndexStore, type PackEntry, type PackIndex } from './pack-storage';
 
@@ -118,10 +118,10 @@ async function main(): Promise<void> {
   const temp = mkdtempSync(join(tmpdir(), 'fruitcats-pack-'));
   const published = new Date().toISOString();
   if (paths && !artUp) {
-    // The finished cards aren't in the repository: tcg makes them here, from the set's sources, into a fresh folder,
-    // and they're uploaded from there (content/tcg.ts).
+    // The finished cards aren't in the repository: kardix makes them here, from the set's sources, into a fresh folder,
+    // and they're uploaded from there (content/kardix.ts).
     const cards = join(temp, 'cards');
-    console.log('  · rendering the cards with tcg');
+    console.log('  · rendering the cards with kardix');
     renderCards(root, cards);
     for (const dir of pictureFolders(root)) if (existsSync(dir)) uploadDir(dir, paths.art.slice(0, -1), FOREVER);
     if (existsSync(cards)) uploadDir(cards, paths.cards.slice(0, -1), FOREVER);

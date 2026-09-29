@@ -1,10 +1,10 @@
 //! Loads a game's folder with the core and prints what is wrong with it: `cargo run --release --example check -- <folder>`.
-//! What `tcg check` will say once tcg runs the core (Stage 2 of docs/tcg/tcg-developer-platform.md).
+//! What `kardix check` will say once kardix runs the core (Stage 2 of docs/tcg/tcg-developer-platform.md).
 
 use std::fs;
 use std::path::Path;
 
-use tcg_engine::loader::project::{self, ProjectFile};
+use kardix::loader::project::{self, ProjectFile};
 
 fn main() {
     let folder = std::env::args().nth(1).unwrap_or_else(|| ".".to_string());

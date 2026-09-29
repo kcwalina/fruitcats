@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gameSet, readBrief, renderCards } from '../content/tcg';
+import { gameSet, readBrief, renderCards } from '../content/kardix';
 
 /** The set's art brief (<set>-brief.alex in its folder in games/folkborn/). */
 function briefOf(folder: string) {
@@ -173,7 +173,7 @@ async function main() {
       const v = [...pic.versions].reverse().find((x) => x.kind === 'final') ?? pic.versions.at(-1)!;
       const bytes = Buffer.from(await (await call(`${set}/pictures/${key}/${v.id}`)).arrayBuffer());
       // Where each kind of picture lives: Pawtraits and the announcement in the set's folder; card pictures in the game
-      // folder, where tcg finds them (content/tcg.ts).
+      // folder, where kardix finds them (content/kardix.ts).
       const out = p.kind === 'pawtrait' ? join(folder, 'avatars', p.file)
         : p.kind === 'announcement' ? join(folder, 'announcement', p.file)
           : join(gameSet(folder), 'art', `${key}.webp`);

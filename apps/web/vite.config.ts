@@ -7,7 +7,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
 import { buildCore } from '../../content/core';
 import { artPaths, artPublished } from '../../content/pack-storage';
-import { briefFile, gameSet, pictureFolders } from '../../content/tcg';
+import { briefFile, gameSet, pictureFolders } from '../../content/kardix';
 import { CONTENT as GAME_SETS } from '../../content/index';
 import { isShellFile, precacheProblems } from './src/sw-rules';
 
@@ -264,7 +264,7 @@ function contentMounts(): { url: string; dir: string; build: boolean }[] {
   for (const { root, folder, code, registered } of contentSets())
     mounts.push(
       // A set's card paintings are in the game folder, and its finished cards are build output in out/cards/<set>/
-      // (npm run cards; content/tcg.ts).
+      // (npm run cards; content/kardix.ts).
       ...pictureFolders(root).map((dir) => ({ url: `/${code}/`, dir, build: LOCAL_ART || !registered })),
       { url: `/cards/${code}/`, dir: join(REPO_ROOT, 'out', 'cards', basename(root)), build: LOCAL_ART || !registered },
       ...(briefFile(root) ? [{ url: `/studio/${code}/project/`, dir: gameSet(root), build: LOCAL_ART || !registered }] : []),

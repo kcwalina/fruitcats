@@ -1,4 +1,4 @@
-# TCG developer platform
+# Kardix platform
 
 The plan for a toolkit that lets hobbyists and indie developers create trading card games that a
 computer can play. It records what was decided in the planning discussion of 2026-09-28 and what
@@ -46,7 +46,7 @@ Everything that must behave identically wherever it runs is written once, as **t
 compiled to one WebAssembly module: Alex (parse, bind, types, diagnostics, the byte-exact round
 trip that lets designers edit files), the game loader, the runtime, the bots, and the card
 renderer. Every host runs that same file: the browser (Studio, the game table, the player app),
-`tcg.exe` through Wasmtime, and the servers.
+`kardix.exe` through Wasmtime, and the servers.
 
 - **The core is pure computation.** Bytes in, bytes out: no I/O, no clock, no network, no calls
   back to the host. That is what makes it portable, deterministic (the same seed and actions give
@@ -58,27 +58,27 @@ renderer. Every host runs that same file: the browser (Studio, the game table, t
   not binding: hosts only see a `.wasm` file and its byte interface (`cardengine/engine/src/abi.rs`),
   so the core can be rewritten in another language that compiles to WebAssembly without the layers
   above it changing.
-- **C# for everything around it:** `tcg.exe` (NativeAOT, trimmed, one file, with the module and
+- **C# for everything around it:** `kardix.exe` (NativeAOT, trimmed, one file, with the module and
   the Studio front end embedded), file watching, the local Studio host, printing jobs, the servers.
-  `tcg cards` draws with SkiaSharp in C# today; the core's renderer replaces it once it draws the
+  `kardix cards` draws with SkiaSharp in C# today; the core's renderer replaces it once it draws the
   same cards pixel for pixel, so the card in Studio, on the table and in the print files is one
   drawing.
 - **A thin front end** for Studio and the player app: plain TypeScript bundled into one file, no
   framework and no runtime dependencies. It draws and handles input; the core decides everything.
 - **No compiled intermediate format.** The core reads `.alex` source directly: converting Alex to
   JSON would lose what Alex was designed to keep.
-- **The engine never assumes `tcg check` ran.** An online server loads games other people wrote,
+- **The engine never assumes `kardix check` ran.** An online server loads games other people wrote,
   so the loader refuses a malformed game with a clear error instead of misbehaving.
 - **Two Alex parsers while both are used, kept identical.** The C# Alex stays for mochi's own
   uses (agent configurations, prompts). `cardengine/conformance` parses every `.alex` file in
   fruitcats and mochi, plus 25 seeded broken copies of each, with both, and compares their
   canonical dumps (tree, spans, trivia, diagnostics, round trip) byte for byte. Rejected: a
   TypeScript engine with a TypeScript Alex beside the C# tools. It would have needed a JavaScript
-  runtime inside `tcg.exe` to run `tcg sim` and `tcg playtest`, and native Node add-ons to render
+  runtime inside `kardix.exe` to run `kardix sim` and `kardix playtest`, and native Node add-ons to render
   cards.
 
 **The Artist Studio runs on the core (done 2026-09-29).** The Studio (`apps/web/src/studio/`) and the build that
-lists its projects (`content/tcg.ts`) load the core's `.wasm` and read their projects through it
+lists its projects (`content/kardix.ts`) load the core's `.wasm` and read their projects through it
 (`cardengine/engine/host/core.ts` in the browser and in Node). The interim TypeScript reader that did this for a day
 (`cardengine/alex/`, 31d7bbc) is deleted, with its tests and its conformance folder. The owner said later that day
 that Alex, both implementations, will move to a separate shared repository of platform pieces that mochi and fruitcats
@@ -107,7 +107,7 @@ Each layer depends only on the ones below it.
 | Layer | What it is | Language |
 |---|---|---|
 | L6 Services | cloud playtests, online hosting and lobbies, storage, printing | C# (running the core) |
-| L5 Tools | the `tcg` CLI, the language server, Studio (the IDE) | C# (+ a thin TS front end) |
+| L5 Tools | the `kardix` CLI, the language server, Studio (the IDE) | C# (+ a thin TS front end) |
 | L4 Presentation | the game table, the card renderer, the rulebook renderer (HTML, PDF) | the core draws; a thin TS front end shows |
 | L3 Drivers | seat drivers (human, search bot, LLM player), the match host, the playtest runner | the core (bots); C# (match host, runner) |
 | L2 Runtime | the engine: plays a game from its Alex source | the core |
@@ -126,8 +126,8 @@ What each layer promises:
   the pattern Folkborn's `packages/match` uses today.
 - **L4 Presentation** is generic: the game declares its zones and the table lays them out; card
   templates say where a card's data goes; the rulebook renders from the same sources as the game.
-- **L5 Tools**: the `tcg` CLI is what a designer and an agent use. Studio is served locally by
-  `tcg studio`; its designers edit source through Alex's byte-exact round trip, so a change in a
+- **L5 Tools**: the `kardix` CLI is what a designer and an agent use. Studio is served locally by
+  `kardix studio`; its designers edit source through Alex's byte-exact round trip, so a change in a
   property grid is an edit to the `.alex` file.
 
 ### The engine contract
@@ -179,21 +179,21 @@ a new library rule, not a more powerful language.
 
 ## A game project
 
-`tcg new <name>` creates a skeleton, like `dotnet new`. It knows nothing about any game: no cards,
+`kardix new <name>` creates a skeleton, like `dotnet new`. It knows nothing about any game: no cards,
 no rules. The designer grows the game one piece at a time, by asking an agent, by editing files,
 or in Studio.
 
 **Two stages, one folder (decided 2026-09-28).** Many designers start with cards and a rulebook
 only, to print a physical game, and make it playable by the computer later or never. So a project
-has two goals, and `tcg check` reports progress toward each:
+has two goals, and `kardix check` reports progress toward each:
 
 - **Printable:** card types, cards, decks, the rulebook, constants and the card back. Nothing about
   the engine or playing appears: a printable game is only a definition of cards and a rulebook.
-  `tcg cards --print` and `tcg rulebook` need only this.
+  `kardix cards --print` and `kardix rulebook` need only this.
 - **Playable:** added below, never changing the printable part: the libraries, zones, rules picked
   from the libraries (each citing its rulebook section), the mapping of the game's card types to
   the libraries' (`UnitCards { types = [@Creature] }`), and a handler for every card with text.
-  `tcg sim`, `test`, `playtest`, `play` and `push` need this.
+  `kardix sim`, `test`, `playtest`, `play` and `push` need this.
 
 Errors are real mistakes only (a broken reference, a missing image, an unknown constant). What a
 game still lacks to be playable is a list, not errors.
@@ -220,7 +220,7 @@ expansions, designed later. A cards file can be held back with a marker such as 
 print, on the core `Card`: `type Creature : Card { cost: int, power: int, health: int }`. `Card`
 gives name, art, text, flavor and constants. The libraries' card shapes (`UnitCard`, `SpellCard`)
 are engine concepts, so a playable game maps its types onto them (`UnitCards { types =
-[@Creature] }`), and `tcg check` confirms the types have the fields the library needs.
+[@Creature] }`), and `kardix check` confirms the types have the fields the library needs.
 
 **Card text and handlers.** A card's printed rules text is `text = '...'`. Its handlers attach to
 the card by slot (`@hello.on-enter = draw-a-card`, `@cheer.static = ...`, `@spark.on-play = ...`);
@@ -245,11 +245,11 @@ cheer = Creature {
 static others-get-bonus { units(own, other).grant(power: +card.bonus) }
 ```
 
-`tcg check`: an unknown name in text is an error; a card constant its text never shows is an error
+`kardix check`: an unknown name in text is an error; a card constant its text never shows is an error
 (players would play with a number they can't see); a digit typed into rulebook text, card text or
 a handler is a note. Constants are also the knobs a playtest can vary.
 
-**How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
+**How a project loads.** `kardix` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name
 (`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game` and any number of `Cards`
 files, all part of it; the rulebook joins by reference (`rulebook = @rulebook`), and each `Rules`
@@ -259,27 +259,27 @@ Assets are referred to by their path in the folder.
 **The rulebook is source.** Its sections are Alex, and every rule cites the section that explains
 it (`cites = @rulebook.sections.combat`). The checker looks both ways, as the linker already does for
 cards and their handlers: a citation of a missing section is an error; a rule with no citation,
-or a section no rule cites, is a note. `tcg rulebook` renders the same file to HTML and PDF, as
+or a section no rule cites, is a note. `kardix rulebook` renders the same file to HTML and PDF, as
 LaTeX does for documents, with a card list generated from the card data.
 
-## The `tcg` command-line tool (free)
+## The `kardix` command-line tool (free)
 
 | Command | What it does |
 |---|---|
-| `tcg new` | create a project skeleton |
-| `tcg check` | parse, link and type-check; says what's missing and where |
-| `tcg test` | run the scenarios (given / when / then) |
-| `tcg sim` | play one game with bots and print its log |
-| `tcg playtest` | play many bot games and report win rates, game length, card stats |
-| `tcg play` | open the game table locally for hot-seat play |
-| `tcg rulebook` | render the rulebook to HTML and PDF |
-| `tcg cards` | render composed card images; `--print --printer <name>` makes printer-ready files |
-| `tcg login`, `tcg push`, `tcg invite` | the online service: host the game, invite players |
-| `tcg studio` | open the IDE on this folder (paid) |
+| `kardix new` | create a project skeleton |
+| `kardix check` | parse, link and type-check; says what's missing and where |
+| `kardix test` | run the scenarios (given / when / then) |
+| `kardix sim` | play one game with bots and print its log |
+| `kardix playtest` | play many bot games and report win rates, game length, card stats |
+| `kardix play` | open the game table locally for hot-seat play |
+| `kardix rulebook` | render the rulebook to HTML and PDF |
+| `kardix cards` | render composed card images; `--print --printer <name>` makes printer-ready files |
+| `kardix login`, `kardix push`, `kardix invite` | the online service: host the game, invite players |
+| `kardix studio` | open the IDE on this folder (paid) |
 
 ## Studio (the IDE, paid)
 
-A local web app that `tcg studio` opens on the project folder. It shows composed cards, the
+A local web app that `kardix studio` opens on the project folder. It shows composed cards, the
 running game and the rulebook, and has graphical designers (a card's property grid, deck
 builder, rule pickers) that write to the Alex files behind the scenes. The code view is the file
 itself.
@@ -289,8 +289,8 @@ itself.
 card; run a game. A host implements that protocol, and the front end never knows which one it
 has:
 
-- **The local host, first.** `tcg studio` is the `tcg` process: it serves the front end on
-  localhost from inside `tcg.exe` and exposes the folder it runs in. Nothing is uploaded, so a
+- **The local host, first.** `kardix studio` is the `kardix` process: it serves the front end on
+  localhost from inside `kardix.exe` and exposes the folder it runs in. Nothing is uploaded, so a
   game with thousands of cards and gigabytes of art costs nothing extra: images are read from the
   disk. A file watcher pushes every change to the page, so an edit made in a text editor or by an
   agent in another terminal shows within a second. Git stays the designer's: Studio edits files
@@ -301,7 +301,7 @@ has:
   place that edits Alex.
 - **Instant previews run in the page.** Dragging a part's box in the layout editor (walkthrough
   §6) redraws the card on every mouse move, so the card renderer runs in the browser, in the
-  core, not behind a request to `tcg`. Clicking an event to jump to the rule that caused it
+  core, not behind a request to `kardix`. Clicking an event to jump to the rule that caused it
   (§13) needs the core to carry source positions through loading into the event log.
 - **An online host** for the online designer (next section): the same front end over a workspace
   that lives in storage instead of on the designer's disk.
@@ -313,7 +313,7 @@ has:
 ### Two products on one core (owner, 2026-09-29)
 
 - **Studio (local)** is the full IDE, like Visual Studio, for **digital game designers**: people
-  who build a game the computer plays, in a repo, with `tcg` and agents.
+  who build a game the computer plays, in a repo, with `kardix` and agents.
 - **The online designer** is what the Artist Studio grows into: an online IDE for people who
   design **physical games** to print and sell. They are not developers and do not care about
   shipping on Steam. In it they add and design cards (not only fill in the art for a packet we
@@ -362,11 +362,11 @@ printed card come from the Alex files. The look has two halves:
   keywords in bold, the card's text with its `{constants}` filled in, flavor in italics under a
   rule). A part shows only on cards that have what it shows (a Charm has no Power).
 
-`tcg check` checks the layout: a `{field}` no card type has, a box off the card, a missing font or
+`kardix check` checks the layout: a `{field}` no card type has, a box off the card, a missing font or
 frame, a text box too small for a card's text at its smallest size (naming the card), and images
-below print resolution. `tcg cards` renders every card; `--print --printer <name>` adds bleed-sized
+below print resolution. `kardix cards` renders every card; `--print --printer <name>` adds bleed-sized
 files, the back and the printer's order choices. The layout is Folkborn's own card anatomy, moved out
-of the Python script that used to draw every card and into data a designer owns. `tcg` now renders
+of the Python script that used to draw every card and into data a designer owns. `kardix` now renders
 every Folkborn set, and the script (`tools/compose_cards.py`) is gone.
 
 Added after comparing with the live game's cards (2026-09-28), so the layout reproduces Folkborn's
@@ -380,7 +380,7 @@ card design exactly:
   field of its own (not one the core's `Set` declares). A Folkborn set gives its `family`, a name and
   colours, once, and every card in it is printed in them.
 - A frame's `texture` (an artist's own picture for the frame) paints the shapes marked
-  `frame-texture`. `tcg cards --frame <name>` draws every card in one frame, and `--no-art` leaves
+  `frame-texture`. `kardix cards --frame <name>` draws every card in one frame, and `--no-art` leaves
   the card's picture and the frame's texture see-through. The Artist Studio uses both to show an
   artist's picture on the real card, in each frame colour they can pick.
 - Parts can depend on the card: `if` / `unless` a template is empty (Folkborn shows "art pending"
@@ -392,16 +392,16 @@ card design exactly:
   (the game's keywords; `with-number` bolds "Tough 1"), `Bold { up-to = ':' }` (a sentence's opening
   up to a colon: "Hello:"), `Italic { between = '()' }` (reminder text). `same-line = true` runs a
   paragraph on from the one before ("Guardian. Hello: …").
-- `tcg` has no Folkborn numbers in it: sizes, paddings and baselines are in the layout, required where
+- `kardix` has no Folkborn numbers in it: sizes, paddings and baselines are in the layout, required where
   there's no neutral default. `text-spacing = whole-pixels` sets text the way the old composer did.
-- `tcg` references the C# Alex's projects directly, as source in the mochi repository checked out beside
-  this one (`C:/git/mochi` next to `C:/git/fruitcats`, kept on main): one copy of Alex, no packages. `tcg`
+- `kardix` references the C# Alex's projects directly, as source in the mochi repository checked out beside
+  this one (`C:/git/mochi` next to `C:/git/fruitcats`, kept on main): one copy of Alex, no packages. `kardix`
   moves onto the core (the WebAssembly module) as the core grows past the parser.
 - **Two-faced cards:** `Card.back` holds a second face (the Hero's Awakened side). It prints on the
   card's back instead of the game's card back, with its own type's frame; it shows its own fields
   and the front's for the ones its type doesn't have (number, rarity, family).
 - **Finishes:** a game declares `enum Finish { standard, foil }` and a `finish` field; a type can fix
-  it (`finish = foil` on `Hero`). `tcg cards --print` groups foil cards as their own order.
+  it (`finish = foil` on `Hero`). `kardix cards --print` groups foil cards as their own order.
 
 ### Text looks the same whatever language the core is written in (owner, 2026-09-29)
 
@@ -442,7 +442,7 @@ foil, two-faced cards) and the layout parts they need.
 
 ## Business
 
-- **Free:** the toolchain: the `tcg` CLI, Alex, the engine, bots, local play, the rulebook and card
+- **Free:** the toolchain: the `kardix` CLI, Alex, the engine, bots, local play, the rulebook and card
   rendering.
 - **Paid:** Studio, the local IDE for digital game designers.
 - **Paid:** the online designer for physical games. Its core is the nightly automatic playtests;
@@ -459,7 +459,7 @@ one (Talon, Tabula) so that the domain and the trademark can be owned outright. 
 | Product | Code name used until now | What it is | For |
 |---|---|---|---|
 | **Folkborn** | Folkborn | the game: Steam, web, iOS and Android | players; the platform's first real game |
-| **Kardix Platform** | TDP | the free, low-level tools: the core, the `kardix` command (today `tcg`), Alex, the framework and libraries | anyone, and agents |
+| **Kardix Platform** | TDP | the free, low-level tools: the core, the `kardix` command (today `kardix`), Alex, the framework and libraries | anyone, and agents |
 | **Kardix Studio** | TPS | the local IDE (Studio, above) | digital game designers |
 | **Kardix Designer** | TDS | the online IDE (the online designer, above; what the Artist Studio grows into) | physical game designers and their artists |
 | **Kardix Playtest** | TPA | the online playtesting service: the core run in the cloud, bots overnight, reports | anyone with a game: Designer and Studio users, and people who use only the free tools with an LLM |
@@ -485,20 +485,17 @@ playtesting: Decklab AI (decklab.ai, "AI card game design, prototyping and playt
 ShuffleKit. Board Game Lab, Dextrous and Tabletop Creator do design and manual play. They are
 worth a proper look before settling Kardix Playtest's positioning.
 
-**Renaming in the code.** It is planned here but not done yet, and must happen before anyone
-outside uses the tools:
+**Renaming in the code (done 2026-09-29).** Before anyone outside uses the tools, the code took the new names:
 
-- The command `tcg` becomes `kardix` (`kardix new`, `kardix check`, `kardix studio`, …): the
-  project `cardengine/tcg/` and its assembly name, `npm run cards` in fruitcats, and every
-  `tcg …` in this doc, the walkthrough and the READMEs. The walkthrough's reader-facing text uses
-  the new name.
-- The core's module `tcg_engine.wasm` becomes `kardix.wasm`, and the crate `tcg-engine` becomes
-  `kardix-core`. Its exports lose the `tcg_` prefix (`kardix_alloc`, `kardix_free`); hosts change
-  in the same commit.
+- The command `tcg` is `kardix` (`kardix new`, `kardix check`, `kardix studio`, …): the project is
+  `cardengine/kardix/` (`Kardix.csproj`, assembly `kardix`, namespace `Kardix`), fruitcats' side of it is
+  `content/kardix.ts`, and this doc, the walkthrough and the READMEs say `kardix`.
+- The core's crate `tcg-engine` is `kardix-core`, its module `kardix.wasm` (it was `tcg_engine.wasm`), and its exports
+  `kardix_alloc` and `kardix_free` (they were `tcg_alloc` and `tcg_free`); every host changed with it.
 - The folder `cardengine/` stays until the platform moves to its own repository, `kardix`, where
   the folders become `core/`, `cli/`, `framework/`, `studio/`, `designer/`, `playtest/`. Renaming
   it twice would only break links.
-- "TCG developer platform" in prose becomes "Kardix". This document keeps its file name until the
+- "TCG developer platform" in prose is "Kardix". This document keeps its file name until the
   move, so links to it keep working.
 
 ## Where it lives
@@ -521,10 +518,10 @@ Folkborn is the platform's first real game (2026-09-28). `games/folkborn/` holds
 `art/finishes/` (the foil, gold and prismatic textures), and for each
 released set `sets/<set>/<set>.alex` (its cards) with the paintings they name (`sets/<set>/art/`). A set that isn't
 part of the game yet is in `prototypes/<set>/` (Flower Souls, the owner's decision of 2026-09-29): it isn't in the game's
-`sets`, and tcg renders it only when asked for it by name (`--set flower-souls`). A set's folder may also hold its art
+`sets`, and kardix renders it only when asked for it by name (`--set flower-souls`). A set's folder may also hold its art
 brief for the Artist Studio (`<set>-brief.alex`), which makes the folder a Studio project. Nothing in it
 is generated. `npm run cards` renders every card into `out/cards/<set>/` (ignored by git), and `publish-pack` renders
-a set into a fresh folder and uploads that; copying `games/folkborn/` anywhere and running `tcg cards` there makes
+a set into a fresh folder and uploads that; copying `games/folkborn/` anywhere and running `kardix cards` there makes
 the same cards, pixel for pixel. `content/<set>/` keeps what the current engine and web app still read (`set.json`,
 art prompts, tale banners); engine files move into the game folder as Alex-based engine features replace them.
 
@@ -550,7 +547,7 @@ On main since 2026-09-29, merged from branch `claude/tcg-developer-ide-architect
 Checked on the owner's machine (Windows on ARM64) when it was merged: `cargo test --release` and
 `cargo build --release --target wasm32-unknown-unknown` in `cardengine/engine` (95 KB), then
 `dotnet run -c Release` in `cardengine/conformance` (96 of 96 dumps and 2,400 of 2,400 broken copies
-identical), and `dotnet build -c Release` in `cardengine/tcg`, whose project finds mochi with forward slashes.
+identical), and `dotnet build -c Release` in `cardengine/kardix`, whose project finds mochi with forward slashes.
 
 ### Stage 1: the core loads a game
 
@@ -570,7 +567,7 @@ identical), and `dotnet build -c Release` in `cardengine/tcg`, whose project fin
    implementation: `card-layout.alex` names `Frame`, which the core doesn't declare, and the samples' `Printed` adds
    `rarity` and `family`, which `common` and `families` also add to `Card`.
 2. **The project loader** (L1): a folder's files handed in as bytes (the core does no I/O), one
-   `Game`, every `Cards` file, `Rules` by their `for`, the checks `tcg check` promises (unknown
+   `Game`, every `Cards` file, `Rules` by their `for`, the checks `kardix check` promises (unknown
    `{name}`, unused card constants, handler and text both ways, citations). Errors carry file and
    span.
    *Done (2026-09-29), in `cardengine/engine/src/loader/project.rs`:* every `.alex` file of the folder joins the one
@@ -579,47 +576,45 @@ identical), and `dotnet build -c Release` in `cardengine/tcg`, whose project fin
    a printable game uses none. Bound with the card engine's host, which checks `{name}`, unused card constants and
    handlers against text. A citation of a missing section is an error, as any unresolved reference is; the notes for a
    rule with no citation or a section no rule cites are still to do. `cargo run --release --example check -- <folder>`
-   prints what it finds. On `games/folkborn` it finds 92 errors, all one story: the core's schema is behind what tcg
+   prints what it finds. On `games/folkborn` it finds 92 errors, all one story: the core's schema is behind what kardix
    and Folkborn's files use (`Frame`, `Finish` records, `text-spacing`, a Set's `family`, paragraph and text box
-   fields). tcg reads its files without a schema, so it never noticed; the core schema needs those added.
+   fields). kardix reads its files without a schema, so it never noticed; the core schema needs those added.
 3. **Interface calls** in `abi.rs` for these: `load_project` (many files in, diagnostics and a
    handle out) and queries on the loaded project (cards, card types, the layout). Bytes in, bytes
    out, with no host imports. The module must still instantiate with an empty linker.
    *Done (2026-09-29):* `project_load`, `project_query` and `project_free`; the questions are `diagnostics`,
    `documents`, `cards` and `value <document>`, answered as JSON (`src/loader/queries.rs`).
 
-4. **The Artist Studio on the core.** `apps/web/src/studio/` and `content/tcg.ts` load the core's
+4. **The Artist Studio on the core.** `apps/web/src/studio/` and `content/kardix.ts` load the core's
    `.wasm` (through a small host like `web/engine.js`, in the browser and in Node) and read their
    projects with the queries from step 3, instead of `cardengine/alex/alex.ts`. Then delete
    `alex.ts`, `alex.test.ts` and `cardengine/alex/conformance/`.
    *Done when* the live Studio shows every project and picture exactly as before, and no file
    imports `cardengine/alex/alex`. *Done 2026-09-29.*
 
-### Stage 2: `tcg.exe` runs the core
+### Stage 2: `kardix.exe` runs the core
 
-0. **Rename first** (see "Products and names", "Renaming in the code"): `tcg` becomes `kardix`, and
-   `tcg_engine.wasm` becomes `kardix.wasm`, while few files use them. The rest of this plan says `tcg`
-   for what is `kardix` from here on.
-1. Move `EngineModule` (the Wasmtime host) from `cardengine/conformance` into `tcg`, and embed
-   `tcg_engine.wasm` as a resource.
-2. `tcg check` runs through the core.
-3. **Publish `tcg.exe` as NativeAOT, trimmed and single-file on Windows, with Wasmtime's native
+0. **Rename first** (see "Products and names", "Renaming in the code"). *Done 2026-09-29.*
+1. Move `EngineModule` (the Wasmtime host) from `cardengine/conformance` into `kardix`, and embed
+   `kardix.wasm` as a resource.
+2. `kardix check` runs through the core.
+3. **Publish `kardix.exe` as NativeAOT, trimmed and single-file on Windows, with Wasmtime's native
    library inside it.** This is the unproven piece of the design; if Wasmtime's .NET package won't
    go single-file, decide between a second file beside the exe and another host.
-   *Done when* a fresh machine with nothing installed runs `tcg check` on `games/folkborn`.
+   *Done when* a fresh machine with nothing installed runs `kardix check` on `games/folkborn`.
 
-### Stage 3: `tcg studio`, read-only
+### Stage 3: `kardix studio`, read-only
 
-1. **The local host** in `tcg`: an explicit HTTP server on localhost (`HttpListener`, or Kestrel
-   configured in code with no conventions) that serves the front end from inside `tcg.exe`, the
+1. **The local host** in `kardix`: an explicit HTTP server on localhost (`HttpListener`, or Kestrel
+   configured in code with no conventions) that serves the front end from inside `kardix.exe`, the
    workspace protocol (list, read and write files, diagnostics), and a push channel (a WebSocket
    or server-sent events) fed by a `FileSystemWatcher`.
 2. **The front end:** plain TypeScript, no framework, bundled by esbuild into one file that is
-   embedded in `tcg.exe`. It shows the files on the left, the selected card or file in the middle,
-   and diagnostics, and it loads `tcg_engine.wasm` itself, so previews run in the page.
+   embedded in `kardix.exe`. It shows the files on the left, the selected card or file in the middle,
+   and diagnostics, and it loads `kardix.wasm` itself, so previews run in the page.
 3. Until the core renders cards (Stage 4), the page shows each card's data and art as the layout
-   places them, or cards `tcg cards` rendered.
-   *Done when* walkthrough §2 is true: `tcg studio` in a folder opens the browser, and an edit
+   places them, or cards `kardix cards` rendered.
+   *Done when* walkthrough §2 is true: `kardix studio` in a folder opens the browser, and an edit
    saved in any editor shows within a second.
 
 ### Stage 4: the card renderer in the core
@@ -630,13 +625,13 @@ As decided in "Text looks the same whatever language the core is written in":
    advances, kerning, line breaking, fitting, emphasis, and 1/64-pixel integer positions with
    their rounding.
 2. **Layout to a draw list** from `card-layout.alex` (boxes, templates, text fitting, emphasis,
-   frames, icons, two faces, finishes), ported from `cardengine/tcg/Renderer.cs` and `Faces.cs`.
+   frames, icons, two faces, finishes), ported from `cardengine/kardix/Renderer.cs` and `Faces.cs`.
    Fonts are read from the project's font files. No rustybuzz.
 3. **Rasterise the draw list** with `tiny-skia`.
 4. *Done when:* every released Folkborn card has the same font sizes and line breaks as
-   `tcg cards` draws today, and differs from it only by antialiasing within a stated tolerance.
-   Then the core's draw lists are committed as goldens, `tcg cards` draws through the core, and
-   SkiaSharp leaves `tcg`.
+   `kardix cards` draws today, and differs from it only by antialiasing within a stated tolerance.
+   Then the core's draw lists are committed as goldens, `kardix cards` draws through the core, and
+   SkiaSharp leaves `kardix`.
 5. Studio shows finished cards drawn in the page.
 
 ### Stage 5: Studio edits
@@ -652,12 +647,12 @@ As decided in "Text looks the same whatever language the core is written in":
 The earlier order continues on the core:
 
 1. **The runtime** plays Hello TCG from its Alex source.
-2. **`tcg` basics:** `new`, `test`, `sim` with a random bot.
-3. **Search bot and `tcg playtest`.**
-4. **The game table:** Studio's Play tab (§13, with events linked to their rules) and `tcg play`
+2. **`kardix` basics:** `new`, `test`, `sim` with a random bot.
+3. **Search bot and `kardix playtest`.**
+4. **The game table:** Studio's Play tab (§13, with events linked to their rules) and `kardix play`
    hot-seat, then online through the match host (a C# server running the core).
-5. **`tcg rulebook`.**
-6. **Print files** from `tcg cards --print`.
+5. **`kardix rulebook`.**
+6. **Print files** from `kardix cards --print`.
 7. **The online designer for physical games:** the online host with storage providers (our
    storage and GitHub first), card design and the artist workflow (the Artist Studio folded in),
    print files, and nightly automatic playtests with a results page. That last part is the
@@ -794,7 +789,7 @@ Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
 - Are the language server and VS Code extension free (part of the toolchain) or part of the paid
   IDE? Recommended: free.
 - The product's name.
-- **Scenarios (given / when / then, `tcg test`, the `scenarios` library) are not designed yet** (the owner,
+- **Scenarios (given / when / then, `kardix test`, the `scenarios` library) are not designed yet** (the owner,
   2026-09-28). They get designed properly near the end: after cards and the rulebook, the IDE, printing, the
   execution engine and the online table. Until then the given/when/then syntax in the samples and the
   walkthrough is a placeholder; don't build on it or go deeper into its design. One question is parked for that

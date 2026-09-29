@@ -1,4 +1,4 @@
-// The engine's WebAssembly module in a browser: the same file tcg.exe runs through Wasmtime. No dependencies and no
+// The engine's WebAssembly module in a browser: the same file kardix.exe runs through Wasmtime. No dependencies and no
 // bindings: the module's interface is plain functions over bytes in its own memory (cardengine/engine/src/abi.rs).
 
 export async function loadEngine(url) {
@@ -20,7 +20,7 @@ export class Engine {
   dump(bytes, mode = 0) {
     const input = this.copyIn(bytes);
     const packed = this.exports.alex_dump(input, bytes.length, mode);
-    this.exports.tcg_free(input, bytes.length);
+    this.exports.kardix_free(input, bytes.length);
     return decoder.decode(this.takeResult(packed));
   }
 
@@ -28,12 +28,12 @@ export class Engine {
   check(bytes) {
     const input = this.copyIn(bytes);
     const count = this.exports.alex_check(input, bytes.length);
-    this.exports.tcg_free(input, bytes.length);
+    this.exports.kardix_free(input, bytes.length);
     return count;
   }
 
   copyIn(bytes) {
-    const address = this.exports.tcg_alloc(bytes.length);
+    const address = this.exports.kardix_alloc(bytes.length);
     new Uint8Array(this.exports.memory.buffer, address, bytes.length).set(bytes);
     return address;
   }
@@ -43,7 +43,7 @@ export class Engine {
     const address = Number(BigInt.asUintN(64, packed) >> 32n);
     const length = Number(BigInt.asUintN(64, packed) & 0xffffffffn);
     const bytes = new Uint8Array(this.exports.memory.buffer, address, length).slice();
-    this.exports.tcg_free(address, length);
+    this.exports.kardix_free(address, length);
     return bytes;
   }
 }

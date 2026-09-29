@@ -8,7 +8,7 @@
 // data-click and data-in attributes, as in the game.
 
 import { Core } from '../../../../cardengine/engine/host/core';
-import coreUrl from '../../../../cardengine/engine/target/wasm32-unknown-unknown/release/tcg_engine.wasm?url';
+import coreUrl from '../../../../cardengine/engine/target/wasm32-unknown-unknown/release/kardix.wasm?url';
 import { session, signOut } from '../auth';
 import { apiPolicy, fetchRetry } from '../net';
 import { BASE, esc } from '../site';

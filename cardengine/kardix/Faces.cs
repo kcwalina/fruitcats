@@ -1,6 +1,6 @@
 using ViaMochi.Alex.Model;
 
-namespace Tcg;
+namespace Kardix;
 
 /// <summary>
 /// One printed face of a card, in one finish. A card has one face, or two when it has a <c>back</c>. A back face

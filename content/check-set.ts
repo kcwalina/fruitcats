@@ -17,7 +17,7 @@ import {
 import { CONTENT, loadContent, type ContentSet } from './index';
 import { cardTexts, suggestText } from './rules-text';
 import { printedCards, printedDifferences } from './printed-cards';
-import { briefFile, gameSet, pictureFolders, readBrief } from './tcg';
+import { briefFile, gameSet, pictureFolders, readBrief } from './kardix';
 import type { Brief } from '../apps/web/src/studio/brief';
 import TERMS from '../packages/engine/src/terms.json';
 
@@ -124,8 +124,8 @@ function checkSet(set: ContentSet, games: number): Report {
   const pictures = pictureFolders(join(HERE, set.folder));
   const missingArt = faces.filter((f) => !pictures.some((dir) => existsSync(join(dir, `${f}.webp`))));
   if (missingArt.length) r.warnings.push(`No illustration yet for ${missingArt.length} card face(s): ${missingArt.join(', ')} (art/illustrations/<id>.webp).`);
-  // tcg renders every set's cards from Alex (content/tcg.ts), when they're published: they aren't kept in the repository.
-  if (!printedCards(join(HERE, set.folder))) r.errors.push(`No cards in Alex: tcg renders a set's cards from ${relative(join(HERE, '..'), gameSet(join(HERE, set.folder))).replace(/\\/g, '/')}/${basename(set.folder)}.alex, which isn't there.`);
+  // kardix renders every set's cards from Alex (content/kardix.ts), when they're published: they aren't kept in the repository.
+  if (!printedCards(join(HERE, set.folder))) r.errors.push(`No cards in Alex: kardix renders a set's cards from ${relative(join(HERE, '..'), gameSet(join(HERE, set.folder))).replace(/\\/g, '/')}/${basename(set.folder)}.alex, which isn't there.`);
   for (const d of printedDifferences(join(HERE, set.folder), data, cards)) r.errors.push(`Printed cards: ${d}`);
   const promptsFile = join(art, 'prompts.json');
   if (existsSync(promptsFile)) {
@@ -134,7 +134,7 @@ function checkSet(set: ContentSet, games: number): Report {
     if (noPrompt.length) r.notes.push(`No art prompt for ${noPrompt.join(', ')} (fine if an artist draws them).`);
   }
   // The art brief, for the Artist Studio (docs/artist-studio-plan.md): <set>-brief.alex in the set's folder, with a
-  // picture for every card face, each on a real card. tcg draws the Studio's frames when the set is published.
+  // picture for every card face, each on a real card. kardix draws the Studio's frames when the set is published.
   if (briefFile(join(HERE, set.folder))) {
     let brief: Brief | null = null;
     try {

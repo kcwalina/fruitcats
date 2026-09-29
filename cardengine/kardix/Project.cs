@@ -1,7 +1,7 @@
 using System.Globalization;
 using ViaMochi.Alex.Model;
 
-namespace Tcg;
+namespace Kardix;
 
 /// <summary>One .alex file of a game project, read on its own.</summary>
 internal sealed record Document(string Name, string Path, AlexDocument Alex)
@@ -64,17 +64,17 @@ internal sealed class Project
             string name = System.IO.Path.GetFileNameWithoutExtension(path);
             if (documents.ContainsKey(name))
             {
-                throw new TcgException($"Two files are named {name}.alex; a document's name is its file name, so it must be unique.");
+                throw new KardixException($"Two files are named {name}.alex; a document's name is its file name, so it must be unique.");
             }
 
             documents[name] = new Document(name, path, alex);
         }
 
         Document[] games = documents.Values.Where(d => d.DeclaredType == "Game").ToArray();
-        if (games.Length == 0) { throw new TcgException($"No file in {root} is a Game (#type Game)."); }
+        if (games.Length == 0) { throw new KardixException($"No file in {root} is a Game (#type Game)."); }
         if (games.Length > 1)
         {
-            throw new TcgException("A project holds exactly one Game; these are all Games: "
+            throw new KardixException("A project holds exactly one Game; these are all Games: "
                 + string.Join(", ", games.Select(g => System.IO.Path.GetRelativePath(root, g.Path))));
         }
 
@@ -89,7 +89,7 @@ internal sealed class Project
     private static IReadOnlyList<AlexSource> LoadCore()
     {
         using Stream stream = typeof(Project).Assembly.GetManifestResourceStream("core.alex")
-            ?? throw new TcgException("tcg is missing its core schema (core.alex).");
+            ?? throw new KardixException("kardix is missing its core schema (core.alex).");
         using MemoryStream copy = new();
         stream.CopyTo(copy);
         return new[] { new AlexSource("core.alex", copy.ToArray()) };
@@ -141,7 +141,7 @@ internal sealed class Project
             Located found = Lookup(reference.Path, from);
             if (found.Value is null)
             {
-                throw new TcgException($"{from.Name}.alex: nothing is named @{reference.Name}.");
+                throw new KardixException($"{from.Name}.alex: nothing is named @{reference.Name}.");
             }
 
             (value, from) = (found.Value, found.Owner!);
@@ -264,4 +264,4 @@ internal sealed class Project
     };
 }
 
-internal sealed class TcgException(string message) : Exception(message);
+internal sealed class KardixException(string message) : Exception(message);

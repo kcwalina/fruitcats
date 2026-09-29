@@ -13,7 +13,7 @@ using ViaMochi.Alex.Parsing;
 // there, to see what a comparison covered.
 
 string? repository = FindRepository(AppContext.BaseDirectory);
-string wasm = repository is null ? "tcg_engine.wasm" : Path.Combine(repository, "cardengine", "engine", "target", "wasm32-unknown-unknown", "release", "tcg_engine.wasm");
+string wasm = repository is null ? "kardix.wasm" : Path.Combine(repository, "cardengine", "engine", "target", "wasm32-unknown-unknown", "release", "kardix.wasm");
 string outFolder = Path.Combine("out", "conformance");
 int mutantsPerFile = 25;
 string? exportFolder = null;
@@ -30,7 +30,7 @@ for (int i = 0; i < args.Length; i++)
 if (roots.Count == 0 && repository is not null)
 {
     roots.Add(repository);
-    // mochi beside this checkout, found by looking upward as tcg's project does, so a worktree finds it too.
+    // mochi beside this checkout, found by looking upward as kardix's project does, so a worktree finds it too.
     for (DirectoryInfo? up = new DirectoryInfo(repository).Parent; up is not null; up = up.Parent)
     {
         string mochi = Path.Combine(up.FullName, "mochi");
@@ -135,7 +135,7 @@ Console.WriteLine($"compared {mutantsCompared} dumps of broken copies ({mutantsP
 // ── binding ──────────────────────────────────────────────────────────────────────────────────────
 
 // Each file on its own, as data with no kinds of declaration and as a program with the card engine's; then each
-// project bound together, as tcg and the engine load them; then the broken copies on their own.
+// project bound together, as kardix and the engine load them; then the broken copies on their own.
 int bindCompared = 0;
 int bindMismatches = 0;
 void CompareBinding(string label, IReadOnlyList<BoundDump.Source> group, bool kinds, string? game = null)

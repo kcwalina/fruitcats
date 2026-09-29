@@ -1,6 +1,6 @@
 // The artist's picture where players will see it. Every preview uses the game's own pieces, so it shows the real
 // thing, not an imitation of it:
-//  - on the card: the card's frame as tcg draws it for the Studio (content/tcg.ts), with the picture in its
+//  - on the card: the card's frame as kardix draws it for the Studio (content/kardix.ts), with the picture in its
 //    see-through window (stretched to 666 × 444 there, as the card's art box in games/folkborn/card-layout.alex);
 //  - in the game: the board's unit and hero tiles, at their sizes in apps/web/src/style.css;
 

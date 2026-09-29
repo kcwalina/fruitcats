@@ -1,5 +1,5 @@
-// The core (cardengine/engine), in Node: built from its Rust source when it is out of date, as tcg is built from its C#
-// (content/tcg.ts), and loaded once. The build, check-set and the Studio's tools read projects with it; the Studio page
+// The core (cardengine/engine), in Node: built from its Rust source when it is out of date, as kardix is built from its C#
+// (content/kardix.ts), and loaded once. The build, check-set and the Studio's tools read projects with it; the Studio page
 // loads the same module in the browser.
 
 import { spawnSync } from 'node:child_process';
@@ -12,7 +12,7 @@ const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENGINE = join(REPO, 'cardengine', 'engine');
 
 /** Where the build puts the module. */
-export const CORE_WASM = join(ENGINE, 'target', 'wasm32-unknown-unknown', 'release', 'tcg_engine.wasm');
+export const CORE_WASM = join(ENGINE, 'target', 'wasm32-unknown-unknown', 'release', 'kardix.wasm');
 
 let built = false;
 let loaded: Core | undefined;

@@ -3,7 +3,7 @@
 In this walkthrough you build **Hello TCG**, a very small two-player card game, in two parts:
 
 - **Part 1: cards on a table.** You design the cards and how they look, write the rulebook, and
-  `tcg` turns them into files a card printer can print, plus a rulebook PDF. At the end you can
+  `kardix` turns them into files a card printer can print, plus a rulebook PDF. At the end you can
   order a real, physical copy of your game and play it with people in the same room. No
   programming.
 - **Part 2: a game the computer can play.** You teach the engine the rules your rulebook already
@@ -21,13 +21,13 @@ paintings and their card design. Each part takes about half an hour.
 
 ## What you need
 
-- **The `tcg` tool**, free. It creates projects, checks them, renders cards and rulebooks, and
+- **The `kardix` tool**, free. It creates projects, checks them, renders cards and rulebooks, and
   plays games with bots.
 - **Some Alex.** Games are written in Alex, and this walkthrough assumes you can read it. If
   you haven't used it, the Alex getting-started guide takes about ten minutes.
 - **A text editor.** Any will do. VS Code with the Alex extension colours the files and underlines
   mistakes as you type.
-- **The Hello TCG images.** `tcg new --sample-art hello-tcg` puts them in the project for you: the
+- **The Hello TCG images.** `kardix new --sample-art hello-tcg` puts them in the project for you: the
   eight paintings, four card frames, four rarity icons and a card back. With your own game, these
   are your own images.
 - **Optional: a coding agent**, such as Claude Code or Codex. Every step in this walkthrough shows
@@ -61,23 +61,23 @@ the folder on your laptop, in Git, on GitHub, or all three.
 On Windows:
 
 ```bash
-winget install tcg
+winget install kardix
 ```
 
 On macOS:
 
 ```bash
-brew install tcg
+brew install kardix
 ```
 
 Check that it works:
 
 ```bash
-tcg --version
+kardix --version
 ```
 
 ```
-tcg 1.0.0 (Alex 1.0, schema 1)
+kardix 1.0.0 (Alex 1.0, schema 1)
 ```
 
 In VS Code, install the **Alex** extension from the Extensions view.
@@ -85,7 +85,7 @@ In VS Code, install the **Alex** extension from the Extensions view.
 ## 2. Create the project
 
 ```bash
-tcg new --sample-art hello-tcg
+kardix new --sample-art hello-tcg
 ```
 
 ```
@@ -97,10 +97,10 @@ Created hello-tcg/
   fonts/                  fonts for your cards
   AGENTS.md               instructions for coding agents
 
-Next: cd hello-tcg, then tcg check
+Next: cd hello-tcg, then kardix check
 ```
 
-`tcg new` never makes up a game for you. Every file starts almost empty; `--sample-art` only
+`kardix new` never makes up a game for you. Every file starts almost empty; `--sample-art` only
 fills `art/` with the images this walkthrough uses. `hello-tcg.alex`:
 
 ```
@@ -112,7 +112,7 @@ rulebook = @rulebook
 ```
 
 `schema-version = 1` says which version of the game file format your game is written in, the way
-a .NET project names the framework it targets. Later versions of `tcg` keep reading it exactly
+a .NET project names the framework it targets. Later versions of `kardix` keep reading it exactly
 the same way. Anything you don't write has a default: no card types, no constants. You add those
 as the game grows.
 
@@ -139,10 +139,10 @@ read it, but you may.
 
 ### How the files fit together
 
-`tcg` reads every `.alex` file in the project folder. Each file holds one thing, of the type its
+`kardix` reads every `.alex` file in the project folder. Each file holds one thing, of the type its
 `#type` line names, and the file's name is how other files refer to it: `@rulebook` is the
 rulebook in `rulebook.alex`, and `@klobuk` is a card in `cards.alex`. There are no other names to
-keep in step. Rename a file, and `tcg check` lists the references to update (Studio and agents
+keep in step. Rename a file, and `kardix check` lists the references to update (Studio and agents
 update them for you).
 
 The folder holds exactly one `Game`: that is your game. Every `Cards` file in the folder is part
@@ -159,7 +159,7 @@ Check the project:
 
 ```bash
 cd hello-tcg
-tcg check
+kardix check
 ```
 
 ```
@@ -168,13 +168,13 @@ hello-tcg: 0 errors
   Playable    not yet: no cards, no rules
 ```
 
-`tcg check` tells you two things. **Errors** are real mistakes, like a reference to something
+`kardix check` tells you two things. **Errors** are real mistakes, like a reference to something
 that doesn't exist; there are none. And it tells you how far the game is from two goals:
 **printable**, where you can print cards and a rulebook, and **playable**, where the computer can
 play it. Part 1 is about the first.
 
 > [!NOTE]
-> **In Studio:** run `tcg studio` in the folder. Studio opens in your browser with the files on
+> **In Studio:** run `kardix studio` in the folder. Studio opens in your browser with the files on
 > the left, your cards in the middle and the rulebook on the right. Everything you do in the rest
 > of this walkthrough shows up there as you save.
 
@@ -280,7 +280,7 @@ cards = [
 See what they look like:
 
 ```bash
-tcg cards hearth-cricket keeper-of-the-door
+kardix cards hearth-cricket keeper-of-the-door
 ```
 
 ```
@@ -293,7 +293,7 @@ Until you design how your cards look (chapter 6), they use a plain default layou
 picture, name, cost, Power, Health, keywords, text and flavor.
 
 The images are part of your game just as the Alex files are: they go into Git with everything
-else, and `tcg check` tells you if a card points at a picture that isn't there:
+else, and `kardix check` tells you if a card points at a picture that isn't there:
 
 ```
 hello-tcg: 1 error
@@ -351,7 +351,7 @@ When a card's text has a number in it, the number is one of the card's **constan
 shows it in braces: the Greeter's card reads "Hello: Heal 2 from each Creature you control."
 because `heal` is 2. That seems like a detour for a printed card. It pays off in Part 2, where the
 engine reads the same number the card prints, so the card and what it does can never disagree.
-`tcg check` holds the text and its constants together: a `{name}` the card doesn't have is an
+`kardix check` holds the text and its constants together: a `{name}` the card doesn't have is an
 error, and so is a constant the text never shows.
 
 ### The Hero
@@ -516,7 +516,7 @@ How to read it:
   "HERO · AWAKENED · DOMOWIKI" and the Hero's number.
 
 ```bash
-tcg cards
+kardix cards
 ```
 
 ```
@@ -528,7 +528,7 @@ place, and the Hero's two faces as `dziadzius.png` and `dziadzius-back.png`. Cha
 the name to 38 and render again, and every card's name is smaller. Change the Greeter's `heal` to
 3, and its card reads "Heal 3".
 
-`tcg check` checks the layout too: a `{field}` no card type has, a card type with no frame, a box
+`kardix check` checks the layout too: a `{field}` no card type has, a card type with no frame, a box
 that runs off the card, a font, frame or icon that isn't there, and a text box too small for a
 card's text at its smallest size, which names the card.
 
@@ -623,7 +623,7 @@ constants = [
 Change `starting-life` to 12, and the rulebook says "Each player starts with 12 Life." There is
 nothing else to update. In Part 2 the engine reads the same constants, so the printed rulebook
 and the game the computer plays always agree. If the rulebook names a constant that doesn't exist,
-`tcg check` says so. It also notes digits typed straight into rulebook text, since those are the
+`kardix check` says so. It also notes digits typed straight into rulebook text, since those are the
 numbers that drift.
 
 Name the layout in `hello-tcg.alex`, so the rulebook's card list uses it too:
@@ -635,7 +635,7 @@ card-layout = @card-layout
 Render the rulebook:
 
 ```bash
-tcg rulebook
+kardix rulebook
 ```
 
 ```
@@ -682,7 +682,7 @@ decks = [
 ```
 
 ```bash
-tcg check
+kardix check
 ```
 
 ```
@@ -710,7 +710,7 @@ card-back = 'art/card-back.png'
 Then make the print files:
 
 ```bash
-tcg cards --print --decks hearth threshold --printer makeplayingcards
+kardix cards --print --decks hearth threshold --printer makeplayingcards
 ```
 
 ```
@@ -744,7 +744,7 @@ totals, attacking, drawing, energy, heroes, keywords like Guardian…), and you 
 game uses and set their numbers. Each rule you pick *cites* the rulebook section that explains
 it, so the rules and the rulebook stay connected.
 
-`tcg check` already listed what's missing:
+`kardix check` already listed what's missing:
 
 ```
   Playable    not yet: no zones, no turns, no way to win, 2 keywords with no rule,
@@ -774,7 +774,7 @@ uses = [
 Tell the libraries what your card types are: your Creatures are what the `units` library calls
 unit cards (cards that stay in play with power and health), your Charms are what the `spells`
 library calls spell cards, and your Heroes are the `heroes` library's hero cards, whose second
-face is their `back`. `tcg check` confirms that your types have the fields each library needs.
+face is their `back`. `kardix check` confirms that your types have the fields each library needs.
 
 ```
 units = [
@@ -941,7 +941,7 @@ Each rule is one sentence of the rulebook:
 - `LifeCounter`: section 1, starting at `@starting-life`, the same number the rulebook prints.
 
 ```bash
-tcg check
+kardix check
 ```
 
 ```
@@ -1014,7 +1014,7 @@ condition enough-creatures { units(own).count >= card.creatures }
 
 Every card with text must have a handler, and every handler must belong to a card with text, so
 the card and what it does can't disagree silently. Cards whose only rules are keywords, like
-Keeper of the Door, need none: the keyword's rule covers them. `tcg check` also notes a digit
+Keeper of the Door, need none: the keyword's rule covers them. `kardix check` also notes a digit
 typed straight into a handler, like `heal(2)`: that's a number the card's text doesn't know about.
 
 ### Scenarios
@@ -1053,7 +1053,7 @@ scenario 'A Domowik''s Temper defeats the chosen Creature' {
 ```
 
 ```bash
-tcg test
+kardix test
 ```
 
 ```
@@ -1063,7 +1063,7 @@ hello-tcg: 3 scenarios, 3 passed
   ✓ A Domowik's Temper defeats the chosen Creature
 ```
 
-Scenarios are your game's tests. Every time you or your agent changes something, `tcg test` tells
+Scenarios are your game's tests. Every time you or your agent changes something, `kardix test` tells
 you whether a card still does what its text says.
 
 > [!TIP]
@@ -1072,7 +1072,7 @@ you whether a card still does what its text says.
 ## 13. Your first game
 
 ```bash
-tcg check
+kardix check
 ```
 
 ```
@@ -1085,7 +1085,7 @@ hello-tcg: 0 errors
 Watch two bots play:
 
 ```bash
-tcg sim --decks hearth threshold --seed 7
+kardix sim --decks hearth threshold --seed 7
 ```
 
 ```
@@ -1132,12 +1132,12 @@ deck-rules = [
 ]
 ```
 
-Now `tcg check` checks every deck against them, and the note about section 2 is gone.
+Now `kardix check` checks every deck against them, and the note about section 2 is gone.
 
 Then the question every designer asks: is it fair? Let bots play a thousand games:
 
 ```bash
-tcg playtest --decks hearth threshold --games 1000
+kardix playtest --decks hearth threshold --games 1000
 ```
 
 ```
@@ -1174,7 +1174,7 @@ Temper, deals 5: one short of its Health. Make it 5 in `cards.alex`:
 ```
 
 ```bash
-tcg playtest --decks hearth threshold --games 1000
+kardix playtest --decks hearth threshold --games 1000
 ```
 
 ```
@@ -1185,7 +1185,7 @@ Draws          14      1.4%
 ```
 
 That's the loop you'll use most: change a card, playtest, read the report, repeat. When you're
-happy, `tcg cards --print` makes new print files: the printed Keeper shows its new Health, because
+happy, `kardix cards --print` makes new print files: the printed Keeper shows its new Health, because
 it's the same card.
 
 > [!NOTE]
@@ -1202,14 +1202,14 @@ it's the same card.
 With a person:
 
 ```bash
-tcg play --decks hearth threshold
+kardix play --decks hearth threshold
 ```
 
 This opens the game table in your browser for two players on one screen (hot-seat). Or
 play against a bot:
 
 ```bash
-tcg play --decks hearth threshold --opponent bot
+kardix play --decks hearth threshold --opponent bot
 ```
 
 The table is laid out from your zones, and the cards are drawn with your card layout. The engine
@@ -1219,17 +1219,17 @@ is hidden.
 With a friend somewhere else, use the online service. You need an account:
 
 ```bash
-tcg login
-tcg push
+kardix login
+kardix push
 ```
 
 ```
 Pushed Hello TCG (commit 3f2a91c) to your games.
-Invite a player:  tcg invite
+Invite a player:  kardix invite
 ```
 
 ```bash
-tcg invite --deck hearth
+kardix invite --deck hearth
 ```
 
 ```
@@ -1241,7 +1241,7 @@ printing. The service runs exactly the game you pushed, so when you push a chang
 it and games in progress finish on the version they started with.
 
 Every online game is saved as its seed and its actions, so you can watch it again with
-`tcg replay`, or turn a surprising moment into a scenario.
+`kardix replay`, or turn a surprising moment into a scenario.
 
 ## 16. Starting from rules you already have
 
@@ -1253,7 +1253,7 @@ Put your rules in the project folder, say `my-rules.md`, and ask:
 > [!TIP]
 > **Ask your agent:** "Read my-rules.md and write this game: the rulebook sections, the cards,
 > the game's rules and a handler and scenario for every card with text. Use library rules
-> wherever you can. Run tcg check and tcg test until both pass, then run a short playtest and tell
+> wherever you can. Run kardix check and kardix test until both pass, then run a short playtest and tell
 > me what you found."
 
 Or only the first half, for a printed game: "Read my-rules.md and write the cards and the
@@ -1263,11 +1263,11 @@ Your agent reads `AGENTS.md`, picks rules from the libraries, and runs the same 
 used here until everything checks. What comes back won't be the same every time, so review it
 the way you'd review anyone's work:
 
-- **Read the rulebook it wrote.** `tcg rulebook` and open the HTML. Is that your game?
-- **Read `tcg check`'s notes.** They point at sections no rule explains and rules no section
+- **Read the rulebook it wrote.** `kardix rulebook` and open the HTML. Is that your game?
+- **Read `kardix check`'s notes.** They point at sections no rule explains and rules no section
   explains, which is where misunderstandings show up.
 - **Read the scenarios.** Each one is a sentence about a card. Do they say what you meant?
-- **Watch a game** with `tcg sim`, or play one with `tcg play`.
+- **Watch a game** with `kardix sim`, or play one with `kardix play`.
 
 If your game needs something no library has, a new way to win or a new kind of turn, your agent
 will say so rather than invent it. Most games need nothing new: the libraries were built from
@@ -1275,7 +1275,7 @@ more than 150 published card games.
 
 ## Where next
 
-- **Your own game.** `tcg new my-game`: cards, their look and a rulebook first, rules when you want
+- **Your own game.** `kardix new my-game`: cards, their look and a rulebook first, rules when you want
   the computer to play it.
 - **Card layouts.** Every kind of part, frames by rarity or faction, badges, foil and other
   finishes, and the sizes printers offer.

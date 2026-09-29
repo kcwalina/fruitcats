@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using SkiaSharp;
 using ViaMochi.Alex.Model;
 
-namespace Tcg;
+namespace Kardix;
 
 /// <summary>Draws card faces from a CardLayout document: the frame, then the parts, in the order the layout lists them.</summary>
 internal sealed class Renderer
@@ -19,7 +19,7 @@ internal sealed class Renderer
         Project.Located layout = project.Resolve(project.Game.Alex.Root.Value("card-layout"), project.Game);
         if (layout.Value is not AlexObject root || layout.Owner is null)
         {
-            throw new TcgException("The Game names no card-layout, so tcg doesn't know how its cards look.");
+            throw new KardixException("The Game names no card-layout, so kardix doesn't know how its cards look.");
         }
 
         _layout = layout.Owner;
@@ -34,11 +34,11 @@ internal sealed class Renderer
     public int Height { get; }
     public int Bleed { get; }
 
-    /// <summary>The frame every card is drawn in (<c>tcg cards --frame</c>), instead of its own.</summary>
+    /// <summary>The frame every card is drawn in (<c>kardix cards --frame</c>), instead of its own.</summary>
     public string? FrameOverride { get; init; }
 
     /// <summary>
-    /// Pictures left see-through (<c>tcg cards --no-art</c>): a card's own picture (a Picture showing one of its fields,
+    /// Pictures left see-through (<c>kardix cards --no-art</c>): a card's own picture (a Picture showing one of its fields,
     /// like <c>{art}</c>) and a frame's texture are holes, for a tool that shows an artist's picture under the card.
     /// </summary>
     public bool NoArt { get; init; }
@@ -52,7 +52,7 @@ internal sealed class Renderer
         if (_root.Value("frames") is not AlexObject frames) { return null; }
         if ((FrameOverride ?? face.Text("frame")) is { Length: > 0 } named)
         {
-            return frames.Value(named) as AlexObject ?? throw new TcgException($"{face.Key}: the card layout has no frame named {named}.");
+            return frames.Value(named) as AlexObject ?? throw new KardixException($"{face.Key}: the card layout has no frame named {named}.");
         }
 
         return ByType(face, frames) as AlexObject;
@@ -83,7 +83,7 @@ internal sealed class Renderer
         canvas.Clear(SKColors.Transparent);
         canvas.Translate(pad, pad);
         AlexObject? frame = Frame(face);
-        AlexObject parts = _root.Value("parts") as AlexObject ?? throw new TcgException("The card layout has no parts.");
+        AlexObject parts = _root.Value("parts") as AlexObject ?? throw new KardixException("The card layout has no parts.");
 
         foreach (AlexProperty part in parts)
         {
@@ -92,7 +92,7 @@ internal sealed class Renderer
 
         if (frame is not null && face.AssetPath(frame.Value("image"), _layout) is { } framePath)
         {
-            SKImage image = Image(framePath) ?? throw new TcgException($"The frame {framePath} doesn't exist.");
+            SKImage image = Image(framePath) ?? throw new KardixException($"The frame {framePath} doesn't exist.");
             // A frame is drawn with its bleed around the card; the card's corner is at (0, 0).
             canvas.DrawImage(image, -Bleed, -Bleed);
         }
@@ -112,7 +112,7 @@ internal sealed class Renderer
         {
             if (types.Any(t => t is AlexInvalid))
             {
-                throw new TcgException("card-layout.alex: only-types names card types as references: [@Hero, @Awakened].");
+                throw new KardixException("card-layout.alex: only-types names card types as references: [@Hero, @Awakened].");
             }
 
             if (!types.Any(t => IsType(face, Project.Scalar(t)))) { return; }
@@ -132,7 +132,7 @@ internal sealed class Renderer
             case "TextBox": TextBox(canvas, face, frame, part); break;
             case "Chip": Chip(canvas, face, frame, part); break;
             case "Icon": Icon(canvas, face, part, Box(part)); break;
-            default: throw new TcgException($"card-layout.alex: tcg doesn't know how to draw a {part.TypeName}.");
+            default: throw new KardixException($"card-layout.alex: kardix doesn't know how to draw a {part.TypeName}.");
         }
     }
 
@@ -148,7 +148,7 @@ internal sealed class Renderer
         }
 
         if (face.AssetPath(part.Value("show"), _layout) is not { } path) { return; }
-        SKImage image = Image(path) ?? throw new TcgException($"{face.Key}: the picture {path} doesn't exist.");
+        SKImage image = Image(path) ?? throw new KardixException($"{face.Key}: the picture {path} doesn't exist.");
         SKRect source = new(0, 0, image.Width, image.Height);
         if (Word(part.Value("fit")) != "contain")
         {
@@ -256,7 +256,7 @@ internal sealed class Renderer
         if (!HasFrameTexture(face, frame)) { return null; }
         if (NoArt) { return SKShader.CreateColor(SKColors.Transparent); }
         string path = face.AssetPath(frame!.Value("texture"), _layout)!;
-        SKImage image = Image(path) ?? throw new TcgException($"{face.Key}: the frame's texture {path} doesn't exist.");
+        SKImage image = Image(path) ?? throw new KardixException($"{face.Key}: the frame's texture {path} doesn't exist.");
         float scale = Math.Max((float)Width / image.Width, (float)Height / image.Height);
         SKMatrix place = SKMatrix.CreateScale(scale, scale)
             .PostConcat(SKMatrix.CreateTranslation((Width - image.Width * scale) / 2, (Height - image.Height * scale) / 2));
@@ -272,7 +272,7 @@ internal sealed class Renderer
         }
 
         string file = Project.Scalar(finish.Value("texture"));
-        SKImage image = Image(Path.GetFullPath(file, _layout.Directory)) ?? throw new TcgException($"The texture {file} doesn't exist.");
+        SKImage image = Image(Path.GetFullPath(file, _layout.Directory)) ?? throw new KardixException($"The texture {file} doesn't exist.");
         return SKShader.CreateImage(image, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp);
     }
 
@@ -280,7 +280,7 @@ internal sealed class Renderer
     {
         string key = face.Template(part.Value("show"));
         if (key.Length == 0 || part.Value("images") is not AlexObject images || images.Value(key) is not AlexTextual file) { return; }
-        SKImage image = Image(Path.GetFullPath(file.Value, _layout.Directory)) ?? throw new TcgException($"The icon {file.Value} doesn't exist.");
+        SKImage image = Image(Path.GetFullPath(file.Value, _layout.Directory)) ?? throw new KardixException($"The icon {file.Value} doesn't exist.");
         canvas.DrawImage(image, box, new SKSamplingOptions(SKCubicResampler.CatmullRom));
     }
 
@@ -506,7 +506,7 @@ internal sealed class Renderer
                 int style = rule.TypeName == "Italic" ? 2 : 1;
                 if ((style == 1 ? styles.Bold : styles.Italic) is null)
                 {
-                    throw new TcgException($"card-layout.alex: a paragraph with {rule.TypeName} emphasis needs a {(style == 1 ? "bold-font" : "italic-font")}.");
+                    throw new KardixException($"card-layout.alex: a paragraph with {rule.TypeName} emphasis needs a {(style == 1 ? "bold-font" : "italic-font")}.");
                 }
 
                 if (rule.Value("words") is { } words)
@@ -615,14 +615,14 @@ internal sealed class Renderer
     {
         Project.Located found = _project.Resolve(part.Value(field), _layout);
         string file = Project.Scalar(found.Value);
-        if (file.Length == 0) { throw new TcgException($"card-layout.alex: a {part.TypeName} has no {field}."); }
+        if (file.Length == 0) { throw new KardixException($"card-layout.alex: a {part.TypeName} has no {field}."); }
         if (!_fonts.TryGetValue(file, out SKTypeface? typeface))
         {
             string local = Path.GetFullPath(file, (found.Owner ?? _layout).Directory);
             string system = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), file);
             string path = File.Exists(local) ? local : File.Exists(system) ? system
-                : throw new TcgException($"The font {file} is neither in the project nor installed.");
-            typeface = SKTypeface.FromFile(path) ?? throw new TcgException($"The font {path} can't be read.");
+                : throw new KardixException($"The font {file} is neither in the project nor installed.");
+            typeface = SKTypeface.FromFile(path) ?? throw new KardixException($"The font {path} can't be read.");
             _fonts[file] = typeface;
         }
 
@@ -656,7 +656,7 @@ internal sealed class Renderer
     {
         AlexInteger i => i.Value,
         AlexFloat f => (float)f.Value,
-        _ => throw new TcgException($"card-layout.alex: a {part.TypeName} needs {field}."),
+        _ => throw new KardixException($"card-layout.alex: a {part.TypeName} needs {field}."),
     };
 
     private static int Int(AlexValue? value, int fallback) => value is AlexInteger i ? (int)i.Value : fallback;

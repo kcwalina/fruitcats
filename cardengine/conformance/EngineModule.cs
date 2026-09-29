@@ -4,7 +4,7 @@ using Wasmtime;
 namespace Conformance;
 
 /// <summary>
-/// The engine's WebAssembly module, run in this process through Wasmtime: how a C# host (tcg.exe, a server) calls
+/// The engine's WebAssembly module, run in this process through Wasmtime: how a C# host (kardix.exe, a server) calls
 /// the core. The module's interface is plain functions over bytes in its own memory (<c>cardengine/engine/src/abi.rs</c>).
 /// </summary>
 internal sealed class EngineModule : IDisposable
@@ -25,8 +25,8 @@ internal sealed class EngineModule : IDisposable
         _module = module;
         _store = store;
         _memory = instance.GetMemory("memory") ?? throw new InvalidOperationException("The module exports no memory.");
-        _alloc = instance.GetFunction<int, int>("tcg_alloc") ?? throw Missing("tcg_alloc");
-        _free = instance.GetAction<int, int>("tcg_free") ?? throw Missing("tcg_free");
+        _alloc = instance.GetFunction<int, int>("kardix_alloc") ?? throw Missing("kardix_alloc");
+        _free = instance.GetAction<int, int>("kardix_free") ?? throw Missing("kardix_free");
         _dump = instance.GetFunction<int, int, int, long>("alex_dump") ?? throw Missing("alex_dump");
         _check = instance.GetFunction<int, int, int>("alex_check") ?? throw Missing("alex_check");
         _bindDump = instance.GetFunction<int, int, long>("alex_bind_dump") ?? throw Missing("alex_bind_dump");

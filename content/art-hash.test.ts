@@ -19,7 +19,7 @@ function setFolder(files: Record<string, string>): string {
 }
 afterEach(() => { for (const root of made.splice(0)) rmSync(root, { recursive: true, force: true }); });
 
-// A set as tcg renders it (content/tcg.ts): the game folder defines its cards (sets/x/x.alex) and holds their
+// A set as kardix renders it (content/kardix.ts): the game folder defines its cards (sets/x/x.alex) and holds their
 // paintings (sets/x/art/); its folder in content/ may hold other pictures; its finished cards are build output.
 function tcgSet(game: Record<string, string>, content: Record<string, string> = {}): [string, string] {
   const root = setFolder({ 'game/folkborn.alex': '#type Game\n', ...Object.fromEntries(Object.entries(game).map(([p, t]) => [`game/sets/x/${p}`, t])),

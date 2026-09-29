@@ -1,5 +1,5 @@
-// The printed cards: each released set's cards as Alex (games/folkborn/sets/<set>/<set>.alex), which tcg renders
-// (cardengine/tcg: npm run cards). Until the engine reads Alex, the
+// The printed cards: each released set's cards as Alex (games/folkborn/sets/<set>/<set>.alex), which kardix renders
+// (cardengine/kardix: npm run cards). Until the engine reads Alex, the
 // game still reads set.json, so the two must say the same thing; check-set compares them on every deploy.
 //
 // This reads only what those files hold: cards with name, epithet, cost, power, health, rarity, number, text and
@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { CardDef, SetData } from '../packages/engine/src/index';
-import { gameSet } from './tcg';
+import { gameSet } from './kardix';
 
 export interface PrintedFace { name: string; text: string; flavor: string; cost?: number; power?: number; health?: number; rarity?: string }
 export interface PrintedCard extends PrintedFace { number: string; back?: PrintedFace }
@@ -99,7 +99,7 @@ export function printedDifferences(folder: string, data: SetData, cards: CardDef
     }
 
     for (const [what, json, alex] of want) {
-      if (json !== alex) out.push(`${c.id}: its ${what} is ${JSON.stringify(json)} in set.json but ${JSON.stringify(alex)} in ${file}. Change both, then tcg cards.`);
+      if (json !== alex) out.push(`${c.id}: its ${what} is ${JSON.stringify(json)} in set.json but ${JSON.stringify(alex)} in ${file}. Change both, then kardix cards.`);
     }
   }
 

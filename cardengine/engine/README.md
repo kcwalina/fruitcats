@@ -1,7 +1,7 @@
 # The core
 
 The TCG platform's core: one WebAssembly module that every host runs. The browser (Studio, the game table, the
-player app), `tcg.exe` through Wasmtime, and the servers all load the same `tcg_engine.wasm`, so a game behaves
+player app), `kardix.exe` through Wasmtime, and the servers all load the same `kardix.wasm`, so a game behaves
 the same everywhere. Why it is built this way is in
 [docs/tcg/tcg-developer-platform.md](../../docs/tcg/tcg-developer-platform.md), "The core".
 
@@ -55,7 +55,7 @@ web/                    the module in a browser: engine.js (the host, no depende
 
 ```bash
 rustup target add wasm32-unknown-unknown         # once
-cargo build --release --target wasm32-unknown-unknown   # target/wasm32-unknown-unknown/release/tcg_engine.wasm
+cargo build --release --target wasm32-unknown-unknown   # target/wasm32-unknown-unknown/release/kardix.wasm
 cargo test --release                             # native: every .alex file round-trips, broken input never panics
 ```
 

@@ -4,8 +4,8 @@
 
 interface Exports {
   memory: WebAssembly.Memory;
-  tcg_alloc(length: number): number;
-  tcg_free(address: number, length: number): void;
+  kardix_alloc(length: number): number;
+  kardix_free(address: number, length: number): void;
   project_load(address: number, length: number): number;
   project_query(handle: number, address: number, length: number): bigint;
   project_free(handle: number): void;
@@ -67,7 +67,7 @@ export class Core {
     const input = join(parts);
     const address = this.copyIn(input);
     const handle = this.exports.project_load(address, input.length);
-    this.exports.tcg_free(address, input.length);
+    this.exports.kardix_free(address, input.length);
     return new Project(this, handle);
   }
 
@@ -76,7 +76,7 @@ export class Core {
     const input = encoder.encode(question);
     const address = this.copyIn(input);
     const packed = this.exports.project_query(handle, address, input.length);
-    this.exports.tcg_free(address, input.length);
+    this.exports.kardix_free(address, input.length);
     return decoder.decode(this.takeResult(packed));
   }
 
@@ -86,7 +86,7 @@ export class Core {
   }
 
   private copyIn(bytes: Uint8Array): number {
-    const address = this.exports.tcg_alloc(bytes.length);
+    const address = this.exports.kardix_alloc(bytes.length);
     new Uint8Array(this.exports.memory.buffer, address, bytes.length).set(bytes);
     return address;
   }
@@ -97,7 +97,7 @@ export class Core {
     const address = Number(value >> 32n);
     const length = Number(value & 0xffffffffn);
     const bytes = new Uint8Array(this.exports.memory.buffer, address, length).slice();
-    this.exports.tcg_free(address, length);
+    this.exports.kardix_free(address, length);
     return bytes;
   }
 }

@@ -65,7 +65,7 @@
 import { loadEngine } from './engine.js';
 
 const params = new URLSearchParams(location.search);
-const wasmUrl = params.get('wasm') ?? '../target/wasm32-unknown-unknown/release/tcg_engine.wasm';
+const wasmUrl = params.get('wasm') ?? '../target/wasm32-unknown-unknown/release/kardix.wasm';
 const engine = await loadEngine(wasmUrl);
 const entry = performance.getEntriesByName(new URL(wasmUrl, location.href).href)[0];
 document.getElementById('module-size').textContent = entry ? (entry.decodedBodySize / 1024).toFixed(1) + ' KB' : '?';

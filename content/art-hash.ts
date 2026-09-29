@@ -1,6 +1,6 @@
-// A set's art, fingerprinted. tcg renders the finished cards (content/tcg.ts), so they are build output, and the
+// A set's art, fingerprinted. kardix renders the finished cards (content/kardix.ts), so they are build output, and the
 // hash is over what they're made from: the set's pictures (here and its card paintings in the game folder), its
-// cards in Alex, the game's card layout, frames and icons, and tcg. publish-pack uploads the art to a folder named
+// cards in Alex, the game's card layout, frames and icons, and kardix. publish-pack uploads the art to a folder named
 // by it (<set>/art/<fingerprint>/, content/pack-storage.ts), and the game's build points at the folder of its own
 // art and refuses while the storage doesn't have it yet (apps/web/vite.config.ts).
 //
@@ -11,7 +11,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { GAME, briefFile, cardSources, isText, pictureFolders } from './tcg';
+import { GAME, briefFile, cardSources, isText, pictureFolders } from './kardix';
 
 function walk(dir: string, rel: string, into: [string, string][]): void {
   for (const name of readdirSync(dir).sort()) {

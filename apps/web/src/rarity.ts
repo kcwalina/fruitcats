@@ -68,7 +68,7 @@ export function drawRarityMark(ctx: CanvasRenderingContext2D, r: Rarity, cx: num
 }
 
 /**
- * The picture of your copy of a card, printed in its finish (tcg renders every card in each finish of
+ * The picture of your copy of a card, printed in its finish (kardix renders every card in each finish of
  * games/folkborn/card-layout.alex, its chrome in holographic silver, gold or a rainbow). `key` is a card id, or a Hero Cat's
  * `<id>-kitten` / `<id>-bigcat`. The opponent's cards are always the standard print: use cardUrl.
  */

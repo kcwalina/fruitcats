@@ -46,7 +46,7 @@ discussed by editing them instead of re-pasting them into chat.
   README.
 - `conformance/`: parses every `.alex` file with the C# Alex and with the core, and compares them
   byte for byte. It is also the first C# host of the module (Wasmtime).
-- `tcg/`: the `tcg` command-line tool (C#).
+- `tcg/`: the `kardix` command-line tool (C#).
 
 ## Dependencies: the platform never depends on Folkborn
 
@@ -56,9 +56,9 @@ Folkborn from its Alex rules, so it must be movable as a folder today:
 
 - **Nothing in `cardengine/` refers to Folkborn's code or data:** not `packages/`, `apps/`,
   `content/`, `playtest/`, `games/` or `art/`, and no Folkborn numbers, names or conventions in
-  the tools. A game is always an input (`tcg cards --project games/folkborn`), never something
+  the tools. A game is always an input (`kardix cards --project games/folkborn`), never something
   built in.
-- **Folkborn depends on the platform, only through its public surface:** the `tcg` command, and
+- **Folkborn depends on the platform, only through its public surface:** the `kardix` command, and
   later the core's `.wasm` and its documented interface. It never reaches into the platform's
   source.
 - **The one outside dependency is mochi's C# Alex** (`mochi.agents/alex`), until the core's Alex

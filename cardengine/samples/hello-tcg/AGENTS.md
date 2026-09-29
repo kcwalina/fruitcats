@@ -1,13 +1,13 @@
 # Working on this game
 
-This folder is a card game for the TCG developer platform. The game is the Alex files plus the
+This folder is a card game for the Kardix platform. The game is the Alex files plus the
 assets they refer to (images in `art/`). Nothing about the game lives anywhere else.
 
 ## Two stages
 
-A game is **printable** when its cards, decks, rulebook and card back are complete: `tcg cards
---print` and `tcg rulebook` make the files to print it. It is **playable** once the engine knows
-its rules too. `tcg check` reports both. Don't add rules or handlers to a game the designer only
+A game is **printable** when its cards, decks, rulebook and card back are complete: `kardix cards
+--print` and `kardix rulebook` make the files to print it. It is **playable** once the engine knows
+its rules too. `kardix check` reports both. Don't add rules or handlers to a game the designer only
 wants to print, unless they ask.
 
 ## The files
@@ -43,19 +43,19 @@ wants to print, unless they ask.
 - **One item per line** in collections; a record that doesn't fit on one line gets one field per
   line.
 - **Layout boxes are measured on the card**, in pixels from its top-left corner at the trim line,
-  not counting bleed. Check a changed layout by rendering the cards (`tcg cards`) and looking.
+  not counting bleed. Check a changed layout by rendering the cards (`kardix cards`) and looking.
 - **Comments only when they say something the code doesn't.**
 
 After every change, run:
 
 ```bash
-tcg check
+kardix check
 ```
 
 It must report no errors. Once the game is playable, also run:
 
 ```bash
-tcg test
+kardix test
 ```
 
 All scenarios must pass before you're done.

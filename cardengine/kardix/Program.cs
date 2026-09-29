@@ -1,13 +1,13 @@
 using SkiaSharp;
-using Tcg;
+using Kardix;
 using ViaMochi.Alex.Model;
 
-// tcg: the TCG developer platform's command-line tool.
+// kardix: the Kardix platform's command-line tool.
 //
-//   tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]
+//   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]
 //
 // Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
-// a folder relative to where tcg runs, where {set} is the name of the file the cards are written in. Finishes
+// a folder relative to where kardix runs, where {set} is the name of the file the cards are written in. Finishes
 // other than standard go into a subfolder. --frame draws every card in the layout's frame of that name; --no-art
 // leaves the pictures see-through (the art's window and a frame's texture), for a tool that shows an artist's
 // picture under the card.
@@ -15,19 +15,19 @@ try
 {
     if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     {
-        Console.WriteLine("tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]");
+        Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]");
         return 0;
     }
 
     return args[0] switch
     {
         "cards" => Cards(args[1..]),
-        _ => throw new TcgException($"tcg doesn't know the command '{args[0]}'. Try: tcg cards"),
+        _ => throw new KardixException($"kardix doesn't know the command '{args[0]}'. Try: kardix cards"),
     };
 }
-catch (TcgException e)
+catch (KardixException e)
 {
-    Console.Error.WriteLine("tcg: " + e.Message);
+    Console.Error.WriteLine("kardix: " + e.Message);
     return 1;
 }
 
@@ -54,7 +54,7 @@ static int Cards(string[] args)
                 only = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 while (i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal)) { only.Add(args[++i]); }
                 break;
-            default: throw new TcgException($"tcg cards doesn't take '{args[i]}'.");
+            default: throw new KardixException($"kardix cards doesn't take '{args[i]}'.");
         }
     }
 
@@ -69,7 +69,7 @@ static int Cards(string[] args)
         documents.Add(unlisted);
     }
 
-    if (onlySet is not null && documents.Count == 0) { throw new TcgException($"No set or cards file in the game is named {onlySet}."); }
+    if (onlySet is not null && documents.Count == 0) { throw new KardixException($"No set or cards file in the game is named {onlySet}."); }
     foreach (Document document in documents)
     {
         if (document.Alex.Root.Value("cards") is not AlexObject cards) { continue; }

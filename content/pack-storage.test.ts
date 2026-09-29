@@ -34,7 +34,7 @@ function storage(): { blobs: Map<string, string>; get: typeof fetch } {
   return { blobs, get };
 }
 
-/** A set as tcg renders it (content/tcg.ts): its cards in Alex and their paintings, in a game folder. [set, game]. */
+/** A set as kardix renders it (content/kardix.ts): its cards in Alex and their paintings, in a game folder. [set, game]. */
 function tcgSet(paintings: Record<string, string>): [string, string] {
   const root = setFolder({
     'game/folkborn.alex': '#type Game\n', 'game/sets/x/x.alex': "#type Set\n\nname = 'X'\n", 'content/x/set.json': '{}',

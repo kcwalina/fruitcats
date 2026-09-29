@@ -1,6 +1,6 @@
 //! The module's interface: plain functions over bytes in the module's own memory, so any WebAssembly host can call
-//! them without bindings. A host allocates a buffer with `tcg_alloc`, copies its input in, calls a function, reads
-//! the result it names, and frees both with `tcg_free`.
+//! them without bindings. A host allocates a buffer with `kardix_alloc`, copies its input in, calls a function, reads
+//! the result it names, and frees both with `kardix_free`.
 //!
 //! A result is returned as one `u64`: the buffer's address in the high 32 bits and its length in the low 32.
 
@@ -13,17 +13,17 @@ use crate::alex::parser::ParseMode;
 
 /// Allocates `length` bytes in the module's memory for the host to write into.
 #[unsafe(no_mangle)]
-pub extern "C" fn tcg_alloc(length: u32) -> *mut u8 {
+pub extern "C" fn kardix_alloc(length: u32) -> *mut u8 {
     let buffer: Box<[u8]> = vec![0u8; length as usize].into_boxed_slice();
     Box::into_raw(buffer) as *mut u8
 }
 
-/// Frees a buffer `tcg_alloc` or a result handed out.
+/// Frees a buffer `kardix_alloc` or a result handed out.
 ///
 /// # Safety
 /// `pointer` and `length` must describe a buffer this module handed out and that has not been freed.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn tcg_free(pointer: *mut u8, length: u32) {
+pub unsafe extern "C" fn kardix_free(pointer: *mut u8, length: u32) {
     if pointer.is_null() {
         return;
     }

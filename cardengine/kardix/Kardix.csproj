@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- tcg: the TCG developer platform's command-line tool. It reads a game's Alex files with the C# Alex, referenced
+  <!-- kardix: the Kardix platform's command-line tool. It reads a game's Alex files with the C# Alex, referenced
        as source from the mochi repository checked out beside this one (C:\git\mochi next to C:\git\fruitcats; found
        by looking upward, so it works from any worktree). Keep that checkout on main. -->
   <PropertyGroup>
@@ -8,15 +8,15 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>tcg</AssemblyName>
-    <RootNamespace>Tcg</RootNamespace>
+    <AssemblyName>kardix</AssemblyName>
+    <RootNamespace>Kardix</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
     <MochiRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), 'mochi/mochi.agents/alex/src/Alex/ViaMochi.Alex.csproj'))</MochiRoot>
     <AlexSrc>$(MochiRoot)/mochi/mochi.agents/alex/src</AlexSrc>
   </PropertyGroup>
 
   <Target Name="RequireAlex" BeforeTargets="ResolveProjectReferences" Condition="'$(MochiRoot)' == ''">
-    <Error Text="tcg needs the mochi repository checked out beside this one (for example C:\git\mochi next to C:\git\fruitcats): it builds the C# Alex from mochi.agents\alex." />
+    <Error Text="kardix needs the mochi repository checked out beside this one (for example C:\git\mochi next to C:\git\fruitcats): it builds the C# Alex from mochi.agents\alex." />
   </Target>
 
   <ItemGroup>

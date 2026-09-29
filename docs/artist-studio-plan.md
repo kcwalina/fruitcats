@@ -62,7 +62,7 @@ picture or ask for changes, and the name suggestions.
 The command signs in with an agent key kept on the owner's computer (like the deploy certificate), which
 may read everything and write comments, but can't approve pictures. Only the owner approves. Approved pictures come into the repo with a
 local script, `npm run studio -- pull <set>`, which copies the approved version of each picture into
-`games/folkborn/sets/<set>/art/` and renders the cards with tcg (`content/tcg.ts`). Nothing deploys itself.
+`games/folkborn/sets/<set>/art/` and renders the cards with kardix (`content/kardix.ts`). Nothing deploys itself.
 
 ## Keeping the artist's work safe
 
@@ -79,10 +79,10 @@ local script, `npm run studio -- pull <set>`, which copies the approved version 
 
 ## How it's built
 
-**Card previews without a second renderer.** Cards are drawn by tcg (`cardengine/tcg`, from
+**Card previews without a second renderer.** Cards are drawn by kardix (`cardengine/kardix`, from
 `games/folkborn/card-layout.alex`), not in the browser. With `--no-art` it draws each card with a see-through window
 where the picture goes (the art box, 666 × 444) and saves it with transparency, for every finish; publish-pack
-renders these frames with the cards (`content/tcg.ts`). The site publishes them next to
+renders these frames with the cards (`content/kardix.ts`). The site publishes them next to
 the finished cards (`/cards/<set>/frames/<id>.webp`). The Studio puts the artist's picture behind the frame,
 so the border, rounded corners and Lucky clover sit on top exactly as on the real card. The board and hero
 views copy the few size rules the game uses (`apps/web/src/style.css` `.unit`, `.hero`). The Studio shows no
@@ -97,7 +97,7 @@ are open to suggestions. The Studio reads these files with the core (`cardengine
 module, loaded by `cardengine/engine/host/core.ts`), and knows no game rules: `apps/web/src/studio/brief.ts`
 (`briefFrom`) and `cards.ts` read the words and numbers the core gives them.
 `publish-pack` uploads the folder as `project/` in the set's fingerprinted folder on the pack storage, next to the
-finished cards and the Studio's frames (`cards/frames/`, drawn by tcg), so nothing a project was published with is
+finished cards and the Studio's frames (`cards/frames/`, drawn by kardix), so nothing a project was published with is
 ever replaced. `npm run check-set` checks the brief: every card face has a picture, and every reference is to
 something in the set.
 
@@ -174,19 +174,19 @@ account keeps deleted blobs for 14 days, and the Studio never deletes or overwri
 the artist. They open it, create their Via Mochi account (or sign in), and see the set. A link works once and lasts
 30 days.
 
-**Adding a set.** A set appears in the Studio when its folder in `games/folkborn/` has `<set>-brief.alex`. Its frames are drawn by tcg when
+**Adding a set.** A set appears in the Studio when its folder in `games/folkborn/` has `<set>-brief.alex`. Its frames are drawn by kardix when
 the set is published (`npm run publish-pack -- <set>`). `npm run check-set` checks the brief.
 
 **Frames the artist chooses.** A card whose picture has `frame-choice = true` in its brief (every Paragon card) shows a row of frame
 colours in the Studio, and one more tile after them: the artist's own image. It's uploaded like a picture, as
 versions of `<key>-frame` (kind `frame`, not reviewed on its own), and the choice is saved as `image:<version>`. The
 Studio shows it under the see-through frames in `frames/p-image/`; `pull` saves it at `art/frames/<card>.webp` and sets
-the card's `frameImage`, and tcg fills the frame and the background behind the name with it (the `image` frame; the small
+the card's `frameImage`, and kardix fills the frame and the background behind the name with it (the `image` frame; the small
 accents use the `ink` colours). Paid prints keep their own frame material, with the image behind the name.
 
 **When pictures are approved.** `npm run studio -- pull <set>` copies each approved picture into the set's folder
 (Pawtraits into its `avatars/`, key art into its `announcement/`; card pictures into `games/folkborn/sets/<set>/art/`)
-and renders the cards with tcg. Review the result with `git
+and renders the cards with kardix. Review the result with `git
 diff`, then commit and deploy as usual.
 
 ## Repairing the Studio's data

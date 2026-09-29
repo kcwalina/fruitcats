@@ -3,8 +3,8 @@
 use std::fs;
 use std::path::Path;
 
-use tcg_engine::loader::project::{self, ProjectFile};
-use tcg_engine::loader::queries;
+use kardix::loader::project::{self, ProjectFile};
+use kardix::loader::queries;
 
 fn folder(root: &Path) -> Vec<ProjectFile> {
     fn walk(root: &Path, at: &Path, files: &mut Vec<ProjectFile>) {

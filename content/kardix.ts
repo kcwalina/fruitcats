@@ -1,9 +1,9 @@
-// tcg (cardengine/tcg) renders every set's finished cards. The cards are defined in the game folder,
+// kardix (cardengine/kardix) renders every set's finished cards. The cards are defined in the game folder,
 // games/folkborn/: the game and its card layout (folkborn.alex, card-layout.alex), its icons and finish textures (art/), and
 // for each set its cards (sets/<set>/<set>.alex) and the paintings they name (sets/<set>/art/); a set that isn't part
 // of the game yet is in prototypes/<set>/ instead. A set's folder may hold its art brief for the Artist Studio
 // (<set>-brief.alex), which makes it a Studio project. The game folder holds
-// sources only. The finished cards are build output, never committed: tcg makes them from the sources, so what's
+// sources only. The finished cards are build output, never committed: kardix makes them from the sources, so what's
 // published can only be what the sources say.
 //
 // A set here in content/ keeps what the game engine and the web app still read from it: set.json, the art
@@ -18,14 +18,14 @@ import { core } from './core';
 
 const CONTENT = dirname(fileURLToPath(import.meta.url));
 const REPO = dirname(CONTENT);
-const TCG = join(REPO, 'cardengine', 'tcg');
+const KARDIX = join(REPO, 'cardengine', 'kardix');
 
 /** Folkborn's game folder: its cards, card layout and the assets they're made from. */
 export const GAME = join(REPO, 'games', 'folkborn');
 
 /**
  * Where the cards of the set in `root` (a folder in content/) are defined, in the game folder: sets/<set>, or
- * prototypes/<set> for a prototype, which tcg renders only when asked for it by name.
+ * prototypes/<set> for a prototype, which kardix renders only when asked for it by name.
  */
 export function gameSet(root: string, game = GAME): string {
   const prototype = join(game, 'prototypes', basename(root));
@@ -73,7 +73,7 @@ function walk(dir: string, keep: (file: string) => boolean = () => true): string
 /**
  * Everything a set's finished cards (and a Studio project's frames) are made from besides its paintings: as [a stable
  * name, the file's path]. The set's Alex files (its cards, its brief) by their file name; the game's shared sources
- * and tcg relative to their folders.
+ * and kardix relative to their folders.
  */
 export function cardSources(root: string, game = GAME): [string, string][] {
   const dir = gameSet(root, game);
@@ -81,21 +81,21 @@ export function cardSources(root: string, game = GAME): [string, string][] {
   const shared: [string, string][] = [
     ...readdirSync(game).filter((f) => f.endsWith('.alex')).map((f): [string, string] => [`game/${f}`, join(game, f)]),
     ...walk(join(game, 'art')).map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
-    ...walk(TCG, (f) => /\.(cs|csproj)$/.test(f)).map((f): [string, string] => [`tcg/${relative(TCG, f).replace(/\\/g, '/')}`, f]),
+    ...walk(KARDIX, (f) => /\.(cs|csproj)$/.test(f)).map((f): [string, string] => [`kardix/${relative(KARDIX, f).replace(/\\/g, '/')}`, f]),
     ['core.alex', join(REPO, 'cardengine', 'framework', 'core.alex')],
-    // The C# Alex tcg builds against, by its projects (their version): source in the mochi repository beside this one.
+    // The C# Alex kardix builds against, by its projects (their version): source in the mochi repository beside this one.
     ...['Alex/ViaMochi.Alex.csproj', 'Alex.Model/ViaMochi.Alex.Model.csproj'].map((f): [string, string] => [`alex/${f}`, join(alexSource(), f)]),
   ];
   return [...own.map((f): [string, string] => [f, join(dir, f)]), ...shared.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))];
 }
 
-/** The C# Alex's source folder, in the mochi repository checked out beside this one (as cardengine/tcg/Tcg.csproj finds it). */
+/** The C# Alex's source folder, in the mochi repository checked out beside this one (as cardengine/kardix/Kardix.csproj finds it). */
 export function alexSource(): string {
   for (let dir = REPO; dirname(dir) !== dir; dir = dirname(dir)) {
     const src = join(dir, 'mochi', 'mochi.agents', 'alex', 'src');
     if (existsSync(join(src, 'Alex', 'ViaMochi.Alex.csproj'))) return src;
   }
-  throw new Error('tcg needs the mochi repository checked out beside this one (for example C:/git/mochi next to C:/git/fruitcats).');
+  throw new Error('kardix needs the mochi repository checked out beside this one (for example C:/git/mochi next to C:/git/fruitcats).');
 }
 
 /** Text a checkout may store with either line ending; its fingerprint mustn't depend on which. */
@@ -103,10 +103,10 @@ export const isText = (file: string) => /\.(alex|cs|csproj|json|md)$/.test(file)
 
 /**
  * Renders the finished cards of the set in `root` into `out` (card faces there; finishes in subfolders), with a
- * fresh build of tcg. Throws with tcg's own message when it fails.
+ * fresh build of kardix. Throws with kardix's own message when it fails.
  */
 export function renderCards(root: string, out: string): void {
-  tcg(root, out);
+  kardix(root, out);
   if (briefFile(root)) renderStudioFrames(root, join(out, 'frames'));
 }
 
@@ -117,7 +117,7 @@ export function renderCards(root: string, out: string): void {
  * that image's parts see-through, in frames/p-image/ (apps/web/src/studio/previews.ts).
  */
 function renderStudioFrames(root: string, out: string): void {
-  tcg(root, out, '--no-art');
+  kardix(root, out, '--no-art');
   const brief = readBrief(root)!;
   const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8')) as {
     families?: Record<string, { frameChoice?: boolean }>; cards: { id: string; family: string }[];
@@ -129,14 +129,14 @@ function renderStudioFrames(root: string, out: string): void {
   if (choosing.size === 0) return;
   const layout = readFileSync(join(GAME, 'card-layout.alex'), 'utf8');
   const colours = [...layout.matchAll(/^ {2}([\w-]+) = Frame \{/gm)].map((m) => m[1]).filter((f) => f !== 'Card');
-  for (const colour of colours) tcg(root, join(out, `p-${colour}`), '--no-art', '--frame', colour, '--only', ...choosing);
+  for (const colour of colours) kardix(root, join(out, `p-${colour}`), '--no-art', '--frame', colour, '--only', ...choosing);
 }
 
-function tcg(root: string, out: string, ...options: string[]): void {
-  const r = spawnSync('dotnet', ['run', '--project', TCG, '-c', 'Release', '--', 'cards', '--project', GAME, '--set', basename(root),
+function kardix(root: string, out: string, ...options: string[]): void {
+  const r = spawnSync('dotnet', ['run', '--project', KARDIX, '-c', 'Release', '--', 'cards', '--project', GAME, '--set', basename(root),
     '--out', out, ...options], { cwd: REPO, encoding: 'utf8' });
   if (r.status !== 0) {
-    throw new Error(`tcg couldn't render ${basename(root)}'s cards: ${(r.stderr || r.stdout).trim()}\n`
-      + '(tcg needs the .NET SDK; see cardengine/tcg/Tcg.csproj.)');
+    throw new Error(`kardix couldn't render ${basename(root)}'s cards: ${(r.stderr || r.stdout).trim()}\n`
+      + '(kardix needs the .NET SDK; see cardengine/kardix/Kardix.csproj.)');
   }
 }

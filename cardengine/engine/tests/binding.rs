@@ -5,8 +5,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use tcg_engine::alex::binder::{self, Role, Source};
-use tcg_engine::loader::card_engine::CardEngineHost;
+use kardix::alex::binder::{self, Role, Source};
+use kardix::loader::card_engine::CardEngineHost;
 
 fn files(folder: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();

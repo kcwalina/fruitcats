@@ -63,8 +63,8 @@ step of quality and the nicer boxes.
 
 Nothing for printing exists in the repo yet. What exists now:
 
-- tcg (`npm run cards`, from `games/folkborn/card-layout.alex`) renders each finished card as a 750×1050 WebP. That is
-  exactly 2.5″×3.5″ at 300 dpi, with **no bleed** (tcg has a `--bleed` option, not used yet). Bleed is the extra ⅛″ of picture on every edge that the printer cuts off. The files are also saved
+- kardix (`npm run cards`, from `games/folkborn/card-layout.alex`) renders each finished card as a 750×1050 WebP. That is
+  exactly 2.5″×3.5″ at 300 dpi, with **no bleed** (kardix has a `--bleed` option, not used yet). Bleed is the extra ⅛″ of picture on every edge that the printer cuts off. The files are also saved
   with lossy compression (quality 90).
 - The art itself (`games/folkborn/sets/<set>/art/*.webp`, 1536×1024) is more than big enough for the
   art window at print size.

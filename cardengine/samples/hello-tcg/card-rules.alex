@@ -1,14 +1,14 @@
 #type Rules
 
-for = @base-set
+for = @cards
 
 effect draw-a-card { draw() }
 @hello.on-enter = draw-a-card
 
-static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+static others-get-bonus { units(own, other).grant(power: +card.bonus) }
 @cheer.static = others-get-bonus
 
-effect damage-opponent { opponent.damage-life(ability.damage) }
+effect damage-opponent { opponent.damage-life(card.damage) }
 @spark.on-play = damage-opponent
 
 effect destroy-a-creature { choose(all).destroy() }

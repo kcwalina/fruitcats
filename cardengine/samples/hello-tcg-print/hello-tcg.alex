@@ -1,18 +1,11 @@
 #type Game
 
 name = 'Hello TCG'
-engine-version = 1
+schema-version = 1
 rulebook = @rulebook
 card-back = 'art/card-back.png'
-uses = [
-  @units
-  @spells
-]
-sets = [
-  @base-set
-]
 
-numbers = [
+constants = [
   starting-life = 10
   opening-hand = 3
   energy-growth = 1
@@ -21,5 +14,11 @@ numbers = [
   max-copies = 3
 ]
 
-type Creature : UnitCard {}
-type Spell : SpellCard {}
+type Creature : Card {
+  cost: int
+  power: int
+  health: int
+}
+type Spell : Card {
+  cost: int
+}

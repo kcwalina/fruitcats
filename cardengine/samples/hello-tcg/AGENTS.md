@@ -3,39 +3,38 @@
 This folder is a card game for the TCG developer platform. The game is the Alex files plus the
 assets they refer to (images in `art/`). Nothing about the game lives anywhere else.
 
-## The files
-
-- `hello-tcg.alex` is the game (`#type Game`): its card types, numbers and card back, and, once
-  the game is playable, the libraries' rules it uses and its zones.
-- `rulebook.alex` is the rulebook (`#type Rulebook`): the text players read. Rules cite its sections.
-- `base-set.alex` is a set (`#type Set`): what each card is, and the decks.
-- `base-set-rules.alex` (`#type Rules`, `for = @base-set`), once the game is playable: what the
-  cards' abilities do, and scenarios that test them.
-- `art/`: images. Cards refer to them by path (`art = 'art/friend.png'`); so does the card back.
-
 ## Two stages
 
 A game is **printable** when its cards, decks, rulebook and card back are complete: `tcg cards
 --print` and `tcg rulebook` make the files to print it. It is **playable** once the engine knows
-its rules too: zones, library rules citing the rulebook, and a handler for every ability. `tcg
-check` reports both. Don't add rules or handlers to a game the designer only wants to print,
-unless they ask.
+its rules too. `tcg check` reports both. Don't add rules or handlers to a game the designer only
+wants to print, unless they ask.
+
+## The files
+
+- `hello-tcg.alex` (`#type Game`): the game's name, card back, constants and card types. Once the
+  game is playable, also the libraries it uses, its zones and the rules it picks from them.
+- `rulebook.alex` (`#type Rulebook`): the text players read.
+- `cards.alex` (`#type Cards`): the cards and the decks. Every cards file in the folder is part of
+  the game.
+- `card-rules.alex` (`#type Rules`, `for = @cards`), once the game is playable: what the cards' text
+  does (handlers), and scenarios that test them.
+- `art/`: images, referred to by path (`art = 'art/friend.png'`, `card-back = ...`).
 
 ## How to work
 
-- **Prefer library rules.** A game is mostly a selection of rules from the libraries it `uses`.
-  Don't invent a rule a library already has. If the game needs something no library offers, say
-  so instead of working around it.
-- **Numbers go in `numbers`.** Rules take them (`start = @starting-life`) and rulebook text embeds
-  them (`{@starting-life}`). Never type a number into rulebook text.
-- **An ability's numbers go on the ability** (`numbers = [damage = 2]`). Its text shows them
-  (`'Deal {damage} damage'`) and its handler reads them (`ability.damage`). Never type a number
-  into card text or a handler.
-- **Every rule cites the rulebook section that explains it** (`cites = @rulebook.sections.winning`). When
-  you add a rule, add or update its section.
-- **Every ability printed on a card has a handler**, and every handler belongs to a printed
-  ability. Keep handlers to a line or two, using the libraries' words.
-- **Every ability gets a scenario** in the rules file.
+- **Numbers are constants.** A number the game uses goes in the game's `constants`; the rulebook
+  shows it as `{@starting-life}` and rules take it as `@starting-life`. A number in a card's text
+  goes in the card's `constants`; the text shows it as `{damage}` and handlers read it as
+  `card.damage`. Never type a number into rulebook text, card text or a handler.
+- **Prefer library rules.** A playable game is mostly a selection of rules from the libraries it
+  `uses`. Don't invent a rule a library already has. If the game needs something no library
+  offers, say so instead of working around it.
+- **Every rule cites the rulebook section that explains it** (`cites = @rulebook.sections.winning`).
+- **Every card with text has a handler**, and every handler belongs to a card with text. Keep
+  handlers to a line or two, using the libraries' words. Every handler gets a scenario.
+- **One item per line** in collections; a record that doesn't fit on one line gets one field per
+  line.
 - **Comments only when they say something the code doesn't.**
 
 After every change, run:
@@ -50,8 +49,7 @@ It must report no errors. Once the game is playable, also run:
 tcg test
 ```
 
-All scenarios must pass before you're done. To see the game play, run `tcg sim`; to judge balance, run
-`tcg playtest`.
+All scenarios must pass before you're done.
 
 ## References
 

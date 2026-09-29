@@ -72,7 +72,7 @@ tcg --version
 ```
 
 ```
-tcg 1.0.0 (Alex 1.0, engine 1)
+tcg 1.0.0 (Alex 1.0, schema 1)
 ```
 
 In VS Code, install the **Alex** extension from the Extensions view.
@@ -87,7 +87,7 @@ tcg new hello-tcg
 Created hello-tcg/
   hello-tcg.alex          the game
   rulebook.alex           the rulebook
-  base-set.alex           your first set of cards
+  cards.alex              your cards
   art/                    your game's images
   AGENTS.md               instructions for coding agents
 
@@ -100,16 +100,14 @@ Next: cd hello-tcg, then tcg check
 #type Game
 
 name = 'Hello TCG'
-engine-version = 1
+schema-version = 1
 rulebook = @rulebook
-sets = [
-  @base-set
-]
 ```
 
-`engine-version = 1` says which version of the game engine your game is written for, so a later
-engine keeps treating it exactly the same way. Anything you don't write has a default: no card
-types, no numbers, two players. You add those as the game grows.
+`schema-version = 1` says which version of the game file format your game is written in, the way
+a .NET project names the framework it targets. Later versions of `tcg` keep reading it exactly
+the same way. Anything you don't write has a default: no card types, no constants. You add those
+as the game grows.
 
 `rulebook.alex`, a rulebook with a title and no sections yet:
 
@@ -119,13 +117,10 @@ types, no numbers, two players. You add those as the game grows.
 title = 'Hello TCG'
 ```
 
-`base-set.alex`, a set of cards with no cards yet:
+`cards.alex`, with no cards yet:
 
 ```
-#type Set
-
-id = 'BASE'
-name = 'Base Set'
+#type Cards
 ```
 
 `art/` is empty. It is where your game's images go.
@@ -138,20 +133,19 @@ read it, but you may.
 
 `tcg` reads every `.alex` file in the project folder. Each file holds one thing, of the type its
 `#type` line names, and the file's name is how other files refer to it: `@rulebook` is the
-rulebook in `rulebook.alex`, and `@base-set` is the set in `base-set.alex`. There are no other
+rulebook in `rulebook.alex`, and `@friend` is a card in `cards.alex`. There are no other
 names to keep in step. Rename a file, and `tcg check` lists the references to update (Studio and
 agents update them for you).
 
-The folder holds exactly one `Game`. That is your game, and everything else joins it through a
-reference:
+The folder holds exactly one `Game`: that is your game. Every `Cards` file in the folder is part
+of it, so you can keep all your cards in `cards.alex` or split them into several files, as you
+like. Everything else is joined by a reference:
 
 ```
 hello-tcg.alex   Game       rulebook = @rulebook      ──▶  rulebook.alex   Rulebook
-                            sets = [@base-set]        ──▶  base-set.alex   Set
-base-set.alex    (a card)   art = 'art/friend.png'    ──▶  art/friend.png
+cards.alex       (a card)   art = 'art/friend.png'    ──▶  art/friend.png
 ```
 
-A folder may hold sets you're still working on; a set is in the game only when `sets` lists it.
 Assets are referred to by their path in the folder.
 
 Check the project:
@@ -184,23 +178,23 @@ Hello TCG has two kinds of card:
 - **Creatures** stay on the table. They have a cost, Power and Health.
 - **Spells** are played once and discarded. They have a cost.
 
-You don't describe what a Creature has field by field. Card games share a small number of card
-shapes, and the libraries define them: a *unit card* has a cost, power and health; a *spell card*
-has a cost. Your game uses those shapes under its own names. In `hello-tcg.alex`:
+Say what each type of card has printed on it. In `hello-tcg.alex`:
 
 ```
-uses = [
-  @units
-  @spells
-]
-
-type Creature : UnitCard {}
-type Spell : SpellCard {}
+type Creature : Card {
+  cost: int
+  power: int
+  health: int
+}
+type Spell : Card {
+  cost: int
+}
 ```
 
-Games name their card types freely (Monsters, Allies, Characters, Tricks); the library supplies
-the shape. Using a library for its card shapes doesn't bring in any of its rules: a library's
-rules apply only once you list them, which you'll do in Part 2.
+`: Card` means these are cards, so they also have what every card has: a name, a picture, text
+and flavor text, all optional. The fields you add are the ones your game prints; `int` means a
+whole number. Games name their card types freely (Monsters, Allies, Characters, Tricks) and give
+them whatever fields they print.
 
 > [!TIP]
 > **Ask your agent:** "My game has two card types: Creatures, with a cost, Power and Health, and
@@ -208,14 +202,11 @@ rules apply only once you list them, which you'll do in Part 2.
 
 ## 4. Your first cards
 
-Open `base-set.alex` and add two Creatures. Any image works for their pictures for now, like a
+Open `cards.alex` and add two Creatures. Any image works for their pictures for now, like a
 sketch or a photo of a drawing: save two images as `art/friend.png` and `art/big-friend.png`.
 
 ```
-#type Set
-
-id = 'BASE'
-name = 'Base Set'
+#type Cards
 
 cards = [
   friend = Creature {
@@ -254,20 +245,20 @@ else, and `tcg check` tells you if a card points at a picture that isn't there:
 
 ```
 hello-tcg: 1 error
-  error  base-set.alex:15  Big Friend's art 'art/big-friend.png' doesn't exist.
+  error  cards.alex:11  Big Friend's art 'art/big-friend.png' doesn't exist.
 ```
 
 > [!NOTE]
-> **In Studio:** click `friend` in `base-set.alex`. The card appears as it will look, with a
+> **In Studio:** click `friend` in `cards.alex`. The card appears as it will look, with a
 > property grid beside it. Change **Cost** from 1 to 2 in the grid, and the line in
-> `base-set.alex` changes to `cost = 2`. Change it back in the file, and the grid follows. The
+> `cards.alex` changes to `cost = 2`. Change it back in the file, and the grid follows. The
 > file is always the truth; the grid is a view of it.
 
 > [!TIP]
 > **Ask your agent:** "Add two Creatures: Friend (cost 1, 1/1, 'Always there.') and Big Friend
 > (cost 3, 3/3, 'Bigger hugs.'), with their pictures in art/."
 
-## 5. Cards with abilities
+## 5. Cards with text
 
 Most cards do something, and say so in their text. Add four more cards to `cards`, each with its
 picture in `art/`:
@@ -276,58 +267,37 @@ picture in `art/`:
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
     art = 'art/hello.png'
+    text = 'When Hello enters, draw a card.'
     flavor = 'Nice to meet you.'
-    abilities = [
-      OnEnter { text = 'When Hello enters, draw a card.' }
-    ]
   }
   cheer = Creature {
     name = 'Cheer', cost = 2, power = 1, health = 2
     art = 'art/cheer.png'
+    text = 'Your other Creatures have +{bonus} Power.'
+    constants = [bonus = 1]
     flavor = 'Louder together.'
-    abilities = [
-      Static {
-        text = 'Your other Creatures have +{bonus} Power.'
-        numbers = [bonus = 1]
-      }
-    ]
   }
   spark = Spell {
     name = 'Spark', cost = 1
     art = 'art/spark.png'
+    text = 'Deal {damage} damage to your opponent.'
+    constants = [damage = 2]
     flavor = 'Small, bright, rude.'
-    abilities = [
-      OnPlay {
-        text = 'Deal {damage} damage to your opponent.'
-        numbers = [damage = 2]
-      }
-    ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
     art = 'art/goodbye.png'
+    text = 'Destroy a Creature.'
     flavor = 'See you around.'
-    abilities = [
-      OnPlay { text = 'Destroy a Creature.' }
-    ]
   }
 ```
 
-An ability is written as what kind of ability it is and the text printed on the card:
-
-- `OnEnter`: something that happens when the card enters play.
-- `Static`: something that is true while the card is in play.
-- `OnPlay`: what a Spell does when you play it.
-
-Saying the kind now costs nothing, and it is what lets Part 2 connect each ability to what it
-does.
-
-Some abilities have numbers in them. Those are written as the ability's `numbers`, and the text
-shows them in braces: Cheer's card reads "Your other Creatures have +1 Power." because `bonus`
-is 1. That seems like a detour for a printed card. It pays off in Part 2, where the engine reads
-the same number the card prints, so the card and what it does can never disagree. `tcg check`
-holds the text and the numbers together: a `{name}` the ability doesn't have is an error, and so
-is a number the text never shows.
+When a card's text has a number in it, the number is one of the card's **constants**, and the text
+shows it in braces: Cheer's card reads "Your other Creatures have +1 Power." because `bonus` is 1.
+That seems like a detour for a printed card. It pays off in Part 2, where the engine reads the
+same number the card prints, so the card and what it does can never disagree. `tcg check` holds
+the text and its constants together: a `{name}` the card doesn't have is an error, and so is a
+constant the text never shows.
 
 > [!TIP]
 > **Ask your agent:** "Add Hello, Cheer, Spark and Goodbye as in chapter 5 of the walkthrough."
@@ -379,13 +349,13 @@ A Spell does what its text says, once, and then goes to your discard pile.
 @@@
 ```
 
-`{@starting-life}` and the others are the game's **numbers**. Numbers are where rulebooks and
-games usually drift apart: the designer changes starting Life to 12 while playtesting, and the
-rulebook still says 10. So every number that shapes the game lives in one place, `numbers` in
-`hello-tcg.alex`, and the rulebook reads it from there. Add them:
+`{@starting-life}` and the others are the game's **constants**: the numbers that shape the game.
+Numbers are where rulebooks and games usually drift apart: the designer changes starting Life to
+12 while playtesting, and the rulebook still says 10. So every such number lives in one place,
+`constants` in `hello-tcg.alex`, and the rulebook reads it from there. Add them:
 
 ```
-numbers = [
+constants = [
   starting-life = 10
   opening-hand = 3
   energy-growth = 1
@@ -396,8 +366,8 @@ numbers = [
 ```
 
 Change `starting-life` to 12, and the rulebook says "Each player starts with 12 Life." There is
-nothing else to update. In Part 2 the engine reads the same numbers, so the printed rulebook and
-the game the computer plays always agree. If the rulebook names a number that doesn't exist,
+nothing else to update. In Part 2 the engine reads the same constants, so the printed rulebook
+and the game the computer plays always agree. If the rulebook names a constant that doesn't exist,
 `tcg check` says so. It also notes digits typed straight into rulebook text, since those are the
 numbers that drift.
 
@@ -413,16 +383,16 @@ Rendered the rulebook:
   out/rulebook/hello-tcg-rulebook.pdf
 ```
 
-It contains every section, in order, and a card list made from `base-set.alex`: each card as it
+It contains every section, in order, and a card list made from your cards: each card as it
 looks, with its text. You never copy a card's text into the rulebook, so the two can't disagree.
 
 > [!TIP]
 > **Ask your agent:** "Write the rulebook for Hello TCG: players start with 10 Life, decks are 12
-> cards with at most 3 copies, … Put every number in the game's numbers."
+> cards with at most 3 copies, … Put every number in the game's constants."
 
 ## 7. Decks
 
-A printed game comes with decks to play. Add two to `base-set.alex`:
+A printed game comes with decks to play. Add two to `cards.alex`:
 
 ```
 decks = [
@@ -454,7 +424,7 @@ tcg check
 ```
 hello-tcg: 0 errors
   Printable   yes: 6 cards, 2 decks, a rulebook with 8 sections
-  Playable    not yet: no zones, no turns, no way to win, 4 abilities with no program
+  Playable    not yet: no zones, no turns, no way to win, 4 cards' text has no handler
 ```
 
 The game is printable. It isn't playable by the computer yet, and it doesn't need to be: none of
@@ -507,15 +477,16 @@ stay connected.
 `tcg check` already listed what's missing:
 
 ```
-  Playable    not yet: no zones, no turns, no way to win, 4 abilities with no program
+  Playable    not yet: no zones, no turns, no way to win, 4 cards' text has no handler
 ```
 
 The chapters below work through that list.
 
 ## 9. The table
 
-The engine needs to know the parts of the table, how a game starts, and how a turn goes. Add the
-libraries to `uses` in `hello-tcg.alex`:
+The engine needs to know the parts of the table, how a game starts, and how a turn goes. From
+here on, everything you add to `hello-tcg.alex` goes below what Part 1 wrote; nothing there
+changes. Add the libraries to `uses`:
 
 ```
 uses = [
@@ -525,6 +496,20 @@ uses = [
   @resources
   @turns
   @setup
+]
+```
+
+Tell the libraries what your card types are: your Creatures are what the `units` library calls
+unit cards (cards that stay in play with power and health), and your Spells are its spell cards.
+`tcg check` confirms that your types have the fields the library needs.
+
+```
+units = [
+  UnitCards { types = [@Creature] }
+]
+
+spells = [
+  SpellCards { types = [@Spell], cites = @rulebook.sections.spells }
 ]
 ```
 
@@ -545,7 +530,7 @@ Each zone's name is the one you give it here: players see "Deck", "Hand", "Board
 The engine enforces this everywhere: in bots, in online play, in replays.
 
 Setup, turns and Energy, each rule citing the section of your rulebook that says the same thing,
-and taking its numbers from `numbers`:
+and taking its numbers from `constants`:
 
 ```
 setup = [
@@ -618,6 +603,7 @@ Then the rules:
 
 ```
 units = [
+  UnitCards { types = [@Creature] }
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
 ]
@@ -660,7 +646,7 @@ tcg check
 ```
 hello-tcg: 0 errors
   Printable   yes
-  Playable    not yet: 4 abilities with no program
+  Playable    not yet: 4 cards' text has no handler
   note  rulebook.alex  Section 'decks' is cited by no rule.
 ```
 
@@ -673,63 +659,60 @@ haven't added yet or a mistake. Deck rules come in chapter 13.
 
 ## 11. What the cards do
 
-Each ability on a card says what kind it is and what its text says. What it *does* is a small
-program called its **handler**. Handlers live in a rules file next to the set. Create
-`base-set-rules.alex`:
+Each card's text says what it does, in words. For the engine, that needs a small program: a
+**handler**. Handlers live in a rules file next to your cards. Create `card-rules.alex`:
 
 ```
 #type Rules
 
-for = @base-set
+for = @cards
 
 effect draw-a-card { draw() }
 @hello.on-enter = draw-a-card
 ```
 
-`for = @base-set` says which set's cards this file programs. The set never mentions its rules
-file, so the cards read the same, and print the same, whether or not their abilities are
-programmed. When `tcg` loads the game, it gathers every rules file whose `for` names one of the
-game's sets.
+`for = @cards` says which cards this file programs. The cards file never mentions its rules file,
+so the cards read the same, and print the same, whether or not they're programmed.
 
-`effect draw-a-card { draw() }` is the ability's program: draw a card. `@hello.on-enter =
-draw-a-card` attaches it to Hello's `OnEnter` ability. Handlers are short on purpose: they use the
-words the libraries give you (`draw`, `damage`, `destroy`, `choose`…), and each one is a line or
-two.
+`effect draw-a-card { draw() }` is the program: draw a card. `@hello.on-enter = draw-a-card`
+attaches it to Hello, and says when it runs: when Hello enters play. Handlers are short on
+purpose: they use the words the libraries give you (`draw`, `damage`, `destroy`, `choose`…), and
+each one is a line or two.
 
 The other three:
 
 ```
-static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+static others-get-bonus { units(own, other).grant(power: +card.bonus) }
 @cheer.static = others-get-bonus
 
-effect damage-opponent { opponent.damage-life(ability.damage) }
+effect damage-opponent { opponent.damage-life(card.damage) }
 @spark.on-play = damage-opponent
 
 effect destroy-a-creature { choose(all).destroy() }
 @goodbye.on-play = destroy-a-creature
 ```
 
-- Cheer's handler reads as: "my units, other than this one, are granted the ability's bonus in
-  power". `ability.bonus` is the number printed on the card. A static isn't something that
-  happens; it's something that is true while the card is in play. When Cheer leaves the board,
-  the bonus goes away by itself.
-- Spark's handler deals `ability.damage`, the same number the card prints.
+- Cheer's handler is a `static`: not something that happens, but something that is true while the
+  card is in play. It reads as: "my units, other than this one, are granted the card's bonus in
+  power". `card.bonus` is the constant printed on the card. When Cheer leaves the board, the
+  bonus goes away by itself.
+- `@spark.on-play` runs when Spark is played, and deals `card.damage`, the same number the card
+  prints.
 - `choose(all)` asks the player who played Goodbye to pick a Creature, any player's. You don't
   write any screen or button for that. The engine asks whoever is playing that seat: a person
   sees the Creatures highlighted on the table, a bot weighs its options, an LLM player reads a
   list.
 
-Every ability printed on a card must have a handler, and every handler must belong to an ability
-printed on a card, so the card and what it does can't disagree silently. `tcg check` also notes a
-digit typed straight into a handler, like `grant(power: +1)`: that's a number the card's text
-doesn't know about.
+Every card with text must have a handler, and every handler must belong to a card with text, so
+the card and what it does can't disagree silently. `tcg check` also notes a digit typed straight
+into a handler, like `grant(power: +1)`: that's a number the card's text doesn't know about.
 
 ### Scenarios
 
 Prove the handlers work. A **scenario** sets up a situation, does something, and checks the
 result. The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`…) come from the
 `scenarios` library, so add `@scenarios` to `uses`. Then add two scenarios to
-`base-set-rules.alex`:
+`card-rules.alex`:
 
 ```
 scenario 'Hello draws a card when it enters' {
@@ -859,7 +842,7 @@ Report saved to out/playtests/2026-09-28-1412.md
 The search bots aren't written for your game. They try out their legal moves and keep the ones
 that tend to win, so they play any game the engine can run, including yours as soon as it checks.
 
-Cheer looks strong. Make it cost 3 in `base-set.alex`:
+Cheer looks strong. Make it cost 3 in `cards.alex`:
 
 ```
     name = 'Cheer', cost = 3, power = 1, health = 2
@@ -944,7 +927,7 @@ Put your rules in the project folder, say `my-rules.md`, and ask:
 
 > [!TIP]
 > **Ask your agent:** "Read my-rules.md and write this game: the rulebook sections, the cards,
-> the game's rules and a handler and scenario for every card ability. Use library rules wherever
+> the game's rules and a handler and scenario for every card with text. Use library rules wherever
 > you can. Run tcg check and tcg test until both pass, then run a short playtest and tell me what
 > you found."
 
@@ -985,8 +968,8 @@ At the end of the walkthrough, your folder holds:
 hello-tcg/
   hello-tcg.alex
   rulebook.alex
-  base-set.alex
-  base-set-rules.alex
+  cards.alex
+  card-rules.alex
   art/
     friend.png
     big-friend.png
@@ -998,7 +981,9 @@ hello-tcg/
   AGENTS.md
 ```
 
-These are the complete Alex files. The images are whatever pictures you chose.
+These are the complete Alex files. The images are whatever pictures you chose. At the end of
+Part 1 the folder is the same without `card-rules.alex`, with only the first part of
+`hello-tcg.alex` (down to the card types), and with Cheer still costing 2.
 
 ### hello-tcg.alex
 
@@ -1006,9 +991,28 @@ These are the complete Alex files. The images are whatever pictures you chose.
 #type Game
 
 name = 'Hello TCG'
-engine-version = 1
+schema-version = 1
 rulebook = @rulebook
 card-back = 'art/card-back.png'
+
+constants = [
+  starting-life = 10
+  opening-hand = 3
+  energy-growth = 1
+  max-energy = 3
+  deck-size = 12
+  max-copies = 3
+]
+
+type Creature : Card {
+  cost: int
+  power: int
+  health: int
+}
+type Spell : Card {
+  cost: int
+}
+
 uses = [
   @common
   @units
@@ -1021,36 +1025,12 @@ uses = [
   @decks
   @scenarios
 ]
-sets = [
-  @base-set
-]
-
-numbers = [
-  starting-life = 10
-  opening-hand = 3
-  energy-growth = 1
-  max-energy = 3
-  deck-size = 12
-  max-copies = 3
-]
-
-type Creature : UnitCard {}
-type Spell : SpellCard {}
 
 zones = [
   Deck = Zone { role = deck, shape = pile, visible = none }
   Hand = Zone { role = hand, shape = set, visible = owner }
   Board = Zone { role = board, shape = row, visible = all }
   Discard = Zone { role = discard, shape = pile, visible = all }
-]
-
-life = [
-  LifeCounter {
-    name = 'Life'
-    start = @starting-life
-    lose-at = 0
-    cites = @rulebook.sections.winning
-  }
 ]
 
 setup = [
@@ -1095,8 +1075,13 @@ resource-rules = [
 cost-resource = @Energy
 
 units = [
+  UnitCards { types = [@Creature] }
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
+]
+
+spells = [
+  SpellCards { types = [@Spell], cites = @rulebook.sections.spells }
 ]
 
 combat = [
@@ -1106,6 +1091,15 @@ combat = [
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
   DamageClearsAt { moment = @turn-end }
+]
+
+life = [
+  LifeCounter {
+    name = 'Life'
+    start = @starting-life
+    lose-at = 0
+    cites = @rulebook.sections.winning
+  }
 ]
 
 deck-rules = [
@@ -1158,13 +1152,10 @@ A Spell does what its text says, once, and then goes to your discard pile.
 @@@
 ```
 
-### base-set.alex
+### cards.alex
 
 ```
-#type Set
-
-id = 'BASE'
-name = 'Base Set'
+#type Cards
 
 cards = [
   friend = Creature {
@@ -1180,40 +1171,28 @@ cards = [
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
     art = 'art/hello.png'
+    text = 'When Hello enters, draw a card.'
     flavor = 'Nice to meet you.'
-    abilities = [
-      OnEnter { text = 'When Hello enters, draw a card.' }
-    ]
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
     art = 'art/cheer.png'
+    text = 'Your other Creatures have +{bonus} Power.'
+    constants = [bonus = 1]
     flavor = 'Louder together.'
-    abilities = [
-      Static {
-        text = 'Your other Creatures have +{bonus} Power.'
-        numbers = [bonus = 1]
-      }
-    ]
   }
   spark = Spell {
     name = 'Spark', cost = 1
     art = 'art/spark.png'
+    text = 'Deal {damage} damage to your opponent.'
+    constants = [damage = 2]
     flavor = 'Small, bright, rude.'
-    abilities = [
-      OnPlay {
-        text = 'Deal {damage} damage to your opponent.'
-        numbers = [damage = 2]
-      }
-    ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
     art = 'art/goodbye.png'
+    text = 'Destroy a Creature.'
     flavor = 'See you around.'
-    abilities = [
-      OnPlay { text = 'Destroy a Creature.' }
-    ]
   }
 ]
 
@@ -1239,20 +1218,20 @@ decks = [
 ]
 ```
 
-### base-set-rules.alex
+### card-rules.alex
 
 ```
 #type Rules
 
-for = @base-set
+for = @cards
 
 effect draw-a-card { draw() }
 @hello.on-enter = draw-a-card
 
-static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+static others-get-bonus { units(own, other).grant(power: +card.bonus) }
 @cheer.static = others-get-bonus
 
-effect damage-opponent { opponent.damage-life(ability.damage) }
+effect damage-opponent { opponent.damage-life(card.damage) }
 @spark.on-play = damage-opponent
 
 effect destroy-a-creature { choose(all).destroy() }

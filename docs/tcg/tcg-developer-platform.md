@@ -139,60 +139,74 @@ or in Studio.
 only, to print a physical game, and make it playable by the computer later or never. So a project
 has two goals, and `tcg check` reports progress toward each:
 
-- **Printable:** card types (library card shapes under the game's names, e.g. `type Creature :
-  UnitCard {}`; using a library for its card shapes brings in none of its rules), cards with their
-  art and printed ability text, decks, the rulebook with its numbers, and the card back. `tcg cards
-  --print` and `tcg rulebook` need only this.
-- **Playable:** zones, rules picked from the libraries (each citing its rulebook section), and a
-  handler for every printed ability, in a rules file next to the set. `tcg sim`, `test`,
-  `playtest`, `play` and `push` need this.
+- **Printable:** card types, cards, decks, the rulebook, constants and the card back. Nothing about
+  the engine or playing appears: a printable game is only a definition of cards and a rulebook.
+  `tcg cards --print` and `tcg rulebook` need only this.
+- **Playable:** added below, never changing the printable part: the libraries, zones, rules picked
+  from the libraries (each citing its rulebook section), the mapping of the game's card types to
+  the libraries' (`UnitCards { types = [@Creature] }`), and a handler for every card with text.
+  `tcg sim`, `test`, `playtest`, `play` and `push` need this.
 
-Errors are real mistakes only (a broken reference, a missing image, an unknown number). What a game
-still lacks to be playable is a list, not errors: missing handlers don't fail a printable game.
+Errors are real mistakes only (a broken reference, a missing image, an unknown constant). What a
+game still lacks to be playable is a list, not errors.
 
 ```
 my-game/
-  my-game.alex        the game: name, card types, numbers, card back; later zones and rules
-  rulebook.alex       the rulebook, as source (starts with a title)
-  base-set.alex       the first set: cards and decks (starts empty)
+  my-game.alex        the game: name, schema version, card back, constants, card types
+  rulebook.alex       the rulebook (starts with a title)
+  cards.alex          the cards and decks (starts empty)
   art/                images: card art, the card back
   AGENTS.md           for Claude, Codex and other agents: the spec, the commands, the conventions
 ```
 
-A rules file (`base-set-rules.alex`, what the cards' abilities do, and scenarios) is added when
-the game is made playable.
+A rules file (`card-rules.alex`, `for = @cards`: handlers and scenarios) is added when the game is
+made playable.
+
+**Cards, not sets (decided 2026-09-28).** A beginner writes a `Cards` file: cards and decks, with
+no id and no name. Every `Cards` file in the folder is part of the game (the game doesn't list
+them), so cards can be split across files freely. A set in the TCG sense (a named release, with a
+code, symbol, collector numbers, boosters, rotation) is an opt-in for games that publish
+expansions, designed later. A cards file can be held back with a marker such as `draft = true`.
+
+**Card types are the game's own (decided 2026-09-28).** A printable game declares what its cards
+print, on the core `Card`: `type Creature : Card { cost: int, power: int, health: int }`. `Card`
+gives name, art, text, flavor and constants. The libraries' card shapes (`UnitCard`, `SpellCard`)
+are engine concepts, so a playable game maps its types onto them (`UnitCards { types =
+[@Creature] }`), and `tcg check` confirms the types have the fields the library needs.
+
+**Card text and handlers.** A card's printed rules text is `text = '...'`. Its handlers attach to
+the card by slot (`@hello.on-enter = draw-a-card`, `@cheer.static = ...`, `@spark.on-play = ...`);
+the slot names when the handler runs. The linker checks both ways: every card with text has a
+handler, every handler belongs to a card with text.
 
 Samples: `cardengine/samples/hello-tcg-print/` is Hello TCG at the end of the walkthrough's Part 1
 (printable only), and `cardengine/samples/hello-tcg/` is the finished, playable game.
 
-**One source for every number.** Rulebooks and games drift apart most often over numbers. So a
-game names the numbers that shape it in one place, `numbers = [starting-life = 10, ...]` on
-`Game`; rules take them (`LifeCounter { start = @starting-life }`) and rulebook text embeds them
-(`Each player starts with {@starting-life} Life.`). `tcg rulebook` fills them in, and `tcg check`
-reports an unknown name in text and notes digits written straight into rulebook text. Named
-numbers are also the knobs a playtest can vary. Needs: `Game.numbers: [text: int]`, rule fields
-that accept a number reference, and `{@name}` in rulebook text. The same holds for card
-abilities: an ability carries its own numbers, and both its printed text and its handler read
-them:
+**One source for every number: constants.** Rulebooks and games drift apart most often over
+numbers. So a game names the numbers that shape it in one place, `constants = [starting-life = 10,
+...]` on `Game`; rules take them (`LifeCounter { start = @starting-life }`) and rulebook text embeds
+them (`Each player starts with {@starting-life} Life.`). A card's own numbers are the card's
+`constants`, shown in its text as `{bonus}` (no `@`) and read by its handler as `card.bonus`:
 
 ```
-Static { text = 'Your other Creatures have +{bonus} Power.', numbers = [bonus = 1] }
-static others-get-bonus { units(own, other).grant(power: +ability.bonus) }
+cheer = Creature {
+  ...
+  text = 'Your other Creatures have +{bonus} Power.'
+  constants = [bonus = 1]
+}
+static others-get-bonus { units(own, other).grant(power: +card.bonus) }
 ```
 
-`{name}` (no `@`) is the ability's own number; `{@name}` is the game's. `ability.name` reads it in
-a handler. `tcg check`: a `{name}` the ability lacks is an error, a number the text never shows is
-an error (players would play with a number they can't see), and a digit written into a handler is
-a note. Needs: `numbers: [text: int] = empty` on `Ability`, `{name}` in ability text, and an
-`ability` selector in handler bodies.
+`tcg check`: an unknown name in text is an error; a card constant its text never shows is an error
+(players would play with a number they can't see); a digit typed into rulebook text, card text or
+a handler is a note. Constants are also the knobs a playtest can vary.
 
 **How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name
-(`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game`, and everything joins it by
-reference: `rulebook = @rulebook`, `sets = [...]` (a set not listed is not in the game), and each
-`Rules` document's `for = @set` (the set never names its rules file: code points at data). The
-loader gathers the rules documents of the game's sets and checks abilities and handlers both
-ways. Assets are referred to by their path in the folder.
+(`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game` and any number of `Cards`
+files, all part of it; the rulebook joins by reference (`rulebook = @rulebook`), and each `Rules`
+document by its `for = @cards` (the cards never name their rules file: code points at data).
+Assets are referred to by their path in the folder.
 
 **The rulebook is source.** Its sections are Alex, and every rule cites the section that explains
 it (`cites = @rulebook.sections.combat`). The checker looks both ways, as the linker already does for
@@ -317,17 +331,29 @@ the core and libraries (seven new libraries, among them `scenarios`, `objectives
   (with `target:`), `attack`, `pass` to act; `in-zone`, `power`, `life`, `winner` to assert.
 - `Card.art: text?`, an asset reference.
 
-Core changes the owner asked for on 2026-09-28, from reading the walkthrough:
+Core changes the owner asked for on 2026-09-28, from reading the walkthrough (the core session
+did the first ones; the rest are to do):
 
-- **`core = '1'` becomes `engine-version = 1`** on `Game`: readable, and a number. Sets take the
-  game's engine version and don't repeat it.
-- **No repeated names.** A game's card types are the types it declares (`type Creature :
-  UnitCard {}`); the `types = [Creature = CardType { name = nameof(Creature) }]` list goes. A
-  record under a key in a keyed map takes its `name` from the key (`Deck = Zone { role = deck }`),
-  unless it gives its own. The keyed map is already the "enum of records"; repeating each key as
-  a name was the noise.
-- **Defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to `empty`, and
-  `players` to `Players {}` (two players), so a new game file doesn't list empty fields.
+- **`core = '1'` becomes `schema-version = 1`** on `Game`: the version of the file format, like a
+  .NET project's target framework. Not "engine": a printed game has no engine. Cards files take
+  the game's version.
+- **No repeated names.** A game's card types are the types it declares; the `types = [Creature =
+  CardType { name = nameof(Creature) }]` list goes. A record under a key in a keyed map takes its
+  `name` from the key (`Deck = Zone { role = deck }`), unless it gives its own.
+- **Defaults instead of boilerplate:** `uses`, `types` and `zones` default to `empty`, and
+  `players` to `Players {}` (two players).
+- **`constants`** (was `numbers`) on `Game` and on `Card`, `{@name}` in rulebook text, `{name}` in
+  card text, a `card` selector in handler bodies. The core session implemented the earlier shape
+  (`Game.numbers`, `Ability.numbers`, an `ability` selector); rename and move it.
+- **`Cards`** document type (cards and decks, no id or name), picked up automatically; `Game.sets`
+  no longer needed for a single release. `Rules.for` accepts a `Cards` document.
+- **`Card.text: text?`** (printed rules text) and **`Card.constants`**; ability kinds as card data
+  (`abilities = [OnEnter { text }]`) are no longer needed for printing, and the handler slot names
+  the kind.
+- **`UnitCards { types }`, `SpellCards { types }`** (and the same for other libraries' card
+  shapes): map a game's own card types onto a library's, checked structurally.
+- **`Game.card-back: text?`**, an asset reference to the back every printed card shares.
+- **`Section.title: text`**, a heading per rulebook section.
 
 An Alex change the owner asked for on 2026-09-28: **a file says what it is with a directive, not
 a named variable.** Today a file starts `hello-tcg = Game`, a name that only repeats the file
@@ -341,16 +367,11 @@ name = 'Hello TCG'
 ```
 
 The fields that follow belong to the file's value. Other files refer to it by its file name
-(`@rulebook`, `@base-set.friend`), and the engine finds the game by type: a folder has exactly one
+(`@rulebook`, `@cards.friend`), and the engine finds the game by type: a folder has exactly one
 `Game`. `#` starts a directive only when a word follows it with no space: the retired hash
 dialect's headers were `# name`, with a space, so the two can't be confused. The named form stays
 legal for other projects that use Alex until nothing needs it. To settle in the Alex spec: how a
 text table fills one of the file's own fields (today `@@@ root-name.field`).
-
-Needed for printing: **`Game.card-back: text?`**, an asset reference to the back every printed card shares.
-
-Still open: **a heading per rulebook section.** The walkthrough writes `Section { number, title,
-text }`; the core's `Section` has no `title` yet. Asked of the TCG Alex session.
 
 Also note: the C# Alex session that binds these files is archived, so the files added in f7a6845
 have not been re-bound by the C# Alex yet. Re-binding them is the first check when the TS Alex work

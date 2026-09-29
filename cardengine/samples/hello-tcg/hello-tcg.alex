@@ -1,9 +1,28 @@
 #type Game
 
 name = 'Hello TCG'
-engine-version = 1
+schema-version = 1
 rulebook = @rulebook
 card-back = 'art/card-back.png'
+
+constants = [
+  starting-life = 10
+  opening-hand = 3
+  energy-growth = 1
+  max-energy = 3
+  deck-size = 12
+  max-copies = 3
+]
+
+type Creature : Card {
+  cost: int
+  power: int
+  health: int
+}
+type Spell : Card {
+  cost: int
+}
+
 uses = [
   @common
   @units
@@ -16,36 +35,12 @@ uses = [
   @decks
   @scenarios
 ]
-sets = [
-  @base-set
-]
-
-numbers = [
-  starting-life = 10
-  opening-hand = 3
-  energy-growth = 1
-  max-energy = 3
-  deck-size = 12
-  max-copies = 3
-]
-
-type Creature : UnitCard {}
-type Spell : SpellCard {}
 
 zones = [
   Deck = Zone { role = deck, shape = pile, visible = none }
   Hand = Zone { role = hand, shape = set, visible = owner }
   Board = Zone { role = board, shape = row, visible = all }
   Discard = Zone { role = discard, shape = pile, visible = all }
-]
-
-life = [
-  LifeCounter {
-    name = 'Life'
-    start = @starting-life
-    lose-at = 0
-    cites = @rulebook.sections.winning
-  }
 ]
 
 setup = [
@@ -90,8 +85,13 @@ resource-rules = [
 cost-resource = @Energy
 
 units = [
+  UnitCards { types = [@Creature] }
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
+]
+
+spells = [
+  SpellCards { types = [@Spell], cites = @rulebook.sections.spells }
 ]
 
 combat = [
@@ -101,6 +101,15 @@ combat = [
   SimultaneousDamage {}
   LifeDamageEqualsPower {}
   DamageClearsAt { moment = @turn-end }
+]
+
+life = [
+  LifeCounter {
+    name = 'Life'
+    start = @starting-life
+    lose-at = 0
+    cites = @rulebook.sections.winning
+  }
 ]
 
 deck-rules = [

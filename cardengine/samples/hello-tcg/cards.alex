@@ -1,7 +1,4 @@
-#type Set
-
-id = 'BASE'
-name = 'Base Set'
+#type Cards
 
 cards = [
   friend = Creature {
@@ -17,40 +14,28 @@ cards = [
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
     art = 'art/hello.png'
+    text = 'When Hello enters, draw a card.'
     flavor = 'Nice to meet you.'
-    abilities = [
-      OnEnter { text = 'When Hello enters, draw a card.' }
-    ]
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
     art = 'art/cheer.png'
+    text = 'Your other Creatures have +{bonus} Power.'
+    constants = [bonus = 1]
     flavor = 'Louder together.'
-    abilities = [
-      Static {
-        text = 'Your other Creatures have +{bonus} Power.'
-        numbers = [bonus = 1]
-      }
-    ]
   }
   spark = Spell {
     name = 'Spark', cost = 1
     art = 'art/spark.png'
+    text = 'Deal {damage} damage to your opponent.'
+    constants = [damage = 2]
     flavor = 'Small, bright, rude.'
-    abilities = [
-      OnPlay {
-        text = 'Deal {damage} damage to your opponent.'
-        numbers = [damage = 2]
-      }
-    ]
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
     art = 'art/goodbye.png'
+    text = 'Destroy a Creature.'
     flavor = 'See you around.'
-    abilities = [
-      OnPlay { text = 'Destroy a Creature.' }
-    ]
   }
 ]
 

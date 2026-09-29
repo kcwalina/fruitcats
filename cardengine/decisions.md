@@ -1005,7 +1005,6 @@ the record of how the design was reached.
 
 Supersedes "TypeScript first" above and the TypeScript engine in earlier entries. Everything that must behave the
 same on every host (Alex, the loader, the runtime, the bots, the card renderer) is one WebAssembly module, the
-core, in `cardengine/engine/` (on branch `claude/tcg-developer-ide-architecture-xy9f9d` until merged), which the browser, `tcg.exe` (through Wasmtime) and the servers all run. It is pure:
 core, in `cardengine/engine/`, which the browser, `tcg.exe` (through Wasmtime) and the servers all run. It is pure:
 bytes in, bytes out, no host calls. Rust because it compiles to WebAssembly without a runtime inside; the hosts see
 only the `.wasm` file, so the language can change later without them. C# stays for the tools and servers, and a thin

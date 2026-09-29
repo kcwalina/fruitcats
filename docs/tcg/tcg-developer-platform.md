@@ -543,21 +543,17 @@ acceptance test, and the product is done when the walkthrough is true.
 
 ### Stage 0: the core's first piece (done, 2026-09-29)
 
-In place on branch `claude/tcg-developer-ide-architecture-xy9f9d` (commit `2ecc808`), **not yet on main**.
-The first step of the local session is to merge that branch into main (`git merge
-origin/claude/tcg-developer-ide-architecture-xy9f9d`, keeping both sides) or, to start clean, to leave it:
-In place on branch `claude/tcg-developer-ide-architecture-xy9f9d` (commit `2ecc808`):
+On main since 2026-09-29, merged from branch `claude/tcg-developer-ide-architecture-xy9f9d` (commit `2ecc808`):
 
 - `cardengine/engine/`: Alex's lexer, parser and byte-exact writer in Rust, 98 KB of WebAssembly.
 - `cardengine/conformance/`: the C# Alex and the core agree on 8,320 of 8,320 dumps (every `.alex`
   file in both repos, plus seeded broken copies).
 - `cardengine/engine/web/`: the module parsing a game folder in a browser.
 
-First, on the owner's machine: `cargo test --release` and
-`cargo build --release --target wasm32-unknown-unknown` in `cardengine/engine`, then
-`dotnet run -c Release` in `cardengine/conformance` (expect 0 different), and
-`dotnet build -c Release` in `cardengine/tcg`. Its project now finds mochi with forward slashes,
-which is verified on Linux but not yet on Windows.
+Checked on the owner's machine (Windows on ARM64) when it was merged: `cargo test --release` and
+`cargo build --release --target wasm32-unknown-unknown` in `cardengine/engine` (95 KB), then
+`dotnet run -c Release` in `cardengine/conformance` (96 of 96 dumps and 2,400 of 2,400 broken copies
+identical), and `dotnet build -c Release` in `cardengine/tcg`, whose project finds mochi with forward slashes.
 
 ### Stage 1: the core loads a game
 

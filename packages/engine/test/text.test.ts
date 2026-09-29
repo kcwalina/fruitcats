@@ -1,5 +1,6 @@
 import { describe as suite, expect, it } from 'vitest';
 import { apply, chooseAction, createGame, describe, listChoices, other, parseChoice, type GameState, type PlayerId } from '../src/index';
+import TERMS from '../src/terms.json';
 
 function rng(seed: number) {
   return () => {
@@ -70,5 +71,54 @@ suite('text interface', () => {
       compared++;
     }
     expect(compared).toBeGreaterThan(100);
+  });
+});
+
+suite("the game's words", () => {
+  // The Story drawer shows the log and the LLM players read the choices: both said "Life" for a Candle until 2026-09-29.
+  it("the log, the questions and the choices use players' words, never the retired ones", () => {
+    const retired = [...(TERMS.retired as string[]), 'Life'];
+    const decks = ['domowiki', 'pari', 'aluxes', 'jiaoren', 'hui-hai'];
+    const seen = new Set<string>();
+    for (let g = 0; g < decks.length; g++) {
+      const s = createGame({ decks: [decks[g], decks[(g + 1) % decks.length]], seed: 900 + g });
+      const r = rng(g + 7);
+      while (s.winner === null) {
+        const c = listChoices(s);
+        seen.add(c.question);
+        for (const o of c.options) seen.add(o.label);
+        apply(s, chooseAction(s, { random: r }));
+      }
+      for (const line of s.log) seen.add(line.text);
+    }
+    const bad = [...seen].filter((t) => retired.some((w) => new RegExp(`\\b${w}\\b`).test(t)));
+    expect(bad).toEqual([]);
+  });
+});
+
+suite('what a play says about arriving', () => {
+  // Pari at the Pool ("Company: enters ready") was labelled "arrives exhausted" even when it came in ready.
+  it('says a unit arrives ready exactly when it does', () => {
+    const decks = ['pari', 'domowiki', 'aluxes', 'jiaoren', 'hui-hai'];
+    let checked = 0;
+    for (let g = 0; g < 10; g++) {
+      const s = createGame({ decks: [decks[g % 5], decks[(g + 2) % 5]], seed: 1300 + g });
+      const r = rng(g + 3);
+      while (s.winner === null) {
+        const seat = s.prompt!.player;
+        for (const o of listChoices(s, { detail: true }).options) {
+          if (o.action.t !== 'play' || !/ arrives (ready|exhausted)/.test(o.label)) continue;
+          const w = structuredClone(s);
+          apply(w, o.action);
+          while (w.prompt?.kind === 'pounce' && w.prompt.player !== seat) apply(w, { t: 'decline' });
+          const unit = w.players[seat].yard.find((u) => u.uid === (o.action as { uid: number }).uid);
+          if (!unit) continue;
+          expect(o.label.includes(' arrives ready'), o.label).toBe(!unit.exhausted);
+          checked++;
+        }
+        apply(s, chooseAction(s, { random: r }));
+      }
+    }
+    expect(checked).toBeGreaterThan(100);
   });
 });

@@ -920,7 +920,7 @@ function resolveAttack(s: GameState): void {
 
   if (w.target.kind === 'hero') {
     const n = attackerFierce(s, w.attacker) ? 2 : 1;
-    log(s, `Hit! ${s.players[defender].name} loses ${n} Li${n > 1 ? 'ves' : 'fe'}.`, w.by);
+    log(s, `Hit! ${s.players[defender].name} loses ${n} ${n > 1 ? TERMS.candles : TERMS.candle}.`, w.by);
     emit(s, { t: 'heroHit', attacker: w.attacker, p: defender, lives: n });
     s.queue.unshift({ t: 'loseLife', p: defender, n });
     return;

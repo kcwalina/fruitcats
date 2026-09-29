@@ -98,7 +98,6 @@ Next: cd hello-tcg, then tcg check
 `tcg new` never makes up a game for you. Every file starts almost empty. Open `hello-tcg.alex`:
 
 ```
-// Hello TCG: the game. Which libraries it uses, its zones and the rules it plays by.
 #type Game
 
 name = 'Hello TCG'
@@ -150,7 +149,6 @@ Designers usually know their rules in words before anything else. So start in th
 Open `rulebook.alex` and add a section:
 
 ```
-// Hello TCG rulebook. Each section is text for players; rules in hello-tcg.alex cite them.
 #type Rulebook
 
 title = 'Hello TCG'
@@ -332,8 +330,6 @@ discard pile.
 Now open `base-set.alex` and add two cards:
 
 ```
-// Base Set: Hello TCG's cards and decks. What each card is; what its abilities do is in
-// base-set-rules.alex.
 #type Set
 
 id = 'BASE'
@@ -531,7 +527,6 @@ printed on a card. So the card and what it does can never disagree silently.
 Open `base-set-rules.alex` and write the handler:
 
 ```
-// Base Set rules: what the cards' abilities do, and scenarios that test them.
 #type Rules
 
 for = @base-set
@@ -932,7 +927,6 @@ These are the complete Alex files. The two images are whatever pictures you chos
 ### hello-tcg.alex
 
 ```
-// Hello TCG: the game. Which libraries it uses, its zones and the rules it plays by.
 #type Game
 
 name = 'Hello TCG'
@@ -1013,7 +1007,6 @@ deck-rules = [
 ### rulebook.alex
 
 ```
-// Hello TCG rulebook. Each section is text for players; rules in hello-tcg.alex cite them.
 #type Rulebook
 
 title = 'Hello TCG'
@@ -1058,8 +1051,6 @@ A Spell does what its text says, once, and then goes to your discard pile.
 ### base-set.alex
 
 ```
-// Base Set: Hello TCG's cards and decks. What each card is; what its abilities do is in
-// base-set-rules.alex.
 #type Set
 
 id = 'BASE'
@@ -1107,7 +1098,6 @@ decks = [
 ### base-set-rules.alex
 
 ```
-// Base Set rules: what the cards' abilities do, and scenarios that test them.
 #type Rules
 
 for = @base-set

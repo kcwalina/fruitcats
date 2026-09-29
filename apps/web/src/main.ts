@@ -880,7 +880,7 @@ function modeCard(open: string, m: ModeCard, status: string, badge: number): str
         ${badge ? `<span class="mode-badge" aria-label="${badge} waiting">${badge}</span>` : ''}
         <span class="mc-frame"><span class="mc-face">
           <span class="mc-bar"><span class="mc-gem" aria-hidden="true"><svg viewBox="0 0 24 24">${MODE_ICONS[m.icon]}</svg></span><span class="mc-name ${m.name.length > 8 ? 'long' : ''}">${m.name}</span></span>
-          <span class="mc-art"><img src="${BASE}ui/mode-${m.key}-v2.webp" alt="" draggable="false"></span>
+          <span class="mc-art"><img src="${BASE}ui/mode-${m.key}-v3.webp" alt="" draggable="false"></span>
           <span class="mc-type"><span>${m.type}</span><small>${m.code}</small></span>
           <span class="mc-text"><span class="mc-rule"><b>${m.kw}:</b> ${m.text}</span>
             ${status ? status.replace(/mode-sub/g, 'mc-state') : `<span class="mc-flavor">${m.flavor}</span><span class="mc-short">${m.sub}</span>`}</span>

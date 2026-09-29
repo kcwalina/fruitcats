@@ -15,7 +15,7 @@ export interface DeckList {
 
 export interface FamilyDef {
   colors?: string[];
-  /** Neutral families (Garden) go in any deck. */
+  /** Neutral families go in any deck. */
   neutral?: boolean;
   mechanic?: string;
   personality?: string;
@@ -23,8 +23,8 @@ export interface FamilyDef {
 }
 
 /**
- * A set mechanic. `keyword` mechanics (Ripen, Heat) give the units that have them abilities and a
- * counter; `condition` mechanics (Zest, Lush) name a condition cards can ask for; `action` ones (Sprout)
+ * A set mechanic. `keyword` mechanics (Rain-Fed, Pearl Tears) give the units that have them abilities and a
+ * counter; `condition` mechanics (Company, Well-Fed) name a condition cards can ask for; `action` ones (Sprout)
  * only name a built-in action for the rules text.
  */
 export interface MechanicDef {
@@ -39,9 +39,9 @@ export interface MechanicDef {
    */
   counter?: { name: string; power?: number; health?: number; log?: string; noun?: string; full?: { name: string; at: number } };
   abilities?: Ability[];
-  /** A small symbol the game shows with the keyword on a unit (🍎 for Ripen). */
+  /** A small symbol the game shows with the keyword on a unit (🌽 for Rain-Fed). */
   icon?: string;
-  /** A condition written as a label in rules text ("Zest: …") rather than as a clause ("If you're Lush, …"). */
+  /** A condition written as a label in rules text ("Company: …") rather than as a clause ("If you're Well-Fed, …"). */
   label?: boolean;
 }
 
@@ -55,8 +55,6 @@ export interface SetData {
   released?: string;
   /** Its decks are the starter decks everyone has for free, so its cards come with them (docs/store-plan.md). */
   starter?: boolean;
-  /** Its decks are from before the folklore re-theme: the Store shows them apart, in its Legacy decks. */
-  legacy?: boolean;
   requires?: string[];
   families?: Record<string, FamilyDef>;
   mechanics?: Record<string, MechanicDef>;
@@ -115,7 +113,7 @@ export interface AiContext {
   passScore: number;
   /** The bot's best choice among some actions, with its score (one-step lookahead). */
   best(actions: import('./types').Action[]): { action: import('./types').Action; score: number };
-  /** Whether a card's abilities ask for a named condition (a mechanic such as Zest). */
+  /** Whether a card's abilities ask for a named condition (a mechanic such as Company). */
   usesCondition(cardId: string, name: string): boolean;
   cardCost(cardId: string): number;
 }
@@ -203,7 +201,6 @@ export interface Keywords {
   fierce: boolean;
   lucky: boolean;
   pounce: boolean;
-  ripen: boolean;
   tough: number;
   /** Every keyword by name, core and set mechanics alike ("Guardian", "Tough 1", "Heat"). */
   all: string[];
@@ -212,7 +209,7 @@ export interface Keywords {
 const keywordCache = new Map<string, Keywords>();
 
 export function keywordsFrom(list: string[]): Keywords {
-  const k: Keywords = { zoomies: false, guardian: false, sneaky: false, fierce: false, lucky: false, pounce: false, ripen: false, tough: 0, all: list };
+  const k: Keywords = { zoomies: false, guardian: false, sneaky: false, fierce: false, lucky: false, pounce: false, tough: 0, all: list };
   for (const s of list) {
     if (s === 'Zoomies') k.zoomies = true;
     else if (s === 'Guardian') k.guardian = true;
@@ -220,7 +217,6 @@ export function keywordsFrom(list: string[]): Keywords {
     else if (s === 'Fierce') k.fierce = true;
     else if (s === 'Lucky') k.lucky = true;
     else if (s === 'Pounce') k.pounce = true;
-    else if (s === 'Ripen') k.ripen = true;
     else if (/^Tough \d+$/.test(s)) k.tough += Number(s.slice(6));
   }
   return k;
@@ -231,7 +227,7 @@ export function parseKeywords(text = ''): Keywords {
   const list: string[] = [];
   for (const raw of text.split(/[.\n]/)) {
     const s = raw.trim();
-    if (['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce', 'Ripen'].includes(s) || /^Tough \d+$/.test(s)) list.push(s);
+    if (['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce'].includes(s) || /^Tough \d+$/.test(s)) list.push(s);
   }
   return keywordsFrom(list);
 }
@@ -267,7 +263,7 @@ export function findAbility(id: string, when: string, side?: 'kitten' | 'bigCat'
   return index < 0 ? null : { ability: list[index], ref: side ? { card: id, side, index } : { card: id, index } };
 }
 
-/** Whether a card's abilities ask for a condition by name (Zest, Lush, a plugin's). */
+/** Whether a card's abilities ask for a condition by name (Company, Well-Fed, a plugin's). */
 export function usesCondition(id: string, name: string): boolean {
   const mentions = (c: Condition | undefined): boolean =>
     c === name || (typeof c === 'object' && c !== null && 'not' in c && mentions(c.not));

@@ -23,7 +23,7 @@ beforeAll(async () => {
   const { table } = await import('../src/tables');
   await table('orders').add({
     partitionKey: ALICE, rowKey: 'earlier-test-order', status: 'test', createdAt: new Date().toISOString(),
-    total: 999, currency: 'USD', lines: '[]', grants: JSON.stringify({ 'BP1-X01': 1 }),
+    total: 999, currency: 'USD', lines: '[]', grants: JSON.stringify({ 'MB1-D01': 1 }),
   });
   preview = await import('../src/store');
 });
@@ -33,13 +33,13 @@ describe('STORE=preview', () => {
     for (const user of [ALICE, BOB]) {
       const [status, body] = await call(preview, user, 'GET', '/v1/store') as [number, { catalog: { products: object }; testCheckout: boolean }];
       expect(status).toBe(200);
-      expect(Object.keys(body.catalog.products)).toContain(deckProduct('picnic-club'));
+      expect(Object.keys(body.catalog.products)).toContain(deckProduct('jiaoren'));
       expect(body.testCheckout).toBe(false);
     }
   });
 
   it('refuses every checkout and reset, testers included', async () => {
-    const cart = [{ product: cardProduct('BP1-X01'), qty: 1 }];
+    const cart = [{ product: cardProduct('MB1-D01'), qty: 1 }];
     for (const user of [ALICE, BOB]) {
       expect((await call(preview, user, 'POST', '/v1/store/test-checkout', { orderId: `preview-${user.slice(0, 4)}`, cart, total: 49 }))[0]).toBe(403);
       expect((await call(preview, user, 'POST', '/v1/store/test-reset'))[0]).toBe(403);
@@ -50,7 +50,7 @@ describe('STORE=preview', () => {
     const { FAKE_CONFIG, fakePaddle } = await import('../src/fakepaddle');
     const fake = fakePaddle();
     preview.usePaddle(FAKE_CONFIG, fake.api);
-    const cart = [{ product: deckProduct('picnic-club'), qty: 1 }];
+    const cart = [{ product: deckProduct('jiaoren'), qty: 1 }];
     for (const user of [ALICE, BOB]) {
       const [, body] = await call(preview, user, 'GET', '/v1/store') as [number, { payments?: unknown; testCheckout: boolean }];
       expect(body.payments).toBeUndefined();

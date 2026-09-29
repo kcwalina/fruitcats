@@ -33,7 +33,7 @@ describe('route', () => {
   });
 
   it('leaves the site files the game does not use to the network', () => {
-    for (const path of ['guide/play/solo.webp', 'studio/index.json', 'cards/sp1/sp1-001.webp', 'version.json', 'playtest/runner.mjs', 'sw.js'])
+    for (const path of ['guide/play/solo.webp', 'studio/index.json', 'cards/mc1/MC1-X01.webp', 'version.json', 'playtest/runner.mjs', 'sw.js'])
       expect(get(SITE + path)).toBe('network');
   });
 
@@ -45,15 +45,15 @@ describe('route', () => {
 
   it('asks the network first for pack lists and set data, here and in the pack storage', () => {
     expect(route({ url: `${SITE}packs/index.json`, method: 'GET', mode: 'cors' }, ctx)).toEqual({ strategy: 'packs', key: `${SITE}packs/index.json` });
-    expect(route({ url: `${SITE}packs/sb1/set.json?x=1`, method: 'GET' }, ctx)).toEqual({ strategy: 'packs', key: `${SITE}packs/sb1/set.json` });
+    expect(route({ url: `${SITE}packs/dw1/set.json?x=1`, method: 'GET' }, ctx)).toEqual({ strategy: 'packs', key: `${SITE}packs/dw1/set.json` });
     expect(get(`${PACKS}/packs/index.json`, 'cors')).toBe('packs');
     expect(get(`${PACKS}/packs/dw1/set.json`, 'cors')).toBe('packs');
   });
 
   it('keeps card art and fonts once seen', () => {
-    expect(get(`${PACKS}/packs/sb1/art/cards/sb1-001.webp`)).toBe('runtime');
-    expect(get(`${PACKS}/packs/sb1/art/illustrations/sb1-001-kitten.webp`)).toBe('runtime');
-    expect(get(`${PACKS}/packs/sb1/art/cards/foil/sb1-001.webp`)).toBe('runtime');
+    expect(get(`${PACKS}/packs/dw1/art/cards/dw1-001.webp`)).toBe('runtime');
+    expect(get(`${PACKS}/packs/dw1/art/illustrations/dw1-001-kitten.webp`)).toBe('runtime');
+    expect(get(`${PACKS}/packs/dw1/art/cards/foil/dw1-001.webp`)).toBe('runtime');
     expect(get('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700')).toBe('runtime');
     expect(get('https://fonts.gstatic.com/s/fredoka/v14/abc.woff2', 'cors')).toBe('runtime');
   });
@@ -67,7 +67,7 @@ describe('route', () => {
     expect(get('https://cdn.paddle.com/paddle/v2/paddle.js')).toBe('network');
     expect(get('wss://api.fruitcats.viamochi.com/v1/live')).toBe('network');
     for (const method of ['POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'])
-      for (const url of [SITE, `${SITE}assets/main-abc.js`, `${PACKS}/packs/index.json`, `${PACKS}/packs/sb1/art/cards/sb1-001.webp`])
+      for (const url of [SITE, `${SITE}assets/main-abc.js`, `${PACKS}/packs/index.json`, `${PACKS}/packs/dw1/art/cards/dw1-001.webp`])
         expect(route({ url, method }, ctx).strategy).toBe('network');
   });
 
@@ -75,7 +75,7 @@ describe('route', () => {
     const nested: RouteContext = { ...ctx, scope: `${SITE}game/` };
     expect(route({ url: `${SITE}assets/main-abc.js`, method: 'GET' }, nested).strategy).toBe('network');
     expect(route({ url: `${SITE}game/assets/main-abc.js`, method: 'GET' }, nested).strategy).toBe('shell');
-    expect(get('https://fruitcatspacks.blob.core.windows.net.evil.example/packs/sb1/art/cards/sb1-001.webp')).toBe('network');
+    expect(get('https://fruitcatspacks.blob.core.windows.net.evil.example/packs/dw1/art/cards/dw1-001.webp')).toBe('network');
     expect(get('not a url')).toBe('network');
   });
 });
@@ -159,10 +159,10 @@ describe('the build list', () => {
 
   it('takes the game files and leaves the other pages and large extras out', () => {
     for (const f of ['index.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'ui/glowwood.webp', 'ui/stat-heart.svg', 'icons/icon-192.png',
-      'sounds/ability.mp3', 'sounds/hit-bad.wav', 'packs/index.json', 'packs/sb1/set.json'])
+      'sounds/ability.mp3', 'sounds/hit-bad.wav', 'packs/index.json', 'packs/dw1/set.json'])
       expect(isShellFile(f), f).toBe(true);
     for (const f of ['studio.html', 'portal.html', 'playtests.html', 'docs.html', 'rules.html', 'terms.html', 'guide/play/solo.webp', 'studio/index.json',
-      'studio/sb1/brief.json', 'cards/sp1/sp1-001.webp', 'sp1/sp1-001.webp', 'avatars/apple.webp', 'announcements/domowiki/index.html',
+      'studio/dw1/brief.json', 'cards/mc1/MC1-X01.webp', 'mc1/MC1-X01.webp', 'avatars/apple.webp', 'announcements/domowiki/index.html',
       'prompts.json', 'staticwebapp.config.json', 'sounds/CREDITS.md', 'ui/app-icon.webp', 'version.json', 'sw.js'])
       expect(isShellFile(f), f).toBe(false);
   });

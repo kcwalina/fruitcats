@@ -19,9 +19,9 @@ describe('deck codes', () => {
   });
 
   it('is not fooled by text that is not a code', () => {
-    expect(parseDeckCode('zest-rush')).toBeNull();
-    expect(parseDeckCode('FC2.x.SB1-H01.SB1-C01x3')).toBeNull();
-    expect(parseDeckCode('FC1.Name with spaces.SB1-H01')).toBeNull();
+    expect(parseDeckCode('domowiki')).toBeNull();
+    expect(parseDeckCode('FC2.x.DW1-H01.DW1-D01x3')).toBeNull();
+    expect(parseDeckCode('FC1.Name with spaces.DW1-H01')).toBeNull();
   });
 });
 
@@ -60,7 +60,7 @@ describe('assembleDeck', () => {
   });
 
   it('turns down a deck without a Hero Cat it can use', () => {
-    expect(assembleDeck('x', 'Nobody', { 'SB1-G01': 3 }, mulberry(1))).toBeNull();
+    expect(assembleDeck('x', 'Nobody', { 'DW1-D01': 3 }, mulberry(1))).toBeNull();
   });
 });
 

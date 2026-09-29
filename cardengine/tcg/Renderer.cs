@@ -34,20 +34,44 @@ internal sealed class Renderer
     public int Height { get; }
     public int Bleed { get; }
 
-    /// <summary>The frame entry for a face: its type's, or its nearest base type's.</summary>
+    /// <summary>The frame every card is drawn in (<c>tcg cards --frame</c>), instead of its own.</summary>
+    public string? FrameOverride { get; init; }
+
+    /// <summary>
+    /// Pictures left see-through (<c>tcg cards --no-art</c>): a card's own picture (a Picture showing one of its fields,
+    /// like <c>{art}</c>) and a frame's texture are holes, for a tool that shows an artist's picture under the card.
+    /// </summary>
+    public bool NoArt { get; init; }
+
+    /// <summary>
+    /// The frame entry for a face: the one <see cref="FrameOverride"/> or the card's <c>frame</c> field names, or else
+    /// its type's, or its nearest base type's.
+    /// </summary>
     public AlexObject? Frame(Face face)
     {
         if (_root.Value("frames") is not AlexObject frames) { return null; }
+        if ((FrameOverride ?? face.Text("frame")) is { Length: > 0 } named)
+        {
+            return frames.Value(named) as AlexObject ?? throw new TcgException($"{face.Key}: the card layout has no frame named {named}.");
+        }
+
+        return ByType(face, frames) as AlexObject;
+    }
+
+    private AlexValue? ByType(Face face, AlexObject map)
+    {
         foreach (string type in new[] { face.TypeName }.Concat(_project.TypeChain(face.TypeName).Skip(1).Select(t => t.Name)))
         {
-            if (frames.Value(type) is AlexObject frame) { return frame; }
+            if (map.Value(type) is { } value) { return value; }
         }
 
         return null;
     }
 
+    /// <summary>A face's file name: the layout's <c>file-names</c> for its type, or its number.</summary>
     public string FileName(Face face) =>
-        Frame(face)?.Value("file") is { } file ? face.Template(file) : face.Text("number") is { Length: > 0 } n ? n : face.Key;
+        _root.Value("file-names") is AlexObject names && ByType(face, names) is { } file ? face.Template(file)
+        : face.Text("number") is { Length: > 0 } n ? n : face.Key;
 
     /// <summary>The face as an image: the trimmed card, or with its bleed.</summary>
     public SKImage Render(Face face, bool withBleed)
@@ -94,6 +118,10 @@ internal sealed class Renderer
             if (!types.Any(t => IsType(face, Project.Scalar(t)))) { return; }
         }
         if (Bool(part.Value("only-with-finish")) && face.Finish == "standard") { return; }
+        if (Bool(part.Value("only-without-finish")) && face.Finish != "standard") { return; }
+        if (Bool(part.Value("only-with-frame-texture")) && !HasFrameTexture(face, frame)) { return; }
+        if (part.Value("if") is { } shown && face.Template(shown).Length == 0) { return; }
+        if (part.Value("unless") is { } hidden && face.Template(hidden).Length > 0) { return; }
         switch (part.TypeName)
         {
             case "Shape": Shape(canvas, face, frame, part); break;
@@ -110,9 +138,17 @@ internal sealed class Renderer
 
     private void Picture(SKCanvas canvas, Face face, AlexObject part)
     {
+        SKRect box = Box(part);
+        float corner = Float(part.Value("corner-radius"), 0);
+        if (NoArt && part.Value("show") is AlexTextual { Value: var shown } && shown.TrimStart().StartsWith('{'))
+        {
+            using SKPaint hole = new() { IsAntialias = false, BlendMode = SKBlendMode.Clear };
+            canvas.DrawRoundRect(new SKRoundRect(box, corner, corner), hole);
+            return;
+        }
+
         if (face.AssetPath(part.Value("show"), _layout) is not { } path) { return; }
         SKImage image = Image(path) ?? throw new TcgException($"{face.Key}: the picture {path} doesn't exist.");
-        SKRect box = Box(part);
         SKRect source = new(0, 0, image.Width, image.Height);
         if (Word(part.Value("fit")) != "contain")
         {
@@ -122,7 +158,7 @@ internal sealed class Renderer
         }
 
         int saved = canvas.Save();
-        if (Float(part.Value("corner-radius"), 0) is var corner and > 0)
+        if (corner > 0)
         {
             canvas.ClipRoundRect(new SKRoundRect(box, corner), antialias: false);
         }
@@ -138,15 +174,18 @@ internal sealed class Renderer
     /// A rectangle (rounded with <c>radius</c>), a circle or a star: filled, outlined, or both. An outline is drawn
     /// inside the box, <c>outline-width</c> wide. With <c>chrome = true</c>, a card printed in a finish has the shape's
     /// fill (or, when it has one, its outline, <c>chrome-width</c> wide) painted with the finish's texture instead.
-    /// Edges are hard, as the old composer drew them.
+    /// With <c>frame-texture = true</c>, a frame with a <c>texture</c> paints the shape's fill and outline (again
+    /// <c>chrome-width</c> wide) with it, where no finish does. Edges are hard, as the old composer drew them.
     /// </summary>
     private void Shape(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
     {
         SKRect box = Box(part);
         string kind = Word(part.Value("kind")) ?? "rounded-rect";
         float radius = Float(part.Value("radius"), 0);
-        SKShader? chrome = Bool(part.Value("chrome")) ? FinishTexture(face) : null;
+        SKShader? finish = Bool(part.Value("chrome")) ? FinishTexture(face) : null;
         bool hasOutline = part.Value("outline") is not null;
+        SKShader? texture = Bool(part.Value("frame-texture")) ? FrameTexture(face, frame) : null;
+        SKShader? chrome = finish ?? texture;
         float outlineWidth = Float(part.Value("outline-width"), 1);
 
         if (kind == "star")
@@ -159,7 +198,8 @@ internal sealed class Renderer
         if (part.Value("fill") is { } fillValue)
         {
             using SKPaint fill = new() { IsAntialias = false, Color = Color(face, frame, fillValue, SKColors.Black) };
-            if (chrome is not null && !hasOutline) { fill.Shader = chrome; }
+            if (finish is not null && !hasOutline) { fill.Shader = finish; }
+            else if (texture is not null) { Textured(fill, texture); }
             canvas.DrawRoundRect(Rounded(box, kind, radius), fill);
         }
 
@@ -167,7 +207,8 @@ internal sealed class Renderer
         {
             float width = chrome is null ? outlineWidth : Float(part.Value("chrome-width"), outlineWidth);
             using SKPaint ring = new() { IsAntialias = false, Color = Color(face, frame, part.Value("outline"), SKColors.Black) };
-            if (chrome is not null) { ring.Shader = chrome; }
+            if (finish is not null) { ring.Shader = finish; }
+            else if (texture is not null) { Textured(ring, texture); }
             SKRect inner = SKRect.Inflate(box, -width, -width);
             using SKPath path = new() { FillType = SKPathFillType.EvenOdd };
             path.AddRoundRect(Rounded(box, kind, radius));
@@ -194,6 +235,32 @@ internal sealed class Renderer
 
         path.Close();
         return path;
+    }
+
+    /// <summary>A texture replaces what's under it; a see-through one (<see cref="NoArt"/>) leaves a hole.</summary>
+    private static void Textured(SKPaint paint, SKShader texture)
+    {
+        paint.Shader = texture;
+        paint.BlendMode = SKBlendMode.Src;
+    }
+
+    private bool HasFrameTexture(Face face, AlexObject? frame) =>
+        frame?.Value("texture") is { } texture && (NoArt || face.AssetPath(texture, _layout) is not null);
+
+    /// <summary>
+    /// The frame's <c>texture</c>: an image (like an artist's own picture for the frame) covering the card, centred,
+    /// its overflow cut off. See-through with <see cref="NoArt"/>.
+    /// </summary>
+    private SKShader? FrameTexture(Face face, AlexObject? frame)
+    {
+        if (!HasFrameTexture(face, frame)) { return null; }
+        if (NoArt) { return SKShader.CreateColor(SKColors.Transparent); }
+        string path = face.AssetPath(frame!.Value("texture"), _layout)!;
+        SKImage image = Image(path) ?? throw new TcgException($"{face.Key}: the frame's texture {path} doesn't exist.");
+        float scale = Math.Max((float)Width / image.Width, (float)Height / image.Height);
+        SKMatrix place = SKMatrix.CreateScale(scale, scale)
+            .PostConcat(SKMatrix.CreateTranslation((Width - image.Width * scale) / 2, (Height - image.Height * scale) / 2));
+        return SKShader.CreateImage(image, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, new SKSamplingOptions(SKCubicResampler.CatmullRom), place);
     }
 
     /// <summary>The texture of the card's finish (the layout's <c>finishes</c>), card-sized; none for a standard card.</summary>

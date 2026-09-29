@@ -58,8 +58,8 @@ export function renderSignIn(inviting: boolean, notice = ''): string {
   }
   return `<main class="si">
     <div class="si-art" aria-hidden="true">
-      <div class="si-fan">${['foil/SP1-X01', 'signature/SP1-X03-kitten', 'gold/SP1-X02'].map((f) =>
-        `<div class="si-card"><div class="si-window"><span>Your image</span></div><img src="${artBases('sp1').cards}frames/${f}.webp" alt=""></div>`).join('')}</div>
+      <div class="si-fan">${['p-midnight/MC1-X01', 'signature/MC1-X01', 'p-orchard/MC1-X01'].map((f) =>
+        `<div class="si-card"><div class="si-window"><span>Your image</span></div><img src="${artBases('mc1').cards}frames/${f}.webp" alt=""></div>`).join('')}</div>
       <p>Make the image with your own tools and upload it here. We add the frame, the name and the rules, and you see it on the card straight away.</p>
     </div>
     <div class="si-panel">

@@ -1,7 +1,6 @@
 // The Store screen (docs/store-plan.md, Store experience): Folkborn's decks under the Store's painting, a deck's page,
-// the cart, an explicit confirmation step and, after an order, the new cards revealed one by one. Codes and the Legacy
-// decks are one tap away in the corner (the owner's call, 2026-09-28: the decks lead; codes and Legacy stay out of the
-// way). Styles: store.css.
+// the cart, an explicit confirmation step and, after an order, the new cards revealed one by one. Codes are one tap
+// away in the corner (the owner's call, 2026-09-28: the decks lead; codes stay out of the way). Styles: store.css.
 //
 // No dark patterns: nothing is bought in one tap, there are no timers or "limited" offers, the total is always shown
 // before confirming, and a deck never costs you for cards you already have. Paying happens in Paddle's window
@@ -10,7 +9,7 @@
 import './store.css';
 import { CARDS, SETS, TERMS, cardName, type DeckList } from '@fruitcats/engine';
 import {
-  deckPrice, deckWith, formatPrice, isLegacySet, maxCopies, missingForDeck,
+  deckPrice, deckWith, formatPrice, maxCopies, missingForDeck,
   type CardProduct, type DeckProduct, type NotSold, type Quote,
 } from '@fruitcats/store';
 import { rarity, rarityMark } from './rarity';
@@ -35,12 +34,12 @@ export interface StoreHost {
  * missing: the cards a deck (from a code, say) needs that you don't have, as a selection: all picked at first, tap one
  * to leave it out, then "Add to cart" below.
  */
-type View = { kind: 'browse' } | { kind: 'legacy' } | { kind: 'code' } | { kind: 'deck'; product: string; from?: 'legacy' } | { kind: 'card'; product: string }
+type View = { kind: 'browse' } | { kind: 'code' } | { kind: 'deck'; product: string } | { kind: 'card'; product: string }
   | { kind: 'cart' } | { kind: 'missing'; deck: DeckList; plan: NonNullable<ReturnType<typeof planForDeck>>; left: Set<string> };
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'] as const;
 
 let view: View = { kind: 'browse' };
-/** The small menu in the corner (Use a code, Legacy decks), open or not. */
+/** The small menu in the corner (Use a code), open or not. */
 let menuOpen = false;
 /** A line under the header after something happened ("Added 3 cards to your cart"). */
 let notice = '';
@@ -125,11 +124,10 @@ export function storeClick(action: string, arg: string, host: StoreHost): void {
   notice = '';
   if (action !== 'menu') menuOpen = false;
   switch (action) {
-    case 'deck': view = { kind: 'deck', product: arg, ...(view.kind === 'legacy' ? { from: 'legacy' as const } : {}) }; break;
+    case 'deck': view = { kind: 'deck', product: arg }; break;
     case 'card': view = { kind: 'card', product: arg }; break;
     case 'browse': view = { kind: 'browse' }; break;
     case 'menu': menuOpen = !menuOpen; break;
-    case 'legacy': view = { kind: 'legacy' }; break;
     case 'code': view = { kind: 'code' }; break;
     case 'retry': refresh(host); break;
     case 'cart': view = canBuy() ? { kind: 'cart' } : { kind: 'browse' }; break;
@@ -187,7 +185,6 @@ export function storeEscape(host: StoreHost): boolean {
   else if (resetAsk) resetAsk = false;
   else if (checkout && !['placing', 'paying', 'finishing'].includes(checkout.stage)) checkout = null;
   else if (reveal) { if (!reveal.all) reveal.all = true; else reveal = null; }
-  else if (view.kind === 'deck' && view.from) view = { kind: 'legacy' };
   else if (view.kind !== 'browse') view = { kind: 'browse' };
   else return false;
   host.render();
@@ -365,16 +362,15 @@ export function renderStore(): string {
   else if (view.kind === 'deck' && cat.products[view.product]?.kind === 'deck') body = renderDeckPage(cat.products[view.product] as DeckProduct);
   else if (view.kind === 'card' && cat.products[view.product]?.kind === 'card') body = renderCardPage(cat.products[view.product] as CardProduct);
   else if (view.kind === 'code') body = `<main class="store-main">${renderCodes()}</main>`;
-  else body = renderShop(view.kind === 'legacy');
+  else body = renderShop();
 
   const count = cartCount();
   // Only the pages that aren't about one thing say where you are, small, in the header row. The Store's own page and a
   // deck's page don't: the painting and the deck's name say it.
-  const headings: Partial<Record<View['kind'], string>> = { cart: 'Your cart', missing: 'Missing cards', legacy: 'Legacy decks', code: 'Use a code' };
+  const headings: Partial<Record<View['kind'], string>> = { cart: 'Your cart', missing: 'Missing cards', code: 'Use a code' };
   const heading = headings[view.kind] ?? '';
   const back = view.kind === 'browse' ? backButton()
-    : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck')
-    : view.kind === 'deck' && view.from ? backButton('store:legacy', 'Legacy decks') : backButton('store:browse', 'Store');
+    : view.kind === 'missing' ? backButton('store:builder', 'Back to your deck') : backButton('store:browse', 'Store');
   const home = view.kind === 'browse' && !!cat && access !== 'private';
   // The page scrolls as one: the painting, then the page's content. Bars for buying stay fixed at the bottom.
   return `
@@ -384,7 +380,7 @@ export function renderStore(): string {
       ${back}
       <h1 class="${heading ? 'store-title' : 'sr-only'}">${heading || 'Store'}</h1>
       <div class="store-top-end">
-        ${home ? `<button class="icon-button more-button ${menuOpen ? 'on' : ''}" data-click="store:menu" aria-haspopup="menu" aria-expanded="${menuOpen}" aria-label="Codes and Legacy decks" title="Codes and Legacy decks">${TICKET}</button>` : ''}
+        ${home ? `<button class="icon-button more-button ${menuOpen ? 'on' : ''}" data-click="store:menu" aria-haspopup="menu" aria-expanded="${menuOpen}" aria-label="Codes" title="Codes">${TICKET}</button>` : ''}
         ${canBuy() ? `<button class="icon-button cart-button ${view.kind === 'cart' ? 'on' : ''}" data-click="store:cart" aria-label="Cart, ${plural(count, 'item')}" title="Your cart">
           ${BAG}${count ? `<span class="cart-badge">${count > 99 ? '99+' : count}</span>` : ''}</button>` : ''}
       </div>
@@ -396,12 +392,11 @@ export function renderStore(): string {
   ${renderCheckout()}${renderReveal()}${renderResetDialog()}${renderSoon()}`;
 }
 
-/** The corner menu: the two things that aren't the Store's decks. A tap outside it closes it. */
+/** The corner menu: what isn't the Store's decks (a code). A tap outside it closes it. */
 function renderMenu(): string {
   return `<div class="store-menu-scrim" data-click="store:menu" aria-hidden="true"></div>
-    <div class="store-menu" role="menu" aria-label="Codes and Legacy decks">
+    <div class="store-menu" role="menu" aria-label="Codes">
       <button role="menuitem" data-click="store:code"><span class="sm-icon">${TICKET}</span><span class="sm-text"><b>Use a code</b><small>Got a code for a deck? Type it here</small></span></button>
-      <button role="menuitem" data-click="store:legacy"><span class="sm-icon">${CARDS_ICON}</span><span class="sm-text"><b>Legacy decks</b><small>The original fruit-cat decks, free</small></span></button>
     </div>`;
 }
 
@@ -433,29 +428,26 @@ function priceChip(full: number, now: number): string {
 
 /**
  * The Store's own page: Folkborn's decks, each its hero's painting hung in the Collection's frame, big enough to enjoy,
- * with its name and price under it; then any single cards, rarest first. Legacy (legacy = true): the free decks from
- * before Folkborn (sets marked `legacy`), the same way. No banners, tabs or filters (the owner's call, 2026-09-28).
+ * with its name and price under it; then any single cards, rarest first. No banners, tabs or filters (the owner's call,
+ * 2026-09-28).
  */
-function renderShop(legacy: boolean): string {
+function renderShop(): string {
   const cat = catalog()!;
   const owned = ownedNow();
-  const here = Object.values(cat.products).filter((p) => isLegacySet(p.set) === legacy);
+  // Only sets this game has: an API not yet updated may still offer a set since taken out (the Starter Box).
+  const here = Object.values(cat.products).filter((p) => SETS[p.set]);
   const decks = here.filter((p): p is DeckProduct => p.kind === 'deck');
   const cards = here.filter((p): p is CardProduct => p.kind === 'card')
     .sort((a, b) => RARITIES.indexOf(rarity(b.card)) - RARITIES.indexOf(rarity(a.card)));
-  const intro = legacy ? '<p class="page-intro">The original fruit-cat decks, from before Folkborn. They’re free.</p>' : '';
   const list = !here.length
-    ? `<div class="store-empty"><h2>${legacy ? 'No Legacy decks' : 'New decks are on the way'}</h2>${legacy ? '' : '<p>The first Folkborn deck comes to the Store soon.</p>'}</div>`
+    ? '<div class="store-empty"><h2>New decks are on the way</h2><p>The first Folkborn deck comes to the Store soon.</p></div>'
     : `${decks.length ? `<div class="deck-shelf n${Math.min(decks.length, 3)}">${decks.map((p, i) => renderDeckOffer(p, i < 3)).join('')}</div>` : ''}
       ${cards.length ? `${decks.length ? '<h2 class="shelf-title">Single cards</h2>' : ''}<div class="offers">${cards.map((p) => renderCardOffer(p, owned(p.card))).join('')}</div>` : ''}`;
-  return `<main class="store-main">${intro}${list}${renderTesterTools()}</main>`;
+  return `<main class="store-main">${list}${renderTesterTools()}</main>`;
 }
 
 /** A ticket, for a code that gives a deck. */
 const TICKET = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/></svg>`;
-
-/** Two cards fanned, for the Legacy decks. */
-const CARDS_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="6.5" width="10" height="14" rx="1.6" transform="rotate(-12 8.5 13.5)"/><rect x="10.5" y="3.5" width="10" height="14" rx="1.6" transform="rotate(9 15.5 10.5)"/></svg>`;
 
 /**
  * What happened to each painting asked for, by address: the address that shows it (the painting's, or its fallback's

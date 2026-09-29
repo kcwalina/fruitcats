@@ -26,10 +26,6 @@ uses = [
   @setup
   @scenarios
 ]
-sets = [
-  @starter-box
-  @berry-picnic
-]
 
 // The constants that shape the game, named once so rules and playtests share them.
 constants = [

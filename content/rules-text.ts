@@ -3,10 +3,10 @@
 // the game read it), and check-set fails if a set's text differs from what its data says. So the text on
 // a card can never drift from what the card does.
 //
-// The house style, as the Starter Box set it:
-//   keywords first ("Guardian. Heat."), then each ability on its own line, the Hero's Awaken line last;
+// The house style, as the game's first set (the Starter Box, since removed) set it:
+//   keywords first ("Guardian. Rain-Fed."), then each ability on its own line, the Hero's Awaken line last;
 //   "Hello:", "Goodbye:" and "Exhaust:" as labels; a unit already named is "it" after that;
-//   a mechanic written as a label ("Zest: …") or as a condition ("If you're Lush, …").
+//   a mechanic written as a label ("Company: …") or as a condition ("If you're Well-Fed, …").
 
 import TERMS from '../packages/engine/src/terms.json';
 import type { Ability, Act, CardDef, Condition, HeroSide, TargetSel, UnitFilter } from '../packages/engine/src/types';
@@ -79,7 +79,7 @@ function auraSubject(to: { each: string; other?: boolean; filter?: UnitFilter })
 
 // ── Conditions ─────────────────────────────────────────────────────────────────────────────────────
 
-/** A condition as a clause: "you have 8 or more Offerings", "you're Lush". */
+/** A condition as a clause: "you have 8 or more Offerings", "you're Well-Fed". */
 function clause(c: Condition): string {
   if (typeof c === 'string') return c === 'targetIsYours' ? "it's yours" : `you're ${c}`;
   if ('not' in c) return typeof c.not === 'string' ? `you're not ${c.not}` : `not: ${clause(c.not)}`;
@@ -104,14 +104,14 @@ function clause(c: Condition): string {
   return '';
 }
 
-/** A mechanic written as a label ("Zest: …") rather than a condition ("If you're Lush, …"). */
+/** A mechanic written as a label ("Company: …") rather than a condition ("If you're Well-Fed, …"). */
 const isLabel = (c: Condition | undefined): c is string => typeof c === 'string' && !!MECHANICS[c]?.label;
 
 // ── Actions ────────────────────────────────────────────────────────────────────────────────────────
 
 /**
  * One action as a clause. `on` is its target as a noun ("a unit you control"), or "it" once named;
- * `subjectless` drops the subject of "gets …" (a unit's own Zest bonus: "Zest: gets +1 Power").
+ * `subjectless` drops the subject of "gets …" (a unit's own Company bonus: "Company: gets +1 Power").
  */
 function actClause(act: Act, on: string, a: Ability, self: string, subjectless: boolean): string {
   const [name, v] = Object.entries(act)[0] ?? [];
@@ -203,7 +203,7 @@ export function abilityText(a: Ability, card: CardDef): string {
     a.when === 'defeatsInCombat' ? `${a.oncePerRound ? 'Once per round, after' : 'After'} ${name} defeats a unit in combat, ` :
     a.when === 'youHeal' ? `${a.oncePerRound ? 'Once per round, when' : 'When'} you heal 1 or more damage from a unit, ` : '';
 
-  // A unit's own bonus under a label mechanic, on arrival: "Zest: gets +1 Power this round." (no "Hello:").
+  // A unit's own bonus under a label mechanic, on arrival: "Company: gets +1 Power this round." (no "Hello:").
   const ownLabelBonus = a.when === 'hello' && a.target === 'self' && isLabel(a.if);
   let clauses = actClauses(a.do ?? [], a, self, ownLabelBonus);
   if (a.optional) clauses = clauses.map((c, i) => (i === 0 ? `you may ${c}` : c));
@@ -213,7 +213,7 @@ export function abilityText(a: Ability, card: CardDef): string {
   else if (a.if !== undefined && typeof a.if === 'object' && 'not' in a.if && typeof a.if.not === 'object')
     body = `Unless ${clause(a.if.not)}, ${clauses.join('. ')}.`;
   else if (a.if !== undefined && !isLabel(a.if)) body = `If ${clause(a.if)}, ${clauses.join('. ')}.`;
-  // A unit's own label bonus runs on from its label, lower case: "Zest: gets +1 Power this round."
+  // A unit's own label bonus runs on from its label, lower case: "Company: gets +1 Power this round."
   else body = ownLabelBonus ? clauses.map((c) => `${c}.`).join(' ') : sentences(clauses);
 
   if (a.instead) {
@@ -229,7 +229,7 @@ export function abilityText(a: Ability, card: CardDef): string {
     }
     body += isLabel(a.instead.if) ? ` ${a.instead.if}: ${better}.` : ` If ${clause(a.instead.if)}, ${better}.`;
   }
-  // A label mechanic joins a trigger's label: "Hello, Zest: …".
+  // A label mechanic joins a trigger's label: "Hello, Company: …".
   if (isLabel(a.if)) return `${label && !ownLabelBonus ? `${label.slice(0, -2)}, ` : ''}${a.if}: ${body}${note}`;
   return `${label}${body}${note}`;
 }

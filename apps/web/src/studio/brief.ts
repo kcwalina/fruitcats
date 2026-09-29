@@ -107,7 +107,7 @@ export function briefFromAlex(folder: AlexFolder, name: string): Brief {
   return brief;
 }
 
-/** A picture's key: its file name without the extension (BP1-X03-kitten, legend-jam, key-art). */
+/** A picture's key: its file name without the extension (JR1-H01-kitten, legend-mochi, key-art). */
 export const keyOf = (p: BriefPicture) => p.file.replace(/\.[a-z]+$/i, '');
 
 export const TIER_NAMES: Record<Tier, string> = {

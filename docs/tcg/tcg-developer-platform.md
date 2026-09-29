@@ -259,14 +259,27 @@ printed card come from the Alex files. The look has two halves:
 `tcg check` checks the layout: a `{field}` no card type has, a box off the card, a missing font or
 frame, a text box too small for a card's text at its smallest size (naming the card), and images
 below print resolution. `tcg cards` renders every card; `--print --printer <name>` adds bleed-sized
-files, the back and the printer's order choices. The layout is Folkborn's own card anatomy
-(`tools/compose_cards.py`) moved out of a Python script and into data a designer owns.
+files, the back and the printer's order choices. The layout is Folkborn's own card anatomy, moved out
+of the Python script that used to draw every card and into data a designer owns. `tcg` now renders
+every Folkborn set, and the script (`tools/compose_cards.py`) is gone.
 
 Added after comparing with the live game's cards (2026-09-28), so the layout reproduces Folkborn's
 card design exactly:
 
 - `frames` entries are `Frame { image, ink }`; a part's `color = ink` takes the frame's ink (purple
   text on Domowiki frames, dark gold on the Hero's).
+- A frame is picked by the card's type, or by name when the card says so (`frame = gold`, on
+  Folkborn's Heroes). Its colours can come from the card's data: `ink = '{family.dark}'`.
+- **Set-wide fields:** a field a card doesn't give comes from its set, when the set gives it as a
+  field of its own (not one the core's `Set` declares). A Folkborn set gives its `family`, a name and
+  colours, once, and every card in it is printed in them.
+- A frame's `texture` (an artist's own picture for the frame) paints the shapes marked
+  `frame-texture`. `tcg cards --frame <name>` draws every card in one frame, and `--no-art` leaves
+  the card's picture and the frame's texture see-through. The Artist Studio uses both to show an
+  artist's picture on the real card, in each frame colour they can pick.
+- Parts can depend on the card: `if` / `unless` a template is empty (Folkborn shows "art pending"
+  until a card has its painting), `only-types`, `if-keyword`, `only-with-finish`,
+  `only-without-finish`.
 - `Title { show, subtitle }`: a name with its epithet under it, or alone and centred.
 - `Icon { show = '{rarity}', images = [...] }`: one of a few images picked by a field.
 - In a `TextBox`, a paragraph's `emphasis` lists what's bold or italic: `Bold { words = keywords }`

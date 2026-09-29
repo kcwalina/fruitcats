@@ -1,0 +1,62 @@
+#type Set
+
+name = 'Flower-Souls'
+code = 'MB1'
+
+family = Family {
+  name = 'Flower-Souls'
+  main = '#C8412B'
+  dark = '#6B1E14'
+  tint = '#FBE6DC'
+}
+
+cards = [
+  silver-bud = Hero {
+    name = 'Silver Bud', epithet = 'the Littlest Flower-Soul'
+    number = 'MB1-H01', rarity = legendary
+    frame = gold
+    art = 'art/MB1-H01-kitten.webp'
+    text = @silver-bud-text
+    flavor = 'The newest flower in the garden. She hasn''t opened yet, but she is already peeking.'
+    back = Awakened {
+      name = 'Silver Bud', epithet = 'in Full Bloom', power = 2
+      art = 'art/MB1-H01-bigcat.webp'
+      text = @silver-bud-back-text
+    }
+  }
+  me-bjooc = Fabled {
+    name = 'Mẻ Bjoóc', epithet = 'Mother Flower'
+    cost = 5, power = 3, health = 6
+    number = 'MB1-D01', rarity = rare
+    art = 'art/MB1-D01.webp'
+    keywords = [@Guardian]
+    text = 'Guardian. Hello: Heal 2 from each unit you control.'
+    flavor = 'She knows every flower in her garden, and every child it belongs to.'
+  }
+  golden-flower-soul = Creature {
+    name = 'Golden Flower-Soul'
+    cost = 2, power = 2, health = 2
+    number = 'MB1-D02', rarity = common
+    art = 'art/MB1-D02.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'A gold flower for a boy. This one can''t wait to be handed down.'
+  }
+  tending-the-roots = Charm {
+    name = 'Tending the Roots'
+    cost = 1
+    number = 'MB1-D03', rarity = uncommon
+    art = 'art/MB1-D03.webp'
+    text = 'Heal 3 from a unit you control. It gets +2 Power this round.'
+    flavor = @tending-the-roots-flavor
+  }
+]
+
+@@@ silver-bud-text
+Exhaust: Heal 2 from a unit you control.
+Awaken: You have 7 or more Offerings.
+@@@ silver-bud-back-text
+Your units get +1 Health.
+Exhaust: Heal 2 from each unit you control.
+@@@ tending-the-roots-flavor
+When a child's soul wanders, the Then singer climbs to the sky garden and tends its flower.
+@@@

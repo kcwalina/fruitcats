@@ -1,8 +1,8 @@
 // publish-pack: put a card set on the pack storage, where running games take it at their next start,
 // without deploying the game (docs/card-data-architecture.md, Card packs).
 //
-//   npm run publish-pack -- berry-picnic         # by folder name or code (bp1)
-//   npm run publish-pack -- bp1 --dry-run        # check and list what would be uploaded
+//   npm run publish-pack -- jiaoren              # by folder name or code (jr1)
+//   npm run publish-pack -- jr1 --dry-run        # check and list what would be uploaded
 //   npm run publish-pack -- hw1 --unpublish      # take a set out of the index (by code): games stop loading it
 //
 // It runs check-set first and stops on any error. Released sets are taken by every game; prototypes only
@@ -23,7 +23,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artHash } from './art-hash';
-import { pictureFolders, renderCards, renderedByTcg } from './tcg';
+import { pictureFolders, renderCards } from './tcg';
 import { runChecks } from './check-set';
 import { PACKS_URL, artPaths, artPublished, dataPath, differsFrom, updateIndex, withEntry, type IndexStore, type PackEntry, type PackIndex } from './pack-storage';
 
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dry = args.includes('--dry-run');
   const which = args.find((a) => !a.startsWith('--'));
-  if (!which) throw new Error('Name the set to publish: npm run publish-pack -- berry-picnic');
+  if (!which) throw new Error('Name the set to publish: npm run publish-pack -- jiaoren');
   if (args.includes('--unpublish')) return unpublish(which.toUpperCase(), dry);
 
   const [{ set, report }] = runChecks(which);
@@ -118,14 +118,11 @@ async function main(): Promise<void> {
   const temp = mkdtempSync(join(tmpdir(), 'fruitcats-pack-'));
   const published = new Date().toISOString();
   if (paths && !artUp) {
-    // A set tcg renders has no finished cards in the repository: they're made here, from its sources, into a
-    // fresh folder, and uploaded from there (content/tcg.ts).
-    let cards = join(root, 'art', 'cards');
-    if (renderedByTcg(root)) {
-      cards = join(temp, 'cards');
-      console.log('  · rendering the cards with tcg');
-      renderCards(root, cards);
-    }
+    // The finished cards aren't in the repository: tcg makes them here, from the set's sources, into a fresh folder,
+    // and they're uploaded from there (content/tcg.ts).
+    const cards = join(temp, 'cards');
+    console.log('  · rendering the cards with tcg');
+    renderCards(root, cards);
     for (const dir of pictureFolders(root)) if (existsSync(dir)) uploadDir(dir, paths.art.slice(0, -1), FOREVER);
     if (existsSync(cards)) uploadDir(cards, paths.cards.slice(0, -1), FOREVER);
     // The marker after the art: a build ships only when the storage has all the art it was built for (vite.config.ts).

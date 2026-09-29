@@ -49,8 +49,8 @@ let peersOn = true;
 /** viamochi-id, or the storage behind the deck check, not answering (restarting). */
 let idDown = false;
 let storageDown = false;
-const STARTER = DECKS['zest-rush'];
-const OTHER = DECKS['orchard-guard'];
+const STARTER = DECKS['domowiki'];
+const OTHER = DECKS['pari'];
 const RELAXED: ChallengeOptions = { pace: 'relaxed', teaching: false, startersOnly: false };
 
 /** Let the hub's awaits finish (real microtasks and I/O turns, while timers are fake). */
@@ -823,6 +823,32 @@ describe('after a restart', () => {
     back.send({ t: 'rejoin', match: id });
     await flush();
     expect(back.last('match')!.view.actions).toBe(saved[0].played.length);
+  });
+
+  it('calls off a game with cards the game no longer has (the Starter Box), rather than failing on it', async () => {
+    const [sam] = await startGame();
+    const id = sam.match!;
+    vi.advanceTimersByTime(1500);
+    await flush();
+    const [r] = await store.liveMatches();
+    const old = { name: 'Zest Rush', hero: 'SB1-H01', cards: { 'SB1-C01': 3, 'SB1-C02': 3 } };
+    await store.saveMatch({ ...r, seats: [{ ...r.seats[0], deck: old }, r.seats[1]] });
+    await store.saveMatch({ ...r, id: 'peer-with-old-cards', peer: true, seats: [r.seats[0], { ...r.seats[1], deck: old }] });
+
+    const kept = store;
+    const logged: string[] = [];
+    hub.stop();
+    hub = createHub({
+      async paid() { return false; }, maxPlayers: 100, open: () => true,
+      store: kept, async verify(token) { const x = token.slice(4); return { id: x, name: NAMES[x] }; },
+      async friendsOf(a) { return FRIENDS[a]; }, async checkDeck() { return null; }, log(event) { logged.push(event); },
+    });
+    await hub.restore();
+    expect(logged.filter((e) => e === 'live.restore_called_off')).toHaveLength(2);
+    expect(await kept.liveMatches()).toEqual([]);
+    const back = await connect(A);
+    expect(back.last('welcome')!.match).not.toBe(id);
+    expect(hub.counts()).toMatchObject({ matches: 0, peers: 0 });
   });
 });
 

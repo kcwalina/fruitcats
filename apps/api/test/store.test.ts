@@ -5,6 +5,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { registerSet } from '@fruitcats/engine';
 import { DECK_PRICE, cardProduct, deckProduct, type Quote } from '@fruitcats/store';
 
 const ALICE = 'a'.repeat(32);   // a tester
@@ -13,7 +14,22 @@ const CAROL = 'c'.repeat(32);   // a tester who takes the free decks
 let storeRequest: typeof import('../src/store').storeRequest;
 let hasPaid: typeof import('../src/store').hasPaid;
 
+/**
+ * A deck given away at $0 (a deck names its own price). No set has one today, so the tests bring their own: a small
+ * set on sale with one free deck.
+ */
+const FREE = 'free-test';
+function registerFreeDeck() {
+  const card = (id: string, type: string) => ({ id, type, rarity: 'Common', family: 'Test', name: id, cost: 1, power: 1, health: 1, text: '' });
+  registerSet({
+    set: 'TST', name: 'Test', status: 'released', families: { Test: {} },
+    cards: [{ ...card('TST-H01', 'Hero Cat'), rarity: 'Rare' }, card('TST-D01', 'Critter')],
+    decks: { [FREE]: { name: 'Free Test', hero: 'TST-H01', cards: { 'TST-D01': 3 }, price: 0 } },
+  } as never);
+}
+
 beforeAll(async () => {
+  registerFreeDeck();
   process.env.LOCAL_DATA = mkdtempSync(join(tmpdir(), 'fruitcats-store-'));
   process.env.STORE = 'testers';
   process.env.STORE_TESTERS = `${ALICE},${CAROL}`;
@@ -35,7 +51,7 @@ describe('who may see the Store', () => {
   it('shows a tester the catalog, what they own and whether test checkout is on', async () => {
     const [status, body] = await call(ALICE, 'GET', '/v1/store') as [number, { catalog: { products: object }; owned: object; testCheckout: boolean }];
     expect(status).toBe(200);
-    expect(Object.keys(body.catalog.products)).toContain(deckProduct('picnic-club'));
+    expect(Object.keys(body.catalog.products)).toContain(deckProduct('jiaoren'));
     expect(body.owned).toEqual({});
     expect(body.testCheckout).toBe(true);
   });
@@ -43,14 +59,14 @@ describe('who may see the Store', () => {
 
 describe('test checkout', () => {
   it('prices the cart itself and refuses a total the player didn’t see', async () => {
-    const cart = [{ product: deckProduct('picnic-club'), qty: 1 }];
+    const cart = [{ product: deckProduct('jiaoren'), qty: 1 }];
     const [status, body] = await call(ALICE, 'POST', '/v1/store/test-checkout', { orderId: orderId(), cart, total: 1 });
     expect(status).toBe(409);
     expect(body).toMatchObject({ error: 'price_changed', quote: { total: DECK_PRICE } });
   });
 
   it('refuses an order under the minimum', async () => {
-    const cart = [{ product: cardProduct('BP1-X01'), qty: 1 }];
+    const cart = [{ product: cardProduct('MB1-D01'), qty: 1 }];
     const q = await quote(ALICE, cart);
     const [status, body] = await call(ALICE, 'POST', '/v1/store/test-checkout', { orderId: orderId(), cart, total: q.total });
     expect(status).toBe(400);
@@ -58,7 +74,7 @@ describe('test checkout', () => {
   });
 
   it('grants what was bought, once, even when the same order arrives twice', async () => {
-    const cart = [{ product: deckProduct('picnic-club'), qty: 1 }];
+    const cart = [{ product: deckProduct('jiaoren'), qty: 1 }];
     const q = await quote(ALICE, cart);
     const id = orderId();
     const first = await call(ALICE, 'POST', '/v1/store/test-checkout', { orderId: id, cart, total: q.total });
@@ -67,18 +83,18 @@ describe('test checkout', () => {
     expect(again).toMatchObject([200, { repeated: true }]);
     const [, store] = await call(ALICE, 'GET', '/v1/store') as [number, { owned: Record<string, number>; orders: unknown[] }];
     expect(store.orders).toHaveLength(1);
-    expect(store.owned['BP1-H01']).toBe(1);
-    expect(store.owned['BP1-B01']).toBe(3);
+    expect(store.owned['JR1-H01']).toBe(1);
+    expect(store.owned['JR1-D02']).toBe(3);
   });
 
   it('then has nothing more to sell of that deck', async () => {
-    const q = await quote(ALICE, [{ product: deckProduct('picnic-club'), qty: 1 }, { product: cardProduct('BP1-B01'), qty: 1 }]);
+    const q = await quote(ALICE, [{ product: deckProduct('jiaoren'), qty: 1 }, { product: cardProduct('JR1-D02'), qty: 1 }]);
     expect(q.total).toBe(0);
     expect(q.canBuy).toBe(false);
   });
 
   it('handles two checkouts at once one after the other, so they can’t both sell the last copies', async () => {
-    const cart = [{ product: cardProduct('BP1-X02'), qty: 1 }, { product: cardProduct('BP1-X01'), qty: 1 }];
+    const cart = [{ product: cardProduct('MB1-H01'), qty: 1 }, { product: cardProduct('MB1-D01'), qty: 1 }];
     const q = await quote(ALICE, cart);
     const [a, b] = await Promise.all([
       call(ALICE, 'POST', '/v1/store/test-checkout', { orderId: orderId(), cart, total: q.total }),
@@ -86,7 +102,7 @@ describe('test checkout', () => {
     ]);
     expect([a[0], b[0]].sort()).toEqual([200, 409]);
     const [, store] = await call(ALICE, 'GET', '/v1/store') as [number, { owned: Record<string, number> }];
-    expect(store.owned['BP1-X02']).toBe(1);
+    expect(store.owned['MB1-H01']).toBe(1);
   });
 
   it('can be reset, and the cards go with the orders', async () => {
@@ -96,38 +112,38 @@ describe('test checkout', () => {
   });
 
   it('ignores junk in the cart', async () => {
-    const q = await quote(ALICE, [{ product: 'card:BP1-B01', qty: '3' }, { product: { a: 1 }, qty: 1 }, 'x', null]);
+    const q = await quote(ALICE, [{ product: 'card:JR1-D02', qty: '3' }, { product: { a: 1 }, qty: 1 }, 'x', null]);
     expect(q.total).toBe(0);
     expect(await quote(ALICE, 'not a list')).toMatchObject({ total: 0, lines: [] });
   });
 });
 
-describe('free decks (the old Starter Box decks, at $0)', () => {
+describe('free decks (a deck at $0)', () => {
   const get = (user: string, product: string, id = orderId()) => call(user, 'POST', '/v1/store/get', { orderId: id, product });
 
   it('never gives away a deck that costs money', async () => {
-    expect(await get(CAROL, deckProduct('picnic-club'))).toEqual([400, { error: 'not_free' }]);
-    expect(await get(CAROL, cardProduct('BP1-X01'))).toEqual([400, { error: 'not_free' }]);
+    expect(await get(CAROL, deckProduct('jiaoren'))).toEqual([400, { error: 'not_free' }]);
+    expect(await get(CAROL, cardProduct('MB1-D01'))).toEqual([400, { error: 'not_free' }]);
     expect(await get(CAROL, 'deck:nope')).toEqual([400, { error: 'not_free' }]);
     expect((await call(CAROL, 'GET', '/v1/store'))[1]).toMatchObject({ owned: {} });
   });
 
   it('is only for accounts the Store is open to', async () => {
-    expect(await get(BOB, deckProduct('zest-rush'))).toEqual([403, { error: 'store_private' }]);
+    expect(await get(BOB, deckProduct(FREE))).toEqual([403, { error: 'store_private' }]);
   });
 
   it('gives the deck’s cards once, however often it’s asked, and they stay after a test reset', async () => {
     const id = orderId();
-    const first = await get(CAROL, deckProduct('zest-rush'), id);
-    const again = await get(CAROL, deckProduct('zest-rush'), id);
+    const first = await get(CAROL, deckProduct(FREE), id);
+    const again = await get(CAROL, deckProduct(FREE), id);
     expect(first).toMatchObject([200, { order: { status: 'free', total: 0 } }]);
     expect(again).toMatchObject([200, { repeated: true }]);
-    expect(await get(CAROL, deckProduct('zest-rush'))).toMatchObject([400, { error: 'nothing_to_buy' }]);
+    expect(await get(CAROL, deckProduct(FREE))).toMatchObject([400, { error: 'nothing_to_buy' }]);
     await call(CAROL, 'POST', '/v1/store/test-reset');
     const [, store] = await call(CAROL, 'GET', '/v1/store') as [number, { owned: Record<string, number>; orders: unknown[] }];
     expect(store.orders).toHaveLength(1);
-    expect(store.owned['SB1-H01']).toBe(1);
-    expect(store.owned['SB1-C01']).toBe(3);
+    expect(store.owned['TST-H01']).toBe(1);
+    expect(store.owned['TST-D01']).toBe(3);
   });
 
   it('doesn’t make the account a paying one', async () => {

@@ -1,0 +1,28 @@
+#type Set
+
+name = 'Mochi'
+code = 'MC1'
+
+family = Family {
+  name = 'Paragon'
+  main = '#8A8178'
+  dark = '#4A433D'
+  tint = '#F1ECE6'
+}
+
+cards = [
+  mochi = Fabled {
+    name = 'Mochi', epithet = 'the Sweet Spirit'
+    cost = 4, power = 3, health = 4
+    number = 'MC1-X01', rarity = legendary
+    finishes = [standard, foil, gold, prismatic, signature]
+    keywords = [@Guardian, @Lucky]
+    text = @mochi-text
+    flavor = 'Soft on the outside. Softer on the inside.'
+  }
+]
+
+@@@ mochi-text
+Guardian. Lucky. Hello: Draw a card.
+Goodbye: Ready two of your Offerings.
+@@@

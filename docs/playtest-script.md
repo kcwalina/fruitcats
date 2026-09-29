@@ -39,7 +39,7 @@ up again, the fix for that concept did not work:
 - [ ] Did not know cards cost anything
 - [ ] Expected to take several actions in a row
 - [ ] Could not say what the mulligan was for
-- [ ] Asked what a keyword meant (Zest, Zoomies, Guardian…) and did not find the answer
+- [ ] Asked what a keyword meant (Well-Fed, Zoomies, Guardian…) and did not find the answer
 - [ ] Thought resting units applied only to the opponent
 
 And three signals about the walkthrough itself:

@@ -35,17 +35,16 @@ Still to do is listed at the end.
   from the engine: the caller passes in `registerSet`, so the sets always land in the caller's engine.
 - **Released and prototype sets.** A set's `status` is `released` or `prototype`. The public game loads
   released sets only; playtests, simulations and tests load prototypes too. So a designed but unreleased
-  deck (Berry Picnic today) can be playtested by bots and agents without appearing in the game.
-- **Folders by release.** `content/2026/09/starter-box/` and `content/2026/12/berry-picnic/`. Everything a
+  set (Mochi today) can be playtested by bots and agents without appearing in the game.
+- **Folders by release.** `content/2026/10/domowiki/` and `content/2026/12/jiaoren/`. Everything a
   set owns lives in its folder:
 
   ```
-  content/2026/12/berry-picnic/
+  content/2026/12/jiaoren/
     set.json                   cards, tokens, families, mechanics, decks
     plugin.ts                  optional
     art/prompts.json           art direction
-    art/illustrations/<id>.webp        text-free art (Hero Cats: <id>-kitten / <id>-bigcat)
-    art/cards/<id>.webp, art/cards/<finish>/<id>.webp   composed by tools/compose_cards.py
+    art/illustrations/<id>.webp        pictures that aren't card art (the tale banner)
     announcement/              its announcement page (index.html, share.jpg)
     avatars/legend-<name>.webp the Legend Pawtraits that come with its cards (tools/generate_avatars.py)
   ```
@@ -58,7 +57,6 @@ Still to do is listed at the end.
 
 | Set | Folder | Status | Plugin |
 |---|---|---|---|
-| Starter Box (SB1) | `content/2026/09/starter-box/` | released; its decks are free in the Store | yes: the bot's Zest heuristic |
 | Domowiki (DW1) | `content/2026/10/domowiki/` | released, the starter (docs/domowiki-set.md) | none needed |
 | Pari (PR1) | `content/2026/10/pari/` | released, a second starter (docs/pari-set.md) | none needed |
 | Aluxes (AL1) | `content/2026/11/aluxes/` | released, a third starter (docs/aluxes-set.md) | none needed |
@@ -71,13 +69,13 @@ A card's rules are a list of **abilities**. Each combines four closed lists of p
 happens, an optional **if**, a **target**, and what it **does**. The engine implements each piece once.
 
 ```jsonc
-{ "id": "SB1-C06", "name": "Citron Fox", "type": "Critter", "family": "Citrus", "rarity": "Common",
+{ "id": "PR1-D06", "name": "Súči of the Hunt", "type": "Critter", "family": "Pari", "rarity": "Common",
   "cost": 3, "power": 3, "health": 3,
-  "text": "Hello: Deal 1 damage to a unit. Zest: deal 2 instead.",
+  "text": "Hello: Deal 1 damage to a unit. Company: deal 2 instead.",
   "abilities": [
     { "when": "hello", "target": { "unit": "any" },
       "do": [{ "damage": 1 }],
-      "instead": { "if": "Zest", "do": [{ "damage": 2 }] } }      // "Zest" names a set mechanic
+      "instead": { "if": "Company", "do": [{ "damage": 2 }] } }      // "Company" names a set mechanic
   ] }
 ```
 
@@ -85,9 +83,9 @@ The vocabulary (types in `packages/engine/src/types.ts`):
 
 | Kind | Pieces |
 |---|---|
-| **keywords** (a card's `keywords` list) | core: `Zoomies`, `Guardian`, `Sneaky`, `Fierce`, `Tough N`, `Lucky`, `Pounce`; plus any set mechanic of kind `keyword` (`Ripen`, `Heat`) |
+| **keywords** (a card's `keywords` list) | core: `Zoomies`, `Guardian`, `Sneaky`, `Fierce`, `Tough N`, `Lucky`, `Pounce`; plus any set mechanic of kind `keyword` (`Rain-Fed`, `Heat`) |
 | **when** | `play` (Tricks) · `hello` · `goodbye` · `roundStart` · `exhaust` (a Hero Cat's ability) · `damagedAndSurvives` · `defeatsInCombat` · `youHeal` |
-| **if** | a set mechanic's name (`Zest`, `Lush`) · a plugin's condition · `targetIsYours` · `{ not }` · `playedThisRound` · `treats` · `lives` · `opponentLives` · `yardHas {keyword}` · `unitsInComposts` · `compost` · `controlUnits` · `unitHasCounter` |
+| **if** | a set mechanic's name (`Company`, `Well-Fed`) · a plugin's condition · `targetIsYours` · `{ not }` · `playedThisRound` · `treats` · `lives` · `opponentLives` · `yardHas {keyword}` · `unitsInComposts` · `compost` · `controlUnits` · `unitHasCounter` |
 | **target** | `self` · `attack` (the attack in this Pounce window) · `{ unit: own / enemy / any, other?, filter? }` (a choice) · `{ each: own / enemy / all / allOther, filter? }` (no choice) · `target2` for a second choice (Showdown) |
 | **filter** | `exhausted` · `damaged` · `noToy` · `keyword` · `counter {name, atLeast}` |
 | **do** | `damage N` · `heal N` · `buff {power, keywords}` (this round) · `counter {name, add, max}` · `draw N` · `exhaust` · `ready` · `readyTreats N` · `sprout N` · `summon tokenId` · `cancelAttack` · `fight` · plus any plugin's actions |
@@ -96,10 +94,10 @@ The vocabulary (types in `packages/engine/src/types.ts`):
 | **Hero Cats** | `kitten` and `bigCat` faces, each with `abilities` (an `exhaust` one) and `keywords`; the Kitten's `growUp: { if }` |
 
 **Family mechanics are data too.** A set defines them once in `mechanics`, and cards use them by name.
-A `keyword` mechanic gives every unit that has it abilities and a counter (Ripen: at the start of each
-round, `counter ripe +1, max 2`, each point +1/+1; Heat: when damaged and it survives, `counter heat +1,
-max 3`, each point +1 Power). A `condition` mechanic names a test (Zest: `playedThisRound ≥ 2`; Lush:
-`treats ≥ 7`). A keyword granted in play (Spiked Collar gives Heat) brings its mechanic's abilities along.
+A `keyword` mechanic gives every unit that has it abilities and a counter (Rain-Fed: at the start of each
+round, `counter rain +1, max 2`, each point +1/+1; Heat: when damaged and it survives, `counter heat +1,
+max 3`, each point +1 Power). A `condition` mechanic names a test (Company: `controlUnits ≥ 3`;
+Well-Fed: `treats ≥ 7`). A keyword granted in play (Spiked Collar gives Heat) brings its mechanic's abilities along.
 
 **What the engine guarantees:**
 - **Timing follows the rulebook.** Triggered abilities queue as steps and run after the state check, so
@@ -114,12 +112,12 @@ max 3`, each point +1 Power). A `condition` mechanic names a test (Zest: `played
 ## Plugins: code a set brings
 
 ```ts
-// content/2026/09/starter-box/plugin.ts
+// content/<yyyy>/<mm>/<set>/plugin.ts
 const plugin: Plugin = {
-  id: 'starter-box',
+  id: '<set>',
   conditions: { /* name: (ctx, value) => boolean */ },
   actions:    { /* name: (ctx, value) => void, used in data as { name: value } */ },
-  ai: { refineAction: zestFirst },   // improve the bot's choice for this set's cards
+  ai: { refineAction: /* … */ },     // improve the bot's choice for this set's cards
 };
 ```
 
@@ -129,19 +127,21 @@ const plugin: Plugin = {
 - Data names a plugin's condition or action exactly like a built-in one. If a card uses a name that no
   loaded plugin provides, the engine says which set's plugin is missing.
 - **When to write one:** only for what the vocabulary can't express. Adding a new built-in piece (for
-  every set) is an engine change instead. Today the only plugin is the Starter Box's, and it holds a bot
-  heuristic, not a rule: play a cheap card before a Zest card, so the Zest bonus applies.
+  every set) is an engine change instead. No set has a plugin today. The only one was the Starter Box's (removed
+  from the game on 2026-09-29), and it held a bot heuristic, not a rule: play a cheap card before a Zest card, so
+  the Zest bonus applies.
 
 ## Proving nothing changed
 
-`packages/engine/test/golden.json` holds 300 bot games recorded with the engine before it went data-driven
-(every Starter Box pairing, both seats, fixed seeds). `golden.test.ts` replays them and compares every
-action. All 300 play identically on the data-driven engine. To change how cards play on purpose, re-record
-with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
+`packages/engine/test/golden.json` holds 300 bot games (every pairing of the Domowiki, Pari and Aluxes decks,
+both seats, fixed seeds). `golden.test.ts` replays them and compares every action. The first recording, made with
+the Starter Box decks before the engine went data-driven, played identically on the data-driven engine; the games
+were recorded again with the folk decks when the Starter Box was removed (2026-09-29). To change how cards play
+on purpose, re-record with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
 
 ## Validation: check-set
 
-`npm run check-set` (or `npm run check-set -- berry-picnic --games 40`) checks a set before it can be played:
+`npm run check-set` (or `npm run check-set -- jiaoren --games 40`) checks a set before it can be played:
 
 - **Structure:** ids start with the set code, and no card appears twice or in another set.
 - **Card basics:** types and rarities are valid, units have stats, and every family is defined.
@@ -151,9 +151,10 @@ with `npx tsx packages/engine/scripts/golden.ts` and say why in the commit.
   keywords, then each ability, Grow Up lines, auras, tokens and notes. `npm run write-text` writes it into
   set.json, and check-set fails when a card's text says anything else, so text and data can't drift
   apart. For wording the templater can't infer, the data carries it: a card's `pronoun`, an ability's
-  `note` (a reminder in parentheses) and a mechanic's `label` (it reads as "Zest: …").
+  `note` (a reminder in parentheses) and a mechanic's `label` (it reads as "Company: …").
 - **Decks:** every deck follows the deckbuilding rules.
-- **Art:** every card has an illustration and a composed card.
+- **Art:** every card has an illustration, and the set's cards are in Alex (`games/folkborn/sets/<set>/<set>.alex`),
+  which tcg renders (`npm run cards`; publish-pack renders them when it publishes the set).
 - **Budget report:** stats and keywords against each card's cost.
 - **Bots (with `--games`):** a first bot run against the released decks.
 
@@ -167,7 +168,7 @@ is also where the site's card art comes from: **a build carries no card art**, a
 art isn't in the storage yet (see below).
 
 ```
-npm run publish-pack -- berry-picnic         # check-set, then upload; --dry-run to only check
+npm run publish-pack -- jiaoren              # check-set, then upload; --dry-run to only check
 npm run publish-pack -- hw1 --unpublish      # take a set out of the pack index, by code; its files stay on the storage
 ```
 
@@ -217,7 +218,7 @@ saved.
 - **Plugins:** a pack whose cards need plugin code the game doesn't have is skipped with a console warning
   (the engine's `missingPieces` names what's missing). Code only arrives with a new build of the game.
 - **Prototypes:** prototype packs are taken only with `?prototypes` in the address, so a playtester can
-  play an unreleased set on the real site. Berry Picnic is published this way.
+  play an unreleased set on the real site. Mochi is published this way.
 
 ## The Studio (future: not to build yet)
 

@@ -3,8 +3,8 @@
 // and as wallpapers. Artists upload each version; nothing is ever overwritten. Comments from the Folkborn team,
 // from AI agents and from the artist sit beside each picture, each labelled with who wrote it.
 //
-// Pages (in the address's #): a project's home (#/bp1; for a reviewer it also assigns the artist), a picture
-// (#/bp1/BP1-X01), and the list of projects (#/). One render() draws the page from `S`; clicks and typing are handled by
+// Pages (in the address's #): a project's home (#/mc1; for a reviewer it also assigns the artist), a picture
+// (#/mc1/MC1-X01), and the list of projects (#/). One render() draws the page from `S`; clicks and typing are handled by
 // data-click and data-in attributes, as in the game.
 
 import '../content';

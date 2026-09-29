@@ -129,7 +129,7 @@ The game screen as in Solo, drawn from the view the server sent, with:
   red in the last 10 seconds.
 - **Hold on** (Relaxed and Quick): two per game, each adds time to the move in front of you. The other player sees
   "Pippin needs a moment."
-- **Pounce and Lucky**: "Pippin plays Pocket Hamster. Pounce?" or "Nothing to Pounce with: it happens in a moment",
+- **Pounce and Lucky**: "Pippin plays Hearth Cricket. Pounce?" or "Nothing to Pounce with: it happens in a moment",
   with **Wait (2)** to keep the question open and **Let it happen**.
 - **When the other player runs out of time** (Friend games): "Pippin is out of time." **Give more time** or **Nudge**
   (their phone vibrates and says "Sam nudged you: your move!"). After 3 more minutes, also **Take the win** or **Call it

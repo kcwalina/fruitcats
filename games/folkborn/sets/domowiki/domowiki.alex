@@ -3,7 +3,8 @@
 name = 'Domowiki'
 code = 'DW1'
 
-colors = Colors {
+family = Family {
+  name = 'Domowiki'
   main = '#5B3F9E'
   dark = '#2E1F5C'
   tint = '#EEE8FB'
@@ -17,6 +18,7 @@ cards = [
   dziadzius = Hero {
     name = 'Dziadziuś', epithet = 'Heart of the House'
     number = 'DW1-H01', rarity = legendary
+    frame = gold
     art = 'art/DW1-H01-kitten.webp'
     text = @dziadzius-text
     flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'

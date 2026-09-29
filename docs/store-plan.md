@@ -28,7 +28,7 @@ says how far it has got, and [Setting up Paddle](#setting-up-paddle-the-owners-s
 
 ## Already done
 
-- **Deck builder:** build your own decks from the cards you have. What you have comes from `owned(id)` in `apps/web/src/collection.ts`, which for now is the three starter decks together.
+- **Deck builder:** build your own decks from the cards you have. What you have comes from `owned(id)` in `apps/web/src/collection.ts`, which for now is the starter decks together.
 - **Collection** (`apps/web/src/showcase.ts`):
   - **Showcase:** your chosen cards, shown big.
   - **All cards:** the whole set. Cards you don't have yet show as shadows, ready for the Store to fill in.
@@ -156,7 +156,7 @@ inside the game, on every platform. The Store only adds the tester list below.
 ## Store experience
 
 - **The Store screen:** two tabs, **Folkborn** (the main one, for the decks of the folklore game) and **Legacy** (the
-  free fruit-cat decks from before it), each a list of decks and single cards, all the same size, plus a cart (no filters).
+  free fruit-cat decks from before it; gone with the Starter Box, removed 2026-09-29), each a list of decks and single cards, all the same size, plus a cart (no filters).
 - **A deck** shows every card in it and marks the cards you already own.
 - **A single card** opens its own page with a full-size preview before buying.
 - **Without an account:** the Store tile is locked like the Collection; tapping it opens the in-game "Sign in or
@@ -179,8 +179,9 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
 - **What's for sale:** every card and deck of the sets on sale. The starter set (Domowiki since 2026-09-26, before
   that the Starter Box) is marked `"starter": true` in its `set.json`: its decks are the free starter decks and its
   cards are never sold. Cards marked `exclusive` are never sold either (see below). A deck can name its own price
-  (`"price"`, cents); the Starter Box's three decks are `0`: the Store shows them with **Get · Free**, which grants
-  them without a cart or checkout (`POST /v1/store/get`, order status `free`), even while buying is off.
+  (`"price"`, cents); a deck priced `0` shows **Get · Free**, which grants it without a cart or checkout
+  (`POST /v1/store/get`, order status `free`), even while buying is off. The Starter Box's three decks were priced
+  `0` until the owner removed the Starter Box on 2026-09-29; no deck is free in the Store today.
 - **The API** (`apps/api/src/store.ts`): `GET /v1/store` (catalog, what you own, your orders), `POST
   /v1/store/quote`, `POST /v1/store/test-checkout` and `POST /v1/store/test-reset`.
   - A test order brings the cards without payment. It's refused unless the total the player saw is still the total,
@@ -194,7 +195,8 @@ Phase 4, built 2026-09-24. Nothing here takes money: there is no payment step ye
   labelled Deck or Card (the owner's call, 2026-09-25: no banner or filters; announcements of new releases, if any,
   will be their own experience). Two tabs since 2026-09-27 (the owner's call): **Folkborn**, the main one, and
   **Legacy**, for the sets marked `"legacy": true` in their set.json (the old Starter Box: Zest Rush, Orchard Guard,
-  Mango Tango, free). Until the first Folkborn deck is on sale, the Folkborn tab says new decks are on the way. A deck looks like a boxed deck of cards; a card is shown as itself.
+  Mango Tango, free). Since 2026-09-28 the Store has no tabs (codes sit in a corner menu), and the Legacy decks went
+  with the Starter Box on 2026-09-29. Until the first Folkborn deck is on sale, the Folkborn tab says new decks are on the way. A deck looks like a boxed deck of cards; a card is shown as itself.
   A tile's price is its **Add to cart** button (one tap adds it; then it reads "In cart" and opens the cart), and
   tapping the picture or name opens the item's page, where **Add to cart** sits right under the name, on the first
   screen of a phone (the owner's call, 2026-09-25: a price that only opened the page, and a button at the bottom of
@@ -242,15 +244,16 @@ around the payment work, which stays closed.
 ### On the live site: a preview for every playtester
 
 Since 2026-09-25 (the owner's call, after trying the whole test flow), the live API runs `STORE=preview`,
-`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,JR1,HH1` (SB1 since 2026-09-26: the old Starter Box decks, free; JR1 since 2026-09-27: the Jiaoren deck at $9.99, the first Folkborn deck on sale; HH1 since 2026-09-28: the Hui Hai deck at $9.99): every signed-in player can open the Store and see every deck, card and
-price, but **Add to cart** says "Coming soon", and there's no cart. The free decks' **Get** works in preview too. The owner sees the same. Test orders placed during
+`STORE_TEST_CHECKOUT=off`, `STORE_SETS=SB1,JR1,HH1` (SB1 from 2026-09-26 to 2026-09-29: the old Starter Box decks, free, until the
+owner removed the Starter Box; the game now leaves out a set it doesn't have; JR1 since 2026-09-27: the Jiaoren deck at $9.99, the first Folkborn deck on sale; HH1 since 2026-09-28: the Hui Hai deck at $9.99): every signed-in player can open the Store and see every deck, card and
+price, but **Add to cart** says "Coming soon", and there's no cart. A free deck's **Get** works in preview too. The owner sees the same. Test orders placed during
 the tester test are kept but count for nothing (no cards, not listed).
 
 To go back to the full test flow for someone (cart, test checkout, reveal, "Remove my test purchases"): `STORE=testers`,
 `STORE_TEST_CHECKOUT=on`, their id in `STORE_TESTERS`. Tell the artist tool session first: a settings change restarts
 the API.
 
-**Signature cards** (`"signature"` in the card's data, like Noelle, BP1-X03) exist only as their Signature print: the Store
+**Signature cards** (`"signature"` in the card's data, like Mochi, MC1-X01) exist only as their Signature print: the Store
 shows that print, labels them "Signature" and prices them at `SIGNATURE_PRICE` ($19.99), never as a standard copy.
 
 ## Making it real: what is left
@@ -285,7 +288,7 @@ source of truth for money, and ours can always be rebuilt from it.
 
 **What Paddle gets, and why ownership can't be faked.**
 
-- **Paddle gets no cards.** It gets a line item and price ("Picnic Club deck, $9.99", or "3 single cards") and our
+- **Paddle gets no cards.** It gets a line item and price ("Jiaoren deck, $9.99", or "3 single cards") and our
   order id and account id as custom data. It sells the right to have those items in the player's Via Mochi account,
   and gives back its own transaction id (`txn_…`).
 - **Owning a card is a row in our database:** account A has 2 copies of `DW1-D04`, from order O. `DW1-D04` is the
@@ -432,7 +435,7 @@ a refund always lands. Paying is for testers (`STORE=testers`) or everyone (`STO
 
 - **Prices:** confirm or change the starting points (decks $9.99, singles $0.49 to $4.99, a $4.99 minimum order).
   They live in `packages/store`, so a change is made in one place and covered by tests.
-- **What's on sale at launch:** which sets (`STORE_SETS`; testers see the free Starter Box decks today) and which singles.
+- **What's on sale at launch:** which sets (`STORE_SETS`; testers see the Jiaoren and Hui Hai decks today) and which singles.
   Every card sold needs its final art.
 - **Premium prints and Signature cards** (Foil, Gold, Signature, First Edition): decide whether any are in the
   launch, or come later as their own work (new finishes, one product per variant).
@@ -523,7 +526,7 @@ is saved either way and can be played once the player has every card.
 ## From the accounts work
 
 - **Legend Pawtraits come with their card.** Buying a card that has a Legend Pawtrait (for now
-  Mochi's `legend-mochi` once its art is in; Tango's `legend-tango` is open to everyone) must also unlock the
+  Mochi's `legend-mochi` once its art is in; Tango's `legend-tango` went with the Starter Box on 2026-09-29) must also unlock the
   Pawtrait: add a row to `viamochi-id`'s `avatarunlocks` table (PartitionKey the account id, RowKey the Pawtrait id)
   in the same step that grants the card, and remove it on a refund. There's no endpoint for
   this yet; `viamochi-id` needs a service-to-service one (see [accounts.md](accounts.md), Avatars).

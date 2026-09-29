@@ -12,7 +12,7 @@ export function numArg(name: string): number | undefined {
   return v === undefined ? undefined : Number(v);
 }
 
-/** Every word after `--name` up to the next flag, joined: for text the playtester passes along split on spaces (`--goal beat Orchard Guard`). */
+/** Every word after `--name` up to the next flag, joined: for text the playtester passes along split on spaces (`--goal beat the Aluxes`). */
 export function textArg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   if (i < 0) return undefined;

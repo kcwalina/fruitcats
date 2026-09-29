@@ -989,6 +989,18 @@ would lose player counters that aren't resources (poison, lore).
 framework, Folkborn and both Hello TCG samples as of fruitcats 49bb669, with 382 of 382 Alex tests
 passing; the Alex session is landing it to mochi main.
 
+### Berry Picnic removed (owner, 2026-09-29)
+
+The owner dropped the old cat-themed prototype sets (Berry Picnic, Studio Practice, Tryout) from the game
+and the repo. `berry-picnic.alex` and `berry-picnic-rules.alex` are gone, and `folkborn.alex` lists only
+`@starter-box`. The Berry Picnic examples above stay as the record of how the design was reached.
+
+### Starter Box removed (owner, 2026-09-29)
+
+The owner removed the Starter Box, the original fruit-cat cards, from the game and the repo. `starter-box.alex`
+and `starter-box-rules.alex` are gone, and `folkborn.alex` lists no sets. The Starter Box examples above stay as
+the record of how the design was reached.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

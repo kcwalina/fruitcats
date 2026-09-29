@@ -81,131 +81,131 @@ describe('studio', () => {
   });
 
   it('lets an invited artist in, and no one else', async () => {
-    expect((await call(ARTIST, '/bp1')).status).toBe(403);
-    expect((await call(ARTIST, '/bp1/invites', { json: {} })).status).toBe(403);
-    const invite = await call(OWNER, '/bp1/invites', { json: { note: 'Basil' } });
+    expect((await call(ARTIST, '/mc1')).status).toBe(403);
+    expect((await call(ARTIST, '/mc1/invites', { json: {} })).status).toBe(403);
+    const invite = await call(OWNER, '/mc1/invites', { json: { note: 'Basil' } });
     expect(invite.status).toBe(201);
     expect(invite.body.url).toContain('studio.html?invite=');
     // A reviewer or an agent opening the link uses nothing up and becomes no one's artist.
-    expect((await call(OWNER, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'bp1', reviewer: true });
+    expect((await call(OWNER, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'mc1', reviewer: true });
     expect((await call(AGENT, `/invites/${invite.body.code}`, { json: {} })).status).toBe(403);
-    expect((await call(OWNER, '/bp1/artists')).body.artists).toEqual([]);
-    expect((await call(ARTIST, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'bp1' });
+    expect((await call(OWNER, '/mc1/artists')).body.artists).toEqual([]);
+    expect((await call(ARTIST, `/invites/${invite.body.code}`, { json: {} })).body).toEqual({ set: 'mc1' });
     expect((await call(STRANGER, `/invites/${invite.body.code}`, { json: {} })).status).toBe(409);
-    expect((await call(ARTIST, '/me')).body.sets).toEqual(['bp1']);
-    expect((await call(ARTIST, '/bp1')).body.role).toBe('artist');
-    expect((await call(STRANGER, '/bp1')).status).toBe(403);
-    expect((await call(OWNER, '/bp1/artists')).body.artists).toMatchObject([{ id: 'basil', name: 'Basil' }]);
+    expect((await call(ARTIST, '/me')).body.sets).toEqual(['mc1']);
+    expect((await call(ARTIST, '/mc1')).body.role).toBe('artist');
+    expect((await call(STRANGER, '/mc1')).status).toBe(403);
+    expect((await call(OWNER, '/mc1/artists')).body.artists).toMatchObject([{ id: 'basil', name: 'Basil' }]);
   });
 
   it('asks an artist to accept the Studio’s terms before uploading', async () => {
     expect((await call(ARTIST, '/me')).body.terms).toBeNull();
-    expect((await call(ARTIST, '/bp1/pictures/BP1-X01', { body: png(1536, 1024, 9) })).body).toEqual({ error: 'terms' });
+    expect((await call(ARTIST, '/mc1/pictures/MC1-X01', { body: png(1536, 1024, 9) })).body).toEqual({ error: 'terms' });
     expect((await call(ARTIST, '/terms', { json: { version: 'studio-1' } })).status).toBe(422);
     expect((await call(ARTIST, '/terms', { json: { version: 'studio-1', adult: true } })).status).toBe(200);
     expect((await call(ARTIST, '/me')).body.terms).toBe('studio-1');
   });
 
   it('keeps every upload, checks it and serves it back', async () => {
-    const first = await call(ARTIST, '/bp1/pictures/BP1-X01?kind=sketch&note=first%20idea', { body: png(1536, 1024, 1) });
+    const first = await call(ARTIST, '/mc1/pictures/MC1-X01?kind=sketch&note=first%20idea', { body: png(1536, 1024, 1) });
     expect(first.status).toBe(201);
     expect(first.body).toMatchObject({ kind: 'sketch', format: 'png', width: 1536, height: 1024, byName: 'Basil', note: 'first idea' });
-    const second = await call(ARTIST, '/bp1/pictures/BP1-X01', { body: png(1536, 1024, 2) });
+    const second = await call(ARTIST, '/mc1/pictures/MC1-X01', { body: png(1536, 1024, 2) });
     expect(second.body.kind).toBe('final');
-    const view = await call(OWNER, '/bp1');
-    expect(view.body.pictures['BP1-X01'].versions.map((v: { id: string }) => v.id)).toEqual([first.body.id, second.body.id]);
-    expect(view.body.pictures['BP1-X01'].state).toBe('waiting');
-    const got = await call(AGENT, `/bp1/pictures/BP1-X01/${first.body.id}`);
+    const view = await call(OWNER, '/mc1');
+    expect(view.body.pictures['MC1-X01'].versions.map((v: { id: string }) => v.id)).toEqual([first.body.id, second.body.id]);
+    expect(view.body.pictures['MC1-X01'].state).toBe('waiting');
+    const got = await call(AGENT, `/mc1/pictures/MC1-X01/${first.body.id}`);
     expect(sha256(got.body as Buffer)).toBe(sha256(png(1536, 1024, 1)));
-    expect((await call(ARTIST, '/bp1/pictures/BP1-X01', { body: Buffer.from('not a picture at all, sorry about that') })).status).toBe(415);
-    expect((await call(AGENT, '/bp1/pictures/BP1-X01', { body: png(1536, 1024, 3) })).status).toBe(403);
-    expect((await call(ARTIST, '/bp1/pictures/..%2Fescape', { body: png(1536, 1024, 4) })).status).toBe(404);
+    expect((await call(ARTIST, '/mc1/pictures/MC1-X01', { body: Buffer.from('not a picture at all, sorry about that') })).status).toBe(415);
+    expect((await call(AGENT, '/mc1/pictures/MC1-X01', { body: png(1536, 1024, 3) })).status).toBe(403);
+    expect((await call(ARTIST, '/mc1/pictures/..%2Fescape', { body: png(1536, 1024, 4) })).status).toBe(404);
   });
 
   it('labels comments by who wrote them', async () => {
-    const view = await call(ARTIST, '/bp1');
-    const version = view.body.pictures['BP1-X01'].versions[0].id;
-    const ai = await call(AGENT, '/bp1/pictures/BP1-X01/comments', { json: { text: 'The star is cut off on a phone.', version, pin: { x: 0.9, y: 0.2 } } });
+    const view = await call(ARTIST, '/mc1');
+    const version = view.body.pictures['MC1-X01'].versions[0].id;
+    const ai = await call(AGENT, '/mc1/pictures/MC1-X01/comments', { json: { text: 'The star is cut off on a phone.', version, pin: { x: 0.9, y: 0.2 } } });
     expect(ai.body).toMatchObject({ author: 'ai', authorName: 'Claude', pinX: 0.9, pinY: 0.2, version });
-    const mine = await call(OWNER, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Love the colours.' } });
+    const mine = await call(OWNER, '/mc1/pictures/MC1-X01/comments', { json: { text: 'Love the colours.' } });
     expect(mine.body).toMatchObject({ author: 'owner', authorName: 'Reviewer' });
-    const reply = await call(ARTIST, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Moving it left.', replyTo: ai.body.id } });
+    const reply = await call(ARTIST, '/mc1/pictures/MC1-X01/comments', { json: { text: 'Moving it left.', replyTo: ai.body.id } });
     expect(reply.body).toMatchObject({ author: 'artist', replyTo: ai.body.id });
-    expect((await call(ARTIST, `/bp1/comments/${ai.body.id}`, { json: { done: true } })).body.done).toBe(true);
-    expect((await call(ARTIST, '/bp1/pictures/BP1-X01/comments', { json: { text: '  ' } })).status).toBe(422);
-    const changes = await call(AGENT, '/bp1/changes?since=2000-01-01');
+    expect((await call(ARTIST, `/mc1/comments/${ai.body.id}`, { json: { done: true } })).body.done).toBe(true);
+    expect((await call(ARTIST, '/mc1/pictures/MC1-X01/comments', { json: { text: '  ' } })).status).toBe(422);
+    const changes = await call(AGENT, '/mc1/changes?since=2000-01-01');
     expect(changes.body.items.filter((i: { type: string }) => i.type === 'comment')).toHaveLength(3);
   });
 
   it('adds a comment sent twice with the same request id once, and a new one again', async () => {
-    const say = (requestId: string) => call(ARTIST, '/bp1/pictures/BP1-X01/comments', { json: { text: 'Sent twice?', requestId } });
+    const say = (requestId: string) => call(ARTIST, '/mc1/pictures/MC1-X01/comments', { json: { text: 'Sent twice?', requestId } });
     const first = await say('0123456789abcdef');
     const again = await say('0123456789abcdef');
     expect(again.status).toBe(201);
     expect(again.body.id).toBe(first.body.id);
     const other = await say('fedcba9876543210');
     expect(other.body.id).not.toBe(first.body.id);
-    const view = await call(OWNER, '/bp1');
+    const view = await call(OWNER, '/mc1');
     expect(view.body.comments.filter((c: { text: string }) => c.text === 'Sent twice?')).toHaveLength(2);
   });
 
   it('keeps one version when the same picture is sent again as the newest', async () => {
-    const first = await call(ARTIST, '/bp1/pictures/BP1-X02', { body: png(1536, 1024, 42) });
-    const again = await call(ARTIST, '/bp1/pictures/BP1-X02', { body: png(1536, 1024, 42) });
+    const first = await call(ARTIST, '/mc1/pictures/MC1-X02', { body: png(1536, 1024, 42) });
+    const again = await call(ARTIST, '/mc1/pictures/MC1-X02', { body: png(1536, 1024, 42) });
     expect(again.status).toBe(201);
     expect(again.body.id).toBe(first.body.id);
-    expect((await call(OWNER, '/bp1')).body.pictures['BP1-X02'].versions).toHaveLength(1);
+    expect((await call(OWNER, '/mc1')).body.pictures['MC1-X02'].versions).toHaveLength(1);
   });
 
   it('lets only the owner review, open steps and decide suggestions', async () => {
-    expect((await call(ARTIST, '/bp1/pictures/BP1-X01/review', { json: { state: 'approved' } })).status).toBe(403);
-    expect((await call(AGENT, '/bp1/pictures/BP1-X01/review', { json: { state: 'approved' } })).status).toBe(403);
-    expect((await call(OWNER, '/bp1/pictures/BP1-X01/review', { json: { state: 'approved' } })).body.state).toBe('approved');
-    expect((await call(OWNER, '/bp1')).body.pictures['BP1-X01'].state).toBe('approved');
-    expect((await call(ARTIST, '/bp1/milestones/3', { json: { open: true } })).status).toBe(403);
-    expect((await call(OWNER, '/bp1/milestones/3', { json: { open: true } })).status).toBe(200);
-    expect((await call(ARTIST, '/bp1')).body.milestones).toEqual({ 3: true });
-    const s = await call(ARTIST, '/bp1/suggestions', { json: { picture: 'BP1-X01', field: 'name', value: 'Snap, the Gingerbread Cat', why: 'fits the pose' } });
+    expect((await call(ARTIST, '/mc1/pictures/MC1-X01/review', { json: { state: 'approved' } })).status).toBe(403);
+    expect((await call(AGENT, '/mc1/pictures/MC1-X01/review', { json: { state: 'approved' } })).status).toBe(403);
+    expect((await call(OWNER, '/mc1/pictures/MC1-X01/review', { json: { state: 'approved' } })).body.state).toBe('approved');
+    expect((await call(OWNER, '/mc1')).body.pictures['MC1-X01'].state).toBe('approved');
+    expect((await call(ARTIST, '/mc1/milestones/3', { json: { open: true } })).status).toBe(403);
+    expect((await call(OWNER, '/mc1/milestones/3', { json: { open: true } })).status).toBe(200);
+    expect((await call(ARTIST, '/mc1')).body.milestones).toEqual({ 3: true });
+    const s = await call(ARTIST, '/mc1/suggestions', { json: { picture: 'MC1-X01', field: 'name', value: 'Snap, the Gingerbread Cat', why: 'fits the pose' } });
     expect(s.body).toMatchObject({ state: 'open', value: 'Snap, the Gingerbread Cat' });
-    expect((await call(ARTIST, `/bp1/suggestions/${s.body.id}`, { json: { state: 'accepted' } })).status).toBe(403);
-    expect((await call(OWNER, `/bp1/suggestions/${s.body.id}`, { json: { state: 'accepted', reply: 'Yes!' } })).body.state).toBe('accepted');
+    expect((await call(ARTIST, `/mc1/suggestions/${s.body.id}`, { json: { state: 'accepted' } })).status).toBe(403);
+    expect((await call(OWNER, `/mc1/suggestions/${s.body.id}`, { json: { state: 'accepted', reply: 'Yes!' } })).body.state).toBe('accepted');
   });
 
   it('lets the reviewer give a set to a game account by its email', async () => {
     const WANDA = 'Dev wanda:Wanda';
     expect((await call(WANDA, '/me')).body.sets).toEqual([]);
-    expect((await call(ARTIST, '/bp1/artists', { json: { email: 'wanda@example.com' } })).status).toBe(403);
-    expect((await call(OWNER, '/bp1/artists', { json: { email: 'nobody@example.com' } })).body).toEqual({ error: 'no_account' });
-    expect((await call(OWNER, '/bp1/artists', { json: { email: 'not an email' } })).status).toBe(422);
-    expect((await call(OWNER, '/bp1/artists', { json: { email: 'wanda@example.com' } })).body).toMatchObject({ id: 'wanda', name: 'Wanda' });
-    expect((await call(WANDA, '/me')).body.sets).toEqual(['bp1']);
-    expect((await call(OWNER, '/bp1/artists')).body.artists).toContainEqual(expect.objectContaining({ id: 'wanda', email: 'wanda@example.com' }));
+    expect((await call(ARTIST, '/mc1/artists', { json: { email: 'wanda@example.com' } })).status).toBe(403);
+    expect((await call(OWNER, '/mc1/artists', { json: { email: 'nobody@example.com' } })).body).toEqual({ error: 'no_account' });
+    expect((await call(OWNER, '/mc1/artists', { json: { email: 'not an email' } })).status).toBe(422);
+    expect((await call(OWNER, '/mc1/artists', { json: { email: 'wanda@example.com' } })).body).toMatchObject({ id: 'wanda', name: 'Wanda' });
+    expect((await call(WANDA, '/me')).body.sets).toEqual(['mc1']);
+    expect((await call(OWNER, '/mc1/artists')).body.artists).toContainEqual(expect.objectContaining({ id: 'wanda', email: 'wanda@example.com' }));
   });
 
   it('keeps the frame colour an artist chose', async () => {
-    const view = await call(OWNER, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'midnight' } });
+    const view = await call(OWNER, '/mc1/pictures/MC1-X01/frame', { json: { palette: 'midnight' } });
     expect(view.body).toEqual({ palette: 'midnight' });
-    expect((await call(OWNER, '/bp1')).body.pictures['BP1-X01'].frame).toBe('midnight');
-    expect((await call(OWNER, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'Not a name!' } })).status).toBe(422);
+    expect((await call(OWNER, '/mc1')).body.pictures['MC1-X01'].frame).toBe('midnight');
+    expect((await call(OWNER, '/mc1/pictures/MC1-X01/frame', { json: { palette: 'Not a name!' } })).status).toBe(422);
   });
 
   it('keeps an image an artist chose for the frame, without touching the card picture’s review', async () => {
-    const before = (await call(OWNER, '/bp1')).body.pictures['BP1-X01'].state;
-    const up = await call(ARTIST, '/bp1/pictures/BP1-X01-frame?kind=frame', { body: png(1200, 800, 7) });
+    const before = (await call(OWNER, '/mc1')).body.pictures['MC1-X01'].state;
+    const up = await call(ARTIST, '/mc1/pictures/MC1-X01-frame?kind=frame', { body: png(1200, 800, 7) });
     expect(up.status).toBe(201);
     expect(up.body.kind).toBe('frame');
-    expect((await call(ARTIST, '/bp1/pictures/BP1-X01/frame', { json: { palette: `image:${up.body.id}` } })).status).toBe(200);
-    const view = (await call(OWNER, '/bp1')).body;
-    expect(view.pictures['BP1-X01'].frame).toBe(`image:${up.body.id}`);
-    expect(view.pictures['BP1-X01'].state).toBe(before);
-    expect(view.pictures['BP1-X01-frame'].state).toBe('none');
+    expect((await call(ARTIST, '/mc1/pictures/MC1-X01/frame', { json: { palette: `image:${up.body.id}` } })).status).toBe(200);
+    const view = (await call(OWNER, '/mc1')).body;
+    expect(view.pictures['MC1-X01'].frame).toBe(`image:${up.body.id}`);
+    expect(view.pictures['MC1-X01'].state).toBe(before);
+    expect(view.pictures['MC1-X01-frame'].state).toBe('none');
     // Only an image that was uploaded for this card's frame.
-    expect((await call(ARTIST, '/bp1/pictures/BP1-X01/frame', { json: { palette: 'image:20260101T000000000Z-deadbeef' } })).status).toBe(422);
+    expect((await call(ARTIST, '/mc1/pictures/MC1-X01/frame', { json: { palette: 'image:20260101T000000000Z-deadbeef' } })).status).toBe(422);
   });
 
   it('removes an artist without losing their pictures', async () => {
-    expect((await call(OWNER, '/bp1/artists/basil', { method: 'DELETE' })).status).toBe(200);
-    expect((await call(ARTIST, '/bp1')).status).toBe(403);
-    expect((await call(OWNER, '/bp1')).body.pictures['BP1-X01'].versions).toHaveLength(2);
+    expect((await call(OWNER, '/mc1/artists/basil', { method: 'DELETE' })).status).toBe(200);
+    expect((await call(ARTIST, '/mc1')).status).toBe(403);
+    expect((await call(OWNER, '/mc1')).body.pictures['MC1-X01'].versions).toHaveLength(2);
   });
 });

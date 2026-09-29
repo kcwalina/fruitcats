@@ -1,7 +1,8 @@
 # Card anatomy
 
 What everything on a Folkborn card means. The card below is **Sanguine, Blood Orange Panther**, a Rare
-Fabled card, in a Prismatic print.
+Fabled card, in a Prismatic print (a card from the Starter Box, the game's first set, removed on 2026-09-29; every
+card has the same parts).
 
 ![Sanguine, Blood Orange Panther, with its parts numbered](guide/card-anatomy.webp)
 
@@ -12,9 +13,9 @@ Fabled card, in a Prismatic print.
 | 1 | **Cost** | How many Offerings you spend to play the card. A Hero has a star here instead: it's always in play, so it's never paid for. |
 | 2 | **Name** | The card's name. Fabled cards, and a Hero's two sides, also have a title under it (*Blood Orange Panther*). |
 | 3 | **Art** | The illustration. It never carries rules or other information: the art belongs to the artist. |
-| 4 | **Type line** | What kind of card it is (Hero, Fabled, Creature, Charm or Talisman) and its family (Citrus, Orchard, Tropical or Wildfolk). On a Hero's Awakened side, the type line says Awakened. |
+| 4 | **Type line** | What kind of card it is (Hero, Fabled, Creature, Charm or Talisman) and its family (Domowiki, Pari, Aluxes, Jiaoren or Hui Hai). On a Hero's Awakened side, the type line says Awakened. |
 | 5 | **Rarity mark** | How rare the card is: see [Rarity](#rarity). |
-| 6 | **Card number** | The card's number in its set: SB1 is the Starter Box. |
+| 6 | **Card number** | The card's number in its set: DW1-D09 is card D09 of the Domowiki set (DW1). |
 | 7 | **Finish code** | How this copy is printed: see [Finishes](#finishes). Only special prints have one. |
 | 8 | **Rules text** | What the card does. **Bold** words are keywords, explained in the [rulebook](rulebook.md#10-keywords). |
 | 9 | **Flavour text** | A line in *italics* that tells you something about the card. It has no effect on the game. |
@@ -33,7 +34,7 @@ Some cards have a green four-leaf clover in the corner of their art: they're **L
 Every card has a rarity, printed as a mark in its collector line. All copies of a card share it.
 Rarity never changes how a card plays: it's there to collect.
 
-| Mark | Rarity | In the Starter Box |
+| Mark | Rarity | Which cards |
 |---|---|---|
 | bronze circle | **Common** | Creatures that cost 3 or less |
 | silver diamond | **Uncommon** | Creatures that cost 4 or more, every Charm and Talisman |

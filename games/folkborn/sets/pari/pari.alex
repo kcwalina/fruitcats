@@ -3,7 +3,8 @@
 name = 'Pari'
 code = 'PR1'
 
-colors = Colors {
+family = Family {
+  name = 'Pari'
   main = '#2E5C9E'
   dark = '#16305A'
   tint = '#E3ECF8'
@@ -18,6 +19,7 @@ cards = [
   parijan = Hero {
     name = 'Parijan', epithet = 'the Littlest Pari'
     number = 'PR1-H01', rarity = legendary
+    frame = gold
     art = 'art/PR1-H01-kitten.webp'
     text = @parijan-text
     flavor = 'Persians called the pari ''those who are better than we''.'

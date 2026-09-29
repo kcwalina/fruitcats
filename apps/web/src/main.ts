@@ -404,7 +404,7 @@ function startGame(tutorial = false) {
   setOnlineAside();
   // The opponent leads one of the other decks, at random. The tutorial is always the Domowiki against the Pari (the
   // two folk starter decks), with you going first.
-  // Against your own deck, it leads a ready-made deck with a different Hero Cat (owned or not), never a Legacy one.
+  // Against your own deck, it leads a ready-made deck with a different Hero Cat (owned or not).
   const mine = deckForKey(myDeck) ?? DECKS[firstDeck()];
   const others = soloFoeDecks(mine.hero);
   const theirDeck = tutorial ? 'pari'
@@ -455,10 +455,10 @@ function startGame(tutorial = false) {
 
 /**
  * What each keyword means, in plain words. Shown under a card when you enlarge it (press and hold),
- * because a playtester kept forgetting what Zest did and iOS has no hover to put a tooltip on.
+ * because a playtester kept forgetting what a mechanic did and iOS has no hover to put a tooltip on.
  * `test` finds the keyword in the card's rules text.
  */
-/** Set mechanics (Zest, Ripen, Heat…) explain themselves from their set's data; the core keywords are here. */
+/** Set mechanics (Well-Fed, Rain-Fed, …) explain themselves from their set's data; the core keywords are here. */
 const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero.' },
@@ -475,7 +475,7 @@ const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Exhaust', test: /\bExhaust\b/, text: 'Spend a card for the rest of the round: it tips sideways and cannot attack or be spent again until everything readies next round.' },
 ];
 
-/** The rules text of whatever a long press enlarged: a card id, or a Hero Cat side like "SB1-H01-bigcat". */
+/** The rules text of whatever a long press enlarged: a card id, or a Hero Cat side like "DW1-H01-bigcat". */
 function zoomText(key: string): string {
   const side = /^(.*)-(kitten|bigcat)$/.exec(key);
   const card = CARDS[side ? side[1] : key];
@@ -854,7 +854,7 @@ const builderHost: BuilderHost = {
   openStore: (deck: DeckList) => { if (STORE) { openStoreForDeck(storeHost, deck); screen = 'store'; render(); } },
 };
 
-/** The unfinished game, for the Resume button: "Round 4 · Sunny vs Pippin". */
+/** The unfinished game, for the Resume button: "Round 4 · Dziadziuś vs Parijan". */
 function savedGameLabel(): string | null {
   const saved = loadGame()?.game;
   return saved ? `Round ${saved.round} · <span class="nowrap">${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}</span>` : null;
@@ -1359,9 +1359,8 @@ function renderHand(s: GameState, playable: Set<number>): string {
   const n = s.players[mySeat].hand.length;
   return `<section class="hand" style="--n:${n};--gaps:${Math.max(1, n - 1)}">
     ${s.players[mySeat].hand.map((c) => {
-      const zestOn = (s.players[mySeat].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
       const cls = [
-        'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
+        'hand-card', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
       // A unit's Health is printed on the card's bottom-right corner, which a bigger hand's overlap hides: it is
@@ -1574,14 +1573,14 @@ function renderRules(): string {
       <h2>Quick rules</h2>
       <p><b>Goal:</b> knock out all 9 of the rival Hero’s Candles.</p>
       <p><b>Each round:</b> ready everything, draw 2, and you may offer 1 card face-down as an <b>Offering</b>. Offerings pay for cards — any card can be an Offering.</p>
-      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one), or pass. The round ends when both pass in a row.</p>
+      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one; you can still Ambush), or pass. The round ends when both pass in a row. If nobody takes the Lantern, it goes to the other player.</p>
       <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again. The book button opens the story so far: everything that has happened in this game.</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
-      <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first.</p>
+      <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first, paid from your ready Offerings. It doesn’t use up your turn.</p>
       <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
       <p><b>Awaken:</b> when its condition is met, your Hero Awakens — stronger ability, and it can attack.</p>
       <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>

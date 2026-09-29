@@ -5,9 +5,6 @@
   "status": "released",
   "released": "2026-11",
   "starter": true,
-  "requires": [
-    "SB1"
-  ],
   "families": {
     "Aluxes": {
       "colors": [
@@ -30,7 +27,7 @@
         "name": "rain",
         "power": 1,
         "health": 1,
-        "log": "{name} grows in the rain (+{n}/+{n})."
+        "log": "{name} grows in the rain: now +{n}/+{n}."
       },
       "abilities": [
         {

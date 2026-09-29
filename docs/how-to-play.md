@@ -92,4 +92,4 @@ Also:
 
 - [Make an account](account.md) to keep a Collection, build decks and play friends.
 - [Play with friends](friends.md) online, each on your own device.
-- Read the [Rulebook](rulebook.md) for every rule, or the [Card list](starter-box-cards.md) for every card.
+- Read the [Rulebook](rulebook.md) for every rule, or [Card anatomy](card-anatomy.md) for what everything on a card means.

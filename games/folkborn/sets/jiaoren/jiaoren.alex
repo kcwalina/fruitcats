@@ -3,7 +3,8 @@
 name = 'Jiaoren'
 code = 'JR1'
 
-colors = Colors {
+family = Family {
+  name = 'Jiaoren'
   main = '#D9735F'
   dark = '#7A2E2A'
   tint = '#FCE9E3'
@@ -17,6 +18,7 @@ cards = [
   zhu-er = Hero {
     name = 'Zhu''er', epithet = 'the Littlest Jiaoren'
     number = 'JR1-H01', rarity = legendary
+    frame = gold
     art = 'art/JR1-H01-kitten.webp'
     text = @zhu-er-text
     flavor = 'Her name means Little Pearl. She has never cried a tear that wasn''t one.'

@@ -206,7 +206,7 @@ export function afterFailure(opts: { reloaded: boolean; fellBack: boolean; fallb
 /**
  * The site's own files (not built from code) that the game needs: its page, interface art, sounds, icons, the
  * manifest and the card packs it ships with. Not the other pages (the Studio, the Portal, the docs) or their pictures
- * (guide/, studio/, the practice sets' cards), and not the Pawtraits (the sign-in service serves those).
+ * (guide/, studio/, the cards of sets the game isn't built with), and not the Pawtraits (the sign-in service serves those).
  */
 const SHELL_FILES = [
   /^index\.html$/, /^manifest\.webmanifest$/, /^apple-touch-icon\.png$/,

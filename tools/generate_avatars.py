@@ -49,10 +49,9 @@ LEGEND_BACKGROUND = ("Background: a radiant sunburst of warm gold and soft cream
 # Every Legend is drawn from real Hero Cat art, so it matches the game's own look.
 # Each Legend Portrait comes with a card, so it lives in that card's set folder (the site publishes each set's
 # avatars/ at /avatars/, apps/web/vite.config.ts). Everyday Portraits belong to no set and stay in art/avatars/.
-LEGEND_SETS = {
-    "legend-tango": "content/2026/09/starter-box/avatars",
-}
-LEGEND_REFERENCE = "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"
+# (Legend Tango came with the Starter Box, taken out of the game on 2026-09-29; none is drawn today.)
+LEGEND_SETS: dict[str, str] = {}
+LEGEND_REFERENCE = "games/folkborn/sets/domowiki/art/DW1-H01-bigcat.webp"
 
 # id: (subject, background colour or None for a Legend Portrait, reference image for a known character)
 AVATARS = {
@@ -70,10 +69,7 @@ AVATARS = {
     "cantaloupe": ("a Scottish selkie pup: a round soft grey seal with big gentle dark eyes and a little shawl of seaweed", "sea blue-grey", None),
     "peapod": ("a Slavic klobuk house bird spirit: a round fluffy little bird with warm brown feathers and golden-tipped wings, a tiny embroidered collar", "warm straw", None),
     "pumpkin": ("a Chinese dangkang lucky beast: a round cheerful little pig-like creature with two small soft tusks and a golden harvest grain stalk behind its ear", "warm apricot", None),
-    # Legend Portraits: each comes with its Legendary card.
-    "legend-tango": ("Tango, the Mango Bengal: a cream-coloured cat with a few simple grey spots and grey-tipped "
-                     "ears, wearing a bright golden-orange mango hood with a little crown of green palm leaves and a "
-                     "small orange bow at the neck, a proud happy smile", None, "content/2026/09/starter-box/art/illustrations/SB1-H03-bigcat.webp"),
+    # Legend Portraits: each comes with its Legendary card (subject, None, its Hero's art).
 }
 
 

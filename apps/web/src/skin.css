@@ -166,10 +166,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
 .pantry-label b { color: #2f8a46; }
 
 /* Units: mini cards framed in their family colour */
-.fam-citrus { --fam: #f29f05; --fam-dark: #a86400; --fam-tint: #fff1cc; }
-.fam-orchard { --fam: #d64545; --fam-dark: #8e2a2a; --fam-tint: #fbe0da; }
-.fam-garden { --fam: #5fa84d; --fam-dark: #3b7430; --fam-tint: #e3f2dc; }
-.fam-tropical { --fam: #f2780c; --fam-dark: #a24e05; --fam-tint: #ffe6cc; }
 .fam-berry { --fam: #d6336c; --fam-dark: #8f1d46; --fam-tint: #fbdde7; }
 .fam-melon { --fam: #3fa66b; --fam-dark: #25714a; --fam-tint: #ddf3e6; }
 .fam-pepper { --fam: #d7261e; --fam-dark: #5a0e0a; --fam-tint: #ffd6c2; }
@@ -398,13 +394,6 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   background: linear-gradient(color-mix(in srgb, var(--fam) 72%, #3a1a00), var(--fam-dark)); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 /* Tint the heart green rather than replace it: a background here would swap the heart for a square. */
-.hand-card.zest-on::before {
-  content: '🍋 Zest!'; position: absolute; left: 50%; top: -10px; transform: translateX(-50%); z-index: 7;
-  font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; white-space: nowrap; padding: 1px 8px; border-radius: 999px;
-  background: linear-gradient(#ffd23f, #f29f05); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
-  animation: zest-pop 0.9s ease-in-out infinite alternate; pointer-events: none;
-}
-@keyframes zest-pop { to { transform: translateX(-50%) scale(1.08); } }
 .lush-badge {
   font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; padding: 0 8px; border-radius: 999px;
   background: linear-gradient(#7ed08a, #2e8b4a); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
@@ -618,7 +607,7 @@ button:disabled { filter: grayscale(0.6); opacity: 0.55; }
   color: #fff; text-shadow: 0 1px 0 rgba(0, 60, 15, 0.45);
   background: linear-gradient(#6cc47c, var(--pick)); box-shadow: 0 2px 0 var(--pick-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
-.chip.chosen:is(.fam-citrus, .fam-orchard, .fam-tropical, .fam-garden, .fam-domowiki) {
+.chip.chosen.fam-domowiki {
   background: linear-gradient(var(--fam), var(--fam-dark)); box-shadow: 0 2px 0 var(--fam-dark), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 .build-head { background: rgba(255, 250, 240, 0.85); border-radius: 14px; padding: 6px 14px; box-shadow: 0 0 0 1px rgba(120, 70, 20, 0.12); }
@@ -1380,7 +1369,7 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 
 /* ── Home's tiles as cards (2026-09-28) ─────────────────────────────────────────────────────────────
    Each tile is drawn as a card of one of the decks (the owner: the card on Solo "frames the image, and it looks
-   awesome"), laid out as compose_cards.py lays out a real one: the deck's dark colour round an ivory face, a name bar in
+   awesome"), laid out as a real one is (games/folkborn/card-layout.alex): the deck's dark colour round an ivory face, a name bar in
    its main colour with a round badge, an illustration of its folk at the tile's business in the deck's style, a tinted
    type line with a card code, rules text (a keyword line and flavour, or the tile's state) and a footer naming the
    deck. Measured in the card's own width (cqw), so it reads the same at every size. Three to a row upright (3, 3, 2),

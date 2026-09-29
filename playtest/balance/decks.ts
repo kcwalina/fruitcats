@@ -2,7 +2,7 @@
 // with a handful of cards swapped (closer to what players actually build). Both are checked with the same
 // `deckProblems` the deck builder uses, so every generated deck is one a player could make.
 
-import { BEHAVIOURS, CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, catCount, copyLimit, deckProblems, deckSize, isNeutralFamily, type DeckList } from '../lib/engine';
+import { BEHAVIOURS, CARDS, DECKS, DECK_RULES, catCount, copyLimit, deckProblems, deckSize, isNeutralFamily, type DeckList } from '../lib/engine';
 import { pick, pickWeighted, type Rng } from '../lib/rng';
 
 /** Hero Cats that can be played: their Exhaust abilities and Grow Up are implemented (not previews). */
@@ -12,18 +12,18 @@ export function playableHeroes(): string[] {
     .map((c) => c.id);
 }
 
-/** Families that have cards to build with, besides Garden. */
+/** Families that have cards to build with, besides the neutral ones. */
 export function families(): string[] {
   const set = new Set<string>();
-  for (const c of Object.values(CARDS)) if (c.type !== 'Hero Cat' && !c.preview && !c.token && c.family !== NEUTRAL_FAMILY) set.add(c.family);
+  for (const c of Object.values(CARDS)) if (c.type !== 'Hero Cat' && !c.preview && !c.token && !isNeutralFamily(c.family)) set.add(c.family);
   return [...set].sort();
 }
 
 /** The cards a deck led by `hero` may use, with `partner` as its one other family. */
 export function cardPool(hero: string, partner?: string): string[] {
-  const allowed = new Set([CARDS[hero].family, NEUTRAL_FAMILY, ...(partner ? [partner] : [])]);
+  const allowed = new Set([CARDS[hero].family, ...(partner ? [partner] : [])]);
   return Object.values(CARDS)
-    .filter((c) => c.type !== 'Hero Cat' && !c.preview && !c.token && allowed.has(c.family))
+    .filter((c) => c.type !== 'Hero Cat' && !c.preview && !c.token && (allowed.has(c.family) || isNeutralFamily(c.family)))
     .map((c) => c.id);
 }
 
@@ -66,7 +66,7 @@ export function mutateDeck(rng: Rng, base: DeckList, swaps: number, name: string
     if (--deck.cards[out] === 0) delete deck.cards[out];
   }
   const families = new Set(Object.keys(base.cards).map((id) => CARDS[id].family));
-  const partner = [...families].find((f) => f !== CARDS[base.hero].family && f !== NEUTRAL_FAMILY);
+  const partner = [...families].find((f) => f !== CARDS[base.hero].family && !isNeutralFamily(f));
   return fill(deck, cardPool(base.hero, partner), rng);
 }
 
@@ -111,11 +111,11 @@ export function assembleDeck(name: string, hero: string, wish: Record<string, nu
     if (n > 0) cards[id] = (cards[id] ?? 0) + n;
   }
   if (unknown.length) notes.push(`${unknown.length} unknown card${unknown.length === 1 ? '' : 's'} left out (${unknown.slice(0, 3).join(', ')}${unknown.length > 3 ? ', …' : ''})`);
-  // The partner: the other fruit family it asked for most copies of.
+  // The partner: the other family it asked for most copies of.
   const byFamily = new Map<string, number>();
   for (const [id, q] of Object.entries(cards)) {
     const f = CARDS[id].family;
-    if (f !== heroFamily && f !== NEUTRAL_FAMILY && !isNeutralFamily(f)) byFamily.set(f, (byFamily.get(f) ?? 0) + q);
+    if (f !== heroFamily && !isNeutralFamily(f)) byFamily.set(f, (byFamily.get(f) ?? 0) + q);
   }
   const partner = [...byFamily.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
   const dropped = [...byFamily.keys()].filter((f) => f !== partner);

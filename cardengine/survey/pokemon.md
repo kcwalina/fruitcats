@@ -345,6 +345,6 @@ than *paid* from a spent pool: that cuts against both `UnitCard`'s one-cost-one-
 `Cost`/`PayBy` resource model everywhere they are used, so it is not one catalog entry away like most
 of the other gaps. Rough estimate: maybe 20-25% of the real card pool — plain vanilla attackers with
 no attack text, and Item/Supporter cards that only draw, heal, or search — would already fit the
-`effect`/`static`/`condition` machinery in `starter-box-rules.alex` once the attacks-as-data and
+`effect`/`static`/`condition` machinery in `starter-box-rules.alex` (since removed) once the attacks-as-data and
 non-consumed-cost gaps are closed at the framework level; most of the rest leans on Abilities,
 Weakness/Resistance math, and Special Conditions, which need the additional catalog entries above.

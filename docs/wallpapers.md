@@ -4,7 +4,7 @@ Any card in your [Collection](collection.md) can become a wallpaper for your pho
 The whole screen becomes the card, with its border curving along your screen's rounded corners.
 Foil, Gold and Prismatic cards keep their [finish](collection.md#finishes).
 
-<figure class="hero"><img src="guide/wallpapers/lock-screens.webp" alt="Two iPhone Lock Screens: Grapefruit Ferret, and Pippin in a Gold print, each filling the whole screen with the clock over the card's art" loading="lazy"><figcaption>The card fills the whole Lock Screen, right into the corners. Here: Grapefruit Ferret, and Pippin in Gold.</figcaption></figure>
+<figure class="hero"><img src="guide/wallpapers/lock-screens.webp" alt="Two iPhone Lock Screens: Grapefruit Ferret, and Pippin in a Gold print, each filling the whole screen with the clock over the card's art" loading="lazy"><figcaption>The card fills the whole Lock Screen, right into the corners. Here: Grapefruit Ferret, and Pippin in Gold (two cards of the Starter Box, the game's first set, removed on 2026-09-29).</figcaption></figure>
 
 No website or web game is allowed to change your wallpaper by itself, so it takes two steps: Folkborn
 makes the picture, then you set it as your wallpaper.

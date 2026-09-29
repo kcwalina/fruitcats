@@ -286,12 +286,11 @@ button.undo-btn {
 .fchip small { font: 800 12.5px/1 Nunito, sans-serif; color: #7a5a2e; margin-left: 2px; position: relative; top: -1px; }
 .fchip small.done { color: #2f8a46; font-size: 14px; }
 .fchip.chosen small, .fchip.chosen small.done { color: #fff; opacity: 0.9; }
-/* Each family's dot. Citrus is lemon yellow here, so it can't be mistaken for Tropical's mango. */
+/* Each family's dot. */
 .fam-dot {
   --dot: var(--fam); width: 12px; height: 12px; border-radius: 50%; background: var(--dot);
   box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(90, 50, 15, 0.35);
 }
-.fchip.fam-citrus .fam-dot { --dot: #f6c90e; }
 .fchip.chosen .fam-dot { background: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); }
 @media (max-width: 640px) {
   .grid-head { gap: 4px; }
@@ -305,7 +304,7 @@ button.undo-btn {
   .fchip .rarity-mark { font-size: 14px; }
 }
 
-/* Filters that match nothing (Legendary Garden cards, say). */
+/* Filters that match nothing (Legendary Talismans, say). */
 .grid-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 16px; text-align: center; }
 .grid-empty p { margin: 0; font: 700 16px Nunito, sans-serif; color: rgba(255, 255, 255, 0.75); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; }

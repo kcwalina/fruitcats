@@ -3,7 +3,8 @@
 name = 'Aluxes'
 code = 'AL1'
 
-colors = Colors {
+family = Family {
+  name = 'Aluxes'
   main = '#2E8FA3'
   dark = '#1A4D5C'
   tint = '#DCF1F5'
@@ -17,6 +18,7 @@ cards = [
   aluxito = Hero {
     name = 'Aluxito', epithet = 'Keeper of the Milpa'
     number = 'AL1-H01', rarity = legendary
+    frame = gold
     art = 'art/AL1-H01-kitten.webp'
     text = @aluxito-text
     flavor = 'Knee-high and invisible. Every corn stalk in the field is his.'

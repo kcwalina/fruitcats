@@ -15,6 +15,8 @@
 //   node scripts/git/lost-work.mjs <merge-commit>   check one merge
 
 import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 function git(args, cwd) {
@@ -53,6 +55,34 @@ function changes(from, to, cwd) {
 
 const meaningful = (line) => line.trim().length > 0;
 
+/**
+ * Objects read in one `git cat-file` call, by `<rev>:<path>` spec: the file's text (`--batch`), or with `check` only its
+ * object id (`--batch-check`); null when that commit has no such file. One process instead of one per file: on
+ * Windows each git start costs 50-150 ms, and a merge that brings in a busy main touches hundreds of files.
+ */
+function readObjects(specs, cwd, check = false) {
+  const found = new Map();
+  if (!specs.length) return found;
+  const r = spawnSync('git', ['cat-file', check ? '--batch-check' : '--batch'], { cwd, input: `${specs.join('\n')}\n`, maxBuffer: 1 << 30 });
+  if (r.status !== 0) throw new Error(`git cat-file: ${r.stderr.toString().trim()}`);
+  const out = r.stdout;
+  let at = 0;
+  for (const spec of specs) {
+    const eol = out.indexOf(10, at);
+    const header = out.toString('utf8', at, eol);
+    at = eol + 1;
+    const m = /^([0-9a-f]+) \S+ (\d+)$/.exec(header);
+    if (!m) { found.set(spec, null); continue; }  // "<spec> missing", or a path that isn't a file there
+    if (check) { found.set(spec, m[1]); continue; }
+    const size = Number(m[2]);
+    found.set(spec, out.toString('utf8', at, at + size));
+    at += size + 1;
+  }
+  return found;
+}
+
+const trimmedLines = (text) => new Set(text.split('\n').map((l) => l.trim()));
+
 /** What the merge commit `merge` dropped from either parent. */
 export function lostInMerge(merge, cwd = process.cwd()) {
   const parents = git(['rev-list', '--parents', '-n', '1', merge], cwd).trim().split(' ').slice(1);
@@ -61,31 +91,43 @@ export function lostInMerge(merge, cwd = process.cwd()) {
   const base = tryGit(['merge-base', p1, p2], cwd)?.trim();
   if (!base) return [];
   const sides = [[p1, changes(base, p1, cwd)], [p2, changes(base, p2, cwd)]];
-  const findings = [];
-  const contents = new Map();
-  const linesAt = (path) => {
-    if (!contents.has(path)) {
-      const text = tryGit(['show', `${merge}:${path}`], cwd);
-      contents.set(path, text === null ? null : new Set(text.split('\n').map((l) => l.trim())));
+
+  // Every file version the checks below read, fetched up front in two git calls.
+  const texts = [];
+  const ids = [];
+  for (const [i, [side, files]] of sides.entries()) {
+    for (const [path, change] of files) {
+      if (change.binary) {
+        if (!sides[1 - i][1].has(path)) ids.push(`${side}:${path}`, `${merge}:${path}`);
+        continue;
+      }
+      texts.push(`${merge}:${path}`);
+      if (change.deleted.length) texts.push(`${side}:${path}`);
     }
-    return contents.get(path);
+  }
+  const text = readObjects([...new Set(texts)], cwd);
+  const id = readObjects([...new Set(ids)], cwd, true);
+  const lineSets = new Map();
+  const linesOf = (spec) => {
+    if (!lineSets.has(spec)) lineSets.set(spec, text.get(spec) == null ? null : trimmedLines(text.get(spec)));
+    return lineSets.get(spec);
   };
+
+  const findings = [];
   for (const [i, [side, files]] of sides.entries()) {
     const other = sides[1 - i][1];
     for (const [path, change] of files) {
       if (change.binary) {
         if (other.has(path)) continue; // both sides changed it: which one wins is a real decision
-        const inSide = tryGit(['rev-parse', `${side}:${path}`], cwd)?.trim() ?? null;
-        const inMerge = tryGit(['rev-parse', `${merge}:${path}`], cwd)?.trim() ?? null;
-        if (inSide !== inMerge) findings.push({ merge, side, path, kind: 'binary', lines: [] });
+        if (id.get(`${side}:${path}`) !== id.get(`${merge}:${path}`)) findings.push({ merge, side, path, kind: 'binary', lines: [] });
         continue;
       }
-      const result = linesAt(path);
+      const result = linesOf(`${merge}:${path}`);
       const otherAdded = new Set((other.get(path)?.added ?? []).map((l) => l.trim()));
       const lost = change.added.filter(meaningful).filter((l) => result === null || !result.has(l.trim()));
       // A deleted line only counts as back when the file on that side no longer has it anywhere (so it wasn't
       // just moved) and the other side didn't add it itself.
-      const sideLines = change.deleted.length ? new Set((tryGit(['show', `${side}:${path}`], cwd) ?? '').split('\n').map((l) => l.trim())) : new Set();
+      const sideLines = change.deleted.length ? (linesOf(`${side}:${path}`) ?? new Set()) : new Set();
       const back = result === null ? [] : change.deleted.filter(meaningful)
         .filter((l) => result.has(l.trim()) && !sideLines.has(l.trim()) && !otherAdded.has(l.trim()));
       if (lost.length) findings.push({ merge, side, path, kind: result === null ? 'file deleted' : 'lost', lines: lost });
@@ -93,6 +135,25 @@ export function lostInMerge(merge, cwd = process.cwd()) {
     }
   }
   return findings;
+}
+
+/**
+ * The findings for a merge, remembered in the repository's git folder by the merge's commit id: a commit never changes,
+ * so neither does what it dropped. A deploy checks the same merges up to four times (after merging main, in its fresh
+ * process, before the push, and in the pre-push hook), and every later deploy of the branch checks them again.
+ */
+const CACHE_VERSION = 1;
+function cachedLostInMerge(merge, cwd) {
+  const file = join(git(['rev-parse', '--git-common-dir'], cwd).trim().replace(/^(?![A-Za-z]:|\/)/, `${cwd}/`), 'lost-work-cache.json');
+  let cache = {};
+  try { cache = JSON.parse(readFileSync(file, 'utf8')); } catch { /* none yet, or unreadable: start over */ }
+  if (cache.version !== CACHE_VERSION) cache = { version: CACHE_VERSION, merges: {} };
+  const sha = git(['rev-parse', merge], cwd).trim();
+  if (!cache.merges[sha]) {
+    cache.merges[sha] = lostInMerge(sha, cwd);
+    try { writeFileSync(file, JSON.stringify(cache)); } catch { /* read-only: just don't remember */ }
+  }
+  return cache.merges[sha];
 }
 
 /** Findings for every merge in `range` (a `from..to` range or a single merge), skipping merges that say why. */
@@ -103,7 +164,7 @@ export function lostInRange(range, cwd = process.cwd()) {
   const findings = [];
   const excused = [];
   for (const merge of merges) {
-    const found = lostInMerge(merge, cwd);
+    const found = cachedLostInMerge(merge, cwd);
     if (!found.length) continue;
     const reason = /^Lost-on-purpose:\s*(.+)$/m.exec(git(['log', '-1', '--format=%B', merge], cwd))?.[1];
     if (reason) excused.push({ merge, reason, count: found.length });

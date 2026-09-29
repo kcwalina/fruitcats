@@ -1,6 +1,6 @@
 """Turn a set's art brief (art/brief.json) into the Markdown brief sent to the artist.
 
-    python tools/brief_to_markdown.py content/2026/12/berry-picnic docs/art-brief-berry-picnic.md
+    python tools/brief_to_markdown.py content/2026/12/mochi docs/art-brief-mochi.md
 
 The JSON is the source (the Artist Studio reads it too); re-run this after changing it.
 """
@@ -60,8 +60,7 @@ def main() -> int:
           f"| Tokens | {counts.get('token', 0)} |", f"| Pawtraits (512 × 512) | {counts.get('pawtrait', 0)} |",
           f"| Announcement key art (2400 × 1260) | {counts.get('announcement', 0)} |",
           f"| **Total pictures** | **{len(brief['pictures'])}** |", "",
-          "Card pictures and tokens are **1536 × 1024**, landscape. Save every picture as WebP with the file name below.",
-          "The deck also uses 14 Garden cards that are already drawn: nothing to draw for them.", ""]
+          "Card pictures and tokens are **1536 × 1024**, landscape. Save every picture as WebP with the file name below.", ""]
     for m in brief["milestones"]:
         pics = [p for p in brief["pictures"] if p["milestone"] == m["id"]]
         L += [f"## Milestone {m['id']}: {m['title']}", "", m["note"], ""]

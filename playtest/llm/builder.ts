@@ -1,10 +1,10 @@
-// deck-build --goal <words…> [--hero SB1-H03] [--vs DECK[,DECK…]] [--candidates 3] [--rounds 2] [--games 40]
+// deck-build --goal <words…> [--hero DW1-H01] [--vs DECK[,DECK…]] [--candidates 3] [--rounds 2] [--games 40]
 //            [--provider pc2024|fireworks-k3] [--model M] [--max-usd 1] [--save] [--key KEY]
 //
 // PC2024's gpt-oss is free and runs from the dashboard; fireworks-k3 (Kimi K3, about $0.20-0.40 a build) is
 // for a build worth a frontier model, run from the laptop that has the key. A paid build stops at --max-usd.
 //
-// An LLM builds a deck for a goal: "an aggressive Citrus deck", "beat Orchard Guard", "a fun deck for a
+// An LLM builds a deck for a goal: "an aggressive Pari deck", "beat the Aluxes", "a fun deck for a
 // beginner". It designs a few candidates under the real deckbuilding rules (checked with the deck builder's
 // own deckProblems), the bots play each against the opponents (`--vs`, the starters by default), the LLM sees
 // the numbers and builds better versions, and at the end it picks the one that fits the goal best (not always

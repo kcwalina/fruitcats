@@ -1,5 +1,6 @@
 import { describe as suite, expect, it } from 'vitest';
 import { apply, chooseAction, createGame, describe, listChoices, other, parseChoice, type GameState, type PlayerId } from '../src/index';
+import TERMS from '../src/terms.json';
 
 function rng(seed: number) {
   return () => {
@@ -10,7 +11,7 @@ function rng(seed: number) {
 
 /** Every decision of a few bot games, with the state it was taken in. */
 function* decisions(games: number): Generator<GameState> {
-  const keys = ['zest-rush', 'orchard-guard', 'mango-tango'];
+  const keys = ['domowiki', 'pari', 'aluxes'];
   for (let g = 0; g < games; g++) {
     const s = createGame({ decks: [keys[g % 3], keys[(g + 1) % 3]], seed: 700 + g });
     const r = rng(g + 1);
@@ -46,7 +47,7 @@ suite('text interface', () => {
   });
 
   it('reads the choice out of a reply that reasons first', () => {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 1 });
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 1 });
     while (s.prompt!.kind !== 'action') apply(s, chooseAction(s, { random: rng(1) }));
     const n = listChoices(s).options.length;
     expect(parseChoice(s, `Round 1 with 2 Treats, so I'll pass.\nAnswer: ${n}`)).toEqual({ action: listChoices(s).options[n - 1].action });
@@ -62,7 +63,7 @@ suite('text interface', () => {
       const seat = s.prompt!.player as PlayerId;
       const t = structuredClone(s);
       const foe = t.players[other(seat)];
-      const swap = (c: { id: string }) => { c.id = c.id === 'SB1-G01' ? 'SB1-G03' : 'SB1-G01'; };
+      const swap = (c: { id: string }) => { c.id = c.id === 'DW1-D16' ? 'PR1-D09' : 'DW1-D16'; };
       foe.hand.forEach(swap);
       foe.pantry.forEach((tr) => swap(tr.card));
       for (const pl of t.players) { pl.deck.forEach(swap); pl.lives.forEach(swap); }
@@ -70,5 +71,54 @@ suite('text interface', () => {
       compared++;
     }
     expect(compared).toBeGreaterThan(100);
+  });
+});
+
+suite("the game's words", () => {
+  // The Story drawer shows the log and the LLM players read the choices: both said "Life" for a Candle until 2026-09-29.
+  it("the log, the questions and the choices use players' words, never the retired ones", () => {
+    const retired = [...(TERMS.retired as string[]), 'Life'];
+    const decks = ['domowiki', 'pari', 'aluxes', 'jiaoren', 'hui-hai'];
+    const seen = new Set<string>();
+    for (let g = 0; g < decks.length; g++) {
+      const s = createGame({ decks: [decks[g], decks[(g + 1) % decks.length]], seed: 900 + g });
+      const r = rng(g + 7);
+      while (s.winner === null) {
+        const c = listChoices(s);
+        seen.add(c.question);
+        for (const o of c.options) seen.add(o.label);
+        apply(s, chooseAction(s, { random: r }));
+      }
+      for (const line of s.log) seen.add(line.text);
+    }
+    const bad = [...seen].filter((t) => retired.some((w) => new RegExp(`\\b${w}\\b`).test(t)));
+    expect(bad).toEqual([]);
+  });
+});
+
+suite('what a play says about arriving', () => {
+  // Pari at the Pool ("Company: enters ready") was labelled "arrives exhausted" even when it came in ready.
+  it('says a unit arrives ready exactly when it does', () => {
+    const decks = ['pari', 'domowiki', 'aluxes', 'jiaoren', 'hui-hai'];
+    let checked = 0;
+    for (let g = 0; g < 10; g++) {
+      const s = createGame({ decks: [decks[g % 5], decks[(g + 2) % 5]], seed: 1300 + g });
+      const r = rng(g + 3);
+      while (s.winner === null) {
+        const seat = s.prompt!.player;
+        for (const o of listChoices(s, { detail: true }).options) {
+          if (o.action.t !== 'play' || !/ arrives (ready|exhausted)/.test(o.label)) continue;
+          const w = structuredClone(s);
+          apply(w, o.action);
+          while (w.prompt?.kind === 'pounce' && w.prompt.player !== seat) apply(w, { t: 'decline' });
+          const unit = w.players[seat].yard.find((u) => u.uid === (o.action as { uid: number }).uid);
+          if (!unit) continue;
+          expect(o.label.includes(' arrives ready'), o.label).toBe(!unit.exhausted);
+          checked++;
+        }
+        apply(s, chooseAction(s, { random: r }));
+      }
+    }
+    expect(checked).toBeGreaterThan(100);
   });
 });

@@ -1,16 +1,15 @@
 # Fruitcats
 
-A trading card game about fruit-themed cats and their cute critter crews. Easy to learn, built for competitive play, and designed from day one to be playtested by bots and LLM agents.
+Folkborn, a trading card game about folk creatures from around the world. Easy to learn, built for competitive play, and designed from day one to be playtested by bots and LLM agents.
 
 ## Docs
 
 - [Rulebook](docs/rulebook.md) — how to play, tournament rules, comprehensive rules
-- [Starter Box card list](docs/starter-box-cards.md) — three ready-to-play 50-card decks, including Mango Tango led by Tango
+- [Domowiki set](docs/domowiki-set.md) — the starter set: the Domowiki deck every player has
 - [Design notes](docs/design-notes.md) — research, rationale, and balance hypotheses to test
-- [Starter Box card images](content/2026/09/starter-box/art/cards/README.md) — every card, rendered
 - [Designing a good deck](docs/designing-good-deck.md) — how to make a folklore deck: research, the hero, a varied cast, proven rules, art, checks
 - [Folk creatures](docs/folk-creatures.md) — the creatures chosen for the coming decks, one per continent
-- [Artist guide](docs/artist-guide.md) — what art a new deck needs, for the artists who draw it; with an [art brief template](docs/art-brief-template.md) and the [Berry Picnic brief](docs/art-brief-berry-picnic.md)
+- [Artist guide](docs/artist-guide.md) — what art a new deck needs, for the artists who draw it; with an [art brief template](docs/art-brief-template.md)
 
 ## Play it
 
@@ -34,17 +33,19 @@ npm run dev        # http://localhost:5173 — play against the AI
   [docs/card-data-architecture.md](docs/card-data-architecture.md)
 - `content/…/<set>/art/prompts.json` — each set's art direction: its style plus one subject per illustration
   (`art/prompts.json` holds the interface art)
-- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into the set's `art/illustrations/`
-- `tools/compose_cards.py` — composes finished cards (frame, name, cost, rules text, stats) into the set's `art/cards/`; the build publishes each set's art at `/<set>/` and
-  `/cards/<set>/`, and its announcement at `/announcements/<set-folder>/`
+- `tools/generate_art.py` — draws text-free illustrations with Azure OpenAI `gpt-image-1-mini` (auth: `az login`) into the set's `games/folkborn/sets/<set>/art/`
+- `games/folkborn/sets/<set>/<set>.alex` — each set's cards as printed. `tcg` (`cardengine/tcg`) renders the finished
+  cards from them and `games/folkborn/card-layout.alex` (`npm run cards`, into `out/cards/<set>/`); `npm run publish-pack`
+  renders them (and the Artist Studio's frames) when it publishes a set. The build publishes each set's art at `/<set>/`
+  and `/cards/<set>/`, and its announcement at `/announcements/<set-folder>/`
 - `art/ui/stat-paw.svg`, `stat-heart.svg` — the Power and Health icons (Phosphor Icons, MIT), with PNG masks beside
   them for the Python tools; cards, wallpapers and the game draw them as small chips in the family's tint
 - `tools/make_icons.py` — cuts the home-screen, PWA, maskable and favicon icons from `art/ui/app-icon.webp`
 
 ```bash
-python tools/generate_art.py          # only draws cards that have no art yet
-python tools/generate_art.py --ui     # interface art: backgrounds, card back, icons
-python tools/compose_cards.py         # re-run after any card data change; no redraw needed
+python tools/generate_art.py --set dw1   # only draws cards that have no art yet
+python tools/generate_art.py --ui        # interface art: backgrounds, card back, icons
+npm run cards                            # re-render after any card change; no redraw needed
 ```
 
 ## Roadmap

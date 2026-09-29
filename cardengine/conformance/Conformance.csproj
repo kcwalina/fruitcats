@@ -2,8 +2,8 @@
 
   <!-- The Alex conformance check: parses every .alex file with the C# Alex (mochi.agents/alex, referenced as source
        from the mochi repository checked out beside this one, as kardix does) and with the engine's WebAssembly module
-       (cardengine/engine, run through Wasmtime), and compares their canonical dumps byte for byte. It is also the
-       first C# host of that module: how kardix.exe will run it. -->
+       (cardengine/engine, run through kardix's host, Kardix.Core), and compares their canonical dumps byte for byte,
+       parses and bindings both. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -25,7 +25,8 @@
     <ProjectReference Include="$(AlexSrc)/Alex.Model/ViaMochi.Alex.Model.csproj" />
     <!-- The card engine's host, as mochi's own tests bind with it: the vocabulary rule bodies are checked against. -->
     <Compile Include="$(AlexSrc)/../tests/Alex.Tests/CardEngineHost.cs" Link="CardEngineHost.cs" />
-    <PackageReference Include="Wasmtime" Version="48.0.2" />
+    <!-- kardix's host for the core (Kardix.Core), which runs the module through Wasmtime. -->
+    <ProjectReference Include="../kardix/Kardix.csproj" />
   </ItemGroup>
 
 </Project>

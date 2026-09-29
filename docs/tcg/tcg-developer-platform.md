@@ -596,12 +596,22 @@ identical), and `dotnet build -c Release` in `cardengine/kardix`, whose project 
 
 0. **Rename first** (see "Products and names", "Renaming in the code"). *Done 2026-09-29.*
 1. Move `EngineModule` (the Wasmtime host) from `cardengine/conformance` into `kardix`, and embed
-   `kardix.wasm` as a resource.
-2. `kardix check` runs through the core.
+   `kardix.wasm` as a resource. *Done 2026-09-29:* `cardengine/kardix/Core.cs`; `Kardix.csproj` builds the core
+   with cargo before compiling and embeds it; the conformance project runs the core through it.
+2. `kardix check` runs through the core. *Done 2026-09-29:* it prints each problem as `file(line,column): error:
+   message` and exits 1 on an error.
 3. **Publish `kardix.exe` as NativeAOT, trimmed and single-file on Windows, with Wasmtime's native
    library inside it.** This is the unproven piece of the design; if Wasmtime's .NET package won't
    go single-file, decide between a second file beside the exe and another host.
    *Done when* a fresh machine with nothing installed runs `kardix check` on `games/folkborn`.
+   *Tried 2026-09-29:* `dotnet publish -c Release -r win-arm64 -p:PublishAot=true` (with Visual Studio's C++ tools, and
+   `vswhere.exe` on the path) makes a 4.2 MB native `kardix.exe` that runs `kardix check` on `games/folkborn` with no
+   .NET installed. Wasmtime's .NET package produces trim and AOT analysis warnings but works. What NativeAOT cannot
+   do is put native libraries inside the exe, so two stay beside it: `wasmtime.dll` (17 MB) and `libSkiaSharp.dll`
+   (10 MB; it goes when the core draws cards, Stage 4). The choice the plan left open: ship the exe with
+   `wasmtime.dll` beside it (works today), or link Wasmtime into the exe statically (its C API's static library with
+   NativeAOT's `DirectPInvoke` and `NativeLibrary`, which needs that library downloaded from Wasmtime's releases and
+   is not tried yet).
 
 ### Stage 3: `kardix studio`, read-only
 

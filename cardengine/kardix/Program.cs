@@ -4,6 +4,11 @@ using ViaMochi.Alex.Model;
 
 // kardix: the Kardix platform's command-line tool.
 //
+//   kardix check [--project <folder>]
+//
+// Loads the project with the core and prints what is wrong with it, one line per problem: file(line,column): error:
+// message. Exits 1 when there is an error.
+//
 //   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]
 //
 // Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
@@ -15,20 +20,62 @@ try
 {
     if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     {
+        Console.WriteLine("kardix check [--project <folder>]");
         Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]");
         return 0;
     }
 
     return args[0] switch
     {
+        "check" => Check(args[1..]),
         "cards" => Cards(args[1..]),
-        _ => throw new KardixException($"kardix doesn't know the command '{args[0]}'. Try: kardix cards"),
+        _ => throw new KardixException($"kardix doesn't know the command '{args[0]}'. Try: kardix check, kardix cards"),
     };
 }
 catch (KardixException e)
 {
     Console.Error.WriteLine("kardix: " + e.Message);
     return 1;
+}
+
+static int Check(string[] args)
+{
+    string projectDir = Directory.GetCurrentDirectory();
+    for (int i = 0; i < args.Length; i++)
+    {
+        switch (args[i])
+        {
+            case "--project" when i + 1 < args.Length: projectDir = args[++i]; break;
+            default: throw new KardixException($"kardix check doesn't take '{args[i]}'.");
+        }
+    }
+
+    string root = Path.GetFullPath(projectDir);
+    if (!Directory.Exists(root)) { throw new KardixException($"There is no folder {projectDir}."); }
+    List<(string Path, byte[] Bytes)> files = new();
+    foreach (string path in Directory.EnumerateFiles(root, "*.alex", SearchOption.AllDirectories))
+    {
+        string relative = Path.GetRelativePath(root, path);
+        if (relative.Split(Path.DirectorySeparatorChar).Any(p => p is "node_modules" or "bin" or "obj" or ".git")) { continue; }
+        files.Add((relative.Replace(Path.DirectorySeparatorChar, '/'), File.ReadAllBytes(path)));
+    }
+
+    files.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
+    using Core core = Core.Load();
+    using CoreProject project = core.LoadProject(files);
+    using System.Text.Json.JsonDocument diagnostics = System.Text.Json.JsonDocument.Parse(project.Query("diagnostics"));
+    int errors = 0;
+    foreach (System.Text.Json.JsonElement d in diagnostics.RootElement.EnumerateArray())
+    {
+        string file = d.GetProperty("file").GetString() ?? string.Empty;
+        string severity = d.GetProperty("severity").GetString() ?? "error";
+        string where = file.Length == 0 ? string.Empty : $"{file}({d.GetProperty("line").GetInt32()},{d.GetProperty("column").GetInt32()}): ";
+        Console.WriteLine(where + severity + ": " + d.GetProperty("message").GetString());
+        if (severity == "error") { errors++; }
+    }
+
+    Console.WriteLine(errors == 0 ? $"{files.Count} files, no errors." : $"{files.Count} files, {errors} error{(errors == 1 ? "" : "s")}.");
+    return errors == 0 ? 0 : 1;
 }
 
 static int Cards(string[] args)

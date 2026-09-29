@@ -64,6 +64,35 @@ internal sealed class BoundDump
         return dump._out.ToString();
     }
 
+    /// <summary>The input of the core's <c>alex_bind_dump</c> for the same binding (<c>cardengine/engine/src/abi.rs</c>).</summary>
+    public static byte[] CoreInput(IReadOnlyList<Source> sources, bool kinds, string? game)
+    {
+        using MemoryStream input = new();
+        using (BinaryWriter writer = new(input, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(game is not null ? 2u : kinds ? 1u : 0u);
+            if (game is not null)
+            {
+                byte[] gameName = Encoding.UTF8.GetBytes(game);
+                writer.Write((uint)gameName.Length);
+                writer.Write(gameName);
+            }
+
+            writer.Write((uint)sources.Count);
+            foreach (Source source in sources)
+            {
+                byte[] name = Encoding.UTF8.GetBytes(source.Name);
+                writer.Write((uint)source.Role);
+                writer.Write((uint)name.Length);
+                writer.Write(name);
+                writer.Write((uint)source.Bytes.Length);
+                writer.Write(source.Bytes);
+            }
+        }
+
+        return input.ToArray();
+    }
+
     private sealed class KindsHost : AlexHost
     {
         public static readonly KindsHost Instance = new();

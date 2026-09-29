@@ -57,7 +57,7 @@ for (int i = 0; i < files.Count; i++)
 }
 
 Stopwatch load = Stopwatch.StartNew();
-using EngineModule module = EngineModule.Load(wasm);
+using Kardix.Core module = Kardix.Core.Load(wasm);
 load.Stop();
 Console.WriteLine($"module   {new FileInfo(wasm).Length / 1024.0:F1} KB, compiled and instantiated in {load.Elapsed.TotalMilliseconds:F1} ms");
 Console.WriteLine($"corpus   {files.Count} .alex files, {totalBytes / 1024.0:F1} KB, from {string.Join(", ", roots)}");
@@ -141,7 +141,7 @@ int bindMismatches = 0;
 void CompareBinding(string label, IReadOnlyList<BoundDump.Source> group, bool kinds, string? game = null)
 {
     string expected = BoundDump.Dump(group, kinds, game);
-    string actual = module.BindDump(group, kinds, game);
+    string actual = module.BindDump(BoundDump.CoreInput(group, kinds, game));
     bindCompared++;
     if (Environment.GetEnvironmentVariable("ALEX_KEEP_BOUND") is { } keep) { Directory.CreateDirectory(keep); File.WriteAllText(Path.Combine(keep, label.Replace('/', '_').Replace(Path.DirectorySeparatorChar, '_') + ".txt"), actual); }
     if (expected == actual) { return; }

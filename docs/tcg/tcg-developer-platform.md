@@ -145,6 +145,24 @@ my-game/
   AGENTS.md           for Claude, Codex and other agents: the spec, the commands, the conventions
 ```
 
+**One source for every number.** Rulebooks and games drift apart most often over numbers. So a
+game names the numbers that shape it in one place, `numbers = [starting-life = 10, ...]` on
+`Game`; rules take them (`LifeCounter { start = @starting-life }`) and rulebook text embeds them
+(`Each player starts with {@starting-life} Life.`). `tcg rulebook` fills them in, and `tcg check`
+reports an unknown name in text and notes digits written straight into rulebook text. Named
+numbers are also the knobs a playtest can vary. Needs: `Game.numbers: [text: int]`, rule fields
+that accept a number reference, and `{@name}` in rulebook text. Next, the same for card text:
+Spark's printed "Deal 2 damage" and its handler's `damage-life(2)` are two copies of one number;
+an ability should carry its numbers, used by both the printed text and the handler.
+
+**How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
+holds one value, of the type its `#type` directive names; the file's name is its name
+(`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game`, and everything joins it by
+reference: `rulebook = @rulebook`, `sets = [...]` (a set not listed is not in the game), and each
+`Rules` document's `for = @set` (the set never names its rules file: code points at data). The
+loader gathers the rules documents of the game's sets and checks abilities and handlers both
+ways. Assets are referred to by their path in the folder.
+
 **The rulebook is source.** Its sections are Alex, and every rule cites the section that explains
 it (`cites = @rulebook.combat`). The checker looks both ways, as the linker already does for
 cards and their handlers: a citation of a missing section is an error; a rule with no citation,
@@ -264,6 +282,36 @@ the core and libraries (seven new libraries, among them `scenarios`, `objectives
 - The `scenarios` library: `hand`, `deck`, `controls`, `counter-is` to set up; `play`
   (with `target:`), `attack`, `pass` to act; `in-zone`, `power`, `life`, `winner` to assert.
 - `Card.art: text?`, an asset reference.
+
+Core changes the owner asked for on 2026-09-28, from reading the walkthrough:
+
+- **`core = '1'` becomes `engine-version = 1`** on `Game`: readable, and a number. Sets take the
+  game's engine version and don't repeat it.
+- **No repeated names.** A game's card types are the types it declares (`type Creature :
+  UnitCard {}`); the `types = [Creature = CardType { name = nameof(Creature) }]` list goes. A
+  record under a key in a keyed map takes its `name` from the key (`Deck = Zone { role = deck }`),
+  unless it gives its own. The keyed map is already the "enum of records"; repeating each key as
+  a name was the noise.
+- **Defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to `empty`, and
+  `players` to `Players {}` (two players), so a new game file doesn't list empty fields.
+
+An Alex change the owner asked for on 2026-09-28: **a file says what it is with a directive, not
+a named variable.** Today a file starts `hello-tcg = Game`, a name that only repeats the file
+name and means nothing. Instead, directives at the top of a file declare things about the whole
+file, as `using` does in C#. The first is `#type`:
+
+```
+#type Game
+
+name = 'Hello TCG'
+```
+
+The fields that follow belong to the file's value. Other files refer to it by its file name
+(`@rulebook`, `@base-set.friend`), and the engine finds the game by type: a folder has exactly one
+`Game`. `#` starts a directive only when a word follows it with no space: the retired hash
+dialect's headers were `# name`, with a space, so the two can't be confused. The named form stays
+legal for other projects that use Alex until nothing needs it. To settle in the Alex spec: how a
+text table fills one of the file's own fields (today `@@@ root-name.field`).
 
 Still open: **a heading per rulebook section.** The walkthrough writes `Section { number, title,
 text }`; the core's `Section` has no `title` yet. Asked of the TCG Alex session.

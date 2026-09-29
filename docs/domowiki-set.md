@@ -2,8 +2,8 @@
 
 Fruitcats is being re-themed: each deck is a family of creatures from folk mythology somewhere in the world, and
 comes with a little about the creature and the culture it's from. Domowiki are the first, and the starter deck
-everyone has. The Starter Box's three fruit-cat decks stay in the game data, but are no longer in anyone's
-collection: they're in the Store, free, for anyone who wants them.
+everyone has. The Starter Box's three fruit-cat decks were first kept in the Store, free; the owner removed the
+Starter Box from the game completely on 2026-09-29.
 
 Status: released (2026-10), data in `content/2026/10/domowiki/set.json`. Last updated 2026-09-26. How to make the
 next deck like this one: [designing-good-deck.md](designing-good-deck.md).
@@ -27,13 +27,13 @@ Source: [Wikipedia, Domovoy](https://en.wikipedia.org/wiki/Domovoy).
 
 ## How it plays
 
-The deck is the Mango Tango deck, card for card: the same costs, stats and rules, re-themed. Mango Tango is the
-proven, balanced ramp deck (extra Treats early, big units late), and feeding the house spirit is exactly that
-fantasy: offerings (Treats) now, and the big spirits wake once the house is **Well-Fed**.
+The deck was copied from Mango Tango, a deck of the Starter Box (removed 2026-09-29), card for card: the same costs,
+stats and rules, re-themed. Mango Tango was the proven, balanced ramp deck (extra Treats early, big units late), and
+feeding the house spirit is exactly that fantasy: offerings (Treats) now, and the big spirits wake once the house is **Well-Fed**.
 
-- **Well-Fed** (the family's condition, like Lush): while you have 7 or more Treats. Badge: 🍞.
-- **Sprout** is the Starter Box's action (put cards from the top of your deck into your Treats), so the set
-  `requires` SB1.
+- **Well-Fed** (the family's condition, like Mango Tango's Lush): while you have 7 or more Offerings. Badge: 🍞.
+- **Sprout** (put cards from the top of your deck into your Offerings) came from the Starter Box. Since the Starter
+  Box was removed, it is defined in this set's `mechanics`, and the set needs no other set.
 - Gameplay that follows the folklore more closely (angry Domowiki, moving house, the warm or cold hand) can come
   later, as the deck is tuned; nothing here needs engine code.
 
@@ -66,7 +66,7 @@ rule, 2026-09-26: lore-based variety, like *Domowik in a Cat's Shape*).
 
 ## The deck (50 cards)
 
-| ID | Name | Type | Cost | P/H | Text | Qty | Was |
+| ID | Name | Type | Cost | P/H | Text | Qty | Was (Mango Tango) |
 |---|---|---|---|---|---|---|---|
 | DW1-D01 | Stove Keeper | Critter | 1 | 1/2 | Hello: Ready one of your Treats. | 3 | Banana Monkey |
 | DW1-D02 | Moving-Day Domowik | Critter | 1 | 1/1 | Hello: Sprout 1. | 3 | Kiwi Bird |
@@ -110,12 +110,13 @@ small old man in a rust-red cap. (The first art, a violet night with glowing bok
 
 Direction and one scene per card in `art/prompts.json`; drawn with `tools/generate_art.py --set dw1 --model gpt-image-2
 --quality high --fidelity high --reference <the church painting, frame cropped off>` and composed with
-`tools/compose_cards.py --set dw1`. What made it work: one reference at a time (three at once were averaged into a
+`tools/compose_cards.py`, since retired (tcg renders the cards now, from `games/folkborn/sets/<set>/<set>.alex`: `npm run cards`). What made it work: one reference at a time (three at once were averaged into a
 blander style), a short lead that points at the reference instead of describing a style in words, and asking for its
 colour outright (without that the model painted it nearly monochrome).
 
-## The old decks, in the Store
+## The old decks, in the Store (until 2026-09-29)
 
-Zest Rush, Orchard Guard and Mango Tango each have `"price": 0` in the Starter Box's set.json. The Store shows them
-with a **Get · Free** button: no cart and no checkout, so it works while buying is off. The API grants the cards
-(`POST /v1/store/get`, order status `free`), and only for a deck whose price is 0.
+Zest Rush, Orchard Guard and Mango Tango each had `"price": 0` in the Starter Box's set.json. The Store showed them
+with a **Get · Free** button: no cart and no checkout, so it worked while buying was off. The API grants the cards
+(`POST /v1/store/get`, order status `free`), and only for a deck whose price is 0. The owner removed the Starter Box,
+and with it these decks, on 2026-09-29.

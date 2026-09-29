@@ -1,6 +1,6 @@
-// The cards a player has: the starter decks added together (so Garden cards, which are in all three, come in
-// plenty), plus what their Via Mochi account bought in the Store (shop.ts). The deck builder only ever asks through
-// these functions.
+// The cards a player has: the starter decks added together, plus what their Via Mochi account bought in the Store
+// (shop.ts). The deck builder only ever asks through these functions. A card the account was given from a set since
+// taken out of the game (the Starter Box) isn't in the catalog, so it's never listed: these functions ask by card.
 
 import { CARDS, SETS } from '@fruitcats/engine';
 import { starterCollection } from '@fruitcats/store';
@@ -36,7 +36,7 @@ export function ownedCards(): string[] {
 export type Finish = 'standard' | 'foil' | 'gold' | 'prismatic' | 'signature';
 export const FINISH_NAMES: Record<Finish, string> = { standard: 'Standard', foil: 'Foil', gold: 'Gold', prismatic: 'Prismatic', signature: 'Signature' };
 
-const FINISHES: Record<string, Finish> = { 'SB1-H01': 'foil', 'SB1-H02': 'gold', 'SB1-H03': 'prismatic', 'DW1-H01': 'gold', 'PR1-H01': 'gold' };
+const FINISHES: Record<string, Finish> = { 'DW1-H01': 'gold', 'PR1-H01': 'gold' };
 
 /** The finest finish the player has a card in. */
 export function finish(id: string): Finish {

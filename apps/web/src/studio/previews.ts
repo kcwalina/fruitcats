@@ -1,7 +1,7 @@
 // The artist's picture where players will see it. Every preview uses the game's own pieces, so it shows the real
 // thing, not an imitation of it:
-//  - on the card: the card's frame from tools/compose_cards.py --frames, with the picture in its see-through window
-//    (stretched to 666 × 444 there, exactly as compose_cards.py does);
+//  - on the card: the card's frame as tcg draws it for the Studio (content/tcg.ts), with the picture in its
+//    see-through window (stretched to 666 × 444 there, as the card's art box in games/folkborn/card-layout.alex);
 //  - in the game: the board's unit and hero tiles, at their sizes in apps/web/src/style.css;
 //  - as a wallpaper: the game's own wallpaper maker (src/wallpaper.ts).
 
@@ -11,7 +11,7 @@ import { renderWallpaper, type Device } from '../wallpaper';
 import type { Finish } from '../collection';
 import type { BriefPicture } from './brief';
 
-/** The card's picture window, as fractions of the 750 × 1050 card (compose_cards.py ART_BOX). */
+/** The card's picture window, as fractions of the 750 × 1050 card (the art box in games/folkborn/card-layout.alex). */
 const ART = { left: 42 / 750, top: 138 / 1050, width: 666 / 750, height: 444 / 1050 };
 
 /**
@@ -26,7 +26,7 @@ export function finishesOf(p: BriefPicture): { finish: string; label: string }[]
   return list;
 }
 
-/** Frame colours an artist may choose (compose_cards.py PALETTES): the name, and the colours shown on its swatch. */
+/** Frame colours an artist may choose (the frames in games/folkborn/card-layout.alex): the name, and the colours shown on its swatch. */
 export const PALETTES: [string, string, string][] = [
   ['midnight', '#2B3A55', '#141C2B'], ['sky', '#3B82C4', '#1D4A78'], ['violet', '#4A2F7A', '#1E1236'], ['berry', '#D6336C', '#8F1D46'],
   ['orchard', '#D64545', '#8E2A2A'], ['pepper', '#D7261E', '#5A0E0A'], ['tropical', '#F2780C', '#A24E05'], ['citrus', '#F29F05', '#A86400'],

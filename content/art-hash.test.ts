@@ -19,30 +19,7 @@ function setFolder(files: Record<string, string>): string {
 }
 afterEach(() => { for (const root of made.splice(0)) rmSync(root, { recursive: true, force: true }); });
 
-describe('a set\'s art fingerprint', () => {
-  it('lists illustrations and finished cards, in every finish, in a fixed order', () => {
-    const root = setFolder({
-      'art/cards/foil/X1-D01.webp': 'f', 'art/cards/X1-D01.webp': 'c', 'art/illustrations/X1-D01.webp': 'i',
-      'art/prompts.json': 'not art', 'set.json': '{}',
-    });
-    expect(artFiles(root)).toEqual(['art/cards/X1-D01.webp', 'art/cards/foil/X1-D01.webp', 'art/illustrations/X1-D01.webp']);
-  });
-
-  it('is the same for the same art, and changes with any file, byte or name', () => {
-    const files = { 'art/illustrations/X1-D01.webp': 'abc', 'art/cards/X1-D01.webp': 'card' };
-    const a = artHash(setFolder(files));
-    expect(a).toBe(artHash(setFolder(files)));
-    expect(artHash(setFolder({ ...files, 'art/cards/X1-D01.webp': 'carD' }))).not.toBe(a);
-    expect(artHash(setFolder({ ...files, 'art/cards/gold/X1-D01.webp': 'g' }))).not.toBe(a);
-    expect(artHash(setFolder({ 'art/illustrations/X1-D02.webp': 'abc', 'art/cards/X1-D01.webp': 'card' }))).not.toBe(a);
-  });
-
-  it('is null for a set with no art, so there is nothing to publish or check', () => {
-    expect(artHash(setFolder({ 'set.json': '{}' }))).toBeNull();
-  });
-});
-
-// A set whose cards tcg renders (content/tcg.ts): the game folder defines its cards (sets/x/x.alex) and holds their
+// A set as tcg renders it (content/tcg.ts): the game folder defines its cards (sets/x/x.alex) and holds their
 // paintings (sets/x/art/); its folder in content/ may hold other pictures; its finished cards are build output.
 function tcgSet(game: Record<string, string>, content: Record<string, string> = {}): [string, string] {
   const root = setFolder({ 'game/folkborn.alex': '#type Game\n', ...Object.fromEntries(Object.entries(game).map(([p, t]) => [`game/sets/x/${p}`, t])),
@@ -50,12 +27,24 @@ function tcgSet(game: Record<string, string>, content: Record<string, string> = 
   return [join(root, 'content', 'x'), join(root, 'game')];
 }
 
-describe('the art fingerprint of a set tcg renders', () => {
+describe('a set\'s art fingerprint', () => {
   const sources = { 'x.alex': "#type Set\n\nname = 'X'\n", 'art/X1-D01.webp': 'painting' };
 
   it('publishes its card paintings and its other pictures together, and never finished cards', () => {
     const [root, game] = tcgSet(sources, { 'art/illustrations/X1-banner.webp': 'banner', 'art/cards/X1-D01.webp': 'old card' });
     expect(artFiles(root, game)).toEqual(['art/illustrations/X1-D01.webp', 'art/illustrations/X1-banner.webp']);
+  });
+
+  it('is the same for the same art, and changes with any picture: its bytes, its name, one more', () => {
+    const a = artHash(...tcgSet(sources));
+    expect(a).toBe(artHash(...tcgSet(sources)));
+    expect(artHash(...tcgSet({ ...sources, 'art/X1-D01.webp': 'paintinG' }))).not.toBe(a);
+    expect(artHash(...tcgSet({ 'x.alex': sources['x.alex'], 'art/X1-D02.webp': 'painting' }))).not.toBe(a);
+    expect(artHash(...tcgSet(sources, { 'art/illustrations/X1-banner.webp': 'banner' }))).not.toBe(a);
+  });
+
+  it('is null for a set with no art, so there is nothing to publish or check', () => {
+    expect(artHash(...tcgSet({ 'x.alex': sources['x.alex'] }))).toBeNull();
   });
 
   it('is made from the sources, so finished cards change nothing', () => {

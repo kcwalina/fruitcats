@@ -30,7 +30,7 @@ This rulebook has three parts:
 
 ## 2. What You Need
 
-- A **Hero** card and a **50-card deck** each (see section 11 for deckbuilding; the [Starter Box](starter-box-cards.md) has three ready-made decks).
+- A **Hero** card and a **50-card deck** each (see section 11 for deckbuilding; every family has a ready-made deck).
 - The **Lantern** token (any small object works). Whoever holds it acts first each round.
 - **Damage counters** (dice or beads work well).
 
@@ -66,7 +66,7 @@ A labelled picture of a card, with its rarity mark and finish code, is in [Card 
 |---|---|
 | **Name** | The card's name. |
 | **Cost** | How many Offerings you must exhaust to play it. |
-| **Family** | Citrus, Berry, Tropical, Orchard, Melon, or Wildfolk (neutral). |
+| **Family** | Domowiki, Pari, Aluxes, Jiaoren or Hui Hai. A set may also add a neutral family. |
 | **Type** | Hero, Fabled, Creature, Charm, or Talisman. |
 | **Power / Health** | Units only. Power is the damage it deals; Health is how much damage defeats it. |
 | **Text** | Keywords and abilities. Never more than two short lines. |
@@ -75,7 +75,7 @@ A labelled picture of a card, with its rarity mark and finish code, is in [Card 
 
 - **Hero** — Your leader. Starts the game in your **Hearth** and never leaves. Double-sided: a first side and an **Awakened** side. A Hero is *not* a unit and cannot be damaged or targeted by cards that say "unit".
 - **Fabled** — The most powerful units in the game. You may include only **one copy** of each Fabled card, and at most **six Fabled** per deck.
-- **Creature** — The everyday units: hamsters, ducks, hedgehogs, foxes and friends.
+- **Creature** — The everyday units: house spirits, fairies, clay guardians, forest folk and their friends.
 - **Charm** — A one-shot effect. Do what it says, then put it in the Mist. Charms with **Ambush** can be played in response to your opponent (section 7).
 - **Talisman** — Attaches to a unit you control and improves it. One Talisman per unit. If the unit leaves play, the Talisman goes to the Mist.
 
@@ -88,12 +88,13 @@ and gives it a **signature mechanic** that only that family has.
 
 | Family | Personality | Plays like | Signature mechanic |
 |---|---|---|---|
-| **Citrus** | Zesty, fast, reckless | Speed and aggression: Swift, Sneaky, direct damage | **Zest** — bonuses for chaining cards in one round |
-| **Orchard** | Kind, patient, protective | Guardians, healing, punishing attackers | **Ripen** — units grow stronger every round |
-| **Tropical** | Laid-back, then enormous | Extra Offerings and huge late-game units | **Sprout** & **Lush** — extra Offerings now, payoffs at 7+ |
-| **Berry** | Small, many, loyal | Swarms of cheap creatures that boost each other | *Bunch* (coming with the Berry deck) |
-| **Melon** | Heavy, stubborn, tricky | Tough units and control: exhausting and bouncing enemies | *Rind* (coming with the Melon deck) |
-| **Wildfolk** | Friends to all | Neutral cards any deck may use | — |
+| **Domowiki** | Grumpy, loyal, fond of porridge | Feed the house with extra Offerings, then wake the big spirits | **Sprout** & **Well-Fed** — extra Offerings now, payoffs at 7+ |
+| **Pari** | Light, graceful, never alone | Fly past the guards in a company of three, and slip away as doves | **Company** & **Feather Coat** — bonuses while you control 3 or more units |
+| **Aluxes** | Tiny, invisible, mischievous, loyal for seven years | Guard the milpa, call the rain, and let the corn grow tall | **Rain-Fed** — units grow stronger every round |
+| **Jiaoren** | Quiet weavers of the South Sea, grateful to the kind | Every tear is a pearl: when a jiaoren is hurt, you get an Offering back | **Pearl Tears** — hurt units ready Offerings |
+| **Hui Hai** | Tiny, invisible, very strong keepers of the forest and its streams | Stone for stone: hurt a Hui Hai and a pebble comes back from nowhere | **Stone for Stone** — hurt units throw stones |
+
+A set may also mark a family **neutral** (**Wildfolk**): neutral cards go in any deck.
 
 ---
 
@@ -230,10 +231,13 @@ Every Hero has an **Awaken** condition printed on it (for example, *"Awaken: you
 | **Hello:** | This effect happens when the unit enters your Yard. |
 | **Goodbye:** | This effect happens when the unit is defeated. |
 | **Awaken:** | When this condition is true, flip your Hero to its Awakened side. |
-| **Zest:** *(Citrus)* | A bonus that applies if you have already played another card this round. |
-| **Ripen** *(Orchard)* | At the start of each round, this unit gets +1 Power and +1 Health, up to +2/+2. |
-| **Sprout N** *(Tropical)* | Put the top N cards of your deck face-down as exhausted Offerings. |
-| **Lush** *(Tropical)* | You are Lush while you have 7 or more Offerings. |
+| **Sprout N** *(Domowiki)* | Put the top N cards of your deck face-down as exhausted Offerings. |
+| **Well-Fed** *(Domowiki)* | This bonus is on while you have 7 or more Offerings. |
+| **Company:** *(Pari)* | This bonus is on while you control 3 or more units. |
+| **Feather Coat** *(Pari)* | Goodbye: Summon a 1/1 Dove. |
+| **Rain-Fed** *(Aluxes)* | At the start of each round, this unit gets +1 Power and +1 Health, up to +2/+2. |
+| **Pearl Tears** *(Jiaoren)* | When this unit is damaged and survives, ready one of your Offerings. |
+| **Stone for Stone** *(Hui Hai)* | When this unit is damaged and survives, deal 1 damage to an enemy unit. |
 
 Other common words:
 
@@ -250,10 +254,10 @@ Other common words:
 ### 11.1 Deckbuilding
 
 - Exactly **1 Hero** and exactly **50 cards**.
-- Your deck may contain cards from your **Hero's family**, **one other family of your choice**, and **Wildfolk** cards.
+- Your deck may contain cards from your **Hero's family**, **one other family of your choice**, and neutral (**Wildfolk**) cards.
 - Up to **3 copies** of any card — except **Fabled: 1 copy each, maximum 6 Fabled**.
-- *New players:* start with a single family plus Wildfolk cards. The Starter Box decks are built this way.
-- *In the app:* a deck can use only the copies you own. Everyone starts with every card from the three Starter Box decks, so you have up to 3 copies of most cards, and only 2 of some.
+- *New players:* start with a single family. Every family's ready-made deck is built this way.
+- *In the app:* a deck can use only the copies you own. Everyone starts with every card of the Domowiki deck, the starter deck; other decks come from the Store.
 
 ### 11.2 Tournament play
 
@@ -268,21 +272,21 @@ Other common words:
 
 ## 12. A Sample Round
 
-*Round 3. Ana plays Sunny the Lemon Lynx (Citrus). Ben plays Pippin the Apple Ragdoll (Orchard). Ana has 9 Candles, Ben has 8. Ana holds the Lantern.*
+*Round 3. Ana plays Dziadziuś, Heart of the House (Domowiki). Ben plays Aluxito, Keeper of the Milpa (Aluxes). Ana has 9 Candles, Ben has 8. Ana holds the Lantern.*
 
-*Ana's Yard: Orange Corgi (3/2), Zest Mouse (1/1). Ben's Yard: Pear Hedgehog (2/2, Guardian), Peach Bunny (1/2).*
+*Ana's Yard: Hearth Cricket (2/1), Moving-Day Domowik (1/1). Ben's Yard: Night Patrol Alux (2/2, Guardian), Saká-Bearing Alux (1/2).*
 
 **Start Phase.** Both ready everything, draw 2, and offer a card. Each now has 4 Offerings.
 
-1. **Ana** plays **Grapefruit Ferret** (cost 3, 3/2, Swift). Ben has an Ambush window and declines. The Ferret enters *ready* thanks to Swift. Ana has 1 ready Offering.
-2. **Ben** plays **Apricot Owl** (cost 3, 2/3, *Hello: Exhaust an enemy unit*). Ana declines to Ambush. The Owl enters exhausted and its Hello exhausts the Ferret before it can attack. Ben has 1 ready Offering.
-3. **Ana** attacks with **Orange Corgi**. Ben has a Guardian, so she must target the Pear Hedgehog. In his Ambush window, Ben plays **Catnip** (cost 1, *Ambush. A unit you control gets +2 Power this round*) on the Hedgehog. Combat resolves: the Corgi deals 3 to the Hedgehog (defeated), and the Hedgehog — now Power 4 — deals 4 to the Corgi (defeated). Both go to the Mist.
-4. **Ben** attacks Ana's Hero with **Peach Bunny**. Ana has no Guardians and no Ambush. It's a hit: Ana loses a Candle (9 → 8) and takes the card into her hand. It's **Garden Snail** — and it's **Lucky**! Ana reveals it and plays it for free: a 1/4 Guardian enters her Yard.
-5. **Ana** attacks Pippin with **Zest Mouse**. Ben's Guardian is gone. A hit: Ben loses a Candle (8 → 7). The card isn't Lucky; it just goes to his hand.
+1. **Ana** plays **Mane-Braiding Domowik** (cost 2, 2/2, Swift). Ben has an Ambush window and declines. The Domowik enters *ready* thanks to Swift. Ana has 2 ready Offerings.
+2. **Ben** plays **Tool-Hiding Alux** (cost 3, 2/3, *Hello: Exhaust an enemy unit*). Ana declines to Ambush. The Alux enters exhausted and its Hello exhausts the Mane-Braiding Domowik before it can attack. Ben has 1 ready Offering.
+3. **Ana** attacks with **Hearth Cricket**. Ben has a Guardian, so she must target the Night Patrol Alux. In his Ambush window, Ben plays **A Sweet on the Doorstep** (cost 1, *Ambush. A unit you control gets +2 Power this round*) on the Night Patrol Alux. Combat resolves: the Cricket deals 2 to the Alux (defeated), and the Alux — now Power 4 — deals 4 to the Cricket (defeated). Both go to the Mist.
+4. **Ben** attacks Ana's Hero with **Saká-Bearing Alux**. Ana has no Guardians and no Ambush. It's a hit: Ana loses a Candle (9 → 8) and takes the card into her hand. It's **The House Snake** — and it's **Lucky**! Ana reveals it and plays it for free: a 1/4 Guardian enters her Yard.
+5. **Ana** attacks Aluxito with **Moving-Day Domowik**. Ben's Guardian is gone. A hit: Ben loses a Candle (8 → 7). The card isn't Lucky; it just goes to his hand.
 6. **Ben** has nothing more he wants to do, so he **Takes the Lantern**. He will act first next round, and can only pass for the rest of this one.
-7. **Ana** has 1 Offering, an exhausted Ferret and Mouse. She **passes**. Ben is passing too, so the Action Phase ends.
+7. **Ana** has 2 Offerings, an exhausted Mane-Braiding Domowik and Moving-Day Domowik. She **passes**. Ben is passing too, so the Action Phase ends.
 
-**End Phase.** Catnip's bonus would wear off (the Hedgehog is already gone). Ben took the Lantern, so it doesn't pass. On to round 4.
+**End Phase.** A Sweet on the Doorstep's bonus would wear off (the Night Patrol Alux is already gone). Ben took the Lantern, so it doesn't pass. On to round 4.
 
 ---
 
@@ -363,10 +367,14 @@ These rules are written to be implemented exactly. Numbered for reference.
 
 ### 850. Signature mechanics
 
-- **850.1 Zest.** A player's *cards played this round* counts every card they played since the last Start Phase: as an action, as an Ambush, or for free via Lucky. A "Zest:" bonus applies if that count, including the card with Zest, is 2 or more when the effect resolves. The count resets at the Start Phase.
-- **850.2 Ripen.** In the Start Phase, right after readying, each unit with Ripen gains a *ripeness* of 1, up to 2. A unit gets +1 Power and +1 Health per ripeness. Ripeness is lost when the unit leaves the Yard (rule 200.7).
-- **850.3 Sprout N.** The top N cards of the owner's deck go to the Offerings zone as exhausted Offerings, one at a time. If the deck runs out, the rest of the Sprout does nothing; it never costs a Candle.
-- **850.4 Lush.** A player is Lush while they have 7 or more Offerings, ready or exhausted. It is checked whenever an effect asks.
+- **850.0 Cards played this round.** A player's *cards played this round* counts every card they played since the last Start Phase: as an action, as an Ambush, or for free via Lucky. The count resets at the Start Phase. Cards that ask for it (Orange-Peri: "Unless you've played 2 other cards this round") check it when the effect resolves.
+- **850.1 Sprout N** *(Domowiki)*. The top N cards of the owner's deck go to the Offerings zone as exhausted Offerings, one at a time. If the deck runs out, the rest of the Sprout does nothing; it never costs a Candle.
+- **850.2 Well-Fed** *(Domowiki)*. A player is Well-Fed while they have 7 or more Offerings, ready or exhausted. It is checked whenever an effect asks.
+- **850.3 Company** *(Pari)*. A "Company:" bonus applies if its controller has 3 or more units in their Yard when the effect is checked.
+- **850.4 Feather Coat** *(Pari)*. When a unit with Feather Coat is defeated, its owner summons a 1/1 Dove. This is a Goodbye (rule 800.4).
+- **850.5 Rain-Fed** *(Aluxes)*. In the Start Phase, each unit with Rain-Fed gains a *rain* counter, up to 2. A unit gets +1 Power and +1 Health per counter. Counters are lost when the unit leaves the Yard (rule 200.7).
+- **850.6 Pearl Tears** *(Jiaoren)*. When a unit with Pearl Tears is dealt damage and is not defeated, its owner readies one of their Offerings.
+- **850.7 Stone for Stone** *(Hui Hai)*. When a unit with Stone for Stone is dealt damage and is not defeated, its owner deals 1 damage to an enemy unit.
 
 ### 900. Tunable parameters
 
@@ -386,9 +394,9 @@ The following values are deliberately isolated so playtesting can adjust them wi
 | Lantern passes if nobody takes it | yes |
 | Second-player compensation in round 1 | none |
 | Copy limit / Fabled limit | 3 / 6 (1 copy each) |
-| Ripen maximum | +2/+2 |
-| Lush threshold | 7 Offerings |
-| Zest | 2nd card of the round or later |
+| Rain-Fed maximum | +2/+2 |
+| Well-Fed threshold | 7 Offerings |
+| Company | 3 or more units |
 
 ---
 

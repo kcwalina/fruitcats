@@ -404,7 +404,7 @@ function startGame(tutorial = false) {
   setOnlineAside();
   // The opponent leads one of the other decks, at random. The tutorial is always the Domowiki against the Pari (the
   // two folk starter decks), with you going first.
-  // Against your own deck, it leads a ready-made deck with a different Hero Cat (owned or not), never a Legacy one.
+  // Against your own deck, it leads a ready-made deck with a different Hero Cat (owned or not).
   const mine = deckForKey(myDeck) ?? DECKS[firstDeck()];
   const others = soloFoeDecks(mine.hero);
   const theirDeck = tutorial ? 'pari'
@@ -455,10 +455,10 @@ function startGame(tutorial = false) {
 
 /**
  * What each keyword means, in plain words. Shown under a card when you enlarge it (press and hold),
- * because a playtester kept forgetting what Zest did and iOS has no hover to put a tooltip on.
+ * because a playtester kept forgetting what a mechanic did and iOS has no hover to put a tooltip on.
  * `test` finds the keyword in the card's rules text.
  */
-/** Set mechanics (Zest, Ripen, Heat…) explain themselves from their set's data; the core keywords are here. */
+/** Set mechanics (Well-Fed, Rain-Fed, …) explain themselves from their set's data; the core keywords are here. */
 const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero.' },
@@ -475,7 +475,7 @@ const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Exhaust', test: /\bExhaust\b/, text: 'Spend a card for the rest of the round: it tips sideways and cannot attack or be spent again until everything readies next round.' },
 ];
 
-/** The rules text of whatever a long press enlarged: a card id, or a Hero Cat side like "SB1-H01-bigcat". */
+/** The rules text of whatever a long press enlarged: a card id, or a Hero Cat side like "DW1-H01-bigcat". */
 function zoomText(key: string): string {
   const side = /^(.*)-(kitten|bigcat)$/.exec(key);
   const card = CARDS[side ? side[1] : key];
@@ -854,7 +854,7 @@ const builderHost: BuilderHost = {
   openStore: (deck: DeckList) => { if (STORE) { openStoreForDeck(storeHost, deck); screen = 'store'; render(); } },
 };
 
-/** The unfinished game, for the Resume button: "Round 4 · Sunny vs Pippin". */
+/** The unfinished game, for the Resume button: "Round 4 · Dziadziuś vs Parijan". */
 function savedGameLabel(): string | null {
   const saved = loadGame()?.game;
   return saved ? `Round ${saved.round} · <span class="nowrap">${saved.players.map((pl) => esc(cardName(pl.hero.id))).join(' vs ')}</span>` : null;
@@ -1359,9 +1359,8 @@ function renderHand(s: GameState, playable: Set<number>): string {
   const n = s.players[mySeat].hand.length;
   return `<section class="hand" style="--n:${n};--gaps:${Math.max(1, n - 1)}">
     ${s.players[mySeat].hand.map((c) => {
-      const zestOn = (s.players[mySeat].playedThisRound ?? 0) >= 1 && /\bZest:/.test(CARDS[c.id].text ?? '');
       const cls = [
-        'hand-card', zestOn && 'zest-on', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
+        'hand-card', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
         selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
       ].filter(Boolean).join(' ');
       // A unit's Health is printed on the card's bottom-right corner, which a bigger hand's overlap hides: it is

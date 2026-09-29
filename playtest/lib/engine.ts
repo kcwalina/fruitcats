@@ -24,7 +24,7 @@ export function prototypeDecks(): Record<string, NonNullable<ContentSet['data'][
   return Object.assign({}, ...playedSets.filter((c) => c.data.status !== 'released').map((c) => c.data.decks ?? {}));
 }
 
-// What-if balance experiments: PLAYTEST_CARD_MODS='{"SB1-T08":{"cost":9}}' changes cards for this process and
+// What-if balance experiments: PLAYTEST_CARD_MODS='{"DW1-D08":{"cost":9}}' changes cards for this process and
 // every worker it starts (they share the environment), so `npm run balance` can measure a proposed card change
 // before anyone edits a set. Never set on PC2024 or in a deploy.
 import { CARDS as ALL_CARDS } from '../../packages/engine/src/index';

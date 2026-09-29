@@ -1,5 +1,5 @@
 // Phone wallpapers: the whole screen is the card. The same frame, name banner, type line, rules text
-// and stat badges as the printed cards (tools/compose_cards.py), stretched to a phone's shape, with the
+// and stat badges as the printed cards (games/folkborn/card-layout.alex), stretched to a phone's shape, with the
 // art filling the top of the screen behind the lock-screen clock.
 // No website can set the wallpaper itself: the player saves the picture (the share sheet's Save Image
 // on iPhone) and chooses it in Photos.
@@ -11,28 +11,28 @@ import { drawRarityMark } from './rarity';
 import { BASE, artUrl } from './ui';
 import { familyColors } from './sets';
 
-/** The finishes' chrome, as compose_cards.py prints it: silver with rainbow flashes, gold, a rainbow. */
+/** The finishes' chrome, as the printed cards have it: silver with rainbow flashes, gold, a rainbow. */
 const RAINBOW = ['#ff6b6b', '#ffd36b', '#7bff9a', '#6bd5ff', '#b07bff', '#ff6bd0'];
 const HOLO = ['#8e97a3', '#eef1f5', '#d7c2ec', '#a7b0bb', '#f7f9fb', '#bfe6f2', '#7f8894', '#f3dcec', '#8e97a3'];
 const PRISM = ['#ff3d8b', '#ff9f1a', '#ffe23d', '#2ee88a', '#2bb8ff', '#7a5cff', '#e84dff', '#ff3d8b'];
 const GOLD = ['#fff4c2', '#e8b73a', '#8a5a0c', '#f7d774', '#b07d17', '#fff0b0', '#c89224', '#fff4c2'];
 const CHROME_INK: Record<Finish, string> = { standard: '', foil: '#4a5362', gold: '#5a3a04', prismatic: '#3a2a5a', signature: '#120b09' };
-/** The Signature stone (compose_cards.py): charred black, warm where the cracks glow; Mochi's glows in every colour. */
+/** The Signature stone: charred black, warm where the cracks glow; Mochi's glows in every colour. */
 const STONE = ['#2a1a15', '#4a2414', '#120b09', '#3a1c10', '#1a100c', '#2a1a15'];
-/** Each finish's code in the collector line, and its letter's colour (compose_cards.py's FINISH_CODES). */
+/** Each finish's code in the collector line, and its letter's colour. */
 const FINISH_CODES: Record<Exclude<Finish, 'standard'>, [string, string]> = {
   foil: ['F', '#2e3552'], gold: ['G', '#4a2c02'], prismatic: ['P', 'white'], signature: ['S', 'white'],
 };
 const CREAM = '#FFF8EC', INK = '#2B211B', MUTED = '#7A6A5C';
-/** The card's footer line, as compose_cards.py prints it: the game, the card's set, the copyright. */
+/** The card's footer line, as the printed card has it (games/folkborn/card-layout.alex): the game, the card's set, the copyright. */
 const footer = (card: CardDef) => `${TERMS.game} · ${SETS[card.set ?? '']?.name ?? 'Domowiki'} · © 2026`;
 const FONT = 'Nunito, "Segoe UI", sans-serif';
 
-/** The stat chips' icons (Phosphor's paw and heart, white masks) and the heart's own colour (compose_cards.py's stat_chip). */
+/** The stat chips' icons (Phosphor's paw and heart, white masks) and the heart's own colour (games/folkborn/card-layout.alex's health chip). */
 const STAT_ICONS = { paw: 'stat-power', heart: 'stat-heart' } as const;
 const HEART_COLOR = '#D9486C';
 
-/** Keywords printed bold: the core ones and every loaded set's mechanics (Zest, Ripen, Heat…). */
+/** Keywords printed bold: the core ones and every loaded set's mechanics (Well-Fed, Rain-Fed, …). */
 const keywordPattern = () => new RegExp(`\\b(Swift|Zoomies|Guardian|Sneaky|Fierce|Tough \\d+|Lucky|Ambush|Pounce|${Object.keys(MECHANICS).map((m) => `${m}(?: \\d+)?`).join('|')})\\b`, 'g');
 const LABEL = /(?:^|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)/g;
 
@@ -107,7 +107,7 @@ function star(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, 
 
 /** A stat badge standing on `bottom`, lined up by the drawing inside the icon, its number on the icon's flat area. */
 /**
- * A stat as a small chip in the family's tint, as compose_cards.py prints it: the icon, then the number.
+ * A stat as a small chip in the family's tint, as the printed card has it (games/folkborn/card-layout.alex): the icon, then the number.
  * `edge` is the chip's left edge (Power) or right edge (Health, `right`), `bottom` its bottom.
  */
 function statChip(p: Parts, icon: HTMLImageElement, kind: 'paw' | 'heart', edge: number, bottom: number, value: number, right: boolean) {
@@ -306,7 +306,7 @@ function drawBanner(p: Parts, x0: number, x1: number, top: number): number {
   return bottom;
 }
 
-/** The type line ("CRITTER · CITRUS", with the rarity mark and collector number at the right). Returns its bottom. */
+/** The type line ("CREATURE · DOMOWIKI", with the rarity mark and collector number at the right). Returns its bottom. */
 function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   const { ctx, card, side, s } = p;
   const [main, dark, tint] = p.colors;
@@ -321,7 +321,7 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
     : TERMS.types[card.type] ?? card.type).toUpperCase();
   // The type on the left, the collector number on the right: the type shrinks to fit beside it, and in
   // a narrow line the number gives way.
-  const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `${card.set ?? 'SB1'} · ${p.number}`;
+  const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `${card.set ?? card.id.split('-')[0]} · ${p.number}`;
   ctx.font = `600 ${20 * s}px ${FONT}`;
   const markW = 36 * s;   // the rarity mark, and the gap before the number
   const tagW = p.finish === 'standard' ? 0 : 34 * s;   // the finish code's tag, and the gap after the number

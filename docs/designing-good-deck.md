@@ -94,20 +94,29 @@ it, and the family's luck goes with it." Kid-safe, plain words.
 ### 4. Rules: reuse what's proven
 
 Don't design new rules for a first deck. Take a released deck whose play style fits the creature's story and copy it
-card for card: same costs, stats, keywords and abilities, new names and pictures. The Domowiki deck is the Starter
-Box's Mango Tango deck (a ramp deck: gather resources early, drop big units late), because "feed the house and the
-big spirits wake" is exactly that story. Balance is then already known, and the nightly playtests and the deploy's
-balance gate pass.
+card for card: same costs, stats, keywords and abilities, new names and pictures. The Domowiki deck was copied card
+for card from Mango Tango, a deck of the Starter Box (removed 2026-09-29): a ramp deck (gather resources early, drop
+big units late), because "feed the house and the big spirits wake" is exactly that story. Balance is then already
+known, and the nightly playtests and the deploy's balance gate pass.
 
 Then match beliefs to slots, not the other way round. Look at what each slot's rules say and find the belief that
 tells that story: a unit that "can't attack unless you're Well-Fed" is the barn spirit who does nothing until he's
 been given his due; "Hello: Draw a card" is the chick that brings things home; "Guardian. Lucky." is the house snake
 whose harm costs the family its luck. When rules and belief agree, the card teaches itself.
 
-Family mechanic: rename the copied deck's family condition to something from the lore (Lush became **Well-Fed**),
+Family mechanic: rename the copied deck's family condition to something from the lore (Mango Tango's Lush became
+**Well-Fed**),
 with a badge icon and a one-line reminder. Data only; no engine code. If you feel a deck needs a new rule, write it
 down under "What it needs built" in the set's doc and leave it for later: engine work waits until the cards are
 final ([card-data-architecture.md](card-data-architecture.md)).
+
+#### Stat budget
+
+When you do set new numbers, start from the stat budget. A plain Creature of cost *N* gets **Power + Health =
+2N + 1**. Keywords and effects are paid for out of that budget: Guardian ≈ 1, Swift ≈ 1, Sneaky ≈ 2, Fierce ≈ 2,
+Tough 1 ≈ 2, "draw a card" ≈ 2, "deal 1 damage" ≈ 1. **Fabled cards get +2 to +3 extra budget**: they are meant to be
+the strongest cards, balanced by the one-copy rule. These are first-pass numbers for the playtest engine to challenge.
+`npm run check-set` reports the cards that are off budget.
 
 ### 5. Write the lore into the set
 
@@ -141,8 +150,9 @@ How the pictures are made:
   Use `--jobs 1`: parallel requests hit the rate limit and fail. Expect about a minute per picture.
 - For the hero, draw two versions of each side and pick the cuter one. For any card that comes out wrong, rewrite the
   subject and redraw with `--only <id> --force`.
-- Compose the cards: `python tools/compose_cards.py --set <code>` (about three minutes a set; if it stops with
-  `OSError: [Errno 22]`, a Windows file lock, just run it again).
+- Write the set's cards in Alex, `games/folkborn/sets/<set>/<set>.alex` (the card paintings go in its `art/`), and
+  render them with tcg: `npm run cards` (into `out/cards/<set>/`). `npm run publish-pack -- <set>` renders them again
+  when it publishes the set, with the Artist Studio's frames.
 - Look at the result. Make a contact sheet of the composed cards and read it as a whole: does the hero stand out?
   Does any picture look weaker than its neighbours? Are the same creature and clothes drawn consistently? Fix before
   showing the owner. Both hero sides get checked side by side with two ordinary cards.

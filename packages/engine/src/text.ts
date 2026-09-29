@@ -29,7 +29,7 @@ Two players, 50-card decks, each led by a Hero. Win by blowing out the opponent'
 - Hero: starts on its first side, which cannot attack. Its "Exhaust:" ability can be used once a round (exhausting the Hero). When its Awaken condition becomes true it flips to its Awakened side for good: stronger ability, and it can attack (it takes no damage attacking).
 - If you must draw from an empty deck, you lose a Candle instead.`;
 
-/** Keywords of the core rules; the mechanics each set brings (Zest, Ripen, Heat, …) are listed after them. */
+/** Keywords of the core rules; the mechanics each set brings (Company, Rain-Fed, Heat, …) are listed after them. */
 const CORE_KEYWORDS = `Swift: enters ready. Guardian: enemies must attack Guardians first. Sneaky: ignores Guardians. Fierce: a hit on a Hero blows out 2 Candles. Tough X: takes X less damage from each hit. Lucky: playable for free when it turns up as a lost Candle. Ambush: playable in the opponent's Ambush window (also as a normal action). Hello: happens when the unit arrives. Goodbye: happens when it is defeated.`;
 
 /**
@@ -92,7 +92,7 @@ function targetName(s: GameState, seat: PlayerId, t: Target | undefined): string
   return unitName(s, seat, t.uid);
 }
 
-/** A counter as a player knows it: by its mechanic's name (Ripen +1, Heat +2). */
+/** A counter as a player knows it: by its mechanic's name (Rain-Fed +1, Heat +2). */
 function counterTags(u: Unit): string[] {
   return Object.entries(u.counters ?? {}).filter(([, n]) => n).map(([name, n]) =>
     `${Object.entries(MECHANICS).find(([, m]) => m.counter?.name === name)?.[0] ?? name} +${n}`);

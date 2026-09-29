@@ -34,13 +34,13 @@ export interface CardDef {
   kitten?: HeroSide;
   bigCat?: HeroSide;
   preview?: boolean;
-  /** Keywords: the core ones ("Guardian", "Tough 1") and set mechanics ("Ripen", "Heat"). */
+  /** Keywords: the core ones ("Guardian", "Tough 1") and set mechanics ("Rain-Fed", "Heat"). */
   keywords?: string[];
   abilities?: Ability[];
   /** A unit that cards summon (never in a deck). */
   token?: boolean;
   /**
-   * A Signature card: designed to exist only as its Signature print, never as a standard copy (compose_cards.py).
+   * A Signature card: designed to exist only as its Signature print, never as a standard copy.
    * 'rainbow' is the Signature stone with rainbow cracks (Mochi). No effect on the rules.
    */
   signature?: boolean | 'rainbow';
@@ -84,7 +84,7 @@ export type TargetSel =
   | { unit: 'own' | 'enemy' | 'any'; other?: boolean; filter?: UnitFilter }
   | { each: 'own' | 'enemy' | 'all' | 'allOther'; other?: boolean; filter?: UnitFilter };
 
-/** A condition: a set mechanic's name ("Zest", "Lush"), a plugin's, a built-in name, or a test. */
+/** A condition: a set mechanic's name ("Company", "Well-Fed"), a plugin's, a built-in name, or a test. */
 export type Condition =
   | string
   | { not: Condition }
@@ -117,7 +117,7 @@ export interface Ability {
   /** A second chosen target (Showdown: one of yours, then one of theirs). */
   target2?: TargetSel;
   do?: Act[];
-  /** A better version when a condition holds (Citron Fox: deal 2 instead with Zest). */
+  /** A better version when a condition holds (Súči of the Hunt: deal 2 instead with Company). */
   instead?: { if: Condition; do: Act[] };
   /** "You may": a Hello whose target can be left out. */
   optional?: boolean;
@@ -126,7 +126,7 @@ export interface Ability {
   oncePerRound?: boolean;
   /** A Pounce card that can only answer this kind of window (Hiss!: an attack). */
   pounceOnly?: 'attack';
-  /** A mechanic's start-of-round ability that happens as the unit readies, not as a queued step (Ripen). */
+  /** A mechanic's start-of-round ability that happens as the unit readies, not as a queued step (Rain-Fed). */
   inline?: boolean;
   static?: StaticEffect;
   /** A line for the game log when it happens. */
@@ -158,7 +158,7 @@ export interface Unit {
   buffKeywords?: string[];
   /** A "once per round" ability has been used since the last Start Phase. */
   usedOnce: boolean;
-  /** Mechanics' counters on the unit: { ripe: 2 } (Ripen), { heat: 1 } (Heat). Lost when it leaves the Yard. */
+  /** Mechanics' counters on the unit: { rain: 2 } (Rain-Fed), { heat: 1 } (Heat). Lost when it leaves the Yard. */
   counters?: Record<string, number>;
 }
 
@@ -183,7 +183,7 @@ export interface PlayerState {
   pantry: Treat[];
   yard: Unit[];
   compost: CardInst[];
-  /** Cards this player has played this round (actions, Pounces and Lucky plays): Citrus's Zest. */
+  /** Cards this player has played this round (actions, Pounces and Lucky plays): Orange-Peri's count. */
   playedThisRound?: number;
   /** Lives this player gave up at the start, as a handicap (GameOptions.lives). */
   handicap?: number;

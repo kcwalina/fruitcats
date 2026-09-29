@@ -13,15 +13,15 @@ than the starter decks, and LLM players look for what the bots can't.
 | `npm run play -- new` / `do <n>` / `show` | A game against the bot, one decision per command: for a Claude Code session doing a deep playtest, or for you. `--deck`, `--vs` take any deck (see below). | — |
 | `npm run llm-playtest` | LLM players (`--persona exploit\|aggro\|newcomer\|all`) against the bot, each game with a transcript and a playtester report. `--deck`, `--vs` take lists of decks. `--bench` times a provider's models first. | 3–4 min a game on PC2024 |
 | `npm run deck-hunt` | An LLM designs decks meant to break the game; the bots play each against the starters. | ~2 min |
-| `npm run deck-build -- --goal …` | An LLM builds a deck for a goal ("an aggressive Citrus deck", "beat Orchard Guard", "a fun deck for a beginner"): candidates, bot games, better versions, then its pick. `--hero`, `--vs`, `--save`. | ~2 min |
+| `npm run deck-build -- --goal …` | An LLM builds a deck for a goal ("an aggressive Pari deck", "beat the Aluxes", "a fun deck for a beginner"): candidates, bot games, better versions, then its pick. `--hero`, `--vs`, `--save`. | ~2 min |
 | `npm run decks -- list` / `show` / `add` / `import` | The deck library: custom decks playtests can name by key. | — |
 | `npm run nightly` | All of it, unattended: full gauntlet (with the library decks), deck hunt, LLM games with custom decks and then the starters until the time is up, and what changed since the last run. | a night |
 
 **Which cards playtests use.** Only the sets listed in `playtest.config.json` under `sets.play` are loaded: today
 Domowiki, Pari, Aluxes and Jiaoren (DW1, PR1, AL1, JR1). Their decks are the starter decks every gauntlet and the deploy gate test,
-and their cards are the only ones random, changed and LLM-built decks may use. The Starter Box (Zest Rush, Orchard
-Guard, Mango Tango) and the older prototypes are retired from playtests; a library deck built from their cards can't
-be played and the next library night removes it. Add a new set's code to the list when it joins.
+and their cards are the only ones random, changed and LLM-built decks may use. The Starter Box (taken out of the game on
+2026-09-29) and the older prototypes are retired; a library deck built from their cards can't be played and the next
+library night removes it. Add a new set's code to the list when it joins.
 
 Every run writes `reports/<kind>-<date>/summary.json` and `report.md` (git-ignored) and ends **pass**,
 **warn** or **block**. The limits are in `balance.config.json`: a starter deck outside 40–60% overall, or
@@ -32,11 +32,11 @@ more often when they are played, and generated decks that beat the starters.
 
 Playtests aren't limited to the starter decks. Wherever a command takes a deck, it takes any of these:
 
-- a starter's key (`zest-rush`) or a prototype set's deck key
+- a starter's key (`domowiki`) or a prototype set's deck key
 - a **library** key: `playtest/decks/library.json` keeps custom decks with a name, where they came from and
   what they're for. `npm run decks -- list` shows them.
 - a **deck code**: a whole deck on one line, `FC1.Name.Hero.card…` (for example
-  `FC1.Zest-Rush.SB1-H01.SB1-C01x3.SB1-C02x3…`). The game's deck builder copies one ("Copy deck code") and
+  `FC1.Domowiki.DW1-H01.DW1-D01x3.DW1-D02x3…`). The game's deck builder copies one ("Copy deck code") and
   takes one ("Deck from a code"); reports print one for every deck they build or find.
 - a DeckList JSON file, or `starters` / `library` for all of either. Lists are written with commas.
 
@@ -82,8 +82,8 @@ decks, two library decks, a random deck and a starter with 8 cards swapped, each
 decks never block a deploy: the deploy gate is still the starter decks alone.
 
 **Trying a card change before making it.** `PLAYTEST_CARD_MODS` overrides card fields for one run, in every
-worker: `PLAYTEST_CARD_MODS='{"SB1-O02":{"health":2},"SB1-C09":{"cost":1}}' npm run balance:check` measures a
-2/2 Pear Hedgehog and a cost-1 Sour Spray without touching a set. Never set it for a deploy.
+worker: `PLAYTEST_CARD_MODS='{"DW1-D05":{"health":2},"DW1-D10":{"cost":3}}' npm run balance:check` measures a
+2/2 Ovinnik of the Drying Barn and a cost-3 A Domowik's Temper without touching a set. Never set it for a deploy.
 
 ## LLM providers
 

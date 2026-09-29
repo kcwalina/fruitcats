@@ -36,10 +36,11 @@ discussed by editing them instead of re-pasting them into chat.
   same game made playable (libraries, rules, and a rules document with handlers and scenarios).
 - `folkborn/`: Folkborn written against the libraries. `folkborn.alex` is the game (it lists the
   libraries it `uses`, declares its card types as subtypes of their records, and fills each
-  library's area with rules), `starter-box.alex` is a set (pure data), and
-  `starter-box-rules.alex` is a program document: effects, statics, conditions,
-  scenarios, and the wiring that attaches them to cards
-  (`@citron-fox.on-enter = zest-damage`). Code points at data; data never points at code.
+  library's area with rules). Its sets were the Starter Box (`starter-box.alex`, pure data, and
+  `starter-box-rules.alex`, a program document: effects, statics, conditions, scenarios, and the
+  wiring that attaches them to cards, `@citron-fox.on-enter = zest-damage`), removed with the
+  Starter Box on 2026-09-29 (decisions.md); the folk sets' cards are in `games/folkborn/sets/`.
+  Code points at data; data never points at code.
 
 ## Principles
 

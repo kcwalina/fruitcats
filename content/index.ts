@@ -7,8 +7,6 @@
 // the public game loads released sets alone.
 
 import type { Plugin, SetData } from '../packages/engine/src/cards';
-import starterBox from './2026/09/starter-box/set.json';
-import starterBoxPlugin from './2026/09/starter-box/plugin';
 import mochi from './2026/12/mochi/set.json';
 import domowiki from './2026/10/domowiki/set.json';
 import pari from './2026/10/pari/set.json';
@@ -16,6 +14,12 @@ import aluxes from './2026/11/aluxes/set.json';
 import jiaoren from './2026/12/jiaoren/set.json';
 import flowerSouls from './2027/01/flower-souls/set.json';
 import huiHai from './2027/01/hui-hai/set.json';
+
+/**
+ * Sets taken out of the game, by code: the Starter Box (the original fruit-cat cards, the owner's call, 2026-09-29).
+ * A card pack of one still listed in the pack storage is never loaded (apps/web/src/content.ts).
+ */
+export const RETIRED_SETS = ['SB1'];
 
 export interface ContentSet {
   data: SetData;
@@ -25,7 +29,6 @@ export interface ContentSet {
 }
 
 export const CONTENT: ContentSet[] = [
-  { data: starterBox as unknown as SetData, plugin: starterBoxPlugin, folder: '2026/09/starter-box' },
   { data: domowiki as unknown as SetData, folder: '2026/10/domowiki' },
   { data: pari as unknown as SetData, folder: '2026/10/pari' },
   { data: aluxes as unknown as SetData, folder: '2026/11/aluxes' },
@@ -49,8 +52,7 @@ export interface LoadOptions {
 /** Register the sets with an engine: pass its `registerSet`. Returns the sets it loaded. */
 export function loadContent(register: (data: SetData, plugin?: Plugin) => void, options: LoadOptions = {}): ContentSet[] {
   const chosen = CONTENT.filter((c) => c.data.status === 'released' || options.prototypes);
-  // Sets are listed in release order, so one that builds on another (Mochi requires the
-  // Starter Box) is registered after it.
+  // Sets are listed in release order, so one that builds on another (its `requires`) is registered after it.
   for (const c of chosen) {
     const keepDecks = c.data.status === 'released' || options.prototypeDecks !== false;
     register(keepDecks ? c.data : { ...c.data, decks: {} }, c.plugin);

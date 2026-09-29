@@ -1,7 +1,7 @@
 // The Fruitcats rules engine: a deterministic state machine that implements docs/rulebook.md §13.
 //
-//   registerSet(starterBox);                     // cards come from outside: see content/index.ts
-//   const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 42 });
+//   registerSet(domowiki);                       // cards come from outside: see content/index.ts
+//   const s = createGame({ decks: ['domowiki', 'pari'], seed: 42 });
 //   while (!s.winner) apply(s, pickOneOf(legalActions(s)));
 //
 // `apply` mutates the state in place (clone first with `structuredClone` to keep history). All
@@ -40,9 +40,6 @@ export const MULLIGAN_MAX = 3;
 export const MAX_ROUNDS = 40;
 /** Triggered abilities allowed in a row before the engine stops the chain (two cards triggering each other). */
 export const TRIGGER_CHAIN_LIMIT = 200;
-/** Kept for older callers: Orchard's Ripen cap and Tropical's Lush threshold now live in the Starter Box's data. */
-export const RIPEN_MAX = 2;
-export const LUSH_TREATS = 7;
 
 export const other = (p: PlayerId): PlayerId => (1 - p) as PlayerId;
 export const cardName = (id: string): string => CARDS[id]?.name.split(',')[0] ?? id;
@@ -67,7 +64,7 @@ function shuffle<T>(s: GameState, items: T[]): void {
 // ── Setup ────────────────────────────────────────────────────────────────────────────────────────
 
 export interface GameOptions {
-  /** A registered deck's key ('zest-rush') or a whole deck list (a player's own deck). */
+  /** A registered deck's key ('domowiki') or a whole deck list (a player's own deck). */
   decks: [string | DeckList, string | DeckList];
   names?: [string, string];
   seed?: number;
@@ -108,6 +105,10 @@ export function createGame(options: GameOptions): GameState {
   if (options.alwaysAsk) s.alwaysAsk = true;
   for (const p of [0, 1] as PlayerId[]) {
     const list = resolveDeck(options.decks[p]);
+    // A deck kept from before a set was taken out of the game (the Starter Box) can't be played: refuse it now, not
+    // with a crash in the middle of the game.
+    const unknown = [list.hero, ...Object.keys(list.cards).filter((id) => list.cards[id] > 0)].filter((id) => !CARDS[id]);
+    if (unknown.length) throw new Error(`Unknown card ${unknown[0]} in the deck '${list.name}': its set isn't loaded`);
     // Shuffle first, then number the cards: numbering the sorted deck list would let anyone who sees
     // a uid (an opponent's card in hand, say) work out which card it is.
     const ids = deckCardIds(list);
@@ -220,7 +221,7 @@ function auraGrant(s: GameState, u: Unit): Grant {
   return g;
 }
 
-/** Power from a unit's counters (Ripen's ripeness, Heat), as each mechanic prices a point of it. */
+/** Power from a unit's counters (Rain-Fed's rain, Heat), as each mechanic prices a point of it. */
 function counterBonus(u: Unit): { power: number; health: number } {
   const bonus = { power: 0, health: 0 };
   if (!u.counters) return bonus;
@@ -271,10 +272,6 @@ export const heroSide = (s: GameState, p: PlayerId) => {
 export const readyTreats = (s: GameState, p: PlayerId): number =>
   s.players[p].pantry.filter((t) => !t.exhausted).length;
 
-/** Kept for older callers: the Starter Box's Zest and Lush conditions, false while that set isn't loaded. */
-export const hasZest = (s: GameState, p: PlayerId): boolean => evaluateCondition(s, p, 'Zest');
-export const isLush = (s: GameState, p: PlayerId): boolean => evaluateCondition(s, p, 'Lush');
-
 function attackerPower(s: GameState, attacker: Target): number {
   if (attacker.kind === 'hero') return heroSide(s, attacker.player).power ?? 0;
   const found = findUnit(s, attacker.uid);
@@ -295,7 +292,7 @@ interface AbilityContext {
   self?: Unit;
 }
 
-/** Whether a condition holds for player p. Names are set mechanics (Zest), plugins' conditions, or built in. */
+/** Whether a condition holds for player p. Names are set mechanics (Company), plugins' conditions, or built in. */
 export function evaluateCondition(s: GameState, p: PlayerId, c: Condition, ctx: AbilityContext = {}): boolean {
   if (typeof c === 'string') {
     if (c === 'targetIsYours') return ctx.target?.kind === 'unit' && findUnit(s, ctx.target.uid)?.owner === p;
@@ -437,7 +434,7 @@ function withChoice<T extends object>(action: T, c: PlayChoice): T {
   return { ...action, ...(c.target ? { target: c.target } : {}), ...(c.target2 ? { target2: c.target2 } : {}) };
 }
 
-/** Whether a unit is barred from attacking right now (Lychee Sloth unless you're Lush). */
+/** Whether a unit is barred from attacking right now (Ovinnik unless you're Well-Fed). */
 function cantAttack(s: GameState, owner: PlayerId, u: Unit): boolean {
   return abilitiesOf(u.id).some((a) => a.static?.cantAttack && (a.static.while === undefined || evaluateCondition(s, owner, a.static.while)));
 }
@@ -698,7 +695,7 @@ function continueTurn(s: GameState): void {
   }
 }
 
-/** Every ability a unit has with this trigger: its card's, and its keywords' mechanics' (Ripen, Heat). */
+/** Every ability a unit has with this trigger: its card's, and its keywords' mechanics' (Rain-Fed, Heat). */
 function unitAbilities(s: GameState, u: Unit, when: string, inline?: boolean): { ability: Ability; ref: AbilityRef }[] {
   const out: { ability: Ability; ref: AbilityRef }[] = [];
   abilitiesOf(u.id).forEach((ability, index) => {
@@ -767,7 +764,7 @@ function exec(s: GameState, step: Step): void {
         for (const u of pl.yard) {
           u.exhausted = false;
           u.usedOnce = false;
-          // Start-of-round abilities that happen as the unit readies (Ripen).
+          // Start-of-round abilities that happen as the unit readies (Rain-Fed).
           for (const { ability } of unitAbilities(s, u, 'roundStart', true)) runAbility(s, q as PlayerId, ability, { self: u });
         }
       }
@@ -998,7 +995,7 @@ function pluginContext(s: GameState, p: PlayerId, unit: Unit | undefined, self: 
   };
 }
 
-/** Log a mechanic condition's name when it pays off, as the Starter Box always has ("Zest!"). */
+/** Log a mechanic condition's name when it pays off, ("Company!"). */
 function shout(s: GameState, p: PlayerId, c: Condition | undefined): void {
   if (typeof c === 'string' && MECHANICS[c]?.kind === 'condition') log(s, `${c}!`, p);
 }

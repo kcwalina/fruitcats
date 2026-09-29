@@ -163,22 +163,9 @@ const TIPS: Balloon[] = [
       + '<b>Awakens</b> into something stronger.',
   },
   {
-    id: 'zest', title: 'Zest! 🍋', anchor: '.hand-card.zest-on',
-    when: (s) => myPrompt(s, 'action') && !!document.querySelector('.hand-card.zest-on'),
-    text: 'Citrus cards have <b>Zest</b>: a bonus when it isn’t your first card this round. '
-      + 'You’ve already played a card, so the glowing <b>Zest!</b> cards now get their bonus.',
-  },
-  {
     id: 'wellFed', title: 'Well-Fed', anchor: '.player.me .pantry-label, .yard.me .pantry-label',
     when: (s) => myPrompt(s, 'action') && s.players[ME].pantry.length >= 7,
     text: 'The house is <b>Well-Fed</b>: with 7 or more Offerings, Domowiki cards that say <b>Well-Fed</b> get their bonus.',
-  },
-  {
-    id: 'ripen', title: 'Ripen 🍎',
-    anchor: (s) => { const u = s.players.flatMap((p) => p.yard).find((x) => (x.counters?.ripe ?? 0) > 0); return u ? `[data-click="unit:${u.uid}"]` : undefined; },
-    when: (s) => myPrompt(s) && s.players.some((p) => p.yard.some((u) => (u.counters?.ripe ?? 0) > 0)),
-    text: 'Orchard units <b>Ripen</b>: at the start of every round they get +1 Power and +1 Health, '
-      + 'up to +2/+2. Deal with them early, before they grow!',
   },
   {
     id: 'lostLife', title: 'You lost a Candle', anchor: '.player.me .lives', when: (s) => s.players[ME].lives.length < 9,
@@ -273,7 +260,7 @@ function nextStep(s: GameState): Balloon | null {
 
 function current(s: GameState): { b: Balloon; kind: 'step' | 'tip' } | null {
   // Steps come first while the walkthrough is running: a tip used to jump the queue and explain
-  // Zest at the exact moment the walkthrough wanted to explain the cat you had just played.
+  // a mechanic at the exact moment the walkthrough wanted to explain the unit you had just played.
   // Tips fill the gaps — and once the steps are done, every moment is a gap.
   if (!tip) {
     const step = nextStep(s);

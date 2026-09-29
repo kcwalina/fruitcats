@@ -63,7 +63,7 @@ describe('player views (online play)', () => {
   it('card uids say nothing about which card they are', () => {
     const firstCard = new Set<string>();
     for (let seed = 1; seed <= 40; seed++) {
-      const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed });
+      const s = createGame({ decks: ['domowiki', 'pari'], seed });
       const all = s.players[0].deck.concat(s.players[0].hand, s.players[0].lives, s.players[0].pantry.map((t) => t.card));
       firstCard.add(all.find((c) => c.uid === 1)!.id);
     }

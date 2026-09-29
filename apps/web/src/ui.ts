@@ -6,7 +6,7 @@ export const BASE = import.meta.env.BASE_URL;
 /** The pack storage: every set's data and art, published with `npm run publish-pack` (docs/card-data-architecture.md). */
 export const PACKS: string = import.meta.env.VITE_PACKS ?? 'https://fruitcatspacks.blob.core.windows.net/packs/';
 /**
- * Where each set's art is published, by set code ('sb1'). In dev the set's folder is served on this site
+ * Where each set's art is published, by set code ('dw1'). In dev the set's folder is served on this site
  * (/<set>/, /cards/<set>/, vite.config.ts). A build takes the art from the pack storage instead, so the site
  * stays small enough to deploy: Azure takes the whole site as one upload in a two-minute window, and card art
  * (over 100 MB by the third deck) doesn't fit. A card pack from the storage brings its own addresses (content.ts).
@@ -31,7 +31,8 @@ export const artBases = (code: string) => ART_BASES[code] ?? BUILT_ART[code] ?? 
  * its address (for a day or more), and a republished set has new addresses.
  */
 export const ART_STAMPS: Record<string, string> = {};
-const setCode = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.set ?? 'SB1').toLowerCase();
+/** A card's set, by code; for a card the game doesn't know, the code its id starts with ('DW1-D01': dw1). */
+const setCode = (key: string) => (CARDS[key.replace(/-(kitten|bigcat)$/, '')]?.set ?? key.split('-')[0]).toLowerCase();
 const bases = (key: string) => artBases(setCode(key));
 /** The stamp for a set's pictures; none for a build's own fingerprinted art, whose addresses already change with it. */
 const stampOf = (set: string) => { const v = !ART_BASES[set] && BUILT_ART[set] ? undefined : ART_STAMPS[set]; return v ? `?v=${encodeURIComponent(v)}` : ''; };
@@ -54,7 +55,7 @@ export const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ '&': '&am
 export const familyName = (family?: string) => (family ? TERMS.families[family as keyof typeof TERMS.families] ?? family : '');
 
 /** Each fruit family is a class with its own signature mechanic. */
-export const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'garden').toLowerCase().replace(/\s+/g, '-')}`;
+export const famClass = (id: string) => `fam-${(CARDS[id]?.family ?? 'none').toLowerCase().replace(/\s+/g, '-')}`;
 
 /** The gear that opens Settings: in Home's corner, in the menu headers, and beside Rules in a game. */
 export function settingsButton(extraClass = ''): string {

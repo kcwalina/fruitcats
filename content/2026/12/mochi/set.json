@@ -3,9 +3,6 @@
   "name": "Mochi",
   "version": "0.1.0",
   "status": "prototype",
-  "requires": [
-    "SB1"
-  ],
   "families": {
     "Paragon": {
       "colors": [

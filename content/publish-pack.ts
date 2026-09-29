@@ -23,7 +23,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artHash } from './art-hash';
-import { pictureFolders, renderCards, renderedByTcg } from './tcg';
+import { pictureFolders, renderCards } from './tcg';
 import { runChecks } from './check-set';
 import { PACKS_URL, artPaths, artPublished, dataPath, differsFrom, updateIndex, withEntry, type IndexStore, type PackEntry, type PackIndex } from './pack-storage';
 
@@ -118,14 +118,11 @@ async function main(): Promise<void> {
   const temp = mkdtempSync(join(tmpdir(), 'fruitcats-pack-'));
   const published = new Date().toISOString();
   if (paths && !artUp) {
-    // A set tcg renders has no finished cards in the repository: they're made here, from its sources, into a
-    // fresh folder, and uploaded from there (content/tcg.ts).
-    let cards = join(root, 'art', 'cards');
-    if (renderedByTcg(root)) {
-      cards = join(temp, 'cards');
-      console.log('  · rendering the cards with tcg');
-      renderCards(root, cards);
-    }
+    // The finished cards aren't in the repository: tcg makes them here, from the set's sources, into a fresh folder,
+    // and they're uploaded from there (content/tcg.ts).
+    const cards = join(temp, 'cards');
+    console.log('  · rendering the cards with tcg');
+    renderCards(root, cards);
     for (const dir of pictureFolders(root)) if (existsSync(dir)) uploadDir(dir, paths.art.slice(0, -1), FOREVER);
     if (existsSync(cards)) uploadDir(cards, paths.cards.slice(0, -1), FOREVER);
     // The marker after the art: a build ships only when the storage has all the art it was built for (vite.config.ts).

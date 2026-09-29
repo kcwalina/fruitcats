@@ -12,7 +12,7 @@ import { addUsage, noUsage, type ChatMessage, type Provider, type Usage } from '
 const TYPE = TERMS.types as Record<string, string>;
 const TYPES = TERMS.typesPlural as Record<string, string>;
 const familyWord = (f: string) => (TERMS.families as Record<string, string>)[f] ?? f;
-/** Families any deck may use (Wildfolk in the Starter Box), by their players' names. */
+/** Families any deck may use (a set's neutral families), by their players' names. */
 const neutralFamilies = () => Object.keys(FAMILIES).filter((f) => isNeutralFamily(f)).map(familyWord);
 
 export function cardPoolText(): string {
@@ -102,7 +102,7 @@ export interface DesignOptions {
   families?: string[];
 }
 
-/** The families a goal names ("an aggressive Citrus deck" names Citrus). */
+/** The families a goal names ("an aggressive Pari deck" names Pari). */
 export function familiesIn(goal: string): string[] {
   const all = new Set(Object.values(CARDS).map((c) => c.family));
   return [...all].filter((f) => new RegExp(`\b${f}\b`, 'i').test(goal));

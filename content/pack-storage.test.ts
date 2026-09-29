@@ -34,20 +34,28 @@ function storage(): { blobs: Map<string, string>; get: typeof fetch } {
   return { blobs, get };
 }
 
-/** What publish-pack puts on the storage for a set's art: every file, then the marker. */
-function publish(blobs: Map<string, string>, code: string, root: string, files: Record<string, string>): void {
-  const hash = artHash(root)!;
+/** A set as tcg renders it (content/tcg.ts): its cards in Alex and their paintings, in a game folder. [set, game]. */
+function tcgSet(paintings: Record<string, string>): [string, string] {
+  const root = setFolder({
+    'game/folkborn.alex': '#type Game\n', 'game/sets/x/x.alex': "#type Set\n\nname = 'X'\n", 'content/x/set.json': '{}',
+    ...Object.fromEntries(Object.entries(paintings).map(([file, text]) => [`game/sets/x/art/${file}`, text])),
+  });
+  return [join(root, 'content', 'x'), join(root, 'game')];
+}
+
+/** What publish-pack puts on the storage for a set's art: every picture, then the marker. */
+function publish(blobs: Map<string, string>, code: string, set: [string, string], paintings: Record<string, string>): void {
+  const hash = artHash(...set)!;
   const p = artPaths(code, hash);
-  for (const [path, text] of Object.entries(files))
-    blobs.set(`${path.startsWith('art/cards/') ? p.cards : p.art}${path.replace(/^art\/(cards|illustrations)\//, '')}`, text);
+  for (const [file, text] of Object.entries(paintings)) blobs.set(`${p.art}${file}`, text);
   blobs.set(p.marker, JSON.stringify({ hash }));
 }
 
 describe('art at its fingerprint\'s address', () => {
   it('puts each version of a set\'s art in its own folder, and the same art always in the same one', () => {
-    const a = artHash(setFolder({ 'art/cards/DW1-D01.webp': 'one' }))!;
-    const b = artHash(setFolder({ 'art/cards/DW1-D01.webp': 'two' }))!;
-    expect(artPaths('dw1', a)).toEqual(artPaths('dw1', artHash(setFolder({ 'art/cards/DW1-D01.webp': 'one' }))!));
+    const a = artHash(...tcgSet({ 'DW1-D01.webp': 'one' }))!;
+    const b = artHash(...tcgSet({ 'DW1-D01.webp': 'two' }))!;
+    expect(artPaths('dw1', a)).toEqual(artPaths('dw1', artHash(...tcgSet({ 'DW1-D01.webp': 'one' }))!));
     expect(artPaths('dw1', a).dir).not.toBe(artPaths('dw1', b).dir);
     expect(artPaths('dw1', a)).toEqual({
       dir: `dw1/art/${a.slice(0, 16)}/`, art: `dw1/art/${a.slice(0, 16)}/illustrations/`,
@@ -62,15 +70,15 @@ describe('art at its fingerprint\'s address', () => {
 
   it('lets two branches publish different art for one set, and each build still finds its own', async () => {
     const { blobs, get } = storage();
-    const mainFiles = { 'art/cards/PA1-D01.webp': 'main' }, branchFiles = { 'art/cards/PA1-D01.webp': 'redrawn' };
-    const onMain = setFolder(mainFiles), onBranch = setFolder(branchFiles);
+    const mainFiles = { 'PA1-D01.webp': 'main' }, branchFiles = { 'PA1-D01.webp': 'redrawn' };
+    const onMain = tcgSet(mainFiles), onBranch = tcgSet(branchFiles);
     publish(blobs, 'pa1', onMain, mainFiles);
-    expect(await artPublished('https://packs.test/', 'pa1', artHash(onBranch)!, get)).toBe(false);
+    expect(await artPublished('https://packs.test/', 'pa1', artHash(...onBranch)!, get)).toBe(false);
     publish(blobs, 'pa1', onBranch, branchFiles);
     // The branch's publish didn't touch main's: both builds find their art, however often either publishes.
-    expect(await artPublished('https://packs.test/', 'pa1', artHash(onMain)!, get)).toBe(true);
-    expect(await artPublished('https://packs.test/', 'pa1', artHash(onBranch)!, get)).toBe(true);
-    expect(blobs.get(`${artPaths('pa1', artHash(onMain)!).cards}PA1-D01.webp`)).toBe('main');
+    expect(await artPublished('https://packs.test/', 'pa1', artHash(...onMain)!, get)).toBe(true);
+    expect(await artPublished('https://packs.test/', 'pa1', artHash(...onBranch)!, get)).toBe(true);
+    expect(blobs.get(`${artPaths('pa1', artHash(...onMain)!).art}PA1-D01.webp`)).toBe('main');
   });
 
   it('counts art as there only once its marker names this very fingerprint', async () => {
@@ -114,8 +122,8 @@ function indexFile(meddle?: (store: IndexStore) => Promise<void>): IndexStore & 
 
 describe('the index running games read', () => {
   it('replaces only the published set\'s entry', () => {
-    expect(withEntry({ packs: [entry('SB1'), entry('DW1')] }, entry('DW1', '1.1.0')).packs)
-      .toEqual([entry('SB1'), entry('DW1', '1.1.0')]);
+    expect(withEntry({ packs: [entry('PR1'), entry('DW1')] }, entry('DW1', '1.1.0')).packs)
+      .toEqual([entry('PR1'), entry('DW1', '1.1.0')]);
   });
 
   it('keeps an entry another session wrote while this one was publishing', async () => {
@@ -125,14 +133,14 @@ describe('the index running games read', () => {
       once = false;
       await updateIndex(s, (i) => withEntry(i, entry('JR1')));
     });
-    await updateIndex(store, (i) => withEntry(i, entry('SB1')));
+    await updateIndex(store, (i) => withEntry(i, entry('PR1')));
     await updateIndex(store, (i) => withEntry(i, entry('AX1')));
-    expect(store.current()!.packs.map((p) => p.set).sort()).toEqual(['AX1', 'JR1', 'SB1']);
+    expect(store.current()!.packs.map((p) => p.set).sort()).toEqual(['AX1', 'JR1', 'PR1']);
   });
 
   it('gives up, saying so, when the index never holds still', async () => {
     const store = indexFile(async (s) => { await updateIndex(s, (i) => withEntry(i, entry(`Z${Math.random()}`))); });
-    await expect(updateIndex(store, (i) => withEntry(i, entry('SB1')), 3)).rejects.toThrow(/kept changing/);
+    await expect(updateIndex(store, (i) => withEntry(i, entry('PR1')), 3)).rejects.toThrow(/kept changing/);
   });
 });
 

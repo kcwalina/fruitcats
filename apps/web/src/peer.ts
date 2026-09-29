@@ -147,7 +147,14 @@ async function startHost(r: Running) {
   // This device's own copy may have moves the API hasn't been sent yet: it's the one that counts.
   if (local && (!record || local.played.length >= record.played.length)) record = local;
   if (!record) { r.pollTimer = window.setTimeout(() => void startHost(r), 5000); return; }
-  r.host = new PeerHost(record, hostDeps(r));
+  try {
+    r.host = new PeerHost(record, hostDeps(r));
+  } catch {
+    // A game this build can't run (cards of a set since taken out, like the Starter Box): let it go.
+    clearLocal(id);
+    stopPeer();
+    return;
+  }
   saveLocal(record);
   if (got.body?.record && record.played.length > got.body.record.played.length) void queueSave(r, record);
   if (r.attached) r.host.open();

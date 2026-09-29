@@ -8,7 +8,7 @@
 // Errors (the set can't be played as it is) fail the check; warnings (worth a look) don't.
 
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   BUILT_IN_ACTIONS, CARDS, CONDITION_TESTS, DECKS, MECHANICS, PLUGINS, TRIGGERS, apply, chooseAction, createGame, deckProblems, registerSet,
@@ -17,7 +17,7 @@ import {
 import { CONTENT, loadContent, type ContentSet } from './index';
 import { cardTexts, suggestText } from './rules-text';
 import { printedCards, printedDifferences } from './printed-cards';
-import { pictureFolders } from './tcg';
+import { gameSet, pictureFolders } from './tcg';
 import TERMS from '../packages/engine/src/terms.json';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,7 @@ const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optio
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'];
 
-// Stat budget (docs/starter-box-cards.md): a plain Critter of cost N has Power + Health = 2N + 1, and
+// Stat budget (docs/designing-good-deck.md): a plain Critter of cost N has Power + Health = 2N + 1, and
 // keywords and effects are paid for out of it. A report, not a rule: Cats get +2 to +3 on purpose.
 const KEYWORD_PRICE: Record<string, number> = { Guardian: 1, Zoomies: 1, Sneaky: 2, Fierce: 2, Lucky: 0, Pounce: 0 };
 
@@ -122,15 +122,9 @@ function checkSet(set: ContentSet, games: number): Report {
   const faces = cards.flatMap((c) => (c.type === 'Hero Cat' ? [`${c.id}-kitten`, `${c.id}-bigcat`] : [c.id]));
   const pictures = pictureFolders(join(HERE, set.folder));
   const missingArt = faces.filter((f) => !pictures.some((dir) => existsSync(join(dir, `${f}.webp`))));
-  const missingCards = faces.filter((f) => !existsSync(join(art, 'cards', `${f}.webp`)));
   if (missingArt.length) r.warnings.push(`No illustration yet for ${missingArt.length} card face(s): ${missingArt.join(', ')} (art/illustrations/<id>.webp).`);
-  // A set with printed cards in Alex is rendered by tcg; the others still by the old composer.
-  const printed = printedCards(join(HERE, set.folder));
-  const render = printed
-    ? `tcg cards --project content --out art/cards --only ${missingCards.join(' ')}`
-    : `python tools/compose_cards.py --set ${code.toLowerCase()}`;
-  // A set tcg renders has its finished cards made when it's published, not kept in the repository.
-  if (missingCards.length && !printed) r.warnings.push(`Not rendered yet: ${missingCards.join(', ')} (${render}).`);
+  // tcg renders every set's cards from Alex (content/tcg.ts), when they're published: they aren't kept in the repository.
+  if (!printedCards(join(HERE, set.folder))) r.errors.push(`No cards in Alex: tcg renders a set's cards from ${relative(join(HERE, '..'), gameSet(join(HERE, set.folder))).replace(/\\/g, '/')}/${basename(set.folder)}.alex, which isn't there.`);
   for (const d of printedDifferences(join(HERE, set.folder), data, cards)) r.errors.push(`Printed cards: ${d}`);
   const promptsFile = join(art, 'prompts.json');
   if (existsSync(promptsFile)) {
@@ -158,9 +152,7 @@ function checkSet(set: ContentSet, games: number): Report {
     for (const c of cards.filter((x) => pickFamilies.has(x.family)))
       if (!pictures.some((p) => p.card === c.id && (p as { frameChoice?: boolean }).frameChoice))
         r.errors.push(`Art brief: ${c.id} is ${c.family}, whose artist picks the frame colour; give its picture "frameChoice": true.`);
-    // tcg draws a printed set's frames when it's published (content/tcg.ts).
-    const noFrame = printed ? [] : faces.filter((f) => briefed.has(f) && !existsSync(join(art, 'cards', 'frames', `${f}.webp`)));
-    if (noFrame.length) r.warnings.push(`No Studio frame for ${noFrame.join(', ')} (python tools/compose_cards.py --set ${code.toLowerCase()} --frames).`);
+    // tcg draws the Studio's frames when the set is published (content/tcg.ts).
   }
 
   // 7. Bots

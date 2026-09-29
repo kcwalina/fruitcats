@@ -17,7 +17,7 @@ brief lists what this set needs.
 
 <Two or three sentences: what the set is about and who it's for.>
 
-**Tone:** <cute, like the Starter Box / "cool, not cute" / something else. Give 3–5 concrete
+**Tone:** <cute / "cool, not cute" / something else. Give 3–5 concrete
 words: expressions, poses, palette, what's allowed and what isn't.>
 
 ## Families

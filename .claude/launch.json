@@ -68,6 +68,26 @@
       ],
       "port": 8791,
       "autoPort": true
+    },
+    {
+      "name": "kardix-studio",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "cardengine/kardix",
+        "-c",
+        "Release",
+        "--no-build",
+        "--",
+        "studio",
+        "--project",
+        "cardengine/samples/hello-tcg",
+        "--port",
+        "4180",
+        "--no-open"
+      ],
+      "port": 4180
     }
   ]
 }

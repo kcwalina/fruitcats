@@ -9,6 +9,11 @@ using ViaMochi.Alex.Model;
 // Loads the project with the core and prints what is wrong with it, one line per problem: file(line,column): error:
 // message. Exits 1 when there is an error.
 //
+//   kardix studio [--project <folder>] [--port <number>] [--no-open]
+//
+// Opens Studio on the project in the browser: its files, its cards and its rulebook, read again each time a file is
+// saved. It serves on localhost only, until Ctrl+C.
+//
 //   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]
 //
 // Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
@@ -21,6 +26,7 @@ try
     if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     {
         Console.WriteLine("kardix check [--project <folder>]");
+        Console.WriteLine("kardix studio [--project <folder>] [--port <number>] [--no-open]");
         Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]");
         return 0;
     }
@@ -28,8 +34,9 @@ try
     return args[0] switch
     {
         "check" => Check(args[1..]),
+        "studio" => Studio.Run(args[1..]),
         "cards" => Cards(args[1..]),
-        _ => throw new KardixException($"kardix doesn't know the command '{args[0]}'. Try: kardix check, kardix cards"),
+        _ => throw new KardixException($"kardix doesn't know the command '{args[0]}'. Try: kardix check, kardix studio, kardix cards"),
     };
 }
 catch (KardixException e)

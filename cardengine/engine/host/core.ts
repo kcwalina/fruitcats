@@ -106,6 +106,11 @@ export class Core {
 export class Project {
   constructor(private readonly core: Core, private readonly handle: number) {}
 
+  /** The answer to a question (cardengine/engine/src/loader/queries.rs), as JSON text. */
+  query(question: string): string {
+    return this.core.query(this.handle, question);
+  }
+
   /** What is wrong with the project, file by file. */
   diagnostics(): Diagnostic[] {
     return JSON.parse(this.core.query(this.handle, 'diagnostics')) as Diagnostic[];

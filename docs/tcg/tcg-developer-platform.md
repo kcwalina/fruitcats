@@ -626,6 +626,13 @@ identical), and `dotnet build -c Release` in `cardengine/kardix`, whose project 
    places them, or cards `kardix cards` rendered.
    *Done when* walkthrough §2 is true: `kardix studio` in a folder opens the browser, and an edit
    saved in any editor shows within a second.
+   *Done 2026-09-29.* `cardengine/kardix/Studio.cs` is the local host (`HttpListener` on localhost; `api/files`,
+   `api/file` to read and write, `api/events` as server-sent events from a `FileSystemWatcher`), and
+   `cardengine/studio/` the page (`main.ts`, bundled by esbuild into `dist/studio.js` when kardix is built, and
+   `studio.html`), both embedded in kardix. The page loads `kardix.wasm` and shows the files with their problem counts,
+   the cards with their paintings and text (constants filled in), a selected file with its problem lines marked, the
+   rulebook with the game's constants filled in, and the problems. On Hello TCG an edit saved on disk showed in the
+   page 154 ms later. The cards are the data and the painting, not drawn cards: drawing waits for Stage 4.
 
 ### Stage 4: the card renderer in the core
 

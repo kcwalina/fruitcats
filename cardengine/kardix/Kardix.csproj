@@ -32,7 +32,14 @@
     <EmbeddedResource Include="../framework/core.alex" LogicalName="core.alex" />
     <!-- The core (cardengine/engine), built from its Rust source before kardix is compiled: kardix check runs it. -->
     <EmbeddedResource Include="../engine/target/wasm32-unknown-unknown/release/kardix.wasm" LogicalName="kardix.wasm" />
+    <!-- Studio's page (cardengine/studio), bundled by esbuild before kardix is compiled: kardix studio serves it. -->
+    <EmbeddedResource Include="../studio/studio.html" LogicalName="studio.html" />
+    <EmbeddedResource Include="../studio/dist/studio.js" LogicalName="studio.js" />
   </ItemGroup>
+
+  <Target Name="BuildStudio" BeforeTargets="BeforeBuild">
+    <Exec Command="npx --no-install esbuild main.ts --bundle --format=esm --target=es2022 --outfile=dist/studio.js --log-level=warning" WorkingDirectory="$(MSBuildThisFileDirectory)../studio" />
+  </Target>
 
   <Target Name="BuildCore" BeforeTargets="BeforeBuild">
     <Exec Command="cargo build --release --target wasm32-unknown-unknown" WorkingDirectory="$(MSBuildThisFileDirectory)../engine" />

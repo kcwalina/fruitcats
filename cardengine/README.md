@@ -42,11 +42,13 @@ discussed by editing them instead of re-pasting them into chat.
   Starter Box on 2026-09-29 (decisions.md); the folk sets' cards are in `games/folkborn/sets/`.
   Code points at data; data never points at code.
 - `engine/`: the core, the one WebAssembly module every host runs (Rust, no dependencies). It holds
-  Alex's parser today; the loader, the runtime, the bots and the card renderer join it. See its
-  README.
-- `conformance/`: parses every `.alex` file with the C# Alex and with the core, and compares them
-  byte for byte. It is also the first C# host of the module (Wasmtime).
-- `tcg/`: the `kardix` command-line tool (C#).
+  Alex's parser and binder and the game loader; the runtime, the bots and the card renderer join it.
+  See its README.
+- `conformance/`: parses and binds every `.alex` file with the C# Alex and with the core, and
+  compares them byte for byte. It runs the core through kardix's host.
+- `kardix/`: the `kardix` command-line tool (C#): `kardix check` and `kardix studio` run the core, `kardix cards` renders
+  cards.
+- `studio/`: Studio's page, which `kardix studio` serves (plain TypeScript, bundled into kardix).
 
 ## Dependencies: the platform never depends on Folkborn
 

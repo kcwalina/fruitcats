@@ -261,8 +261,7 @@ frame, a text box too small for a card's text at its smallest size (naming the c
 below print resolution. `tcg cards` renders every card; `--print --printer <name>` adds bleed-sized
 files, the back and the printer's order choices. The layout is Folkborn's own card anatomy, moved out
 of the Python script that used to draw every card and into data a designer owns. `tcg` now renders
-every Folkborn set, and the script is gone.
-(once `tools/compose_cards.py`, now removed) moved out of a Python script and into data a designer owns.
+every Folkborn set, and the script (`tools/compose_cards.py`) is gone.
 
 Added after comparing with the live game's cards (2026-09-28), so the layout reproduces Folkborn's
 card design exactly:

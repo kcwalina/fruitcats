@@ -1,10 +1,9 @@
 // spells: one-shot cards that resolve and leave play (Charms, instants, Trainers, actions).
 // Depends on common for Cost.
-spells = Library
+#type Library
 
 name = 'Spells'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 type SpellCard : Card { cost: Cost? }

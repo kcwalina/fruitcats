@@ -1,10 +1,9 @@
 // permanents: cards that stay in play, fight nothing and attach to nothing (Items, Locations,
 // Tamers, Artifacts, Stadiums, Secrets). Depends on common for Cost.
-permanents = Library
+#type Library
 
 name = 'Permanents'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 type PermanentCard : Card {

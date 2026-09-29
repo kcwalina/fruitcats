@@ -60,9 +60,14 @@ discussed by editing them instead of re-pasting them into chat.
 
 ## Language conventions, as settled
 
-- A file declares one named value, and the name matches the file: `folkborn = Game`. A bare type
-  name on the right-hand side is an open instance whose fields follow as `path = value` lines; a
-  bare `field = value` at top level addresses the root. `Type { ... }` is a closed instance, and a
+- A file holds one value and says its type with a directive on its first statement line:
+  `#type Game`, `#type Set`, `#type Rules`, `#type Library`, `#type Core`. The value is an open
+  instance of that type whose fields follow as `field = value` lines, and the file's base name is
+  its name (`@folkborn` is `folkborn.alex`). A text table filling one of the file's own fields is
+  `@@@ .field`. A file that only declares types needs no directive. The older named root
+  (`folkborn = Game`) stays legal in Alex, but not together with `#type`, and these files no longer
+  use it. A bare type name on the right-hand side of a member is an open instance whose fields
+  follow as `path = value` lines. `Type { ... }` is a closed instance, and a
   later assignment into a closed record is an error. Every path is set exactly once. Type names
   start with a capital letter; enum members, fields and keywords never do.
 - Brackets are collections, braces are records. `[T]` is a list; `[K: V]` is a map, keyed by
@@ -76,9 +81,17 @@ discussed by editing them instead of re-pasting them into chat.
   unqualified `@name` resolves to a uniquely named member anywhere in the game; the checker asks
   to qualify when two match. A data document never sees declarations; only a program document's
   references reach them.
-- `nameof(x)` is the identifier's last segment as text, checked to exist, never dereferenced.
-  Convention: a member whose display name is its identifier is written in Title Case and uses
-  `name = nameof(...)`; cards keep lowercase identifiers and string names.
+- `nameof(x)` is the identifier's last segment as text, checked to exist, never dereferenced. A
+  field that names a card type takes `nameof(Creature)`.
+- A record under a key in a keyed map takes its `name` from the key: `Deck = Zone { role = deck }`
+  is named 'Deck'. Such members are written in Title Case; an explicit `name` wins
+  (`AmbushOnAttack = Ambush { name = 'Ambush' }`). Cards keep lowercase keys and string names.
+- A game's card types are the subtypes of card records its game file declares
+  (`type Creature : UnitCard {}`); there is no list of them.
+- The engine version is `engine-version = 1` on the game only; sets and libraries take it.
+- Numbers that shape a game are named once in `numbers = [starting-life = 10, ...]` on the game.
+  Rules refer to them (`start = @starting-life`) and rulebook text embeds them
+  (`{@starting-life}`); the checker notes digits written straight into rulebook text.
 - `nic` (Polish for "nothing") is the no-value. A field is required exactly when its type doesn't
   include `nic`; `T?` is sugar for `T | nic` on a single type; a union with nothing is spelled
   out, never parenthesised. Omitted means `nic` in a document and unchanged in a patch.

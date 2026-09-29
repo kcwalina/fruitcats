@@ -1,10 +1,9 @@
 // life-stack: life as a face-down stack of the player's own cards (Candles, Prizes, Security,
 // Shields, One Piece life), with what happens to a lost card. Depends on life.
-life-stack = Library
+#type Library
 
 name = 'Life as a stack of cards'
 version = '0.1'
-core = '1'
 requires = [@life]
 
 type LifeStack : LifeRule {

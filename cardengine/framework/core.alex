@@ -17,13 +17,19 @@
 // change, objects may belong to no player, dice are face lists, zones may be created during
 // play, zones carry a role, a rulebook may be a document whose sections rules cite, cards may
 // name their art, and scenarios are a block kind.
-core = Core
+// From the owner's review of the TCG walkthrough (2026-09-28): the engine version is a number
+// named `engine-version` and only the game carries it; `Game` defaults its structural fields;
+// a game names its numbers once (`Game.numbers`) and rules and rulebook text refer to them;
+// rulebook sections have titles; card types are the game's declared types, not a `types` list;
+// a record under a key takes its name from the key; files say their type with `#type`.
+#type Core
 
-version = '1'
+engine-version = 1
 
 // The root type of this document.
 type Core {
-  version: text
+  version: text?                  // deprecated: was '1'; the engine version is `engine-version`
+  engine-version: int?
   actions: [text: ActionKind]
   moments: [text: Moment]
   selectors: [text: Selector]
@@ -52,16 +58,25 @@ enum ZoneRole     { deck, hand, discard, board, life, resource, exile, other }
 type Rule { cites: Section | text | nic }
 
 // A rulebook as a document, so citations can be checked and shown.
-type Rulebook : data { title: text, sections: [text: Section] }
-type Section { number: text, text: text }
+// Section text may embed the game's named numbers as `{@name}` (`{@starting-life} Life`); the
+// renderer fills them in from `Game.numbers`. `{{` is a literal brace. The checker errors on a
+// name `Game.numbers` lacks and notes digits written straight into section text, since a digit
+// there is a number that can drift from the rules.
+type Rulebook : data { title: text, sections: [text: Section] = empty }
+type Section {
+  number: text
+  title: text?                    // the heading; without it the section renders by number alone
+  text: text
+}
 
 // A library: a set of helpers over the core that a game may use or ignore. It declares the rule
 // types, card records, keywords and vocabulary it owns, and the other libraries it builds on. A
-// library depends on the core and on what it lists in `requires`, and on nothing else.
+// library depends on the core and on what it lists in `requires`, and on nothing else. It ships
+// with the engine and has the engine's version, so it does not state one.
 type Library {
   name: text
   version: text
-  core: text
+  core: text?                     // deprecated: libraries take the engine's version
   requires: [Library] = empty
   actions: [text: ActionKind] = empty
   moments: [text: Moment] = empty
@@ -80,19 +95,31 @@ type Moment { name: text }
 // -------------------------------------------------------------------------------------------
 // The game and its structure.
 
+// A new game needs only `name`, `engine-version`, `rulebook` and `sets`; every other field has
+// a default. A game's card types are the subtypes of a card record its file declares
+// (`type Creature : UnitCard {}`); no list repeats them.
 type Game : data {
   name: text
   rulebook: Rulebook | text | nic  // a Rulebook document, or a path to one outside Alex
-  core: text                      // the core version this document was written against
-  uses: [Library]                 // the libraries whose rules, records and vocabulary it may use
-  players: Players
-  sets: [Set]
-  types: [text: CardType]
-  zones: [text: Zone]
+  // The engine version the game is written for; a later engine plays it the same way. Required
+  // unless the deprecated `core` is set: `core = '1'` reads as `engine-version = 1`, and a game
+  // setting both, or neither, is an error.
+  engine-version: int?
+  core: text?                     // deprecated: see engine-version
+  uses: [Library] = empty         // the libraries whose rules, records and vocabulary it may use
+  players: Players = Players {}   // two players, clockwise
+  sets: [Set] = empty
+  types: [text: CardType] = empty // deprecated: the declared card types are the list
+  zones: [text: Zone] = empty
   keywords: [text: Keyword] = empty   // tags cards may carry; libraries give them meaning
   randomness: [RandomSource] = [shuffle]
   rules: [Rule] = empty           // rules that belong to no library area
   event-names: [text: text] = empty
+  // The numbers that shape the game, named once. A rule's int field takes one by reference
+  // (`LifeCounter { start = @starting-life }`): the entry is an int member of the game, and a
+  // reference to an int member is accepted wherever an int is, as any reference is. Rulebook
+  // text embeds them as `{@starting-life}`. A playtest may vary them.
+  numbers: [text: int] = empty
 }
 
 type Players {
@@ -103,15 +130,22 @@ type Players {
 }
 type Teams { size: int }
 
-// A game's own name for one of its card types. The type itself is declared by the game as a
-// subtype of a library card record (`type Creature : UnitCard {}`), under the same name.
+// Deprecated: a game's card types are the types it declares (`type Creature : UnitCard {}`),
+// with a display name and citation as fixed fields when they differ (`Card.type-name`,
+// `Card.type-cites`). A rule field that names a card type takes `CardType | text`, the text
+// being `nameof(Creature)`, checked to name a card type the game declares.
 type CardType {
-  name: text
+  name: text?
   cites: text?
 }
 
+// Names from keys: a record with a `name: text?` field that sits under a key in a keyed map
+// (zones, keywords, counters, tokens, cards, decks, resources, families, mechanics) and does
+// not set `name` takes the key as its name: `Deck = Zone { role = deck }` is named 'Deck'. An
+// explicit `name` wins (`AmbushOnAttack = Ambush { name = 'Ambush' }`). Anywhere else, such a
+// record must set `name`; the checker says so.
 type Zone {
-  name: text
+  name: text?
   shape: Shape
   role: ZoneRole = other
   width: int?                     // grid zones: columns
@@ -126,10 +160,11 @@ type Zone {
 // -------------------------------------------------------------------------------------------
 // Sets: a card pool. Libraries extend this with what their cards need (families, mechanics).
 
+// A set has its game's engine version; it does not state one.
 type Set : data {
   id: text
   name: text
-  core: text
+  core: text?                     // deprecated: a set takes its game's engine-version
   version: text?
   status: Status = prototype
   released: text?
@@ -144,14 +179,14 @@ type Set : data {
 
 // A named number an object can carry. Libraries give counters meaning (stat bonuses, "full").
 type Counter {
-  name: text
+  name: text?
   max: int?
 }
 
 // A keyword is a tag on a card. The core only knows it is a tag; a library gives it meaning by
 // declaring a subtype (`type Guardian : Keyword {}`) or by attaching behaviour in a rules document.
 type Keyword {
-  name: text
+  name: text?
   cites: text?
 }
 // A keyword applied to a card with a parameter (Tough 1).
@@ -162,19 +197,27 @@ type Applied {
 
 // The card the core knows: a named object of a game-declared type, with faces and tags. Stats
 // (cost, power, health) belong to library card records that extend this one.
+// A card's name defaults to its key like any keyed record's, but cards keep lowercase keys
+// (`citron-fox`) and set their printed name ('Citron Fox'). `type-name` and `type-cites` are
+// fixed by the game's type declaration when the type's display name is not its identifier
+// (`type Spirit : UnitCard { type-name = 'Nature Spirit' }`).
 type Card : data {
-  name: text
+  name: text?
   flavor: text?
   pronoun: text?
   art: text?                      // an asset reference, never inline image data
   cites: Section | text | nic
   keywords: [Keyword | Applied] = empty
   abilities: [Ability] = empty
+  type-name: text?                // fixed by the type: its display name; defaults to its identifier
+  type-cites: Section | text | nic  // fixed by the type: the rulebook's section on it
 }
-type Token : Card { type: CardType }
+// A token's type is a card type the game declares, as `nameof(Creature)`; `CardType` is the
+// deprecated form.
+type Token : Card { type: CardType | text }
 
 type Deck {
-  name: text
+  name: text?
   cards: [[Card, int]]
   blurb: text?
 }

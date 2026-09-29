@@ -1,11 +1,10 @@
 // objectives: winning by something other than life. Races to a counter, shared objectives that
 // are claimed or captured, control of a zone, missions completed, the majority of rounds. About a
 // quarter of the 156 surveyed games win this way. Depends on common for Cost.
-objectives = Library
+#type Library
 
 name = 'Objectives'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 type ObjectiveRule : Rule {}

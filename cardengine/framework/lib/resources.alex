@@ -1,14 +1,14 @@
 // resources: what pays for cards. A game names each resource it has and lists policies about
 // them. Depends on common for Cost.
-resources = Library
+#type Library
 
 name = 'Resources'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 type ResourceRule : Rule {}
 type ResourcePolicy : Rule {}
+// A resource's name defaults to its key (`Energy = GrowingCounter { ... }` is 'Energy').
 extension Game {
   resources: [text: ResourceRule] = empty
   resource-rules: [ResourcePolicy] = empty
@@ -17,7 +17,7 @@ extension Game {
 
 // Any card played face down becomes a resource (Offerings, ink, Duel Masters mana).
 type CardsAsResources : ResourceRule {
-  name: text
+  name: text?
   zone: Zone
   from: Zone
   start: int
@@ -27,28 +27,28 @@ type CardsAsResources : ResourceRule {
 }
 // A number that rises to a cap (mana crystals).
 type GrowingCounter : ResourceRule {
-  name: text
+  name: text?
   start: int
   max: int
   pay-by: PayBy
 }
 // Dedicated resource cards in the deck (lands; energy attached to a unit).
 type ResourceCards : ResourceRule {
-  name: text
+  name: text?
   attaches-to-units: bool
 }
 // Pay by discarding cards from hand for their printed pitch value (Flesh and Blood).
-type PitchFromHand : ResourceRule { name: text, zone: Zone, from: Zone }
+type PitchFromHand : ResourceRule { name: text?, zone: Zone, from: Zone }
 // A counter each object carries and spends for its own abilities (Vampire: The Eternal Struggle).
-type PerObjectResource : ResourceRule { name: text, counter: text }
+type PerObjectResource : ResourceRule { name: text?, counter: text }
 // Units in play produce the resource (Caster Chronicles, Doomtown deeds).
-type ProducedByUnits : ResourceRule { name: text, property: text }
+type ProducedByUnits : ResourceRule { name: text?, property: text }
 // The player's own damage pile is the resource (Raw Deal fortitude, UFS momentum).
-type DamageAsResource : ResourceRule { name: text, zone: Zone }
+type DamageAsResource : ResourceRule { name: text?, zone: Zone }
 // A shared pool both players push and pull (Decipher's Lord of the Rings twilight).
-type SharedPool : ResourceRule { name: text, start: int }
+type SharedPool : ResourceRule { name: text?, start: int }
 // Dedicated resource cards that also attach to units as a buff (One Piece DON!!).
-type ResourceCardsAttach : ResourceRule { name: text, grant-power: int }
+type ResourceCardsAttach : ResourceRule { name: text?, grant-power: int }
 enum PayBy { exhaust, discard, spend }
 
 type NoIdentityWhileResource : ResourcePolicy { resource: ResourceRule }
@@ -61,7 +61,7 @@ type RequiresAttachedResources : ResourcePolicy { resource: ResourceRule, consum
 // Pay a card's cost another way when a condition holds (sing a song, convoke, delve).
 type AlternateCost : ResourcePolicy { pays: PayBy, when: text }
 // Pay by destroying or releasing your own units (tribute, materials).
-type SacrificeCost : ResourcePolicy { of: CardType, count: int }
+type SacrificeCost : ResourcePolicy { of: CardType | text, count: int }
 // A colour or threshold that must be present among resources controlled, not spent (Hex, ink).
 type ThresholdRequirement : ResourcePolicy { resource: ResourceRule }
 // A card may be played only while named other cards are in play (prerequisite chains).

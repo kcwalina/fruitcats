@@ -1,10 +1,9 @@
 // attachments: cards that sit on a unit and change it (Talismans, auras, equipment, tools,
 // energy). Depends on units for Grant and on common for Cost.
-attachments = Library
+#type Library
 
 name = 'Attachments'
 version = '0.1'
-core = '1'
 requires = [@common, @units]
 
 type AttachmentCard : Card {

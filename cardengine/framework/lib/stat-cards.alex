@@ -1,11 +1,10 @@
 // stat-cards: cards that are only a set of comparable numbers, played from a fixed line-up and
 // compared head to head (Match Attax, Adrenalyn XL, Cricket Attax). No cost, no persistence, no
 // combat. Depends on the core only.
-stat-cards = Library
+#type Library
 
 name = 'Stat cards'
 version = '0.1'
-core = '1'
 
 type StatCard : Card { stats: [text: int] }
 

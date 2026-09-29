@@ -1,9 +1,8 @@
 // Starter Box (SB1): three families, three decks, and the Wildfolk cards every deck may use.
-starter-box = Set
+#type Set
 
 id = 'SB1'
 name = 'Starter Box'
-core = '1'
 version = '0.4.0'
 status = released
 released = '2026-09'
@@ -11,15 +10,15 @@ legacy = true
 
 families = [
   Citrus = Family {
-    name = nameof(Citrus), colors = ['#F29F05', '#A86400', '#FFF1CC']
+    colors = ['#F29F05', '#A86400', '#FFF1CC']
     mechanic = @Zest, hint = 'bonuses when it isn''t your first card this round'
   }
   Orchard = Family {
-    name = nameof(Orchard), colors = ['#D64545', '#8E2A2A', '#FBE0DA']
+    colors = ['#D64545', '#8E2A2A', '#FBE0DA']
     mechanic = @Ripen, hint = 'units grow +1/+1 every round'
   }
   Tropical = Family {
-    name = nameof(Tropical), colors = ['#F2780C', '#A24E05', '#FFE6CC']
+    colors = ['#F2780C', '#A24E05', '#FFE6CC']
     mechanic = @Sprout, hint = 'extra Offerings now, Lush payoffs at 7+'
   }
   Garden = Family {
@@ -30,11 +29,11 @@ families = [
 
 // Signature mechanics. Their conditions and effects live in starter-box-rules.alex.
 counters = [
-  Ripeness = StatCounter { name = nameof(Ripeness), power = 1, health = 1, max = 2 }
+  Ripeness = StatCounter { power = 1, health = 1, max = 2 }
 ]
 mechanics = [
   Zest = Mechanic {
-    name = nameof(Zest), family = @Citrus, kind = condition
+    family = @Citrus, kind = condition
     label = true
     reminder = 'A bonus if this is not the first card you have played this round.'
     abilities = [
@@ -44,7 +43,7 @@ mechanics = [
     ]
   }
   Ripen = Mechanic {
-    name = nameof(Ripen), family = @Orchard, kind = keyword
+    family = @Orchard, kind = keyword
     icon = '🍎'
     reminder = 'At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2.'
     abilities = [
@@ -54,13 +53,13 @@ mechanics = [
     ]
   }
   Lush = Mechanic {
-    name = nameof(Lush), family = @Tropical, kind = condition
+    family = @Tropical, kind = condition
     badge = '🌴'
     reminder = 'This bonus is on while you have 7 or more Offerings.'
     abilities = [MechanicCondition { text = 'Lush: while you have 7 or more Offerings.' }]
   }
   Sprout = Mechanic {
-    name = nameof(Sprout), family = @Tropical, kind = action
+    family = @Tropical, kind = action
     reminder = 'Put that many cards from the top of your deck into your Offerings.'
   }
 ]

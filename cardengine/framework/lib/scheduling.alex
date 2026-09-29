@@ -1,10 +1,9 @@
 // scheduling: when triggered effects resolve and in what order, and what a state check does.
 // Depends on the core only.
-scheduling = Library
+#type Library
 
 name = 'Scheduling'
 version = '0.1'
-core = '1'
 
 type SchedulingRule : Rule {}
 extension Game { scheduling: [SchedulingRule] = empty }

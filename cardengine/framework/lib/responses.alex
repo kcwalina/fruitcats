@@ -1,11 +1,10 @@
 // responses: reacting to the opponent. Fixed windows after named events (Ambush), or a full
 // stack or chain where anyone may respond to anything (the core's after-all-pass drain policy).
 // Depends on the core only.
-responses = Library
+#type Library
 
 name = 'Responses'
 version = '0.1'
-core = '1'
 
 type ResponseRule : Rule {}
 extension Game { responses: [ResponseRule] = empty }

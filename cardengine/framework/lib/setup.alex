@@ -1,15 +1,14 @@
 // setup: what happens before round 1. Depends on the core only.
-setup = Library
+#type Library
 
 name = 'Setup'
 version = '0.1'
-core = '1'
 
 type SetupRule : Rule {}
 extension Game { setup: [SetupRule] = empty }
 
 type ShuffleDeck : SetupRule { zone: Zone? }      // the deck-role zone when omitted
-type StartsInZone : SetupRule { type: CardType, zone: Zone, face: int = 1 }
+type StartsInZone : SetupRule { type: CardType | text, zone: Zone, face: int = 1 }
 type SplitSharedPool : SetupRule { zone: Zone, each: int }   // deal one pool to all (Epic)
 type OpeningHand : SetupRule { n: int }
 type AsymmetricOpeningHand : SetupRule { first: int, second: int }

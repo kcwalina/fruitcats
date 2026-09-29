@@ -1,15 +1,14 @@
 // Berry Picnic (BP1). Requires the Starter Box for its Wildfolk cards.
-berry-picnic = Set
+#type Set
 
 id = 'BP1'
 name = 'Berry Picnic'
-core = '1'
 status = released
 requires = [@starter-box]
 
 families = [
   Berry = Family {
-    name = nameof(Berry), colors = ['#D6336C', '#8F1D46', '#FBDDE7']
+    colors = ['#D6336C', '#8F1D46', '#FBDDE7']
     mechanic = @Leftovers, personality = 'Sweet, social, a little chaotic'
     plays-like = 'Nobody leaves the picnic hungry: every defeated friend feeds another'
     hint = 'units that feed their friends when they go, so every trade makes the Yard stronger'
@@ -18,11 +17,11 @@ families = [
 
 // The set's only new things.
 counters = [
-  Crumb = StatCounter { name = nameof(Crumb), power = 1, health = 1, max = 3, full-at = 3 }
+  Crumb = StatCounter { power = 1, health = 1, max = 3, full-at = 3 }
 ]
 mechanics = [
   Leftovers = Mechanic {
-    name = nameof(Leftovers), family = @Berry, kind = keyword
+    family = @Berry, kind = keyword
     icon = '🍪', reminder = @leftovers-reminder
     abilities = [
       MechanicDefeated {
@@ -33,7 +32,7 @@ mechanics = [
 ]
 tokens = [
   Ant = Token {
-    type = @Creature, name = nameof(Ant), family = @Berry
+    type = nameof(Creature), family = @Berry
     cost = 0, power = 1, health = 1, keywords = [@Leftovers]   // §200.4 tokens cost 0
     flavor = 'It brought friends.'
   }

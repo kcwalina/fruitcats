@@ -1,5 +1,5 @@
 // Berry Picnic rules: a program document. `this` is the object a declaration is attached to.
-berry-picnic-rules = Rules
+#type Rules
 
 for = @berry-picnic
 

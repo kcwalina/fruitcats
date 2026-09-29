@@ -1,10 +1,9 @@
 // initiative: a token that says who acts first (the Lantern, the attack token, the first-player
 // marker) and how it moves. Depends on the core only.
-initiative = Library
+#type Library
 
 name = 'Initiative'
 version = '0.1'
-core = '1'
 
 type InitiativeRule : Rule {}
 extension Game { initiative: [InitiativeRule] = empty }

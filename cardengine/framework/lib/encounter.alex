@@ -1,11 +1,10 @@
 // encounter: a scripted opponent. Cooperative and solo games (Arkham Horror, Marvel Champions,
 // Lord of the Rings LCG) play against a deck whose cards say what they do; the deck acts through
 // hooks and never through input, so the core's loop hosts it unchanged. Depends on the core only.
-encounter = Library
+#type Library
 
 name = 'Encounter'
 version = '0.1'
-core = '1'
 
 type EncounterRule : Rule {}
 extension Game { encounter: [EncounterRule] = empty }

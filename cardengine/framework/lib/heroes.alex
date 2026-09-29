@@ -1,11 +1,10 @@
 // heroes: a card that is always in play and represents the player (Hero, leader, avatar,
 // planeswalker), with one or two faces, optional stats of its own, and a repeatable ability.
 // Depends on the core only.
-heroes = Library
+#type Library
 
 name = 'Heroes'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 type HeroCard : Card {

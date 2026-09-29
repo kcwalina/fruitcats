@@ -1,7 +1,7 @@
-// The cards of a Studio project, as its Alex file writes them (games/folkborn/sets/<set>/<set>.alex): what the Studio
+// The cards of a Studio project, as the core reads its Alex file (games/folkborn/sets/<set>/<set>.alex): what the Studio
 // shows beside a picture and on its game previews. It reads the words and numbers only; it knows no rules.
 
-import { intOf, objectOf, textOf, type AlexFolder, type AlexObject, type AlexValue } from '../../../../cardengine/alex/alex';
+import type { Json } from '../../../../cardengine/engine/host/core';
 
 export interface StudioFace {
   /** The card's type as its file writes it, in words: 'Fabled', 'Token Creature'. */
@@ -22,35 +22,37 @@ export interface StudioCard extends StudioFace {
   back?: StudioFace;
 }
 
-/** The cards of `set` (a document of `folder`), by their number. */
-export function cardsOf(folder: AlexFolder, set: string): Map<string, StudioCard> {
-  const doc = folder.documents.get(set);
-  const cards = new Map<string, StudioCard>();
-  if (!doc) return cards;
-  const at = (v: AlexValue | undefined) => folder.resolve(v, set);
-  const family = textOf(objectOf(at(doc.root.get('family')))?.get('name'));
-  const face = (o: AlexObject): StudioFace => {
-    const epithet = textOf(at(o.get('epithet')));
-    const name = textOf(at(o.get('name'))) ?? '';
-    return {
-      type: (o.type ?? '').replace(/([a-z])([A-Z])/g, '$1 $2'),
-      name: epithet ? `${name}, ${epithet}` : name,
-      text: textOf(at(o.get('text'))),
-      flavor: textOf(at(o.get('flavor'))),
-      cost: intOf(o.get('cost')),
-      power: intOf(o.get('power')),
-      health: intOf(o.get('health')),
-    };
+type Record_ = { [key: string]: Json };
+const isRecord = (v: Json | undefined): v is Record_ => v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
+const text = (o: Record_, field: string) => (typeof o[field] === 'string' ? (o[field] as string) : undefined);
+const whole = (o: Record_, field: string) => (typeof o[field] === 'number' ? (o[field] as number) : undefined);
+
+function face(o: Record_): StudioFace {
+  const epithet = text(o, 'epithet');
+  const name = text(o, 'name') ?? '';
+  return {
+    type: String(o.$type ?? '').replace(/([a-z])([A-Z])/g, '$1 $2'),
+    name: epithet ? `${name}, ${epithet}` : name,
+    text: text(o, 'text'),
+    flavor: text(o, 'flavor'),
+    cost: whole(o, 'cost'),
+    power: whole(o, 'power'),
+    health: whole(o, 'health'),
   };
-  for (const [, v] of objectOf(at(doc.root.get('cards')))?.entries ?? []) {
-    const card = objectOf(at(v));
-    const number = card && textOf(card.get('number'));
-    if (!card || !number) continue;
-    const back = objectOf(at(card.get('back')));
-    const rarity = at(card.get('rarity'));
+}
+
+/** The cards of a set, from its document's value, by their number. */
+export function cardsFrom(set: Json): Map<string, StudioCard> {
+  const cards = new Map<string, StudioCard>();
+  if (!isRecord(set)) return cards;
+  const family = isRecord(set.family) ? text(set.family, 'name') : undefined;
+  const all = isRecord(set.cards) ? set.cards : {};
+  for (const [, value] of Object.entries(all)) {
+    if (!isRecord(value)) continue;
+    const number = text(value, 'number');
+    if (!number) continue;
     cards.set(number, {
-      ...face(card), number, family, back: back ? face(back) : undefined,
-      rarity: rarity?.kind === 'enum' ? rarity.member : undefined,
+      ...face(value), number, family, back: isRecord(value.back) ? face(value.back) : undefined, rarity: text(value, 'rarity'),
     });
   }
   return cards;

@@ -77,15 +77,12 @@ renderer. Every host runs that same file: the browser (Studio, the game table, t
   runtime inside `tcg.exe` to run `tcg sim` and `tcg playtest`, and native Node add-ons to render
   cards.
 
-**The TypeScript reader on main is interim, and the Artist Studio moves to the core.**
-`cardengine/alex/alex.ts` (31d7bbc) reads Alex's data layer for the Artist Studio
-(`apps/web/src/studio/`) and for the build that lists its projects (`content/tcg.ts`), checked
-against the C# Alex by `cardengine/alex/conformance/`. It was written the same morning, before this
-decision. It grows no further: no binder and no program layer. The Artist Studio is ported to the
-core's `.wasm` (parsing, binding and everything after), in the browser and in the build, as part of
-Stage 1, and `alex.ts` with its tests and conformance folder is then deleted. Everything stays in
-this repository: nothing moves to a separate one. Merging the spike's `cardengine/conformance/`
-beside `cardengine/alex/conformance/` needs one of the two renamed.
+**The Artist Studio runs on the core (done 2026-09-29).** The Studio (`apps/web/src/studio/`) and the build that
+lists its projects (`content/tcg.ts`) load the core's `.wasm` and read their projects through it
+(`cardengine/engine/host/core.ts` in the browser and in Node). The interim TypeScript reader that did this for a day
+(`cardengine/alex/`, 31d7bbc) is deleted, with its tests and its conformance folder. The owner said later that day
+that Alex, both implementations, will move to a separate shared repository of platform pieces that mochi and fruitcats
+both use; until then it stays here and in mochi.
 
 **The spike (2026-09-29)** proved it on Alex's parser, ported to Rust from `AlexParser.cs`:
 
@@ -576,16 +573,27 @@ identical), and `dotnet build -c Release` in `cardengine/tcg`, whose project fin
    `Game`, every `Cards` file, `Rules` by their `for`, the checks `tcg check` promises (unknown
    `{name}`, unused card constants, handler and text both ways, citations). Errors carry file and
    span.
+   *Done (2026-09-29), in `cardengine/engine/src/loader/project.rs`:* every `.alex` file of the folder joins the one
+   `Game` (a `Rules` document read in program mode; it joins by its references, as the language binds it). The schema is
+   the framework's core, embedded in the module (`build.rs`), and the libraries the game `uses`, with what they require;
+   a printable game uses none. Bound with the card engine's host, which checks `{name}`, unused card constants and
+   handlers against text. A citation of a missing section is an error, as any unresolved reference is; the notes for a
+   rule with no citation or a section no rule cites are still to do. `cargo run --release --example check -- <folder>`
+   prints what it finds. On `games/folkborn` it finds 92 errors, all one story: the core's schema is behind what tcg
+   and Folkborn's files use (`Frame`, `Finish` records, `text-spacing`, a Set's `family`, paragraph and text box
+   fields). tcg reads its files without a schema, so it never noticed; the core schema needs those added.
 3. **Interface calls** in `abi.rs` for these: `load_project` (many files in, diagnostics and a
    handle out) and queries on the loaded project (cards, card types, the layout). Bytes in, bytes
    out, with no host imports. The module must still instantiate with an empty linker.
+   *Done (2026-09-29):* `project_load`, `project_query` and `project_free`; the questions are `diagnostics`,
+   `documents`, `cards` and `value <document>`, answered as JSON (`src/loader/queries.rs`).
 
 4. **The Artist Studio on the core.** `apps/web/src/studio/` and `content/tcg.ts` load the core's
    `.wasm` (through a small host like `web/engine.js`, in the browser and in Node) and read their
    projects with the queries from step 3, instead of `cardengine/alex/alex.ts`. Then delete
    `alex.ts`, `alex.test.ts` and `cardengine/alex/conformance/`.
    *Done when* the live Studio shows every project and picture exactly as before, and no file
-   imports `cardengine/alex/alex`.
+   imports `cardengine/alex/alex`. *Done 2026-09-29.*
 
 ### Stage 2: `tcg.exe` runs the core
 

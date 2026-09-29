@@ -7,6 +7,7 @@
 use crate::alex::dump;
 use crate::alex::host::{Host, KindsHost};
 use crate::loader::card_engine::CardEngineHost;
+use crate::loader::{project, queries};
 use crate::alex::{binder, bound_dump};
 use crate::alex::parser::ParseMode;
 
@@ -114,6 +115,76 @@ fn read_sources(input: &[u8]) -> Option<(Box<dyn Host>, Vec<binder::Source>)> {
         sources.push(binder::Source { name, bytes, role, check_root_name: true });
     }
     Some((host, sources))
+}
+
+// ── projects ─────────────────────────────────────────────────────────────────────────────────────
+
+thread_local! {
+    static PROJECTS: std::cell::RefCell<Vec<Option<project::Project>>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Loads a project from the files at `pointer` and returns a handle to ask it questions with (`project_query`) and to
+/// free it (`project_free`). The input is little-endian: a u32 count, then for each file its path within the project's
+/// folder and its bytes, each as a u32 length and its bytes. A handle is never 0.
+///
+/// # Safety
+/// `pointer` and `length` must describe readable memory in this module.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn project_load(pointer: *const u8, length: u32) -> u32 {
+    let input = unsafe { std::slice::from_raw_parts(pointer, length as usize) };
+    let files = read_project_files(input).unwrap_or_default();
+    let loaded = project::load(files);
+    PROJECTS.with(|projects| {
+        let mut projects = projects.borrow_mut();
+        projects.push(Some(loaded));
+        projects.len() as u32
+    })
+}
+
+/// Answers a question about a loaded project (`loader::queries::answer`), as UTF-8 JSON.
+///
+/// # Safety
+/// `pointer` and `length` must describe readable memory in this module.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn project_query(handle: u32, pointer: *const u8, length: u32) -> u64 {
+    let question = String::from_utf8_lossy(unsafe { std::slice::from_raw_parts(pointer, length as usize) }).into_owned();
+    let answer = PROJECTS.with(|projects| {
+        let projects = projects.borrow();
+        match projects.get((handle as usize).wrapping_sub(1)).and_then(|p| p.as_ref()) {
+            Some(project) => queries::answer(project, &question),
+            None => "{\"error\":\"No project has that handle.\"}".to_string(),
+        }
+    });
+    hand_out(answer.into_bytes())
+}
+
+/// Frees a loaded project.
+#[unsafe(no_mangle)]
+pub extern "C" fn project_free(handle: u32) {
+    PROJECTS.with(|projects| {
+        if let Some(slot) = projects.borrow_mut().get_mut((handle as usize).wrapping_sub(1)) {
+            *slot = None;
+        }
+    });
+}
+
+fn read_project_files(input: &[u8]) -> Option<Vec<project::ProjectFile>> {
+    let mut at = 0usize;
+    let mut take = |length: usize| -> Option<&[u8]> {
+        let slice = input.get(at..at.checked_add(length)?)?;
+        at += length;
+        Some(slice)
+    };
+    let count = u32::from_le_bytes(take(4)?.try_into().ok()?);
+    let mut files = Vec::new();
+    for _ in 0..count {
+        let path_length = u32::from_le_bytes(take(4)?.try_into().ok()?) as usize;
+        let path = String::from_utf8_lossy(take(path_length)?).into_owned();
+        let bytes_length = u32::from_le_bytes(take(4)?.try_into().ok()?) as usize;
+        let bytes = take(bytes_length)?.to_vec();
+        files.push(project::ProjectFile { path, bytes });
+    }
+    Some(files)
 }
 
 fn hand_out(bytes: Vec<u8>) -> u64 {

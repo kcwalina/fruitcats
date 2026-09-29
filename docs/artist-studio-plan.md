@@ -93,8 +93,9 @@ picture, so any image an artist sends can become one.
 `games/folkborn/sets/<set>/`: its cards (`<set>.alex`), its brief (`<set>-brief.alex`, `#type ArtBrief`, declared in
 `folkborn.alex`) and its paintings (`art/`). The brief has the steps in order, each with its pictures: the file name,
 size, kind and tier, the card it's for (a reference into `<set>.alex`), what to draw, what must stay, and which parts
-are open to suggestions. The Studio reads these files with the TypeScript Alex (`cardengine/alex/`), and knows no
-game rules: `apps/web/src/studio/brief.ts` (`briefFromAlex`) and `cards.ts` read the words and numbers only.
+are open to suggestions. The Studio reads these files with the core (`cardengine/engine`, the platform's WebAssembly
+module, loaded by `cardengine/engine/host/core.ts`), and knows no game rules: `apps/web/src/studio/brief.ts`
+(`briefFrom`) and `cards.ts` read the words and numbers the core gives them.
 `publish-pack` uploads the folder as `project/` in the set's fingerprinted folder on the pack storage, next to the
 finished cards and the Studio's frames (`cards/frames/`, drawn by tcg), so nothing a project was published with is
 ever replaced. `npm run check-set` checks the brief: every card face has a picture, and every reference is to

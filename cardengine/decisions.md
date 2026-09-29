@@ -1013,7 +1013,8 @@ fruitcats and mochi and on 8,000 broken copies (`cardengine/conformance`). The f
 `docs/tcg/tcg-developer-platform.md`, "The core".
 
 The Artist Studio moves to the core too (Stage 1): it and `content/tcg.ts` load the `.wasm` instead of
-`cardengine/alex/alex.ts`, which is then deleted. Everything stays in this repository.
+`cardengine/alex/alex.ts`, which is then deleted. Everything stays in this repository. (Done 2026-09-29. Later that
+day the owner said Alex, both implementations, will move to a separate shared repository of platform pieces.)
 
 ## Open
 

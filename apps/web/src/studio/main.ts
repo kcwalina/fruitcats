@@ -7,7 +7,8 @@
 // (#/mc1/MC1-X01), and the list of projects (#/). One render() draws the page from `S`; clicks and typing are handled by
 // data-click and data-in attributes, as in the game.
 
-import { AlexFolder, parseAlex } from '../../../../cardengine/alex/alex';
+import { Core } from '../../../../cardengine/engine/host/core';
+import coreUrl from '../../../../cardengine/engine/target/wasm32-unknown-unknown/release/tcg_engine.wasm?url';
 import { session, signOut } from '../auth';
 import { apiPolicy, fetchRetry } from '../net';
 import { BASE, esc } from '../site';
@@ -15,9 +16,9 @@ import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
 import {
   FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
-  briefFromAlex, type Brief, type BriefPicture, type State,
+  briefFrom, type Brief, type BriefPicture, type State,
 } from './brief';
-import { cardsOf, type StudioCard } from './cards';
+import { cardsFrom, type StudioCard } from './cards';
 import { PALETTES, announcementPreview, cardPreview, finishesOf, frameImages, framePalettes, gamePreview, pawtraitPreview } from './previews';
 import { renderSignIn, signInClick, signInEnter, signInInput } from './signin';
 import { STUDIO_TERMS, STUDIO_TERMS_VERSION } from './terms';
@@ -191,18 +192,31 @@ function visibleSets(): SetEntry[] {
   return S.sets.filter((s) => mine.includes(s.code));
 }
 
+let loadingCore: Promise<Core> | undefined;
+/** The core (cardengine/engine), which reads a project's Alex files: loaded once, when the first project opens. */
+function studioCore(): Promise<Core> {
+  loadingCore ??= Core.load(coreUrl);
+  loadingCore.catch(() => { loadingCore = undefined; });
+  return loadingCore;
+}
+
 async function loadSet(code: string) {
   if (!S.briefs.has(code)) {
     try {
-      // The project's folder: the set's cards and its brief, in Alex.
+      // The project's folder: the set's cards and its brief, in Alex, loaded by the core.
       const entry = S.sets.find((s) => s.code === code)!;
       const base = /^https?:/.test(entry.project) ? entry.project : `${BASE}${entry.project}`;
       const name = entry.folder;
-      const [cards, brief] = await Promise.all([`${name}.alex`, `${name}-brief.alex`]
-        .map(async (file) => parseAlex(await (await staticFile(`${base}${file}`)).text(), file)));
-      const folder = new AlexFolder(new Map([[name, cards], [`${name}-brief`, brief]]));
-      for (const [number, card] of cardsOf(folder, name)) setCards.set(number, card);
-      S.briefs.set(code, briefFromAlex(folder, `${name}-brief`));
+      const [core, files] = await Promise.all([
+        studioCore(),
+        Promise.all([`${name}.alex`, `${name}-brief.alex`]
+          .map(async (path) => ({ path, bytes: new Uint8Array(await (await staticFile(`${base}${path}`)).arrayBuffer()) }))),
+      ]);
+      const project = core.loadProject(files);
+      const documents = { [name]: project.value(name), [`${name}-brief`]: project.value(`${name}-brief`) };
+      project.free();
+      for (const [number, card] of cardsFrom(documents[name])) setCards.set(number, card);
+      S.briefs.set(code, briefFrom(documents, `${name}-brief`));
     } catch {
       return;
     }

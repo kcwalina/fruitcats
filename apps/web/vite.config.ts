@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
+import { buildCore } from '../../content/core';
 import { artPaths, artPublished } from '../../content/pack-storage';
 import { briefFile, gameSet, pictureFolders } from '../../content/tcg';
 import { CONTENT as GAME_SETS } from '../../content/index';
@@ -40,6 +41,8 @@ const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
 // public site has them too. `vite build --mode playtest` (npm run build:playtest) builds into dist-playtest/ for the
 // playtest site; any feature still hidden from the public goes in its `define` only.
 export default defineConfig(({ mode, command }) => ({
+  // The core (cardengine/engine), which the Studio loads projects with: built first, since the Studio imports its file.
+  ...(buildCore(), {}),
   base: './',
   define: {
     // Card art: served from the sets' folders in dev, taken from the pack storage in a build (contentAssets below).

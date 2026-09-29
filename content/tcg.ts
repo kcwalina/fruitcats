@@ -13,8 +13,8 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AlexFolder, parseAlex } from '../cardengine/alex/alex';
-import { briefFromAlex, type Brief } from '../apps/web/src/studio/brief';
+import { briefFrom, type Brief } from '../apps/web/src/studio/brief';
+import { core } from './core';
 
 const CONTENT = dirname(fileURLToPath(import.meta.url));
 const REPO = dirname(CONTENT);
@@ -38,17 +38,19 @@ export function briefFile(root: string, game = GAME): string | null {
   return existsSync(file) ? file : null;
 }
 
-/** The set's Alex files, read: its cards, its brief. */
-export function setDocuments(root: string, game = GAME): AlexFolder {
-  const dir = gameSet(root, game);
-  return new AlexFolder(new Map(readdirSync(dir).filter((f) => f.endsWith('.alex')).sort()
-    .map((f) => [f.slice(0, -'.alex'.length), parseAlex(readFileSync(join(dir, f), 'utf8'), relative(REPO, join(dir, f)))])));
-}
-
-/** The set's art brief, as the Studio reads it, or null when it has none. */
+/** The set's art brief, as the Studio reads it (the core loads the set's folder), or null when it has none. */
 export function readBrief(root: string, game = GAME): Brief | null {
   const file = briefFile(root, game);
-  return file ? briefFromAlex(setDocuments(root, game), basename(file, '.alex')) : null;
+  if (!file) return null;
+  const dir = gameSet(root, game);
+  const files = readdirSync(dir).filter((f) => f.endsWith('.alex')).sort().map((f) => ({ path: f, bytes: readFileSync(join(dir, f)) }));
+  const project = core().loadProject(files);
+  try {
+    const documents = Object.fromEntries(files.map((f) => [f.path.slice(0, -'.alex'.length), project.value(f.path.slice(0, -'.alex'.length))]));
+    return briefFrom(documents, basename(file, '.alex'));
+  } finally {
+    project.free();
+  }
 }
 
 /** Folders that hold a set's pictures: content/<set>/art/illustrations, and its card paintings in the game folder. */

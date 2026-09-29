@@ -1,20 +1,28 @@
-// The Studio reads a project from its Alex files: Mochi's brief and cards, as games/folkborn/sets/mochi/ has them.
-// The Studio's saved work (uploads, comments, a step opened early) is kept under each picture's file name and each
-// step's number, so those must read as they always have.
+// The Studio reads a project through the core: Mochi's brief and cards, as games/folkborn/sets/mochi/ has them. The
+// Studio's saved work (uploads, comments, a step opened early) is kept under each picture's file name and each step's
+// number, so those must read as they always have.
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { AlexFolder, parseAlex } from '../../../cardengine/alex/alex';
-import { briefFromAlex } from '../src/studio/brief';
-import { cardsOf } from '../src/studio/cards';
+import type { Json } from '../../../cardengine/engine/host/core';
+import { core } from '../../../content/core';
+import { briefFrom } from '../src/studio/brief';
+import { cardsFrom } from '../src/studio/cards';
 
 const MOCHI = fileURLToPath(new URL('../../../games/folkborn/sets/mochi/', import.meta.url));
-const folder = new AlexFolder(new Map(readdirSync(MOCHI).filter((f) => f.endsWith('.alex'))
-  .map((f) => [f.replace(/\.alex$/, ''), parseAlex(readFileSync(MOCHI + f, 'utf8'), f)])));
 
-describe('a Studio project in Alex', () => {
-  const brief = briefFromAlex(folder, 'mochi-brief');
+function documents(skip = ''): Record<string, Json> {
+  const files = readdirSync(MOCHI).filter((f) => f.endsWith('.alex') && f !== skip).map((path) => ({ path, bytes: readFileSync(MOCHI + path) }));
+  const project = core().loadProject(files);
+  const values = Object.fromEntries(files.map((f) => [f.path.replace(/\.alex$/, ''), project.value(f.path.replace(/\.alex$/, ''))]));
+  project.free();
+  return values;
+}
+
+describe('a Studio project, read through the core', () => {
+  const read = documents();
+  const brief = briefFrom(read, 'mochi-brief');
 
   it('keeps the set, the steps and the pictures the Studio keeps work under', () => {
     expect([brief.set, brief.name]).toEqual(['MC1', 'Mochi']);
@@ -23,7 +31,7 @@ describe('a Studio project in Alex', () => {
       ['MC1-X01.webp', 'MC1-X01', 'card', [1536, 1024], 'signature', 1],
       ['legend-mochi.webp', null, 'pawtrait', [512, 512], 'legend', 2],
     ]);
-  });
+  }, 120_000);
 
   it('keeps what the artist reads', () => {
     expect(brief.pictures[0]).toMatchObject({
@@ -36,14 +44,13 @@ describe('a Studio project in Alex', () => {
   });
 
   it('reads the cards the pictures are for', () => {
-    expect(cardsOf(folder, 'mochi').get('MC1-X01')).toMatchObject({
+    expect(cardsFrom(read.mochi).get('MC1-X01')).toMatchObject({
       name: 'Mochi, the Sweet Spirit', type: 'Fabled', cost: 4, power: 3, health: 4, family: 'Paragon', rarity: 'legendary',
       text: 'Guardian. Lucky. Hello: Draw a card.\nGoodbye: Ready two of your Offerings.',
     });
   });
 
   it('says which reference names nothing', () => {
-    const broken = new AlexFolder(new Map([...folder.documents].filter(([name]) => name !== 'mochi')));
-    expect(() => briefFromAlex(broken, 'mochi-brief')).toThrow(/line \d+: nothing is named @mochi/);
+    expect(() => briefFrom(documents('mochi.alex'), 'mochi-brief')).toThrow(/nothing is named @mochi/);
   });
 });

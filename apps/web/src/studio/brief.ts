@@ -1,9 +1,7 @@
 // A set's art brief (games/folkborn/sets/<set>/<set>-brief.alex, #type ArtBrief) and what the Studio works out from
 // it: which step the artist is on, and what to do next for each picture.
 
-import {
-  boolOf, itemsOf, memberOf, objectOf, textOf, type AlexFolder, type AlexObject, type AlexValue,
-} from '../../../../cardengine/alex/alex';
+import { follow, referenceOf, type Json } from '../../../../cardengine/engine/host/core';
 import type { SetView, Version } from './api';
 
 export interface Brief {
@@ -46,69 +44,77 @@ export interface BriefPicture {
   framePalette?: string;
 }
 
+type Record_ = { [key: string]: Json };
+
 /**
- * The brief in `folder`'s document `name`, for the Studio. Steps are numbered in order from 1, as the Studio's saved
- * state knows them; a picture's card is the card's number, and its portrait the portrait's file.
+ * The brief in the document `name` of a project the core loaded, for the Studio: `documents` holds each document's
+ * value by its name (the set's, for the picture's card). Steps are numbered in order from 1, as the Studio's saved state
+ * knows them; a picture's card is the card's number, and its portrait the portrait's file.
  */
-export function briefFromAlex(folder: AlexFolder, name: string): Brief {
-  const doc = folder.documents.get(name);
-  if (!doc || doc.type !== 'ArtBrief') throw new Error(`${name}.alex isn't an art brief (#type ArtBrief).`);
-  const at = (v: AlexValue | undefined) => {
-    const found = folder.resolve(v, name);
-    if (v?.kind === 'ref' && found === undefined) throw new Error(`${name}.alex, line ${v.line}: nothing is named @${v.path.join('.')}.`);
-    return found;
+export function briefFrom(documents: Record<string, Json>, name: string): Brief {
+  const root = documents[name];
+  if (!isRecord(root) || root.$type !== 'ArtBrief') throw new Error(`${name}.alex isn't an art brief (#type ArtBrief).`);
+  const at = (v: Json | undefined): Json | undefined => {
+    const reference = referenceOf(v);
+    if (reference && (reference as unknown as Record_).$unresolved) throw new Error(`${name}.alex: nothing is named @${reference.$ref}.`);
+    return follow(v, documents);
   };
-  const text = (o: AlexObject, field: string) => textOf(at(o.get(field)));
-  const set = objectOf(at(doc.root.get('set')));
-  const entries = (v: AlexValue | undefined) => [...(objectOf(at(v))?.entries ?? [])];
+  const record = (v: Json | undefined): Record_ | undefined => { const r = at(v); return isRecord(r) ? r : undefined; };
+  const text = (o: Record_ | undefined, field: string) => { const v = at(o?.[field]); return typeof v === 'string' ? v : undefined; };
+  const flag = (o: Record_, field: string) => { const v = o[field]; return typeof v === 'boolean' ? v : undefined; };
+  const word = (o: Record_, field: string) => { const v = o[field]; return typeof v === 'string' ? v : undefined; };
+  const list = (v: Json | undefined): Json[] => { const l = at(v); return Array.isArray(l) ? l : []; };
+  const entries = (v: Json | undefined): [string, Record_][] =>
+    Object.entries(record(v) ?? {}).filter(([k]) => !k.startsWith('$')).map(([k, x]) => [k, record(x) ?? {}]);
+
+  const set = record(root.set);
   const brief: Brief = {
-    set: (set && text(set, 'code')) ?? name.replace(/-brief$/, ''),
-    name: (set && text(set, 'name')) ?? name,
-    about: text(doc.root, 'about'),
-    audience: text(doc.root, 'audience'),
-    style: text(doc.root, 'style'),
-    families: Object.fromEntries(entries(doc.root.get('families')).map(([family, v]) => {
-      const f = objectOf(at(v))!;
-      return [family, { world: text(f, 'world') ?? '', note: text(f, 'note') }];
-    })),
+    set: text(set, 'code') ?? name.replace(/-brief$/, ''),
+    name: text(set, 'name') ?? name,
+    about: text(root, 'about'),
+    audience: text(root, 'audience'),
+    style: text(root, 'style'),
+    families: Object.fromEntries(entries(root.families).map(([family, f]) => [family, { world: text(f, 'world') ?? '', note: text(f, 'note') }])),
     milestones: [],
     pictures: [],
   };
-  entries(doc.root.get('steps')).forEach(([, v], i) => {
-    const step = objectOf(at(v))!;
+  entries(root.steps).forEach(([, step], i) => {
     const id = i + 1;
     brief.milestones.push({ id, title: text(step, 'title') ?? '', note: text(step, 'note') });
-    for (const [, pv] of entries(step.get('pictures'))) {
-      const p = objectOf(at(pv))!;
-      const size = itemsOf(at(p.get('size'))).map((x) => (x.kind === 'int' ? x.value : 0));
-      const card = objectOf(at(p.get('card')));
-      const kind = memberOf(p.get('kind')) ?? 'card';
-      const face = memberOf(p.get('face'));
-      const portrait = objectOf(at(p.get('portrait')));
+    for (const [, p] of entries(step.pictures)) {
+      const size = list(p.size).map((x) => (typeof x === 'number' ? x : 0));
+      const card = record(p.card);
+      const kind = word(p, 'kind') ?? 'card';
+      const face = word(p, 'face');
+      const portrait = record(p.portrait);
       brief.pictures.push({
         file: text(p, 'file') ?? '',
         card: card ? text(card, 'number') ?? null : null,
         kind: (kind === 'portrait' ? 'pawtrait' : kind) as BriefPicture['kind'],
         size: [size[0], size[1]],
-        tier: memberOf(p.get('tier')) as Tier,
-        style: memberOf(p.get('style')) as BriefPicture['style'],
+        tier: word(p, 'tier') as Tier,
+        style: word(p, 'style') as BriefPicture['style'],
         milestone: id,
         draw: text(p, 'draw') ?? '',
-        mustKeep: itemsOf(at(p.get('must-keep'))).map((x) => textOf(at(x)) ?? ''),
-        open: itemsOf(at(p.get('open'))).map((x) => memberOf(x) ?? ''),
+        mustKeep: list(p['must-keep']).map((x) => (typeof at(x) === 'string' ? at(x) as string : '')),
+        open: list(p.open).map((x) => (typeof x === 'string' ? x : '')),
         side: face === 'front' ? 'kitten' : face === 'back' ? 'bigcat' : undefined,
-        showcase: boolOf(p.get('showcase')),
-        main: boolOf(p.get('main')),
-        signature: memberOf(p.get('signature')) as BriefPicture['signature'],
+        showcase: flag(p, 'showcase'),
+        main: flag(p, 'main'),
+        signature: word(p, 'signature') as BriefPicture['signature'],
         pawtrait: portrait ? text(portrait, 'file') : undefined,
         family: text(p, 'family'),
         workingName: text(p, 'working-name'),
-        frameChoice: boolOf(p.get('frame-choice')),
+        frameChoice: flag(p, 'frame-choice'),
         framePalette: text(p, 'frame-palette'),
       });
     }
   });
   return brief;
+}
+
+function isRecord(value: Json | undefined): value is Record_ {
+  return value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value);
 }
 
 /** A picture's key: its file name without the extension (JR1-H01-kitten, legend-mochi, key-art). */

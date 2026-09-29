@@ -275,8 +275,9 @@ card design exactly:
   paragraph on from the one before ("Guardian. Hello: …").
 - `tcg` has no Folkborn numbers in it: sizes, paddings and baselines are in the layout, required where
   there's no neutral default. `text-spacing = whole-pixels` sets text the way the old composer did.
-- `tcg` takes the C# Alex as NuGet packages committed beside it (`cardengine/tcg/packages/`), so it builds
-  from this repository alone.
+- `tcg` references the C# Alex's projects directly, as source in the mochi repository checked out beside
+  this one (`C:/git/mochi` next to `C:/git/fruitcats`, kept on main): one copy of Alex, no packages. The
+  TypeScript Alex, when it's written, is used the same way: its source imported directly, never published.
 - **Two-faced cards:** `Card.back` holds a second face (the Hero's Awakened side). It prints on the
   card's back instead of the game's card back, with its own type's frame; it shows its own fields
   and the front's for the ones its type doesn't have (number, rarity, family).

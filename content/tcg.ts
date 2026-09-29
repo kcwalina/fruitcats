@@ -54,14 +54,25 @@ export function cardSources(root: string, game = GAME): [string, string][] {
   const shared: [string, string][] = [
     ...readdirSync(game).filter((f) => f.endsWith('.alex')).map((f): [string, string] => [`game/${f}`, join(game, f)]),
     ...walk(join(game, 'art')).map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
-    ...walk(TCG, (f) => /\.(cs|csproj|nupkg|config)$/.test(f)).map((f): [string, string] => [`tcg/${relative(TCG, f).replace(/\\/g, '/')}`, f]),
+    ...walk(TCG, (f) => /\.(cs|csproj)$/.test(f)).map((f): [string, string] => [`tcg/${relative(TCG, f).replace(/\\/g, '/')}`, f]),
     ['core.alex', join(REPO, 'cardengine', 'framework', 'core.alex')],
+    // The C# Alex tcg builds against, by its projects (their version): source in the mochi repository beside this one.
+    ...['Alex/ViaMochi.Alex.csproj', 'Alex.Model/ViaMochi.Alex.Model.csproj'].map((f): [string, string] => [`alex/${f}`, join(alexSource(), f)]),
   ];
   return [[own, join(gameSet(root, game), own)], ...shared.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))];
 }
 
+/** The C# Alex's source folder, in the mochi repository checked out beside this one (as cardengine/tcg/Tcg.csproj finds it). */
+export function alexSource(): string {
+  for (let dir = REPO; dirname(dir) !== dir; dir = dirname(dir)) {
+    const src = join(dir, 'mochi', 'mochi.agents', 'alex', 'src');
+    if (existsSync(join(src, 'Alex', 'ViaMochi.Alex.csproj'))) return src;
+  }
+  throw new Error('tcg needs the mochi repository checked out beside this one (for example C:/git/mochi next to C:/git/fruitcats).');
+}
+
 /** Text a checkout may store with either line ending; its fingerprint mustn't depend on which. */
-export const isText = (file: string) => /\.(alex|cs|csproj|config|json|md)$/.test(file);
+export const isText = (file: string) => /\.(alex|cs|csproj|json|md)$/.test(file);
 
 /**
  * Renders the finished cards of the set in `root` into `out` (card faces there; finishes in subfolders), with a

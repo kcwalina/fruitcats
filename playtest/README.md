@@ -8,7 +8,7 @@ than the starter decks, and LLM players look for what the bots can't.
 | Command | What it does | Time |
 |---|---|---|
 | `npm run balance:check` | Starter decks against each other, 300 games a pair. The deploy gate. | ~20 s |
-| `npm run balance` | The full bot gauntlet: starters, random decks for every Hero Cat and partner family, starters with cards swapped, bot sanity check, then removal tests for the cards that look strongest (see below). `--scale N` for more games, `--deck DECK` or `--library` to add custom decks (see below). | ~5 min |
+| `npm run balance` | The full bot gauntlet: starters, random decks for every Hero Cat and partner family, starters with cards swapped, bot sanity check, then removal tests for the cards that look strongest (see below). `--scale N` for more games, `--deck DECK` or `--library` to add custom decks (see below). | ~40 min on the laptop (86,000 games; `--scale` multiplies it) |
 | `npm run deploy` | Type-check, tests, the balance check, engine check, build, bundle check, upload, live check. `--dry-run` stops before the upload; `--force-balance` deploys past a blocking balance problem (say why). | ~1 min |
 | `npm run play -- new` / `do <n>` / `show` | A game against the bot, one decision per command: for a Claude Code session doing a deep playtest, or for you. `--deck`, `--vs` take any deck (see below). | — |
 | `npm run llm-playtest` | LLM players (`--persona exploit\|aggro\|newcomer\|all`) against the bot, each game with a transcript and a playtester report. `--deck`, `--vs` take lists of decks. `--bench` times a provider's models first. | 3–4 min a game on PC2024 |

@@ -306,13 +306,14 @@ the `deck` zone into the `hand` zone.
 
 ```
 zones = [
-  Deck = Zone { name = nameof(Deck), role = deck, shape = pile, visible = none }
-  Hand = Zone { name = nameof(Hand), role = hand, shape = set, visible = owner }
-  Board = Zone { name = nameof(Board), role = board, shape = row, visible = all }
-  Discard = Zone { name = nameof(Discard), role = discard, shape = pile, visible = all }
+  Deck = Zone { role = deck, shape = pile, visible = none }
+  Hand = Zone { role = hand, shape = set, visible = owner }
+  Board = Zone { role = board, shape = row, visible = all }
+  Discard = Zone { role = discard, shape = pile, visible = all }
 ]
 ```
 
+Each zone's name is the one you give it here: players see "Deck", "Hand", "Board".
 `visible` decides who may see the cards in a zone. Nobody sees the deck; only you see your hand.
 The engine enforces this everywhere: in bots, in online play, in replays.
 
@@ -338,7 +339,7 @@ turns = [
 ]
 
 resources = [
-  Energy = GrowingCounter { name = nameof(Energy), start = 0, max = @max-energy, pay-by = spend }
+  Energy = GrowingCounter { start = 0, max = @max-energy, pay-by = spend }
 ]
 resource-rules = [
   GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
@@ -376,9 +377,6 @@ gives them its own name, **Creature**. In `hello-tcg.alex`:
 uses = [@common, @units, @life, @resources, @turns, @setup]
 
 type Creature : UnitCard {}
-types = [
-  Creature = CardType { name = nameof(Creature) }
-]
 
 units = [
   UnitsEnterExhausted { cites = @rulebook.creatures }
@@ -388,7 +386,8 @@ units = [
 
 Your game's Creatures are the library's unit cards under your own name, so they have everything
 a unit card has: a cost, power and health. Games name their card types freely (Monsters, Allies,
-Characters); the library supplies what they do.
+Characters); the library supplies what they do. Declaring the type is all it takes: your game's
+card types are the types it declares.
 
 The rulebook section:
 
@@ -676,13 +675,6 @@ discard pile. Spells come from the `spells` library, and your game calls them **
 uses = [@common, @units, @spells, @combat, @life, @resources, @turns, @setup, @scenarios]
 
 type Spell : SpellCard {}
-```
-
-```
-types = [
-  Creature = CardType { name = nameof(Creature) }
-  Spell = CardType { name = nameof(Spell) }
-]
 ```
 
 The cards:
@@ -1032,16 +1024,12 @@ numbers = [
 
 type Creature : UnitCard {}
 type Spell : SpellCard {}
-types = [
-  Creature = CardType { name = nameof(Creature) }
-  Spell = CardType { name = nameof(Spell) }
-]
 
 zones = [
-  Deck = Zone { name = nameof(Deck), role = deck, shape = pile, visible = none }
-  Hand = Zone { name = nameof(Hand), role = hand, shape = set, visible = owner }
-  Board = Zone { name = nameof(Board), role = board, shape = row, visible = all }
-  Discard = Zone { name = nameof(Discard), role = discard, shape = pile, visible = all }
+  Deck = Zone { role = deck, shape = pile, visible = none }
+  Hand = Zone { role = hand, shape = set, visible = owner }
+  Board = Zone { role = board, shape = row, visible = all }
+  Discard = Zone { role = discard, shape = pile, visible = all }
 ]
 
 life = [
@@ -1067,9 +1055,7 @@ turns = [
 ]
 
 resources = [
-  Energy = GrowingCounter {
-    name = nameof(Energy), start = 0, max = @max-energy, pay-by = spend, cites = @rulebook.energy
-  }
+  Energy = GrowingCounter { start = 0, max = @max-energy, pay-by = spend, cites = @rulebook.energy }
 ]
 resource-rules = [
   GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }

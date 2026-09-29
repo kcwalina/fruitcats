@@ -287,6 +287,11 @@ Core changes the owner asked for on 2026-09-28, from reading the walkthrough:
 
 - **`core = '1'` becomes `engine-version = 1`** on `Game`: readable, and a number. Sets take the
   game's engine version and don't repeat it.
+- **No repeated names.** A game's card types are the types it declares (`type Creature :
+  UnitCard {}`); the `types = [Creature = CardType { name = nameof(Creature) }]` list goes. A
+  record under a key in a keyed map takes its `name` from the key (`Deck = Zone { role = deck }`),
+  unless it gives its own. The keyed map is already the "enum of records"; repeating each key as
+  a name was the noise.
 - **Defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to `empty`, and
   `players` to `Players {}` (two players), so a new game file doesn't list empty fields.
 

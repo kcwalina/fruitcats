@@ -23,9 +23,9 @@ process.env.STORE ??= 'testers';
 process.env.STORE_TESTERS ??= '*';
 const FAKE_PADDLE = process.argv.includes('--fake-paddle');
 process.env.STORE_TEST_CHECKOUT ??= FAKE_PADDLE ? 'off' : 'on';
-// Like the live Store: the old Starter Box decks (free, in the Legacy decks) and the Jiaoren and Hui Hai decks.
-// No prototype sets: their art may not be final, and the Store never sells a card you can't see.
-process.env.STORE_SETS ??= 'SB1,JR1,HH1';
+// Like the live Store: the Jiaoren and Hui Hai decks. No prototype sets: their art may not be final, and the Store
+// never sells a card you can't see.
+process.env.STORE_SETS ??= 'JR1,HH1';
 if (process.argv.includes('--fake-sign-in')) process.env.FAKE_SIGN_IN = 'on';
 // The playtest dashboard: any signed-in account is its owner here, and a runner may use the key "local-runner".
 process.env.PLAYTEST_OWNERS ??= '*';

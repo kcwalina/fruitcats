@@ -6,9 +6,10 @@
 // it was built with (/packs/index.json), and the pack storage holds sets published on their own with
 // `npm run publish-pack` (PACK_INDEXES). At start-up the game registers any released pack it wasn't built
 // with, or a newer version of one it was, so new cards reach a running site without a new game build.
-// A pack whose cards need plugin code the game doesn't have is skipped: code only arrives with a build.
+// A pack whose cards need plugin code the game doesn't have is skipped: code only arrives with a build. So is a pack of
+// a set taken out of the game (RETIRED_SETS, content/index.ts) that the pack storage still lists.
 import { SETS, missingPieces, registerSet, type SetData } from '@fruitcats/engine';
-import { loadContent } from '../../../content';
+import { RETIRED_SETS, loadContent } from '../../../content';
 import { ART_BASES, ART_STAMPS, BASE, PACKS } from './ui';
 
 loadContent(registerSet);
@@ -46,7 +47,7 @@ export async function loadPacks(timeoutMs = 1500): Promise<string[]> {
   const indexes = await Promise.all(PACK_INDEXES.map(async (url) => ({ url, index: await fetchJson<{ packs: PackEntry[] }>(url) })));
   for (const { url, index } of indexes) {
     for (const pack of index?.packs ?? []) {
-      if (pack.status !== 'released' && !wantPrototypes) continue;
+      if ((pack.status !== 'released' && !wantPrototypes) || RETIRED_SETS.includes(pack.set)) continue;
       // When its art was last published, even for a set this build has: redrawn art gets new addresses (ui.ts).
       // The pack storage's list comes first and wins.
       if (pack.published) ART_STAMPS[pack.set.toLowerCase()] ??= pack.published;

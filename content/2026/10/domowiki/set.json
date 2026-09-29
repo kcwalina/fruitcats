@@ -5,9 +5,6 @@
   "status": "released",
   "released": "2026-10",
   "starter": true,
-  "requires": [
-    "SB1"
-  ],
   "families": {
     "Domowiki": {
       "colors": [
@@ -35,6 +32,11 @@
         "icon": "🍞",
         "title": "Well-Fed: 7 or more Offerings — Well-Fed bonuses are on"
       }
+    },
+    "Sprout": {
+      "family": "Domowiki",
+      "kind": "action",
+      "reminder": "Put that many cards from the top of your deck into your Offerings."
     }
   },
   "lore": {

@@ -1,13 +1,12 @@
 # Fruitcats
 
-A trading card game about fruit-themed cats and their cute critter crews. Easy to learn, built for competitive play, and designed from day one to be playtested by bots and LLM agents.
+Folkborn, a trading card game about folk creatures from around the world. Easy to learn, built for competitive play, and designed from day one to be playtested by bots and LLM agents.
 
 ## Docs
 
 - [Rulebook](docs/rulebook.md) — how to play, tournament rules, comprehensive rules
-- [Starter Box card list](docs/starter-box-cards.md) — three ready-to-play 50-card decks, including Mango Tango led by Tango
+- [Domowiki set](docs/domowiki-set.md) — the starter set: the Domowiki deck every player has
 - [Design notes](docs/design-notes.md) — research, rationale, and balance hypotheses to test
-- [Starter Box card images](content/2026/09/starter-box/art/cards/README.md) — every card, rendered
 - [Designing a good deck](docs/designing-good-deck.md) — how to make a folklore deck: research, the hero, a varied cast, proven rules, art, checks
 - [Folk creatures](docs/folk-creatures.md) — the creatures chosen for the coming decks, one per continent
 - [Artist guide](docs/artist-guide.md) — what art a new deck needs, for the artists who draw it; with an [art brief template](docs/art-brief-template.md)

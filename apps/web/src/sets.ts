@@ -11,9 +11,9 @@ export function familyInfo(family: string): { mechanic: string; hint: string } |
   return f?.mechanic ? { mechanic: f.mechanic, hint: f.hint ?? '' } : undefined;
 }
 
-/** Colours of a family (main, dark, tint), as compose_cards.py prints them; Garden's when unknown. */
+/** Colours of a family (main, dark, tint), as compose_cards.py prints them; a plain green when unknown. */
 export function familyColors(family: string): [string, string, string] {
-  const c = FAMILIES[family]?.colors ?? FAMILIES.Garden?.colors ?? ['#5FA84D', '#3B7430', '#E3F2DC'];
+  const c = FAMILIES[family]?.colors ?? ['#5FA84D', '#3B7430', '#E3F2DC'];
   return [c[0], c[1], c[2]];
 }
 
@@ -27,7 +27,7 @@ export function mechanicGlossary(): { name: string; test: RegExp; text: string }
 }
 
 type Badge = { icon?: string; title?: string };
-/** The mechanics that show a badge on a player's panel while they hold (Tropical's Lush). */
+/** The mechanics that show a badge on a player's panel while they hold (Domowiki's Well-Fed). */
 export function badgeMechanics(family: string): [string, MechanicDef & { badge: Badge }][] {
   return Object.entries(MECHANICS)
     .filter(([, m]) => m.kind === 'condition' && m.family === family && (m as { badge?: Badge }).badge)

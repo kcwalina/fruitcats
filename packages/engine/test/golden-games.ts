@@ -1,12 +1,12 @@
 // The golden games (scripts/golden.ts records them, golden.test.ts replays them): every pairing of the
-// Starter Box decks, both seats, bot against bot, fixed seeds for the deal and for the bots.
+// first three folk decks (Domowiki, Pari, Aluxes), both seats, bot against bot, fixed seeds for the deal and for the bots.
 
 import { createHash } from 'node:crypto';
 import { apply, chooseAction, createGame, type Action } from '../src/index';
 
 export interface GoldenGame { a: string; b: string; seed: number }
 
-const PAIRS: [string, string][] = [['zest-rush', 'orchard-guard'], ['zest-rush', 'mango-tango'], ['orchard-guard', 'mango-tango']];
+const PAIRS: [string, string][] = [['domowiki', 'pari'], ['domowiki', 'aluxes'], ['pari', 'aluxes']];
 export const GOLDEN_GAMES: GoldenGame[] = PAIRS.flatMap(([a, b]) =>
   Array.from({ length: 100 }, (_, i) => (i % 2 ? { a: b, b: a, seed: 5000 + i } : { a, b, seed: 5000 + i })));
 

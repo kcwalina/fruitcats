@@ -1,11 +1,9 @@
 # Mochi (MC1-X01): playtest notes
 
-Mochi, the Sweet Spirit is a Garden Cat meant to fit any deck. To test that, each deck gives up one Pocket Hamster
-(SB1-G01) for Mochi, and the bots play the changed deck and the unchanged deck against the three starter decks.
-
-    npm run balance -- --quick --scale 4 --deck <every file in this folder, comma-separated>
-
-The `orig-*.json` files are the decks as they are; the `mochi-*.json` files swap one Pocket Hamster for Mochi.
+Mochi, the Sweet Spirit was tested as a card meant to fit any deck: each Starter Box deck gave up one Pocket Hamster
+for Mochi, and the bots played the changed deck and the unchanged deck against the three starter decks of the time.
+The Starter Box was taken out of the game on 2026-09-29, and its deck files with it; the notes below are the record.
+Mochi is to be tested again in folk-creature decks.
 
 ## 2026-09-25
 

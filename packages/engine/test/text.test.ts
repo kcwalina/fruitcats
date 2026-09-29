@@ -10,7 +10,7 @@ function rng(seed: number) {
 
 /** Every decision of a few bot games, with the state it was taken in. */
 function* decisions(games: number): Generator<GameState> {
-  const keys = ['zest-rush', 'orchard-guard', 'mango-tango'];
+  const keys = ['domowiki', 'pari', 'aluxes'];
   for (let g = 0; g < games; g++) {
     const s = createGame({ decks: [keys[g % 3], keys[(g + 1) % 3]], seed: 700 + g });
     const r = rng(g + 1);
@@ -46,7 +46,7 @@ suite('text interface', () => {
   });
 
   it('reads the choice out of a reply that reasons first', () => {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 1 });
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 1 });
     while (s.prompt!.kind !== 'action') apply(s, chooseAction(s, { random: rng(1) }));
     const n = listChoices(s).options.length;
     expect(parseChoice(s, `Round 1 with 2 Treats, so I'll pass.\nAnswer: ${n}`)).toEqual({ action: listChoices(s).options[n - 1].action });
@@ -62,7 +62,7 @@ suite('text interface', () => {
       const seat = s.prompt!.player as PlayerId;
       const t = structuredClone(s);
       const foe = t.players[other(seat)];
-      const swap = (c: { id: string }) => { c.id = c.id === 'SB1-G01' ? 'SB1-G03' : 'SB1-G01'; };
+      const swap = (c: { id: string }) => { c.id = c.id === 'DW1-D16' ? 'PR1-D09' : 'DW1-D16'; };
       foe.hand.forEach(swap);
       foe.pantry.forEach((tr) => swap(tr.card));
       for (const pl of t.players) { pl.deck.forEach(swap); pl.lives.forEach(swap); }

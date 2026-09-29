@@ -31,7 +31,7 @@ const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optio
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'];
 
-// Stat budget (docs/starter-box-cards.md): a plain Critter of cost N has Power + Health = 2N + 1, and
+// Stat budget (docs/designing-good-deck.md): a plain Critter of cost N has Power + Health = 2N + 1, and
 // keywords and effects are paid for out of it. A report, not a rule: Cats get +2 to +3 on purpose.
 const KEYWORD_PRICE: Record<string, number> = { Guardian: 1, Zoomies: 1, Sneaky: 2, Fierce: 2, Lucky: 0, Pounce: 0 };
 

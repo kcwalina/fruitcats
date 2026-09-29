@@ -795,6 +795,15 @@ export function createHub(deps: HubDeps) {
     /** Pick up the games that were going when the API last stopped. The players find them waiting when they return. */
     async restore() {
       for (const r of await deps.store.liveMatches()) {
+        // A game with cards the game no longer has (a set taken out, like the Starter Box) can't go on: it's called off
+        // and put away with the finished games, so both players are free and it isn't tried again.
+        const gone = r.seats.flatMap((s) => [s.deck.hero, ...Object.keys(s.deck.cards)]).filter((id) => !CARDS[id]);
+        if (gone.length) {
+          const end: MatchEnd = { winner: null, how: 'called-off' };
+          await deps.store.finishMatch({ ...r, end }).catch((e) => deps.log('live.save_failed', { match: r.id, message: (e as Error).message }));
+          deps.log('live.restore_called_off', { match: r.id, unknownCard: gone[0] });
+          continue;
+        }
         // A game played directly: its devices carry on as they were; the hub keeps its copy again.
         if (r.peer) { addPeer(r); continue; }
         try {

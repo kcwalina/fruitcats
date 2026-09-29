@@ -68,7 +68,7 @@ type Field { type: Arg | text }
 
 object-fields = [
   id = Field { type = text }                 // stable within a game
-  card = Field { type = text }               // the member path of its card or token (SB1.citron-fox)
+  card = Field { type = text }               // the member path of its card or token (domowiki.stove-keeper)
   owner = Field { type = 'player or nothing' }      // nothing: a shared object (an objective)
   controller = Field { type = 'player or nothing' }
   zone = Field { type = zone }

@@ -37,10 +37,12 @@ const changed = () => listeners.forEach((fn) => fn());
 export function listDecks(): MyDeck[] {
   try {
     const decks = JSON.parse(localStorage.getItem(DECKS_KEY) ?? '[]');
-    // A deck whose Hero Cat no longer exists can't be shown or fixed; unknown cards are dropped.
+    // A deck whose Hero Cat no longer exists can't be shown or fixed; unknown cards (a set taken out of the game, like
+    // the Starter Box) are dropped, from the deck and from the one it was copied from.
+    const known = (cards: Record<string, number> | undefined) => Object.fromEntries(Object.entries(cards ?? {}).filter(([id, qty]) => CARDS[id] && qty > 0));
     return Array.isArray(decks)
       ? decks.filter((d: MyDeck) => d?.id && CARDS[d.hero]).map((d: MyDeck) => ({
-        ...d, cards: Object.fromEntries(Object.entries(d.cards ?? {}).filter(([id, qty]) => CARDS[id] && qty > 0)),
+        ...d, cards: known(d.cards), ...(d.from ? { from: { ...d.from, cards: known(d.from.cards) } } : {}),
       }))
       : [];
   } catch {
@@ -121,8 +123,8 @@ export const isReady = (deck: DeckList) => problems(deck).length === 0;
 export const customKey = (id: string) => `${CUSTOM}${id}`;
 
 /**
- * The ready-made decks the player has every card of: the starter decks, and those taken from the Store (the old
- * Starter Box decks are there, free). Starter decks first.
+ * The ready-made decks the player has every card of: the starter decks, and those taken from the Store. Starter
+ * decks first.
  */
 export function ownedDeckKeys(): string[] {
   const starter = (key: string) => (isStarterSet(CARDS[DECKS[key].hero]?.set ?? '') ? 0 : 1);

@@ -16,20 +16,19 @@ import { isShellFile, precacheProblems } from './src/sw-rules';
 // /announcements/<set-folder>/ (its announcement page).
 // Pages: the game (index.html), plus the documentation rendered from docs/: its home (docs.html), the
 // getting-started guides (how to play, your account, friends, the Collection, wallpapers), then the rulebook
-// (rules.html), the card list (cards.html) and what's on a card (anatomy.html). And the Artist Studio (studio.html, docs/artist-studio-plan.md), where artists
+// (rules.html) and what's on a card (anatomy.html). And the Artist Studio (studio.html, docs/artist-studio-plan.md), where artists
 // upload their pictures and see them on cards. And the owner's playtest Portal (portal.html, docs/playtests.md).
 
 /** The documentation's pages, in tab order. `tab` is the section's name in the header; the home has none. */
 const DOC_PAGES: { md: string; html: string; tab?: string }[] = [
   { md: 'documentation.md', html: 'docs.html' },
-  // Getting started first, then the reference: the rulebook, the card list and what's on a card.
+  // Getting started first, then the reference: the rulebook and what's on a card.
   { md: 'how-to-play.md', html: 'how-to-play.html', tab: 'How to play' },
   { md: 'account.md', html: 'account.html', tab: 'Account' },
   { md: 'friends.md', html: 'friends.html', tab: 'Friends' },
   { md: 'collection.md', html: 'collection.html', tab: 'Collection' },
   { md: 'wallpapers.md', html: 'wallpapers.html', tab: 'Wallpapers' },
   { md: 'rulebook.md', html: 'rules.html', tab: 'Rulebook' },
-  { md: 'starter-box-cards.md', html: 'cards.html', tab: 'Card list' },
   { md: 'card-anatomy.md', html: 'anatomy.html', tab: 'Card anatomy' },
   // Linked from the sign-up screen; no tabs of their own.
   { md: 'legal/terms-of-use.md', html: 'terms.html' },
@@ -221,7 +220,7 @@ function contentSets(): { root: string; folder: string; code: string; data: Reco
         const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8'));
         sets.push({ root, folder, code: String(data.set).toLowerCase(), data, registered: registered.has(`${year}/${month}/${folder}`) });
       }
-  // A set that builds on another (Mochi requires the Starter Box) comes after it.
+  // A set that builds on another (its `requires`) comes after it.
   const needs = (s: { data: Record<string, unknown> }) => (s.data.requires as string[] | undefined) ?? [];
   return sets.sort((a, b) => (needs(a).includes(String(b.data.set)) ? 1 : needs(b).includes(String(a.data.set)) ? -1 : 0));
 }

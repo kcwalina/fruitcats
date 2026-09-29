@@ -33,9 +33,9 @@ const FAMILIES = () => ['all', ...new Set(collectable().filter((id) => !CARDS[id
 const cardsOf = (set: string) => Object.keys(CARDS).filter((id) => CARDS[id].set === set && !CARDS[id].token);
 /**
  * The cards to collect: every card of the sets you have cards from, the starter set first and then the others in
- * the order they loaded, each set in its own order. A set you own nothing of (the old Starter Box, before you take
- * its decks from the Store) isn't here at all: its cards are in the Store, not in your collection. Worked out on
- * each render, because what you own changes (a deck taken from the Store) and so can the loaded sets (a card pack).
+ * the order they loaded, each set in its own order. A set you own nothing of isn't here at all: its cards are in the
+ * Store, not in your collection. Worked out on each render, because what you own changes (a deck taken from the
+ * Store) and so can the loaded sets (a card pack).
  */
 function collectable(): string[] {
   const sets = [...new Set(Object.keys(CARDS).map((id) => CARDS[id].set).filter((s): s is string => !!s))]
@@ -54,7 +54,7 @@ const number = (face: string) => {
   const id = idOf(face), inSet = cardsOf(CARDS[id]?.set ?? '');
   return `${String(inSet.indexOf(id) + 1).padStart(3, '0')}/${String(inSet.length).padStart(3, '0')}`;
 };
-/** The name on this face: a Kitten and its Big Cat are named differently ("Tango, Sunbeam Kit"). */
+/** The name on this face: a Hero's two sides are named differently ("Dziadziuś, Heart of the House"). */
 const faceName = (face: string) => {
   const card = CARDS[idOf(face)], side = sideOf(face);
   return (side === 'kitten' ? card.kitten?.name : side === 'bigcat' ? card.bigCat?.name : card.name) ?? card.name;

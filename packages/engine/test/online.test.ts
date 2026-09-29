@@ -17,7 +17,7 @@ function playOut(s: GameState, seed: number, each: (s: GameState) => void = () =
 
 describe('handicap: starting with fewer Lives', () => {
   it('starts each player with the Lives they chose, and keeps the rest in the deck', () => {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 5, lives: [6, 9] });
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [6, 9] });
     expect(s.players[0].lives.length).toBe(6);
     expect(s.players[1].lives.length).toBe(LIVES);
     expect(s.players[0].handicap).toBe(3);
@@ -27,20 +27,20 @@ describe('handicap: starting with fewer Lives', () => {
   });
 
   it('keeps Lives between 1 and 9', () => {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 5, lives: [0, 20] });
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [0, 20] });
     expect(s.players[0].lives.length).toBe(1);
     expect(s.players[1].lives.length).toBe(LIVES);
   });
 
   it('plays to the end', () => {
     for (let seed = 1; seed <= 20; seed++) {
-      const s = playOut(createGame({ decks: ['zest-rush', 'orchard-guard'], seed, lives: [4, 9] }), seed);
+      const s = playOut(createGame({ decks: ['domowiki', 'pari'], seed, lives: [4, 9] }), seed);
       expect(s.winner).not.toBeNull();
     }
   });
 
   it('shows the handicap to both players', () => {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 5, lives: [7, 9] });
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [7, 9] });
     expect(viewFor(s, 1).players[0].handicap).toBe(2);
     expect(viewFor(s, 1).players[0].lives.length).toBe(7);
   });
@@ -50,7 +50,7 @@ describe('alwaysAsk: Pounce and Lucky prompts that give nothing away', () => {
   it('asks the defender after every play and attack, with only "let it happen" when they hold no Pounce', () => {
     let windows = 0, empty = 0;
     for (let seed = 1; seed <= 20; seed++) {
-      playOut(createGame({ decks: ['zest-rush', 'orchard-guard'], seed, alwaysAsk: true }), seed, (s) => {
+      playOut(createGame({ decks: ['domowiki', 'pari'], seed, alwaysAsk: true }), seed, (s) => {
         if (s.window && s.prompt?.kind !== 'pounce' && s.prompt?.kind !== 'choose' && s.prompt?.kind !== 'lucky')
           throw new Error(`an open window without a Pounce prompt (${s.prompt?.kind})`);
         if (s.prompt?.kind === 'pounce') {
@@ -66,7 +66,7 @@ describe('alwaysAsk: Pounce and Lucky prompts that give nothing away', () => {
   it('asks about every lost Life, and a Life that isn\'t Lucky can only be kept', () => {
     let asked = 0;
     for (let seed = 1; seed <= 20; seed++) {
-      playOut(createGame({ decks: ['zest-rush', 'orchard-guard'], seed, alwaysAsk: true }), seed, (s) => {
+      playOut(createGame({ decks: ['domowiki', 'pari'], seed, alwaysAsk: true }), seed, (s) => {
         if (s.prompt?.kind !== 'lucky') return;
         asked++;
         const card = s.players[s.prompt.player].hand.find((c) => c.uid === (s.prompt as { uid: number }).uid)!;
@@ -78,7 +78,7 @@ describe('alwaysAsk: Pounce and Lucky prompts that give nothing away', () => {
   });
 
   it('is off unless asked for, so Solo plays as before', () => {
-    const s = createGame({ decks: ['zest-rush', 'orchard-guard'], seed: 3 });
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 3 });
     expect(s.alwaysAsk).toBeUndefined();
   });
 });

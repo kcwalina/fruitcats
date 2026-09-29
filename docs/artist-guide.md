@@ -194,20 +194,20 @@ costume details (a cape, glowing cracks), stronger contrast and a commanding pos
 Every card belongs to a **family**, and each family has its own background world and frame colours. The frame
 colours are added by us, and backgrounds from the same world help a family feel like one place. Families so far:
 
-| Family | Background world (painted scenes) |
+| Family | Where its creatures come from |
 |---|---|
-| Citrus | a sunny Mediterranean citrus grove, warm yellow and orange light |
-| Orchard | a cosy autumn apple orchard, golden afternoon light |
-| Garden | a fresh cottage vegetable garden, leafy greens, flowers, morning light |
-| Berry | a lush berry patch, pinks, reds and purples |
-| Tropical | a tropical jungle clearing, palm leaves, a golden sunset |
-| Melon | a lazy summer melon patch, soft greens and pinks |
+| Domowiki | Slavic folklore: the house, the stove, the barn and the yard |
+| Pari | Persian folklore: mountain lakes, the high peaks of Mount Qāf |
+| Aluxes | Yucatec Maya folklore: the milpa (the cornfield), the jungle, cenotes |
+| Jiaoren | Chinese folklore: the South Sea and the halls under it |
+| Hui Hai | Ba Na folk belief, Central Highlands of Vietnam: the forest and its streams |
 
 A set can give a family a new look for its own cards. **A new family brings its own background world and three frame colours**, and the brief lists them.
 
 ### Each set has a tone
 
-The brief gives the set's tone. The Starter Box is **cute**: sunbeams, hugs, beach days, big sparkly eyes. A set
+The brief gives the set's tone. The Starter Box (the game's first set, removed on 2026-09-29) was **cute**:
+sunbeams, hugs, beach days, big sparkly eyes. A set
 aimed at teens can be **"cool, not cute"**: confident smirks, narrowed eyes, action poses, low camera
 angles, a darker palette (charcoal, crimson, ember orange) with fire, sparks and smoke. Streetwear, ninja scarves
 and armour are fine.

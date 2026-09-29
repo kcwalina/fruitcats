@@ -42,7 +42,7 @@ Left out on purpose:
 The owner asked for gameplay that comes from the mythology, not a reskinned deck. So the rules follow the tales:
 
 - **Company** (the family condition, badge 🕊️): while you control 3 or more units, Company bonuses are on.
-  Pari come in companies. Company works as a label, like Zest: "Company: enters ready."
+  Pari come in companies. Company works as a label, like the Starter Box's Zest did: "Company: enters ready."
 - **Feather Coat** (a keyword): "Goodbye: Summon a 1/1 Dove." The pari puts on her feather coat and flies off as
   a dove. The Dove (PR1-K01) is a token.
 - **Flying is Sneaky.** Many pari fly over Guardians. *Pari* may come from the word for "wing".
@@ -55,9 +55,11 @@ are the opposite, a slow deck that feeds the house and wakes the big spirits.
 
 Everything is card data. No engine or plugin code was needed; it uses `controlUnits`, `playedThisRound`,
 `summon` and a keyword mechanic with a `goodbye` ability. The costs, stats and copy counts started from Zest
-Rush's curve, the proven fast deck, and were tuned from there.
+Rush's curve, the proven fast deck of the Starter Box (removed from the game on 2026-09-29), and were tuned from
+there.
 
-**Balance** (2026-09-26, bots, 500 games per matchup):
+**Balance** (2026-09-26, bots, 500 games per matchup; Zest Rush, Orchard Guard and Mango Tango were the Starter Box
+decks, since removed):
 
 | Against | Zest Rush | Orchard Guard | Mango Tango | Domowiki |
 |---|---|---|---|---|

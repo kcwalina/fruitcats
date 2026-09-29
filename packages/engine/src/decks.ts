@@ -1,7 +1,7 @@
 // Deckbuilding rules (rulebook §11.1): which decks are legal, and why a card can't be added to one.
 // Messages are written for players, since the deck builder shows them as they are.
 
-import { CARDS, DECKS, isNeutralFamily, type DeckList } from './cards';
+import { CARDS, DECKS, FAMILIES, isNeutralFamily, type DeckList } from './cards';
 import { DECK_SIZE, cardName } from './engine';
 
 export const DECK_RULES = {
@@ -13,11 +13,10 @@ export const DECK_RULES = {
   maxCats: 6,
 } as const;
 
-/**
- * Kept for older callers: the Starter Box's neutral family. Deck rules ask the catalog instead
- * (isNeutralFamily), where a set marks its neutral families.
- */
-export const NEUTRAL_FAMILY = 'Garden';
+/** The families any deck may use besides its own and its one other: a set marks them `neutral`. */
+export function neutralFamilies(): string[] {
+  return Object.keys(FAMILIES).filter(isNeutralFamily);
+}
 
 /** How many copies of this card a deck may hold, by the rules (ownership aside). */
 export function copyLimit(id: string): number {
@@ -32,7 +31,7 @@ export function catCount(deck: DeckList): number {
   return Object.entries(deck.cards).reduce((n, [id, qty]) => n + (CARDS[id]?.type === 'Cat' ? qty : 0), 0);
 }
 
-/** The fruit families in the deck besides its Hero Cat's own (Garden doesn't count). A legal deck has at most one. */
+/** The families in the deck besides its Hero Cat's own (neutral ones don't count). A legal deck has at most one. */
 export function otherFamilies(deck: DeckList): string[] {
   const heroFamily = CARDS[deck.hero]?.family;
   const families = new Set<string>();
@@ -108,7 +107,7 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
 /**
  * A deck as one line of text, to copy out of the deck builder, paste into a playtest or pass along where only
  * plain words fit (PC2024's playtester takes letters, digits, spaces, dots, commas and dashes):
- * `FC1.Zest-Rush.SB1-H01.SB1-C01x3.SB1-C02x3…`. The name's spaces become dashes; a single copy has no `x1`.
+ * `FC1.Domowiki.DW1-H01.DW1-D01x3.DW1-D02x3…`. The name's spaces become dashes; a single copy has no `x1`.
  * There are no commas in a code, so a list of decks can be written with commas between them.
  */
 export function deckCode(deck: DeckList): string {

@@ -32,7 +32,7 @@ const FONT = 'Nunito, "Segoe UI", sans-serif';
 const STAT_ICONS = { paw: 'stat-power', heart: 'stat-heart' } as const;
 const HEART_COLOR = '#D9486C';
 
-/** Keywords printed bold: the core ones and every loaded set's mechanics (Zest, Ripen, Heat…). */
+/** Keywords printed bold: the core ones and every loaded set's mechanics (Well-Fed, Rain-Fed, …). */
 const keywordPattern = () => new RegExp(`\\b(Swift|Zoomies|Guardian|Sneaky|Fierce|Tough \\d+|Lucky|Ambush|Pounce|${Object.keys(MECHANICS).map((m) => `${m}(?: \\d+)?`).join('|')})\\b`, 'g');
 const LABEL = /(?:^|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)/g;
 
@@ -306,7 +306,7 @@ function drawBanner(p: Parts, x0: number, x1: number, top: number): number {
   return bottom;
 }
 
-/** The type line ("CRITTER · CITRUS", with the rarity mark and collector number at the right). Returns its bottom. */
+/** The type line ("CREATURE · DOMOWIKI", with the rarity mark and collector number at the right). Returns its bottom. */
 function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
   const { ctx, card, side, s } = p;
   const [main, dark, tint] = p.colors;
@@ -321,7 +321,7 @@ function drawTypeLine(p: Parts, x0: number, x1: number, top: number): number {
     : TERMS.types[card.type] ?? card.type).toUpperCase();
   // The type on the left, the collector number on the right: the type shrinks to fit beside it, and in
   // a narrow line the number gives way.
-  const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `${card.set ?? 'SB1'} · ${p.number}`;
+  const label = `${kind} · ${card.family.toUpperCase()}`, numberText = `${card.set ?? card.id.split('-')[0]} · ${p.number}`;
   ctx.font = `600 ${20 * s}px ${FONT}`;
   const markW = 36 * s;   // the rarity mark, and the gap before the number
   const tagW = p.finish === 'standard' ? 0 : 34 * s;   // the finish code's tag, and the gap after the number

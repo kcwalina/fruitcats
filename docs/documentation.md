@@ -61,13 +61,6 @@ Every rule of the game, down to the exact wording judges use.
 
 **[Open the Rulebook →](rulebook.md)**
 
-## Card list
-
-Every card in the Starter Box, deck by deck: the three Heroes, Zest Rush, Orchard Guard, Mango
-Tango, and the Wildfolk cards they share. Also what each card's [rarity mark](starter-box-cards.md#rarity) means.
-
-**[Open the Card list →](starter-box-cards.md)**
-
 ## Card anatomy
 
 What everything on a card means, from its cost to its power and health, with a labelled picture. Also how

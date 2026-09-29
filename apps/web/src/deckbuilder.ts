@@ -5,8 +5,8 @@
 // ever lost; Done just goes back to your decks.
 
 import {
-  CARDS, DECKS, DECK_RULES, NEUTRAL_FAMILY, addProblem, builtInTwin, cardName, catCount, copyLimit, deckChanges, deckCode,
-  deckSize, otherFamilies, parseDeckCode, sameCards, type DeckList,
+  CARDS, DECKS, DECK_RULES, addProblem, builtInTwin, cardName, catCount, copyLimit, deckChanges, deckCode,
+  deckSize, isNeutralFamily, neutralFamilies, otherFamilies, parseDeckCode, sameCards, type DeckList,
 } from '@fruitcats/engine';
 import { missingForDeck } from '@fruitcats/store';
 import { owned, ownedCards, ownedHeroes } from './collection';
@@ -32,7 +32,7 @@ let typeFilter: TypeFilter = 'all';
 let sheetOpen = false;
 /** The deck the "Delete this deck?" dialog is asking about, if it's open. */
 let deleting: string | null = null;
-/** What's typed in New deck's name box, used when the Hero Cat is picked (empty: "Sunny's deck"). */
+/** What's typed in New deck's name box, used when the Hero Cat is picked (empty: "Dziadziuś's deck"). */
 let newName = '';
 /** Why the last tapped card couldn't go in. */
 let message = '';
@@ -410,7 +410,7 @@ function renderNewDeck(): string {
     <div class="setup-body">
       <label class="new-name">
         <span>Deck name</span>
-        <input data-newname value="${esc(newName)}" maxlength="40" placeholder="e.g. Citrus Rush" enterkeyhint="done" autocomplete="off">
+        <input data-newname value="${esc(newName)}" maxlength="40" placeholder="e.g. House Spirits" enterkeyhint="done" autocomplete="off">
       </label>
       <section class="picker">
         <h2>Choose its Hero</h2>
@@ -436,12 +436,12 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ── The builder ──────────────────────────────────────────────────────────────────────────────────
 
-/** Hero Cat's family first, then the other fruit families, then Garden. */
+/** Hero Cat's family first, then the other families, then the neutral ones. */
 function familyOrder(deck: DeckList): string[] {
   const heroFamily = CARDS[deck.hero].family;
   const families = [...new Set(ownedCards().map((id) => CARDS[id].family))];
-  const fruit = families.filter((f) => f !== heroFamily && f !== NEUTRAL_FAMILY);
-  return [heroFamily, ...fruit, ...(families.includes(NEUTRAL_FAMILY) ? [NEUTRAL_FAMILY] : [])];
+  const others = families.filter((f) => f !== heroFamily && !isNeutralFamily(f));
+  return [heroFamily, ...others, ...families.filter((f) => f !== heroFamily && isNeutralFamily(f))];
 }
 
 function sortCards(ids: string[], order: string[]): string[] {
@@ -480,7 +480,7 @@ function renderBuilder(deck: MyDeck): string {
     <div class="setup-bar build-bar">${bar}</div>
     <div class="build-head">
       <div class="build-lead">
-        <span><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].map(familyName).join(' + '))}</span>
+        <span><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), ...neutralFamilies()].map(familyName).join(' + '))}</span>
       </div>
       <div class="build-count"><b>${size}</b> / ${DECK_RULES.size} cards · Fabled <b>${catCount(deck)}</b> / ${DECK_RULES.maxCats}</div>
       ${status}
@@ -579,7 +579,7 @@ function renderDeckPanel(deck: MyDeck, order: string[], ready: boolean, base: De
           <span class="toggle-arrow" aria-hidden="true">${sheetOpen ? '▼' : '▲'}</span>
         </button>
         <div class="deck-panel-body">
-          <p class="sheet-lead"><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), NEUTRAL_FAMILY].map(familyName).join(' + '))}</p>
+          <p class="sheet-lead"><b>${esc(cardName(deck.hero))}</b> leads · ${esc([CARDS[deck.hero].family, ...otherFamilies(deck), ...neutralFamilies()].map(familyName).join(' + '))}</p>
           <div class="curve" aria-label="Cards by cost">
             ${buckets.map((n, i) => `<div class="curve-col"><span class="curve-n">${n || ''}</span>
               <span class="curve-bar" style="height:${Math.round((n / tallest) * 100)}%"></span><span class="curve-cost">${i === 6 ? '7+' : i + 1}</span></div>`).join('')}

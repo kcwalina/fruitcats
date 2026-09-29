@@ -406,11 +406,12 @@ Things that make them expensive:
   with [tools/generate_avatars.py](../tools/generate_avatars.py) into `art/avatars/`.
 - **Everyday Pawtraits:** 12 plain cats, two per fruit family, free for everyone.
 - **Legend Pawtraits:** each comes with a Legendary card, as a card-plus-Pawtrait combo. There's no separate avatar
-  store. Own the card and its Pawtrait is yours. The first one is:
-  - **Tango**, the Mango Bengal (SB1-H03, `legend-tango`): open to everyone, because Tango's card is in a starter deck.
-    Until 2026-09-25 this card was Mochi and its Pawtrait was `legend-mochi`; `viamochi-id` moved everyone wearing it
-    to `legend-tango` (`AvatarCatalog.Renamed`). The name Mochi now belongs to MC1-X01, Mochi, the Sweet Spirit,
-    whose own Pawtrait will be `legend-mochi` once the artist delivers it.
+  store. Own the card and its Pawtrait is yours. The first one was:
+  - **Tango**, the Mango Bengal (SB1-H03, `legend-tango`): open to everyone, because Tango's card was in a starter
+    deck. Until 2026-09-25 this card was Mochi and its Pawtrait was `legend-mochi`; `viamochi-id` moved everyone
+    wearing it to `legend-tango` (`AvatarCatalog.Renamed`). Tango came with the Starter Box, which the owner removed
+    from the game on 2026-09-29, so no Legend Pawtrait is drawn today. The name Mochi now belongs to MC1-X01, Mochi,
+    the Sweet Spirit, whose own Pawtrait will be `legend-mochi` once the artist delivers it.
 - **Not exclusive:** any number of players can wear the same Pawtrait.
 - **Served by `viamochi-id`**, so every Via Mochi app shows the same face from one address:
   - `GET /avatars`: the catalog

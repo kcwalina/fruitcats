@@ -422,7 +422,7 @@ async function beat(e: GameEvent) {
       return;
     }
     case 'counter': {
-      // A mechanic's counter grew (Ripen's ripeness, Heat): the mechanic says what a point is worth.
+      // A mechanic's counter grew (Rain-Fed's rain): the mechanic says what a point is worth.
       const t = unitEl(e.uid);
       const counter = Object.values(MECHANICS).find((m) => m.counter?.name === e.name)?.counter;
       const power = counter?.power ?? 0, health = counter?.health ?? 0;

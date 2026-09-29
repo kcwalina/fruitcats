@@ -114,8 +114,8 @@ function indexFile(meddle?: (store: IndexStore) => Promise<void>): IndexStore & 
 
 describe('the index running games read', () => {
   it('replaces only the published set\'s entry', () => {
-    expect(withEntry({ packs: [entry('SB1'), entry('DW1')] }, entry('DW1', '1.1.0')).packs)
-      .toEqual([entry('SB1'), entry('DW1', '1.1.0')]);
+    expect(withEntry({ packs: [entry('PR1'), entry('DW1')] }, entry('DW1', '1.1.0')).packs)
+      .toEqual([entry('PR1'), entry('DW1', '1.1.0')]);
   });
 
   it('keeps an entry another session wrote while this one was publishing', async () => {
@@ -125,14 +125,14 @@ describe('the index running games read', () => {
       once = false;
       await updateIndex(s, (i) => withEntry(i, entry('JR1')));
     });
-    await updateIndex(store, (i) => withEntry(i, entry('SB1')));
+    await updateIndex(store, (i) => withEntry(i, entry('PR1')));
     await updateIndex(store, (i) => withEntry(i, entry('AX1')));
-    expect(store.current()!.packs.map((p) => p.set).sort()).toEqual(['AX1', 'JR1', 'SB1']);
+    expect(store.current()!.packs.map((p) => p.set).sort()).toEqual(['AX1', 'JR1', 'PR1']);
   });
 
   it('gives up, saying so, when the index never holds still', async () => {
     const store = indexFile(async (s) => { await updateIndex(s, (i) => withEntry(i, entry(`Z${Math.random()}`))); });
-    await expect(updateIndex(store, (i) => withEntry(i, entry('SB1')), 3)).rejects.toThrow(/kept changing/);
+    await expect(updateIndex(store, (i) => withEntry(i, entry('PR1')), 3)).rejects.toThrow(/kept changing/);
   });
 });
 

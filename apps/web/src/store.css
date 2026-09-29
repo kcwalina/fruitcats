@@ -1,8 +1,7 @@
 /* The Store (storefront.ts), in Home's night wood (the owner's calls, 2026-09-27 and 2026-09-28).
    The Store's own painting (art/ui/store-banner.webp, a lantern-lit card stall) lies behind the top of the page and
    melts into the wood; the decks start right under it, hung as the Collection hangs its covers: the hero's painting
-   in a plain frame, the name in the shell's serif under it. Codes and the Legacy decks are in the corner menu, never in
-   the way. No tabs, no dividers, no visible scrollbar.
+   in a plain frame, the name in the shell's serif under it. Codes are in the corner menu, never in the way. No tabs, no dividers, no visible scrollbar.
    Most rules are scoped to .store-screen. Three groups aren't, because they're used outside it: the deck covers'
    frame (.deck-slot, also the Collection's), and the dialogs and the reveal (drawn beside the screen, not in it). */
 
@@ -66,7 +65,7 @@
   background: #d9486c; color: #fff; font: 800 12px/21px Nunito, sans-serif; text-align: center; box-shadow: 0 0 0 2.5px #171a36;
 }
 
-/* The corner menu: Use a code, Legacy decks. */
+/* The corner menu: Use a code. */
 .store-menu-scrim { position: fixed; inset: 0; z-index: 4; }
 .store-menu {
   position: absolute; z-index: 5; top: calc(var(--corner-top) + 54px); right: var(--corner-right);
@@ -101,10 +100,6 @@
 /* The Store's own page: the painting shows between the header and the decks, as on the Collection's covers page. */
 .store-home .store-main { padding-top: var(--scene-gap, 120px); }
 .store-home .store-notice + .store-main { padding-top: calc(var(--scene-gap, 120px) - 44px); }
-.store-screen .page-intro {
-  max-width: 640px; margin: 0 auto clamp(18px, 3vw, 28px); text-align: center;
-  font: italic 500 clamp(18px, 2.2vw, 21px)/1.4 var(--serif, Georgia, serif); color: var(--ink); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
-}
 .store-screen .store-empty {
   max-width: 560px; margin: 0 auto; padding: clamp(32px, 6vw, 56px) 20px; text-align: center; border-radius: 4px;
   background: var(--plaque); box-shadow: var(--plaque-edge);

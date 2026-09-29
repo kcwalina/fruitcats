@@ -1,10 +1,9 @@
 """Draw card illustrations with an Azure OpenAI image model.
 
-    python tools/generate_art.py                      # draw every card that has no art yet
-    python tools/generate_art.py --only SB1-C04       # one card (hero ids draw both sides)
-    python tools/generate_art.py --force              # redraw even if the file exists
-    python tools/generate_art.py --set mc1                # another set, by its code
-    python tools/generate_art.py --reference content/2026/09/starter-box/art/illustrations/SB1-C04.webp   # match a style
+    python tools/generate_art.py --set mc1                # every card of a set (by its code) that has no art yet
+    python tools/generate_art.py --set dw1 --only DW1-D04 # one card (hero ids draw both sides)
+    python tools/generate_art.py --set mc1 --force        # redraw even if the file exists
+    python tools/generate_art.py --set mc1 --reference games/folkborn/sets/domowiki/art/DW1-D04.webp   # match a style
 
 Art is text-free; card text is added by tools/compose_cards.py so it is always exact.
 Auth is the signed-in Azure CLI (`az login`), the same as mochi's image tools -- no keys.
@@ -38,7 +37,7 @@ API_VERSION = "2025-04-01-preview"
 
 
 def set_file(code: str) -> Path:
-    """A set's data by its code ('sb1', 'mc1'): content/<year>/<month>/<set>/set.json."""
+    """A set's data by its code ('dw1', 'mc1'): content/<year>/<month>/<set>/set.json."""
     for path in sorted((ROOT / "content").glob("*/*/*/set.json")):
         if json.loads(path.read_text(encoding="utf-8")).get("set", "").lower() == code.lower():
             return path
@@ -95,7 +94,7 @@ def multipart(fields: dict, file_field: str, file_path: Path) -> tuple[bytes, st
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--set", default="sb1")
+    parser.add_argument("--set", required=True, help="the set, by its code (mc1)")
     parser.add_argument("--only", nargs="*", help="card ids to draw")
     parser.add_argument("--force", action="store_true", help="redraw existing art")
     parser.add_argument("--model", default="gpt-image-1-mini", choices=MODELS)

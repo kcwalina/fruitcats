@@ -6,7 +6,8 @@ their style (the Hàng Trống "White Tiger"), and on 2026-09-28 asked for the f
 
 Status: released (2027-01), not a starter: players get it from the Store. The data is in
 `content/2027/01/hui-hai/set.json`; the deck's price is `"price": 999` on the deck, and the live API lists the set
-with `STORE_SETS=SB1,JR1,HH1`. Buying itself is still off everywhere (`BUYING` in `apps/web/src/flags.ts`), so the
+in `STORE_SETS` (JR1 and HH1; SB1, the Starter Box, was listed too until the owner removed it on 2026-09-29).
+Buying itself is still off everywhere (`BUYING` in `apps/web/src/flags.ts`), so the
 Store shows the deck and its price, and "Add to cart" says "Coming soon". The prototype history (four cards, five art
 passes) is in [vietnam-prototypes.md](vietnam-prototypes.md).
 

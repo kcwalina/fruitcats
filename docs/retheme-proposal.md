@@ -48,7 +48,7 @@ any culture a later deck comes from.
 | Critter | **Creature** | |
 | Trick | **Charm** | Folk magic, in one word. |
 | Toy | **Talisman** | Something a creature carries: an old bast shoe, an amulet. |
-| Garden (the neutral family) | **Wildfolk** | Hedgehogs, crickets, owls: small creatures found in every land. |
+| Garden (the neutral family; its cards left with the Starter Box, 2026-09-29) | **Wildfolk** | Hedgehogs, crickets, owls: small creatures found in every land. |
 
 **Keywords.** Only the cat-flavoured ones change.
 
@@ -88,3 +88,4 @@ owner's call. Only the player-facing name has to change: the web address and the
   2. Screens, the tutorial and card frames.
   3. The art: home screen, avatars, card back, sounds.
 - **The old Starter Box cards** keep their fruit-cat art. They're in the Store, free, for as long as they're offered.
+  (Since then the owner removed the Starter Box from the game completely, on 2026-09-29.)

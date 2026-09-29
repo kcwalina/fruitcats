@@ -15,11 +15,14 @@ describe('rules text comes from the data', () => {
     for (const { report } of runChecks()) expect(report.errors.filter((e) => e.includes("doesn't match its data"))).toEqual([]);
   });
   it('writes the house style', () => {
-    expect(suggestText(CARDS['SB1-C09'])).toBe('Ambush. Lucky. Deal 2 damage to a unit.');
-    expect(suggestText(CARDS['SB1-C01'])).toBe('Swift. Zest: gets +1 Power this round.');
-    expect(suggestText(CARDS['SB1-O09'])).toBe('Ambush. Cancel an attack. (The attacker stays exhausted.)');
-    expect(suggestText(CARDS['SB1-C02'])).toBe('Goodbye: Deal 1 damage to a unit.');
-    expect(heroTexts(CARDS['SB1-H03']).kitten).toBe('Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.');
+    expect(suggestText(CARDS['PR1-D12'])).toBe('Ambush. Lucky. Deal 2 damage to a unit.');
+    expect(suggestText(CARDS['PR1-D04'])).toBe('Company: enters ready.');
+    expect(suggestText(CARDS['PR1-D06'])).toBe('Hello: Deal 1 damage to a unit. Company: deal 2 instead.');
+    expect(suggestText(CARDS['AL1-D09'])).toBe('Ambush. Cancel an attack. (The attacker stays exhausted.)');
+    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Draw 2 cards.');
+    expect(suggestText(CARDS['DW1-D02'])).toBe('Hello: Sprout 1.');
+    expect(suggestText(CARDS['AL1-D04'])).toBe('Rain-Fed.');
+    expect(heroTexts(CARDS['DW1-H01']).kitten).toBe('Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.');
   });
   it('never writes a retired word (Treats, Pounce, Zoomies…) on any card', () => {
     for (const c of Object.values(CARDS)) {

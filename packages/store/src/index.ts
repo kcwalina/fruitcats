@@ -44,8 +44,8 @@ export const deckProduct = (deck: string) => `deck:${deck}`;
 export const validProductId = (id: unknown): id is string => typeof id === 'string' && /^(card|deck):[A-Za-z0-9-]{1,40}$/.test(id);
 
 /**
- * Is this a starter set, whose decks everyone has? Sets say so (`starter`). A card pack published before sets said
- * it can replace the built-in Starter Box, so when no loaded set says, the released sets are the starters, as before.
+ * Is this a starter set, whose decks everyone has? Sets say so (`starter`). When no loaded set says (a card pack
+ * published before sets said), the released sets are the starters.
  */
 export function isStarterSet(set: string): boolean {
   const s = SETS[set];
@@ -53,17 +53,11 @@ export function isStarterSet(set: string): boolean {
   return Object.values(SETS).some((x) => x.starter) ? !!s.starter : s.status === 'released';
 }
 
-/** Is this a set from before the folklore re-theme? The Store shows its decks and cards in the Legacy decks. */
-export const isLegacySet = (set: string): boolean => !!SETS[set]?.legacy;
-
-/**
- * The ready-made decks the Solo opponent may lead against a deck with this Hero Cat: any other deck, never a Legacy
- * one (the owner's call, 2026-09-27: Legacy decks appear in a game only when a player took one from the Store).
- */
+/** The ready-made decks the Solo opponent may lead against a deck with this Hero Cat: any other deck. */
 export function soloFoeDecks(hero: string): string[] {
-  const folkborn = Object.keys(DECKS).filter((key) => !isLegacySet(CARDS[DECKS[key].hero]?.set ?? ''));
-  const others = folkborn.filter((key) => DECKS[key].hero !== hero);
-  return others.length ? others : folkborn;
+  const all = Object.keys(DECKS);
+  const others = all.filter((key) => DECKS[key].hero !== hero);
+  return others.length ? others : all;
 }
 
 /** Cards of a starter set come free with the starter decks, so they're never sold. */

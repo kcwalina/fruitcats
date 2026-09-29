@@ -59,14 +59,12 @@ your mind? Tap **Undo** in the bar that appears.
 Every card is printed with a rarity mark on its type line, just before its number. Rarity never
 changes how a card plays: it's there to collect.
 
-| Mark | Rarity | In the Starter Box |
+| Mark | Rarity | Which cards |
 |---|---|---|
 | bronze circle | **Common** | Creatures that cost 3 or less |
 | silver diamond | **Uncommon** | Creatures that cost 4 or more, every Charm and Talisman |
 | gold star | **Rare** | the Fabled cards |
 | purple crown | **Legendary** | the Heroes |
-
-The [card list](starter-box-cards.md#rarity) has the full breakdown.
 
 ## Finishes
 
@@ -86,8 +84,8 @@ end of the card's collector line, after its number, so you can tell a special pr
 [Card anatomy](card-anatomy.md). When you open a card, its rarity and finish are also shown under its name.
 
 Your copies appear in their finish everywhere: in the Collection, the deck builder, your hand and board
-in a game, and on [wallpapers](wallpapers.md). For now the three starter Heroes come special:
-**Sunny** is Foil, **Pippin** is Gold and **Tango** is Prismatic.
+in a game, and on [wallpapers](wallpapers.md). For now two Heroes come special: **Dziadziuś** (Domowiki) and
+**Parijan** (Pari) are Gold.
 
 ## Wallpapers
 

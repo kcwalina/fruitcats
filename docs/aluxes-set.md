@@ -45,15 +45,15 @@ no Maya gods appear on any card. A Maya or Yucatecan reviewer would still help.
 
 ## How it plays
 
-The deck is the Starter Box's Orchard Guard, card for card: the same costs, stats, keywords and abilities, re-themed.
-Orchard Guard is the patient deck (Guardians, healing, units that grow each round), and that is the alux's job: guard
-the milpa, call the rain, and let the corn grow.
+The deck was copied from Orchard Guard, a deck of the Starter Box (removed from the game on 2026-09-29), card for
+card: the same costs, stats, keywords and abilities, re-themed. Orchard Guard was the patient deck (Guardians,
+healing, units that grow each round), and that is the alux's job: guard the milpa, call the rain, and let the corn
+grow.
 
-- **Rain-Fed** replaces Ripen: at the start of each round the unit gets +1/+1, up to +2/+2. Badge: 🌽. Same counter
-  as Ripen, defined in the set's `mechanics`; no engine code.
+- **Rain-Fed** took the place of Orchard Guard's Ripen: at the start of each round the unit gets +1/+1, up to +2/+2.
+  Badge: 🌽. It is a counter defined in the set's `mechanics`; no engine code.
 - Guardians are aluxes on patrol; heals are the rain; the Toy is the little house itself.
-- The deck uses the Starter Box's Garden slots (Orchard Guard has no Garden Snail), so the set `requires` SB1, but
-  every card in the deck is an Aluxes card of its own.
+- Orchard Guard's shared neutral slots are Aluxes cards of the set's own, so the set needs no other set.
 
 ## Hero: Aluxito, Keeper of the Milpa (AL1-H01, Legendary)
 
@@ -85,7 +85,7 @@ Every card is a real belief from the sources above:
 
 ## The deck (50 cards)
 
-| ID | Name | Type | Cost | P/H | Text | Qty | Was |
+| ID | Name | Type | Cost | P/H | Text | Qty | Was (Orchard Guard) |
 |---|---|---|---|---|---|---|---|
 | AL1-D01 | Saká-Bearing Alux | Critter | 1 | 1/2 | Hello: Heal 2 from a unit. | 3 | Peach Bunny |
 | AL1-D02 | Night Patrol Alux | Critter | 2 | 2/2 | Guardian. | 3 | Pear Hedgehog |
@@ -139,5 +139,5 @@ which needs a tester account). Making it a Store deck later is one line in the s
 
 ## What it needs built
 
-Nothing: the rules are Orchard Guard's, and Rain-Fed is data. Gameplay closer to the folklore (the seven-year seal,
+Nothing: the rules are Orchard Guard's (copied into the set), and Rain-Fed is data. Gameplay closer to the folklore (the seven-year seal,
 the offering a roadside alux asks for) can come later, once the deck has been played.

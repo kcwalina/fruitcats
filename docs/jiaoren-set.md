@@ -6,7 +6,8 @@ for the full deck in the Store at $9.99.
 
 Status: released (2026-12), not a starter: players get it from the Store. The data is in
 `content/2026/12/jiaoren/set.json`; the deck's price is `"price": 999` on the deck, and the live API lists the set
-with `STORE_SETS=SB1,JR1`. Buying itself is still off everywhere (`BUYING` in `apps/web/src/flags.ts`), so the Store
+in `STORE_SETS` (with HH1 since 2026-09-28; SB1, the Starter Box, was listed too until the owner removed it on
+2026-09-29). Buying itself is still off everywhere (`BUYING` in `apps/web/src/flags.ts`), so the Store
 shows the deck and its price, and "Add to cart" says "Coming soon". Last updated 2026-09-27.
 
 ## The creature
@@ -40,7 +41,8 @@ once. Sturdy Guardians with Pearl Tears soak up attacks and pay for your next ca
 the Muke Poet) leave something behind when they go. Defined in the set's `mechanics`; no engine code.
 
 Balance (check-set, bots, 60 games per matchup, 2026-09-27): 47% overall; Zest Rush 47%, Orchard Guard 52%, Mango
-Tango 43%, Domowiki 43%, Pari 47%, Aluxes 52%.
+Tango 43%, Domowiki 43%, Pari 47%, Aluxes 52%. (Zest Rush, Orchard Guard and Mango Tango were the Starter Box decks,
+removed from the game on 2026-09-29.)
 
 ## Hero: Zhu'er (JR1-H01, Legendary, gold frame)
 

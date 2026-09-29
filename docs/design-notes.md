@@ -1,6 +1,6 @@
 # Fruitcats — Design Notes
 
-Why the rules are the way they are, what we borrowed, and what the playtest engine should try to break first. Companion to [rulebook.md](rulebook.md) and [starter-box-cards.md](starter-box-cards.md).
+Why the rules are the way they are, what we borrowed, and what the playtest engine should try to break first. Companion to [rulebook.md](rulebook.md) and [designing-good-deck.md](designing-good-deck.md).
 
 ## Goals
 
@@ -27,6 +27,13 @@ Why the rules are the way they are, what we borrowed, and what the playtest engi
 | Open decklists, chess clock, ladder rules = tournament rules | Lessons from Hearthstone Conquest & Snap Conquest | Pro play should be the game everyone plays. |
 
 ## Classes and signature mechanics (added after playtest feedback: "we need classes")
+
+This section and its simulation notes are history: they describe the fruit families of the Starter Box, the game's
+first set, which the owner removed on 2026-09-29. Today's families are folk-creature families, each with its own
+mechanic (Domowiki: Sprout and Well-Fed; Pari: Company and Feather Coat; Aluxes: Rain-Fed; Jiaoren: Pearl Tears;
+Hui Hai: Stone for Stone), listed in the [rulebook](rulebook.md#3-3-the-families-classes). Some of them play the part
+of the old ones: Company that of Zest, Rain-Fed that of Ripen, Well-Fed that of Lush; Sprout itself moved to the
+Domowiki.
 
 The fruit families were always classes (they gate deckbuilding), but players didn't *feel* them, because
 all families shared the same keywords in different amounts. Each family now has one mechanic of its own,
@@ -76,12 +83,12 @@ cost 4 (barely moves Zest; she wants a new ability, not a lower cost).
 ## Known risks — first hypotheses for the playtest engine
 
 1. **Nine Lives may over-feed the defender.** One Piece uses 4–5 life cards; we give 9 extra cards. Watch: average hand size of the losing player, comeback rate, whether aggro is viable. Knobs: Lives count, or only odd-numbered Lives go to hand.
-2. **Every hit is worth 1 Life regardless of Power**, so cheap units are the most efficient face damage. Natural brakes: planting + cheap units drains the hand, every hit gives the opponent a card, Yard cap of 6, Guardians. Watch: Berry/Citrus swarm win rates, average cost of units that deal hits. Knobs: Fierce availability, Yard cap, a "Power ≥ N to hit" rule.
+2. **Every hit is worth 1 Life regardless of Power**, so cheap units are the most efficient face damage. Natural brakes: planting + cheap units drains the hand, every hit gives the opponent a card, Yard cap of 6, Guardians. Watch: swarm decks' win rates, average cost of units that deal hits. Knobs: Fierce availability, Yard cap, a "Power ≥ N to hit" rule.
 3. **Big Cat attacks are risk-free** (no damage back). Watch: share of Lives removed by Hero attacks; games decided purely by who Grows Up first.
 4. **Hiss! / cheap Pounce cancels** might make attacking feel bad. Watch: attacks cancelled per game, LLM-tester sentiment.
 5. **Taking the Yarn early** then still Pouncing could be too cheap. Watch: how often the Yarn is taken, first-actor win rate per round. Knob: no Pounce after Taking the Yarn.
 6. **First-actor advantage in round 1.** Target: 48–52% win rate for the starting Yarn holder. Knob: non-holder plants a 3rd Treat, or draws 1 extra.
-7. **Grow Up conditions that may never fire** (Pippin vs. a passive opponent). Watch: % of games in which each Hero Grows Up, and the round it happens (target: 80%+, rounds 4–6).
+7. **Grow Up conditions that may never fire** (Pippin, a Starter Box Hero, vs. a passive opponent). Watch: % of games in which each Hero Grows Up, and the round it happens (target: 80%+, rounds 4–6).
 8. **Game length.** Target: 6–9 rounds, ≤ 60 total actions, ~10 minutes human time.
 9. **Stat budget** (`2×cost + 1`, keyword prices) is a guess. Use win-rate-when-drawn / when-played deltas per card to correct it.
 
@@ -96,8 +103,8 @@ drawn/planted rates, Lucky swing, comeback rate, Pounce and bluff rates, branchi
 
 The same work replaced the bot's fixed planting rule (plant to 5 Treats, or 8 for Mochi) with a general
 one: plant to the priciest card, plus one spare when that costs 6 or more, plus whatever the Hero Cat's
-Grow Up counts in Treats. In bot-vs-bot duels the spare Treat was worth +8 points to Orchard Guard and
-nothing to the others, so with a better bot Orchard Guard measures about 58% overall rather than 53%.
+Grow Up counts in Treats. In bot-vs-bot duels the spare Treat was worth +8 points to Orchard Guard (a Starter Box
+deck, since removed) and nothing to the others, so with a better bot Orchard Guard measures about 58% overall rather than 53%.
 
 ## Research sources
 

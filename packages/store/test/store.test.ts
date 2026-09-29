@@ -5,9 +5,10 @@ import { CARDS, DECKS, SETS } from '@fruitcats/engine';
 import {
   SIGNATURE_PRICE,
   CARD_PRICES, DECK_PRICE, MINIMUM_ORDER, buildCatalog, cardProduct, cartForDeck, collectionOf, deckPrice, deckProduct,
-  deckWith, formatPrice, isLegacySet, maxCopies, missingForDeck, priceCart, soloFoeDecks, starterCollection, whyNotSold, type DeckProduct,
+  deckWith, formatPrice, maxCopies, missingForDeck, priceCart, soloFoeDecks, starterCollection, whyNotSold, type DeckProduct,
 } from '../src/index';
 
+// SB1, the retired Starter Box, as an old STORE_SETS may still name it: a set the game doesn't have is left out.
 const catalog = buildCatalog(['DW1', 'SB1', 'JR1', 'MB1', 'MC1']);
 const starterOnly = collectionOf({});
 const jiaoren = catalog.products[deckProduct('jiaoren')] as DeckProduct;
@@ -26,20 +27,17 @@ describe('catalog', () => {
   });
 
 
-  it('never sells the starter set', () => {
-    expect(catalog.sets).toEqual(['SB1', 'JR1', 'MB1', 'MC1']);
+  it('never sells the starter set, nor a set the game doesn’t have', () => {
+    expect(catalog.sets).toEqual(['JR1', 'MB1', 'MC1']);
     expect(Object.values(catalog.products).some((p) => p.set === 'DW1')).toBe(false);
   });
 
-  it('lists the old Starter Box decks for free: a deck names its own price', () => {
-    const old = Object.values(catalog.products).filter((p): p is DeckProduct => p.kind === 'deck' && p.set === 'SB1');
-    expect(old.map((p) => p.deck)).toEqual(['zest-rush', 'orchard-guard', 'mango-tango']);
-    for (const p of old) {
-      expect(p.price).toBe(0);
-      expect(deckPrice(p, starterOnly)).toBe(0);
-      expect(Object.keys(missingForDeck(p, starterOnly)).length).toBeGreaterThan(0);   // free, but it brings cards
-      expect(priceCart([{ product: p.id, qty: 1 }], catalog, starterOnly)).toMatchObject({ total: 0, canBuy: false });
-    }
+  it('lists a free deck for free: a deck names its own price', () => {
+    const free: DeckProduct = { ...jiaoren, id: deckProduct('free-jiaoren'), deck: 'free-jiaoren', price: 0 };
+    const cat = { ...catalog, products: { ...catalog.products, [free.id]: free } };
+    expect(deckPrice(free, starterOnly)).toBe(0);
+    expect(Object.keys(missingForDeck(free, starterOnly)).length).toBeGreaterThan(0);   // free, but it brings cards
+    expect(priceCart([{ product: free.id, qty: 1 }], cat, starterOnly)).toMatchObject({ total: 0, canBuy: false });
   });
 
   it('sells every deck, and on their own only the cards that come in no deck, priced by rarity', () => {
@@ -60,23 +58,14 @@ describe('catalog', () => {
     expect(whyNotSold('JR1-D02', catalog)).toBe('in-deck');
     expect(deckWith('JR1-D02', catalog)?.id).toBe(deckProduct('jiaoren'));
     expect(whyNotSold('DW1-D01', catalog)).toBe('starter');
-    expect(whyNotSold('SB1-C01', catalog)).toBe('in-deck');
+    expect(whyNotSold('SB1-C01', catalog)).toBe('not-yet');   // a retired card: the game doesn't know it
     expect(whyNotSold('MB1-D01', catalog)).toBeNull();
   });
 
-  it('puts the sets from before the folklore re-theme in the Legacy decks', () => {
-    expect(isLegacySet('SB1')).toBe(true);
-    expect(isLegacySet('JR1')).toBe(false);
-    expect(isLegacySet('DW1')).toBe(false);
-  });
-
-  it('never gives the Solo opponent a Legacy deck', () => {
-    const legacy = Object.keys(DECKS).filter((key) => isLegacySet(CARDS[DECKS[key].hero]?.set ?? ''));
-    expect(legacy.length).toBeGreaterThan(0);
+  it('gives the Solo opponent a deck with another Hero Cat', () => {
     for (const deck of Object.values(DECKS)) {
       const foes = soloFoeDecks(deck.hero);
       expect(foes.length).toBeGreaterThan(0);
-      expect(foes.filter((key) => legacy.includes(key))).toEqual([]);
       expect(foes.filter((key) => DECKS[key].hero === deck.hero)).toEqual([]);
     }
   });
@@ -94,12 +83,21 @@ describe('what a player owns', () => {
       for (const [id, qty] of Object.entries(deck.cards)) expect(starter[id]).toBeGreaterThanOrEqual(qty);
     }
     expect(starter['JR1-H01']).toBeUndefined();
-    expect(starter['SB1-H01']).toBeUndefined();   // the old Starter Box: taken from the Store now
   });
 
   it('adds what was bought', () => {
     expect(collectionOf({ 'JR1-D02': 2 })('JR1-D02')).toBe(2);
     expect(collectionOf({ 'JR1-D02': 2 })('JR1-D04')).toBe(0);
+  });
+
+  it('keeps cards of a retired set an account was given (the Starter Box), without their counting for anything', () => {
+    const owned = collectionOf({ 'SB1-H01': 1, 'SB1-C01': 3, 'JR1-D02': 1 });
+    expect(owned('JR1-D02')).toBe(1);
+    expect(owned('SB1-C01')).toBe(3);
+    const deck = { name: 'Old', hero: 'SB1-H01', cards: { 'SB1-C01': 3, 'JR1-D02': 1 } };
+    expect(missingForDeck(deck, collectionOf({}))).toEqual({ 'JR1-D02': 1 });
+    expect(cartForDeck(deck, catalog, owned).unavailable).toEqual([]);
+    expect(priceCart([{ product: deckProduct('zest-rush'), qty: 1 }], catalog, owned)).toMatchObject({ total: 0, canBuy: false });   // its old free deck: gone
   });
 });
 
@@ -228,7 +226,7 @@ describe('a deck from a code, with cards you don’t have', () => {
 
   it('lists cards the Store doesn’t sell apart', () => {
     const deck = { name: 'x', hero: 'DW1-H01', cards: { 'MB1-D01': 1 } };
-    expect(cartForDeck(deck, buildCatalog(['SB1']), starterOnly).unavailable).toEqual([{ card: 'MB1-D01', qty: 1, why: 'not-yet' }]);
+    expect(cartForDeck(deck, buildCatalog([]), starterOnly).unavailable).toEqual([{ card: 'MB1-D01', qty: 1, why: 'not-yet' }]);
   });
 
   it('never sells an exclusive card, and says why', () => {

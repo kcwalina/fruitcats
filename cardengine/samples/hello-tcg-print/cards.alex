@@ -1,31 +1,50 @@
 #type Cards
 
 cards = [
+  dziadzius = Hero {
+    name = 'Dziadziuś', epithet = 'Heart of the House'
+    number = 'DW1-H01', rarity = legendary, family = 'Domowiki'
+    art = 'art/dziadzius.webp'
+    text = @dziadzius-text
+    constants = [energy = 1, creatures = 3]
+    flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'
+    back = Awakened {
+      name = 'Dziadziuś', epithet = 'Master of the House', power = 4
+      art = 'art/dziadzius-awakened.webp'
+      text = 'Exhaust: Gain {energy} Energy.'
+      constants = [energy = 2]
+    }
+  }
   hearth-cricket = Creature {
     name = 'Hearth Cricket', cost = 1, power = 2, health = 1
+    number = 'DW1-D16', rarity = common, family = 'Domowiki'
     art = 'art/hearth-cricket.webp'
     flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
   mane-braiding-domowik = Creature {
     name = 'Mane-Braiding Domowik', cost = 2, power = 2, health = 2
+    number = 'DW1-D03', rarity = common, family = 'Domowiki'
     art = 'art/mane-braiding-domowik.webp'
     keywords = [@Swift]
     flavor = 'The horse he favours wakes with braids in its mane.'
   }
   klobuk = Creature {
-    name = 'Kłobuk, the Soggy Chick', cost = 3, power = 2, health = 3
+    name = 'Kłobuk', epithet = 'the Soggy Chick', cost = 3, power = 2, health = 3
+    number = 'DW1-D18', rarity = common, family = 'Domowiki'
     art = 'art/klobuk.webp'
     text = 'Hello: Draw a card.'
     flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
   keeper-of-the-door = Creature {
     name = 'Keeper of the Door', cost = 3, power = 2, health = 6
+    number = 'DW1-D04', rarity = common, family = 'Domowiki'
     art = 'art/keeper-of-the-door.webp'
     keywords = [@Guardian]
     flavor = 'Nothing crosses the threshold without his nod.'
   }
   bread-and-salt-greeter = Creature {
     name = 'Bread-and-Salt Greeter', cost = 4, power = 3, health = 5
+    number = 'DW1-D06', rarity = uncommon, family = 'Domowiki'
     art = 'art/bread-and-salt-greeter.webp'
     text = 'Hello: Heal {heal} from each Creature you control.'
     constants = [heal = 2]
@@ -33,6 +52,7 @@ cards = [
   }
   domowiks-temper = Charm {
     name = 'A Domowik''s Temper', cost = 4
+    number = 'DW1-D10', rarity = uncommon, family = 'Domowiki'
     art = 'art/domowiks-temper.webp'
     text = 'Deal {damage} damage to a Creature.'
     constants = [damage = 5]
@@ -43,6 +63,7 @@ cards = [
 decks = [
   hearth = Deck {
     name = 'Hearth',
+    hero = @dziadzius,
     cards = [
       [@hearth-cricket, 3],
       [@mane-braiding-domowik, 3],
@@ -52,6 +73,7 @@ decks = [
   }
   threshold = Deck {
     name = 'Threshold',
+    hero = @dziadzius,
     cards = [
       [@keeper-of-the-door, 3],
       [@bread-and-salt-greeter, 3],
@@ -60,3 +82,8 @@ decks = [
     ]
   }
 ]
+
+@@@ dziadzius-text
+Exhaust: Gain {energy} Energy.
+Awaken: You control {creatures} or more Creatures.
+@@@

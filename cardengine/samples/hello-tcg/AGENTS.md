@@ -25,6 +25,8 @@ wants to print, unless they ask.
 - `art/`: images, referred to by path: card paintings, the card back, and frames in `art/frames/`.
   Frames are 822 × 1122 (750 × 1050 plus 36 px bleed each side) with a transparent art window.
 - `fonts/`: font files the card layout uses.
+- A card with a `back` (the Hero's Awakened face) prints double-sided; `finish = foil` prints on foil
+  stock. Rarity marks are images in `art/icons/`.
 
 ## How to work
 

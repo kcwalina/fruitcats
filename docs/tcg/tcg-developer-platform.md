@@ -262,6 +262,21 @@ below print resolution. `tcg cards` renders every card; `--print --printer <name
 files, the back and the printer's order choices. The layout is Folkborn's own card anatomy
 (`tools/compose_cards.py`) moved out of a Python script and into data a designer owns.
 
+Added after comparing with the live game's cards (2026-09-28), so the layout reproduces Folkborn's
+card design exactly:
+
+- `frames` entries are `Frame { image, ink }`; a part's `color = ink` takes the frame's ink (purple
+  text on Domowiki frames, dark gold on the Hero's).
+- `Title { show, subtitle }`: a name with its epithet under it, or alone and centred.
+- `Icon { show = '{rarity}', images = [...] }`: one of a few images picked by a field.
+- In a `TextBox`, `bold = [keywords, labels]` bolds the game's keywords and "Label:" openers, and
+  `same-line = true` runs a paragraph on from the one before ("Guardian. Hello: …").
+- **Two-faced cards:** `Card.back` holds a second face (the Hero's Awakened side). It prints on the
+  card's back instead of the game's card back, with its own type's frame; it shows its own fields
+  and the front's for the ones its type doesn't have (number, rarity, family).
+- **Finishes:** a game declares `enum Finish { standard, foil }` and a `finish` field; a type can fix
+  it (`finish = foil` on `Hero`). `tcg cards --print` groups foil cards as their own order.
+
 Still to explore, as a survey like the rules survey: the elements cards have across many TCGs
 (rarity marks, set symbols and collector numbers, faction frames, icons in text, finishes such as
 foil, two-faced cards) and the layout parts they need.
@@ -396,6 +411,11 @@ changes from the walkthrough review" and "Printing first: cards, constants, sche
   cardengine file starts with its `#type`.
 - Fixed from the Alex session's re-bind: `reveal`'s `CheckToPlay` is `RevealToPlay`, and the
   scenario verb `pass` is `passes`, so `@pass` means the core's pass action.
+
+Asked for the Hero and foil (2026-09-28), to do: `Frame { image, ink }` and `color = ink`; `Title`;
+`Icon`; `TextBox` `bold` and `same-line`; `Card.back`; `Deck.hero` in the core (a print-only game
+has no `decks` library); `HeroCards { second-face = back }`; the scenario verb `awakened`; `gain`
+taking a resource.
 
 Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
 `cardengine/decisions.md` under "Card layouts, and keyword rules that take the game's own keyword";

@@ -14,10 +14,10 @@ Many designers only need Part 1, or do Part 1 first and come back to Part 2 once
 has been played a few times. Both parts work on the same folder: Part 2 adds to what Part 1
 made, and changes nothing about it.
 
-Hello TCG is deliberately small: six cards, one page of rules. Its cards are real ones, borrowed
-from **Folkborn**, a published game built with this toolkit: five Creatures and a Charm from its
-Domowiki deck, the house spirits of Slavic folklore, with their original paintings. Each part
-takes about half an hour.
+Hello TCG is deliberately small: a Hero, six cards, one page of rules. Its cards are real ones,
+borrowed from **Folkborn**, a published game built with this toolkit: the Domowiki deck's Hero,
+five of its Creatures and a Charm, the house spirits of Slavic folklore, with their original
+paintings and their card design. Each part takes about half an hour.
 
 ## What you need
 
@@ -28,7 +28,8 @@ takes about half an hour.
 - **A text editor.** Any will do. VS Code with the Alex extension colours the files and underlines
   mistakes as you type.
 - **The Hello TCG images.** `tcg new --sample-art hello-tcg` puts them in the project for you: the
-  six paintings, two card frames and a card back. With your own game, these are your own images.
+  eight paintings, four card frames, four rarity icons and a card back. With your own game, these
+  are your own images.
 - **Optional: a coding agent**, such as Claude Code or Codex. Every step in this walkthrough shows
   the exact change to make by hand, so everyone ends up with the same game. Most people end up
   asking an agent to make these changes instead. Look for the boxes that say *Ask your agent*:
@@ -45,8 +46,8 @@ A game is a folder. It holds two kinds of thing:
 - **Alex files**, plain text written in **Alex**, a small language for describing things. They
   say what the game is: its cards, how they look, its rulebook and, once you want the computer to
   play it, its rules.
-- **Assets**: the files the Alex files point at. Card paintings, card frames, the card back, fonts,
-  pictures for the rulebook.
+- **Assets**: the files the Alex files point at. Card paintings, card frames, icons, the card
+  back, fonts, pictures for the rulebook.
 
 Nothing about your game lives anywhere else: not in a database, not on a website. You can keep
 the folder on your laptop, in Git, on GitHub, or all three.
@@ -179,28 +180,60 @@ play it. Part 1 is about the first.
 
 ## 3. Card types and keywords
 
-Hello TCG has two kinds of card:
+Hello TCG has three kinds of card:
 
 - **Creatures** stay on the table. They have a cost, Power and Health.
 - **Charms** are played once and discarded. They have a cost.
+- **Heroes** lead a deck. A Hero has two faces: it starts on its front, and later turns over to its
+  **Awakened** side, which has Power. Heroes are printed on foil.
 
-Say what each type of card has printed on it. In `hello-tcg.alex`:
+Every card also prints its **family** (all of Hello TCG's are Domowiki), its **rarity** and its
+collector **number**, and a card's name may have an **epithet** under it ("Kłobuk, *the Soggy
+Chick*"). Say all of that in `hello-tcg.alex`:
 
 ```
-type Creature : Card {
+enum Rarity { common, uncommon, rare, legendary }
+enum Finish { standard, foil }
+
+type Printed : Card {
+  number: text
+  rarity: Rarity
+  family: text
+  epithet: text?
+  finish: Finish = standard
+}
+type Creature : Printed {
   cost: int
   power: int
   health: int
 }
-type Charm : Card {
+type Charm : Printed {
   cost: int
+}
+type Hero : Printed {
+  finish = foil
+  back: Awakened
+}
+type Awakened : Card {
+  type-name = 'Hero · Awakened'
+  epithet: text
+  power: int
 }
 ```
 
-`: Card` means these are cards, so they also have what every card has: a name, a picture, text,
-keywords, flavor text and constants, all optional. The fields you add are the ones your game
-prints; `int` means a whole number. Games name their card types freely (Monsters, Allies,
-Spells, Tricks) and give them whatever fields they print.
+How to read it:
+
+- **`Printed`** is what every card of this game prints, written once. `: Card` means it's a card,
+  so it also has what every card has: a name, a picture, text, keywords, flavor text and
+  constants. `epithet: text?` is optional: the `?` means a card may leave it out.
+- **Creature, Charm and Hero** are `Printed` cards with fields of their own; `int` is a whole
+  number. Games name their card types freely (Monsters, Allies, Spells, Leaders) and give them
+  whatever fields they print.
+- **`finish`** is `standard` unless a card says otherwise, and `finish = foil` on the Hero type
+  makes every Hero foil. A single card can be foil too: `finish = foil` on the card.
+- **`back`** is the Hero's other face. A card with a `back` is printed double-sided: its front on
+  one side and its back on the other, instead of the game's card back. The Awakened face is a card
+  of its own type with a display name, `type-name = 'Hero · Awakened'`, for its type line.
 
 Some cards carry a **keyword**: a word that stands for a rule the rulebook explains once, so the
 card doesn't have to. Hello TCG has two:
@@ -213,8 +246,9 @@ keywords = [
 ```
 
 > [!TIP]
-> **Ask your agent:** "My game has two card types: Creatures, with a cost, Power and Health, and
-> Charms, with a cost. It has two keywords, Guardian and Swift."
+> **Ask your agent:** "My game has Creatures (cost, Power, Health), Charms (cost) and Heroes (two
+> faces, printed on foil; the back has Power). Every card prints a family, a rarity and a number,
+> and may have an epithet. Keywords: Guardian and Swift."
 
 ## 4. Your first cards
 
@@ -226,11 +260,13 @@ Open `cards.alex` and add two Creatures:
 cards = [
   hearth-cricket = Creature {
     name = 'Hearth Cricket', cost = 1, power = 2, health = 1
+    number = 'DW1-D16', rarity = common, family = 'Domowiki'
     art = 'art/hearth-cricket.webp'
     flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
   keeper-of-the-door = Creature {
     name = 'Keeper of the Door', cost = 3, power = 2, health = 6
+    number = 'DW1-D04', rarity = common, family = 'Domowiki'
     art = 'art/keeper-of-the-door.webp'
     keywords = [@Guardian]
     flavor = 'Nothing crosses the threshold without his nod.'
@@ -261,7 +297,7 @@ else, and `tcg check` tells you if a card points at a picture that isn't there:
 
 ```
 hello-tcg: 1 error
-  error  cards.alex:11  Keeper of the Door's art 'art/keeper-of-the-door.webp' doesn't exist.
+  error  cards.alex:12  Keeper of the Door's art 'art/keeper-of-the-door.webp' doesn't exist.
 ```
 
 > [!NOTE]
@@ -271,28 +307,31 @@ hello-tcg: 1 error
 > truth; the grid is a view of it.
 
 > [!TIP]
-> **Ask your agent:** "Add two Creatures: Hearth Cricket (cost 1, 2/1) and Keeper of the Door
-> (cost 3, 2/6, Guardian), with their pictures and flavor text."
+> **Ask your agent:** "Add two Creatures: Hearth Cricket (cost 1, 2/1, DW1-D16, common) and Keeper
+> of the Door (cost 3, 2/6, Guardian, DW1-D04, common), with their pictures and flavor text."
 
-## 5. Cards with text
+## 5. Cards with text, and the Hero
 
-Most cards do something, and say so in their text. Add the other four cards to `cards`:
+Most cards do something, and say so in their text. Add four more cards to `cards`:
 
 ```
   mane-braiding-domowik = Creature {
     name = 'Mane-Braiding Domowik', cost = 2, power = 2, health = 2
+    number = 'DW1-D03', rarity = common, family = 'Domowiki'
     art = 'art/mane-braiding-domowik.webp'
     keywords = [@Swift]
     flavor = 'The horse he favours wakes with braids in its mane.'
   }
   klobuk = Creature {
-    name = 'Kłobuk, the Soggy Chick', cost = 3, power = 2, health = 3
+    name = 'Kłobuk', epithet = 'the Soggy Chick', cost = 3, power = 2, health = 3
+    number = 'DW1-D18', rarity = common, family = 'Domowiki'
     art = 'art/klobuk.webp'
     text = 'Hello: Draw a card.'
     flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
   bread-and-salt-greeter = Creature {
     name = 'Bread-and-Salt Greeter', cost = 4, power = 3, health = 5
+    number = 'DW1-D06', rarity = uncommon, family = 'Domowiki'
     art = 'art/bread-and-salt-greeter.webp'
     text = 'Hello: Heal {heal} from each Creature you control.'
     constants = [heal = 2]
@@ -300,6 +339,7 @@ Most cards do something, and say so in their text. Add the other four cards to `
   }
   domowiks-temper = Charm {
     name = 'A Domowik''s Temper', cost = 4
+    number = 'DW1-D10', rarity = uncommon, family = 'Domowiki'
     art = 'art/domowiks-temper.webp'
     text = 'Deal {damage} damage to a Creature.'
     constants = [damage = 5]
@@ -314,33 +354,70 @@ engine reads the same number the card prints, so the card and what it does can n
 `tcg check` holds the text and its constants together: a `{name}` the card doesn't have is an
 error, and so is a constant the text never shows.
 
+### The Hero
+
+The Hero, Dziadziuś, the smallest Domowik in the house, has two faces. Add him at the top of
+`cards`:
+
+```
+  dziadzius = Hero {
+    name = 'Dziadziuś', epithet = 'Heart of the House'
+    number = 'DW1-H01', rarity = legendary, family = 'Domowiki'
+    art = 'art/dziadzius.webp'
+    text = @dziadzius-text
+    constants = [energy = 1, creatures = 3]
+    flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'
+    back = Awakened {
+      name = 'Dziadziuś', epithet = 'Master of the House', power = 4
+      art = 'art/dziadzius-awakened.webp'
+      text = 'Exhaust: Gain {energy} Energy.'
+      constants = [energy = 2]
+    }
+  }
+```
+
+His front's text is two lines, so it goes in a text table at the end of `cards.alex`:
+
+```
+@@@ dziadzius-text
+Exhaust: Gain {energy} Energy.
+Awaken: You control {creatures} or more Creatures.
+@@@
+```
+
+The back is a whole face: its own name, epithet, picture, text and constants. What it doesn't
+have, it shares with the front: the number, rarity and family print on both sides.
+
 > [!TIP]
-> **Ask your agent:** "Add Mane-Braiding Domowik, Kłobuk, Bread-and-Salt Greeter and A Domowik's
-> Temper as in chapter 5 of the walkthrough."
+> **Ask your agent:** "Add Mane-Braiding Domowik, Kłobuk, Bread-and-Salt Greeter, A Domowik's
+> Temper and the Hero Dziadziuś as in chapter 5 of the walkthrough."
 
 ## 6. How your cards look
 
 A printed card is a picture: a frame, the painting, and the card's data (name, cost, text, Power,
-Health) drawn in the right places, in the right fonts. You design the look once, and every card
-gets it, so changing a card's cost in `cards.alex` changes the printed card, with nothing redrawn
-by hand.
+Health, rarity, number) drawn in the right places, in the right fonts and colours. You design the
+look once, and every card gets it, so changing a card's cost in `cards.alex` changes the printed
+card, with nothing redrawn by hand.
 
 The look has two halves:
 
 - **Frames**, images you draw in any drawing program: everything on the card that is the same on
-  every card of a type. Hello TCG's are in `art/frames/`: `creature.png` and `charm.png`. A frame
-  leaves a transparent window where the painting shows through, and blank spaces where the data
-  goes: a circle for the cost, a banner for the name, a box for the text, and, on the Creature
-  frame only, two chips for Power and Health.
+  every card of a type. Hello TCG's are in `art/frames/`: Folkborn's card design, left blank. A
+  frame leaves a transparent window where the painting shows through, and blank spaces where the
+  data goes: a circle for the cost, a banner for the name, a strip for the type line, a box for
+  the text, and chips for Power and Health. Each type has its own: Creatures and Charms in
+  Domowiki's purple (a Charm has no chips), and the Hero's two faces in gold, with a star in the
+  circle instead of a cost, and only a Power chip on the Awakened face.
 - **A card layout**, an Alex file that says which frame each card type uses, and where each piece
   of the card's data goes on it.
 
 The frames are drawn at the card's printed size, 750 × 1050 pixels (2.5 × 3.5 inches at 300
 dots per inch), plus 36 pixels of **bleed** on every side: the frame's edge carries on past where
 the printer cuts, so no card ends up with a white sliver when the cut is slightly off. So the
-frame images are 822 × 1122 pixels.
+frame images are 822 × 1122 pixels. The rarity marks are small images in `art/icons/`: a bronze
+circle, a silver diamond, a gold star and a purple crown.
 
-Create `card-layout.alex`:
+Create `card-layout.alex`. Its beginning:
 
 ```
 #type CardLayout
@@ -353,13 +430,16 @@ bleed = 36
 fonts = [
   black = 'fonts/Nunito-Black.ttf'
   bold = 'fonts/Nunito-Bold.ttf'
+  bold-italic = 'fonts/Nunito-BoldItalic.ttf'
   regular = 'fonts/Nunito-Regular.ttf'
   italic = 'fonts/Nunito-Italic.ttf'
 ]
 
 frames = [
-  Creature = 'art/frames/creature.png'
-  Charm = 'art/frames/charm.png'
+  Creature = Frame { image = 'art/frames/creature.png', ink = '#2E1F5C' }
+  Charm = Frame { image = 'art/frames/charm.png', ink = '#2E1F5C' }
+  Hero = Frame { image = 'art/frames/hero.png', ink = '#7A5A0C' }
+  Awakened = Frame { image = 'art/frames/hero-awakened.png', ink = '#7A5A0C' }
 ]
 
 parts = [
@@ -374,70 +454,89 @@ parts = [
     box = Box { x = 30, y = 26, width = 102, height = 102 }
     font = @black
     size = 60
-    color = '#2E1F5C'
+    color = ink
     align = center
   }
-  name = Label {
+  name = Title {
     show = '{name}'
-    box = Box { x = 150, y = 42, width = 540, height = 72 }
+    subtitle = '{epithet}'
+    box = Box { x = 150, y = 34, width = 540, height = 88 }
     font = @bold
     size = 42
     smallest = 26
+    subtitle-font = @bold-italic
+    subtitle-size = 25
     color = '#FFFFFF'
-    outline = '#2E1F5C'
+    outline = ink
+  }
+  type-line = Label {
+    show = '{type} · {family}'
+    ...
   }
   ...
 ]
 ```
 
-(The complete file, with the type line, the text box, Power, Health and the footer, is at the end
-of the walkthrough.)
+(The complete file, with the rarity, number, text box, Power, Health and footer, is at the end of
+the walkthrough.)
 
 How to read it:
 
-- **`frames`** gives each card type its frame. A Charm has no Power or Health, so its frame has
-  no chips for them.
+- **`frames`** gives each card type its frame, and its **ink**: the colour its text is drawn in,
+  deep purple on the Domowiki frames and dark gold on the Hero's. A part with `color = ink` takes
+  the ink of the card's frame.
 - **`parts`** are the pieces drawn on the card, in order. Each has a **box**: where it goes,
   measured in pixels from the card's top-left corner, where the printer cuts, not counting bleed.
   Designers usually measure them in their drawing program: the box of the name is the name banner
   in the frame.
-- **`show`** says what the part shows. `'{cost}'` is the card's `cost`, `'{name}'` its name. It
-  can mix in words of its own: `show = 'Hello TCG'` on the footer is the same on every card.
-- **A `Label`** is one line of text. `size` is its font size; with `smallest`, a long name shrinks
-  to fit its box instead of spilling out ("Kłobuk, the Soggy Chick" is long).
+- **`show`** says what the part shows: `'{cost}'` is the card's cost, `'{type} · {family}'` its
+  type and family, for "CREATURE · DOMOWIKI". It can mix in words of its own: the footer shows
+  `'Hello TCG · {family} · © 2026'`.
+- **A `Label`** is one line of text. `size` is its font size; with `smallest`, long text shrinks
+  to fit its box instead of spilling out. `capitals = true` prints it in capitals.
+- **A `Title`** is a name with an optional line under it: the epithet, when the card has one.
+  "Kłobuk" gets "the Soggy Chick" under it; "A Domowik's Temper" sits alone in the middle of the
+  banner.
 - **A `Picture`** shows an image. `fit = cover` fills the box and trims what doesn't fit;
   `under-frame = true` draws it below the frame, so it shows through the frame's window.
-- **A `TextBox`** holds paragraphs: the keywords in bold, then the card's text, then the flavor in
-  italics under a thin line. Its text shrinks to fit the box. The `{heal}` in the Greeter's text is
-  filled in with its constant before it's drawn.
+- **An `Icon`** shows one of a few images, picked by a field: the rarity mark, by `{rarity}`.
+- **A `TextBox`** holds paragraphs that shrink together to fit the box: the keywords in bold, then
+  the card's text on the same line (`same-line = true`), with its keywords and labels such as
+  "Hello:" and "Exhaust:" in bold, then the flavor in italics under a thin line. The `{heal}` in
+  the Greeter's text is filled in with its constant before it's drawn.
 - **A part shows only on cards that have what it shows.** A Charm has no `power`, so its card has
-  no Power. A card with no text has no text paragraph.
+  no Power; a Hero has no `cost`, so its circle keeps the frame's star.
+- **A card with a `back`** is drawn twice, front and back, each with its own type's frame. The
+  back shows its own fields and the front's for what it doesn't have, so the Awakened face prints
+  "HERO · AWAKENED · DOMOWIKI" and the Hero's number.
 
 ```bash
 tcg cards
 ```
 
 ```
-Rendered 6 cards to out/cards/ (card-layout.alex)
+Rendered 7 cards, 8 faces, to out/cards/ (card-layout.alex)
 ```
 
 Open `out/cards/`: every card in its frame, with its painting, name, cost, text and stats in
-place. Change `size = 42` on the name to 38 and render again, and every card's name is smaller.
-Change the Greeter's `heal` to 3, and its card reads "Heal 3".
+place, and the Hero's two faces as `dziadzius.png` and `dziadzius-back.png`. Change `size = 42` on
+the name to 38 and render again, and every card's name is smaller. Change the Greeter's `heal` to
+3, and its card reads "Heal 3".
 
-`tcg check` checks the layout too: a `{field}` no card type has, a box that runs off the card, a
-font file or frame that isn't there, and a text box too small for a card's text at its smallest
-size, which names the card.
+`tcg check` checks the layout too: a `{field}` no card type has, a card type with no frame, a box
+that runs off the card, a font, frame or icon that isn't there, and a text box too small for a
+card's text at its smallest size, which names the card.
 
 > [!NOTE]
 > **In Studio:** open `card-layout.alex`, and the layout editor shows a card with every part's box
 > drawn on it. Drag a box, and its `x` and `y` change in the file. Pick any card to see it in the
-> layout, or show all six side by side.
+> layout, or show them all side by side.
 
 > [!TIP]
 > **Ask your agent:** "Write a card layout for my frames in art/frames: the cost in the circle,
-> the name in the banner, the text in the box, Power and Health in the chips." Agents can read the
-> frame images to find where the spaces are, but check their boxes against a rendered card.
+> the name and epithet in the banner, the type line and rarity, the text in the box, Power and
+> Health in the chips." Agents can read the frame images to find where the spaces are, but check
+> their boxes against a rendered card.
 
 ## 7. The rulebook
 
@@ -455,17 +554,20 @@ sections = [
   your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
   energy = Section { number = '5', title = 'Energy', text = @energy-text }
   creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
-  keywords = Section { number = '7', title = 'Keywords', text = @keywords-text }
-  attacking = Section { number = '8', title = 'Attacking', text = @attacking-text }
-  charms = Section { number = '9', title = 'Charms', text = @charms-text }
+  heroes = Section { number = '7', title = 'Heroes', text = @heroes-text }
+  keywords = Section { number = '8', title = 'Keywords', text = @keywords-text }
+  attacking = Section { number = '9', title = 'Attacking', text = @attacking-text }
+  charms = Section { number = '10', title = 'Charms', text = @charms-text }
 ]
 
 @@@ winning-text
 Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
 @@@ decks-text
-A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
+A deck has a Hero and exactly {@deck-size} other cards, with at most {@max-copies} copies of any
+card.
 @@@ setup-text
-Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
+Each player puts their Hero in play, shuffles their deck and draws {@opening-hand} cards. A random
+player goes first.
 @@@ your-turn-text
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
@@ -478,6 +580,11 @@ Creatures stay on the board. A Creature enters exhausted, so it can't attack on 
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
 discard pile. "Hello:" on a Creature means: when this Creature enters play, do what follows.
 "Heal" removes damage from a Creature.
+@@@ heroes-text
+Your Hero is in play from the start. It isn't a Creature: it can't be attacked or damaged. Once
+each turn you may exhaust it to use its "Exhaust:" ability. When its "Awaken:" condition is true,
+turn it over to its Awakened side, which it keeps for the rest of the game. An Awakened Hero with
+Power can attack like a Creature, and takes no damage doing so.
 @@@ keywords-text
 Guardian: while you control a Creature with Guardian, your opponent's Creatures must attack a
 Creature with Guardian if they attack.
@@ -532,21 +639,23 @@ Rendered the rulebook:
   out/rulebook/hello-tcg-rulebook.pdf
 ```
 
-It contains every section, in order, and a card list: each card as it will be printed. You never
-copy a card's text into the rulebook, so the two can't disagree.
+It contains every section, in order, and a card list: each card as it will be printed, both faces
+of the Hero. You never copy a card's text into the rulebook, so the two can't disagree.
 
 > [!TIP]
-> **Ask your agent:** "Write the rulebook for Hello TCG: players start with 10 Life, decks are 12
-> cards with at most 3 copies, … Put every number in the game's constants."
+> **Ask your agent:** "Write the rulebook for Hello TCG: players start with 10 Life, decks are a
+> Hero and 12 cards with at most 3 copies, … Put every number in the game's constants."
 
 ## 8. Decks
 
-A printed game comes with decks to play. Add two to `cards.alex`:
+A printed game comes with decks to play, each led by a Hero. Add two to `cards.alex`, after the
+cards and before the text table:
 
 ```
 decks = [
   hearth = Deck {
     name = 'Hearth',
+    hero = @dziadzius,
     cards = [
       [@hearth-cricket, 3],
       [@mane-braiding-domowik, 3],
@@ -556,6 +665,7 @@ decks = [
   }
   threshold = Deck {
     name = 'Threshold',
+    hero = @dziadzius,
     cards = [
       [@keeper-of-the-door, 3],
       [@bread-and-salt-greeter, 3],
@@ -574,9 +684,9 @@ tcg check
 hello-tcg: 0 errors, 1 warning
   warning  hello-tcg.alex:7  The card back is 600 × 840 pixels; printing needs 822 × 1122
            (300 dpi with bleed). It will look soft when printed.
-  Printable   yes: 6 cards, 2 decks, a rulebook with 9 sections
+  Printable   yes: 7 cards, 2 decks, a rulebook with 10 sections
   Playable    not yet: no zones, no turns, no way to win, 2 keywords with no rule,
-              3 cards' text has no handler
+              4 cards' text has no handler
 ```
 
 The game is printable. It isn't playable by the computer yet, and it doesn't need to be: none of
@@ -599,17 +709,19 @@ tcg cards --print --decks hearth threshold --printer makeplayingcards
 ```
 
 ```
-Rendered 24 cards (2 decks × 12) for MakePlayingCards, poker size (63 × 88 mm):
-  out/print/fronts/*.png          one image per card, 822 × 1122, 300 dpi, with bleed
-  out/print/back.png              the card back, 822 × 1122
-  out/print/order.txt             what to choose on the order page
-  out/print/hello-tcg-cards.pdf   the same cards for home printing, with crop marks
+Rendered 26 cards for MakePlayingCards, poker size (63 × 88 mm), 822 × 1122 at 300 dpi with bleed:
+  out/print/standard/     24 cards: fronts, and the card back
+  out/print/foil/         2 cards on foil: Dziadziuś (× 2), double-sided, front and Awakened back
+  out/print/order.txt     what to choose on the order page
+  out/print/hello-tcg-cards.pdf   everything for home printing, with crop marks
 ```
 
 These are the files an online card printer asks for: each card at print resolution with the
-bleed the cutter needs, and the back. `order.txt` lists the choices to make on the printer's order
-page (card size, stock, number of cards) so the files fit. Or print the PDF at home and cut along
-the marks.
+bleed the cutter needs. Cards are grouped the way printers take orders: the standard cards with the
+shared card back, and the foil cards, which are ordered on foil stock and here have their own
+backs, the Hero's Awakened face. `order.txt` lists the choices to make on the printer's order
+page for each group (card size, stock, finish, number of cards) so the files fit. Or print the
+PDF at home and cut along the marks.
 
 With the rulebook PDF from chapter 7, that's a copy of your game you can play at a table. That's
 the end of Part 1. Play it with people, change what doesn't work, and print again.
@@ -623,15 +735,15 @@ to play it online, the engine has to know the rules too. Your rulebook already s
 are; Part 2 tells the engine the same thing.
 
 You rarely write rules from scratch. The libraries hold the rules card games commonly use (life
-totals, attacking, drawing, energy, keywords like Guardian…), and you pick the ones your game uses
-and set their numbers. Each rule you pick *cites* the rulebook section that explains it, so the
-rules and the rulebook stay connected.
+totals, attacking, drawing, energy, heroes, keywords like Guardian…), and you pick the ones your
+game uses and set their numbers. Each rule you pick *cites* the rulebook section that explains
+it, so the rules and the rulebook stay connected.
 
 `tcg check` already listed what's missing:
 
 ```
   Playable    not yet: no zones, no turns, no way to win, 2 keywords with no rule,
-              3 cards' text has no handler
+              4 cards' text has no handler
 ```
 
 The chapters below work through that list.
@@ -647,6 +759,7 @@ uses = [
   @common
   @units
   @spells
+  @heroes
   @resources
   @turns
   @setup
@@ -654,9 +767,9 @@ uses = [
 ```
 
 Tell the libraries what your card types are: your Creatures are what the `units` library calls
-unit cards (cards that stay in play with power and health), and your Charms are what the `spells`
-library calls spell cards. `tcg check` confirms that your types have the fields the library
-needs.
+unit cards (cards that stay in play with power and health), your Charms are what the `spells`
+library calls spell cards, and your Heroes are the `heroes` library's hero cards, whose second
+face is their `back`. `tcg check` confirms that your types have the fields each library needs.
 
 ```
 units = [
@@ -666,10 +779,14 @@ units = [
 spells = [
   SpellCards { types = [@Charm], cites = @rulebook.sections.charms }
 ]
+
+hero = [
+  HeroCards { types = [@Hero], second-face = back }
+]
 ```
 
 The zones. Each has a `role` that tells the libraries what it is for: drawing takes cards from
-the `deck` zone into the `hand` zone.
+the `deck` zone into the `hand` zone. The Hearth is where the Hero sits.
 
 ```
 zones = [
@@ -677,10 +794,11 @@ zones = [
   Hand = Zone { role = hand, shape = set, visible = owner }
   Board = Zone { role = board, shape = row, visible = all }
   Discard = Zone { role = discard, shape = pile, visible = all }
+  Hearth = Zone { role = other, shape = slot, visible = all }
 ]
 ```
 
-Each zone's name is the one you give it here: players see "Deck", "Hand", "Board".
+Each zone's name is the one you give it here: players see "Deck", "Hand", "Board", "Hearth".
 `visible` decides who may see the cards in a zone. Nobody sees the deck; only you see your hand.
 The engine enforces this everywhere: in bots, in online play, in replays.
 
@@ -689,6 +807,7 @@ and taking its numbers from `constants`:
 
 ```
 setup = [
+  StartsInZone { type = nameof(Hero), zone = @Hearth, cites = @rulebook.sections.setup }
   ShuffleDeck { cites = @rulebook.sections.setup }
   OpeningHand { n = @opening-hand, cites = @rulebook.sections.setup }
 ]
@@ -709,6 +828,7 @@ turns = [
   Actions {
     allowed = [
       @common.actions.play
+      @abilities.actions.ability
       @pass
     ]
   }
@@ -729,7 +849,8 @@ resource-rules = [
 cost-resource = @Energy
 ```
 
-`cost-resource` says that when a card shows `cost = 2`, it means 2 Energy.
+`cost-resource` says that when a card shows `cost = 2`, it means 2 Energy. The `ability` action is
+exhausting the Hero to use its ability.
 
 `cites = @rulebook.sections.setup` connects a rule to the text that explains it. When a game is
 played, every event a rule causes carries that reference, so a player can always ask "why did
@@ -739,15 +860,16 @@ that happen?" and get the rulebook's answer.
 > **Ask your agent:** "Make the game playable: add the zones, setup, turn and Energy rules that
 > rulebook sections 3 to 5 describe."
 
-## 11. Creatures, keywords, attacking and winning
+## 11. Creatures, the Hero, keywords, attacking and winning
 
-The rest of the rulebook: Creatures, keywords, attacks and Life. Add `@combat` and `@life` to
-`uses`, and `@combat.actions.attack` to the allowed actions:
+The rest of the rulebook: Creatures, the Hero, keywords, attacks and Life. Add `@abilities`,
+`@combat` and `@life` to `uses`, and `@combat.actions.attack` to the allowed actions:
 
 ```
   Actions {
     allowed = [
       @common.actions.play
+      @abilities.actions.ability
       @combat.actions.attack
       @pass
     ]
@@ -762,6 +884,15 @@ units = [
   UnitsEnterExhausted { cites = @rulebook.sections.creatures }
   EntersReady { keyword = @Swift, cites = @rulebook.sections.keywords }
   DefeatAtHealth { cites = @rulebook.sections.creatures }
+]
+
+hero = [
+  HeroCards { types = [@Hero], second-face = back }
+  TwoFaces { cites = @rulebook.sections.heroes }
+  AwakenOnStateCheck { cites = @rulebook.sections.heroes }
+  AwakenedNeverReverts { cites = @rulebook.sections.heroes }
+  PowerOncePerRound { cites = @rulebook.sections.heroes }
+  HeroAttacksWhenAwakened { takes-no-damage = true, cites = @rulebook.sections.heroes }
 ]
 
 combat = [
@@ -787,10 +918,14 @@ life = [
 Each rule is one sentence of the rulebook:
 
 - `UnitsEnterExhausted`, `DefeatAtHealth`: section 6, Creatures.
-- `EntersReady { keyword = @Swift }`: section 7. A keyword means nothing to the engine until a rule
+- `EntersReady { keyword = @Swift }`: section 8. A keyword means nothing to the engine until a rule
   gives it meaning; this is the library's "enters ready" rule, applied to your keyword.
-- `GuardiansFirst { keyword = @Guardian }`: section 7 again, the library's "must be attacked
+- `GuardiansFirst { keyword = @Guardian }`: section 8 again, the library's "must be attacked
   first" rule, applied to Guardian.
+- `TwoFaces`, `AwakenOnStateCheck`, `AwakenedNeverReverts`: section 7. The Hero turns over as soon
+  as its Awaken condition holds, and stays turned.
+- `PowerOncePerRound`: the Hero's Exhaust ability, once each turn.
+- `HeroAttacksWhenAwakened`: an Awakened Hero with Power attacks, and takes no damage.
 - `AttackerChooses { targets = [unit, life] }`: the attacker picks either a Creature or the
   opponent.
 - `AttackerMustBeReady`: only ready Creatures attack, and attacking exhausts them.
@@ -807,7 +942,7 @@ tcg check
 ```
 hello-tcg: 0 errors
   Printable   yes
-  Playable    not yet: 3 cards' text has no handler
+  Playable    not yet: 4 cards' text has no handler
   note  rulebook.alex  Section 'decks' is cited by no rule.
 ```
 
@@ -815,8 +950,8 @@ The note is the rulebook check at work: a section that explains no rule is eithe
 haven't added yet or a mistake. Deck rules come in chapter 14.
 
 > [!TIP]
-> **Ask your agent:** "Add the rules for Creatures, keywords, attacking and winning from rulebook
-> sections 1, 6, 7 and 8."
+> **Ask your agent:** "Add the rules for Creatures, the Hero, keywords, attacking and winning from
+> rulebook sections 1 and 6 to 9."
 
 ## 12. What the cards do
 
@@ -838,9 +973,9 @@ so the cards read the same, and print the same, whether or not they're programme
 `effect draw-a-card { draw() }` is the program: draw a card. `@klobuk.on-enter = draw-a-card`
 attaches it to Kłobuk, and says when it runs: when Kłobuk enters play, which is what "Hello:"
 means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
-`damage`, `choose`…), and each one is a line or two.
+`damage`, `gain`, `choose`…), and each one is a line or two.
 
-The other two:
+The Greeter and the Temper:
 
 ```
 effect heal-own-creatures { units(own).heal(card.heal) }
@@ -856,6 +991,22 @@ effect damage-a-creature { choose(all).damage(card.damage) }
   engine asks whoever is playing that seat: a person sees the Creatures highlighted on the table,
   a bot weighs its options, an LLM player reads a list. Then it deals `card.damage` to it.
 
+And the Hero. Each labelled line of its text ("Exhaust:", "Awaken:") is its own handler:
+
+```
+effect gain-energy { gain(@Energy, card.energy) }
+@dziadzius.exhaust = gain-energy
+@dziadzius.back.exhaust = gain-energy
+
+condition enough-creatures { units(own).count >= card.creatures }
+@dziadzius.awaken = enough-creatures
+```
+
+- Both faces' Exhaust abilities use the same handler. `card.energy` is the number printed on the
+  face in play: 1 on the front, 2 on the Awakened back.
+- `condition` is a handler that answers yes or no: here, "do I control 3 or more Creatures?". The
+  moment it's yes, the Hero awakens.
+
 Every card with text must have a handler, and every handler must belong to a card with text, so
 the card and what it does can't disagree silently. Cards whose only rules are keywords, like
 Keeper of the Door, need none: the keyword's rule covers them. `tcg check` also notes a digit
@@ -864,8 +1015,8 @@ typed straight into a handler, like `heal(2)`: that's a number the card's text d
 ### Scenarios
 
 Prove the handlers work. A **scenario** sets up a situation, does something, and checks the
-result. The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`…) come from the
-`scenarios` library, so add `@scenarios` to `uses`. Then add two scenarios to
+result. The words scenarios use (`hand`, `deck`, `counter-is`, `in-zone`, `awakened`…) come from
+the `scenarios` library, so add `@scenarios` to `uses`. Then add three scenarios to
 `card-rules.alex`:
 
 ```
@@ -875,6 +1026,16 @@ scenario 'Kłobuk draws a card when it enters' {
     counter-is(me, @Energy, 3)
   when play(me, @klobuk)
   then in-zone(@hearth-cricket, @Hand)
+}
+
+scenario 'Dziadziuś awakens when you control enough Creatures' {
+  given controls(me, @dziadzius)
+    controls(me, @hearth-cricket)
+    controls(me, @klobuk)
+    hand(me, @mane-braiding-domowik)
+    counter-is(me, @Energy, 2)
+  when play(me, @mane-braiding-domowik)
+  then awakened(@dziadzius)
 }
 
 scenario 'A Domowik''s Temper defeats the chosen Creature' {
@@ -891,8 +1052,9 @@ tcg test
 ```
 
 ```
-hello-tcg: 2 scenarios, 2 passed
+hello-tcg: 3 scenarios, 3 passed
   ✓ Kłobuk draws a card when it enters
+  ✓ Dziadziuś awakens when you control enough Creatures
   ✓ A Domowik's Temper defeats the chosen Creature
 ```
 
@@ -924,18 +1086,20 @@ tcg sim --decks hearth threshold --seed 7
 ```
 Hello TCG · seed 7 · Hearth (Player 1, random bot) vs Threshold (Player 2, random bot)
 
-Setup    Both decks are shuffled. Each player draws 3.              [Setting up]
+Setup    Both Heroes are put in play. Both decks are shuffled.
+         Each player draws 3.                                        [Setting up]
          Player 1 goes first.                                        [Your turn]
 Round 1  Player 1: Energy 1. Plays Hearth Cricket.
-         Player 2: draws. Energy 1. Passes.
+         Player 2: draws. Energy 1. Exhausts Dziadziuś: Energy 1 → 2.   [Heroes]
 Round 2  Player 1: draws. Energy 2. Plays Mane-Braiding Domowik, which enters ready.
                                                                      [Keywords]
          Hearth Cricket attacks Player 2: Life 10 → 8.              [Attacking]
          Mane-Braiding Domowik attacks Player 2: Life 8 → 6.
-         Player 2: draws. Energy 2. Passes.
+         Player 2: draws. Energy 2. Exhausts Dziadziuś: Energy 2 → 3.
+         Plays Keeper of the Door.
 Round 3  Player 1: draws. Energy 3. Plays Kłobuk, draws a card.
-         Player 2: draws. Energy 3. Plays Keeper of the Door.
-Round 4  Player 1: Hearth Cricket must attack Keeper of the Door.    [Keywords]
+         Player 1 controls 3 Creatures: Dziadziuś awakens.           [Heroes]
+         Hearth Cricket must attack Keeper of the Door.              [Keywords]
 ...
 Round 11 Player 2: Bread-and-Salt Greeter attacks Player 1: Life 3 → 0.
 Game over: Player 2 wins in round 11.                                [Winning]
@@ -980,6 +1144,7 @@ Threshold     633     63.3%    60.3 – 66.2
 Draws          15      1.5%
 
 Game length: median 10 rounds (most games 7 – 14)
+Dziadziuś awakened in 71% of Hearth's games and 38% of Threshold's.
 
 Cards (win rate in games where the card was played):
   Keeper of the Door        72%   A Domowik's Temper couldn't defeat it: 6 Health
@@ -1107,8 +1272,8 @@ more than 150 published card games.
 
 - **Your own game.** `tcg new my-game`: cards, their look and a rulebook first, rules when you want
   the computer to play it.
-- **Card layouts.** Every kind of part, several frames per type (by rarity, by faction), foil and
-  other finishes, and the sizes printers offer.
+- **Card layouts.** Every kind of part, frames by rarity or faction, badges, foil and other
+  finishes, and the sizes printers offer.
 - **The library reference.** Every library, every rule, and what its numbers mean.
 - **Folkborn.** The complete game Hello TCG's cards come from, as an example of a bigger project.
 
@@ -1126,6 +1291,8 @@ hello-tcg/
   card-layout.alex
   card-rules.alex
   art/
+    dziadzius.webp
+    dziadzius-awakened.webp
     hearth-cricket.webp
     mane-braiding-domowik.webp
     klobuk.webp
@@ -1136,9 +1303,17 @@ hello-tcg/
     frames/
       creature.png
       charm.png
+      hero.png
+      hero-awakened.png
+    icons/
+      common.png
+      uncommon.png
+      rare.png
+      legendary.png
   fonts/
     Nunito-Black.ttf
     Nunito-Bold.ttf
+    Nunito-BoldItalic.ttf
     Nunito-Regular.ttf
     Nunito-Italic.ttf
   AGENTS.md
@@ -1173,19 +1348,40 @@ keywords = [
   Swift = Keyword {}
 ]
 
-type Creature : Card {
+enum Rarity { common, uncommon, rare, legendary }
+enum Finish { standard, foil }
+
+type Printed : Card {
+  number: text
+  rarity: Rarity
+  family: text
+  epithet: text?
+  finish: Finish = standard
+}
+type Creature : Printed {
   cost: int
   power: int
   health: int
 }
-type Charm : Card {
+type Charm : Printed {
   cost: int
+}
+type Hero : Printed {
+  finish = foil
+  back: Awakened
+}
+type Awakened : Card {
+  type-name = 'Hero · Awakened'
+  epithet: text
+  power: int
 }
 
 uses = [
   @common
   @units
   @spells
+  @heroes
+  @abilities
   @combat
   @life
   @resources
@@ -1200,9 +1396,11 @@ zones = [
   Hand = Zone { role = hand, shape = set, visible = owner }
   Board = Zone { role = board, shape = row, visible = all }
   Discard = Zone { role = discard, shape = pile, visible = all }
+  Hearth = Zone { role = other, shape = slot, visible = all }
 ]
 
 setup = [
+  StartsInZone { type = nameof(Hero), zone = @Hearth, cites = @rulebook.sections.setup }
   ShuffleDeck { cites = @rulebook.sections.setup }
   OpeningHand { n = @opening-hand, cites = @rulebook.sections.setup }
 ]
@@ -1223,6 +1421,7 @@ turns = [
   Actions {
     allowed = [
       @common.actions.play
+      @abilities.actions.ability
       @combat.actions.attack
       @pass
     ]
@@ -1252,6 +1451,15 @@ units = [
 
 spells = [
   SpellCards { types = [@Charm], cites = @rulebook.sections.charms }
+]
+
+hero = [
+  HeroCards { types = [@Hero], second-face = back }
+  TwoFaces { cites = @rulebook.sections.heroes }
+  AwakenOnStateCheck { cites = @rulebook.sections.heroes }
+  AwakenedNeverReverts { cites = @rulebook.sections.heroes }
+  PowerOncePerRound { cites = @rulebook.sections.heroes }
+  HeroAttacksWhenAwakened { takes-no-damage = true, cites = @rulebook.sections.heroes }
 ]
 
 combat = [
@@ -1292,17 +1500,20 @@ sections = [
   your-turn = Section { number = '4', title = 'Your turn', text = @your-turn-text }
   energy = Section { number = '5', title = 'Energy', text = @energy-text }
   creatures = Section { number = '6', title = 'Creatures', text = @creatures-text }
-  keywords = Section { number = '7', title = 'Keywords', text = @keywords-text }
-  attacking = Section { number = '8', title = 'Attacking', text = @attacking-text }
-  charms = Section { number = '9', title = 'Charms', text = @charms-text }
+  heroes = Section { number = '7', title = 'Heroes', text = @heroes-text }
+  keywords = Section { number = '8', title = 'Keywords', text = @keywords-text }
+  attacking = Section { number = '9', title = 'Attacking', text = @attacking-text }
+  charms = Section { number = '10', title = 'Charms', text = @charms-text }
 ]
 
 @@@ winning-text
 Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
 @@@ decks-text
-A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
+A deck has a Hero and exactly {@deck-size} other cards, with at most {@max-copies} copies of any
+card.
 @@@ setup-text
-Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
+Each player puts their Hero in play, shuffles their deck and draws {@opening-hand} cards. A random
+player goes first.
 @@@ your-turn-text
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
@@ -1315,6 +1526,11 @@ Creatures stay on the board. A Creature enters exhausted, so it can't attack on 
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the
 discard pile. "Hello:" on a Creature means: when this Creature enters play, do what follows.
 "Heal" removes damage from a Creature.
+@@@ heroes-text
+Your Hero is in play from the start. It isn't a Creature: it can't be attacked or damaged. Once
+each turn you may exhaust it to use its "Exhaust:" ability. When its "Awaken:" condition is true,
+turn it over to its Awakened side, which it keeps for the rest of the game. An Awakened Hero with
+Power can attack like a Creature, and takes no damage doing so.
 @@@ keywords-text
 Guardian: while you control a Creature with Guardian, your opponent's Creatures must attack a
 Creature with Guardian if they attack.
@@ -1335,31 +1551,50 @@ A Charm does what its text says, once, and then goes to your discard pile.
 #type Cards
 
 cards = [
+  dziadzius = Hero {
+    name = 'Dziadziuś', epithet = 'Heart of the House'
+    number = 'DW1-H01', rarity = legendary, family = 'Domowiki'
+    art = 'art/dziadzius.webp'
+    text = @dziadzius-text
+    constants = [energy = 1, creatures = 3]
+    flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'
+    back = Awakened {
+      name = 'Dziadziuś', epithet = 'Master of the House', power = 4
+      art = 'art/dziadzius-awakened.webp'
+      text = 'Exhaust: Gain {energy} Energy.'
+      constants = [energy = 2]
+    }
+  }
   hearth-cricket = Creature {
     name = 'Hearth Cricket', cost = 1, power = 2, health = 1
+    number = 'DW1-D16', rarity = common, family = 'Domowiki'
     art = 'art/hearth-cricket.webp'
     flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
   mane-braiding-domowik = Creature {
     name = 'Mane-Braiding Domowik', cost = 2, power = 2, health = 2
+    number = 'DW1-D03', rarity = common, family = 'Domowiki'
     art = 'art/mane-braiding-domowik.webp'
     keywords = [@Swift]
     flavor = 'The horse he favours wakes with braids in its mane.'
   }
   klobuk = Creature {
-    name = 'Kłobuk, the Soggy Chick', cost = 3, power = 2, health = 3
+    name = 'Kłobuk', epithet = 'the Soggy Chick', cost = 3, power = 2, health = 3
+    number = 'DW1-D18', rarity = common, family = 'Domowiki'
     art = 'art/klobuk.webp'
     text = 'Hello: Draw a card.'
     flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
   keeper-of-the-door = Creature {
     name = 'Keeper of the Door', cost = 3, power = 2, health = 5
+    number = 'DW1-D04', rarity = common, family = 'Domowiki'
     art = 'art/keeper-of-the-door.webp'
     keywords = [@Guardian]
     flavor = 'Nothing crosses the threshold without his nod.'
   }
   bread-and-salt-greeter = Creature {
     name = 'Bread-and-Salt Greeter', cost = 4, power = 3, health = 5
+    number = 'DW1-D06', rarity = uncommon, family = 'Domowiki'
     art = 'art/bread-and-salt-greeter.webp'
     text = 'Hello: Heal {heal} from each Creature you control.'
     constants = [heal = 2]
@@ -1367,6 +1602,7 @@ cards = [
   }
   domowiks-temper = Charm {
     name = 'A Domowik''s Temper', cost = 4
+    number = 'DW1-D10', rarity = uncommon, family = 'Domowiki'
     art = 'art/domowiks-temper.webp'
     text = 'Deal {damage} damage to a Creature.'
     constants = [damage = 5]
@@ -1377,6 +1613,7 @@ cards = [
 decks = [
   hearth = Deck {
     name = 'Hearth',
+    hero = @dziadzius,
     cards = [
       [@hearth-cricket, 3],
       [@mane-braiding-domowik, 3],
@@ -1386,6 +1623,7 @@ decks = [
   }
   threshold = Deck {
     name = 'Threshold',
+    hero = @dziadzius,
     cards = [
       [@keeper-of-the-door, 3],
       [@bread-and-salt-greeter, 3],
@@ -1394,6 +1632,11 @@ decks = [
     ]
   }
 ]
+
+@@@ dziadzius-text
+Exhaust: Gain {energy} Energy.
+Awaken: You control {creatures} or more Creatures.
+@@@
 ```
 
 ### card-layout.alex
@@ -1409,13 +1652,16 @@ bleed = 36
 fonts = [
   black = 'fonts/Nunito-Black.ttf'
   bold = 'fonts/Nunito-Bold.ttf'
+  bold-italic = 'fonts/Nunito-BoldItalic.ttf'
   regular = 'fonts/Nunito-Regular.ttf'
   italic = 'fonts/Nunito-Italic.ttf'
 ]
 
 frames = [
-  Creature = 'art/frames/creature.png'
-  Charm = 'art/frames/charm.png'
+  Creature = Frame { image = 'art/frames/creature.png', ink = '#2E1F5C' }
+  Charm = Frame { image = 'art/frames/charm.png', ink = '#2E1F5C' }
+  Hero = Frame { image = 'art/frames/hero.png', ink = '#7A5A0C' }
+  Awakened = Frame { image = 'art/frames/hero-awakened.png', ink = '#7A5A0C' }
 ]
 
 parts = [
@@ -1430,25 +1676,46 @@ parts = [
     box = Box { x = 30, y = 26, width = 102, height = 102 }
     font = @black
     size = 60
-    color = '#2E1F5C'
+    color = ink
     align = center
   }
-  name = Label {
+  name = Title {
     show = '{name}'
-    box = Box { x = 150, y = 42, width = 540, height = 72 }
+    subtitle = '{epithet}'
+    box = Box { x = 150, y = 34, width = 540, height = 88 }
     font = @bold
     size = 42
     smallest = 26
+    subtitle-font = @bold-italic
+    subtitle-size = 25
     color = '#FFFFFF'
-    outline = '#2E1F5C'
+    outline = ink
   }
   type-line = Label {
-    show = '{type}'
-    box = Box { x = 62, y = 600, width = 626, height = 44 }
+    show = '{type} · {family}'
+    box = Box { x = 62, y = 600, width = 480, height = 44 }
     font = @bold
     size = 25
-    color = '#2E1F5C'
+    color = ink
     capitals = true
+  }
+  rarity = Icon {
+    show = '{rarity}'
+    images = [
+      common = 'art/icons/common.png'
+      uncommon = 'art/icons/uncommon.png'
+      rare = 'art/icons/rare.png'
+      legendary = 'art/icons/legendary.png'
+    ]
+    box = Box { x = 566, y = 609, width = 26, height = 26 }
+  }
+  number = Label {
+    show = '{number}'
+    box = Box { x = 598, y = 606, width = 90, height = 32 }
+    font = @regular
+    size = 20
+    color = '#7A6A5C'
+    align = right
   }
   rules = TextBox {
     box = Box { x = 66, y = 678, width = 618, height = 216 }
@@ -1457,7 +1724,13 @@ parts = [
     color = '#2B211B'
     paragraphs = [
       Paragraph { show = '{keywords}.', join = '. ', font = @bold }
-      Paragraph { show = '{text}', font = @regular, bold-font = @bold }
+      Paragraph {
+        show = '{text}'
+        font = @regular
+        bold-font = @bold
+        bold = [keywords, labels]
+        same-line = true
+      }
       Paragraph {
         show = '{flavor}'
         font = @italic
@@ -1472,17 +1745,17 @@ parts = [
     box = Box { x = 98, y = 930, width = 52, height = 62 }
     font = @black
     size = 40
-    color = '#2E1F5C'
+    color = ink
   }
   health = Label {
     show = '{health}'
     box = Box { x = 642, y = 930, width = 52, height = 62 }
     font = @black
     size = 40
-    color = '#2E1F5C'
+    color = ink
   }
   footer = Label {
-    show = 'Hello TCG'
+    show = 'Hello TCG · {family} · © 2026'
     box = Box { x = 0, y = 988, width = 750, height = 24 }
     font = @regular
     size = 17
@@ -1499,6 +1772,13 @@ parts = [
 
 for = @cards
 
+effect gain-energy { gain(@Energy, card.energy) }
+@dziadzius.exhaust = gain-energy
+@dziadzius.back.exhaust = gain-energy
+
+condition enough-creatures { units(own).count >= card.creatures }
+@dziadzius.awaken = enough-creatures
+
 effect draw-a-card { draw() }
 @klobuk.on-enter = draw-a-card
 
@@ -1514,6 +1794,16 @@ scenario 'Kłobuk draws a card when it enters' {
     counter-is(me, @Energy, 3)
   when play(me, @klobuk)
   then in-zone(@hearth-cricket, @Hand)
+}
+
+scenario 'Dziadziuś awakens when you control enough Creatures' {
+  given controls(me, @dziadzius)
+    controls(me, @hearth-cricket)
+    controls(me, @klobuk)
+    hand(me, @mane-braiding-domowik)
+    counter-is(me, @Energy, 2)
+  when play(me, @mane-braiding-domowik)
+  then awakened(@dziadzius)
 }
 
 scenario 'A Domowik''s Temper defeats the chosen Creature' {

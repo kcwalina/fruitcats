@@ -2,6 +2,13 @@
 
 for = @cards
 
+effect gain-energy { gain(@Energy, card.energy) }
+@dziadzius.exhaust = gain-energy
+@dziadzius.back.exhaust = gain-energy
+
+condition enough-creatures { units(own).count >= card.creatures }
+@dziadzius.awaken = enough-creatures
+
 effect draw-a-card { draw() }
 @klobuk.on-enter = draw-a-card
 
@@ -17,6 +24,16 @@ scenario 'Kłobuk draws a card when it enters' {
     counter-is(me, @Energy, 3)
   when play(me, @klobuk)
   then in-zone(@hearth-cricket, @Hand)
+}
+
+scenario 'Dziadziuś awakens when you control enough Creatures' {
+  given controls(me, @dziadzius)
+    controls(me, @hearth-cricket)
+    controls(me, @klobuk)
+    hand(me, @mane-braiding-domowik)
+    counter-is(me, @Energy, 2)
+  when play(me, @mane-braiding-domowik)
+  then awakened(@dziadzius)
 }
 
 scenario 'A Domowik''s Temper defeats the chosen Creature' {

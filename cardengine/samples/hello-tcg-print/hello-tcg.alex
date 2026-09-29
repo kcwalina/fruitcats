@@ -20,11 +20,30 @@ keywords = [
   Swift = Keyword {}
 ]
 
-type Creature : Card {
+enum Rarity { common, uncommon, rare, legendary }
+enum Finish { standard, foil }
+
+type Printed : Card {
+  number: text
+  rarity: Rarity
+  family: text
+  epithet: text?
+  finish: Finish = standard
+}
+type Creature : Printed {
   cost: int
   power: int
   health: int
 }
-type Charm : Card {
+type Charm : Printed {
   cost: int
+}
+type Hero : Printed {
+  finish = foil
+  back: Awakened
+}
+type Awakened : Card {
+  type-name = 'Hero · Awakened'
+  epithet: text
+  power: int
 }

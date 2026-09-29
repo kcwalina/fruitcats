@@ -20,19 +20,40 @@ keywords = [
   Swift = Keyword {}
 ]
 
-type Creature : Card {
+enum Rarity { common, uncommon, rare, legendary }
+enum Finish { standard, foil }
+
+type Printed : Card {
+  number: text
+  rarity: Rarity
+  family: text
+  epithet: text?
+  finish: Finish = standard
+}
+type Creature : Printed {
   cost: int
   power: int
   health: int
 }
-type Charm : Card {
+type Charm : Printed {
   cost: int
+}
+type Hero : Printed {
+  finish = foil
+  back: Awakened
+}
+type Awakened : Card {
+  type-name = 'Hero · Awakened'
+  epithet: text
+  power: int
 }
 
 uses = [
   @common
   @units
   @spells
+  @heroes
+  @abilities
   @combat
   @life
   @resources
@@ -47,9 +68,11 @@ zones = [
   Hand = Zone { role = hand, shape = set, visible = owner }
   Board = Zone { role = board, shape = row, visible = all }
   Discard = Zone { role = discard, shape = pile, visible = all }
+  Hearth = Zone { role = other, shape = slot, visible = all }
 ]
 
 setup = [
+  StartsInZone { type = nameof(Hero), zone = @Hearth, cites = @rulebook.sections.setup }
   ShuffleDeck { cites = @rulebook.sections.setup }
   OpeningHand { n = @opening-hand, cites = @rulebook.sections.setup }
 ]
@@ -70,6 +93,7 @@ turns = [
   Actions {
     allowed = [
       @common.actions.play
+      @abilities.actions.ability
       @combat.actions.attack
       @pass
     ]
@@ -99,6 +123,15 @@ units = [
 
 spells = [
   SpellCards { types = [@Charm], cites = @rulebook.sections.charms }
+]
+
+hero = [
+  HeroCards { types = [@Hero], second-face = back }
+  TwoFaces { cites = @rulebook.sections.heroes }
+  AwakenOnStateCheck { cites = @rulebook.sections.heroes }
+  AwakenedNeverReverts { cites = @rulebook.sections.heroes }
+  PowerOncePerRound { cites = @rulebook.sections.heroes }
+  HeroAttacksWhenAwakened { takes-no-damage = true, cites = @rulebook.sections.heroes }
 ]
 
 combat = [

@@ -42,27 +42,34 @@ describe('a set\'s art fingerprint', () => {
   });
 });
 
-// A set whose cards tcg renders (content/tcg.ts) keeps its cards in <set>.alex; its finished cards are build output.
-function tcgSet(files: Record<string, string>): string {
-  return join(setFolder(Object.fromEntries(Object.entries(files).map(([path, text]) => [`x/${path}`, text]))), 'x');
+// A set whose cards tcg renders (content/tcg.ts): the game folder defines its cards (sets/x/x.alex) and holds their
+// paintings (sets/x/art/); its folder in content/ may hold other pictures; its finished cards are build output.
+function tcgSet(game: Record<string, string>, content: Record<string, string> = {}): [string, string] {
+  const root = setFolder({ 'game/folkborn.alex': '#type Game\n', ...Object.fromEntries(Object.entries(game).map(([p, t]) => [`game/sets/x/${p}`, t])),
+    ...Object.fromEntries(Object.entries(content).map(([p, t]) => [`content/x/${p}`, t])), 'content/x/set.json': '{}' });
+  return [join(root, 'content', 'x'), join(root, 'game')];
 }
 
 describe('the art fingerprint of a set tcg renders', () => {
-  const sources = { 'x.alex': '#type Set\n\nname = \'X\'\n', 'art/illustrations/X1-D01.webp': 'painting' };
+  const sources = { 'x.alex': "#type Set\n\nname = 'X'\n", 'art/X1-D01.webp': 'painting' };
 
-  it('is made from the sources, so finished cards in the folder change nothing', () => {
-    const a = artHash(tcgSet(sources));
-    expect(artHash(tcgSet({ ...sources, 'art/cards/X1-D01.webp': 'anything', 'art/cards/foil/X1-D01.webp': 'at all' }))).toBe(a);
-    expect(artFiles(tcgSet({ ...sources, 'art/cards/X1-D01.webp': 'c' }))).toEqual(['art/illustrations/X1-D01.webp']);
+  it('publishes its card paintings and its other pictures together, and never finished cards', () => {
+    const [root, game] = tcgSet(sources, { 'art/illustrations/X1-banner.webp': 'banner', 'art/cards/X1-D01.webp': 'old card' });
+    expect(artFiles(root, game)).toEqual(['art/illustrations/X1-D01.webp', 'art/illustrations/X1-banner.webp']);
+  });
+
+  it('is made from the sources, so finished cards change nothing', () => {
+    const a = artHash(...tcgSet(sources));
+    expect(artHash(...tcgSet(sources, { 'art/cards/X1-D01.webp': 'anything', 'art/cards/foil/X1-D01.webp': 'at all' }))).toBe(a);
   });
 
   it('changes with the cards in Alex and with a painting', () => {
-    const a = artHash(tcgSet(sources));
-    expect(artHash(tcgSet({ ...sources, 'x.alex': '#type Set\n\nname = \'Y\'\n' }))).not.toBe(a);
-    expect(artHash(tcgSet({ ...sources, 'art/illustrations/X1-D01.webp': 'repainted' }))).not.toBe(a);
+    const a = artHash(...tcgSet(sources));
+    expect(artHash(...tcgSet({ ...sources, 'x.alex': "#type Set\n\nname = 'Y'\n" }))).not.toBe(a);
+    expect(artHash(...tcgSet({ ...sources, 'art/X1-D01.webp': 'repainted' }))).not.toBe(a);
   });
 
   it('is the same whichever line endings a checkout gives the Alex files', () => {
-    expect(artHash(tcgSet({ ...sources, 'x.alex': '#type Set\r\n\r\nname = \'X\'\r\n' }))).toBe(artHash(tcgSet(sources)));
+    expect(artHash(...tcgSet({ ...sources, 'x.alex': "#type Set\r\n\r\nname = 'X'\r\n" }))).toBe(artHash(...tcgSet(sources)));
   });
 });

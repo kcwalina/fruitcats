@@ -6,8 +6,9 @@ using ViaMochi.Alex.Model;
 //
 //   tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--png] [--bleed]
 //
-// Renders every card face of the project, in each finish it's printed in. A card's images go into --out
-// (default out/cards) beside the file the card is written in; finishes other than standard into a subfolder.
+// Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
+// a folder relative to where tcg runs, where {set} is the name of the file the cards are written in. Finishes
+// other than standard go into a subfolder.
 try
 {
     if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
@@ -30,7 +31,7 @@ catch (TcgException e)
 
 static int Cards(string[] args)
 {
-    string projectDir = Directory.GetCurrentDirectory(), outDir = Path.Combine("out", "cards");
+    string projectDir = Directory.GetCurrentDirectory(), outDir = Path.Combine("out", "cards", "{set}");
     string? onlyFinish = null, onlySet = null;
     HashSet<string>? only = null;
     bool png = false, bleed = false;
@@ -73,7 +74,7 @@ static int Cards(string[] args)
                 foreach (Face face in faces)
                 {
                     using SKImage image = renderer.Render(face, bleed);
-                    string folder = Path.Combine(document.Directory, outDir, finish == "standard" ? "" : finish);
+                    string folder = Path.Combine(Path.GetFullPath(outDir.Replace("{set}", document.Name)), finish == "standard" ? "" : finish);
                     Directory.CreateDirectory(folder);
                     string path = Path.Combine(folder, renderer.FileName(face) + (png ? ".png" : ".webp"));
                     using SKData data = image.Encode(png ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Webp, png ? 100 : 90);

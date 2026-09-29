@@ -19,6 +19,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gameSet, renderedByTcg } from '../content/tcg';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const args = process.argv.slice(2);
@@ -164,10 +165,12 @@ async function main() {
       if (pic?.state !== 'approved') continue;
       const v = [...pic.versions].reverse().find((x) => x.kind === 'final') ?? pic.versions.at(-1)!;
       const bytes = Buffer.from(await (await call(`${set}/pictures/${key}/${v.id}`)).arrayBuffer());
-      // Where each kind of picture lives, all in the set's folder: card pictures, Pawtraits, the announcement.
+      // Where each kind of picture lives: Pawtraits and the announcement in the set's folder; card pictures there
+      // too, or in the game folder for a set whose cards tcg renders (content/tcg.ts).
       const out = p.kind === 'pawtrait' ? join(folder, 'avatars', p.file)
         : p.kind === 'announcement' ? join(folder, 'announcement', p.file)
-          : join(folder, 'art', 'illustrations', `${key}.webp`);
+          : renderedByTcg(folder) ? join(gameSet(folder), 'art', `${key}.webp`)
+            : join(folder, 'art', 'illustrations', `${key}.webp`);
       mkdirSync(dirname(out), { recursive: true });
       if (v.format === 'webp') writeFileSync(out, bytes);
       else {

@@ -17,12 +17,12 @@ cards = [
   dziadzius = Hero {
     name = 'Dziadziuś', epithet = 'Heart of the House'
     number = 'DW1-H01', rarity = legendary
-    art = 'art/illustrations/DW1-H01-kitten.webp'
+    art = 'art/DW1-H01-kitten.webp'
     text = @dziadzius-text
     flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'
     back = Awakened {
       name = 'Dziadziuś', epithet = 'Master of the House', power = 4
-      art = 'art/illustrations/DW1-H01-bigcat.webp'
+      art = 'art/DW1-H01-bigcat.webp'
       keywords = [@Fierce]
       text = 'Fierce. Exhaust: Ready two of your Offerings.'
     }
@@ -31,7 +31,7 @@ cards = [
     name = 'Stove Keeper'
     cost = 1, power = 1, health = 2
     number = 'DW1-D01', rarity = common
-    art = 'art/illustrations/DW1-D01.webp'
+    art = 'art/DW1-D01.webp'
     text = 'Hello: Ready one of your Offerings.'
     flavor = 'Keeps the embers warm until morning.'
   }
@@ -39,7 +39,7 @@ cards = [
     name = 'Moving-Day Domowik'
     cost = 1, power = 1, health = 1
     number = 'DW1-D02', rarity = common
-    art = 'art/illustrations/DW1-D02.webp'
+    art = 'art/DW1-D02.webp'
     text = 'Hello: Sprout 1.'
     flavor = 'Carry the old fire, and the home comes with you.'
   }
@@ -47,7 +47,7 @@ cards = [
     name = 'Mane-Braiding Domowik'
     cost = 2, power = 2, health = 2
     number = 'DW1-D03', rarity = common
-    art = 'art/illustrations/DW1-D03.webp'
+    art = 'art/DW1-D03.webp'
     keywords = [@Swift]
     text = 'Swift.'
     flavor = 'The horse he favours wakes with braids in its mane.'
@@ -56,7 +56,7 @@ cards = [
     name = 'Keeper of the Door'
     cost = 3, power = 2, health = 6
     number = 'DW1-D04', rarity = common
-    art = 'art/illustrations/DW1-D04.webp'
+    art = 'art/DW1-D04.webp'
     keywords = [@Guardian]
     text = 'Guardian.'
     flavor = 'Nothing crosses the threshold without his nod.'
@@ -65,7 +65,7 @@ cards = [
     name = 'Ovinnik of the Drying Barn'
     cost = 2, power = 2, health = 3
     number = 'DW1-D05', rarity = common
-    art = 'art/illustrations/DW1-D05.webp'
+    art = 'art/DW1-D05.webp'
     text = 'Can''t attack unless you''re Well-Fed.'
     flavor = 'Keeps the fire that dries the grain. Feed him first, or no one gets bread.'
   }
@@ -73,7 +73,7 @@ cards = [
     name = 'Bread-and-Salt Greeter'
     cost = 4, power = 3, health = 5
     number = 'DW1-D06', rarity = uncommon
-    art = 'art/illustrations/DW1-D06.webp'
+    art = 'art/DW1-D06.webp'
     text = 'Hello: Heal 2 from each unit you control.'
     flavor = 'Every guest is welcome. Every crumb is counted.'
   }
@@ -81,7 +81,7 @@ cards = [
     name = 'Kikimora', epithet = 'the Night Spinner'
     cost = 5, power = 5, health = 5
     number = 'DW1-D07', rarity = uncommon
-    art = 'art/illustrations/DW1-D07.webp'
+    art = 'art/DW1-D07.webp'
     text = 'Hello: If you''re Well-Fed, draw 2 cards.'
     flavor = 'Spins by the stove all night. The yarn tells tomorrow.'
   }
@@ -89,7 +89,7 @@ cards = [
     name = 'Dvorovoi', epithet = 'Lord of the Yard'
     cost = 8, power = 6, health = 7
     number = 'DW1-D08', rarity = uncommon
-    art = 'art/illustrations/DW1-D08.webp'
+    art = 'art/DW1-D08.webp'
     keywords = [@Guardian, @Fierce]
     text = 'Guardian. Fierce.'
     flavor = 'The house belongs to his cousin. Everything outside is his.'
@@ -98,7 +98,7 @@ cards = [
     name = 'Bowl of Kasha'
     cost = 3
     number = 'DW1-D09', rarity = uncommon
-    art = 'art/illustrations/DW1-D09.webp'
+    art = 'art/DW1-D09.webp'
     text = 'Sprout 2.'
     flavor = 'A bowl by the stove, the first spoonful for him.'
   }
@@ -106,7 +106,7 @@ cards = [
     name = 'A Domowik''s Temper'
     cost = 4
     number = 'DW1-D10', rarity = uncommon
-    art = 'art/illustrations/DW1-D10.webp'
+    art = 'art/DW1-D10.webp'
     keywords = [@Lucky]
     text = 'Lucky. Deal 5 damage to a unit.'
     flavor = 'Slam a door in his house and he slams back.'
@@ -115,7 +115,7 @@ cards = [
     name = 'Saucer of Milk'
     cost = 1
     number = 'DW1-D11', rarity = uncommon
-    art = 'art/illustrations/DW1-D11.webp'
+    art = 'art/DW1-D11.webp'
     keywords = [@Ambush]
     text = 'Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings.'
     flavor = 'Warm milk in the stable keeps the whole barn happy.'
@@ -124,7 +124,7 @@ cards = [
     name = 'Old Bast Shoe'
     cost = 2
     number = 'DW1-D12', rarity = uncommon
-    art = 'art/illustrations/DW1-D12.webp'
+    art = 'art/DW1-D12.webp'
     text = 'Attached unit gets +2 Power and +2 Health.'
     flavor = 'His ride to every new home.'
   }
@@ -132,7 +132,7 @@ cards = [
     name = 'Domowik in a Cat''s Shape'
     cost = 3, power = 2, health = 4
     number = 'DW1-D13', rarity = rare
-    art = 'art/illustrations/DW1-D13.webp'
+    art = 'art/DW1-D13.webp'
     text = 'Hello: Sprout 1.'
     flavor = 'The family cat sleeps in the stove corner. Or does it?'
   }
@@ -140,7 +140,7 @@ cards = [
     name = 'Babunia', epithet = 'Lady of the Cellar'
     cost = 5, power = 4, health = 5
     number = 'DW1-D14', rarity = rare
-    art = 'art/illustrations/DW1-D14.webp'
+    art = 'art/DW1-D14.webp'
     keywords = [@Guardian]
     text = 'Guardian. Hello: Ready one of your Offerings.'
     flavor = 'Some say she was the first spirit of the house. He only moved in later.'
@@ -149,7 +149,7 @@ cards = [
     name = 'Bannik of the Bathhouse'
     cost = 8, power = 8, health = 8
     number = 'DW1-D15', rarity = rare
-    art = 'art/illustrations/DW1-D15.webp'
+    art = 'art/DW1-D15.webp'
     keywords = [@Fierce, @Sneaky]
     text = 'Fierce. Sneaky.'
     flavor = 'Always leave the last steam for him.'
@@ -158,14 +158,14 @@ cards = [
     name = 'Hearth Cricket'
     cost = 1, power = 2, health = 1
     number = 'DW1-D16', rarity = common
-    art = 'art/illustrations/DW1-D16.webp'
+    art = 'art/DW1-D16.webp'
     flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
   the-house-snake = Creature {
     name = 'The House Snake'
     cost = 2, power = 1, health = 4
     number = 'DW1-D17', rarity = common
-    art = 'art/illustrations/DW1-D17.webp'
+    art = 'art/DW1-D17.webp'
     keywords = [@Guardian, @Lucky]
     text = 'Guardian. Lucky.'
     flavor = 'Lives under the doorstep. Harm it, and the family''s luck goes with it.'
@@ -174,7 +174,7 @@ cards = [
     name = 'Kłobuk', epithet = 'the Soggy Chick'
     cost = 3, power = 2, health = 3
     number = 'DW1-D18', rarity = common
-    art = 'art/illustrations/DW1-D18.webp'
+    art = 'art/DW1-D18.webp'
     text = 'Hello: Draw a card.'
     flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
@@ -182,7 +182,7 @@ cards = [
     name = 'Warm Hand in the Night'
     cost = 1
     number = 'DW1-D19', rarity = uncommon
-    art = 'art/illustrations/DW1-D19.webp'
+    art = 'art/DW1-D19.webp'
     keywords = [@Ambush]
     text = 'Ambush. A unit you control gets +2 Power this round.'
     flavor = 'A soft, warm, furry hand on your cheek means good luck.'
@@ -191,7 +191,7 @@ cards = [
     name = 'Knotted Mane'
     cost = 1
     number = 'DW1-D20', rarity = uncommon
-    art = 'art/illustrations/DW1-D20.webp'
+    art = 'art/DW1-D20.webp'
     keywords = [@Lucky]
     text = 'Lucky. Exhaust an enemy unit.'
     flavor = 'Anger the Domowik and wake up with tangled hair.'

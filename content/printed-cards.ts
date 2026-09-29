@@ -1,5 +1,5 @@
-// The printed cards: each released set's cards as Alex (content/<y>/<m>/<set>/<set>.alex), which tcg renders
-// into art/cards/ (cardengine/tcg: tcg cards --project content --out art/cards). Until the engine reads Alex, the
+// The printed cards: each released set's cards as Alex (games/folkborn/sets/<set>/<set>.alex), which tcg renders
+// (cardengine/tcg: npm run cards). Until the engine reads Alex, the
 // game still reads set.json, so the two must say the same thing; check-set compares them on every deploy.
 //
 // This reads only what those files hold: cards with name, epithet, cost, power, health, rarity, number, text and
@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { CardDef, SetData } from '../packages/engine/src/index';
+import { gameSet } from './tcg';
 
 export interface PrintedFace { name: string; text: string; flavor: string; cost?: number; power?: number; health?: number; rarity?: string }
 export interface PrintedCard extends PrintedFace { number: string; back?: PrintedFace }
@@ -22,7 +23,7 @@ function value(raw: string, texts: Map<string, string>): string | number {
 
 /** The cards in a set's .alex file, by number; undefined when the set has none. */
 export function printedCards(folder: string): Map<string, PrintedCard> | undefined {
-  const file = join(folder, `${basename(folder)}.alex`);
+  const file = join(gameSet(folder), `${basename(folder)}.alex`);
   if (!existsSync(file)) return undefined;
   const lines = readFileSync(file, 'utf8').replace(/\r/g, '').split('\n');
   const texts = new Map<string, string>();

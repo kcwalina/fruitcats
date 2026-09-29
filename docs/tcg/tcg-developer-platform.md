@@ -295,6 +295,16 @@ separable: the platform does not depend on Folkborn, and Folkborn becomes an app
 platform. The platform lives in `cardengine/` at the repo root (agreed with the TCG Alex
 session).
 
+## Folkborn's game folder
+
+Folkborn is the platform's first real game (2026-09-28). `games/folkborn/` holds only its sources: `folkborn.alex`
+(the game and its card types), `card-layout.alex` (its card design), `art/frames/` and `art/icons/`, and for each
+released set `sets/<set>/<set>.alex` (its cards) with the paintings they name (`sets/<set>/art/`). Nothing in it
+is generated. `npm run cards` renders every card into `out/cards/<set>/` (ignored by git), and `publish-pack` renders
+a set into a fresh folder and uploads that; copying `games/folkborn/` anywhere and running `tcg cards` there makes
+the same cards, pixel for pixel. `content/<set>/` keeps what the current engine and web app still read (`set.json`,
+art prompts, tale banners); engine files move into the game folder as Alex-based engine features replace them.
+
 ## Order of work
 
 1. **The walkthrough** ([walkthrough.md](walkthrough.md)): the tutorial as it will read on release

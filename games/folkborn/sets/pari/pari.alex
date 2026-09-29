@@ -18,12 +18,12 @@ cards = [
   parijan = Hero {
     name = 'Parijan', epithet = 'the Littlest Pari'
     number = 'PR1-H01', rarity = legendary
-    art = 'art/illustrations/PR1-H01-kitten.webp'
+    art = 'art/PR1-H01-kitten.webp'
     text = @parijan-text
     flavor = 'Persians called the pari ''those who are better than we''.'
     back = Awakened {
       name = 'Parijan', epithet = 'Wings over Qāf', power = 2
-      art = 'art/illustrations/PR1-H01-bigcat.webp'
+      art = 'art/PR1-H01-bigcat.webp'
       text = 'Exhaust: A unit you control gets +2 Power and Sneaky this round.'
     }
   }
@@ -31,7 +31,7 @@ cards = [
     name = 'Dove-Shaped Pari'
     cost = 1, power = 1, health = 1
     number = 'PR1-D01', rarity = common
-    art = 'art/illustrations/PR1-D01.webp'
+    art = 'art/PR1-D01.webp'
     keywords = [@feather-coat]
     text = 'Feather Coat.'
     flavor = 'A pari can put on a coat of feathers and fly off as a dove.'
@@ -40,7 +40,7 @@ cards = [
     name = 'Orange-Peri'
     cost = 1, power = 3, health = 1
     number = 'PR1-D02', rarity = common
-    art = 'art/illustrations/PR1-D02.webp'
+    art = 'art/PR1-D02.webp'
     text = 'Hello: Unless you''ve played 2 other cards this round, deal 1 damage to Orange-Peri.'
     flavor = 'She steps out of an orange and asks for water. Only the third is given some in time.'
   }
@@ -48,7 +48,7 @@ cards = [
     name = 'Murghatipi', epithet = 'the Bird Fairy'
     cost = 1, power = 2, health = 1
     number = 'PR1-D03', rarity = common
-    art = 'art/illustrations/PR1-D03.webp'
+    art = 'art/PR1-D03.webp'
     keywords = [@Sneaky]
     text = 'Sneaky.'
     flavor = 'In the mountains of Chitral, one of the fairies'' names means ''bird fairy''.'
@@ -57,7 +57,7 @@ cards = [
     name = 'Pari at the Pool'
     cost = 2, power = 3, health = 2
     number = 'PR1-D04', rarity = common
-    art = 'art/illustrations/PR1-D04.webp'
+    art = 'art/PR1-D04.webp'
     text = 'Company: enters ready.'
     flavor = 'People who met a pari usually found her bathing. Her sisters were never far.'
   }
@@ -65,7 +65,7 @@ cards = [
     name = 'Gale-Bringer of the High Lakes'
     cost = 3, power = 3, health = 2
     number = 'PR1-D05', rarity = common
-    art = 'art/illustrations/PR1-D05.webp'
+    art = 'art/PR1-D05.webp'
     keywords = [@Swift, @Sneaky]
     text = 'Swift. Sneaky.'
     flavor = 'Unseen pari bathe in the high mountain lakes, and bring the gales and the rain.'
@@ -74,7 +74,7 @@ cards = [
     name = 'Súči of the Hunt'
     cost = 3, power = 3, health = 3
     number = 'PR1-D06', rarity = common
-    art = 'art/illustrations/PR1-D06.webp'
+    art = 'art/PR1-D06.webp'
     text = 'Hello: Deal 1 damage to a unit. Company: deal 2 instead.'
     flavor = 'The Kalasha''s mountain fairies help the hunters they like.'
   }
@@ -82,7 +82,7 @@ cards = [
     name = 'Markhor of the Mothers'
     cost = 4, power = 4, health = 3
     number = 'PR1-D07', rarity = uncommon
-    art = 'art/illustrations/PR1-D07.webp'
+    art = 'art/PR1-D07.webp'
     keywords = [@Fierce]
     text = 'Fierce.'
     flavor = @markhor-of-the-mothers-flavor
@@ -91,7 +91,7 @@ cards = [
     name = 'Pari on a Wonder-Camel'
     cost = 5, power = 4, health = 4
     number = 'PR1-D08', rarity = uncommon
-    art = 'art/illustrations/PR1-D08.webp'
+    art = 'art/PR1-D08.webp'
     keywords = [@Swift, @Sneaky]
     text = 'Swift. Sneaky.'
     flavor = 'Old Persian paintings show pari riding camels made of many creatures.'
@@ -100,14 +100,14 @@ cards = [
     name = 'Ibex Kid'
     cost = 1, power = 2, health = 1
     number = 'PR1-D09', rarity = common
-    art = 'art/illustrations/PR1-D09.webp'
+    art = 'art/PR1-D09.webp'
     flavor = 'The mountain pari keep the ibex as their herds.'
   }
   lookout-on-mount-qaf = Creature {
     name = 'Lookout on Mount Qāf'
     cost = 2, power = 1, health = 4
     number = 'PR1-D10', rarity = common
-    art = 'art/illustrations/PR1-D10.webp'
+    art = 'art/PR1-D10.webp'
     keywords = [@Guardian, @Lucky]
     text = 'Guardian. Lucky.'
     flavor = 'Mount Qāf, all emerald, rings the world. Its green glow tints the sky.'
@@ -116,7 +116,7 @@ cards = [
     name = 'Khangi', epithet = 'the Helpful One'
     cost = 3, power = 2, health = 3
     number = 'PR1-D11', rarity = common
-    art = 'art/illustrations/PR1-D11.webp'
+    art = 'art/PR1-D11.webp'
     text = 'Hello: Draw a card.'
     flavor = 'House fairies help pick the fruit. Families set food aside for them.'
   }
@@ -124,7 +124,7 @@ cards = [
     name = 'Falling Star'
     cost = 1
     number = 'PR1-D12', rarity = uncommon
-    art = 'art/illustrations/PR1-D12.webp'
+    art = 'art/PR1-D12.webp'
     keywords = [@Ambush, @Lucky]
     text = 'Ambush. Lucky. Deal 2 damage to a unit.'
     flavor = 'The oldest Persian books call the pari shooting stars.'
@@ -133,7 +133,7 @@ cards = [
     name = 'Mountain Gale'
     cost = 3
     number = 'PR1-D13', rarity = uncommon
-    art = 'art/illustrations/PR1-D13.webp'
+    art = 'art/PR1-D13.webp'
     text = 'Deal 3 damage to a unit. Company: deal 5 instead.'
     flavor = 'When the pari ride the wind, the whole valley bends.'
   }
@@ -141,7 +141,7 @@ cards = [
     name = 'Choicest Odours'
     cost = 2
     number = 'PR1-D14', rarity = uncommon
-    art = 'art/illustrations/PR1-D14.webp'
+    art = 'art/PR1-D14.webp'
     text = 'Ready an exhausted unit you control. Heal 2 from it.'
     flavor = @choicest-odours-flavor
   }
@@ -149,7 +149,7 @@ cards = [
     name = 'Zangwar', epithet = 'the Marching Tune'
     cost = 1
     number = 'PR1-D15', rarity = uncommon
-    art = 'art/illustrations/PR1-D15.webp'
+    art = 'art/PR1-D15.webp'
     keywords = [@Ambush]
     text = 'Ambush. A unit you control gets +2 Power this round.'
     flavor = 'In Chitral, people and fairies once marched out together to the same tune.'
@@ -158,7 +158,7 @@ cards = [
     name = 'Carried Off Asleep'
     cost = 1
     number = 'PR1-D16', rarity = uncommon
-    art = 'art/illustrations/PR1-D16.webp'
+    art = 'art/PR1-D16.webp'
     keywords = [@Lucky]
     text = 'Lucky. Exhaust an enemy unit.'
     flavor = 'The pari carried sleeping Zin away, and had her home before morning.'
@@ -167,7 +167,7 @@ cards = [
     name = 'Pari Banu''s Pocket Tent'
     cost = 1
     number = 'PR1-D17', rarity = uncommon
-    art = 'art/illustrations/PR1-D17.webp'
+    art = 'art/PR1-D17.webp'
     text = 'Attached unit gets +3 Health.'
     flavor = 'It folds small enough to hold in one hand, and opens big enough to shelter an army.'
   }
@@ -175,7 +175,7 @@ cards = [
     name = 'Manar al-Sana', epithet = 'the Bird-Maiden'
     cost = 3, power = 3, health = 3
     number = 'PR1-D18', rarity = rare
-    art = 'art/illustrations/PR1-D18.webp'
+    art = 'art/PR1-D18.webp'
     keywords = [@Swift, @feather-coat]
     text = 'Swift. Feather Coat. Hello: Ready another unit you control.'
     flavor = 'Hassan hid her feather robe by the pool. The day she found it, she flew home.'
@@ -184,7 +184,7 @@ cards = [
     name = 'Asman Pari', epithet = 'Queen of Qāf'
     cost = 4, power = 3, health = 4
     number = 'PR1-D19', rarity = rare
-    art = 'art/illustrations/PR1-D19.webp'
+    art = 'art/PR1-D19.webp'
     text = 'Hello: Deal 1 damage to each enemy unit.'
     flavor = 'Asman means ''sky''. She ruled the pari of Mount Qāf.'
   }
@@ -192,7 +192,7 @@ cards = [
     name = 'Schaibar', epithet = 'Pari Banu''s Brother'
     cost = 5, power = 5, health = 5
     number = 'PR1-D20', rarity = rare
-    art = 'art/illustrations/PR1-D20.webp'
+    art = 'art/PR1-D20.webp'
     keywords = [@Fierce]
     text = 'Fierce. Once per round, after Schaibar defeats a unit in combat, ready him.'
     flavor = @schaibar-flavor
@@ -201,7 +201,7 @@ cards = [
     name = 'Dove'
     cost = 0, power = 1, health = 1
     number = 'PR1-K01'
-    art = 'art/illustrations/PR1-K01.webp'
+    art = 'art/PR1-K01.webp'
     flavor = 'Somewhere under those feathers, a pari.'
   }
 ]

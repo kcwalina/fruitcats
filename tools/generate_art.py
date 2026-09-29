@@ -114,7 +114,9 @@ def main() -> int:
     prompts = json.loads((ROOT / "art" / "prompts.json").read_text(encoding="utf-8")) if args.ui else         json.loads((set_path.parent / "art" / "prompts.json").read_text(encoding="utf-8"))
     if args.ui:
         return draw_ui(prompts["ui"], args)
-    out_dir = set_path.parent / "art" / "illustrations"
+    # A set whose cards tcg renders keeps its card paintings in the game folder (content/tcg.ts).
+    game_set = ROOT / "games" / "folkborn" / "sets" / set_path.parent.name
+    out_dir = game_set / "art" if (game_set / f"{set_path.parent.name}.alex").exists() else set_path.parent / "art" / "illustrations"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     endpoint, deployment = MODELS[args.model]

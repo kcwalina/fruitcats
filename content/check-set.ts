@@ -17,6 +17,7 @@ import {
 import { CONTENT, loadContent, type ContentSet } from './index';
 import { cardTexts, suggestText } from './rules-text';
 import { printedCards, printedDifferences } from './printed-cards';
+import { pictureFolders } from './tcg';
 import TERMS from '../packages/engine/src/terms.json';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -119,7 +120,8 @@ function checkSet(set: ContentSet, games: number): Report {
   // 6. Art
   const art = join(HERE, set.folder, 'art');
   const faces = cards.flatMap((c) => (c.type === 'Hero Cat' ? [`${c.id}-kitten`, `${c.id}-bigcat`] : [c.id]));
-  const missingArt = faces.filter((f) => !existsSync(join(art, 'illustrations', `${f}.webp`)));
+  const pictures = pictureFolders(join(HERE, set.folder));
+  const missingArt = faces.filter((f) => !pictures.some((dir) => existsSync(join(dir, `${f}.webp`))));
   const missingCards = faces.filter((f) => !existsSync(join(art, 'cards', `${f}.webp`)));
   if (missingArt.length) r.warnings.push(`No illustration yet for ${missingArt.length} card face(s): ${missingArt.join(', ')} (art/illustrations/<id>.webp).`);
   // A set with printed cards in Alex is rendered by tcg; the others still by the old composer.

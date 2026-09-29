@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
 import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, extname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
 import { artPaths, artPublished } from '../../content/pack-storage';
+import { pictureFolders, renderedByTcg } from '../../content/tcg';
 import { CONTENT as GAME_SETS } from '../../content/index';
 import { isShellFile, precacheProblems } from './src/sw-rules';
 
@@ -250,13 +251,21 @@ function packFiles(localArt: boolean): Record<string, string> {
   return files;
 }
 
+const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
+
 /** Each set's folders and the address each is published at. `build`: copied into a build (the art isn't, see above). */
 function contentMounts(): { url: string; dir: string; build: boolean }[] {
   const mounts: { url: string; dir: string; build: boolean }[] = [];
   for (const { root, folder, code, registered } of contentSets())
     mounts.push(
-      { url: `/${code}/`, dir: join(root, 'art', 'illustrations'), build: LOCAL_ART || !registered },
-      { url: `/cards/${code}/`, dir: join(root, 'art', 'cards'), build: LOCAL_ART || !registered },
+      // A set whose cards tcg renders has its card paintings in the game folder, and its finished cards are build
+      // output in out/cards/<set>/ (npm run cards; content/tcg.ts).
+      ...pictureFolders(root).map((dir) => ({ url: `/${code}/`, dir, build: LOCAL_ART || !registered })),
+      {
+        url: `/cards/${code}/`,
+        dir: renderedByTcg(root) ? join(REPO_ROOT, 'out', 'cards', basename(root)) : join(root, 'art', 'cards'),
+        build: LOCAL_ART || !registered,
+      },
       { url: `/announcements/${folder}/`, dir: join(root, 'announcement'), build: true },
       // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
       { url: '/avatars/', dir: join(root, 'avatars'), build: true },
@@ -328,7 +337,7 @@ function contentAssets(): Plugin {
           if (!path.startsWith(m.url) && path !== m.url.slice(0, -1)) continue;
           let file = join(m.dir, path.slice(m.url.length));
           if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
-          if (!existsSync(file)) break;
+          if (!existsSync(file)) continue; // a later mount may serve the same address (a set's pictures in two folders)
           res.setHeader('Content-Type', TYPES[extname(file)] ?? 'application/octet-stream');
           createReadStream(file).pipe(res);
           return;

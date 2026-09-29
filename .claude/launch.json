@@ -88,6 +88,26 @@
         "--no-open"
       ],
       "port": 4180
+    },
+    {
+      "name": "kardix-studio-folkborn",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "cardengine/kardix",
+        "-c",
+        "Release",
+        "--no-build",
+        "--",
+        "studio",
+        "--project",
+        "games/folkborn",
+        "--port",
+        "4181",
+        "--no-open"
+      ],
+      "port": 4181
     }
   ]
 }

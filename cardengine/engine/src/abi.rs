@@ -159,7 +159,7 @@ pub unsafe extern "C" fn project_query(handle: u32, pointer: *const u8, length: 
 }
 
 /// Draws a face of a loaded project as a PNG (`loader::queries::png`): `<set> <card> <front|back> <finish>`, then
-/// `bleed`, `frame=<name>` or `no-art`. The answer is the PNG's bytes, or, when the face can't be drawn, UTF-8 JSON
+/// `bleed`, `frame=<name>` or `no-art`; or a draw list the project's files draw. The answer is the PNG's bytes, or, when the face can't be drawn, UTF-8 JSON
 /// `{"error": ...}`, which a PNG never starts with.
 ///
 /// # Safety
@@ -175,6 +175,27 @@ pub unsafe extern "C" fn project_png(handle: u32, pointer: *const u8, length: u3
         }
     });
     hand_out(answer)
+}
+
+/// Adds files that aren't Alex (fonts, pictures) to a loaded project, in `project_load`'s format, so a host can hand
+/// the core the pictures a face draws only when it draws it. A file already there is replaced. Answers 1, or 0 for a
+/// bad handle or input.
+///
+/// # Safety
+/// `pointer` and `length` must describe readable memory in this module.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn project_add(handle: u32, pointer: *const u8, length: u32) -> u32 {
+    let input = unsafe { std::slice::from_raw_parts(pointer, length as usize) };
+    let Some(files) = read_project_files(input) else { return 0 };
+    PROJECTS.with(|projects| {
+        let mut projects = projects.borrow_mut();
+        let Some(project) = projects.get_mut((handle as usize).wrapping_sub(1)).and_then(|p| p.as_mut()) else { return 0 };
+        for file in files.into_iter().filter(|f| !f.path.ends_with(".alex")) {
+            project.assets.retain(|a| a.path != file.path);
+            project.assets.push(file);
+        }
+        1
+    })
 }
 
 /// Frees a loaded project.

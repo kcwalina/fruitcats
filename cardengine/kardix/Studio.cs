@@ -152,6 +152,14 @@ internal sealed class Studio
             return;
         }
 
+        // A font the card layout names that the project doesn't have is read from the system, as kardix cards reads it.
+        if (!System.IO.File.Exists(full) && Path.GetExtension(full).ToLowerInvariant() is ".ttf" or ".otf"
+            && Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), Path.GetFileName(full)) is var system
+            && System.IO.File.Exists(system))
+        {
+            full = system;
+        }
+
         if (!System.IO.File.Exists(full))
         {
             Fail(response, 404, "The project has no file " + relative + ".");

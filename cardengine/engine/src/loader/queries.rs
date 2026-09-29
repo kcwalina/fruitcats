@@ -179,8 +179,12 @@ fn draw(project: &Project, what: &str) -> String {
 }
 
 /// A face drawn as a PNG (`project_png`): `<set> <card> <front|back> <finish>`, with `draw`'s options and `bleed` to
-/// draw the card with its bleed. The project must hold the pictures and fonts the face uses.
+/// draw the card with its bleed; or a draw list itself, drawn trimmed. The project must hold the pictures and fonts the
+/// face uses.
 pub fn png(project: &Project, what: &str) -> Result<Vec<u8>, String> {
+    if what.starts_with("kardix draw list ") {
+        return Raster::new(project).draw(what, false)?.encode_png().map_err(|e| e.to_string());
+    }
     let bleed = what.split_whitespace().any(|w| w == "bleed");
     let rest: Vec<&str> = what.split_whitespace().filter(|w| *w != "bleed").collect();
     let list = draw(project, &rest.join(" "));
@@ -199,23 +203,25 @@ impl crate::render::raster::Files for Project {
 }
 
 /// Every face's draw list, each after a line `=== <set> <card> <front|back> <finish> <file>`: `draw-lists [<set>]`, with
-/// `draw`'s options. A problem is answered as `{"error": ...}`.
+/// `draw`'s options, and `finish=<name>` for the faces in that finish only. A problem is answered as `{"error": ...}`.
 fn draw_lists(project: &Project, what: &str) -> String {
     let mut layout = match Layout::new(project) {
         Ok(layout) => layout,
         Err(e) => return error(&e),
     };
     let mut set = None;
+    let mut finish = None;
     for word in what.split_whitespace() {
         match word.split_once('=') {
             Some(("frame", name)) => layout.frame_override = Some(name.to_string()),
+            Some(("finish", name)) => finish = Some(name),
             None if word == "no-art" => layout.no_art = true,
             None => set = Some(word),
             _ => return error(&format!("draw-lists doesn't take '{}'.", word)),
         }
     }
     let mut out = String::new();
-    for face in layout.faces(set) {
+    for face in layout.faces(set).into_iter().filter(|f| finish.is_none_or(|name| f.finish == name)) {
         out.push_str(&format!(
             "=== {} {} {} {} {}
 ",

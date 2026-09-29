@@ -1,14 +1,16 @@
 // Kardix Studio, read-only (Stage 3 of docs/tcg/tcg-developer-platform.md): the project's files on the left, its cards
 // or the selected file in the middle, the rulebook on the right, and what is wrong with it underneath. `kardix studio`
 // serves this page and the project's files; the page loads the core itself and reads the project in the browser, and
-// reads it again each time the server says a file changed.
+// reads it again each time the server says a file changed. The core draws the cards (Stage 4), fetching the fonts and
+// pictures each one uses as it draws it; a project whose cards can't be drawn shows their data instead.
 
-import { Core, type Diagnostic, type Json, type ProjectFile } from '../engine/host/core';
+import { Core, drawnFiles, type Diagnostic, type Json, type Project, type ProjectFile } from '../engine/host/core';
 
 interface WorkspaceFile { path: string; size: number; modified: string }
 type Record_ = { [key: string]: Json };
 interface Card { document: string; key: string; card: Record_ }
 interface Document { file: string; name: string | null; type: string | null }
+interface Face { set: string; card: string; face: 'front' | 'back'; finish: string; file: string }
 
 const state = {
   root: '',
@@ -19,6 +21,9 @@ const state = {
   game: null as Record_ | null,
   rulebook: null as Record_ | null,
   diagnostics: [] as Diagnostic[],
+  faces: [] as Face[],
+  /** Why the cards can't be drawn, when they can't. */
+  cannotDraw: '',
   selected: null as string | null,
   loadedAt: '',
   failure: '',
@@ -29,6 +34,48 @@ const text = (o: Record_ | null | undefined, field: string) => (o && typeof o[fi
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 let core: Core | undefined;
+let project: Project | undefined;
+/** Each drawn face's picture (an object URL), or what stopped it, by the face's words. */
+const drawn = new Map<string, { url?: string; error?: string }>();
+/** Pictures by the draw list they were drawn from: a face whose list didn't change isn't drawn again. */
+const byList = new Map<string, { url?: string; error?: string }>();
+/** The fonts and pictures the loaded project has been given. */
+const given = new Set<string>();
+/** Fonts and pictures fetched for drawing, by path, with the file's size and time when fetched. A fetch that failed
+ * isn't kept, so the next reading tries again. */
+const fetched = new Map<string, { bytes: Uint8Array; stamp: string }>();
+let generation = 0;
+
+/** A file's size and time as listed; a font the host reads from the system isn't listed, and doesn't change. */
+function stampOf(path: string): string {
+  const file = state.files.find((f) => f.path === path);
+  return file ? `${file.size} ${file.modified}` : 'unlisted';
+}
+
+async function fetchFile(path: string): Promise<Uint8Array | null> {
+  if (!fetched.has(path)) {
+    const stamp = stampOf(path);
+    const response = await fetch(`api/file?path=${encodeURIComponent(path)}`, { cache: 'no-store' }).catch(() => null);
+    if (!response?.ok) return null;
+    fetched.set(path, { bytes: new Uint8Array(await response.arrayBuffer()), stamp });
+  }
+  return fetched.get(path)?.bytes ?? null;
+}
+
+/** Forgets the fonts and pictures that changed on disk, and the faces drawn with them. */
+function forgetChangedFiles() {
+  const changed = [...fetched].filter(([path, f]) => f.stamp !== stampOf(path)).map(([path]) => path);
+  for (const path of changed) fetched.delete(path);
+  if (!changed.length) return;
+  for (const [list, entry] of byList) {
+    if (drawnFiles(list).some((path) => changed.includes(path))) {
+      if (entry.url) URL.revokeObjectURL(entry.url);
+      byList.delete(list);
+    }
+  }
+}
+
+const faceWords = (f: Face) => `${f.set} ${f.card} ${f.face} ${f.finish}`;
 
 async function load() {
   try {
@@ -36,6 +83,7 @@ async function load() {
     const list = (await (await fetch('api/files', { cache: 'no-store' })).json()) as { root: string; files: WorkspaceFile[] };
     state.root = list.root;
     state.files = list.files.sort((a, b) => a.path.localeCompare(b.path));
+    forgetChangedFiles();
     const alex = state.files.filter((f) => f.path.endsWith('.alex'));
     const files: ProjectFile[] = await Promise.all(alex.map(async (f) => ({
       path: f.path,
@@ -43,27 +91,122 @@ async function load() {
     })));
     state.sources = new Map(files.map((f) => [f.path, new TextDecoder().decode(f.bytes)]));
 
-    const project = core.loadProject(files);
-    try {
-      state.diagnostics = project.diagnostics();
-      state.documents = JSON.parse(project.query('documents')) as Document[];
-      state.cards = JSON.parse(project.query('cards')) as Card[];
-      const game = state.documents.find((d) => d.type === 'Game');
-      const rulebook = state.documents.find((d) => d.type === 'Rulebook');
-      state.game = game?.name ? asRecord(project.value(game.name)) : null;
-      state.rulebook = rulebook?.name ? asRecord(project.value(rulebook.name)) : null;
-    } finally {
-      project.free();
-    }
+    project?.free();
+    project = core.loadProject(files);
+    state.diagnostics = project.diagnostics();
+    state.documents = JSON.parse(project.query('documents')) as Document[];
+    state.cards = JSON.parse(project.query('cards')) as Card[];
+    const game = state.documents.find((d) => d.type === 'Game');
+    const rulebook = state.documents.find((d) => d.type === 'Rulebook');
+    state.game = game?.name ? asRecord(project.value(game.name)) : null;
+    state.rulebook = rulebook?.name ? asRecord(project.value(rulebook.name)) : null;
+    await prepareDrawing(project);
     state.failure = '';
     state.loadedAt = new Date().toLocaleTimeString();
   } catch (e) {
     state.failure = e instanceof Error ? e.message : String(e);
   }
   render();
+  void drawAll();
 }
 
 const asRecord = (v: Json) => (isRecord(v) ? v : null);
+
+/** Fetches the layout's fonts and lists the faces to draw; or says why the cards can't be drawn. */
+async function prepareDrawing(loaded: Project) {
+  drawn.clear();
+  given.clear();
+  state.faces = [];
+  state.cannotDraw = '';
+  const fonts = JSON.parse(loaded.query('fonts')) as string[] | { error: string };
+  if (!Array.isArray(fonts)) {
+    state.cannotDraw = fonts.error;
+    return;
+  }
+  const missing: string[] = [];
+  const files: ProjectFile[] = [];
+  for (const font of fonts) {
+    const bytes = await fetchFile(font);
+    if (bytes) files.push({ path: font, bytes });
+    else missing.push(font);
+  }
+  if (missing.length) {
+    state.cannotDraw = missing.length === 1
+      ? `the card layout's font ${missing[0]} is neither in the project nor installed.`
+      : `the card layout's fonts ${missing.join(', ')} are neither in the project nor installed.`;
+    return;
+  }
+  loaded.add(files);
+  for (const f of files) given.add(f.path);
+  const faces = JSON.parse(loaded.query('faces')) as Face[] | { error: string };
+  if (!Array.isArray(faces)) {
+    state.cannotDraw = faces.error;
+    return;
+  }
+  state.faces = faces.filter((f) => f.finish === 'standard');
+}
+
+/** Draws each face in turn, fetching what it uses, and puts it on the page as it is done. */
+async function drawAll() {
+  const mine = ++generation;
+  if (!project || !state.faces.length) return;
+  // Every face laid out at once: one layout, not one per face.
+  const lists = new Map<string, string>();
+  const all = project.query('draw-lists finish=standard');
+  if (all.startsWith('{')) {
+    state.cannotDraw = (JSON.parse(all) as { error: string }).error;
+    state.faces = [];
+    render();
+    return;
+  }
+  for (const part of all.split(/^=== /m).slice(1)) {
+    const end = part.indexOf('\n');
+    lists.set(part.slice(0, end).split(' ').slice(0, 4).join(' '), part.slice(end + 1));
+  }
+  for (const face of state.faces) {
+    if (mine !== generation || !project) return;
+    const words = faceWords(face);
+    if (drawn.has(words)) continue;
+    const list = lists.get(words) ?? '{"error":"The core laid out no such face."}';
+    const known = byList.get(list);
+    if (known) {
+      drawn.set(words, known);
+      showDrawn(face);
+      continue;
+    }
+    let entry: { url?: string; error?: string };
+    try {
+      if (list.startsWith('{')) throw new Error((JSON.parse(list) as { error: string }).error);
+      const files: ProjectFile[] = [];
+      for (const path of drawnFiles(list)) {
+        if (given.has(path)) continue;
+        const bytes = await fetchFile(path);
+        if (bytes) files.push({ path, bytes });
+      }
+      if (mine !== generation) return;
+      project.add(files);
+      for (const f of files) given.add(f.path);
+      entry = { url: URL.createObjectURL(new Blob([project.png(list) as BlobPart], { type: 'image/png' })) };
+    } catch (e) {
+      entry = { error: e instanceof Error ? e.message : String(e) };
+    }
+    if (entry.url) byList.set(list, entry);
+    drawn.set(words, entry);
+    showDrawn(face);
+  }
+}
+
+function showDrawn(face: Face) {
+  const slot = app.querySelector<HTMLElement>(`[data-face="${CSS.escape(faceWords(face))}"]`);
+  if (slot) slot.innerHTML = drawnView(face);
+}
+
+function drawnView(face: Face): string {
+  const entry = drawn.get(faceWords(face));
+  if (!entry) return '<span class="quiet">Drawing…</span>';
+  if (entry.error) return `<span class="bad-note">${esc(entry.error)}</span>`;
+  return `<img src="${entry.url}" alt="${esc(face.card)}${face.face === 'back' ? ' (back)' : ''}">`;
+}
 
 // ── drawing ────────────────────────────────────────────────────────────────────────────────────
 
@@ -130,6 +273,17 @@ function filled(textValue: string, card: Record_): string {
 }
 
 function cardsView(): string {
+  if (state.faces.length) {
+    const sets = new Map<string, Face[]>();
+    for (const f of state.faces) sets.set(f.set, [...(sets.get(f.set) ?? []), f]);
+    return [...sets].map(([set, faces]) => `<h2>${esc(set)}</h2><div class="drawn">${faces
+      .map((f) => `<figure data-face="${esc(faceWords(f))}">${drawnView(f)}</figure>`).join('')}</div>`).join('');
+  }
+  const note = state.cannotDraw ? `<p class="quiet">The cards are shown as data: ${esc(state.cannotDraw)}</p>` : '';
+  return note + dataCardsView();
+}
+
+function dataCardsView(): string {
   if (!state.cards.length) return '<h2>Cards</h2><p class="quiet">No cards yet. Add some to a cards file and save it.</p>';
   const groups = new Map<string, Card[]>();
   for (const c of state.cards) groups.set(c.document, [...(groups.get(c.document) ?? []), c]);

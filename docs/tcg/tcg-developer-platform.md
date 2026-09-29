@@ -677,6 +677,12 @@ As decided in "Text looks the same whatever language the core is written in":
    They live beside the site's build, not in `cardengine/`, which names no game. Hello TCG has none yet: its layout
    names Nunito, and the sample doesn't have the font files.
 5. Studio shows finished cards drawn in the page.
+   *Done 2026-09-29:* the page lays every face out with one `draw-lists` query, fetches the fonts and pictures each
+   draw list names (`project_add` hands them to the loaded project) and draws it with `project_png`. `kardix studio`
+   serves a font the project doesn't have from the system's fonts, so Folkborn's Segoe UI works on Windows. A face
+   whose draw list didn't change, and whose pictures didn't, isn't drawn again: on Folkborn (111 faces) a saved
+   edit to one card showed 0.42 s later, the other 110 kept. The first drawing of all of them takes about 30 s.
+   A project whose cards can't be drawn (Hello TCG: no font files) shows their data, and says why.
 
 ### Stage 5: Studio edits
 

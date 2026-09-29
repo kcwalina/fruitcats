@@ -30,3 +30,7 @@ playtest/paw/obj/
 
 # Finished cards tcg renders from the game folder's sources (npm run cards): build output, never committed.
 /out/
+
+# Build output of the C# tools in cardengine/ (tcg, the Alex conformance check).
+cardengine/**/bin/
+cardengine/**/obj/

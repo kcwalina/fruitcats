@@ -125,7 +125,7 @@ async function main() {
   }
 
   if (command === 'get') {
-    if (!picture) throw new Error('Which picture? e.g. npm run studio -- get bp1 BP1-X01');
+    if (!picture) throw new Error('Which picture? e.g. npm run studio -- get mc1 MC1-X01');
     const view = await json<View>(set);
     const versions = view.pictures[picture]?.versions ?? [];
     const v = extra ? versions.find((x) => x.id === extra) : versions.at(-1);

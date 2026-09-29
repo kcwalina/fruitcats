@@ -33,7 +33,7 @@ describe('route', () => {
   });
 
   it('leaves the site files the game does not use to the network', () => {
-    for (const path of ['guide/play/solo.webp', 'studio/index.json', 'cards/sp1/sp1-001.webp', 'version.json', 'playtest/runner.mjs', 'sw.js'])
+    for (const path of ['guide/play/solo.webp', 'studio/index.json', 'cards/mc1/MC1-X01.webp', 'version.json', 'playtest/runner.mjs', 'sw.js'])
       expect(get(SITE + path)).toBe('network');
   });
 
@@ -162,7 +162,7 @@ describe('the build list', () => {
       'sounds/ability.mp3', 'sounds/hit-bad.wav', 'packs/index.json', 'packs/sb1/set.json'])
       expect(isShellFile(f), f).toBe(true);
     for (const f of ['studio.html', 'portal.html', 'playtests.html', 'docs.html', 'rules.html', 'terms.html', 'guide/play/solo.webp', 'studio/index.json',
-      'studio/sb1/brief.json', 'cards/sp1/sp1-001.webp', 'sp1/sp1-001.webp', 'avatars/apple.webp', 'announcements/domowiki/index.html',
+      'studio/sb1/brief.json', 'cards/mc1/MC1-X01.webp', 'mc1/MC1-X01.webp', 'avatars/apple.webp', 'announcements/domowiki/index.html',
       'prompts.json', 'staticwebapp.config.json', 'sounds/CREDITS.md', 'ui/app-icon.webp', 'version.json', 'sw.js'])
       expect(isShellFile(f), f).toBe(false);
   });

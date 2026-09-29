@@ -201,8 +201,8 @@ function docsPages(): Plugin {
 // doesn't have that folder yet. Every version stays there, so a publish from another branch can't change what this
 // build shows. VITE_LOCAL_ART=on builds with the art inside, for a build that must work without the storage; it is
 // too big to deploy.
-// Set folders the game isn't built with (content/index.ts): the Artist Studio's practice sets, a few MB of frames.
-// Those stay on the site as before, and the Studio finds them there (VITE_SITE_ART_SETS).
+// Set folders the game isn't built with (content/index.ts), such as a practice set for the Artist Studio, hold a few
+// MB of frames. Those stay on the site as before, and the Studio finds them there (VITE_SITE_ART_SETS).
 
 const CONTENT = fileURLToPath(new URL('../../content/', import.meta.url));
 const PACKS = process.env.VITE_PACKS ?? 'https://fruitcatspacks.blob.core.windows.net/packs/';
@@ -221,7 +221,7 @@ function contentSets(): { root: string; folder: string; code: string; data: Reco
         const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8'));
         sets.push({ root, folder, code: String(data.set).toLowerCase(), data, registered: registered.has(`${year}/${month}/${folder}`) });
       }
-  // A set that builds on another (Berry Picnic uses the Starter Box's Garden cards) comes after it.
+  // A set that builds on another (Mochi requires the Starter Box) comes after it.
   const needs = (s: { data: Record<string, unknown> }) => (s.data.requires as string[] | undefined) ?? [];
   return sets.sort((a, b) => (needs(a).includes(String(b.data.set)) ? 1 : needs(b).includes(String(a.data.set)) ? -1 : 0));
 }

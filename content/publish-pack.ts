@@ -1,8 +1,8 @@
 // publish-pack: put a card set on the pack storage, where running games take it at their next start,
 // without deploying the game (docs/card-data-architecture.md, Card packs).
 //
-//   npm run publish-pack -- berry-picnic         # by folder name or code (bp1)
-//   npm run publish-pack -- bp1 --dry-run        # check and list what would be uploaded
+//   npm run publish-pack -- jiaoren              # by folder name or code (jr1)
+//   npm run publish-pack -- jr1 --dry-run        # check and list what would be uploaded
 //   npm run publish-pack -- hw1 --unpublish      # take a set out of the index (by code): games stop loading it
 //
 // It runs check-set first and stops on any error. Released sets are taken by every game; prototypes only
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const dry = args.includes('--dry-run');
   const which = args.find((a) => !a.startsWith('--'));
-  if (!which) throw new Error('Name the set to publish: npm run publish-pack -- berry-picnic');
+  if (!which) throw new Error('Name the set to publish: npm run publish-pack -- jiaoren');
   if (args.includes('--unpublish')) return unpublish(which.toUpperCase(), dry);
 
   const [{ set, report }] = runChecks(which);

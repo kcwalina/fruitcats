@@ -3,7 +3,7 @@
     python tools/generate_art.py                      # draw every card that has no art yet
     python tools/generate_art.py --only SB1-C04       # one card (hero ids draw both sides)
     python tools/generate_art.py --force              # redraw even if the file exists
-    python tools/generate_art.py --set bp1                # another set, by its code
+    python tools/generate_art.py --set mc1                # another set, by its code
     python tools/generate_art.py --reference content/2026/09/starter-box/art/illustrations/SB1-C04.webp   # match a style
 
 Art is text-free; card text is added by tools/compose_cards.py so it is always exact.
@@ -38,7 +38,7 @@ API_VERSION = "2025-04-01-preview"
 
 
 def set_file(code: str) -> Path:
-    """A set's data by its code ('sb1', 'bp1'): content/<year>/<month>/<set>/set.json."""
+    """A set's data by its code ('sb1', 'mc1'): content/<year>/<month>/<set>/set.json."""
     for path in sorted((ROOT / "content").glob("*/*/*/set.json")):
         if json.loads(path.read_text(encoding="utf-8")).get("set", "").lower() == code.lower():
             return path

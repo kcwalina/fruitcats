@@ -2,8 +2,8 @@
 
 <!--
 How to use this template: copy it to docs/art-brief-<set>.md, fill in every <...>, delete what doesn't
-apply, and send it together with docs/artist-guide.md. A filled-in example is
-docs/art-brief-berry-picnic.md. Write for the artist: no rules jargon they'd need the rulebook for.
+apply, and send it together with docs/artist-guide.md. Write for the artist: no rules jargon they'd need
+the rulebook for.
 -->
 
 **For:** <artist's name> · **From:** <your name> · **Sent:** <date> · **First single card by:** <date> · **Main pictures by:** <date> · **All pictures by:** <date>

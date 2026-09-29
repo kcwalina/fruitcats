@@ -13,7 +13,7 @@ export const PACKS: string = import.meta.env.VITE_PACKS ?? 'https://fruitcatspac
  */
 export const ART_BASES: Record<string, { art: string; cards: string }> = {};
 const LOCAL_ART: boolean = import.meta.env.VITE_LOCAL_ART === 'on';
-/** Set folders the game isn't built with (the Studio's practice sets): their few frames stay on the site. */
+/** Set folders the game isn't built with (such as a Studio practice set): their few frames stay on the site. */
 const SITE_ART = new Set<string>(import.meta.env.VITE_SITE_ART_SETS ?? []);
 /**
  * Where a build found each built-in set's art on the pack storage: a folder named by the art's fingerprint

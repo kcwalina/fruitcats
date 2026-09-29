@@ -157,7 +157,7 @@ export function removeFromLibrary(key: string): boolean {
 const plain = (d: DeckList): DeckList => ({ name: d.name, hero: d.hero, cards: { ...d.cards } });
 
 /**
- * Any way of naming a deck, as a DeckList: a starter's key, a prototype set's deck key (picnic-club), a library
+ * Any way of naming a deck, as a DeckList: a starter's key, a prototype set's deck key, a library
  * key, a deck code (FC1.…) or a JSON file with a DeckList. Throws, saying why, when it's none of them or the
  * deck breaks the rules.
  */

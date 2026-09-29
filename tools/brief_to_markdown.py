@@ -1,6 +1,6 @@
 """Turn a set's art brief (art/brief.json) into the Markdown brief sent to the artist.
 
-    python tools/brief_to_markdown.py content/2026/12/berry-picnic docs/art-brief-berry-picnic.md
+    python tools/brief_to_markdown.py content/2026/12/mochi docs/art-brief-mochi.md
 
 The JSON is the source (the Artist Studio reads it too); re-run this after changing it.
 """

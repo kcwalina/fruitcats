@@ -32,7 +32,7 @@ more often when they are played, and generated decks that beat the starters.
 
 Playtests aren't limited to the starter decks. Wherever a command takes a deck, it takes any of these:
 
-- a starter's key (`zest-rush`) or a prototype set's deck key (`picnic-club`)
+- a starter's key (`zest-rush`) or a prototype set's deck key
 - a **library** key: `playtest/decks/library.json` keeps custom decks with a name, where they came from and
   what they're for. `npm run decks -- list` shows them.
 - a **deck code**: a whole deck on one line, `FC1.Name.Hero.card…` (for example

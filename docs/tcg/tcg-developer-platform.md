@@ -433,3 +433,9 @@ Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
   IDE? Recommended: free.
 - Is Studio a local web app opened by `tcg studio` (recommended), or a desktop app?
 - The product's name.
+- **Scenarios (given / when / then, `tcg test`, the `scenarios` library) are not designed yet** (the owner,
+  2026-09-28). They get designed properly near the end: after cards and the rulebook, the IDE, printing, the
+  execution engine and the online table. Until then the given/when/then syntax in the samples and the
+  walkthrough is a placeholder; don't build on it or go deeper into its design. One question is parked for that
+  design: whether a section's label may repeat on consecutive lines (`given a` / `given b`) as well as one `given`
+  with continuation lines.

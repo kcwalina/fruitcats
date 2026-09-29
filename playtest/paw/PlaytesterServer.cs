@@ -419,6 +419,16 @@ sealed partial class PlaytesterServer : UdsPaw
         });
     }
 
+    [PawRoute("POST", "/runs/game")]
+    [Description("One game of an LLM playtest run (Markdown): its transcript and the playtester's report. n counts from 1")]
+    public Task<JsonObject> GetGameAsync(string id, int n)
+    {
+        if (!RunId().IsMatch(id)) return Task.FromResult(new JsonObject { ["error"] = "not a run id" });
+        string file = Path.Combine(_config.ReportsDir, id, $"game-{n:000}.md");
+        if (n < 1 || !File.Exists(file)) return Task.FromResult(new JsonObject { ["error"] = "no such game" });
+        return Task.FromResult(new JsonObject { ["game"] = File.ReadAllText(file) });
+    }
+
     static bool IsCommand(string command) => command is "nightly" or "balance" or "llm-playtest" or "deck-hunt" or "deck-build" or "llm-compare";
 
     [GeneratedRegex(@"^[a-z-]+-\d{8}-\d{6}$")]

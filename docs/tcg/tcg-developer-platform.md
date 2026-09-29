@@ -188,18 +188,18 @@ numbers. So a game names the numbers that shape it in one place, `constants = [s
 them (`Each player starts with {@starting-life} Life.`). A card's own numbers are the card's
 `constants`, shown in its text as `{bonus}` (no `@`) and read by its handler as `card.bonus`:
 
+```
 cheer = Creature {
   ...
   text = 'Your other Creatures have +{bonus} Power.'
   constants = [bonus = 1]
 }
 static others-get-bonus { units(own, other).grant(power: +card.bonus) }
+```
 
 `tcg check`: an unknown name in text is an error; a card constant its text never shows is an error
 (players would play with a number they can't see); a digit typed into rulebook text, card text or
 a handler is a note. Constants are also the knobs a playtest can vary.
-numbers are also the knobs a playtest can vary. The core has them: `Game.numbers: [text: int]`,
-referenced like any int member, and `{@name}` in rulebook text. Next, the same for card text:
 
 **How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name
@@ -236,12 +236,35 @@ running game and the rulebook, and has graphical designers (a card's property gr
 builder, rule pickers) that write to the Alex files behind the scenes. The code view is the file
 itself. A hosted Studio can come later without a rewrite.
 
-## How cards look (to explore)
+## How cards look
 
-A second survey, like the rules survey: which data-driven elements cards have across many TCGs
-(name, cost, stats, type line, rules text, keywords' icons, rarity, set symbol, frame by type or
-faction…) and how they compose with art. Everything about a card is source in the repo (Alex
-plus image files), and `tcg cards` produces composed images and files ready for online printers.
+**Decided 2026-09-28.** A designer designs the look once; every card gets it, and the numbers on a
+printed card come from the Alex files. The look has two halves:
+
+- **Frames**: images the designer draws in any drawing program, one per card type (later also per
+  rarity, faction or finish). A frame holds everything that is the same on every card of its type
+  and leaves a transparent window for the painting and blank spaces for the data. Frames are drawn
+  at the trimmed card size plus bleed: for poker size at 300 dpi, 750 × 1050 plus 36 px each side,
+  so 822 × 1122.
+- **A card layout** (`card-layout.alex`, `#type CardLayout`, named by `Game.card-layout`): the card
+  size, dpi and bleed; the fonts (files in `fonts/`); which frame each card type uses; and the
+  **parts** drawn on the frame, in order. A part has a box (pixels from the card's top-left corner
+  at the trim line) and shows a template of the card's data: `show = '{cost}'`, `'{name}'`,
+  `'{type}'`, or fixed words. Kinds: `Label` (one line; `size`, `smallest` to shrink long text,
+  `color`, `outline`, `align`, `capitals`), `Picture` (`fit = cover`, `under-frame = true` so the
+  painting shows through the frame's window), `TextBox` (paragraphs that shrink together to fit:
+  keywords in bold, the card's text with its `{constants}` filled in, flavor in italics under a
+  rule). A part shows only on cards that have what it shows (a Charm has no Power).
+
+`tcg check` checks the layout: a `{field}` no card type has, a box off the card, a missing font or
+frame, a text box too small for a card's text at its smallest size (naming the card), and images
+below print resolution. `tcg cards` renders every card; `--print --printer <name>` adds bleed-sized
+files, the back and the printer's order choices. The layout is Folkborn's own card anatomy
+(`tools/compose_cards.py`) moved out of a Python script and into data a designer owns.
+
+Still to explore, as a survey like the rules survey: the elements cards have across many TCGs
+(rarity marks, set symbols and collector numbers, faction frames, icons in text, finishes such as
+foil, two-faced cards) and the layout parts they need.
 
 ## Business
 
@@ -268,7 +291,7 @@ session).
 5. **Search bot and `tcg playtest`.**
 6. **The game table:** `tcg play` hot-seat, then online through the match host.
 7. **`tcg rulebook`.**
-8. **Card templates and `tcg cards`** (after the card-look survey).
+8. **The card layout and `tcg cards`**, including print files. The owner's next step.
 9. **Studio.**
 10. **Services.**
 
@@ -278,23 +301,34 @@ real game.
 
 ## Hello TCG
 
-Its finished sources are in `cardengine/samples/hello-tcg/`, the same files as the walkthrough's
-"The finished game". Keep the two in step: when the walkthrough changes, the sample changes.
+Its sources are in `cardengine/samples/`: `hello-tcg-print/` is the game at the end of the
+walkthrough's Part 1 (printable only), and `hello-tcg/` is the finished, playable game, the same
+files as the walkthrough's "The finished game". Keep them in step with the walkthrough.
 
-The game the walkthrough builds. It is deliberately boring and uses each core idea once, with only
-built-in library rules, in the survey's most common shape: full turns (77% of games), life as a
-counter, a growing resource, attacker-chooses combat, no responses.
+The game the walkthrough builds. Its cards are six real Folkborn cards from the Domowiki deck,
+with their original paintings, so the card layout and the print files are tested on real art and
+real text. Its rules use only built-in library rules, in the survey's most common shape: full
+turns (77% of games), life as a counter, a growing resource, attacker-chooses combat, no
+responses.
 
 - Two players, 10 Life each. A 12-card deck, 3 cards in the opening hand, draw 1 a turn.
-- Energy grows by 1 each turn, to 3, and refills each turn.
+- Energy grows by 1 each turn, to 4, and refills each turn.
 - Creatures enter exhausted; on later turns each may attack the opponent or a Creature.
-- Win when the opponent's Life reaches 0. The game is a draw after 20 rounds.
-- Six cards: Friend (1/1), Big Friend (3/3), Hello (draw when it enters), Cheer (your other
-  Creatures get +1 Power), Spark (2 damage to the opponent), Goodbye (destroy a Creature).
-- Two decks of four cards × 3: Swarm and Big.
+- Two keywords: Guardian (must be attacked first) and Swift (enters ready).
+- Cards: Hearth Cricket (1, 2/1), Mane-Braiding Domowik (2, 2/2, Swift), Kłobuk, the Soggy Chick
+  (3, 2/3, "Hello: Draw a card."), Keeper of the Door (3, 2/6 then 2/5, Guardian), Bread-and-Salt
+  Greeter (4, 3/5, "Hello: Heal {heal} from each Creature you control."), and the Charm A
+  Domowik's Temper (4, "Deal {damage} damage to a Creature."). Texts are adapted where Folkborn's
+  words differ ("unit" is "Creature"; Temper's Lucky keyword is left out).
+- Two decks of four cards × 3: Hearth and Threshold.
+- Art: the six paintings (1536 × 1024, 3:2), two blank frames (`creature.png` with Power and Health
+  chips, `charm.png` without) drawn from Folkborn's anatomy in Domowiki's colours, and Folkborn's
+  card back.
+- Fonts: the layout uses Nunito (SIL Open Font License) from `fonts/`. The font files still need
+  adding to the samples.
 
-It covers zones, hidden hands, shuffling, costs, a trigger, a static, a choice, winning and
-drawing, scenarios, the rulebook as source, and a balance question for the playtester.
+It covers zones, hidden hands, shuffling, costs, keywords, triggers, a choice, winning and drawing,
+scenarios, the rulebook as source, the card layout, and a balance question for the playtester.
 
 ## Working with the TCG Alex session
 
@@ -331,61 +365,45 @@ the core and libraries (seven new libraries, among them `scenarios`, `objectives
   (with `target:`), `attack`, `passes` to act; `in-zone`, `power`, `life`, `winner` to assert.
 - `Card.art: text?`, an asset reference.
 
-Core changes the owner asked for on 2026-09-28, from reading the walkthrough (the core session
-did the first ones; the rest are to do):
-
-- **`core = '1'` becomes `schema-version = 1`** on `Game`: the version of the file format, like a
-  .NET project's target framework. Not "engine": a printed game has no engine. Cards files take
-  the game's version.
-- **No repeated names.** A game's card types are the types it declares; the `types = [Creature =
-  CardType { name = nameof(Creature) }]` list goes. A record under a key in a keyed map takes its
-  `name` from the key (`Deck = Zone { role = deck }`), unless it gives its own.
-- **Defaults instead of boilerplate:** `uses`, `types` and `zones` default to `empty`, and
-  `players` to `Players {}` (two players).
-- **`constants`** (was `numbers`) on `Game` and on `Card`, `{@name}` in rulebook text, `{name}` in
-  card text, a `card` selector in handler bodies. The core session implemented the earlier shape
-  (`Game.numbers`, `Ability.numbers`, an `ability` selector); rename and move it.
-- **`Cards`** document type (cards and decks, no id or name), picked up automatically; `Game.sets`
-  no longer needed for a single release. `Rules.for` accepts a `Cards` document.
-- **`Card.text: text?`** (printed rules text) and **`Card.constants`**; ability kinds as card data
-  (`abilities = [OnEnter { text }]`) are no longer needed for printing, and the handler slot names
-  the kind.
-- **`UnitCards { types }`, `SpellCards { types }`** (and the same for other libraries' card
-  shapes): map a game's own card types onto a library's, checked structurally.
-- **`Game.card-back: text?`**, an asset reference to the back every printed card shares.
-- **`Section.title: text`**, a heading per rulebook section.
-
-
-
-
-(`@rulebook`, `@cards.friend`), and the engine finds the game by type: a folder has exactly one
-
 Core changes the owner asked for on 2026-09-28, from reading the walkthrough. **All done** in
 `cardengine/` (core, libraries and Folkborn), recorded in `cardengine/decisions.md` under "Core
-changes from the walkthrough review". Each is additive: the old spellings still bind as
-deprecated fields.
+changes from the walkthrough review" and "Printing first: cards, constants, schema-version"
+(ede3bb0). Each is additive: old spellings still bind as deprecated fields.
 
-- Done: **`core = '1'` becomes `engine-version = 1`** on `Game`. Sets and libraries take the
-  engine version and no longer state it.
-- Done: **no repeated names.** A game's card types are the types it declares; `Game.types` is
-  deprecated. A display name or citation that differs from the identifier is a fixed field on
-  the declaration (`type-name`, `type-cites`). A record under a key takes its `name` from the key
-  unless it gives its own. Rule fields that name a card type take `nameof(Hero)`.
-- Done: **defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to
-  `empty`, and `players` to `Players {}`; `Rulebook.sections` defaults to `empty`.
-- Done: **named numbers.** `Game.numbers: [text: int]`. A number reference needs no new type: a
-  `numbers` entry is an int member, and a reference to an int member is accepted wherever an int
-  is. Rulebook text embeds `{@name}`; the checker errors on an unknown name and notes digits in
-  rulebook text.
-- Done: **a heading per rulebook section:** `Section.title`.
-- Done: **`#type`**, implemented in the C# Alex by the mochi Alex session (`@@@ .field` fills one
-  of the file's own fields). Every cardengine file starts with its `#type`.
-- Fixed from the Alex session's re-bind: `reveal`'s `CheckToPlay` is `RevealToPlay` (it clashed
-  with `resources`'), and the scenario verb `pass` is `passes`, so `@pass` in a game that uses
-  `scenarios` means the core's pass action without qualifying it.
-- Done: **an ability carries its numbers.** `Ability.numbers` (`numbers = [damage = 2]`), shown
-  in its text as `{damage}` and read by its handler as `ability.damage` through the new core
-  selector `ability`.
+- **`schema-version = 1`** on `Game` (first `engine-version`, then renamed): the version of the
+  file format, like a .NET project's target framework. Cards files take the game's version.
+- **No repeated names.** A game's card types are the types it declares; `Game.types` is
+  deprecated. A record under a key takes its `name` from the key unless it gives its own. Rule
+  fields that name a card type still take `nameof(Hero)`; moving them to `@Hero` is open.
+- **Defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to `empty`,
+  `players` to `Players {}`, `Rulebook.sections` to `empty`.
+- **`constants`** on `Game` and on `Card`: `{@name}` in rulebook text, `{name}` in card text, the
+  `card` selector in handler bodies. The checker errors on an unknown name and on a card constant
+  its text never shows, and notes digits in rulebook text, card text and handlers.
+- **`Cards`** documents (`cards`, `decks`, `draft = true`; no tokens or counters yet), picked up
+  automatically. `Rules.for` accepts a `Cards` document. `Set` stays for expansions, with `code`
+  and `symbol`, and joins through `Game.sets`.
+- **`Card.text`** (printed rules text) and **`Card.constants`**. A card uses `text` or
+  `abilities`, not both; `abilities` stays for once-per-round abilities, hero faces and
+  mechanics.
+- **`UnitCards { types }`, `SpellCards { types }`**: map a game's own card types onto a library's,
+  checked structurally. Needs Alex 0.6.0 (type-valued fields, mapped card types), being built by
+  the session "Alex 0.6.0: type-valued fields and mapped card types"; the samples bind once it
+  lands.
+- **`Game.card-back`**, an asset reference to the back every printed card shares.
+- **`Section.title`**, required.
+- **`#type`**, in the C# Alex (mochi); `@@@ .field` fills one of the file's own fields. Every
+  cardengine file starts with its `#type`.
+- Fixed from the Alex session's re-bind: `reveal`'s `CheckToPlay` is `RevealToPlay`, and the
+  scenario verb `pass` is `passes`, so `@pass` means the core's pass action.
+
+Asked after the real-card samples (2026-09-28), to do:
+
+- **`CardLayout`** documents and **`Game.card-layout`** (see "How cards look" above).
+- **Keyword rules that take the game's keyword:** `EntersReady { keyword = @Swift }` in `units`,
+  `GuardiansFirst { keyword = @Guardian }` in `combat`, and the same pattern for the other
+  keywords the libraries give meaning to. A printable game declares its keywords as plain
+  `Keyword {}`; the playable part gives them meaning.
 
 ## Open questions
 

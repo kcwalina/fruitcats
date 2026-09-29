@@ -20,6 +20,7 @@ mod framework {
 }
 
 /// One file of a project: its path within the project's folder (forward slashes) and its bytes.
+#[derive(Clone)]
 pub struct ProjectFile {
     pub path: String,
     pub bytes: Vec<u8>,
@@ -46,10 +47,17 @@ pub struct Project {
     pub sources: Vec<Vec<u8>>,
     pub game: Option<String>,
     pub diagnostics: Vec<ProjectDiagnostic>,
+    /// The project's other files the host passed in (fonts), by path.
+    pub assets: Vec<ProjectFile>,
 }
 
 impl Project {
     /// The project's own documents: its files, not the framework's.
+    /// A file of the project that isn't Alex, by its path.
+    pub fn asset(&self, path: &str) -> Option<&[u8]> {
+        self.assets.iter().find(|f| f.path == path).map(|f| f.bytes.as_slice())
+    }
+
     pub fn documents(&self) -> impl Iterator<Item = (usize, &BoundDocument)> {
         self.compilation.documents.iter().enumerate().filter(|(_, d)| !d.is_schema)
     }
@@ -174,7 +182,7 @@ pub fn load(files: Vec<ProjectFile>) -> Project {
     let mut problems: Vec<ProjectDiagnostic> = Vec::new();
     let whole = |message: String| ProjectDiagnostic { file: String::new(), line: 0, column: 0, span: TextSpan::default(), is_error: true, message };
 
-    let alex: Vec<ProjectFile> = files.into_iter().filter(|f| f.path.ends_with(".alex")).collect();
+    let (alex, assets): (Vec<ProjectFile>, Vec<ProjectFile>) = files.into_iter().partition(|f| f.path.ends_with(".alex"));
     let mut seen_names: Vec<(String, String)> = Vec::new();
     for file in &alex {
         let name = base_name(&file.path);
@@ -248,7 +256,7 @@ pub fn load(files: Vec<ProjectFile>) -> Project {
         }
     }
 
-    Project { compilation, paths, sources: bytes, game, diagnostics }
+    Project { compilation, paths, sources: bytes, game, diagnostics, assets }
 }
 
 /// The one-based line and column of a byte offset, counting characters rather than bytes.

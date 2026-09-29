@@ -73,6 +73,27 @@ internal sealed class Renderer
         _root.Value("file-names") is AlexObject names && ByType(face, names) is { } file ? face.Template(file)
         : face.Text("number") is { Length: > 0 } n ? n : face.Key;
 
+    /// <summary>What drawing the face draws, as the core's draw list.</summary>
+    public string DrawListOf(Face face)
+    {
+        _record = new DrawList(_project.Root, Width, Height, Bleed);
+        Text.Record = _record;
+        try
+        {
+            using SKImage image = Render(face, withBleed: false);
+            return _record.ToString();
+        }
+        finally
+        {
+            _record = null;
+            Text.Record = null;
+        }
+    }
+
+    private DrawList? _record;
+
+    private string Paint(SKColor color) => DrawList.Color(color);
+
     /// <summary>The face as an image: the trimmed card, or with its bleed.</summary>
     public SKImage Render(Face face, bool withBleed)
     {
@@ -95,6 +116,7 @@ internal sealed class Renderer
             SKImage image = Image(framePath) ?? throw new KardixException($"The frame {framePath} doesn't exist.");
             // A frame is drawn with its bleed around the card; the card's corner is at (0, 0).
             canvas.DrawImage(image, -Bleed, -Bleed);
+            _record?.ImageAt(framePath, -Bleed, -Bleed);
         }
 
         foreach (AlexProperty part in parts)
@@ -144,11 +166,13 @@ internal sealed class Renderer
         {
             using SKPaint hole = new() { IsAntialias = false, BlendMode = SKBlendMode.Clear };
             canvas.DrawRoundRect(new SKRoundRect(box, corner, corner), hole);
+            _record?.Rect(box, corner, corner, "clear", smooth: false);
             return;
         }
 
         if (face.AssetPath(part.Value("show"), _layout) is not { } path) { return; }
         SKImage image = Image(path) ?? throw new KardixException($"{face.Key}: the picture {path} doesn't exist.");
+        _record?.Image(path, Word(part.Value("fit")) == "contain" ? "contain" : "cover", box, corner);
         SKRect source = new(0, 0, image.Width, image.Height);
         if (Word(part.Value("fit")) != "contain")
         {
@@ -188,34 +212,48 @@ internal sealed class Renderer
         SKShader? chrome = finish ?? texture;
         float outlineWidth = Float(part.Value("outline-width"), 1);
 
+        string? finishName = finish is null ? null : "finish:" + _record?.Path(FinishFile(face)!);
+        string? textureName = texture is null ? null : NoArt ? "clear" : "texture:" + _record?.Path(face.AssetPath(frame!.Value("texture"), _layout)!);
+
         if (kind == "star")
         {
             using SKPaint paint = new() { IsAntialias = false, Color = Color(face, frame, part.Value("fill"), SKColors.Black) };
             canvas.DrawPath(Star(box), paint);
+            _record?.Star(box, Paint(paint.Color));
             return;
         }
 
         if (part.Value("fill") is { } fillValue)
         {
             using SKPaint fill = new() { IsAntialias = false, Color = Color(face, frame, fillValue, SKColors.Black) };
-            if (finish is not null && !hasOutline) { fill.Shader = finish; }
-            else if (texture is not null) { Textured(fill, texture); }
-            canvas.DrawRoundRect(Rounded(box, kind, radius), fill);
+            string name = Paint(fill.Color);
+            if (finish is not null && !hasOutline) { fill.Shader = finish; name = finishName!; }
+            else if (texture is not null) { Textured(fill, texture); name = textureName!; }
+            SKRoundRect rounded = Rounded(box, kind, radius);
+            canvas.DrawRoundRect(rounded, fill);
+            _record?.Rect(box, rounded.Radii[0].X, rounded.Radii[0].Y, name, smooth: false);
         }
 
         if (hasOutline)
         {
             float width = chrome is null ? outlineWidth : Float(part.Value("chrome-width"), outlineWidth);
             using SKPaint ring = new() { IsAntialias = false, Color = Color(face, frame, part.Value("outline"), SKColors.Black) };
-            if (finish is not null) { ring.Shader = finish; }
-            else if (texture is not null) { Textured(ring, texture); }
+            string name = Paint(ring.Color);
+            if (finish is not null) { ring.Shader = finish; name = finishName!; }
+            else if (texture is not null) { Textured(ring, texture); name = textureName!; }
             SKRect inner = SKRect.Inflate(box, -width, -width);
             using SKPath path = new() { FillType = SKPathFillType.EvenOdd };
-            path.AddRoundRect(Rounded(box, kind, radius));
-            path.AddRoundRect(Rounded(inner, kind, Math.Max(radius - width, 0)));
+            SKRoundRect outerRounded = Rounded(box, kind, radius), innerRounded = Rounded(inner, kind, Math.Max(radius - width, 0));
+            path.AddRoundRect(outerRounded);
+            path.AddRoundRect(innerRounded);
             canvas.DrawPath(path, ring);
+            _record?.Ring(box, outerRounded.Radii[0].X, outerRounded.Radii[0].Y, inner, innerRounded.Radii[0].X, innerRounded.Radii[0].Y, name);
         }
     }
+
+    private string? FinishFile(Face face) =>
+        face.Finish != "standard" && _root.Value("finishes") is AlexObject finishes && finishes.Value(face.Finish) is AlexObject finish
+            ? Path.GetFullPath(Project.Scalar(finish.Value("texture")), _layout.Directory) : null;
 
     private static SKRoundRect Rounded(SKRect box, string kind, float radius) =>
         kind == "circle" ? new SKRoundRect(box, box.Width / 2, box.Height / 2) : new SKRoundRect(box, radius, radius);
@@ -282,6 +320,7 @@ internal sealed class Renderer
         if (key.Length == 0 || part.Value("images") is not AlexObject images || images.Value(key) is not AlexTextual file) { return; }
         SKImage image = Image(Path.GetFullPath(file.Value, _layout.Directory)) ?? throw new KardixException($"The icon {file.Value} doesn't exist.");
         canvas.DrawImage(image, box, new SKSamplingOptions(SKCubicResampler.CatmullRom));
+        _record?.Image(Path.GetFullPath(file.Value, _layout.Directory), "stretch", box, 0);
     }
 
     private void Label(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part, SKRect box)
@@ -365,6 +404,7 @@ internal sealed class Renderer
         using (SKPaint fill = new() { IsAntialias = true, Color = Color(face, frame, part.Value("fill"), SKColors.White) })
         {
             canvas.DrawRoundRect(SKRect.Create(x0, box.Top, width, h), h / 2, h / 2, fill);
+            _record?.Rect(SKRect.Create(x0, box.Top, width, h), h / 2, h / 2, Paint(fill.Color), smooth: true);
         }
 
         float stroke = Float(part.Value("outline-width"), 1);
@@ -372,6 +412,7 @@ internal sealed class Renderer
         {
             SKRect r = SKRect.Create(x0 + stroke / 2, box.Top + stroke / 2, width - stroke, h - stroke);
             canvas.DrawRoundRect(r, r.Height / 2, r.Height / 2, outline);
+            _record?.Stroke(r, r.Height / 2, r.Height / 2, stroke, Paint(outline.Color));
         }
 
         if (part.Value("icon") is AlexTextual iconFile && Image(Path.GetFullPath(iconFile.Value, _layout.Directory)) is { } icon)
@@ -379,6 +420,7 @@ internal sealed class Renderer
             using SKPaint tint = new() { ColorFilter = SKColorFilter.CreateBlendMode(Color(face, frame, part.Value("icon-color"), SKColors.Black), SKBlendMode.SrcIn) };
             SKRect iconBox = SKRect.Create(x0 + pad, box.Top + MathF.Floor((h - iconSize) / 2), iconSize, iconSize);
             canvas.DrawImage(icon, iconBox, new SKSamplingOptions(SKCubicResampler.CatmullRom), tint);
+            _record?.Tinted(Path.GetFullPath(iconFile.Value, _layout.Directory), iconBox, Paint(Color(face, frame, part.Value("icon-color"), SKColors.Black)));
         }
 
         Text.Draw(canvas, text, font, x0 + pad + iconSize + gap, box.Top + h / 2 + Float(part.Value("text-offset"), 0), "left", Middle: true,
@@ -437,6 +479,7 @@ internal sealed class Renderer
                     Color = Color(face, frame, l.Paragraph.Value("rule-above"), SKColors.Gray),
                 };
                 canvas.DrawLine(box.Left + inset, ruleY, box.Right - inset, ruleY, rule);
+                _record?.Line(box.Left + inset, ruleY, box.Right - inset, ruleY, rule.StrokeWidth, Paint(rule.Color));
                 y += l.Rule;
             }
 
@@ -624,6 +667,7 @@ internal sealed class Renderer
                 : throw new KardixException($"The font {file} is neither in the project nor installed.");
             typeface = SKTypeface.FromFile(path) ?? throw new KardixException($"The font {path} can't be read.");
             _fonts[file] = typeface;
+            Text.FontNames[typeface] = Path.GetRelativePath(_project.Root, local).Replace('\\', '/');
         }
 
         return new SKFont(typeface, size) { Subpixel = false, LinearMetrics = false, Edging = SKFontEdging.Antialias, Hinting = SKFontHinting.Normal };
@@ -678,6 +722,11 @@ internal static class Text
     /// </summary>
     public static bool WholePixels { get; set; }
 
+    /// <summary>Where the renderer records what it draws (<see cref="Renderer.DrawListOf"/>), and each font's file.</summary>
+    public static DrawList? Record { get; set; }
+
+    public static Dictionary<SKTypeface, string> FontNames { get; } = new();
+
     public static float Width(string text, SKFont font)
     {
         if (!WholePixels) { return font.MeasureText(text); }
@@ -686,7 +735,7 @@ internal static class Text
         return width;
     }
 
-    private static SKTextBlob? Blob(string text, SKFont font, float left, float baseline)
+    private static SKTextBlob? Blob(string text, SKFont font, float left, float baseline, SKColor color, SKColor outline, float outlineWidth)
     {
         ushort[] glyphs = font.GetGlyphs(text);
         if (glyphs.Length == 0) { return null; }
@@ -698,6 +747,8 @@ internal static class Text
             points[i] = new SKPoint(x, baseline);
             x += WholePixels ? MathF.Round(widths[i]) : widths[i];
         }
+
+        Record?.Text(FontNames.GetValueOrDefault(font.Typeface, "?"), font.Size, color, outline, outlineWidth, glyphs, points);
 
         using SKTextBlobBuilder builder = new();
         SKPositionedRunBuffer run = builder.AllocatePositionedRun(font, glyphs.Length);
@@ -723,7 +774,7 @@ internal static class Text
             baseline = y + (-m.Ascent - m.Descent) / 2;
         }
 
-        using SKTextBlob? blob = Blob(text, font, left, baseline);
+        using SKTextBlob? blob = Blob(text, font, left, baseline, color, outline, outlineWidth);
         if (blob is null) { return; }
         if (outline != SKColors.Empty && outlineWidth > 0)
         {

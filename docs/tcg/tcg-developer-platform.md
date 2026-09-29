@@ -644,14 +644,32 @@ As decided in "Text looks the same whatever language the core is written in":
 1. **Write the text layout algorithm down first**, as a short spec beside the code: glyph lookup,
    advances, kerning, line breaking, fitting, emphasis, and 1/64-pixel integer positions with
    their rounding.
+   *Done 2026-09-29:* `cardengine/engine/src/render/text-layout.md`. Advances are the font's own units scaled
+   linearly (SkiaSharp's were, unhinted), rounded to whole pixels under `text-spacing = whole-pixels`; the middle-line
+   baseline comes from `hhea`. No kerning yet, since the first cards were set without it; the spec says how it will
+   come. The draw list's format is `draw-list.md` beside it.
 2. **Layout to a draw list** from `card-layout.alex` (boxes, templates, text fitting, emphasis,
    frames, icons, two faces, finishes), ported from `cardengine/kardix/Renderer.cs` and `Faces.cs`.
    Fonts are read from the project's font files. No rustybuzz.
+   *Done 2026-09-29:* `src/render/` (`font.rs` reads `head`, `hhea`, `hmtx` and `cmap`; `text.rs` measures, marks
+   emphasis and breaks lines; `layout.rs` is the port; `draw.rs` writes the list). The core answers `fonts`,
+   `faces [<set>]`, `draw <set> <card> <front|back> <finish>` and `draw-lists [<set>]`, with `frame=<name>` and
+   `no-art`. A host passes the fonts in as files of the project; Folkborn's are Segoe UI, which a host reads from the
+   system when the game's folder doesn't have them. To check the port, `kardix cards --draw-list` records what SkiaSharp
+   draws in the same format: on all 442 Folkborn faces, the 88 Domowiki faces with `--no-art --frame image` and the 20
+   Flower Souls faces in another frame, every shape, colour, image, font size, line break and glyph is the same, and a
+   glyph's position differs by at most half of 1/64 pixel (SkiaSharp keeps the middle-line baseline's fraction; the
+   spec rounds it).
 3. **Rasterise the draw list** with `tiny-skia`.
 4. *Done when:* every released Folkborn card has the same font sizes and line breaks as
    `kardix cards` draws today, and differs from it only by antialiasing within a stated tolerance.
    Then the core's draw lists are committed as goldens, `kardix cards` draws through the core, and
    SkiaSharp leaves `kardix`.
+   *Goldens committed 2026-09-29:* `content/draw-lists/<set>.txt`, every face of every Folkborn set, prototypes
+   included (462). `content/draw-lists.test.ts` runs with every deploy and fails when the core draws a card
+   differently; `npm run draw-lists` writes them again when a change to a card, the layout or the renderer is meant.
+   They live beside the site's build, not in `cardengine/`, which names no game. Hello TCG has none yet: its layout
+   names Nunito, and the sample doesn't have the font files.
 5. Studio shows finished cards drawn in the page.
 
 ### Stage 5: Studio edits

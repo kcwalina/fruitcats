@@ -31,6 +31,7 @@
     "check-set": "tsx content/check-set.ts",
     "cards": "dotnet run --project cardengine/kardix -c Release -- cards --project games/folkborn --out out/cards/{set}",
     "studio": "tsx tools/studio.ts",
+    "draw-lists": "tsx content/draw-lists.ts",
     "publish-pack": "tsx content/publish-pack.ts",
     "write-text": "tsx content/write-text.ts"
   },

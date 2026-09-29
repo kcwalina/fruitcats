@@ -14,7 +14,7 @@ using ViaMochi.Alex.Model;
 // Opens Studio on the project in the browser: its files, its cards and its rulebook, read again each time a file is
 // saved. It serves on localhost only, until Ctrl+C.
 //
-//   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]
+//   kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed] [--draw-list]
 //
 // Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
 // a folder relative to where kardix runs, where {set} is the name of the file the cards are written in. Finishes
@@ -27,7 +27,7 @@ try
     {
         Console.WriteLine("kardix check [--project <folder>]");
         Console.WriteLine("kardix studio [--project <folder>] [--port <number>] [--no-open]");
-        Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]");
+        Console.WriteLine("kardix cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed] [--draw-list]");
         return 0;
     }
 
@@ -91,7 +91,7 @@ static int Cards(string[] args)
     string? onlyFinish = null, onlySet = null;
     HashSet<string>? only = null;
     string? frame = null;
-    bool png = false, bleed = false, noArt = false;
+    bool png = false, bleed = false, noArt = false, drawList = false;
     for (int i = 0; i < args.Length; i++)
     {
         switch (args[i])
@@ -104,6 +104,7 @@ static int Cards(string[] args)
             case "--bleed": bleed = true; break;
             case "--frame": frame = args[++i]; break;
             case "--no-art": noArt = true; break;
+            case "--draw-list": drawList = true; break;
             case "--only":
                 only = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 while (i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal)) { only.Add(args[++i]); }
@@ -139,9 +140,16 @@ static int Cards(string[] args)
                 if (card.Value("back") is AlexObject back) { faces.Add(new Face(project, document, entry.Name, card, back, isBack: true, finish)); }
                 foreach (Face face in faces)
                 {
-                    using SKImage image = renderer.Render(face, bleed);
                     string folder = Path.Combine(Path.GetFullPath(outDir.Replace("{set}", document.Name)), finish == "standard" ? "" : finish);
                     Directory.CreateDirectory(folder);
+                    if (drawList)
+                    {
+                        File.WriteAllText(Path.Combine(folder, renderer.FileName(face) + ".txt"), renderer.DrawListOf(face));
+                        written++;
+                        continue;
+                    }
+
+                    using SKImage image = renderer.Render(face, bleed);
                     string path = Path.Combine(folder, renderer.FileName(face) + (png ? ".png" : ".webp"));
                     using SKData data = image.Encode(png ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Webp, png ? 100 : 90);
                     File.WriteAllBytes(path, data.ToArray());

@@ -5,7 +5,7 @@ player app), `tcg.exe` through Wasmtime, and the servers all load the same `tcg_
 the same everywhere. Why it is built this way is in
 [docs/tcg/tcg-developer-platform.md](../../docs/tcg/tcg-developer-platform.md), "The core".
 
-Today it holds Alex's parser. The binder, the game loader, the runtime, the bots and the card renderer join it.
+Today it holds Alex's parser and binder. The game loader, the runtime, the bots and the card renderer join it.
 
 ## Rules
 
@@ -16,21 +16,26 @@ Today it holds Alex's parser. The binder, the game loader, the runtime, the bots
 - **The interface is the contract.** Hosts see only the exports in `src/abi.rs`: plain functions over bytes in
   the module's memory. The language behind them can change; they can't, except by adding.
 - **Alex is identical to the C# Alex** (`mochi.agents/alex`) while both are used. The parser is a port of
-  `AlexParser.cs` with the same grammar, recovery and diagnostic messages, and `cardengine/conformance` proves it.
-  Change both together.
+  `AlexParser.cs` and the binder of `AlexBinder*.cs`, with the same rules, passes and diagnostic messages, and
+  `cardengine/conformance` proves it. Change both together.
 
 ## Layout
 
 ```
 src/lib.rs              the crate
-src/abi.rs              the exports: tcg_alloc, tcg_free, alex_dump, alex_check
+src/abi.rs              the exports: tcg_alloc, tcg_free, alex_dump, alex_check, alex_bind_dump
 src/alex/lexer.rs       bytes to tokens with trivia; text tables are found here
 src/alex/parser.rs      tokens to the concrete syntax tree, with recovery
 src/alex/syntax.rs      the tree: tokens, trivia, statements, values, types, bodies
 src/alex/tokens.rs      a node's tokens in order: what the writer writes and spans come from
 src/alex/writer.rs      the tree back to bytes, byte for byte
-src/alex/dump.rs        the canonical dump the conformance check compares
+src/alex/dump.rs        the canonical dump of a parse, which the conformance check compares
+src/alex/model.rs       the bound model: values, types, fields and declarations, in arenas
+src/alex/binder.rs      syntax trees to the model: types, the value graph, references, checking (binder_program.rs:
+                        extensions, declarations, assignments through references; binder_type_values.rs: `type R`)
+src/alex/bound_dump.rs  the canonical dump of a binding, which the conformance check compares
 tests/corpus.rs         every .alex file in fruitcats and mochi round-trips
+tests/binding.rs        the Hello TCG samples bind with the framework and their rules attach
 web/                    the module in a browser: engine.js (the host, no dependencies) and a check page
 ```
 

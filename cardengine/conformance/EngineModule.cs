@@ -17,6 +17,7 @@ internal sealed class EngineModule : IDisposable
     private readonly Action<int, int> _free;
     private readonly Func<int, int, int, long> _dump;
     private readonly Func<int, int, int> _check;
+    private readonly Func<int, int, long> _bindDump;
 
     private EngineModule(Engine engine, Module module, Store store, Instance instance)
     {
@@ -28,6 +29,7 @@ internal sealed class EngineModule : IDisposable
         _free = instance.GetAction<int, int>("tcg_free") ?? throw Missing("tcg_free");
         _dump = instance.GetFunction<int, int, int, long>("alex_dump") ?? throw Missing("alex_dump");
         _check = instance.GetFunction<int, int, int>("alex_check") ?? throw Missing("alex_check");
+        _bindDump = instance.GetFunction<int, int, long>("alex_bind_dump") ?? throw Missing("alex_bind_dump");
     }
 
     /// <summary>Compiles and instantiates the module at <paramref name="path"/>.</summary>
@@ -57,6 +59,32 @@ internal sealed class EngineModule : IDisposable
         int count = _check(input, source.Length);
         _free(input, source.Length);
         return count;
+    }
+
+    /// <summary>The canonical dump of <paramref name="sources"/> bound together (<c>alex_bind_dump</c>).</summary>
+    public string BindDump(IReadOnlyList<BoundDump.Source> sources, bool kinds)
+    {
+        using MemoryStream input = new();
+        using (BinaryWriter writer = new(input, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(kinds ? 1u : 0u);
+            writer.Write((uint)sources.Count);
+            foreach (BoundDump.Source source in sources)
+            {
+                byte[] name = Encoding.UTF8.GetBytes(source.Name);
+                writer.Write((uint)source.Role);
+                writer.Write((uint)name.Length);
+                writer.Write(name);
+                writer.Write((uint)source.Bytes.Length);
+                writer.Write(source.Bytes);
+            }
+        }
+
+        byte[] bytes = input.ToArray();
+        int address = CopyIn(bytes);
+        long result = _bindDump(address, bytes.Length);
+        _free(address, bytes.Length);
+        return Encoding.UTF8.GetString(TakeResult(result));
     }
 
     private int CopyIn(byte[] source)

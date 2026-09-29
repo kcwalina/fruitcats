@@ -7,7 +7,7 @@ using ViaMochi.Alex.Parsing;
 //
 //   dotnet run -c Release [-- --wasm <file>] [--out <folder>] [--mutants <per file>] [--export <folder>] [<folder>...]
 //
-// Folders default to this repository and, when it is checked out beside it, mochi. Build the module first:
+// Folders default to this repository and mochi, when it is checked out beside it (found by looking upward). Build the module first:
 // cargo build --release --target wasm32-unknown-unknown (in cardengine/engine). A mismatch writes both dumps to
 // --out (default out/conformance) and exits 1.
 
@@ -29,8 +29,12 @@ for (int i = 0; i < args.Length; i++)
 if (roots.Count == 0 && repository is not null)
 {
     roots.Add(repository);
-    string mochi = Path.GetFullPath(Path.Combine(repository, "..", "mochi"));
-    if (Directory.Exists(mochi)) { roots.Add(mochi); }
+    // mochi beside this checkout, found by looking upward as tcg's project does, so a worktree finds it too.
+    for (DirectoryInfo? up = new DirectoryInfo(repository).Parent; up is not null; up = up.Parent)
+    {
+        string mochi = Path.Combine(up.FullName, "mochi");
+        if (Directory.Exists(Path.Combine(mochi, "mochi.agents"))) { roots.Add(mochi); break; }
+    }
 }
 
 if (!File.Exists(wasm))
@@ -126,6 +130,76 @@ for (int i = 0; i < files.Count; i++)
 
 mismatches += mutantMismatches;
 Console.WriteLine($"compared {mutantsCompared} dumps of broken copies ({mutantsPerFile} per file x 2 modes; {mutantDiagnostics} with diagnostics): {mutantsCompared - mutantMismatches} identical, {mutantMismatches} different");
+
+// ── binding ──────────────────────────────────────────────────────────────────────────────────────
+
+// Each file on its own, as data with no kinds of declaration and as a program with the card engine's; then each
+// project bound together, as tcg and the engine load them; then the broken copies on their own.
+int bindCompared = 0;
+int bindMismatches = 0;
+void CompareBinding(string label, IReadOnlyList<BoundDump.Source> group, bool kinds)
+{
+    string expected = BoundDump.Dump(group, kinds);
+    string actual = module.BindDump(group, kinds);
+    bindCompared++;
+    if (expected == actual) { return; }
+    bindMismatches++;
+    string name = label.Replace('/', '_').Replace(Path.DirectorySeparatorChar, '_');
+    Directory.CreateDirectory(outFolder);
+    File.WriteAllText(Path.Combine(outFolder, name + ".bound.csharp.txt"), expected);
+    File.WriteAllText(Path.Combine(outFolder, name + ".bound.wasm.txt"), actual);
+    if (bindMismatches <= 20) { Console.WriteLine($"DIFFERENT binding {label}: {FirstDifference(expected, actual)}"); }
+}
+
+for (int i = 0; i < files.Count; i++)
+{
+    string name = Path.GetFileName(files[i]);
+    CompareBinding(name + ".data", new[] { new BoundDump.Source(name, sources[i], BoundDump.SourceRole.Data) }, kinds: false);
+    CompareBinding(name + ".any", new[] { new BoundDump.Source(name, sources[i], BoundDump.SourceRole.Any) }, kinds: true);
+}
+
+if (repository is not null)
+{
+    string cardengine = Path.Combine(repository, "cardengine");
+    List<string> framework = new();
+    Collect(Path.Combine(cardengine, "framework"), framework);
+    framework.Sort(StringComparer.Ordinal);
+    BoundDump.Source Read(string path, BoundDump.SourceRole role) => new(Path.GetFileName(path), File.ReadAllBytes(path), role);
+    BoundDump.SourceRole RoleOf(string path) => path.EndsWith("-rules.alex", StringComparison.Ordinal) ? BoundDump.SourceRole.Any : BoundDump.SourceRole.Data;
+
+    CompareBinding("framework", framework.Select(f => Read(f, BoundDump.SourceRole.Any)).ToList(), kinds: true);
+    foreach (string project in new[] { Path.Combine("samples", "hello-tcg"), Path.Combine("samples", "hello-tcg-print"), "folkborn" })
+    {
+        List<string> projectFiles = new();
+        Collect(Path.Combine(cardengine, project), projectFiles);
+        projectFiles.Sort(StringComparer.Ordinal);
+        List<BoundDump.Source> group = framework.Select(f => Read(f, BoundDump.SourceRole.Schema)).ToList();
+        group.AddRange(projectFiles.Select(f => Read(f, RoleOf(f))));
+        CompareBinding(project, group, kinds: true);
+    }
+
+    List<string> game = new();
+    Collect(Path.Combine(repository, "games", "folkborn"), game);
+    game.Sort(StringComparer.Ordinal);
+    List<BoundDump.Source> folkborn = new() { Read(Path.Combine(cardengine, "framework", "core.alex"), BoundDump.SourceRole.Schema) };
+    folkborn.AddRange(game.Select(f => Read(f, BoundDump.SourceRole.Any)));
+    CompareBinding("games-folkborn", folkborn, kinds: true);
+}
+
+int bindMutants = 0;
+for (int i = 0; i < files.Count; i++)
+{
+    List<byte[]> mutants = Mutants.Make(sources[i], Math.Min(mutantsPerFile, 10), 7919 * i + 23);
+    string name = Path.GetFileName(files[i]);
+    for (int m = 0; m < mutants.Count; m++)
+    {
+        bindMutants++;
+        CompareBinding(name + ".mutant" + m, new[] { new BoundDump.Source(name, mutants[m], BoundDump.SourceRole.Any) }, kinds: true);
+    }
+}
+
+Console.WriteLine($"bound    {bindCompared} compilations ({files.Count} files x 2 ways, the projects together, {bindMutants} broken copies): {bindCompared - bindMismatches} identical, {bindMismatches} different");
+mismatches += bindMismatches;
 
 // ── timing ───────────────────────────────────────────────────────────────────────────────────────
 

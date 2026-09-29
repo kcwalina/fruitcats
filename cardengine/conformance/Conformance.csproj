@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(AlexSrc)/Alex/ViaMochi.Alex.csproj" />
+    <ProjectReference Include="$(AlexSrc)/Alex.Model/ViaMochi.Alex.Model.csproj" />
     <PackageReference Include="Wasmtime" Version="48.0.2" />
   </ItemGroup>
 

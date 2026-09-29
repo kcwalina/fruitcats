@@ -1,8 +1,14 @@
-//! Alex: the language games are written in. Parsing, and writing a tree back out byte for byte.
+//! Alex: the language games are written in. Parsing, writing a tree back out byte for byte, and binding documents
+//! together into values checked against their types.
 
+pub mod binder;
+mod binder_program;
+mod binder_type_values;
+pub mod bound_dump;
 pub mod dump;
 pub mod identifiers;
 pub mod lexer;
+pub mod model;
 pub mod parser;
 pub mod syntax;
 pub mod tokens;

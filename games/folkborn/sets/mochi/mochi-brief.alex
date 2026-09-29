@@ -1,0 +1,64 @@
+#type ArtBrief
+
+set = @mochi
+about = 'Mochi is our signature card: one legendary cat that any player can add to any deck. It''s the card we hope everyone wants.'
+audience = 'Every Folkborn player.'
+style = 'Your own style. Mochi isn''t part of a deck, so it doesn''t need to match one.'
+note = 'All of this describes the card. How the image looks is up to you, and if it takes the card somewhere else, we''ll change the card to fit your image.'
+
+families = [
+  Paragon = FamilyBrief {
+    world = 'Paragon is the family of the game''s most important cards; any deck can add them'
+  }
+]
+
+steps = [
+  card = ArtStep {
+    title = 'Mochi’s card'
+    note = 'The image on the card.'
+    pictures = [
+      mochi-card = ArtPicture {
+        file = 'MC1-X01.webp'
+        size = [1536, 1024]
+        card = @mochi.cards.mochi
+        tier = signature
+        draw = @mochi-card-draw
+        must-keep = [
+          'the card is a cat named Mochi'
+          'it belongs to the Paragon family: the most important cards, which any deck can add'
+        ]
+        open = [
+          name
+          flavor
+          look
+          scene
+        ]
+        showcase = true
+        signature = requested
+        family = 'Paragon'
+        portrait = @mochi-portrait
+        frame-choice = true
+      }
+    ]
+  }
+  portrait = ArtStep {
+    title = 'Mochi’s Portrait'
+    note = 'The round portrait players can wear as their profile picture.'
+    pictures = [
+      mochi-portrait = ArtPicture {
+        file = 'legend-mochi.webp'
+        kind = portrait
+        size = [512, 512]
+        tier = legend
+        draw = 'Mochi’s Portrait: players who own the card can wear it as their profile picture. It’s shown as a circle, in the account screen, the friends list and on the game board.'
+        must-keep = [
+          'the same character as Mochi’s card'
+        ]
+      }
+    ]
+  }
+]
+
+@@@ mochi-card-draw
+Mochi, the Sweet Spirit: a legendary cat that fits in any deck. In the game it stands in front of your other units to protect them (Guardian), brings you a new card when it arrives, and readies two of your Offerings when it leaves. It's Lucky too: if it turns up as a lost Candle, it joins the game for free.
+@@@

@@ -16,6 +16,22 @@ AlexBindOptions Options(string path) => new()
 };
 HashSet<string> schemaTypes = AlexDocument.Parse(Array.Empty<byte>(), Options("empty.alex")).Types.Keys.ToHashSet(StringComparer.Ordinal);
 
+// --check: print each file's diagnostics instead, and fail when there are any.
+if (args[(split + 1)..] is ["--check", .. var checkedFiles])
+{
+    int errors = 0;
+    foreach (string path in checkedFiles)
+    {
+        foreach (AlexDiagnostic d in AlexDocument.Parse(File.ReadAllBytes(path), Options(path)).Diagnostics)
+        {
+            Console.WriteLine($"{path}: {d}");
+            errors++;
+        }
+    }
+
+    return errors == 0 ? 0 : 1;
+}
+
 JsonArray all = new();
 foreach (string path in args[(split + 1)..])
 {

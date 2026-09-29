@@ -64,3 +64,50 @@ type TokenCreature : Creature {
   type-name = 'Token Creature'
   finishes = [standard]
 }
+
+// The Artist Studio's brief for a set: the pictures an artist is asked for, in steps. Everything in it is a
+// suggestion to the artist except a picture's file, size and kind.
+type ArtBrief {
+  set: Set
+  about: text?
+  audience: text?
+  style: text?
+  note: text?
+  families: [text: FamilyBrief] = empty
+  steps: [text: ArtStep]
+}
+type FamilyBrief {
+  world: text
+  note: text?
+}
+type ArtStep {
+  title: text
+  note: text?
+  pictures: [text: ArtPicture]
+}
+enum PictureKind { card, token, portrait, announcement }
+enum ArtTier { deck, token, foil, gold, signature, legend, announcement }
+enum PaintStyle { painted, sticker }
+enum HeroFace { front, back }
+enum SignatureWish { requested, welcome }
+enum Suggestable { name, flavor, look, scene, object, characters, rules, other }
+type ArtPicture {
+  file: text
+  kind: PictureKind = card
+  size: [int, int]
+  card: Card?
+  face: HeroFace?
+  tier: ArtTier
+  style: PaintStyle?
+  draw: text
+  must-keep: [text] = empty
+  open: [Suggestable] = empty
+  showcase: bool = false
+  main: bool = false
+  signature: SignatureWish?
+  portrait: ArtPicture?
+  family: text?
+  working-name: text?
+  frame-choice: bool = false
+  frame-palette: text?
+}

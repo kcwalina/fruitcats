@@ -1,6 +1,9 @@
-// A set's art brief (content/<year>/<month>/<set>/art/brief.json, published at studio/<set>/brief.json) and what
-// the Studio works out from it: which step the artist is on, and what to do next for each picture.
+// A set's art brief (games/folkborn/sets/<set>/<set>-brief.alex, #type ArtBrief) and what the Studio works out from
+// it: which step the artist is on, and what to do next for each picture.
 
+import {
+  boolOf, itemsOf, memberOf, objectOf, textOf, type AlexFolder, type AlexObject, type AlexValue,
+} from '../../../../cardengine/alex/alex';
 import type { SetView, Version } from './api';
 
 export interface Brief {
@@ -41,6 +44,67 @@ export interface BriefPicture {
   frameChoice?: boolean;
   /** With frameChoice: a colour to start in instead of the family's own (optional). */
   framePalette?: string;
+}
+
+/**
+ * The brief in `folder`'s document `name`, for the Studio. Steps are numbered in order from 1, as the Studio's saved
+ * state knows them; a picture's card is the card's number, and its portrait the portrait's file.
+ */
+export function briefFromAlex(folder: AlexFolder, name: string): Brief {
+  const doc = folder.documents.get(name);
+  if (!doc || doc.type !== 'ArtBrief') throw new Error(`${name}.alex isn't an art brief (#type ArtBrief).`);
+  const at = (v: AlexValue | undefined) => folder.resolve(v, name);
+  const text = (o: AlexObject, field: string) => textOf(at(o.get(field)));
+  const set = objectOf(at(doc.root.get('set')));
+  const entries = (v: AlexValue | undefined) => [...(objectOf(at(v))?.entries ?? [])];
+  const brief: Brief = {
+    set: (set && text(set, 'code')) ?? name.replace(/-brief$/, ''),
+    name: (set && text(set, 'name')) ?? name,
+    about: text(doc.root, 'about'),
+    audience: text(doc.root, 'audience'),
+    style: text(doc.root, 'style'),
+    families: Object.fromEntries(entries(doc.root.get('families')).map(([family, v]) => {
+      const f = objectOf(at(v))!;
+      return [family, { world: text(f, 'world') ?? '', note: text(f, 'note') }];
+    })),
+    milestones: [],
+    pictures: [],
+  };
+  entries(doc.root.get('steps')).forEach(([, v], i) => {
+    const step = objectOf(at(v))!;
+    const id = i + 1;
+    brief.milestones.push({ id, title: text(step, 'title') ?? '', note: text(step, 'note') });
+    for (const [, pv] of entries(step.get('pictures'))) {
+      const p = objectOf(at(pv))!;
+      const size = itemsOf(at(p.get('size'))).map((x) => (x.kind === 'int' ? x.value : 0));
+      const card = objectOf(at(p.get('card')));
+      const kind = memberOf(p.get('kind')) ?? 'card';
+      const face = memberOf(p.get('face'));
+      const portrait = objectOf(at(p.get('portrait')));
+      brief.pictures.push({
+        file: text(p, 'file') ?? '',
+        card: card ? text(card, 'number') ?? null : null,
+        kind: (kind === 'portrait' ? 'pawtrait' : kind) as BriefPicture['kind'],
+        size: [size[0], size[1]],
+        tier: memberOf(p.get('tier')) as Tier,
+        style: memberOf(p.get('style')) as BriefPicture['style'],
+        milestone: id,
+        draw: text(p, 'draw') ?? '',
+        mustKeep: itemsOf(at(p.get('must-keep'))).map((x) => textOf(at(x)) ?? ''),
+        open: itemsOf(at(p.get('open'))).map((x) => memberOf(x) ?? ''),
+        side: face === 'front' ? 'kitten' : face === 'back' ? 'bigcat' : undefined,
+        showcase: boolOf(p.get('showcase')),
+        main: boolOf(p.get('main')),
+        signature: memberOf(p.get('signature')) as BriefPicture['signature'],
+        pawtrait: portrait ? text(portrait, 'file') : undefined,
+        family: text(p, 'family'),
+        workingName: text(p, 'working-name'),
+        frameChoice: boolOf(p.get('frame-choice')),
+        framePalette: text(p, 'frame-palette'),
+      });
+    }
+  });
+  return brief;
 }
 
 /** A picture's key: its file name without the extension (BP1-X03-kitten, legend-jam, key-art). */

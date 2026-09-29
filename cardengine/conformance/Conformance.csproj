@@ -23,6 +23,8 @@
   <ItemGroup>
     <ProjectReference Include="$(AlexSrc)/Alex/ViaMochi.Alex.csproj" />
     <ProjectReference Include="$(AlexSrc)/Alex.Model/ViaMochi.Alex.Model.csproj" />
+    <!-- The card engine's host, as mochi's own tests bind with it: the vocabulary rule bodies are checked against. -->
+    <Compile Include="$(AlexSrc)/../tests/Alex.Tests/CardEngineHost.cs" Link="CardEngineHost.cs" />
     <PackageReference Include="Wasmtime" Version="48.0.2" />
   </ItemGroup>
 

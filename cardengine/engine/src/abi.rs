@@ -5,7 +5,8 @@
 //! A result is returned as one `u64`: the buffer's address in the high 32 bits and its length in the low 32.
 
 use crate::alex::dump;
-use crate::alex::model::BodyShape;
+use crate::alex::host::{Host, KindsHost};
+use crate::loader::card_engine::CardEngineHost;
 use crate::alex::{binder, bound_dump};
 use crate::alex::parser::ParseMode;
 
@@ -55,9 +56,9 @@ pub unsafe extern "C" fn alex_check(pointer: *const u8, length: u32) -> u32 {
 }
 
 /// Binds the sources at `pointer` together and returns their canonical bound dump (`alex::bound_dump`). The input is
-/// little-endian: a u32 that is 1 when the host registers the card engine's kinds of declaration (effect, static,
-/// condition, scenario), a u32 count, then for each source a u32 role (0 schema, 1 data, 2 any), the file name and the
-/// bytes, each as a u32 length and its bytes.
+/// little-endian: a u32 host (0 none; 1 the card engine's kinds of declaration and nothing else; 2 the card engine's
+/// host for the game named next, as a u32 length and its bytes), a u32 count, then for each source a u32 role (0 schema,
+/// 1 data, 2 any), the file name and the bytes, each as a u32 length and its bytes.
 ///
 /// # Safety
 /// `pointer` and `length` must describe readable memory in this module.
@@ -65,26 +66,13 @@ pub unsafe extern "C" fn alex_check(pointer: *const u8, length: u32) -> u32 {
 pub unsafe extern "C" fn alex_bind_dump(pointer: *const u8, length: u32) -> u64 {
     let input = unsafe { std::slice::from_raw_parts(pointer, length as usize) };
     let text = match read_sources(input) {
-        Some((kinds, sources)) => {
-            let kinds = if kinds { card_engine_kinds() } else { Vec::new() };
-            bound_dump::dump(&binder::bind(sources, kinds, false))
-        }
-        None => "unreadable input
-".to_string(),
+        Some((host, sources)) => bound_dump::dump(&binder::bind(sources, host.as_ref(), false)),
+        None => "unreadable input\n".to_string(),
     };
     hand_out(text.into_bytes())
 }
 
-fn card_engine_kinds() -> binder::Kinds {
-    vec![
-        ("effect".to_string(), BodyShape::Statements),
-        ("static".to_string(), BodyShape::Statements),
-        ("condition".to_string(), BodyShape::Expression),
-        ("scenario".to_string(), BodyShape::Scenario),
-    ]
-}
-
-fn read_sources(input: &[u8]) -> Option<(bool, Vec<binder::Source>)> {
+fn read_sources(input: &[u8]) -> Option<(Box<dyn Host>, Vec<binder::Source>)> {
     struct Reader<'i> {
         input: &'i [u8],
         at: usize,
@@ -102,7 +90,15 @@ fn read_sources(input: &[u8]) -> Option<(bool, Vec<binder::Source>)> {
     }
 
     let mut reader = Reader { input, at: 0 };
-    let kinds = reader.number()? == 1;
+    let host: Box<dyn Host> = match reader.number()? {
+        0 => Box::new(KindsHost { kinds: Vec::new() }),
+        1 => Box::new(KindsHost { kinds: CardEngineHost::new("").kinds() }),
+        _ => {
+            let length = reader.number()? as usize;
+            let game = String::from_utf8_lossy(reader.bytes(length)?).into_owned();
+            Box::new(CardEngineHost::new(&game))
+        }
+    };
     let count = reader.number()?;
     let mut sources = Vec::new();
     for _ in 0..count {
@@ -117,7 +113,7 @@ fn read_sources(input: &[u8]) -> Option<(bool, Vec<binder::Source>)> {
         let bytes = reader.bytes(bytes_length)?.to_vec();
         sources.push(binder::Source { name, bytes, role, check_root_name: true });
     }
-    Some((kinds, sources))
+    Some((host, sources))
 }
 
 fn hand_out(bytes: Vec<u8>) -> u64 {

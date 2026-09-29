@@ -10,6 +10,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use super::host::Host;
 use super::model::*;
 use super::parser::{self, ParseMode};
 use super::syntax::{self, Document as DocumentSyntax, Element, Separated, Statement, SyntaxTree, TextSpan, TextTableParts, Token};
@@ -59,8 +60,8 @@ pub struct Compilation {
     pub types: Vec<(String, TypeId)>,
 }
 
-pub fn bind(sources: Vec<Source>, kinds: Kinds, is_patch: bool) -> Compilation {
-    let mut binder = Binder::new(kinds, is_patch);
+pub fn bind(sources: Vec<Source>, host: &dyn Host, is_patch: bool) -> Compilation {
+    let mut binder = Binder::new(host, is_patch);
     binder.run(sources)
 }
 
@@ -135,7 +136,8 @@ pub(super) struct Declared {
     pub statement: usize,
 }
 
-pub(super) struct Binder {
+pub(super) struct Binder<'h> {
+    pub host: &'h dyn Host,
     pub model: Model,
     pub kinds: Kinds,
     pub is_patch: bool,
@@ -159,13 +161,19 @@ pub(super) struct Binder {
     pub trials: i32,
     /// Where each union trial under way reports: thrown away when it ends.
     pub trial_sinks: Vec<Vec<BoundDiagnostic>>,
+    /// The document that declares each type, and each field (a field an extension adds: the extension's).
+    pub type_states: HashMap<TypeId, usize>,
+    pub field_states: HashMap<FieldId, usize>,
+    /// Which document each value is written in, for the host's validation; made when first asked.
+    pub value_documents: Option<HashMap<ValueId, usize>>,
 }
 
-impl Binder {
-    fn new(kinds: Kinds, is_patch: bool) -> Binder {
+impl<'h> Binder<'h> {
+    fn new(host: &'h dyn Host, is_patch: bool) -> Binder<'h> {
         Binder {
+            host,
             model: Model::default(),
-            kinds,
+            kinds: host.kinds(),
             is_patch,
             states: Vec::new(),
             type_names: Vec::new(),
@@ -184,6 +192,9 @@ impl Binder {
             reported_type_values: HashSet::new(),
             trials: 0,
             trial_sinks: Vec::new(),
+            type_states: HashMap::new(),
+            field_states: HashMap::new(),
+            value_documents: None,
         }
     }
 
@@ -289,8 +300,11 @@ impl Binder {
         }
         self.bind_reference_assignments();
         self.check_required_extension_members();
+        self.check_bodies();
         self.report_unresolved_references();
         self.check_nameofs();
+        let host = self.host;
+        host.validate(self);
 
         let mut bound = Vec::new();
         for state in &mut self.states {
@@ -356,6 +370,7 @@ impl Binder {
             self.type_index.insert(text.clone(), type_id);
             self.type_names.push((text.clone(), type_id));
             self.states[s].types.push((text, type_id));
+            self.type_states.insert(type_id, s);
             self.declared.push(Declared { type_id, document: s, statement: index });
         }
     }
@@ -555,6 +570,7 @@ impl Binder {
             let span = field_item_span(item);
             self.model.fields.push(Field { name, field_type: bound_type, default: default_value, span, declaring_type: Some(record), is_extension: false });
             let field = self.model.fields.len() - 1;
+            self.field_states.insert(field, s);
             self.model.record_mut(record).unwrap().own_fields.push(field);
         }
     }
@@ -2262,4 +2278,89 @@ pub(super) fn format_float(value: f64) -> String {
         return format!("{}E{}{:02}", mantissa, if exponent < 0 { '-' } else { '+' }, exponent.abs());
     }
     format!("{}", value)
+}
+
+
+// ── what a host's validation sees ────────────────────────────────────────────────────────────────
+
+impl Binder<'_> {
+    fn view(&self, index: usize) -> super::host::DocumentView {
+        let state = &self.states[index];
+        super::host::DocumentView { index, name: state.root_name.clone(), is_schema: state.is_schema, is_program: state.is_program, root: state.root }
+    }
+
+    /// Which document each value is written in: every value in each root's tree, its texts and declarations. A
+    /// reference's target is written somewhere else, and indexed there.
+    fn index_value_documents(&self) -> HashMap<ValueId, usize> {
+        fn walk(model: &Model, value: ValueId, s: usize, values: &mut HashMap<ValueId, usize>) {
+            if values.contains_key(&value) {
+                return;
+            }
+            values.insert(value, s);
+            match &model.values[value].kind {
+                ValueKind::Object(object) => {
+                    for property in &object.properties {
+                        walk(model, property.value, s, values);
+                    }
+                }
+                ValueKind::Array(array) => {
+                    for item in array {
+                        walk(model, *item, s, values);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let mut values: HashMap<ValueId, usize> = HashMap::new();
+        for (s, state) in self.states.iter().enumerate() {
+            walk(&self.model, state.root, s, &mut values);
+            for (_, text) in &state.texts {
+                values.entry(*text).or_insert(s);
+            }
+            for declaration in &state.declarations {
+                values.entry(*declaration).or_insert(s);
+            }
+        }
+        values
+    }
+}
+
+impl super::host::ValidationContext for Binder<'_> {
+    fn model(&self) -> &Model {
+        &self.model
+    }
+
+    fn documents(&self) -> Vec<super::host::DocumentView> {
+        (0..self.states.len()).filter(|s| !self.states[*s].is_schema).map(|s| self.view(s)).collect()
+    }
+
+    fn types(&self) -> Vec<(String, TypeId)> {
+        self.type_names.clone()
+    }
+
+    fn document(&self, name: &str) -> Option<super::host::DocumentView> {
+        let documents = (0..self.states.len()).filter(|s| !self.states[*s].is_schema);
+        let schemas = (0..self.states.len()).filter(|s| self.states[*s].is_schema);
+        documents.chain(schemas).find(|s| self.states[*s].root_name.as_deref() == Some(name)).map(|s| self.view(s))
+    }
+
+    fn declaring_document_of_type(&self, type_id: TypeId) -> Option<super::host::DocumentView> {
+        self.type_states.get(&type_id).map(|s| self.view(*s))
+    }
+
+    fn declaring_document_of_field(&self, field: FieldId) -> Option<super::host::DocumentView> {
+        self.field_states.get(&field).map(|s| self.view(*s))
+    }
+
+    fn document_of(&mut self, value: ValueId) -> Option<super::host::DocumentView> {
+        if self.value_documents.is_none() {
+            self.value_documents = Some(self.index_value_documents());
+        }
+        let s = *self.value_documents.as_ref().unwrap().get(&value)?;
+        Some(self.view(s))
+    }
+
+    fn error(&mut self, document: usize, span: TextSpan, message: String) {
+        self.states[document].diagnostics.push(BoundDiagnostic::error(message, span));
+    }
 }

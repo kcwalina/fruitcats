@@ -5,7 +5,8 @@ player app), `tcg.exe` through Wasmtime, and the servers all load the same `tcg_
 the same everywhere. Why it is built this way is in
 [docs/tcg/tcg-developer-platform.md](../../docs/tcg/tcg-developer-platform.md), "The core".
 
-Today it holds Alex's parser and binder. The game loader, the runtime, the bots and the card renderer join it.
+Today it holds Alex's parser and binder, and the card engine's host (`src/loader/`). The rest of the game loader, the
+runtime, the bots and the card renderer join it.
 
 ## Rules
 
@@ -33,7 +34,10 @@ src/alex/dump.rs        the canonical dump of a parse, which the conformance che
 src/alex/model.rs       the bound model: values, types, fields and declarations, in arenas
 src/alex/binder.rs      syntax trees to the model: types, the value graph, references, checking (binder_program.rs:
                         extensions, declarations, assignments through references; binder_type_values.rs: `type R`)
+src/alex/binder_bodies.rs  bodies checked against the host's environment: names, calls, members, Booleans
+src/alex/host.rs        what a host gives binding: kinds of declaration, the scope a body is checked in, validation
 src/alex/bound_dump.rs  the canonical dump of a binding, which the conformance check compares
+src/loader/card_engine.rs  the card engine's host: the libraries' vocabulary, and the card game's own rules
 tests/corpus.rs         every .alex file in fruitcats and mochi round-trips
 tests/binding.rs        the Hello TCG samples bind with the framework and their rules attach
 web/                    the module in a browser: engine.js (the host, no dependencies) and a check page

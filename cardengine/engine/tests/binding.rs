@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use tcg_engine::alex::binder::{self, Role, Source};
-use tcg_engine::alex::model::BodyShape;
+use tcg_engine::loader::card_engine::CardEngineHost;
 
 fn files(folder: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
@@ -26,15 +26,6 @@ fn source(path: &Path, role: Role) -> Source {
     Source { name: path.file_name().unwrap().to_string_lossy().into_owned(), bytes: fs::read(path).unwrap(), role, check_root_name: true }
 }
 
-fn kinds() -> binder::Kinds {
-    vec![
-        ("effect".to_string(), BodyShape::Statements),
-        ("static".to_string(), BodyShape::Statements),
-        ("condition".to_string(), BodyShape::Expression),
-        ("scenario".to_string(), BodyShape::Scenario),
-    ]
-}
-
 #[test]
 fn the_samples_bind_with_the_framework_and_their_rules_attach() {
     let cardengine = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
@@ -46,7 +37,7 @@ fn the_samples_bind_with_the_framework_and_their_rules_attach() {
             sources.push(source(&file, role));
         }
 
-        let compilation = binder::bind(sources, kinds(), false);
+        let compilation = binder::bind(sources, &CardEngineHost::new("hello-tcg"), false);
         assert!(compilation.types.iter().any(|(name, _)| name == "Creature"), "{}: no Creature type", sample);
         let attached: usize = compilation.model.declarations.iter().map(|d| d.attachments.len()).sum();
         if sample == "hello-tcg" {

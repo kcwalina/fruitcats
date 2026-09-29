@@ -563,12 +563,13 @@ identical), and `dotnet build -c Release` in `cardengine/tcg`, whose project fin
    values, references resolved, diagnostics) to both sides and to `cardengine/conformance`.
    *Done when* the framework, Folkborn and both Hello TCG samples bind identically in C# and in the
    core, broken copies included.
-   *Status (2026-09-29):* everything but checking bodies against a host's environment. The binder is in
-   `cardengine/engine/src/alex/` (`binder*.rs`, `model.rs`), and `cardengine/conformance` binds every `.alex` file in
-   fruitcats and mochi on its own, the framework, both samples, the old Folkborn and `games/folkborn` together, and
-   broken copies, in C# and in the core: 1,913 bindings, every one identical, with 9,684 diagnostics among them. Bodies
-   are checked for their shape only; their vocabulary comes from the host (the card game's is `CardEngineHost` in
-   mochi's tests), which is step 2's loader. The samples don't bind cleanly against today's framework, in either
+   *Done (2026-09-29).* The binder is in `cardengine/engine/src/alex/` (`binder*.rs`, `model.rs`, `host.rs`), and the
+   card engine's host, which gives bodies their vocabulary and checks the card game's own rules, in
+   `cardengine/engine/src/loader/card_engine.rs`, a port of `CardEngineHost.cs` in mochi's tests (which the conformance
+   project compiles from mochi as source). `cardengine/conformance` binds every `.alex` file in fruitcats and mochi on
+   its own three ways, the framework, both samples, the old Folkborn, `games/folkborn` and mochi's frozen card-engine
+   fixtures (the Starter Box's and Berry Picnic's rules) together, and broken copies, the fixtures' rules broken inside
+   the whole game among them, in C# and in the core: 2,098 bindings, every one identical. The samples don't bind cleanly against today's framework, in either
    implementation: `card-layout.alex` names `Frame`, which the core doesn't declare, and the samples' `Printed` adds
    `rarity` and `family`, which `common` and `families` also add to `Card`.
 2. **The project loader** (L1): a folder's files handed in as bytes (the core does no I/O), one

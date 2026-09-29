@@ -62,12 +62,19 @@ internal sealed class EngineModule : IDisposable
     }
 
     /// <summary>The canonical dump of <paramref name="sources"/> bound together (<c>alex_bind_dump</c>).</summary>
-    public string BindDump(IReadOnlyList<BoundDump.Source> sources, bool kinds)
+    public string BindDump(IReadOnlyList<BoundDump.Source> sources, bool kinds, string? game = null)
     {
         using MemoryStream input = new();
         using (BinaryWriter writer = new(input, Encoding.UTF8, leaveOpen: true))
         {
-            writer.Write(kinds ? 1u : 0u);
+            writer.Write(game is not null ? 2u : kinds ? 1u : 0u);
+            if (game is not null)
+            {
+                byte[] gameName = Encoding.UTF8.GetBytes(game);
+                writer.Write((uint)gameName.Length);
+                writer.Write(gameName);
+            }
+
             writer.Write((uint)sources.Count);
             foreach (BoundDump.Source source in sources)
             {

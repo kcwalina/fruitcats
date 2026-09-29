@@ -2,10 +2,12 @@
 //! together into values checked against their types.
 
 pub mod binder;
+mod binder_bodies;
 mod binder_program;
 mod binder_type_values;
 pub mod bound_dump;
 pub mod dump;
+pub mod host;
 pub mod identifiers;
 pub mod lexer;
 pub mod model;

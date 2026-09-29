@@ -9,7 +9,7 @@ use super::model::*;
 use super::syntax::{self, Body, BodyStatement, Statement, TextSpan};
 use super::tokens;
 
-impl Binder {
+impl Binder<'_> {
     // ── kinds ────────────────────────────────────────────────────────────────────────────────
 
     /// The function type a kind of declaration names, or none when the host registers no such kind.
@@ -90,6 +90,7 @@ impl Binder {
                 let span = field_item_span(item);
                 self.model.fields.push(Field { name: text, field_type: member_type, default: default_value, span, declaring_type: Some(record), is_extension });
                 let field = self.model.fields.len() - 1;
+                self.field_states.insert(field, s);
                 let target = self.model.record_mut(record).unwrap();
                 if is_extension {
                     target.own_extension_members.push(field);
@@ -147,7 +148,7 @@ impl Binder {
         let tree = self.states[s].tree.clone();
         let bytes = self.states[s].bytes.clone();
         let mut names_seen: HashSet<String> = HashSet::new();
-        for statement in &tree.root.statements {
+        for (index, statement) in tree.root.statements.iter().enumerate() {
             let Statement::Declaration { kind, name, body } = statement else { continue };
             if kind.is_missing {
                 continue;
@@ -190,6 +191,8 @@ impl Binder {
                 title,
                 document_name: self.states[s].root_name.clone(),
                 attachments: Vec::new(),
+                document: s,
+                statement: index,
             });
             let declaration = self.model.declarations.len() - 1;
             let value = self.model.add_value(ValueKind::Declaration(declaration), statement_span(statement));

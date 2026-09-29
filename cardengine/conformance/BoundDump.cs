@@ -28,9 +28,18 @@ internal sealed class BoundDump
 
     internal enum SourceRole { Schema = 0, Data = 1, Any = 2 }
 
-    /// <summary>Binds <paramref name="sources"/> together and dumps the result. <paramref name="kinds"/>: whether the host
-    /// registers the card engine's kinds of declaration (effect, static, condition, scenario), with no environment.</summary>
-    public static string Dump(IReadOnlyList<Source> sources, bool kinds)
+    /// <summary>The libraries of the card-engine framework, in dependency order, as mochi's tests list them.</summary>
+    internal static readonly string[] Libraries =
+    {
+        "common", "units", "abilities", "attachments", "combat", "decks", "families", "heroes", "initiative", "life",
+        "life-stack", "objects", "permanents", "resources", "responses", "scheduling", "setup", "spells", "turns",
+        "board", "dice", "encounter", "objectives", "reveal", "scenarios", "stat-cards",
+    };
+
+    /// <summary>Binds <paramref name="sources"/> together and dumps the result. <paramref name="game"/>: null for a host that
+    /// registers the card engine's kinds of declaration and nothing else (or no kinds, when <paramref name="kinds"/> is
+    /// false); otherwise the card engine's host for that game, which checks bodies and the card game's rules.</summary>
+    public static string Dump(IReadOnlyList<Source> sources, bool kinds, string? game = null)
     {
         List<AlexSource> documents = new();
         List<AlexSource> schemas = new();
@@ -40,7 +49,8 @@ internal sealed class BoundDump
             else { documents.Add(new AlexSource(source.Name, source.Bytes) { Accept = source.Role == SourceRole.Any ? AlexAccept.Any : AlexAccept.Data }); }
         }
 
-        AlexCompilation compilation = AlexCompilation.Bind(documents, schemas, kinds ? KindsHost.Instance : AlexHost.None);
+        AlexHost host = game is not null ? new Alex.Tests.CardEngineHost(game, Libraries) : kinds ? KindsHost.Instance : AlexHost.None;
+        AlexCompilation compilation = AlexCompilation.Bind(documents, schemas, host);
         BoundDump dump = new();
 
         // The first pass numbers every record, map and list; the second writes, with references to those numbers.

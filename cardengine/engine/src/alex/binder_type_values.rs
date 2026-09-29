@@ -5,7 +5,7 @@
 use super::binder::*;
 use super::model::*;
 
-impl Binder {
+impl Binder<'_> {
     /// Walks a document's values with the types their positions give them, and turns every reference that stands where
     /// a type is expected into the type it names, mapping that type onto the record.
     pub(super) fn map_type_values(&mut self, value: ValueId, expected: Option<TypeId>, s: usize) -> ValueId {

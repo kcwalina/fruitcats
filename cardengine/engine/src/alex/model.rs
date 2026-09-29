@@ -170,6 +170,9 @@ pub struct Declaration {
     pub title: Option<String>,
     pub document_name: Option<String>,
     pub attachments: Vec<Attachment>,
+    /// Where it is written: the document's index in the binding, and the statement's in the document.
+    pub document: usize,
+    pub statement: usize,
 }
 
 #[derive(Clone, Debug)]

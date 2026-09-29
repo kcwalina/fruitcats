@@ -163,7 +163,8 @@ async function onRoute() {
   if (S.route.page === 'comments') S.commentAt = 0;
   S.pinning = false; S.pin = null; S.replyTo = null; S.suggesting = null; S.uploadError = ''; S.newInvite = '';
   const mine = visibleSets();
-  if (S.route.page === 'sets' && mine.length === 1 && (S.me || S.guest)) { go(`#/${mine[0].code}`); return; }
+  // An artist with one project goes straight to it; a reviewer keeps the list, which is how they reach every project.
+  if (S.route.page === 'sets' && mine.length === 1 && S.me && !seesAll()) { go(`#/${mine[0].code}`); return; }
   if (S.route.page !== 'sets') {
     await loadSet(S.route.code);
     chooseMode(S.route.code);
@@ -182,9 +183,12 @@ async function onRoute() {
   window.scrollTo(0, 0);
 }
 
-/** The sets this person may open: an artist's own sets; everything for the owner, agents and guests. */
+/** The owner, agents and guests may open every project; an artist, only their own. */
+const seesAll = () => S.guest || S.me?.sets === '*';
+
+/** The sets this person may open. */
 function visibleSets(): SetEntry[] {
-  if (S.guest || S.me?.sets === '*') return S.sets;
+  if (seesAll()) return S.sets;
   const mine = S.me?.sets ?? [];
   return S.sets.filter((s) => mine.includes(s.code));
 }
@@ -445,7 +449,7 @@ function topBar(): string {
       <button class="${S.asArtist ? '' : 'on'}" data-click="asartist:0" role="radio" aria-checked="${!S.asArtist}">Reviewer</button></div>` : '';
   return `<header class="top">
     <a class="brand" href="#/"><img src="${BASE}icons/icon-192.png" alt=""><span>Folkborn <b>Artist Studio</b></span></a>
-    ${set ? `<nav class="crumbs"><a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : ''}</nav>` : '<span></span>'}
+    ${set ? `<nav class="crumbs">${seesAll() || visibleSets().length > 1 ? '<a href="#/">Projects</a> <span>›</span> ' : ''}<a href="#/${set.code}">${esc(set.name)}</a>${r.page === 'picture' ? ` <span>›</span> <span>${esc(pictureTitle(r.code, r.key))}</span>` : ''}</nav>` : '<span></span>'}
     <div class="me">${switcher}
       <a class="btn ghost small" href="${BASE}docs.html" target="_blank" rel="noopener">Guide</a>
       <span class="me-name">${who}</span>

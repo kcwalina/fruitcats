@@ -1,4 +1,4 @@
-//! The loader loads real projects: Folkborn's game folder and the Hello TCG samples, from their files.
+//! The loader loads projects from their files: Hello TCG, and a small game written here.
 
 use std::fs;
 use std::path::Path;
@@ -28,16 +28,77 @@ fn repository() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..")
 }
 
+fn file(path: &str, text: &str) -> ProjectFile {
+    ProjectFile { path: path.to_string(), bytes: text.as_bytes().to_vec() }
+}
+
 #[test]
-fn folkborn_loads_with_its_cards_and_brief() {
-    let project = project::load(folder(&repository().join("games").join("folkborn")));
-    assert_eq!(project.game.as_deref(), Some("folkborn"));
+fn a_game_its_cards_and_a_document_that_refers_to_them() {
+    let project = project::load(vec![
+        file("pocket.alex", "#type Game
+
+name = 'Pocket'
+sets = [@first]
+
+type Creature : Card {
+  number: text
+  power: int
+}
+type Note {
+  card: Card
+  words: text
+}
+"),
+        file("sets/first/first.alex", "#type Set
+
+id = 'first'
+name = 'First'
+cards = [
+  owl = Creature {
+    name = 'Owl'
+    number = 'P-1'
+    power = 2
+    text = @owl-text
+  }
+]
+
+@@@ owl-text
+Hello: Draw a card.
+@@@
+"),
+        file("sets/first/notes.alex", "#type Note
+
+card = @first.cards.owl
+words = 'Keep the owl round.'
+"),
+    ]);
+    assert_eq!(project.game.as_deref(), Some("pocket"));
+    let errors: Vec<String> = project.diagnostics.iter().filter(|d| d.is_error).map(|d| format!("{}({},{}): {}", d.file, d.line, d.column, d.message)).collect();
+    assert!(errors.iter().all(|e| e.contains("no rules document gives it a handler")), "{}", errors.join("
+"));
+
     let cards = queries::answer(&project, "cards");
-    assert!(cards.contains("\"key\":\"mochi\""), "no Mochi card in {}", &cards[..cards.len().min(400)]);
-    assert!(cards.contains("\"number\":\"DW1-D01\""), "no Domowiki card");
-    let brief = queries::answer(&project, "value mochi-brief");
-    assert!(brief.contains("\"$ref\":\"mochi.cards.mochi\""), "the brief's card isn't a reference: {}", &brief[..brief.len().min(600)]);
-    assert!(brief.contains("\"file\":\"MC1-X01.webp\""));
+    assert!(cards.contains("\"key\":\"owl\"") && cards.contains("\"text\":\"Hello: Draw a card.\""), "{}", cards);
+    let note = queries::answer(&project, "value notes");
+    assert!(note.contains("\"card\":{\"$ref\":\"first.cards.owl\",\"$document\":\"first\",\"$path\":[\"cards\",\"owl\"]}"), "{}", note);
+}
+
+#[test]
+fn an_error_names_its_file_line_and_column() {
+    let project = project::load(vec![
+        file("pocket.alex", "#type Game
+
+name = 'Pocket'
+"),
+        file("extra.alex", "#type Set
+
+id = 'x'
+name = 'X'
+nope = 1
+"),
+    ]);
+    let found = project.diagnostics.iter().find(|d| d.message.starts_with("A Set has no field 'nope'")).expect("the unknown field");
+    assert_eq!((found.file.as_str(), found.line, found.column), ("extra.alex", 5, 1));
 }
 
 #[test]

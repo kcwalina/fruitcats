@@ -158,67 +158,51 @@ for (int i = 0; i < files.Count; i++)
     string name = Path.GetFileName(files[i]);
     CompareBinding(name + ".data", new[] { new BoundDump.Source(name, sources[i], BoundDump.SourceRole.Data) }, kinds: false);
     CompareBinding(name + ".any", new[] { new BoundDump.Source(name, sources[i], BoundDump.SourceRole.Any) }, kinds: true);
-    CompareBinding(name + ".card-engine", new[] { new BoundDump.Source(name, sources[i], BoundDump.SourceRole.Any) }, kinds: true, game: "folkborn");
+    CompareBinding(name + ".card-engine", new[] { new BoundDump.Source(name, sources[i], BoundDump.SourceRole.Any) }, kinds: true, game: Path.GetFileNameWithoutExtension(name));
 }
 
 if (repository is not null)
 {
-    string cardengine = Path.Combine(repository, "cardengine");
     List<string> framework = new();
-    Collect(Path.Combine(cardengine, "framework"), framework);
+    Collect(Path.Combine(repository, "cardengine", "framework"), framework);
     framework.Sort(StringComparer.Ordinal);
+    string core = Path.Combine(repository, "cardengine", "framework", "core.alex");
     BoundDump.Source Read(string path, BoundDump.SourceRole role) => new(Path.GetFileName(path), File.ReadAllBytes(path), role);
-    BoundDump.SourceRole RoleOf(string path) => path.EndsWith("-rules.alex", StringComparison.Ordinal) ? BoundDump.SourceRole.Any : BoundDump.SourceRole.Data;
+    BoundDump.SourceRole RoleOf(string path) =>
+        path.EndsWith("-rules.alex", StringComparison.Ordinal) || DeclaredType(path) == "Rules" ? BoundDump.SourceRole.Any : BoundDump.SourceRole.Data;
 
     CompareBinding("framework", framework.Select(f => Read(f, BoundDump.SourceRole.Any)).ToList(), kinds: true);
-    CompareBinding("framework.card-engine", framework.Select(f => Read(f, BoundDump.SourceRole.Any)).ToList(), kinds: true, game: "folkborn");
-    foreach (string project in new[] { Path.Combine("samples", "hello-tcg"), Path.Combine("samples", "hello-tcg-print"), "folkborn" })
-    {
-        List<string> projectFiles = new();
-        Collect(Path.Combine(cardengine, project), projectFiles);
-        projectFiles.Sort(StringComparer.Ordinal);
-        List<BoundDump.Source> group = framework.Select(f => Read(f, BoundDump.SourceRole.Schema)).ToList();
-        group.AddRange(projectFiles.Select(f => Read(f, RoleOf(f))));
-        CompareBinding(project, group, kinds: true);
-        CompareBinding(project + ".card-engine", group, kinds: true, game: project == "folkborn" ? "folkborn" : "hello-tcg");
-    }
+    CompareBinding("framework.card-engine", framework.Select(f => Read(f, BoundDump.SourceRole.Any)).ToList(), kinds: true, game: "game");
 
-    // mochi keeps the card-engine files its tests are frozen against, the Starter Box's and Berry Picnic's rules
-    // included: the most rule bodies there are, bound as its tests bind them.
-    foreach (string root in roots)
+    // Every game project among the inputs: a folder with a '#type Game' file, and every .alex file under it. Each is bound
+    // against the core alone and against the whole framework, with the card engine's host, and each of its rules
+    // documents broken ten ways inside it: the body checker's errors on real rules.
+    int projectNumber = 0;
+    foreach (string gameFile in files.Where(f => DeclaredType(f) == "Game" && !framework.Contains(f)))
     {
-        string fixtures = Path.Combine(root, "mochi.agents", "alex", "tests", "Alex.Tests", "Fixtures", "cardengine");
-        if (!Directory.Exists(fixtures)) { continue; }
-        List<string> fixtureFramework = new();
-        Collect(Path.Combine(fixtures, "framework"), fixtureFramework);
-        fixtureFramework.Sort(StringComparer.Ordinal);
-        List<string> fixtureGame = new();
-        Collect(Path.Combine(fixtures, "folkborn"), fixtureGame);
-        fixtureGame.Sort(StringComparer.Ordinal);
-        List<BoundDump.Source> whole = fixtureFramework.Select(f => Read(f, BoundDump.SourceRole.Schema)).ToList();
-        whole.AddRange(fixtureGame.Select(f => Read(f, RoleOf(f))));
-        CompareBinding("mochi-fixtures-folkborn.card-engine", whole, kinds: true, game: "folkborn");
-
-        // Each rules document broken ten ways, bound with the rest of the game: the body checker's errors on real rules.
-        for (int f = 0; f < whole.Count; f++)
+        string folder = Path.GetDirectoryName(gameFile)!;
+        string game = Path.GetFileNameWithoutExtension(gameFile);
+        List<string> projectFiles = files.Where(f => f.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.Ordinal)).ToList();
+        string label = "project" + ++projectNumber + "-" + game;
+        foreach ((string schemas, List<string> schemaFiles) in new[] { ("core", new List<string> { core }), ("framework", framework) })
         {
-            if (whole[f].Role != BoundDump.SourceRole.Any) { continue; }
-            List<byte[]> broken = Mutants.Make(whole[f].Bytes, 10, 104729 + f);
-            for (int m = 0; m < broken.Count; m++)
+            List<BoundDump.Source> group = schemaFiles.Select(f => Read(f, BoundDump.SourceRole.Schema)).ToList();
+            group.AddRange(projectFiles.Select(f => Read(f, RoleOf(f))));
+            CompareBinding(label + "." + schemas, group, kinds: true);
+            CompareBinding(label + "." + schemas + ".card-engine", group, kinds: true, game: game);
+            if (schemas != "framework") { continue; }
+            for (int f = 0; f < group.Count; f++)
             {
-                List<BoundDump.Source> variant = new(whole) { [f] = whole[f] with { Bytes = broken[m] } };
-                CompareBinding("mochi-fixtures-folkborn." + whole[f].Name + ".mutant" + m, variant, kinds: true, game: "folkborn");
+                if (group[f].Role != BoundDump.SourceRole.Any) { continue; }
+                List<byte[]> broken = Mutants.Make(group[f].Bytes, 10, 104729 + f);
+                for (int m = 0; m < broken.Count; m++)
+                {
+                    List<BoundDump.Source> variant = new(group) { [f] = group[f] with { Bytes = broken[m] } };
+                    CompareBinding(label + "." + group[f].Name + ".mutant" + m, variant, kinds: true, game: game);
+                }
             }
         }
     }
-
-    List<string> game = new();
-    Collect(Path.Combine(repository, "games", "folkborn"), game);
-    game.Sort(StringComparer.Ordinal);
-    List<BoundDump.Source> folkborn = new() { Read(Path.Combine(cardengine, "framework", "core.alex"), BoundDump.SourceRole.Schema) };
-    folkborn.AddRange(game.Select(f => Read(f, BoundDump.SourceRole.Any)));
-    CompareBinding("games-folkborn", folkborn, kinds: true);
-    CompareBinding("games-folkborn.card-engine", folkborn, kinds: true, game: "folkborn");
 }
 
 int bindMutants = 0;
@@ -229,11 +213,11 @@ for (int i = 0; i < files.Count; i++)
     for (int m = 0; m < mutants.Count; m++)
     {
         bindMutants++;
-        CompareBinding(name + ".mutant" + m, new[] { new BoundDump.Source(name, mutants[m], BoundDump.SourceRole.Any) }, kinds: true, game: "folkborn");
+        CompareBinding(name + ".mutant" + m, new[] { new BoundDump.Source(name, mutants[m], BoundDump.SourceRole.Any) }, kinds: true, game: Path.GetFileNameWithoutExtension(name));
     }
 }
 
-Console.WriteLine($"bound    {bindCompared} compilations ({files.Count} files x 3 ways, the projects together with and without the card engine's host, {bindMutants} broken copies with it): {bindCompared - bindMismatches} identical, {bindMismatches} different");
+Console.WriteLine($"bound    {bindCompared} compilations ({files.Count} files x 3 ways, the framework and every game project found, their rules broken, {bindMutants} broken copies of files): {bindCompared - bindMismatches} identical, {bindMismatches} different");
 mismatches += bindMismatches;
 
 // ── timing ───────────────────────────────────────────────────────────────────────────────────────
@@ -284,6 +268,18 @@ static void Collect(string directory, List<string> files)
         if (name is "node_modules" or "target" or "bin" or "obj" || name.StartsWith('.')) { continue; }
         Collect(child, files);
     }
+}
+
+static string? DeclaredType(string path)
+{
+    foreach (string line in File.ReadLines(path))
+    {
+        string text = line.Trim().TrimStart('﻿');
+        if (text.Length == 0 || text.StartsWith("//", StringComparison.Ordinal)) { continue; }
+        return text.StartsWith("#type ", StringComparison.Ordinal) ? text[6..].Trim() : null;
+    }
+
+    return null;
 }
 
 static string? FindRepository(string start)

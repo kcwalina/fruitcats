@@ -18,7 +18,7 @@ use super::tokens;
 
 /// One source to bind.
 pub struct Source {
-    /// The file name: `folkborn.alex`.
+    /// The file name: `game.alex`.
     pub name: String,
     pub bytes: Vec<u8>,
     pub role: Role,

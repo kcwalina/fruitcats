@@ -4,11 +4,11 @@ name = 'Folkborn'
 schema-version = 1
 card-layout = @card-layout
 sets = [
-  @dw1
-  @pr1
-  @al1
-  @jr1
-  @hh1
+  @domowiki
+  @pari
+  @aluxes
+  @jiaoren
+  @hui-hai
 ]
 
 keywords = [
@@ -24,8 +24,7 @@ keywords = [
 enum Rarity { common, uncommon, rare, legendary }
 enum Finish { standard, foil, gold, prismatic }
 
-type Family {
-  name: text
+type Colors {
   main: text
   dark: text
   tint: text
@@ -34,7 +33,6 @@ type Family {
 type Printed : Card {
   number: text
   rarity: Rarity?
-  family: Family
   epithet: text?
   finishes: [Finish] = [standard, foil, gold, prismatic]
 }

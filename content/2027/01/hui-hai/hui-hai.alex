@@ -3,14 +3,11 @@
 name = 'Hui Hai'
 code = 'HH1'
 
-families = [
-  hui-hai = Family {
-    name = 'Hui Hai'
-    main = '#4E9A3A'
-    dark = '#24501A'
-    tint = '#E9F5E1'
-  }
-]
+colors = Colors {
+  main = '#4E9A3A'
+  dark = '#24501A'
+  tint = '#E9F5E1'
+}
 
 keywords = [
   stone-for-stone = Keyword { name = 'Stone for Stone' }
@@ -19,7 +16,7 @@ keywords = [
 cards = [
   pebble = Hero {
     name = 'Pebble', epithet = 'the Littlest Hui Hai'
-    number = 'HH1-H01', rarity = legendary, family = @hui-hai
+    number = 'HH1-H01', rarity = legendary
     art = 'art/illustrations/HH1-H01-kitten.webp'
     text = @pebble-text
     flavor = 'Nobody has ever seen her. Plenty of people have met her pebbles.'
@@ -32,7 +29,7 @@ cards = [
   hui-hai-of-the-stream = Creature {
     name = 'Hui Hai of the Stream'
     cost = 2, power = 1, health = 2
-    number = 'HH1-D01', rarity = common, family = @hui-hai
+    number = 'HH1-D01', rarity = common
     art = 'art/illustrations/HH1-D01.webp'
     text = 'Hello: Deal 1 damage to an enemy unit.'
     flavor = 'A ripple where there is no fish. A splash where there is no stone.'
@@ -40,7 +37,7 @@ cards = [
   ya-hui-hai = Fabled {
     name = 'Yă Hui Hai', epithet = 'Lady of the Ferns'
     cost = 4, power = 3, health = 4
-    number = 'HH1-D02', rarity = rare, family = @hui-hai
+    number = 'HH1-D02', rarity = rare
     art = 'art/illustrations/HH1-D02.webp'
     keywords = [@Guardian]
     text = 'Guardian. Hello: Deal 2 damage to an enemy unit.'
@@ -49,7 +46,7 @@ cards = [
   a-pebble-at-your-feet = Charm {
     name = 'A Pebble at Your Feet'
     cost = 1
-    number = 'HH1-D03', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D03', rarity = uncommon
     art = 'art/illustrations/HH1-D03.webp'
     keywords = [@Ambush]
     text = 'Ambush. Deal 2 damage to an enemy unit.'
@@ -58,7 +55,7 @@ cards = [
   hui-hai-in-the-ferns = Creature {
     name = 'Hui Hai in the Ferns'
     cost = 1, power = 1, health = 2
-    number = 'HH1-D04', rarity = common, family = @hui-hai
+    number = 'HH1-D04', rarity = common
     art = 'art/illustrations/HH1-D04.webp'
     keywords = [@stone-for-stone]
     text = 'Stone for Stone.'
@@ -67,14 +64,14 @@ cards = [
   pebble-thrower = Creature {
     name = 'Pebble-Thrower'
     cost = 1, power = 2, health = 1
-    number = 'HH1-D05', rarity = common, family = @hui-hai
+    number = 'HH1-D05', rarity = common
     art = 'art/illustrations/HH1-D05.webp'
     flavor = 'No taller than your thumb. Throws harder than you do.'
   }
   hui-hai-at-the-spring = Creature {
     name = 'Hui Hai at the Spring'
     cost = 2, power = 1, health = 3
-    number = 'HH1-D06', rarity = common, family = @hui-hai
+    number = 'HH1-D06', rarity = common
     art = 'art/illustrations/HH1-D06.webp'
     keywords = [@Guardian, @stone-for-stone]
     text = 'Guardian. Stone for Stone.'
@@ -83,14 +80,14 @@ cards = [
   boulder-pusher = Creature {
     name = 'Boulder-Pusher'
     cost = 3, power = 4, health = 2
-    number = 'HH1-D07', rarity = common, family = @hui-hai
+    number = 'HH1-D07', rarity = common
     art = 'art/illustrations/HH1-D07.webp'
     flavor = 'The boulder was on the path in the evening. In the morning it wasn''t.'
   }
   hui-hai-in-the-bamboo = Creature {
     name = 'Hui Hai in the Bamboo'
     cost = 2, power = 2, health = 2
-    number = 'HH1-D08', rarity = common, family = @hui-hai
+    number = 'HH1-D08', rarity = common
     art = 'art/illustrations/HH1-D08.webp'
     keywords = [@Swift]
     text = 'Swift.'
@@ -99,7 +96,7 @@ cards = [
   keeper-of-the-old-forest = Creature {
     name = 'Keeper of the Old Forest'
     cost = 3, power = 2, health = 4
-    number = 'HH1-D09', rarity = common, family = @hui-hai
+    number = 'HH1-D09', rarity = common
     art = 'art/illustrations/HH1-D09.webp'
     keywords = [@Guardian, @stone-for-stone]
     text = 'Guardian. Stone for Stone.'
@@ -108,7 +105,7 @@ cards = [
   gohlou = Creature {
     name = 'Gơhlŏu', epithet = 'the Sweet-Smelling'
     cost = 3, power = 2, health = 3
-    number = 'HH1-D10', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D10', rarity = uncommon
     art = 'art/illustrations/HH1-D10.webp'
     text = 'Hello: Draw a card.'
     flavor = 'Something lives in the trees. Nobody has seen it, but it smells wonderful.'
@@ -116,7 +113,7 @@ cards = [
   moss-mender-ya-hui-hai = Creature {
     name = 'Moss-Mender Yă Hui Hai'
     cost = 4, power = 3, health = 5
-    number = 'HH1-D11', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D11', rarity = uncommon
     art = 'art/illustrations/HH1-D11.webp'
     text = 'Hello: Heal 2 from each unit you control.'
     flavor = 'She tucks moss into every scrape, grumbling the whole time.'
@@ -124,7 +121,7 @@ cards = [
   old-one-of-the-waterfall = Creature {
     name = 'Old One of the Waterfall'
     cost = 7, power = 6, health = 6
-    number = 'HH1-D12', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D12', rarity = uncommon
     art = 'art/illustrations/HH1-D12.webp'
     keywords = [@Guardian, @Fierce, @stone-for-stone]
     text = 'Guardian. Fierce. Stone for Stone.'
@@ -133,7 +130,7 @@ cards = [
   stones-from-nowhere = Charm {
     name = 'Stones from Nowhere'
     cost = 4
-    number = 'HH1-D13', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D13', rarity = uncommon
     art = 'art/illustrations/HH1-D13.webp'
     text = 'Deal 1 damage to each enemy unit.'
     flavor = 'A whole hillside of pebbles, and not one hand to be seen.'
@@ -141,7 +138,7 @@ cards = [
   the-forest-remembers = Charm {
     name = 'The Forest Remembers'
     cost = 4
-    number = 'HH1-D14', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D14', rarity = uncommon
     art = 'art/illustrations/HH1-D14.webp'
     keywords = [@Lucky]
     text = 'Lucky. Deal 4 damage to a unit.'
@@ -150,7 +147,7 @@ cards = [
   nobody-threw-it = Charm {
     name = 'Nobody Threw It'
     cost = 1
-    number = 'HH1-D15', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D15', rarity = uncommon
     art = 'art/illustrations/HH1-D15.webp'
     keywords = [@Lucky]
     text = 'Lucky. Exhaust an enemy unit.'
@@ -159,7 +156,7 @@ cards = [
   a-pouch-of-river-pebbles = Talisman {
     name = 'A Pouch of River Pebbles'
     cost = 1
-    number = 'HH1-D16', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D16', rarity = uncommon
     art = 'art/illustrations/HH1-D16.webp'
     text = 'Attached unit gets +1 Power and Stone for Stone.'
     flavor = 'Smooth, round, and exactly the right size for throwing.'
@@ -167,7 +164,7 @@ cards = [
   grandfather-hui-hai = Fabled {
     name = 'Grandfather Hui Hai', epithet = 'Mover of Rocks'
     cost = 5, power = 4, health = 5
-    number = 'HH1-D17', rarity = rare, family = @hui-hai
+    number = 'HH1-D17', rarity = rare
     art = 'art/illustrations/HH1-D17.webp'
     keywords = [@Guardian, @stone-for-stone]
     text = 'Guardian. Stone for Stone. Hello: Deal 2 damage to an enemy unit.'
@@ -176,7 +173,7 @@ cards = [
   the-hidden-village = Fabled {
     name = 'The Hidden Village'
     cost = 4, power = 3, health = 3
-    number = 'HH1-D18', rarity = rare, family = @hui-hai
+    number = 'HH1-D18', rarity = rare
     art = 'art/illustrations/HH1-D18.webp'
     text = 'Hello: Deal 1 damage to each enemy unit.'
     flavor = 'A whole village lives in this clearing. You are standing in it.'
@@ -184,7 +181,7 @@ cards = [
   the-rock-that-moved-in-the-night = Fabled {
     name = 'The Rock That Moved in the Night'
     cost = 8, power = 8, health = 8
-    number = 'HH1-D19', rarity = rare, family = @hui-hai
+    number = 'HH1-D19', rarity = rare
     art = 'art/illustrations/HH1-D19.webp'
     keywords = [@Fierce, @stone-for-stone]
     text = 'Fierce. Stone for Stone.'
@@ -193,7 +190,7 @@ cards = [
   small-but-strong = Charm {
     name = 'Small but Strong'
     cost = 1
-    number = 'HH1-D20', rarity = uncommon, family = @hui-hai
+    number = 'HH1-D20', rarity = uncommon
     art = 'art/illustrations/HH1-D20.webp'
     keywords = [@Ambush]
     text = 'Ambush. A unit you control gets +2 Power this round.'

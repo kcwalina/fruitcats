@@ -3,14 +3,11 @@
 name = 'Aluxes'
 code = 'AL1'
 
-families = [
-  aluxes = Family {
-    name = 'Aluxes'
-    main = '#2E8FA3'
-    dark = '#1A4D5C'
-    tint = '#DCF1F5'
-  }
-]
+colors = Colors {
+  main = '#2E8FA3'
+  dark = '#1A4D5C'
+  tint = '#DCF1F5'
+}
 
 keywords = [
   rain-fed = Keyword { name = 'Rain-Fed' }
@@ -19,7 +16,7 @@ keywords = [
 cards = [
   aluxito = Hero {
     name = 'Aluxito', epithet = 'Keeper of the Milpa'
-    number = 'AL1-H01', rarity = legendary, family = @aluxes
+    number = 'AL1-H01', rarity = legendary
     art = 'art/illustrations/AL1-H01-kitten.webp'
     text = @aluxito-text
     flavor = 'Knee-high and invisible. Every corn stalk in the field is his.'
@@ -32,7 +29,7 @@ cards = [
   saka-bearing-alux = Creature {
     name = 'Saká-Bearing Alux'
     cost = 1, power = 1, health = 2
-    number = 'AL1-D01', rarity = common, family = @aluxes
+    number = 'AL1-D01', rarity = common
     art = 'art/illustrations/AL1-D01.webp'
     text = 'Hello: Heal 2 from a unit.'
     flavor = 'A gourd of sweet corn drink, carried to whoever needs it most.'
@@ -40,7 +37,7 @@ cards = [
   night-patrol-alux = Creature {
     name = 'Night Patrol Alux'
     cost = 2, power = 2, health = 2
-    number = 'AL1-D02', rarity = common, family = @aluxes
+    number = 'AL1-D02', rarity = common
     art = 'art/illustrations/AL1-D02.webp'
     keywords = [@Guardian]
     text = 'Guardian.'
@@ -49,7 +46,7 @@ cards = [
   corn-tending-alux = Creature {
     name = 'Corn-Tending Alux'
     cost = 2, power = 2, health = 2
-    number = 'AL1-D03', rarity = common, family = @aluxes
+    number = 'AL1-D03', rarity = common
     art = 'art/illustrations/AL1-D03.webp'
     keywords = [@rain-fed]
     text = 'Rain-Fed. Hello: If you control a Guardian, draw a card.'
@@ -58,7 +55,7 @@ cards = [
   clay-alux = Creature {
     name = 'Clay Alux', epithet = 'Fresh from the J-meen'
     cost = 3, power = 2, health = 3
-    number = 'AL1-D04', rarity = common, family = @aluxes
+    number = 'AL1-D04', rarity = common
     art = 'art/illustrations/AL1-D04.webp'
     keywords = [@rain-fed]
     text = 'Rain-Fed.'
@@ -67,7 +64,7 @@ cards = [
   tool-hiding-alux = Creature {
     name = 'Tool-Hiding Alux'
     cost = 3, power = 2, health = 3
-    number = 'AL1-D05', rarity = common, family = @aluxes
+    number = 'AL1-D05', rarity = common
     art = 'art/illustrations/AL1-D05.webp'
     text = 'Hello: Exhaust an enemy unit.'
     flavor = 'Your machete was right here. Now it isn''t.'
@@ -75,7 +72,7 @@ cards = [
   slingshot-alux = Creature {
     name = 'Slingshot Alux'
     cost = 4, power = 4, health = 3
-    number = 'AL1-D06', rarity = uncommon, family = @aluxes
+    number = 'AL1-D06', rarity = uncommon
     art = 'art/illustrations/AL1-D06.webp'
     keywords = [@Guardian]
     text = 'Guardian.'
@@ -84,7 +81,7 @@ cards = [
   alux-of-the-old-stones = Creature {
     name = 'Alux of the Old Stones'
     cost = 4, power = 2, health = 5
-    number = 'AL1-D07', rarity = uncommon, family = @aluxes
+    number = 'AL1-D07', rarity = uncommon
     art = 'art/illustrations/AL1-D07.webp'
     keywords = [@Guardian, Applied { keyword = @Tough, n = 1 }]
     text = 'Guardian. Tough 1.'
@@ -93,7 +90,7 @@ cards = [
   alux-of-the-ceiba-roots = Creature {
     name = 'Alux of the Ceiba Roots'
     cost = 6, power = 5, health = 6
-    number = 'AL1-D08', rarity = uncommon, family = @aluxes
+    number = 'AL1-D08', rarity = uncommon
     art = 'art/illustrations/AL1-D08.webp'
     keywords = [@Guardian, @Fierce]
     text = 'Guardian. Fierce.'
@@ -102,7 +99,7 @@ cards = [
   a-whistle-in-the-dark = Charm {
     name = 'A Whistle in the Dark'
     cost = 1
-    number = 'AL1-D09', rarity = uncommon, family = @aluxes
+    number = 'AL1-D09', rarity = uncommon
     art = 'art/illustrations/AL1-D09.webp'
     keywords = [@Ambush]
     text = 'Ambush. Cancel an attack. (The attacker stays exhausted.)'
@@ -111,7 +108,7 @@ cards = [
   honey-and-tortillas = Charm {
     name = 'Honey and Tortillas'
     cost = 2
-    number = 'AL1-D10', rarity = uncommon, family = @aluxes
+    number = 'AL1-D10', rarity = uncommon
     art = 'art/illustrations/AL1-D10.webp'
     keywords = [@Lucky]
     text = 'Lucky. Heal 3 from a unit you control. Draw a card.'
@@ -120,7 +117,7 @@ cards = [
   pots-and-pans-flung = Charm {
     name = 'Pots and Pans Flung'
     cost = 3
-    number = 'AL1-D11', rarity = uncommon, family = @aluxes
+    number = 'AL1-D11', rarity = uncommon
     art = 'art/illustrations/AL1-D11.webp'
     text = 'Deal 4 damage to an exhausted unit.'
     flavor = 'Fall asleep without leaving an offering, and the kitchen lets you know.'
@@ -128,7 +125,7 @@ cards = [
   kahtal-alux = Talisman {
     name = 'Kahtal Alux', epithet = 'the Little House'
     cost = 2
-    number = 'AL1-D12', rarity = uncommon, family = @aluxes
+    number = 'AL1-D12', rarity = uncommon
     art = 'art/illustrations/AL1-D12.webp'
     text = 'Attached unit gets +3 Health and Guardian.'
     flavor = @kahtal-alux-flavor
@@ -136,7 +133,7 @@ cards = [
   the-roadside-alux = Fabled {
     name = 'The Roadside Alux'
     cost = 3, power = 2, health = 4
-    number = 'AL1-D13', rarity = rare, family = @aluxes
+    number = 'AL1-D13', rarity = rare
     art = 'art/illustrations/AL1-D13.webp'
     text = 'Once per round, when you heal 1 or more damage from a unit, draw a card.'
     flavor = 'Stops travellers and asks for a little something. Give it, and luck follows you home.'
@@ -144,7 +141,7 @@ cards = [
   the-alux-of-the-sacred-cenote = Fabled {
     name = 'The Alux of the Sacred Cenote'
     cost = 4, power = 3, health = 5
-    number = 'AL1-D14', rarity = rare, family = @aluxes
+    number = 'AL1-D14', rarity = rare
     art = 'art/illustrations/AL1-D14.webp'
     keywords = [@Guardian]
     text = 'Guardian. At the start of each round, heal 1 from each unit you control.'
@@ -153,23 +150,23 @@ cards = [
   the-bridge-alux-of-cancun = Fabled {
     name = 'The Bridge Alux of Cancún'
     cost = 6, power = 6, health = 7
-    number = 'AL1-D15', rarity = rare, family = @aluxes
+    number = 'AL1-D15', rarity = rare
     art = 'art/illustrations/AL1-D15.webp'
     keywords = [@Guardian, Applied { keyword = @Tough, n = 1 }]
     text = 'Guardian. Tough 1.'
     flavor = 'The bridge fell three times. Then they built him a house, and it stood.'
   }
-  the-alux-s-dog = Creature {
+  the-aluxs-dog = Creature {
     name = 'The Alux''s Dog'
     cost = 1, power = 2, health = 1
-    number = 'AL1-D16', rarity = common, family = @aluxes
+    number = 'AL1-D16', rarity = common
     art = 'art/illustrations/AL1-D16.webp'
     flavor = 'Where an alux walks, a little dog trots behind.'
   }
   toh = Creature {
     name = 'Toh', epithet = 'the Cenote Bird'
     cost = 3, power = 2, health = 3
-    number = 'AL1-D17', rarity = common, family = @aluxes
+    number = 'AL1-D17', rarity = common
     art = 'art/illustrations/AL1-D17.webp'
     text = 'Hello: Draw a card.'
     flavor = 'Nests in the walls of the cenote and knows everything that goes on there.'
@@ -177,7 +174,7 @@ cards = [
   a-sweet-on-the-doorstep = Charm {
     name = 'A Sweet on the Doorstep'
     cost = 1
-    number = 'AL1-D18', rarity = uncommon, family = @aluxes
+    number = 'AL1-D18', rarity = uncommon
     art = 'art/illustrations/AL1-D18.webp'
     keywords = [@Ambush]
     text = 'Ambush. A unit you control gets +2 Power this round.'
@@ -186,7 +183,7 @@ cards = [
   lost-in-the-monte = Charm {
     name = 'Lost in the Monte'
     cost = 1
-    number = 'AL1-D19', rarity = uncommon, family = @aluxes
+    number = 'AL1-D19', rarity = uncommon
     art = 'art/illustrations/AL1-D19.webp'
     keywords = [@Lucky]
     text = 'Lucky. Exhaust an enemy unit.'

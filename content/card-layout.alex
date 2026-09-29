@@ -14,10 +14,10 @@ fonts = [
 
 frames = [
   Printed = Frame {
-    image = 'art/frames/{family}/{finish}.png'
-    ink = '{family.dark}'
-    accent = '{family.main}'
-    tint = '{family.tint}'
+    image = 'art/frames/{set}/{finish}.png'
+    ink = '{set.colors.dark}'
+    accent = '{set.colors.main}'
+    tint = '{set.colors.tint}'
   }
   Hero = Frame {
     image = 'art/frames/hero/{finish}.png'
@@ -71,7 +71,7 @@ parts = [
     outline = ink
   }
   type-line = Label {
-    show = '{type} · {family.name}'
+    show = '{type} · {set.name}'
     box = Box { x = 62, y = 600, width = 460, height = 44 }
     font = @bold
     size = 25

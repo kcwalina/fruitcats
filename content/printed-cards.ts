@@ -1,4 +1,4 @@
-// The printed cards: each released set's cards as Alex (content/<y>/<m>/<set>/<code>.alex), which tcg renders
+// The printed cards: each released set's cards as Alex (content/<y>/<m>/<set>/<set>.alex), which tcg renders
 // into art/cards/ (cardengine/tcg: tcg cards --project content --out art/cards). Until the engine reads Alex, the
 // game still reads set.json, so the two must say the same thing; check-set compares them on every deploy.
 //
@@ -6,7 +6,7 @@
 // flavor, a Hero's back, and text tables. It is not an Alex parser; the TypeScript Alex will replace it.
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { CardDef, SetData } from '../packages/engine/src/index';
 
 export interface PrintedFace { name: string; text: string; flavor: string; cost?: number; power?: number; health?: number; rarity?: string }
@@ -21,8 +21,8 @@ function value(raw: string, texts: Map<string, string>): string | number {
 }
 
 /** The cards in a set's .alex file, by number; undefined when the set has none. */
-export function printedCards(folder: string, code: string): Map<string, PrintedCard> | undefined {
-  const file = join(folder, `${code.toLowerCase()}.alex`);
+export function printedCards(folder: string): Map<string, PrintedCard> | undefined {
+  const file = join(folder, `${basename(folder)}.alex`);
   if (!existsSync(file)) return undefined;
   const lines = readFileSync(file, 'utf8').replace(/\r/g, '').split('\n');
   const texts = new Map<string, string>();
@@ -74,10 +74,10 @@ export function printedCards(folder: string, code: string): Map<string, PrintedC
 
 /** Where a set's printed cards (its .alex) and its set.json disagree, one line each. */
 export function printedDifferences(folder: string, data: SetData, cards: CardDef[]): string[] {
-  const printed = printedCards(folder, data.set);
+  const printed = printedCards(folder);
   if (!printed) return [];
   const out: string[] = [];
-  const file = `${data.set.toLowerCase()}.alex`;
+  const file = `${basename(folder)}.alex`;
   const all = [...cards, ...((data.tokens ?? []) as CardDef[])];
   for (const c of all) {
     const p = printed.get(c.id);

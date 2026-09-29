@@ -123,7 +123,7 @@ function checkSet(set: ContentSet, games: number): Report {
   const missingCards = faces.filter((f) => !existsSync(join(art, 'cards', `${f}.webp`)));
   if (missingArt.length) r.warnings.push(`No illustration yet for ${missingArt.length} card face(s): ${missingArt.join(', ')} (art/illustrations/<id>.webp).`);
   // A set with printed cards in Alex is rendered by tcg; the others still by the old composer.
-  const printed = printedCards(join(HERE, set.folder), code);
+  const printed = printedCards(join(HERE, set.folder));
   const render = printed
     ? `tcg cards --project content --out art/cards --only ${missingCards.join(' ')}`
     : `python tools/compose_cards.py --set ${code.toLowerCase()}`;

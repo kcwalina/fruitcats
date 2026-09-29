@@ -9,6 +9,8 @@ sets = [
   @aluxes
   @jiaoren
   @hui-hai
+  @mochi
+  @flower-souls
 ]
 
 keywords = [
@@ -22,9 +24,11 @@ keywords = [
 ]
 
 enum Rarity { common, uncommon, rare, legendary }
-enum Finish { standard, foil, gold, prismatic }
+enum Finish { standard, foil, gold, prismatic, signature }
+enum Palette { citrus, orchard, tropical, garden, berry, melon, pepper, violet, sky, midnight, gold, ink, image }
 
-type Colors {
+type Family {
+  name: text
   main: text
   dark: text
   tint: text
@@ -34,6 +38,9 @@ type Printed : Card {
   number: text
   rarity: Rarity?
   epithet: text?
+  family: Family?
+  frame: Palette?
+  frame-image: text?
   finishes: [Finish] = [standard, foil, gold, prismatic]
 }
 type Creature : Printed {

@@ -3,7 +3,8 @@
 name = 'Hui Hai'
 code = 'HH1'
 
-colors = Colors {
+family = Family {
+  name = 'Hui Hai'
   main = '#4E9A3A'
   dark = '#24501A'
   tint = '#E9F5E1'
@@ -17,6 +18,7 @@ cards = [
   pebble = Hero {
     name = 'Pebble', epithet = 'the Littlest Hui Hai'
     number = 'HH1-H01', rarity = legendary
+    frame = gold
     art = 'art/HH1-H01-kitten.webp'
     text = @pebble-text
     flavor = 'Nobody has ever seen her. Plenty of people have met her pebbles.'

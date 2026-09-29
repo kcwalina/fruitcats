@@ -158,7 +158,8 @@ function checkSet(set: ContentSet, games: number): Report {
     for (const c of cards.filter((x) => pickFamilies.has(x.family)))
       if (!pictures.some((p) => p.card === c.id && (p as { frameChoice?: boolean }).frameChoice))
         r.errors.push(`Art brief: ${c.id} is ${c.family}, whose artist picks the frame colour; give its picture "frameChoice": true.`);
-    const noFrame = faces.filter((f) => briefed.has(f) && !existsSync(join(art, 'cards', 'frames', `${f}.webp`)));
+    // tcg draws a printed set's frames when it's published (content/tcg.ts).
+    const noFrame = printed ? [] : faces.filter((f) => briefed.has(f) && !existsSync(join(art, 'cards', 'frames', `${f}.webp`)));
     if (noFrame.length) r.warnings.push(`No Studio frame for ${noFrame.join(', ')} (python tools/compose_cards.py --set ${code.toLowerCase()} --frames).`);
   }
 

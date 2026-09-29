@@ -4,7 +4,8 @@ namespace Tcg;
 
 /// <summary>
 /// One printed face of a card, in one finish. A card has one face, or two when it has a <c>back</c>. A back face
-/// shows its own fields, and the front's for any field its type doesn't declare (number, rarity, family).
+/// shows its own fields, and the front's for any field its type doesn't declare (number, rarity, family). A field
+/// the card doesn't give comes from its set, when the set gives it as a field of its own (see <see cref="Project.SetWide"/>).
 /// </summary>
 internal sealed class Face
 {
@@ -46,6 +47,7 @@ internal sealed class Face
             if (Project.TypeValue(Card.TypeName, name) is { } frontTyped) { return new Project.Located(frontTyped, Project.Game, name); }
         }
 
+        if (Project.SetWide(Document, name) is { } setWide) { return new Project.Located(setWide, Document, name); }
         return default;
     }
 

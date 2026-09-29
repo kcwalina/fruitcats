@@ -4,16 +4,18 @@ using ViaMochi.Alex.Model;
 
 // tcg: the TCG developer platform's command-line tool.
 //
-//   tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--png] [--bleed]
+//   tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]
 //
 // Renders every card face of the project, in each finish it's printed in, into --out (default out/cards/{set}):
 // a folder relative to where tcg runs, where {set} is the name of the file the cards are written in. Finishes
-// other than standard go into a subfolder.
+// other than standard go into a subfolder. --frame draws every card in the layout's frame of that name; --no-art
+// leaves the pictures see-through (the art's window and a frame's texture), for a tool that shows an artist's
+// picture under the card.
 try
 {
     if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     {
-        Console.WriteLine("tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--png] [--bleed]");
+        Console.WriteLine("tcg cards [--project <folder>] [--set <name>] [--out <folder>] [--finish <name>] [--only <number>...] [--frame <name>] [--no-art] [--png] [--bleed]");
         return 0;
     }
 
@@ -34,7 +36,8 @@ static int Cards(string[] args)
     string projectDir = Directory.GetCurrentDirectory(), outDir = Path.Combine("out", "cards", "{set}");
     string? onlyFinish = null, onlySet = null;
     HashSet<string>? only = null;
-    bool png = false, bleed = false;
+    string? frame = null;
+    bool png = false, bleed = false, noArt = false;
     for (int i = 0; i < args.Length; i++)
     {
         switch (args[i])
@@ -45,6 +48,8 @@ static int Cards(string[] args)
             case "--set": onlySet = args[++i]; break;
             case "--png": png = true; break;
             case "--bleed": bleed = true; break;
+            case "--frame": frame = args[++i]; break;
+            case "--no-art": noArt = true; break;
             case "--only":
                 only = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 while (i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal)) { only.Add(args[++i]); }
@@ -54,7 +59,7 @@ static int Cards(string[] args)
     }
 
     Project project = Project.Load(projectDir);
-    Renderer renderer = new(project);
+    Renderer renderer = new(project) { FrameOverride = frame, NoArt = noArt };
     int written = 0;
     List<Document> documents = project.CardDocuments().Where(d => onlySet is null || d.Name == onlySet).ToList();
     if (onlySet is not null && documents.Count == 0) { throw new TcgException($"No set or cards file in the game is named {onlySet}."); }

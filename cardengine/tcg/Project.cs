@@ -33,8 +33,10 @@ internal sealed class Project
         Root = root;
         Documents = documents;
         Game = game;
-        Types = game.Alex.Types.Where(t => t.Value is AlexRecordType)
-            .ToDictionary(t => t.Key, t => (AlexRecordType)t.Value, StringComparer.Ordinal);
+        // The core's types (Card, Set…) and the game's own.
+        Types = CoreTypes.Concat(game.Alex.Types).Where(t => t.Value is AlexRecordType)
+            .GroupBy(t => t.Key, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => (AlexRecordType)g.Last().Value, StringComparer.Ordinal);
     }
 
     public static Project Load(string root)
@@ -80,6 +82,9 @@ internal sealed class Project
     }
 
     private static readonly IReadOnlyList<AlexSource> CoreSchema = LoadCore();
+
+    private static readonly IReadOnlyDictionary<string, AlexType> CoreTypes =
+        AlexDocument.Parse(CoreSchema[0].Bytes.ToArray(), new AlexBindOptions { SourceName = "core.alex", Accept = AlexAccept.Any }).Types;
 
     private static IReadOnlyList<AlexSource> LoadCore()
     {
@@ -203,6 +208,16 @@ internal sealed class Project
         }
 
         return current;
+    }
+
+    /// <summary>
+    /// A field a set (or cards file) gives for all its cards: one of its own that its document type doesn't declare,
+    /// like a Folkborn set's <c>family</c>. Its cards have it unless they give their own.
+    /// </summary>
+    public AlexValue? SetWide(Document document, string field)
+    {
+        if (document.DeclaredType is not { } type || !Types.ContainsKey(type)) { return null; }
+        return TypeChain(type).Any(t => t.OwnFields.Any(f => f.Name == field)) ? null : document.Alex.Root.Value(field);
     }
 
     /// <summary>A declared record type and its bases, nearest first.</summary>

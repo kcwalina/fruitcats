@@ -17,25 +17,85 @@ finishes = [
   foil = Finish { texture = 'art/finishes/foil.png', ink = '#4A5362' }
   gold = Finish { texture = 'art/finishes/gold.png', ink = '#5A3A04' }
   prismatic = Finish { texture = 'art/finishes/prismatic.png', ink = '#3A2A5A' }
+  signature = Finish { texture = 'art/finishes/rainbow-signature.png', ink = '#0B0810' }
+]
+
+file-names = [
+  Hero = '{number}-kitten'
+  Awakened = '{number}-bigcat'
 ]
 
 frames = [
-  Printed = Frame {
-    ink = '{set.colors.dark}'
-    accent = '{set.colors.main}'
-    tint = '{set.colors.tint}'
+  Card = Frame {
+    ink = '{family.dark}'
+    accent = '{family.main}'
+    tint = '{family.tint}'
   }
-  Hero = Frame {
+  citrus = Frame {
+    ink = '#A86400'
+    accent = '#F29F05'
+    tint = '#FFF1CC'
+  }
+  orchard = Frame {
+    ink = '#8E2A2A'
+    accent = '#D64545'
+    tint = '#FBE0DA'
+  }
+  tropical = Frame {
+    ink = '#A24E05'
+    accent = '#F2780C'
+    tint = '#FFE6CC'
+  }
+  garden = Frame {
+    ink = '#3B7430'
+    accent = '#5FA84D'
+    tint = '#E3F2DC'
+  }
+  berry = Frame {
+    ink = '#8F1D46'
+    accent = '#D6336C'
+    tint = '#FBDDE7'
+  }
+  melon = Frame {
+    ink = '#25714A'
+    accent = '#3FA66B'
+    tint = '#DDF3E6'
+  }
+  pepper = Frame {
+    ink = '#5A0E0A'
+    accent = '#D7261E'
+    tint = '#FFD6C2'
+  }
+  violet = Frame {
+    ink = '#1E1236'
+    accent = '#4A2F7A'
+    tint = '#EFE8FF'
+  }
+  sky = Frame {
+    ink = '#1D4A78'
+    accent = '#3B82C4'
+    tint = '#E1EEFB'
+  }
+  midnight = Frame {
+    ink = '#141C2B'
+    accent = '#2B3A55'
+    tint = '#E6ECF7'
+  }
+  gold = Frame {
     ink = '#7A5A0C'
     accent = '#C8961E'
     tint = '#FFF3CF'
-    file = '{number}-kitten'
   }
-  Awakened = Frame {
-    ink = '#7A5A0C'
-    accent = '#C8961E'
-    tint = '#FFF3CF'
-    file = '{number}-bigcat'
+  ink = Frame {
+    ink = '#161616'
+    accent = '#3A3A3A'
+    tint = '#EEEEEE'
+  }
+  image = Frame {
+    ink = '#161616'
+    accent = '#3A3A3A'
+    tint = '#EEEEEE'
+    texture = '{frame-image}'
   }
 ]
 
@@ -45,11 +105,27 @@ parts = [
     radius = 42
     fill = ink
     chrome = true
+    frame-texture = true
   }
   panel = Shape {
     box = Box { x = 21, y = 21, width = 708, height = 1008 }
     radius = 30
     fill = '#FFF8EC'
+  }
+  art-pending = Shape {
+    box = Box { x = 42, y = 138, width = 666, height = 444 }
+    radius = 18
+    fill = tint
+    unless = '{art}'
+  }
+  art-pending-note = Label {
+    show = 'art pending'
+    box = Box { x = 42, y = 138, width = 666, height = 444 }
+    font = @italic
+    size = 34
+    color = '#7A6A5C'
+    align = center
+    unless = '{art}'
   }
   art = Picture {
     show = '{art}'
@@ -64,6 +140,7 @@ parts = [
     outline-width = 6
     chrome = true
     chrome-width = 7
+    frame-texture = true
   }
   banner = Shape {
     box = Box { x = 36, y = 30, width = 679, height = 97 }
@@ -73,6 +150,22 @@ parts = [
     outline-width = 4
     chrome = true
     chrome-width = 5
+    frame-texture = true
+  }
+  banner-edge = Shape {
+    box = Box { x = 36, y = 30, width = 679, height = 97 }
+    radius = 26
+    outline = ink
+    outline-width = 4
+    only-with-frame-texture = true
+    only-without-finish = true
+  }
+  panel-inner-edge = Shape {
+    box = Box { x = 21, y = 21, width = 708, height = 1008 }
+    radius = 30
+    outline = ink
+    outline-width = 2
+    only-with-frame-texture = true
   }
   cost-circle = Shape {
     kind = circle
@@ -181,7 +274,7 @@ parts = [
     outline-width = 2
   }
   type-line = Label {
-    show = '{type} · {set.name}'
+    show = '{type} · {family.name}'
     box = Box { x = 62, y = 600, width = 460, height = 44 }
     font = @bold
     size = 25
@@ -197,6 +290,7 @@ parts = [
           foil = 'art/icons/finish-foil.png'
           gold = 'art/icons/finish-gold.png'
           prismatic = 'art/icons/finish-prismatic.png'
+          signature = 'art/icons/finish-rainbow-signature.png'
         ]
         width = 26
         height = 24

@@ -16,6 +16,7 @@ import {
 } from '../packages/engine/src/index';
 import { CONTENT, loadContent, type ContentSet } from './index';
 import { cardTexts, suggestText } from './rules-text';
+import { printedCards, printedDifferences } from './printed-cards';
 import TERMS from '../packages/engine/src/terms.json';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -121,7 +122,13 @@ function checkSet(set: ContentSet, games: number): Report {
   const missingArt = faces.filter((f) => !existsSync(join(art, 'illustrations', `${f}.webp`)));
   const missingCards = faces.filter((f) => !existsSync(join(art, 'cards', `${f}.webp`)));
   if (missingArt.length) r.warnings.push(`No illustration yet for ${missingArt.length} card face(s): ${missingArt.join(', ')} (art/illustrations/<id>.webp).`);
-  if (missingCards.length) r.warnings.push(`Not composed yet: ${missingCards.join(', ')} (python tools/compose_cards.py --set ${code.toLowerCase()}).`);
+  // A set with printed cards in Alex is rendered by tcg; the others still by the old composer.
+  const printed = printedCards(join(HERE, set.folder), code);
+  const render = printed
+    ? `tcg cards --project content --out art/cards --only ${missingCards.join(' ')}`
+    : `python tools/compose_cards.py --set ${code.toLowerCase()}`;
+  if (missingCards.length) r.warnings.push(`Not rendered yet: ${missingCards.join(', ')} (${render}).`);
+  for (const d of printedDifferences(join(HERE, set.folder), data, cards)) r.errors.push(`Printed cards: ${d}`);
   const promptsFile = join(art, 'prompts.json');
   if (existsSync(promptsFile)) {
     const subjects = JSON.parse(readFileSync(promptsFile, 'utf8')).subjects ?? {};

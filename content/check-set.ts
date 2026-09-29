@@ -127,7 +127,8 @@ function checkSet(set: ContentSet, games: number): Report {
   const render = printed
     ? `tcg cards --project content --out art/cards --only ${missingCards.join(' ')}`
     : `python tools/compose_cards.py --set ${code.toLowerCase()}`;
-  if (missingCards.length) r.warnings.push(`Not rendered yet: ${missingCards.join(', ')} (${render}).`);
+  // A set tcg renders has its finished cards made when it's published, not kept in the repository.
+  if (missingCards.length && !printed) r.warnings.push(`Not rendered yet: ${missingCards.join(', ')} (${render}).`);
   for (const d of printedDifferences(join(HERE, set.folder), data, cards)) r.errors.push(`Printed cards: ${d}`);
   const promptsFile = join(art, 'prompts.json');
   if (existsSync(promptsFile)) {

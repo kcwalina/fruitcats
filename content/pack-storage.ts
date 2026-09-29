@@ -81,7 +81,7 @@ export function differsFrom(repo: string, folder: string, ref = 'origin/main'): 
   if (git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]).status !== 0) return `there is no ${ref} here`;
   const changed = git(['diff', '--name-only', ref, '--', folder]);
   if (changed.status !== 0) return `git diff failed: ${changed.stderr.trim()}`;
-  const extra = git(['ls-files', '--others', '--', folder]);
+  const extra = git(['ls-files', '--others', '--exclude-standard', '--', folder]);
   const files = [...changed.stdout.split('\n'), ...extra.stdout.split('\n')].filter(Boolean);
   return files.length ? `${files.length} file(s) differ from ${ref}, e.g. ${files[0]}` : null;
 }

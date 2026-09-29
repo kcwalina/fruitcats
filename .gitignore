@@ -27,3 +27,10 @@ playtest/paw/obj/
 
 # The API run locally (npm run api:local) keeps its rows here.
 .local-api/
+
+# Finished cards tcg renders from each set's Alex sources (content/tcg.ts): build output, never committed.
+content/2026/10/domowiki/art/cards/
+content/2026/10/pari/art/cards/
+content/2026/11/aluxes/art/cards/
+content/2026/12/jiaoren/art/cards/
+content/2027/01/hui-hai/art/cards/

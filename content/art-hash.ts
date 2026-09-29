@@ -1,4 +1,6 @@
-// A set's art, fingerprinted: one hash over every illustration and finished card in its folder. publish-pack
+// A set's art, fingerprinted: one hash over every illustration and finished card in its folder. For a set whose
+// cards tcg renders (content/tcg.ts), the finished cards aren't in the folder: they're build output, so the hash is
+// over their sources instead (its paintings, its cards in Alex, the game's card layout, frames and icons, and tcg). publish-pack
 // uploads the art to a folder named by it (<set>/art/<fingerprint>/, content/pack-storage.ts), and the game's build
 // points at the folder of its own art and refuses while the storage doesn't have it yet (apps/web/vite.config.ts).
 //
@@ -9,6 +11,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { cardSources, isText, renderedByTcg } from './tcg';
 
 /** The folders of a set that hold its art, relative to the set's folder. */
 export const ART_DIRS = ['art/illustrations', 'art/cards'];
@@ -23,19 +26,22 @@ export function artFiles(root: string): string[] {
       else files.push(`${rel}${name}`);
     }
   };
-  for (const d of ART_DIRS) if (existsSync(join(root, d))) walk(join(root, d), `${d}/`);
+  const dirs = renderedByTcg(root) ? ART_DIRS.filter((d) => d !== 'art/cards') : ART_DIRS;
+  for (const d of dirs) if (existsSync(join(root, d))) walk(join(root, d), `${d}/`);
   return files.sort();
 }
 
 /** The fingerprint of the set's art, or null when the set has no art at all. */
 export function artHash(root: string): string | null {
-  const files = artFiles(root);
+  const files: [string, string][] = artFiles(root).map((f) => [f, join(root, f)]);
   if (!files.length) return null;
+  if (renderedByTcg(root)) files.push(...cardSources(root).map(([name, path]): [string, string] => [`source:${name}`, path]));
   const hash = createHash('sha256');
-  for (const file of files) {
-    hash.update(file);
+  for (const [name, path] of files) {
+    hash.update(name);
     hash.update('\0');
-    hash.update(readFileSync(join(root, file)));
+    const bytes = readFileSync(path);
+    hash.update(isText(path) ? bytes.toString('utf8').replace(/\r\n/g, '\n') : bytes);
     hash.update('\0');
   }
   return hash.digest('hex');

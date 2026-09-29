@@ -62,6 +62,13 @@ static int Cards(string[] args)
     Renderer renderer = new(project) { FrameOverride = frame, NoArt = noArt };
     int written = 0;
     List<Document> documents = project.CardDocuments().Where(d => onlySet is null || d.Name == onlySet).ToList();
+    // A set the game doesn't list (a prototype) is rendered only when asked for by name.
+    if (onlySet is not null && documents.Count == 0 && project.Documents.TryGetValue(onlySet, out Document? unlisted)
+        && unlisted.DeclaredType is "Set" or "Cards")
+    {
+        documents.Add(unlisted);
+    }
+
     if (onlySet is not null && documents.Count == 0) { throw new TcgException($"No set or cards file in the game is named {onlySet}."); }
     foreach (Document document in documents)
     {

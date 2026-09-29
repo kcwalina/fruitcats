@@ -23,7 +23,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artHash } from './art-hash';
-import { pictureFolders, renderCards } from './tcg';
+import { briefFile, gameSet, pictureFolders, renderCards } from './tcg';
 import { runChecks } from './check-set';
 import { PACKS_URL, artPaths, artPublished, dataPath, differsFrom, updateIndex, withEntry, type IndexStore, type PackEntry, type PackIndex } from './pack-storage';
 
@@ -125,6 +125,8 @@ async function main(): Promise<void> {
     renderCards(root, cards);
     for (const dir of pictureFolders(root)) if (existsSync(dir)) uploadDir(dir, paths.art.slice(0, -1), FOREVER);
     if (existsSync(cards)) uploadDir(cards, paths.cards.slice(0, -1), FOREVER);
+    // A Studio project (a set with an art brief) as its folder: its Alex files and paintings, which the Studio reads.
+    if (briefFile(root)) uploadDir(gameSet(root), paths.project.slice(0, -1), FOREVER);
     // The marker after the art: a build ships only when the storage has all the art it was built for (vite.config.ts).
     writeFileSync(join(temp, 'art.json'), JSON.stringify({ hash, published }));
     uploadFile(join(temp, 'art.json'), paths.marker, 'application/json', 'no-cache');

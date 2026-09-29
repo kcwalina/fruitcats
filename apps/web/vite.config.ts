@@ -6,7 +6,7 @@ import { Marked } from 'marked';
 import { defineConfig, type Plugin } from 'vite';
 import { artHash } from '../../content/art-hash';
 import { artPaths, artPublished } from '../../content/pack-storage';
-import { pictureFolders } from '../../content/tcg';
+import { briefFile, gameSet, pictureFolders } from '../../content/tcg';
 import { CONTENT as GAME_SETS } from '../../content/index';
 import { isShellFile, precacheProblems } from './src/sw-rules';
 
@@ -241,12 +241,15 @@ function packFiles(localArt: boolean): Record<string, string> {
     }, null, 1),
   };
   for (const s of sets) files[`packs/${s.code}/set.json`] = JSON.stringify(s.data);
-  // The Artist Studio (studio.html): each set's art brief, and the list of sets that have one.
-  const briefs = sets.filter((s) => existsSync(join(s.root, 'art', 'brief.json')));
+  // The Artist Studio (studio.html): the list of its projects, the sets with an art brief (<set>-brief.alex), and
+  // where each project's folder is: on the pack storage beside the set's art, or here (contentMounts).
+  const projects = sets.filter((s) => briefFile(s.root));
   files['studio/index.json'] = JSON.stringify({
-    sets: briefs.map((s) => ({ set: s.data.set, code: s.code, name: s.data.name, status: s.data.status, folder: s.folder })),
+    sets: projects.map((s) => ({
+      set: s.data.set, code: s.code, name: s.data.name, status: s.data.status, folder: s.folder,
+      project: (localArt || !s.registered ? undefined : artBasesOf(builtArt())[s.code]?.project) ?? `studio/${s.code}/project/`,
+    })),
   }, null, 1);
-  for (const s of briefs) files[`studio/${s.code}/brief.json`] = readFileSync(join(s.root, 'art', 'brief.json'), 'utf8');
   return files;
 }
 
@@ -261,6 +264,7 @@ function contentMounts(): { url: string; dir: string; build: boolean }[] {
       // (npm run cards; content/tcg.ts).
       ...pictureFolders(root).map((dir) => ({ url: `/${code}/`, dir, build: LOCAL_ART || !registered })),
       { url: `/cards/${code}/`, dir: join(REPO_ROOT, 'out', 'cards', basename(root)), build: LOCAL_ART || !registered },
+      ...(briefFile(root) ? [{ url: `/studio/${code}/project/`, dir: gameSet(root), build: LOCAL_ART || !registered }] : []),
       { url: `/announcements/${folder}/`, dir: join(root, 'announcement'), build: true },
       // Legend Pawtraits come with a card of the set; everyday ones (art/avatars/, the public folder) share /avatars/.
       { url: '/avatars/', dir: join(root, 'avatars'), build: true },
@@ -280,10 +284,10 @@ function builtArt(): { code: string; folder: string; hash: string }[] {
 }
 
 /** Each set's art addresses on the pack storage, by code: in its fingerprint's folder. */
-function artBasesOf(art: { code: string; hash: string }[]): Record<string, { art: string; cards: string }> {
+function artBasesOf(art: { code: string; hash: string }[]): Record<string, { art: string; cards: string; project: string }> {
   return Object.fromEntries(art.map(({ code, hash }) => {
     const p = artPaths(code, hash);
-    return [code, { art: `${PACKS}${p.art}`, cards: `${PACKS}${p.cards}` }];
+    return [code, { art: `${PACKS}${p.art}`, cards: `${PACKS}${p.cards}`, project: `${PACKS}${p.project}` }];
   }));
 }
 

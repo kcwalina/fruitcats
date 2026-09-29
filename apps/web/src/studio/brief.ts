@@ -53,7 +53,11 @@ export interface BriefPicture {
 export function briefFromAlex(folder: AlexFolder, name: string): Brief {
   const doc = folder.documents.get(name);
   if (!doc || doc.type !== 'ArtBrief') throw new Error(`${name}.alex isn't an art brief (#type ArtBrief).`);
-  const at = (v: AlexValue | undefined) => folder.resolve(v, name);
+  const at = (v: AlexValue | undefined) => {
+    const found = folder.resolve(v, name);
+    if (v?.kind === 'ref' && found === undefined) throw new Error(`${name}.alex, line ${v.line}: nothing is named @${v.path.join('.')}.`);
+    return found;
+  };
   const text = (o: AlexObject, field: string) => textOf(at(o.get(field)));
   const set = objectOf(at(doc.root.get('set')));
   const entries = (v: AlexValue | undefined) => [...(objectOf(at(v))?.entries ?? [])];

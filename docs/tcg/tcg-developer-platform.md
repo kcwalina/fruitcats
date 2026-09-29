@@ -320,7 +320,10 @@ session).
 Folkborn is the platform's first real game (2026-09-28). `games/folkborn/` holds only its sources: `folkborn.alex`
 (the game and its card types), `card-layout.alex` (its card design, drawn from shapes), `art/icons/` and
 `art/finishes/` (the foil, gold and prismatic textures), and for each
-released set `sets/<set>/<set>.alex` (its cards) with the paintings they name (`sets/<set>/art/`). Nothing in it
+released set `sets/<set>/<set>.alex` (its cards) with the paintings they name (`sets/<set>/art/`). A set that isn't
+part of the game yet is in `prototypes/<set>/` (Flower Souls, the owner's decision of 2026-09-29): it isn't in the game's
+`sets`, and tcg renders it only when asked for it by name (`--set flower-souls`). A set's folder may also hold its art
+brief for the Artist Studio (`<set>-brief.alex`), which makes the folder a Studio project. Nothing in it
 is generated. `npm run cards` renders every card into `out/cards/<set>/` (ignored by git), and `publish-pack` renders
 a set into a fresh folder and uploads that; copying `games/folkborn/` anywhere and running `tcg cards` there makes
 the same cards, pixel for pixel. `content/<set>/` keeps what the current engine and web app still read (`set.json`,

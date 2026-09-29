@@ -10,6 +10,7 @@ import { artBases, esc } from '../ui';
 import { renderWallpaper, type Device } from '../wallpaper';
 import type { Finish } from '../collection';
 import type { BriefPicture } from './brief';
+import type { StudioCard } from './cards';
 
 /** The card's picture window, as fractions of the 750 × 1050 card (the art box in games/folkborn/card-layout.alex). */
 const ART = { left: 42 / 750, top: 138 / 1050, width: 666 / 750, height: 444 / 1050 };
@@ -61,25 +62,22 @@ export function cardPreview(code: string, key: string, finish: string, art: stri
   </div>`;
 }
 
-/** Where a card's face is on the board: a unit tile (Critters, Cats, tokens) or the hero tile (Hero Cats). */
-function boardShape(p: BriefPicture): 'unit' | 'hero' | null {
-  if (!p.card) return null;
-  const card = CARDS[p.card];
+/** Where a card's face is on the board: the hero tile for a two-faced card (a Hero), a unit tile for a card with Health. */
+function boardShape(p: BriefPicture, card: StudioCard | null): 'unit' | 'hero' | null {
   if (!card) return p.kind === 'token' ? 'unit' : null;
-  if (card.type === 'Hero Cat') return 'hero';
-  return card.type === 'Critter' || card.type === 'Cat' || p.kind === 'token' ? 'unit' : null;
+  if (card.back) return 'hero';
+  return card.health !== undefined || p.kind === 'token' ? 'unit' : null;
 }
 
-function faceOf(p: BriefPicture) {
-  const card = p.card ? CARDS[p.card] : undefined;
-  const face = p.side === 'kitten' ? card?.kitten : p.side === 'bigcat' ? card?.bigCat : card;
-  return { card, name: face?.name ?? p.workingName ?? p.file, power: face?.power ?? card?.power, health: p.side ? undefined : card?.health };
+function faceOf(p: BriefPicture, card: StudioCard | null) {
+  const face = p.side === 'bigcat' ? card?.back ?? card : card;
+  return { name: face?.name ?? p.workingName ?? p.file, power: face?.power, health: p.side ? undefined : card?.health };
 }
 
 /** The picture as the game shows it during play, on a phone and on a computer. */
-export function gamePreview(p: BriefPicture, art: string | null, code: string, key: string): string {
-  const shape = boardShape(p);
-  const { card, name, power, health } = faceOf(p);
+export function gamePreview(p: BriefPicture, card: StudioCard | null, art: string | null, code: string, key: string): string {
+  const shape = boardShape(p, card);
+  const { name, power, health } = faceOf(p, card);
   const family = (p.family ?? card?.family ?? 'garden').toLowerCase();
   const bg = art ? `background-image:url(${art})` : '';
   const tile = (height: number) => shape === 'hero'

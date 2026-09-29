@@ -11,7 +11,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { GAME, cardSources, isText, pictureFolders } from './tcg';
+import { GAME, briefFile, cardSources, isText, pictureFolders } from './tcg';
 
 function walk(dir: string, rel: string, into: [string, string][]): void {
   for (const name of readdirSync(dir).sort()) {
@@ -36,11 +36,14 @@ export function artFiles(root: string, game = GAME): string[] {
   return artEntries(root, game).map(([name]) => name);
 }
 
-/** The fingerprint of the set's art, or null when the set has no art at all. */
+/**
+ * The fingerprint of the set's art, or null when the set has no art at all. A Studio project (a set with an art brief)
+ * always has one, pictures or not: its Studio frames and its project files are published under it.
+ */
 export function artHash(root: string, game = GAME): string | null {
   // Art files byte for byte, as always; the sources with their line endings made the same everywhere.
   const files: [string, string, boolean][] = artEntries(root, game).map(([name, path]) => [name, path, false]);
-  if (!files.length) return null;
+  if (!files.length && !briefFile(root, game)) return null;
   files.push(...cardSources(root, game).map(([name, path]): [string, string, boolean] => [`source:${name}`, path, isText(path)]));
   const hash = createHash('sha256');
   for (const [name, path, text] of files) {

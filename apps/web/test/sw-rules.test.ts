@@ -162,7 +162,7 @@ describe('the build list', () => {
       'sounds/ability.mp3', 'sounds/hit-bad.wav', 'packs/index.json', 'packs/dw1/set.json'])
       expect(isShellFile(f), f).toBe(true);
     for (const f of ['studio.html', 'portal.html', 'playtests.html', 'docs.html', 'rules.html', 'terms.html', 'guide/play/solo.webp', 'studio/index.json',
-      'studio/dw1/brief.json', 'cards/mc1/MC1-X01.webp', 'mc1/MC1-X01.webp', 'avatars/apple.webp', 'announcements/domowiki/index.html',
+      'studio/mc1/project/mochi-brief.alex', 'cards/mc1/MC1-X01.webp', 'mc1/MC1-X01.webp', 'avatars/apple.webp', 'announcements/domowiki/index.html',
       'prompts.json', 'staticwebapp.config.json', 'sounds/CREDITS.md', 'ui/app-icon.webp', 'version.json', 'sw.js'])
       expect(isShellFile(f), f).toBe(false);
   });

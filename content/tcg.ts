@@ -1,6 +1,8 @@
 // tcg (cardengine/tcg) renders every set's finished cards. The cards are defined in the game folder,
 // games/folkborn/: the game and its card layout (folkborn.alex, card-layout.alex), its icons and finish textures (art/), and
-// for each set its cards (sets/<set>/<set>.alex) and the paintings they name (sets/<set>/art/). That folder holds
+// for each set its cards (sets/<set>/<set>.alex) and the paintings they name (sets/<set>/art/); a set that isn't part
+// of the game yet is in prototypes/<set>/ instead. A set's folder may hold its art brief for the Artist Studio
+// (<set>-brief.alex), which makes it a Studio project. The game folder holds
 // sources only. The finished cards are build output, never committed: tcg makes them from the sources, so what's
 // published can only be what the sources say.
 //
@@ -11,6 +13,8 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AlexFolder, parseAlex } from '../cardengine/alex/alex';
+import { briefFromAlex, type Brief } from '../apps/web/src/studio/brief';
 
 const CONTENT = dirname(fileURLToPath(import.meta.url));
 const REPO = dirname(CONTENT);
@@ -19,8 +23,33 @@ const TCG = join(REPO, 'cardengine', 'tcg');
 /** Folkborn's game folder: its cards, card layout and the assets they're made from. */
 export const GAME = join(REPO, 'games', 'folkborn');
 
-/** Where the cards of the set in `root` (a folder in content/) are defined, in the game folder. */
-export const gameSet = (root: string, game = GAME) => join(game, 'sets', basename(root));
+/**
+ * Where the cards of the set in `root` (a folder in content/) are defined, in the game folder: sets/<set>, or
+ * prototypes/<set> for a prototype, which tcg renders only when asked for it by name.
+ */
+export function gameSet(root: string, game = GAME): string {
+  const prototype = join(game, 'prototypes', basename(root));
+  return existsSync(prototype) ? prototype : join(game, 'sets', basename(root));
+}
+
+/** The set's art brief for the Artist Studio (<set>-brief.alex in its folder), or null when it has none. */
+export function briefFile(root: string, game = GAME): string | null {
+  const file = join(gameSet(root, game), `${basename(root)}-brief.alex`);
+  return existsSync(file) ? file : null;
+}
+
+/** The set's Alex files, read: its cards, its brief. */
+export function setDocuments(root: string, game = GAME): AlexFolder {
+  const dir = gameSet(root, game);
+  return new AlexFolder(new Map(readdirSync(dir).filter((f) => f.endsWith('.alex')).sort()
+    .map((f) => [f.slice(0, -'.alex'.length), parseAlex(readFileSync(join(dir, f), 'utf8'), relative(REPO, join(dir, f)))])));
+}
+
+/** The set's art brief, as the Studio reads it, or null when it has none. */
+export function readBrief(root: string, game = GAME): Brief | null {
+  const file = briefFile(root, game);
+  return file ? briefFromAlex(setDocuments(root, game), basename(file, '.alex')) : null;
+}
 
 /** Folders that hold a set's pictures: content/<set>/art/illustrations, and its card paintings in the game folder. */
 export function pictureFolders(root: string, game = GAME): string[] {
@@ -40,11 +69,13 @@ function walk(dir: string, keep: (file: string) => boolean = () => true): string
 }
 
 /**
- * Everything a set's finished cards are made from besides its paintings: as [a stable name, the file's
- * path]. The set's cards by their file name; the game's shared sources and tcg relative to their folders.
+ * Everything a set's finished cards (and a Studio project's frames) are made from besides its paintings: as [a stable
+ * name, the file's path]. The set's Alex files (its cards, its brief) by their file name; the game's shared sources
+ * and tcg relative to their folders.
  */
 export function cardSources(root: string, game = GAME): [string, string][] {
-  const own = `${basename(root)}.alex`;
+  const dir = gameSet(root, game);
+  const own = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.alex')).sort() : [];
   const shared: [string, string][] = [
     ...readdirSync(game).filter((f) => f.endsWith('.alex')).map((f): [string, string] => [`game/${f}`, join(game, f)]),
     ...walk(join(game, 'art')).map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
@@ -53,7 +84,7 @@ export function cardSources(root: string, game = GAME): [string, string][] {
     // The C# Alex tcg builds against, by its projects (their version): source in the mochi repository beside this one.
     ...['Alex/ViaMochi.Alex.csproj', 'Alex.Model/ViaMochi.Alex.Model.csproj'].map((f): [string, string] => [`alex/${f}`, join(alexSource(), f)]),
   ];
-  return [[own, join(gameSet(root, game), own)], ...shared.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))];
+  return [...own.map((f): [string, string] => [f, join(dir, f)]), ...shared.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))];
 }
 
 /** The C# Alex's source folder, in the mochi repository checked out beside this one (as cardengine/tcg/Tcg.csproj finds it). */
@@ -74,7 +105,7 @@ export const isText = (file: string) => /\.(alex|cs|csproj|json|md)$/.test(file)
  */
 export function renderCards(root: string, out: string): void {
   tcg(root, out);
-  if (existsSync(join(root, 'art', 'brief.json'))) renderStudioFrames(root, join(out, 'frames'));
+  if (briefFile(root)) renderStudioFrames(root, join(out, 'frames'));
 }
 
 /**
@@ -85,12 +116,12 @@ export function renderCards(root: string, out: string): void {
  */
 function renderStudioFrames(root: string, out: string): void {
   tcg(root, out, '--no-art');
-  const brief = JSON.parse(readFileSync(join(root, 'art', 'brief.json'), 'utf8')) as { pictures?: { card?: string; frameChoice?: boolean }[] };
+  const brief = readBrief(root)!;
   const data = JSON.parse(readFileSync(join(root, 'set.json'), 'utf8')) as {
     families?: Record<string, { frameChoice?: boolean }>; cards: { id: string; family: string }[];
   };
   const choosing = new Set([
-    ...(brief.pictures ?? []).filter((p) => p.frameChoice && p.card).map((p) => p.card!),
+    ...brief.pictures.filter((p) => p.frameChoice && p.card).map((p) => p.card!),
     ...data.cards.filter((c) => data.families?.[c.family]?.frameChoice).map((c) => c.id),
   ]);
   if (choosing.size === 0) return;

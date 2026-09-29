@@ -23,10 +23,13 @@ export const PACKS_URL = 'https://fruitcatspacks.blob.core.windows.net/packs/';
 /** A fingerprint as it appears in an address: short, and still far from ever meeting another. */
 export const addressOf = (fingerprint: string) => fingerprint.slice(0, 16);
 
-/** Where a set's art with this fingerprint lives, relative to the storage. `marker` is written last, when all of it is up. */
-export function artPaths(code: string, hash: string): { dir: string; art: string; cards: string; marker: string } {
+/**
+ * Where a set's art with this fingerprint lives, relative to the storage. `project`: a Studio project's folder (the
+ * set's Alex files and paintings, as in games/folkborn/). `marker` is written last, when all of it is up.
+ */
+export function artPaths(code: string, hash: string): { dir: string; art: string; cards: string; project: string; marker: string } {
   const dir = `${code}/art/${addressOf(hash)}/`;
-  return { dir, art: `${dir}illustrations/`, cards: `${dir}cards/`, marker: `${dir}art.json` };
+  return { dir, art: `${dir}illustrations/`, cards: `${dir}cards/`, project: `${dir}project/`, marker: `${dir}art.json` };
 }
 
 /** Where this exact set data lives, relative to the storage. */

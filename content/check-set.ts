@@ -17,7 +17,8 @@ import {
 import { CONTENT, loadContent, type ContentSet } from './index';
 import { cardTexts, suggestText } from './rules-text';
 import { printedCards, printedDifferences } from './printed-cards';
-import { gameSet, pictureFolders } from './tcg';
+import { briefFile, gameSet, pictureFolders, readBrief } from './tcg';
+import type { Brief } from '../apps/web/src/studio/brief';
 import TERMS from '../packages/engine/src/terms.json';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -132,27 +133,28 @@ function checkSet(set: ContentSet, games: number): Report {
     const noPrompt = faces.filter((f) => !subjects[f]);
     if (noPrompt.length) r.notes.push(`No art prompt for ${noPrompt.join(', ')} (fine if an artist draws them).`);
   }
-  // The art brief, for the Artist Studio (docs/artist-studio-plan.md): a picture for every card face, each on a
-  // real card and in a real step, and the Studio's frames drawn.
-  const briefFile = join(art, 'brief.json');
-  if (existsSync(briefFile)) {
-    const brief = JSON.parse(readFileSync(briefFile, 'utf8')) as { milestones?: { id: unknown }[]; pictures?: { file: string; card: string | null; milestone: unknown; size?: number[] }[] };
-    const pictures = brief.pictures ?? [];
-    const steps = new Set((brief.milestones ?? []).map((m) => String(m.id)));
+  // The art brief, for the Artist Studio (docs/artist-studio-plan.md): <set>-brief.alex in the set's folder, with a
+  // picture for every card face, each on a real card. tcg draws the Studio's frames when the set is published.
+  if (briefFile(join(HERE, set.folder))) {
+    let brief: Brief | null = null;
+    try {
+      brief = readBrief(join(HERE, set.folder));
+    } catch (e) {
+      r.errors.push(`Art brief: ${(e as Error).message}`);
+    }
+    const pictures = brief?.pictures ?? [];
     const briefed = new Set(pictures.map((p) => p.file.replace(/\.[a-z]+$/i, '')));
     const unbriefed = faces.filter((f) => !briefed.has(f));
-    if (unbriefed.length) r.warnings.push(`The art brief has no picture for ${unbriefed.join(', ')}.`);
+    if (brief && unbriefed.length) r.warnings.push(`The art brief has no picture for ${unbriefed.join(', ')}.`);
     for (const p of pictures) {
       if (!/^[A-Za-z0-9][A-Za-z0-9-]*\.webp$/.test(p.file)) r.errors.push(`Art brief: "${p.file}" isn't a file name the Studio can use (letters, digits and dashes, .webp).`);
       if (p.card && !ids.has(p.card)) r.errors.push(`Art brief: ${p.file} is for card ${p.card}, which isn't in the set.`);
-      if (!steps.has(String(p.milestone))) r.errors.push(`Art brief: ${p.file} is in step ${String(p.milestone)}, which isn't one of its milestones.`);
-      if (!Array.isArray(p.size) || p.size.length !== 2) r.errors.push(`Art brief: ${p.file} needs a size, [width, height].`);
+      if (!(p.size[0] > 0 && p.size[1] > 0)) r.errors.push(`Art brief: ${p.file} needs a size, [width, height].`);
     }
     const pickFamilies = new Set(Object.entries(data.families ?? {}).filter(([, f]) => (f as { frameChoice?: boolean }).frameChoice).map(([n]) => n));
-    for (const c of cards.filter((x) => pickFamilies.has(x.family)))
-      if (!pictures.some((p) => p.card === c.id && (p as { frameChoice?: boolean }).frameChoice))
-        r.errors.push(`Art brief: ${c.id} is ${c.family}, whose artist picks the frame colour; give its picture "frameChoice": true.`);
-    // tcg draws the Studio's frames when the set is published (content/tcg.ts).
+    for (const c of brief ? cards.filter((x) => pickFamilies.has(x.family)) : [])
+      if (!pictures.some((p) => p.card === c.id && p.frameChoice))
+        r.errors.push(`Art brief: ${c.id} is ${c.family}, whose artist picks the frame colour; give its picture frame-choice = true.`);
   }
 
   // 7. Bots

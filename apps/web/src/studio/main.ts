@@ -7,8 +7,9 @@
 // (#/mc1/MC1-X01), and the list of projects (#/). One render() draws the page from `S`; clicks and typing are handled by
 // data-click and data-in attributes, as in the game.
 
+// The game's cards, for the wallpaper previews only (src/wallpaper.ts draws a card from the game's own data).
 import '../content';
-import { registerSet, TERMS, type SetData } from '@fruitcats/engine';
+import { AlexFolder, parseAlex } from '../../../../cardengine/alex/alex';
 import { session, signOut } from '../auth';
 import { apiPolicy, fetchRetry } from '../net';
 import { BASE, esc } from '../ui';
@@ -16,14 +17,16 @@ import * as api from './api';
 import { DEV, devUser, setDevUser, type Comment, type Me, type SetView, type Suggestion, type Version } from './api';
 import {
   FIELD_NAMES, STATE_NAMES, TIER_NAMES, keyOf, nextAction, nextPicture, overall, stateOf, steps, versionsOf,
-  type Brief, type BriefPicture, type State,
+  briefFromAlex, type Brief, type BriefPicture, type State,
 } from './brief';
+import { cardsOf, type StudioCard } from './cards';
 import { DEVICES, LOCK_CLOCK, PALETTES, announcementPreview, cardPreview, finishesOf, frameImages, framePalettes, gamePreview, pawtraitPreview, wallpaper } from './previews';
 import { renderSignIn, signInClick, signInEnter, signInInput } from './signin';
 import { STUDIO_TERMS, STUDIO_TERMS_VERSION } from './terms';
 import './studio.css';
 
-interface SetEntry { set: string; code: string; name: string; status: string; folder: string }
+/** A Studio project: a set with an art brief, and where its folder (its Alex files and paintings) is published. */
+interface SetEntry { set: string; code: string; name: string; status: string; folder: string; project: string }
 interface LocalPicture { url: string; file: File; width: number; height: number; format: string }
 type Tab = 'card' | 'picture' | 'game' | 'wallpaper';
 type Route = { page: 'sets' } | { page: 'home'; code: string } | { page: 'all'; code: string } | { page: 'comments'; code: string } | { page: 'picture'; code: string; key: string };
@@ -114,11 +117,12 @@ function go(hash: string) {
 }
 
 /** One of the Studio's own files. Tried once more after a dropped connection, and never waited on for ever. */
-async function staticJson<T>(url: string): Promise<T> {
+async function staticFile(url: string): Promise<Response> {
   const r = await fetchRetry(url, { cache: 'no-cache' }, apiPolicy('GET'));
   if (!r.ok) throw new Error(`${url}: ${r.status}`);
-  return r.json() as Promise<T>;
+  return r;
 }
+const staticJson = async <T>(url: string): Promise<T> => (await staticFile(url)).json() as Promise<T>;
 
 async function boot() {
   S.booting = true;
@@ -188,13 +192,15 @@ function visibleSets(): SetEntry[] {
 async function loadSet(code: string) {
   if (!S.briefs.has(code)) {
     try {
-      const [brief, data] = await Promise.all([
-        staticJson<Brief>(`${BASE}studio/${code}/brief.json`),
-        staticJson<SetData>(`${BASE}packs/${code}/set.json`),
-      ]);
-      try { registerSet(data); } catch { /* the previews that need card data are skipped */ }
-      for (const c of [...data.cards, ...(data.tokens ?? [])]) setCards.set(c.id, c as unknown as CardWords);
-      S.briefs.set(code, brief);
+      // The project's folder: the set's cards and its brief, in Alex.
+      const entry = S.sets.find((s) => s.code === code)!;
+      const base = /^https?:/.test(entry.project) ? entry.project : `${BASE}${entry.project}`;
+      const name = entry.folder;
+      const [cards, brief] = await Promise.all([`${name}.alex`, `${name}-brief.alex`]
+        .map(async (file) => parseAlex(await (await staticFile(`${base}${file}`)).text(), file)));
+      const folder = new AlexFolder(new Map([[name, cards], [`${name}-brief`, brief]]));
+      for (const [number, card] of cardsOf(folder, name)) setCards.set(number, card);
+      S.briefs.set(code, briefFromAlex(folder, `${name}-brief`));
     } catch {
       return;
     }
@@ -245,13 +251,11 @@ function title(p: BriefPicture): string {
 function faceName(p: BriefPicture): string | null {
   const card = cardData(p);
   if (!card) return null;
-  const face = p.side === 'kitten' ? card.kitten : p.side === 'bigcat' ? card.bigCat : card;
-  return face?.name ?? card.name;
+  return (p.side === 'bigcat' ? card.back ?? card : card).name;
 }
 
-/** The words on each card of the loaded sets: names, rules text and flavour. */
-interface CardWords { name: string; type: string; text?: string; flavor?: string; kitten?: { name: string; text?: string }; bigCat?: { name: string; text?: string } }
-const setCards = new Map<string, CardWords>();
+/** The cards of the loaded projects, by number. */
+const setCards = new Map<string, StudioCard>();
 const cardData = (p: BriefPicture) => (p.card ? (setCards.get(p.card) ?? null) : null);
 
 const sideLabel = (p: BriefPicture) => (p.side === 'kitten' ? 'Hero' : p.side === 'bigcat' ? 'Awakened' : '');
@@ -872,9 +876,9 @@ function uploadBox(p: BriefPicture, versions: Version[]): string {
 function cardText(p: BriefPicture): string {
   const card = cardData(p);
   if (!card) return '';
-  const face = p.side === 'kitten' ? card.kitten : p.side === 'bigcat' ? card.bigCat : card;
-  const text = face?.text ?? '';
-  return `<section><h3>On the card</h3><p><b>${esc(face?.name ?? card.name)}</b> · ${esc(TERMS.types[card.type as keyof typeof TERMS.types] ?? card.type)}</p>
+  const face = p.side === 'bigcat' ? card.back ?? card : card;
+  const text = face.text ?? '';
+  return `<section><h3>On the card</h3><p><b>${esc(face.name)}</b> · ${esc(face.type)}</p>
     ${text ? `<p class="rules">${esc(text).replace(/\n/g, '<br>')}</p>` : ''}${card.flavor && p.side !== 'bigcat' ? `<p class="flavor">${esc(card.flavor)}</p>` : ''}</section>`;
 }
 
@@ -939,7 +943,7 @@ function previewTabs(code: string, p: BriefPicture, pic: ReturnType<typeof shown
     body = `${finishes.length > 1 ? `<div class="seg small">${finishes.map((f) => `<button class="${f.finish === finish ? 'on' : ''}" data-click="finish:${key}:${f.finish}">${f.label}</button>`).join('')}</div>` : ''}
       ${frameChooser(code, p)}<div class="card-stage">${cardPreview(code, key, finish, url, 420, pinsFor(code, key, pic.version))}</div>
       <p class="pv-note">The card shows your whole image, shrunk into its window. The rounded corners and the border cover a few pixels at the edges.</p>`;
-  } else if (tab === 'game') body = gamePreview(p, url, code, key);
+  } else if (tab === 'game') body = gamePreview(p, cardData(p), url, code, key);
   else {
     // The phone comes first and largest: most wallpapers are made for a phone's lock screen.
     const wall = ([d, label]: [string, string]) => `<figure class="wall wall-${d}"><div class="wall-img" data-wall="${d}" style="--art:url(${url})"><div class="spinner"></div>${d === 'phone' ? LOCK_CLOCK : ''}</div><figcaption>${label}</figcaption></figure>`;

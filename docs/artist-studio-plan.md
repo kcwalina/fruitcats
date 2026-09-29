@@ -26,7 +26,7 @@ The guide stays, as the reference behind the Studio's short in-page tips.
   2. then the deck: its Hero Cat's two pictures first, then the rest in small batches.
   3. then Pawtraits.
 
-  The order comes from the set's `brief.json`, so it can differ from set to set.
+  The order comes from the set's brief, so it can differ from set to set.
 - **A card page for each picture.** It shows:
   - the brief for that card: what to draw, what must not change, the style (painted or sticker), the tier
     (deck card, Foil, Gold or Signature)
@@ -89,10 +89,17 @@ so the border, rounded corners and Lucky clover sit on top exactly as on the rea
 wallpaper views copy the few size rules the game uses (`apps/web/src/style.css` `.unit`, `.hero`;
 `apps/web/src/wallpaper.ts`).
 
-**Brief as data.** Each set gets `content/<yyyy>/<mm>/<set>/art/brief.json`: for each picture, the file
-name, what to draw, what must stay, style, tier, milestone, Pawtrait, and which fields are open to
-suggestions. The Markdown brief (`docs/art-brief-<set>.md`) can be generated from it. `npm run check-set`
-checks that every card has a brief entry.
+**A Studio project is Alex files plus assets (2026-09-29).** A project is one set's folder in the game folder,
+`games/folkborn/sets/<set>/`: its cards (`<set>.alex`), its brief (`<set>-brief.alex`, `#type ArtBrief`, declared in
+`folkborn.alex`) and its paintings (`art/`). The brief has the steps in order, each with its pictures: the file name,
+size, kind and tier, the card it's for (a reference into `<set>.alex`), what to draw, what must stay, and which parts
+are open to suggestions. The Studio reads these files with the TypeScript Alex (`cardengine/alex/`), and knows no
+game rules: `apps/web/src/studio/brief.ts` (`briefFromAlex`) and `cards.ts` read the words and numbers only.
+`publish-pack` uploads the folder as `project/` in the set's fingerprinted folder on the pack storage, next to the
+finished cards and the Studio's frames (`cards/frames/`, drawn by tcg), so nothing a project was published with is
+ever replaced. `npm run check-set` checks the brief: every card face has a picture, and every reference is to
+something in the set. The wallpaper previews are the one part still drawn from the game's own card data
+(`src/wallpaper.ts`).
 
 **The site.** A new page in `apps/web` (`studio.html`, its own entry in `vite.config.ts`), styled like the
 game. It's published with the rest of the site; the page itself holds nothing private.
@@ -123,7 +130,7 @@ called `studio`, in the `fruitcatsdata` account, reached with the API's managed 
 
 | # | Phase | Result | Depends on |
 |---|---|---|---|
-| S1 | Preview studio | Frames with a see-through window; `brief.json` for a set; the Studio page with the guided steps, card previews and checks, working on files the artist picks (no sign-in, no upload) | nothing |
+| S1 | Preview studio | Frames with a see-through window; a brief for a set; the Studio page with the guided steps, card previews and checks, working on files the artist picks (no sign-in, no upload) | nothing |
 | S2 | Sign-in and uploads | Via Mochi sign-in, artist list, uploads kept as versions, previews from stored files | the accounts branch merged and deployed |
 | S3 | Comments and review | Comment threads with pins and AI labels, the agent command (`status`, `get`, `comment`), approve / ask for changes, progress, suggestions, `npm run studio -- pull` | S2 |
 | S4 | Helper chat | A chat beside the work that answers from the guide and brief | S3 |
@@ -133,7 +140,7 @@ the files as the guide says today.
 
 ## Working with the other sessions
 
-- **Artist guide:** owns the guide and the briefs. The Studio needs the brief as `brief.json`; the guide
+- **Artist guide:** owns the guide and the briefs. The Studio needs the brief as `<set>-brief.alex`; the guide
   gets a short section pointing to the Studio.
 - **Accounts:** owns sign-in and `apps/api`. S2 adds routes there after the accounts work is merged.
 
@@ -167,10 +174,10 @@ account keeps deleted blobs for 14 days, and the Studio never deletes or overwri
 the artist. They open it, create their Via Mochi account (or sign in), and see the set. A link works once and lasts
 30 days.
 
-**Adding a set.** A set appears in the Studio when its folder has `art/brief.json`. Its frames are drawn by tcg when
+**Adding a set.** A set appears in the Studio when its folder in `games/folkborn/` has `<set>-brief.alex`. Its frames are drawn by tcg when
 the set is published (`npm run publish-pack -- <set>`). `npm run check-set` checks the brief.
 
-**Frames the artist chooses.** A card marked `frameChoice` in its brief (every Paragon card) shows a row of frame
+**Frames the artist chooses.** A card whose picture has `frame-choice = true` in its brief (every Paragon card) shows a row of frame
 colours in the Studio, and one more tile after them: the artist's own image. It's uploaded like a picture, as
 versions of `<key>-frame` (kind `frame`, not reviewed on its own), and the choice is saved as `image:<version>`. The
 Studio shows it under the see-through frames in `frames/p-image/`; `pull` saves it at `art/frames/<card>.webp` and sets

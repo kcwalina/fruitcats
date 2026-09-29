@@ -19,7 +19,14 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gameSet, renderCards } from '../content/tcg';
+import { gameSet, readBrief, renderCards } from '../content/tcg';
+
+/** The set's art brief (<set>-brief.alex in its folder in games/folkborn/). */
+function briefOf(folder: string) {
+  const brief = readBrief(folder);
+  if (!brief) throw new Error(`${basename(folder)} has no art brief (games/folkborn/sets/${basename(folder)}/${basename(folder)}-brief.alex).`);
+  return brief;
+}
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const args = process.argv.slice(2);
@@ -114,7 +121,7 @@ async function main() {
 
   if (command === 'pictures') {
     const view = await json<View>(set);
-    const brief = JSON.parse(readFileSync(join(setFolder(set), 'art', 'brief.json'), 'utf8')) as { pictures: { file: string; milestone: unknown }[] };
+    const brief = briefOf(setFolder(set));
     for (const p of brief.pictures) {
       const key = p.file.replace(/\.[a-z]+$/, '');
       const pic = view.pictures[key];
@@ -153,7 +160,7 @@ async function main() {
 
   if (command === 'pull') {
     const folder = setFolder(set);
-    const brief = JSON.parse(readFileSync(join(folder, 'art', 'brief.json'), 'utf8')) as { pictures: { file: string; kind: string }[] };
+    const brief = briefOf(folder);
     const view = await json<View>(set);
     let count = 0;
     const setFile = join(folder, 'set.json');

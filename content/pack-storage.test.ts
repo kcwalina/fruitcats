@@ -59,7 +59,8 @@ describe('art at its fingerprint\'s address', () => {
     expect(artPaths('dw1', a).dir).not.toBe(artPaths('dw1', b).dir);
     expect(artPaths('dw1', a)).toEqual({
       dir: `dw1/art/${a.slice(0, 16)}/`, art: `dw1/art/${a.slice(0, 16)}/illustrations/`,
-      cards: `dw1/art/${a.slice(0, 16)}/cards/`, marker: `dw1/art/${a.slice(0, 16)}/art.json`,
+      cards: `dw1/art/${a.slice(0, 16)}/cards/`, project: `dw1/art/${a.slice(0, 16)}/project/`,
+      marker: `dw1/art/${a.slice(0, 16)}/art.json`,
     });
   });
 

@@ -46,3 +46,11 @@ Wildfolk. Card text is generated from it (`npm run write-text`). The code keeps 
 `Zoomies`, `'Hero Cat'`…) because saved games and the online protocol use them; only players' words changed.
 `check-set` (and so every deploy) refuses the retired words in any card's text, name, flavor or a set's hints. Don't
 work around it: use the new words.
+
+## The platform and Folkborn
+
+`cardengine/` is the Kardix platform (the TCG developer platform), a separate product that moves to its own repository once its engine
+plays Folkborn. Nothing in `cardengine/` may refer to Folkborn's code or data (`packages/`, `apps/`, `content/`,
+`playtest/`, `games/`, `art/`) or carry Folkborn's numbers or conventions; Folkborn uses the platform only through
+the `tcg` command and, later, the core's `.wasm`. The rule and its known exceptions: `cardengine/README.md`,
+"Dependencies".

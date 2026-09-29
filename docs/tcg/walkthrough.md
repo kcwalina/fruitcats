@@ -206,12 +206,24 @@ sections = [
 ]
 
 @@@ winning
-Each player starts with 10 Life. When your opponent's Life reaches 0, you win.
+Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
 @@@
 ```
 
-Now the rule itself. Life totals are in the `life` library. In `hello-tcg.alex`, add the library
-to `uses` and add the rule:
+`{@starting-life}` is a number the game defines. Numbers like this are where rulebooks and
+games usually drift apart: the designer changes starting Life to 12 while playtesting, and the
+rulebook still says 10. So every number that shapes the game lives in one place, `numbers` in
+`hello-tcg.alex`, and both the rules and the rulebook read it from there. In
+`hello-tcg.alex`, add:
+
+```
+numbers = [
+  starting-life = 10
+]
+```
+
+Now the rule itself. Life totals are in the `life` library. Add the library to `uses` and add
+the rule, taking its starting Life from `numbers`:
 
 ```
 uses = [@life]
@@ -219,9 +231,14 @@ uses = [@life]
 
 ```
 life = [
-  LifeCounter { name = 'Life', start = 10, lose-at = 0, cites = @rulebook.winning }
+  LifeCounter { name = 'Life', start = @starting-life, lose-at = 0, cites = @rulebook.winning }
 ]
 ```
+
+Change `starting-life` to 12, and the game starts at 12 Life and `tcg rulebook` prints "Each player
+starts with 12 Life." There is nothing else to update. If the rulebook names a number that
+doesn't exist, or a rule uses one, `tcg check` says so. It also notes digits written straight into
+rulebook text, since those are the numbers that drift.
 
 `cites = @rulebook.winning` connects the rule to the text that explains it. When a game is
 played, every event this rule causes carries that reference, so a player can always ask "why did
@@ -256,18 +273,29 @@ And their text, in the text table:
 
 ```
 @@@ setup
-Each player shuffles their 12-card deck and draws 3 cards. A random player goes first.
+Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
 @@@ your-turn
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
 and pass when you are done.
 @@@ energy
-Cards cost Energy. You have 1 Energy on your first turn, 2 on your second, and 3 from your
-third turn on. Your Energy refills at the start of each of your turns.
+Cards cost Energy. You start with none. At the start of each of your turns, your Energy grows by
+{@energy-growth}, up to {@max-energy}, and refills.
 @@@
 ```
 
-Now the game. Add the libraries:
+Now the game. The new numbers go next to `starting-life`:
+
+```
+numbers = [
+  starting-life = 10
+  opening-hand = 3
+  energy-growth = 1
+  max-energy = 3
+]
+```
+
+Add the libraries:
 
 ```
 uses = [@common, @life, @resources, @turns, @setup]
@@ -293,7 +321,7 @@ Setup, turns and Energy:
 ```
 setup = [
   ShuffleDeck { cites = @rulebook.setup }
-  OpeningHand { n = 3, cites = @rulebook.setup }
+  OpeningHand { n = @opening-hand, cites = @rulebook.setup }
 ]
 
 turns = [
@@ -310,10 +338,10 @@ turns = [
 ]
 
 resources = [
-  Energy = GrowingCounter { name = nameof(Energy), start = 0, max = 3, pay-by = spend }
+  Energy = GrowingCounter { name = nameof(Energy), start = 0, max = @max-energy, pay-by = spend }
 ]
 resource-rules = [
-  GrowsAt { resource = @Energy, moment = @turn-start, by = 1 }
+  GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
   RefillsAt { resource = @Energy, moment = @turn-start }
 ]
 cost-resource = @Energy
@@ -728,12 +756,19 @@ A Spell does what its text says, once, and then goes to your discard pile.
 
 ## 10. Two decks and a playtest
 
-A real game has rules about decks. Add the `decks` library to `uses`, and:
+A real game has rules about decks. Add two numbers:
+
+```
+  deck-size = 12
+  max-copies = 3
+```
+
+Add the `decks` library to `uses`, and:
 
 ```
 deck-rules = [
-  DeckSize { n = 12, cites = @rulebook.decks }
-  CopiesMax { n = 3, cites = @rulebook.decks }
+  DeckSize { n = @deck-size, cites = @rulebook.decks }
+  CopiesMax { n = @max-copies, cites = @rulebook.decks }
 ]
 ```
 
@@ -743,7 +778,7 @@ deck-rules = [
 
 ```
 @@@ decks
-A deck has exactly 12 cards, with at most 3 copies of any card.
+A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
 @@@
 ```
 
@@ -986,6 +1021,15 @@ uses = [
 ]
 sets = [@base-set]
 
+numbers = [
+  starting-life = 10
+  opening-hand = 3
+  energy-growth = 1
+  max-energy = 3
+  deck-size = 12
+  max-copies = 3
+]
+
 type Creature : UnitCard {}
 type Spell : SpellCard {}
 types = [
@@ -1001,12 +1045,12 @@ zones = [
 ]
 
 life = [
-  LifeCounter { name = 'Life', start = 10, lose-at = 0, cites = @rulebook.winning }
+  LifeCounter { name = 'Life', start = @starting-life, lose-at = 0, cites = @rulebook.winning }
 ]
 
 setup = [
   ShuffleDeck { cites = @rulebook.setup }
-  OpeningHand { n = 3, cites = @rulebook.setup }
+  OpeningHand { n = @opening-hand, cites = @rulebook.setup }
 ]
 
 turns = [
@@ -1024,11 +1068,11 @@ turns = [
 
 resources = [
   Energy = GrowingCounter {
-    name = nameof(Energy), start = 0, max = 3, pay-by = spend, cites = @rulebook.energy
+    name = nameof(Energy), start = 0, max = @max-energy, pay-by = spend, cites = @rulebook.energy
   }
 ]
 resource-rules = [
-  GrowsAt { resource = @Energy, moment = @turn-start, by = 1 }
+  GrowsAt { resource = @Energy, moment = @turn-start, by = @energy-growth }
   RefillsAt { resource = @Energy, moment = @turn-start }
 ]
 cost-resource = @Energy
@@ -1048,8 +1092,8 @@ combat = [
 ]
 
 deck-rules = [
-  DeckSize { n = 12, cites = @rulebook.decks }
-  CopiesMax { n = 3, cites = @rulebook.decks }
+  DeckSize { n = @deck-size, cites = @rulebook.decks }
+  CopiesMax { n = @max-copies, cites = @rulebook.decks }
 ]
 ```
 
@@ -1071,18 +1115,18 @@ sections = [
 ]
 
 @@@ winning
-Each player starts with 10 Life. When your opponent's Life reaches 0, you win.
+Each player starts with {@starting-life} Life. When your opponent has no Life left, you win.
 @@@ decks
-A deck has exactly 12 cards, with at most 3 copies of any card.
+A deck has exactly {@deck-size} cards, with at most {@max-copies} copies of any card.
 @@@ setup
-Each player shuffles their 12-card deck and draws 3 cards. A random player goes first.
+Each player shuffles their deck and draws {@opening-hand} cards. A random player goes first.
 @@@ your-turn
 Players take turns. At the start of your turn, ready your exhausted cards and draw a card (the
 first player skips this draw on the very first turn). Then play cards and attack in any order,
 and pass when you are done.
 @@@ energy
-Cards cost Energy. You have 1 Energy on your first turn, 2 on your second, and 3 from your
-third turn on. Your Energy refills at the start of each of your turns.
+Cards cost Energy. You start with none. At the start of each of your turns, your Energy grows by
+{@energy-growth}, up to {@max-energy}, and refills.
 @@@ creatures
 Creatures stay on the board. A Creature enters exhausted, so it can't attack on the turn you
 play it. When a Creature has taken damage equal to its Health, it is defeated and goes to the

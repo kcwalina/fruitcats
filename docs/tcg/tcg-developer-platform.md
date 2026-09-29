@@ -145,6 +145,16 @@ my-game/
   AGENTS.md           for Claude, Codex and other agents: the spec, the commands, the conventions
 ```
 
+**One source for every number.** Rulebooks and games drift apart most often over numbers. So a
+game names the numbers that shape it in one place, `numbers = [starting-life = 10, ...]` on
+`Game`; rules take them (`LifeCounter { start = @starting-life }`) and rulebook text embeds them
+(`Each player starts with {@starting-life} Life.`). `tcg rulebook` fills them in, and `tcg check`
+reports an unknown name in text and notes digits written straight into rulebook text. Named
+numbers are also the knobs a playtest can vary. Needs: `Game.numbers: [text: int]`, rule fields
+that accept a number reference, and `{@name}` in rulebook text. Next, the same for card text:
+Spark's printed "Deal 2 damage" and its handler's `damage-life(2)` are two copies of one number;
+an ability should carry its numbers, used by both the printed text and the handler.
+
 **How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name
 (`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game`, and everything joins it by

@@ -113,8 +113,57 @@ Two things to notice:
 - Anything you don't write has a default: no libraries, no card types, no zones, two players.
   You add those as the game grows.
 
-`rulebook.alex` has a title and no sections yet. `base-set.alex` is a set with no cards.
-`base-set-rules.alex` has nothing in it but a line saying it belongs to `@base-set`.
+The other three files. `rulebook.alex`, a rulebook with a title and no sections yet:
+
+```
+#type Rulebook
+
+title = 'Hello TCG'
+```
+
+`base-set.alex`, a set of cards with no cards yet:
+
+```
+#type Set
+
+id = 'BASE'
+name = 'Base Set'
+```
+
+`base-set-rules.alex`, where the abilities of the set's cards will be programmed:
+
+```
+#type Rules
+
+for = @base-set
+```
+
+### How the files fit together
+
+`tcg` reads every `.alex` file in the project folder. Each file holds one thing, of the type its
+`#type` line names, and the file's name is how other files refer to it: `@rulebook` is the
+rulebook in `rulebook.alex`, and `@base-set` is the set in `base-set.alex`. There are no other
+names to keep in step. Rename a file, and `tcg check` lists the references to update (Studio and
+agents update them for you).
+
+The folder holds exactly one `Game`. That is your game, and everything else joins it through a
+reference:
+
+```
+hello-tcg.alex       Game       rulebook = @rulebook   ──▶  rulebook.alex        Rulebook
+                                sets = [@base-set]     ──▶  base-set.alex        Set
+base-set-rules.alex  Rules      for = @base-set        ──▶  base-set.alex
+base-set.alex        (a card)   art = 'art/friend.png' ──▶  art/friend.png
+```
+
+- **The game lists its sets.** A folder may hold sets you're still working on; a set is in the
+  game only when `sets` lists it.
+- **A rules file names the set it programs.** The set itself never mentions its rules file, so the
+  cards read the same whether or not their abilities are programmed yet. When `tcg` loads the
+  game, it gathers every rules file whose `for` names one of the game's sets, and checks that
+  every ability printed on a card has its program, and every program belongs to a printed
+  ability.
+- **Assets are referred to by their path** in the folder.
 
 `art/` is empty. It is where your game's images go: card art now, and later card frames, icons
 and pictures for the rulebook.

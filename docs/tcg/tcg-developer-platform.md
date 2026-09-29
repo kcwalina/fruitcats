@@ -145,6 +145,14 @@ my-game/
   AGENTS.md           for Claude, Codex and other agents: the spec, the commands, the conventions
 ```
 
+**How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
+holds one value, of the type its `#type` directive names; the file's name is its name
+(`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game`, and everything joins it by
+reference: `rulebook = @rulebook`, `sets = [...]` (a set not listed is not in the game), and each
+`Rules` document's `for = @set` (the set never names its rules file: code points at data). The
+loader gathers the rules documents of the game's sets and checks abilities and handlers both
+ways. Assets are referred to by their path in the folder.
+
 **The rulebook is source.** Its sections are Alex, and every rule cites the section that explains
 it (`cites = @rulebook.combat`). The checker looks both ways, as the linker already does for
 cards and their handlers: a citation of a missing section is an error; a rule with no citation,

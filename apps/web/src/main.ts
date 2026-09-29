@@ -873,10 +873,21 @@ function friendTileLine(): { line: string; badge: number; waiting: boolean } {
 }
 
 /** One of Home's tiles as a card. `open` is the element's opening tag without its brackets (a button or a link). */
+/**
+ * Each card's own colour, stepping around the colour wheel in the order the cards are laid out (red, orange, gold,
+ * green, teal, blue, violet, magenta), all at one lightness and strength: a spectrum, so no card shouts and none
+ * repeats. OKLCH hue in degrees.
+ */
+const MODE_HUES: Record<string, number> = { solo: 25, friend: 55, ranked: 88, collection: 145, store: 195, decks: 250, tutorial: 295, docs: 340 };
+const modeColours = (key: string) => {
+  const h = MODE_HUES[key] ?? 280;
+  return `--main:oklch(0.56 0.14 ${h});--dark:oklch(0.32 0.08 ${h});--tint:oklch(0.93 0.03 ${h})`;
+};
+
 function modeCard(open: string, m: ModeCard, status: string, badge: number): string {
   const tag = open.split(' ')[0], d = MODE_DECKS[m.deck];
   return `
-      <${open} style="--main:${d.main};--dark:${d.dark};--tint:${d.tint}">
+      <${open} style="${modeColours(m.key)}">
         ${badge ? `<span class="mode-badge" aria-label="${badge} waiting">${badge}</span>` : ''}
         <span class="mc-frame"><span class="mc-face">
           <span class="mc-bar"><span class="mc-gem" aria-hidden="true"><svg viewBox="0 0 24 24">${MODE_ICONS[m.icon]}</svg></span><span class="mc-name ${m.name.length > 8 ? 'long' : ''}">${m.name}</span></span>

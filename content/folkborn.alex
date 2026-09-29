@@ -1,0 +1,68 @@
+#type Game
+
+name = 'Folkborn'
+schema-version = 1
+card-layout = @card-layout
+sets = [
+  @dw1
+  @pr1
+  @al1
+  @jr1
+  @hh1
+]
+
+keywords = [
+  Swift = Keyword {}
+  Guardian = Keyword {}
+  Sneaky = Keyword {}
+  Fierce = Keyword {}
+  Tough = Keyword {}
+  Lucky = Keyword {}
+  Ambush = Keyword {}
+]
+
+enum Rarity { common, uncommon, rare, legendary }
+enum Finish { standard, foil, gold, prismatic }
+
+type Family {
+  name: text
+  main: text
+  dark: text
+  tint: text
+}
+
+type Printed : Card {
+  number: text
+  rarity: Rarity?
+  family: Family
+  epithet: text?
+  finishes: [Finish] = [standard, foil, gold, prismatic]
+}
+type Creature : Printed {
+  cost: int
+  power: int
+  health: int
+}
+type Fabled : Printed {
+  cost: int
+  power: int
+  health: int
+}
+type Charm : Printed {
+  cost: int
+}
+type Talisman : Printed {
+  cost: int
+}
+type Hero : Printed {
+  back: Awakened
+}
+type Awakened : Card {
+  type-name = 'Hero · Awakened'
+  epithet: text?
+  power: int?
+}
+type TokenCreature : Creature {
+  type-name = 'Token Creature'
+  finishes = [standard]
+}

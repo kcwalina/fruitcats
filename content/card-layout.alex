@@ -1,0 +1,173 @@
+#type CardLayout
+
+width = 750
+height = 1050
+dpi = 300
+
+fonts = [
+  black = 'seguibl.ttf'
+  bold = 'segoeuib.ttf'
+  bold-italic = 'segoeuiz.ttf'
+  regular = 'segoeui.ttf'
+  italic = 'segoeuii.ttf'
+]
+
+frames = [
+  Printed = Frame {
+    image = 'art/frames/{family}/{finish}.png'
+    ink = '{family.dark}'
+    accent = '{family.main}'
+    tint = '{family.tint}'
+  }
+  Hero = Frame {
+    image = 'art/frames/hero/{finish}.png'
+    ink = '#7A5A0C'
+    accent = '#C8961E'
+    tint = '#FFF3CF'
+    file = '{number}-kitten'
+  }
+  Awakened = Frame {
+    image = 'art/frames/hero/{finish}.png'
+    ink = '#7A5A0C'
+    accent = '#C8961E'
+    tint = '#FFF3CF'
+    file = '{number}-bigcat'
+  }
+]
+
+parts = [
+  art = Picture {
+    show = '{art}'
+    box = Box { x = 42, y = 138, width = 666, height = 444 }
+    fit = cover
+    under-frame = true
+  }
+  cost = Label {
+    show = '{cost}'
+    box = Box { x = 30, y = 26, width = 102, height = 100 }
+    font = @black
+    size = 60
+    color = ink
+    align = center
+  }
+  lucky = Picture {
+    show = 'art/icons/lucky.png'
+    box = Box { x = 632, y = 150, width = 64, height = 64 }
+    if-keyword = @Lucky
+  }
+  name = Title {
+    show = '{name}'
+    subtitle = '{epithet}'
+    box = Box { x = 150, y = 34, width = 520, height = 88 }
+    font = @bold
+    size = 42
+    smallest = 26
+    baseline = 34
+    subtitle-font = @bold-italic
+    subtitle-size = 25
+    subtitle-baseline = 70
+    subtitle-indent = 2
+    color = '#FFFFFF'
+    outline = ink
+  }
+  type-line = Label {
+    show = '{type} · {family.name}'
+    box = Box { x = 62, y = 600, width = 460, height = 44 }
+    font = @bold
+    size = 25
+    color = ink
+    capitals = true
+  }
+  collector = Row {
+    box = Box { x = 400, y = 610, width = 288, height = 24 }
+    items = [
+      Icon {
+        show = '{finish}'
+        images = [
+          foil = 'art/icons/finish-foil.png'
+          gold = 'art/icons/finish-gold.png'
+          prismatic = 'art/icons/finish-prismatic.png'
+        ]
+        width = 26
+        height = 24
+        gap = 8
+      }
+      Label { show = '{number}', font = @regular, size = 20, color = '#7A6A5C', gap = 4 }
+      Icon {
+        show = '{rarity}'
+        images = [
+          common = 'art/icons/common.png'
+          uncommon = 'art/icons/uncommon.png'
+          rare = 'art/icons/rare.png'
+          legendary = 'art/icons/legendary.png'
+        ]
+        width = 32
+        height = 32
+      }
+    ]
+  }
+  rules = TextBox {
+    box = Box { x = 42, y = 660, width = 666, height = 252 }
+    padding = 24
+    padding-top = 18
+    size = 31
+    smallest = 18
+    line-height = 1.3
+    paragraphs = [
+      Paragraph {
+        show = '{text}'
+        font = @regular
+        bold-font = @bold
+        italic-font = @italic
+        bold = [keywords, labels]
+        italic = [reminders]
+        color = '#2B211B'
+      }
+      Paragraph {
+        show = '{flavor}'
+        font = @italic
+        size-change = -5
+        smallest = 16
+        color = '#7A6A5C'
+        align = center
+        rule-above = '#E2D3BA'
+        rule-inset = 150
+        rule-gap = 18
+      }
+    ]
+  }
+  power = Chip {
+    show = '{power}'
+    icon = 'art/icons/power.png'
+    icon-color = ink
+    box = Box { x = 42, y = 930, width = 666, height = 62 }
+    align = left
+    font = @black
+    size = 40
+    color = ink
+    fill = tint
+    outline = accent
+    text-offset = 1
+  }
+  health = Chip {
+    show = '{health}'
+    icon = 'art/icons/heart.png'
+    icon-color = '#D9486C'
+    box = Box { x = 42, y = 930, width = 666, height = 62 }
+    align = right
+    font = @black
+    size = 40
+    color = ink
+    fill = tint
+    outline = accent
+    text-offset = 1
+  }
+  footer = Label {
+    show = 'Folkborn · {set.name} · © 2026'
+    box = Box { x = 0, y = 989, width = 750, height = 22 }
+    font = @regular
+    size = 17
+    color = '#7A6A5C'
+    align = center
+  }
+]

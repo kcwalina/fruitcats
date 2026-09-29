@@ -124,7 +124,7 @@ internal sealed class Renderer
         if (part.Value("unless") is { } hidden && face.Template(hidden).Length > 0) { return; }
         switch (part.TypeName)
         {
-            case "Shape": Shape(canvas, face, frame, part); break;
+            case "Figure": Figure(canvas, face, frame, part); break;
             case "Picture": Picture(canvas, face, part); break;
             case "Label": Label(canvas, face, frame, part, Box(part)); break;
             case "Title": Title(canvas, face, frame, part); break;
@@ -177,7 +177,7 @@ internal sealed class Renderer
     /// With <c>frame-texture = true</c>, a frame with a <c>texture</c> paints the shape's fill and outline (again
     /// <c>chrome-width</c> wide) with it, where no finish does. Edges are hard, as the old composer drew them.
     /// </summary>
-    private void Shape(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
+    private void Figure(SKCanvas canvas, Face face, AlexObject? frame, AlexObject part)
     {
         SKRect box = Box(part);
         string kind = Word(part.Value("kind")) ?? "rounded-rect";

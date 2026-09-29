@@ -1,5 +1,6 @@
-#type Set
+#type FamilySet
 
+id = 'mochi'
 name = 'Mochi'
 code = 'MC1'
 

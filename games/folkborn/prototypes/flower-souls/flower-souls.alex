@@ -1,5 +1,6 @@
-#type Set
+#type FamilySet
 
+id = 'flower-souls'
 name = 'Flower-Souls'
 code = 'MB1'
 

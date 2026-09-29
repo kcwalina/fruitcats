@@ -306,9 +306,7 @@ type Deck {
 // Sizes are pixels at `dpi`, measured from the card's top-left corner at the trim line, not
 // counting bleed; frames and the back are drawn at the size plus `bleed` on every side (poker
 // size at 300 dpi: 750 x 1050, plus 36 each side). `fonts` names font files; a part refers to
-// one by reference (`font = @bold`). `frames` gives each card type its frame, keyed by the card
-// type's identifier (`Creature = 'art/frames/creature.png'`); the checker requires each key to
-// name a card type the game declares.
+// one by reference (`font = @bold`).
 //
 // `show` is a template: `{name}` is a field of the card (`{cost}`, `{power}`, a field its type
 // declares), `{type}` the card type's display name, `{text}` the card's text with its `{constants}`
@@ -325,9 +323,37 @@ type CardLayout : data {
   height: int
   dpi: int = 300
   bleed: int = 0
+  // How far a glyph moves the next one: its exact advance, or its advance rounded to a whole
+  // pixel, as FreeType's hinted layout sets text (Folkborn's cards were first drawn that way).
+  text-spacing: TextSpacing = exact
   fonts: [text: text] = empty     // name = font file
-  frames: [text: text] = empty    // card type = frame image
+  // Each card type's frame, keyed by the card type's identifier (`Creature = Frame { ... }`), or
+  // a frame a card picks by name (`frame = gold`, when its type has a `frame` field).
+  frames: [text: Frame] = empty
+  // How a card printed in a finish looks, keyed by the finish (`foil = FinishStyle { ... }`). A
+  // card's finish is its `finish` field; a card with none, or with `standard`, has no finish.
+  finishes: [text: FinishStyle] = empty
+  // A face's file name by its card type (`Hero = '{number}-front'`); its `number` otherwise.
+  file-names: [text: text] = empty
   parts: [text: Part] = empty
+}
+enum TextSpacing { exact, whole-pixels }
+// A frame: an image drawn over the card (with its bleed), leaving a window for the painting, and
+// the colours parts take by name: `color = ink`. A colour can come from the card
+// (`ink = '{family.dark}'`). A `texture` is a picture painted into the shapes marked
+// `frame-texture`, instead of their colour.
+type Frame {
+  image: text?
+  ink: text?
+  accent: text?
+  tint: text?
+  texture: text?
+}
+// The colours a part takes from its frame, or from the card's finish (`finish-ink`).
+enum FrameColor { ink, accent, tint, finish-ink }
+type FinishStyle {
+  texture: text                   // painted, card-sized, into the shapes marked `chrome`
+  ink: text?                      // `finish-ink`: the edges drawn on a card with this finish
 }
 type Box {
   x: int
@@ -337,42 +363,142 @@ type Box {
 }
 enum Align { left, center, right }
 enum Fit { cover, contain }       // cover fills the box and trims; contain shows it whole
-type Part { box: Box }
-// One line of text. With `smallest`, text too long for the box shrinks to fit, down to that size.
+// A part is drawn only on the cards its conditions allow: `if` a template is not empty, `unless`
+// it is, a card of one of `only-types` (or a subtype), a card with the keyword `if-keyword`, a
+// card with a finish or without one, a card whose frame has a texture. Parts `under-frame` are
+// drawn first, then the frame, then the others, each in the order the layout lists them.
+type Part {
+  box: Box?                       // not in a Row, which places its items itself
+  under-frame: bool = false
+  if: text?
+  unless: text?
+  only-types: [type Card] = empty
+  if-keyword: Keyword?
+  only-with-finish: bool = false
+  only-without-finish: bool = false
+  only-with-frame-texture: bool = false
+}
+// One line of text, centred on the box's middle line. With `smallest`, text too long for the box
+// shrinks to fit, down to that size.
 type Label : Part {
   show: text
   font: text?                     // a `fonts` entry (`@bold`); the renderer's default without one
   size: int
   smallest: int?
-  color: text = '#000000'
-  outline: text?
+  color: text | FrameColor = '#000000'
+  outline: text | FrameColor | nic
+  outline-width: int = 1
   align: Align = left
   capitals: bool = false
+  gap: int = 0                    // in a Row: the space before the next item
 }
 type Picture : Part {
   show: text                      // an asset: '{art}', or a fixed image
   fit: Fit = cover
-  under-frame: bool = false       // drawn below the frame, showing through its window
+  corner-radius: int = 0
 }
-// Paragraphs that shrink together to fit the box, down to `smallest`.
+// A card's name, shrinking by 2 at a time down to `smallest` to fit the box's width. With a
+// subtitle (an epithet), the name sits on `baseline` and the subtitle under it; without one, the
+// name is centred on the box's middle line.
+type Title : Part {
+  show: text
+  subtitle: text?
+  font: text?
+  size: int
+  smallest: int?
+  baseline: int?
+  subtitle-font: text?
+  subtitle-size: int?
+  subtitle-baseline: int?
+  subtitle-indent: int = 0
+  color: text | FrameColor = '#FFFFFF'
+  outline: text | FrameColor | nic
+  outline-width: int = 1
+}
+// A rectangle (rounded by `radius`), a circle or a five-pointed star, filled, outlined inside its
+// box, or both. With `chrome`, a card with a finish has the shape painted with the finish's
+// texture (its outline, `chrome-width` wide, when it has one); with `frame-texture`, a frame's
+// texture paints it where no finish does. Edges are hard.
+type Figure : Part {
+  kind: FigureKind = rounded-rect
+  radius: int = 0
+  fill: text | FrameColor | nic
+  outline: text | FrameColor | nic
+  outline-width: int = 1
+  chrome: bool = false
+  chrome-width: int?
+  frame-texture: bool = false
+}
+enum FigureKind { rounded-rect, circle, star }
+// One of a few images, picked by a template: `show = '{rarity}'` with an image per rarity.
+type Icon : Part {
+  show: text
+  images: [text: text]
+  width: int?                     // in a Row; a part on its own fills its box
+  height: int?
+  gap: int = 0
+}
+// Items set right to left from the box's right edge, each centred on its middle line, skipping
+// the ones with nothing to show.
+type Row : Part { items: [Label | Icon] }
+// A pill: an icon and one line of text, as wide as they need, from the box's left or right edge.
+type Chip : Part {
+  show: text
+  icon: text?
+  icon-color: text | FrameColor = '#000000'
+  icon-size: int?                 // the box's height without one
+  font: text?
+  size: int
+  color: text | FrameColor = '#000000'
+  fill: text | FrameColor = '#FFFFFF'
+  outline: text | FrameColor = '#000000'
+  outline-width: int = 1
+  padding: int = 0
+  gap: int = 0                    // between the icon and the text
+  align: Align = left
+  text-offset: int = 0            // moves the text down from the middle line
+}
+// Paragraphs that shrink together to fit the box, down to `smallest`, one size at a time.
 type TextBox : Part {
   paragraphs: [Paragraph]
   font: text?
   size: int
   smallest: int?
   color: text = '#000000'
+  padding: int = 0
+  padding-top: int?               // `padding` without one
+  line-height: float = 1.2        // times the size
 }
 type Paragraph {
   show: text
   join: text = ', '               // between the items of a list field (`{keywords}`)
   font: text?                     // the text box's font without one
-  // For the bold runs of the card's text: an ability word before a colon ('Hello:') and the
-  // names of keywords.
   bold-font: text?
+  italic-font: text?
+  emphasis: [Emphasis] = empty
   color: text?                    // the text box's color without one
   align: Align = left
+  size-change: int = 0            // this paragraph's size, from the text box's
+  smallest: int?
+  same-line: bool = false         // runs on from the paragraph before
   rule-above: text?               // a thin line of this color above the paragraph
+  rule-inset: int = 0
+  rule-offset: int = 0
+  rule-width: int = 1
+  rule-gap: int = 0               // the space the rule takes
 }
+// What a paragraph sets in bold or italics: the game's keywords (`words = keywords`, with
+// `with-number` a number after one: 'Tough 1') or a list of words; a sentence's opening up to a
+// character (`up-to = ':'`: 'Hello:'); or text between two characters (`between = '()'`).
+type Emphasis {
+  words: [text] | WordList | nic
+  with-number: bool = false
+  up-to: text?
+  between: text?
+}
+enum WordList { keywords }
+type Bold : Emphasis {}
+type Italic : Emphasis {}
 
 // -------------------------------------------------------------------------------------------
 // Program layer: the plug points for behaviour. Libraries declare the actual events, verbs,

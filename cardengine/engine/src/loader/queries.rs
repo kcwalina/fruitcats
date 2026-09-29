@@ -9,7 +9,7 @@
 use std::collections::HashSet;
 
 use super::project::{declared_type, Project};
-use crate::alex::model::{ValueId, ValueKind};
+use crate::alex::model::{TypeId, ValueId, ValueKind};
 
 /// Answers `question`: `diagnostics`, `documents`, `cards`, or `value <document>`.
 pub fn answer(project: &Project, question: &str) -> String {
@@ -73,12 +73,11 @@ fn documents(project: &Project) -> String {
 fn cards(project: &Project) -> String {
     let model = &project.compilation.model;
     let mut items: Vec<String> = Vec::new();
-    for (index, document) in project.documents() {
-        let declared = declared_type(&project.sources[index]);
-        if !matches!(declared.as_deref(), Some("Set") | Some("Cards")) {
+    for (_, document) in project.documents() {
+        let Some(root) = model.object(document.root) else { continue };
+        if !is_a(project, root.record_type, "Set") && !is_a(project, root.record_type, "Cards") {
             continue;
         }
-        let Some(root) = model.object(document.root) else { continue };
         let Some(cards) = root.get("cards").and_then(|p| model.object(p.value)) else { continue };
         for property in &cards.properties {
             items.push(format!(
@@ -90,6 +89,20 @@ fn cards(project: &Project) -> String {
         }
     }
     format!("[{}]", items.join(","))
+}
+
+/// Whether a record type is `name` or derives from it: a game's own set type (`type FamilySet : Set`) is a set.
+pub fn is_a(project: &Project, record: Option<TypeId>, name: &str) -> bool {
+    let model = &project.compilation.model;
+    let mut current = record;
+    while let Some(t) = current {
+        let Some(r) = model.record(t) else { return false };
+        if r.name == name {
+            return true;
+        }
+        current = r.base;
+    }
+    false
 }
 
 /// A value as JSON.

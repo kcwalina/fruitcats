@@ -1,5 +1,6 @@
-#type Set
+#type FamilySet
 
+id = 'pari'
 name = 'Pari'
 code = 'PR1'
 

@@ -33,6 +33,9 @@ type Family {
   tint: text
 }
 
+// A Folkborn set is one family's cards: the family's name and colours are printed on every card in it.
+type FamilySet : Set { family: Family }
+
 type Printed : Card {
   number: text
   rarity: Rarity?

@@ -576,9 +576,12 @@ identical), and `dotnet build -c Release` in `cardengine/kardix`, whose project 
    a printable game uses none. Bound with the card engine's host, which checks `{name}`, unused card constants and
    handlers against text. A citation of a missing section is an error, as any unresolved reference is; the notes for a
    rule with no citation or a section no rule cites are still to do. `cargo run --release --example check -- <folder>`
-   prints what it finds. On `games/folkborn` it finds 92 errors, all one story: the core's schema is behind what kardix
-   and Folkborn's files use (`Frame`, `Finish` records, `text-spacing`, a Set's `family`, paragraph and text box
-   fields). kardix reads its files without a schema, so it never noticed; the core schema needs those added.
+   prints what it finds. On `games/folkborn` it first found 92 errors, all one story: kardix read the layout without a
+   schema, so the core's schema had fallen behind it. Now the core declares the whole layout vocabulary (`Frame`,
+   `FinishStyle`, `text-spacing`, `Title`, `Figure`, `Row`, `Icon`, `Chip`, emphasis, a part's conditions), and
+   Folkborn's sets are its own set type (`type FamilySet : Set { family: Family }`), so Folkborn binds with no
+   problems. Two layout parts were renamed because their names were taken: a drawn shape is a `Figure` (`Shape` is
+   the zones' enum) and a finish's look a `FinishStyle` (`Finish` is the game's enum of finishes).
 3. **Interface calls** in `abi.rs` for these: `load_project` (many files in, diagnostics and a
    handle out) and queries on the loaded project (cards, card types, the layout). Bytes in, bytes
    out, with no host imports. The module must still instantiate with an empty linker.

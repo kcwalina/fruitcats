@@ -114,3 +114,31 @@ fn a_folder_without_a_game_says_so() {
     let project = project::load(vec![ProjectFile { path: "cards.alex".to_string(), bytes: b"#type Cards\n".to_vec() }]);
     assert!(project.diagnostics.iter().any(|d| d.message.starts_with("No file in the project is a Game")));
 }
+
+#[test]
+fn a_games_own_set_type_is_a_set() {
+    let project = project::load(vec![
+        file("pocket.alex", "#type Game
+
+name = 'Pocket'
+sets = [@first]
+
+type Colours { ink: text }
+type ColourSet : Set { colours: Colours }
+type Creature : Card { power: int }
+"),
+        file("first.alex", "#type ColourSet
+
+id = 'first'
+name = 'First'
+colours = Colours { ink = '#2E1F5C' }
+cards = [
+  owl = Creature { name = 'Owl', power = 2 }
+]
+"),
+    ]);
+    let errors: Vec<&str> = project.diagnostics.iter().filter(|d| d.is_error).map(|d| d.message.as_str()).collect();
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+    let cards = queries::answer(&project, "cards");
+    assert!(cards.contains("\"document\":\"first\",\"key\":\"owl\""), "{}", cards);
+}

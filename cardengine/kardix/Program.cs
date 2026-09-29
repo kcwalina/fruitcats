@@ -118,7 +118,7 @@ static int Cards(string[] args)
     List<Document> documents = project.CardDocuments().Where(d => onlySet is null || d.Name == onlySet).ToList();
     // A set the game doesn't list (a prototype) is rendered only when asked for by name.
     if (onlySet is not null && documents.Count == 0 && project.Documents.TryGetValue(onlySet, out Document? unlisted)
-        && unlisted.DeclaredType is "Set" or "Cards")
+        && project.TypeChain(unlisted.DeclaredType).Any(t => t.Name is "Set" or "Cards"))
     {
         documents.Add(unlisted);
     }

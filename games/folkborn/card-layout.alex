@@ -14,10 +14,10 @@ fonts = [
 ]
 
 finishes = [
-  foil = Finish { texture = 'art/finishes/foil.png', ink = '#4A5362' }
-  gold = Finish { texture = 'art/finishes/gold.png', ink = '#5A3A04' }
-  prismatic = Finish { texture = 'art/finishes/prismatic.png', ink = '#3A2A5A' }
-  signature = Finish { texture = 'art/finishes/rainbow-signature.png', ink = '#0B0810' }
+  foil = FinishStyle { texture = 'art/finishes/foil.png', ink = '#4A5362' }
+  gold = FinishStyle { texture = 'art/finishes/gold.png', ink = '#5A3A04' }
+  prismatic = FinishStyle { texture = 'art/finishes/prismatic.png', ink = '#3A2A5A' }
+  signature = FinishStyle { texture = 'art/finishes/rainbow-signature.png', ink = '#0B0810' }
 ]
 
 file-names = [
@@ -100,19 +100,19 @@ frames = [
 ]
 
 parts = [
-  border = Shape {
+  border = Figure {
     box = Box { x = 0, y = 0, width = 750, height = 1050 }
     radius = 42
     fill = ink
     chrome = true
     frame-texture = true
   }
-  panel = Shape {
+  panel = Figure {
     box = Box { x = 21, y = 21, width = 708, height = 1008 }
     radius = 30
     fill = '#FFF8EC'
   }
-  art-pending = Shape {
+  art-pending = Figure {
     box = Box { x = 42, y = 138, width = 666, height = 444 }
     radius = 18
     fill = tint
@@ -133,7 +133,7 @@ parts = [
     fit = cover
     corner-radius = 18
   }
-  art-border = Shape {
+  art-border = Figure {
     box = Box { x = 42, y = 138, width = 667, height = 445 }
     radius = 18
     outline = accent
@@ -142,7 +142,7 @@ parts = [
     chrome-width = 7
     frame-texture = true
   }
-  banner = Shape {
+  banner = Figure {
     box = Box { x = 36, y = 30, width = 679, height = 97 }
     radius = 26
     fill = accent
@@ -152,7 +152,7 @@ parts = [
     chrome-width = 5
     frame-texture = true
   }
-  banner-edge = Shape {
+  banner-edge = Figure {
     box = Box { x = 36, y = 30, width = 679, height = 97 }
     radius = 26
     outline = ink
@@ -160,19 +160,19 @@ parts = [
     only-with-frame-texture = true
     only-without-finish = true
   }
-  panel-inner-edge = Shape {
+  panel-inner-edge = Figure {
     box = Box { x = 21, y = 21, width = 708, height = 1008 }
     radius = 30
     outline = ink
     outline-width = 2
     only-with-frame-texture = true
   }
-  cost-circle = Shape {
+  cost-circle = Figure {
     kind = circle
     box = Box { x = 30, y = 26, width = 103, height = 103 }
     fill = '#FFFFFF'
   }
-  cost-ring = Shape {
+  cost-ring = Figure {
     kind = circle
     box = Box { x = 30, y = 26, width = 103, height = 103 }
     outline = ink
@@ -180,13 +180,13 @@ parts = [
     chrome = true
     chrome-width = 9
   }
-  star = Shape {
+  star = Figure {
     kind = star
     box = Box { x = 43, y = 41, width = 76, height = 76 }
     fill = accent
     only-types = [@Hero, @Awakened]
   }
-  type-strip = Shape {
+  type-strip = Figure {
     box = Box { x = 42, y = 596, width = 667, height = 53 }
     radius = 14
     fill = tint
@@ -195,49 +195,49 @@ parts = [
     chrome = true
     chrome-width = 4
   }
-  panel-edge = Shape {
+  panel-edge = Figure {
     box = Box { x = 21, y = 21, width = 708, height = 1008 }
     radius = 30
     outline = finish-ink
     outline-width = 2
     only-with-finish = true
   }
-  outer-edge = Shape {
+  outer-edge = Figure {
     box = Box { x = 1, y = 1, width = 748, height = 1048 }
     radius = 41
     outline = finish-ink
     outline-width = 2
     only-with-finish = true
   }
-  cost-edge = Shape {
+  cost-edge = Figure {
     kind = circle
     box = Box { x = 30, y = 26, width = 103, height = 103 }
     outline = finish-ink
     outline-width = 2
     only-with-finish = true
   }
-  cost-inner-edge = Shape {
+  cost-inner-edge = Figure {
     kind = circle
     box = Box { x = 38, y = 34, width = 87, height = 87 }
     outline = finish-ink
     outline-width = 2
     only-with-finish = true
   }
-  art-edge = Shape {
+  art-edge = Figure {
     box = Box { x = 42, y = 138, width = 667, height = 445 }
     radius = 18
     outline = finish-ink
     outline-width = 1
     only-with-finish = true
   }
-  art-inner-edge = Shape {
+  art-inner-edge = Figure {
     box = Box { x = 49, y = 145, width = 653, height = 431 }
     radius = 12
     outline = finish-ink
     outline-width = 1
     only-with-finish = true
   }
-  text-panel = Shape {
+  text-panel = Figure {
     box = Box { x = 42, y = 660, width = 667, height = 253 }
     radius = 18
     fill = '#FFFFFF'

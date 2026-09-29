@@ -211,13 +211,15 @@ internal sealed class Project
     }
 
     /// <summary>
-    /// A field a set (or cards file) gives for all its cards: one of its own that its document type doesn't declare,
-    /// like a Folkborn set's <c>family</c>. Its cards have it unless they give their own.
+    /// A field a set (or cards file) gives for all its cards: one the core's <c>Set</c> or <c>Cards</c> doesn't declare,
+    /// like the <c>family</c> of a Folkborn set (a <c>FamilySet</c>, the game's own set type). Its cards have it unless
+    /// they give their own.
     /// </summary>
     public AlexValue? SetWide(Document document, string field)
     {
         if (document.DeclaredType is not { } type || !Types.ContainsKey(type)) { return null; }
-        return TypeChain(type).Any(t => t.OwnFields.Any(f => f.Name == field)) ? null : document.Alex.Root.Value(field);
+        bool core = TypeChain(type).Any(t => CoreTypes.ContainsKey(t.Name) && t.OwnFields.Any(f => f.Name == field));
+        return core ? null : document.Alex.Root.Value(field);
     }
 
     /// <summary>A declared record type and its bases, nearest first.</summary>

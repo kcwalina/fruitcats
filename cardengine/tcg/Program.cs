@@ -19,7 +19,6 @@ try
     return args[0] switch
     {
         "cards" => Cards(args[1..]),
-        "measure" => Measure(args[1..]),
         _ => throw new TcgException($"tcg doesn't know the command '{args[0]}'. Try: tcg cards"),
     };
 }
@@ -83,25 +82,5 @@ static int Cards(string[] args)
     }
 
     Console.WriteLine($"Rendered {written} card face(s).");
-    return 0;
-}
-
-static int Measure(string[] args)
-{
-    using SKTypeface face = SKTypeface.FromFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), args[0]));
-    float size = float.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture);
-    foreach (SKFontHinting hinting in Enum.GetValues<SKFontHinting>())
-    {
-        foreach (bool linear in new[] { false, true })
-        {
-            using SKFont font = new(face, size) { Subpixel = false, Hinting = hinting, LinearMetrics = linear };
-            ushort[] glyphs = font.GetGlyphs(args[2]);
-            float[] widths = font.GetGlyphWidths(glyphs);
-            float rounded = 0;
-            foreach (float w in widths) { rounded += MathF.Round(w); }
-            Console.WriteLine($"{hinting,-7} linear={linear,-5} measure={font.MeasureText(args[2]):F2} sum={widths.Sum():F2} rounded={rounded}");
-        }
-    }
-
     return 0;
 }

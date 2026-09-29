@@ -39,7 +39,7 @@ discussed by editing them instead of re-pasting them into chat.
   library's area with rules), `starter-box.alex` and `berry-picnic.alex` are sets (pure data),
   and `starter-box-rules.alex` and `berry-picnic-rules.alex` are program documents: effects,
   statics, conditions, scenarios, and the wiring that attaches them to cards
-  (`@citron-fox.on-enter = zing`). Code points at data; data never points at code.
+  (`@citron-fox.on-enter = zest-damage`). Code points at data; data never points at code.
 
 ## Principles
 
@@ -125,7 +125,7 @@ discussed by editing them instead of re-pasting them into chat.
   layer adds `effect`, `static`, `condition` and `scenario` declarations with bodies, `extension
   Type { field: T }` blocks (a data-typed member is an ordinary field once its schema is loaded; a
   function-typed member is program-only), and assignments through references to those members
-  (`@citron-fox.on-enter = zing`), which may only target extension members and are set once
+  (`@citron-fox.on-enter = zest-damage`), which may only target extension members and are set once
   across the whole game. A game declares its card types as subtypes with fixed fields
   (`type Fabled : UnitCard { unique = true }`).
 - Layout: no line over 100 characters. A type declaration lists one field per line unless it is

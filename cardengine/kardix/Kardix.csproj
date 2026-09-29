@@ -24,6 +24,32 @@
     <EmbeddedResource Include="../studio/dist/studio.js" LogicalName="studio.js" />
   </ItemGroup>
 
+  <!-- Published as one native file (dotnet publish -c Release -r win-arm64 -p:PublishAot=true), kardix carries Wasmtime
+       inside it: Wasmtime's C API, a static library downloaded once from Wasmtime's releases (the version the .NET
+       package wraps) into obj/, is linked in, and the package's wasmtime.dll is left out. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <WasmtimeVersion>48.0.2</WasmtimeVersion>
+    <WasmtimeArch Condition="'$(RuntimeIdentifier)' == 'win-arm64'">aarch64-windows</WasmtimeArch>
+    <WasmtimeArch Condition="'$(RuntimeIdentifier)' == 'win-x64'">x86_64-windows</WasmtimeArch>
+    <WasmtimeCApi>$(MSBuildThisFileDirectory)obj/wasmtime-c-api/wasmtime-v$(WasmtimeVersion)-$(WasmtimeArch)-c-api</WasmtimeCApi>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <DirectPInvoke Include="wasmtime" />
+    <NativeLibrary Include="$(WasmtimeCApi)/lib/wasmtime.lib" />
+    <NativeLibrary Include="ws2_32.lib;advapi32.lib;userenv.lib;ntdll.lib;shell32.lib;ole32.lib;bcrypt.lib;synchronization.lib" />
+  </ItemGroup>
+
+  <Target Name="DownloadWasmtime" BeforeTargets="BeforeBuild" Condition="'$(PublishAot)' == 'true' And !Exists('$(WasmtimeCApi)/lib/wasmtime.lib')">
+    <Error Condition="'$(WasmtimeArch)' == ''" Text="kardix publishes as one file for win-arm64 and win-x64; this is $(RuntimeIdentifier)." />
+    <DownloadFile SourceUrl="https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-$(WasmtimeArch)-c-api.zip" DestinationFolder="$(MSBuildThisFileDirectory)obj/wasmtime-c-api" />
+    <Unzip SourceFiles="$(MSBuildThisFileDirectory)obj/wasmtime-c-api/wasmtime-v$(WasmtimeVersion)-$(WasmtimeArch)-c-api.zip" DestinationFolder="$(MSBuildThisFileDirectory)obj/wasmtime-c-api" />
+  </Target>
+
+  <Target Name="LeaveOutWasmtimeDll" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'">
+    <Delete Files="$(PublishDir)wasmtime.dll" />
+  </Target>
+
   <Target Name="BuildStudio" BeforeTargets="BeforeBuild">
     <Exec Command="npx --no-install esbuild main.ts --bundle --format=esm --target=es2022 --outfile=dist/studio.js --log-level=warning" WorkingDirectory="$(MSBuildThisFileDirectory)../studio" />
   </Target>

@@ -614,6 +614,12 @@ identical), and `dotnet build -c Release` in `cardengine/kardix`, whose project 
    `wasmtime.dll` beside it (works today), or link Wasmtime into the exe statically (its C API's static library with
    NativeAOT's `DirectPInvoke` and `NativeLibrary`, which needs that library downloaded from Wasmtime's releases and
    is not tried yet).
+   *Done 2026-09-29, one file:* the owner chose static linking. Published with `-p:PublishAot=true`, `Kardix.csproj`
+   downloads Wasmtime's C API for the target (`wasmtime-v48.0.2-<arch>-windows-c-api.zip`, the version the .NET
+   package wraps) into `obj/` once, links its static `wasmtime.lib` in (`DirectPInvoke`, `NativeLibrary`, with the
+   Windows libraries Rust's standard library needs) and leaves the package's `wasmtime.dll` out. SkiaSharp is gone
+   (Stage 4), so `kardix.exe` is the only file: 13 MB on win-arm64. Alone in an empty folder it checks Folkborn, draws
+   the 88 Domowiki faces in 10 s with pixels identical to the regular build, and serves Studio.
 
 ### Stage 3: `kardix studio`, read-only
 

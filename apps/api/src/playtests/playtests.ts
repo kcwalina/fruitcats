@@ -246,7 +246,8 @@ export function playtests(opt: PlaytestOptions) {
     if (method === 'PUT' && path === '/v1/playtests/library') {
       const b = (await body()) as { decks?: unknown };
       const decks = b?.decks;
-      if (!decks || typeof decks !== 'object' || Array.isArray(decks) || !Object.keys(decks).length) return [400, { error: 'bad_library' }];
+      // An empty library is a real outcome: retention drops every deck a set's retirement made unplayable.
+      if (!decks || typeof decks !== 'object' || Array.isArray(decks)) return [400, { error: 'bad_library' }];
       await docs.put('library.json', b);
       log('playtests.library_published', { decks: Object.keys(decks).length, runner: name });
       return [200, { ok: true }];

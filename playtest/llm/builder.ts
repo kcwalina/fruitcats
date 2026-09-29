@@ -149,7 +149,17 @@ const cardsText = (d: DeckList) => Object.entries(d.cards).sort(([a], [b]) => a.
 
 export async function runDeckBuild(o: BuildOptions & { save?: boolean; key?: string }): Promise<RunSummary> {
   const run = newRun('deck-build');
-  const r = await buildDeck({ ...o, onProgress: (phase, done, total) => reportProgress(run, 'deck-build', phase, done, total) });
+  let r: Awaited<ReturnType<typeof buildDeck>>;
+  try {
+    r = await buildDeck({ ...o, onProgress: (phase, done, total) => reportProgress(run, 'deck-build', phase, done, total) });
+  } catch (e) {
+    // A failed build says why in its summary, instead of being left to look abandoned.
+    const why = (e as Error).message;
+    finishRun(run, 'deck-build', 0, [{ level: 'block', text: `The deck build failed: ${why}` }],
+      { goal: o.goal, provider: o.provider.name, model: o.provider.model, error: why, pick: null, decks: [], rejected: [] },
+      `# Deck build: ${o.goal}\n\n${o.provider.name} ${o.provider.model} failed: ${why}\n`);
+    throw e;
+  }
   const problems: Problem[] = [];
   if (!r.pick) problems.push({ level: 'warn', text: `The LLM built no legal deck for "${o.goal}".` });
   let saved: string | undefined;

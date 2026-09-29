@@ -1,0 +1,19 @@
+[package]
+name = "tcg-engine"
+version = "0.1.0"
+edition = "2024"
+description = "The TCG platform's core: Alex, and in time the game loader, the runtime and the card renderer, as one WebAssembly module."
+publish = false
+
+# The core depends on nothing. Every host (the browser, tcg.exe through Wasmtime, a server) runs the same module.
+[dependencies]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

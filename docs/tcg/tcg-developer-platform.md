@@ -546,6 +546,7 @@ acceptance test, and the product is done when the walkthrough is true.
 In place on branch `claude/tcg-developer-ide-architecture-xy9f9d` (commit `2ecc808`), **not yet on main**.
 The first step of the local session is to merge that branch into main (`git merge
 origin/claude/tcg-developer-ide-architecture-xy9f9d`, keeping both sides) or, to start clean, to leave it:
+In place on branch `claude/tcg-developer-ide-architecture-xy9f9d` (commit `2ecc808`):
 
 - `cardengine/engine/`: Alex's lexer, parser and byte-exact writer in Rust, 98 KB of WebAssembly.
 - `cardengine/conformance/`: the C# Alex and the core agree on 8,320 of 8,320 dumps (every `.alex`

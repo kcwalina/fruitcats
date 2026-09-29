@@ -11,8 +11,8 @@
     <AssemblyName>tcg</AssemblyName>
     <RootNamespace>Tcg</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <MochiRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), 'mochi\mochi.agents\alex\src\Alex\ViaMochi.Alex.csproj'))</MochiRoot>
-    <AlexSrc>$(MochiRoot)\mochi\mochi.agents\alex\src</AlexSrc>
+    <MochiRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), 'mochi/mochi.agents/alex/src/Alex/ViaMochi.Alex.csproj'))</MochiRoot>
+    <AlexSrc>$(MochiRoot)/mochi/mochi.agents/alex/src</AlexSrc>
   </PropertyGroup>
 
   <Target Name="RequireAlex" BeforeTargets="ResolveProjectReferences" Condition="'$(MochiRoot)' == ''">
@@ -20,8 +20,8 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="$(AlexSrc)\Alex\ViaMochi.Alex.csproj" />
-    <ProjectReference Include="$(AlexSrc)\Alex.Model\ViaMochi.Alex.Model.csproj" />
+    <ProjectReference Include="$(AlexSrc)/Alex/ViaMochi.Alex.csproj" />
+    <ProjectReference Include="$(AlexSrc)/Alex.Model/ViaMochi.Alex.Model.csproj" />
     <PackageReference Include="SkiaSharp" Version="3.119.1" />
   </ItemGroup>
 

@@ -1,0 +1,65 @@
+# The core
+
+The TCG platform's core: one WebAssembly module that every host runs. The browser (Studio, the game table, the
+player app), `tcg.exe` through Wasmtime, and the servers all load the same `tcg_engine.wasm`, so a game behaves
+the same everywhere. Why it is built this way is in
+[docs/tcg/tcg-developer-platform.md](../../docs/tcg/tcg-developer-platform.md), "The core".
+
+Today it holds Alex's parser. The binder, the game loader, the runtime, the bots and the card renderer join it.
+
+## Rules
+
+- **Pure computation.** Bytes in, bytes out. No I/O, no clock, no randomness it wasn't handed, no calls back to
+  the host, and no imports: the module must instantiate with an empty linker.
+- **No dependencies.** `Cargo.toml` has an empty `[dependencies]`. Adding one is a decision for the platform doc,
+  not a convenience.
+- **The interface is the contract.** Hosts see only the exports in `src/abi.rs`: plain functions over bytes in
+  the module's memory. The language behind them can change; they can't, except by adding.
+- **Alex is identical to the C# Alex** (`mochi.agents/alex`) while both are used. The parser is a port of
+  `AlexParser.cs` with the same grammar, recovery and diagnostic messages, and `cardengine/conformance` proves it.
+  Change both together.
+
+## Layout
+
+```
+src/lib.rs              the crate
+src/abi.rs              the exports: tcg_alloc, tcg_free, alex_dump, alex_check
+src/alex/lexer.rs       bytes to tokens with trivia; text tables are found here
+src/alex/parser.rs      tokens to the concrete syntax tree, with recovery
+src/alex/syntax.rs      the tree: tokens, trivia, statements, values, types, bodies
+src/alex/tokens.rs      a node's tokens in order: what the writer writes and spans come from
+src/alex/writer.rs      the tree back to bytes, byte for byte
+src/alex/dump.rs        the canonical dump the conformance check compares
+tests/corpus.rs         every .alex file in fruitcats and mochi round-trips
+web/                    the module in a browser: engine.js (the host, no dependencies) and a check page
+```
+
+## Build and test
+
+```bash
+rustup target add wasm32-unknown-unknown         # once
+cargo build --release --target wasm32-unknown-unknown   # target/wasm32-unknown-unknown/release/tcg_engine.wasm
+cargo test --release                             # native: every .alex file round-trips, broken input never panics
+```
+
+Then compare it with the C# Alex (needs mochi checked out beside fruitcats):
+
+```bash
+cd ../conformance && dotnet run -c Release
+```
+
+The browser page: serve the repository root with any static file server and open
+`/cardengine/engine/web/index.html`. Pick a game folder; its `.alex` files are parsed in the page and nothing is
+uploaded.
+
+## Calling it
+
+Every function takes and returns bytes in the module's own memory. A host:
+
+1. `tcg_alloc(length)` returns an address; it copies its input there.
+2. It calls a function, such as `alex_dump(address, length, mode)`.
+3. A function that returns bytes returns one `u64`: the address in the high 32 bits, the length in the low 32. The
+   host copies them out and frees them with `tcg_free(address, length)`, as it frees its input.
+
+`cardengine/conformance/EngineModule.cs` (C#, Wasmtime) and `web/engine.js` (a browser) are the two hosts so far,
+about 60 lines each.

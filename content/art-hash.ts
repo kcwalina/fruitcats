@@ -33,15 +33,18 @@ export function artFiles(root: string): string[] {
 
 /** The fingerprint of the set's art, or null when the set has no art at all. */
 export function artHash(root: string): string | null {
-  const files: [string, string][] = artFiles(root).map((f) => [f, join(root, f)]);
+  // Art files byte for byte, as always; a tcg set's sources with their line endings made the same everywhere.
+  const files: [string, string, boolean][] = artFiles(root).map((f) => [f, join(root, f), false]);
   if (!files.length) return null;
-  if (renderedByTcg(root)) files.push(...cardSources(root).map(([name, path]): [string, string] => [`source:${name}`, path]));
+  if (renderedByTcg(root)) {
+    files.push(...cardSources(root).map(([name, path]): [string, string, boolean] => [`source:${name}`, path, isText(path)]));
+  }
   const hash = createHash('sha256');
-  for (const [name, path] of files) {
+  for (const [name, path, text] of files) {
     hash.update(name);
     hash.update('\0');
     const bytes = readFileSync(path);
-    hash.update(isText(path) ? bytes.toString('utf8').replace(/\r\n/g, '\n') : bytes);
+    hash.update(text ? bytes.toString('utf8').replace(/\r\n/g, '\n') : bytes);
     hash.update('\0');
   }
   return hash.digest('hex');

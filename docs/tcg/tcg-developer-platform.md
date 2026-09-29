@@ -397,7 +397,9 @@ changes from the walkthrough review" and "Printing first: cards, constants, sche
 - Fixed from the Alex session's re-bind: `reveal`'s `CheckToPlay` is `RevealToPlay`, and the
   scenario verb `pass` is `passes`, so `@pass` means the core's pass action.
 
-Asked after the real-card samples (2026-09-28), to do:
+Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
+`cardengine/decisions.md` under "Card layouts, and keyword rules that take the game's own keyword";
+`frames` is keyed by the card type's name as text, checked against the declared types:
 
 - **`CardLayout`** documents and **`Game.card-layout`** (see "How cards look" above).
 - **Keyword rules that take the game's keyword:** `EntersReady { keyword = @Swift }` in `units`,

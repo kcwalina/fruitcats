@@ -1,11 +1,10 @@
 // units: cards that sit in play with power and health, take damage and can be exhausted. The
 // record, its stat counters and grants, the verbs that act on units, and the rules about
 // entering play and being defeated. Depends on common for Cost.
-units = Library
+#type Library
 
 name = 'Units'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 // Only what every unit in every surveyed game has is required. Snap units have no health,
@@ -39,6 +38,9 @@ type StatCounter : Counter {
 type UnitRule : Rule {}
 extension Game { units: [UnitRule] = empty }
 
+// The game's card types that are units (`UnitCards { types = [@Creature] }`); see core.alex on
+// mapping a game's types onto a library's card records.
+type UnitCards : UnitRule { types: [type UnitCard] }
 type UnitsEnterExhausted : UnitRule {}
 type DefensePosition : UnitRule {}                // a unit is in attack or defence position
 type DualStatByConflict : UnitRule {}             // power or defense is used per conflict type

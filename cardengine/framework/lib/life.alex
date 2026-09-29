@@ -1,11 +1,10 @@
 // life: how a player loses. The base every life rule shares, life as a number, shields, and
 // losing on a failed draw. Life as a stack of cards is the life-stack library, built on this.
 // Depends on the core only.
-life = Library
+#type Library
 
 name = 'Life'
 version = '0.1'
-core = '1'
 
 type LifeRule : Rule {}
 extension Game { life: [LifeRule] = empty }
@@ -22,7 +21,7 @@ type LoseOnEmptyDraw : LifeRule {}                // drawing from an empty deck 
 type EmptyDeckDrawCosts : LifeRule { n: int, growth: int = 0 }
 type WinAtCounter : LifeRule { counter: text, n: int }   // first to n of a counter wins (lore)
 // Life as separate objects each with hit points (provinces, towers, zones with defence).
-type LifeObjects : LifeRule { type: CardType, lose-when: int }
+type LifeObjects : LifeRule { type: CardType | text, lose-when: int }
 type DamageTiers : LifeRule { tiers: [text] }            // damage moves a unit through named states
 type RuneThresholds : LifeRule { every: int }            // losing n life triggers (a draw, a play)
 

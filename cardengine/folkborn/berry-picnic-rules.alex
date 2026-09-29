@@ -1,5 +1,5 @@
 // Berry Picnic rules: a program document. `this` is the object a declaration is attached to.
-berry-picnic-rules = Rules
+#type Rules
 
 for = @berry-picnic
 
@@ -74,7 +74,7 @@ static others-plus-one { units(own, other).grant(power: +1) }
 @bramble.static = full-units-fierce
 
 scenario 'Goose steals a Crumb' {
-  given controls(opponent, @lamb, counter: @Crumb, n: 2)
+  given controls(opponent, @lamb), card-counter(@lamb, @Crumb, 2)
   when play(me, @goose, target: @lamb)
   then exhausted(@lamb), counter(@lamb, @Crumb) == 1, counter(@goose, @Crumb) == 1
 }

@@ -188,18 +188,18 @@ numbers. So a game names the numbers that shape it in one place, `constants = [s
 them (`Each player starts with {@starting-life} Life.`). A card's own numbers are the card's
 `constants`, shown in its text as `{bonus}` (no `@`) and read by its handler as `card.bonus`:
 
-```
 cheer = Creature {
   ...
   text = 'Your other Creatures have +{bonus} Power.'
   constants = [bonus = 1]
 }
 static others-get-bonus { units(own, other).grant(power: +card.bonus) }
-```
 
 `tcg check`: an unknown name in text is an error; a card constant its text never shows is an error
 (players would play with a number they can't see); a digit typed into rulebook text, card text or
 a handler is a note. Constants are also the knobs a playtest can vary.
+numbers are also the knobs a playtest can vary. The core has them: `Game.numbers: [text: int]`,
+referenced like any int member, and `{@name}` in rulebook text. Next, the same for card text:
 
 **How a project loads.** `tcg` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name
@@ -328,7 +328,7 @@ the core and libraries (seven new libraries, among them `scenarios`, `objectives
 - `Zone.role: ZoneRole` (`deck, hand, discard, board, life, resource, exile, other`).
 - `ShuffleDeck { zone: Zone? }` in `setup`.
 - The `scenarios` library: `hand`, `deck`, `controls`, `counter-is` to set up; `play`
-  (with `target:`), `attack`, `pass` to act; `in-zone`, `power`, `life`, `winner` to assert.
+  (with `target:`), `attack`, `passes` to act; `in-zone`, `power`, `life`, `winner` to assert.
 - `Card.art: text?`, an asset reference.
 
 Core changes the owner asked for on 2026-09-28, from reading the walkthrough (the core session
@@ -355,27 +355,37 @@ did the first ones; the rest are to do):
 - **`Game.card-back: text?`**, an asset reference to the back every printed card shares.
 - **`Section.title: text`**, a heading per rulebook section.
 
-An Alex change the owner asked for on 2026-09-28: **a file says what it is with a directive, not
-a named variable.** Today a file starts `hello-tcg = Game`, a name that only repeats the file
-name and means nothing. Instead, directives at the top of a file declare things about the whole
-file, as `using` does in C#. The first is `#type`:
 
-```
-#type Game
 
-name = 'Hello TCG'
-```
 
-The fields that follow belong to the file's value. Other files refer to it by its file name
 (`@rulebook`, `@cards.friend`), and the engine finds the game by type: a folder has exactly one
-`Game`. `#` starts a directive only when a word follows it with no space: the retired hash
-dialect's headers were `# name`, with a space, so the two can't be confused. The named form stays
-legal for other projects that use Alex until nothing needs it. To settle in the Alex spec: how a
-text table fills one of the file's own fields (today `@@@ root-name.field`).
 
-Also note: the C# Alex session that binds these files is archived, so the files added in f7a6845
-have not been re-bound by the C# Alex yet. Re-binding them is the first check when the TS Alex work
-starts, since both implementations are measured against the same fixtures.
+Core changes the owner asked for on 2026-09-28, from reading the walkthrough. **All done** in
+`cardengine/` (core, libraries and Folkborn), recorded in `cardengine/decisions.md` under "Core
+changes from the walkthrough review". Each is additive: the old spellings still bind as
+deprecated fields.
+
+- Done: **`core = '1'` becomes `engine-version = 1`** on `Game`. Sets and libraries take the
+  engine version and no longer state it.
+- Done: **no repeated names.** A game's card types are the types it declares; `Game.types` is
+  deprecated. A display name or citation that differs from the identifier is a fixed field on
+  the declaration (`type-name`, `type-cites`). A record under a key takes its `name` from the key
+  unless it gives its own. Rule fields that name a card type take `nameof(Hero)`.
+- Done: **defaults instead of boilerplate:** `uses`, `sets`, `types` and `zones` default to
+  `empty`, and `players` to `Players {}`; `Rulebook.sections` defaults to `empty`.
+- Done: **named numbers.** `Game.numbers: [text: int]`. A number reference needs no new type: a
+  `numbers` entry is an int member, and a reference to an int member is accepted wherever an int
+  is. Rulebook text embeds `{@name}`; the checker errors on an unknown name and notes digits in
+  rulebook text.
+- Done: **a heading per rulebook section:** `Section.title`.
+- Done: **`#type`**, implemented in the C# Alex by the mochi Alex session (`@@@ .field` fills one
+  of the file's own fields). Every cardengine file starts with its `#type`.
+- Fixed from the Alex session's re-bind: `reveal`'s `CheckToPlay` is `RevealToPlay` (it clashed
+  with `resources`'), and the scenario verb `pass` is `passes`, so `@pass` in a game that uses
+  `scenarios` means the core's pass action without qualifying it.
+- Done: **an ability carries its numbers.** `Ability.numbers` (`numbers = [damage = 2]`), shown
+  in its text as `{damage}` and read by its handler as `ability.damage` through the new core
+  selector `ability`.
 
 ## Open questions
 

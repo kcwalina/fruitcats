@@ -1,10 +1,9 @@
 // combat: units attacking units, heroes or life, and everything that decides who may attack
 // what and what damage results. Depends on units.
-combat = Library
+#type Library
 
 name = 'Combat'
 version = '0.1'
-core = '1'
 requires = [@units]
 
 type CombatRule : Rule {}

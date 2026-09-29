@@ -1,13 +1,12 @@
 // families: colours, classes, houses, types: a grouping of cards with display data, and a set's
 // signature mechanics. Depends on the core only.
-families = Library
+#type Library
 
 name = 'Families and mechanics'
 version = '0.1'
-core = '1'
 
 type Family {
-  name: text
+  name: text?                     // defaults to its key in `families`
   colors: [text]
   mechanic: Mechanic?
   neutral: bool = false

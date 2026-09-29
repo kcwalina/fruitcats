@@ -1,11 +1,10 @@
 // board: units that stand on a grid and move, with range, line of sight and terrain. Twelve of
 // the 156 surveyed games. Uses the core's grid zones, `coords`, `facing`, `turn`, `create-zone`
 // and the `adjacent` query. Depends on units.
-board = Library
+#type Library
 
 name = 'Board'
 version = '0.1'
-core = '1'
 requires = [@units]
 
 type BoardRule : Rule {}
@@ -18,7 +17,7 @@ type LineOfSight : BoardRule {}                         // blocked cells stop at
 type Facing : BoardRule { directions: int }             // 4 or 8; attacks and patterns use it
 type AdjacencyTriggersBattle : BoardRule {}             // moving next to an enemy starts combat
 type TerrainModifier : BoardRule { cell-property: text }   // a cell changes what stands on it
-type BuildBoard : BoardRule { from: CardType }          // players lay the cells during play
+type BuildBoard : BoardRule { from: CardType | text }          // players lay the cells during play
 
 extension UnitCard {
   move: int?                      // this unit's own movement, overriding Movement

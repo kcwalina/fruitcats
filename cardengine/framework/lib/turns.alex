@@ -1,10 +1,9 @@
 // turns: the shape of a round, its phases and steps, and limits on actions. Depends on the
 // core only.
-turns = Library
+#type Library
 
 name = 'Turns'
 version = '0.1'
-core = '1'
 
 type TurnRule : Rule {}
 extension Game { turns: [TurnRule] = empty }

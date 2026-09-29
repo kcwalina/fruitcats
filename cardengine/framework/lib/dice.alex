@@ -2,11 +2,10 @@
 // (Ashes), a die added to a contest (Neopets, Illuminati, X-Men), a unit's stat rolled per battle
 // (Bakugan). Uses the core's `die` object field, `roll` and `roll-object`. Depends on the core
 // only.
-dice = Library
+#type Library
 
 name = 'Dice'
 version = '0.1'
-core = '1'
 
 type DiceRule : Rule {}
 extension Game { dice: [DiceRule] = empty }

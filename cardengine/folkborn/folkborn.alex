@@ -1,17 +1,54 @@
 // Folkborn, the game: a selection of libraries and of rules from them. § cites docs/rulebook.md
 // section 13 (Comprehensive Rules). A rule not listed here does not apply.
-folkborn = Game
+#type Game
 
 name = 'Folkborn'
 rulebook = 'docs/rulebook.md'
-core = '1'
+schema-version = 1
 uses = [
-  @common, @units, @spells, @attachments, @heroes, @abilities, @life, @life-stack, @resources
-  @turns, @initiative, @combat, @responses, @scheduling, @objects, @families, @decks, @setup
+  @common
+  @units
+  @spells
+  @attachments
+  @heroes
+  @abilities
+  @life
+  @life-stack
+  @resources
+  @turns
+  @initiative
+  @combat
+  @responses
+  @scheduling
+  @objects
+  @families
+  @decks
+  @setup
   @scenarios
 ]
-players = Players { min = 2, max = 2 }              // singular `opponent` is legal in this game
-sets = [@starter-box, @berry-picnic]
+sets = [
+  @starter-box
+  @berry-picnic
+]
+
+// The constants that shape the game, named once so rules and playtests share them.
+constants = [
+  // §11.1
+  deck-size = 50
+  max-copies = 3
+  fabled-total = 6
+  // §5
+  candles = 9
+  opening-hand = 6
+  mulligan-up-to = 3
+  // §5.5, §300
+  setup-offerings = 2
+  draw-per-round = 2
+  max-hand = 10
+  // §200.5
+  yard-size = 6
+  max-rounds = 40
+]
 
 // §3.2 Card types: our names for the libraries' card records. §200.2 A Hero is never a unit.
 // §200.8 Fabled cards are unique. §200.6 one Talisman per unit.
@@ -21,62 +58,62 @@ type Creature : UnitCard {}
 type Charm : SpellCard {}
 type Talisman : AttachmentCard { per-unit = 1 }
 
-types = [
-  Hero = CardType { name = nameof(Hero) }
-  Fabled = CardType { name = nameof(Fabled) }
-  Creature = CardType { name = nameof(Creature) }
-  Charm = CardType { name = nameof(Charm) }
-  Talisman = CardType { name = nameof(Talisman) }
-]
-
 // §200.1 Zones, one of each per player. §100.5 what is hidden. §4 nobody may look at Candles.
 zones = [
-  Deck = Zone { name = nameof(Deck), shape = pile, role = deck, visible = none }
-  Hand = Zone { name = nameof(Hand), shape = set, role = hand, visible = owner }
-  Candles = Zone { name = nameof(Candles), shape = pile, role = life, visible = none }
-  Offerings = Zone {
-    name = nameof(Offerings), shape = set, role = resource, visible = owner, face-down = true
-  }
-  Yard = Zone { name = nameof(Yard), shape = row, role = board, visible = all }
-  Hearth = Zone { name = nameof(Hearth), shape = slot, visible = all }
-  Mist = Zone { name = nameof(Mist), shape = pile, role = discard, visible = all }
+  Deck = Zone { shape = pile, role = deck, visible = none }
+  Hand = Zone { shape = set, role = hand, visible = owner }
+  Candles = Zone { shape = pile, role = life, visible = none }
+  Offerings = Zone { shape = set, role = resource, visible = owner, face-down = true }
+  Yard = Zone { shape = row, role = board, visible = all }
+  Hearth = Zone { shape = slot, visible = all }
+  Mist = Zone { shape = pile, role = discard, visible = all }
 ]
 
 // §10 Keywords: each is a library's keyword type under our name. §700.3 Lucky plays are free.
 keywords = [
-  Swift = Swift { name = nameof(Swift) }
-  Guardian = Guardian { name = nameof(Guardian) }
-  Sneaky = Sneaky { name = nameof(Sneaky) }
-  Fierce = Fierce { name = nameof(Fierce), value = 2 }
-  Tough = Tough { name = nameof(Tough) }
-  Lucky = Lucky { name = nameof(Lucky) }
-  Ambush = Ambush { name = nameof(Ambush) }
+  Swift = Swift {}
+  Guardian = Guardian {}
+  Sneaky = Sneaky {}
+  Fierce = Fierce { value = 2 }
+  Tough = Tough {}
+  Lucky = Lucky {}
+  Ambush = Ambush {}
   // Hiss! may only be played against an attack.
   AmbushOnAttack = Ambush { name = 'Ambush', only = @combat.events.attack }
 ]
-event-names = [on-enter = 'Hello', on-defeated = 'Goodbye', awaken = 'Awaken', exhaust = 'Exhaust']
-randomness = [shuffle, initiative]                  // §100.4 nothing else is random
-rules = [ZoneCapacity { zone = @Yard, n = 6, cites = '§200.5' }]
+event-names = [
+  on-enter = 'Hello'
+  on-defeated = 'Goodbye'
+  awaken = 'Awaken'
+  exhaust = 'Exhaust'
+]
+// §100.4 nothing else is random
+randomness = [
+  shuffle
+  initiative
+]
+rules = [ZoneCapacity { zone = @Yard, n = @yard-size, cites = '§200.5' }]
 
 // §11.1 Deckbuilding.
 deck-rules = [
-  DeckSize { n = 50 }, CopiesMax { n = 3 }
-  TypeCount { type = @Hero, min = 1, max = 1 }
-  CopyLimit { type = @Fabled, copies = 1, total = 6 }
+  DeckSize { n = @deck-size }
+  CopiesMax { n = @max-copies }
+  TypeCount { type = nameof(Hero), min = 1, max = 1 }
+  CopyLimit { type = nameof(Fabled), copies = 1, total = @fabled-total }
 ]
 
 // §5 Setup. Offering two cards is a resource policy below.
 setup = [
-  StartsInZone { type = @Hero, zone = @Hearth, face = 1 }             // §5.1
-  ShuffleDeck {}                                                      // §5.2
-  OpeningHand { n = 6 }                                               // §5.3
-  Mulligan { times = 1, up-to = 3 }                                   // §5.4
-  RandomInitiative {}                                                 // §5.6
+  StartsInZone { type = nameof(Hero), zone = @Hearth, face = 1 }  // §5.1
+  ShuffleDeck {}  // §5.2
+  OpeningHand { n = @opening-hand }  // §5.3
+  Mulligan { times = 1, up-to = @mulligan-up-to }  // §5.4
+  RandomInitiative {}  // §5.6
 ]
 
 // §700 Candles.
 life = [
-  LifeStack { name = nameof(Candles), zone = @Candles, size = 9, from = @Deck }   // §5.2
+  LifeStack { name = nameof(Candles), zone = @Candles, size = @candles, from = @Deck }  // §5.2
   LostCardGoesTo { zone = @Hand, cites = '§700.1' }
   LoseOneAtATime { cites = '§700.1' }
   LoseWhenEmpty { cites = '§700.2' }
@@ -86,15 +123,25 @@ life = [
 // §200.3, §6.1 Offerings: any card face down is worth exactly 1.
 resources = [
   Offerings = CardsAsResources {
-    name = nameof(Offerings), zone = @folkborn.zones.Offerings, from = @Hand
-    start = 0, per-round = 1, worth = 1, pay-by = exhaust
+    zone = @folkborn.zones.Offerings
+    from = @Hand
+    start = 0
+    per-round = 1
+    worth = 1
+    pay-by = exhaust
   }
 ]
 resource-rules = [
   NoIdentityWhileResource { resource = @folkborn.resources.Offerings, cites = '§200.3' }
-  OfferAtSetup { resource = @folkborn.resources.Offerings, count = 2, cites = '§5.5' }
-  MayOfferAt {                                                        // §6.1
-    resource = @folkborn.resources.Offerings, moment = @round-start, count = 1
+  OfferAtSetup {
+    resource = @folkborn.resources.Offerings
+    count = @setup-offerings
+    cites = '§5.5'
+  }
+  MayOfferAt {  // §6.1
+    resource = @folkborn.resources.Offerings
+    moment = @round-start
+    count = 1
   }
 ]
 cost-resource = @folkborn.resources.Offerings
@@ -102,56 +149,96 @@ cost-resource = @folkborn.resources.Offerings
 // §300 Rounds.
 turns = [
   AlternatingActions { first = initiative-holder, ends-when = all-pass-in-a-row, cites = '§300.3' }
-  MaxRounds { n = 40 }
-  RoundStart {                                                        // §300.2, skipped in round 1
+  MaxRounds { n = @max-rounds }
+  RoundStart {  // §300.2, skipped in round 1
     skip-round = 1
-    steps = [ReadyAll {}, ResetOncePerRound {}, Triggers { of = @round-start }, Draw { count = 2 }]
+    steps = [
+      ReadyAll {}
+      ResetOncePerRound {}
+      Triggers { of = @round-start }
+      Draw { count = @draw-per-round }
+    ]
   }
-  Actions {                                                           // §6.2
-    allowed = [@common.actions.play, @combat.actions.attack, @ability, @take-initiative, @pass]
+  Actions {  // §6.2
+    allowed = [
+      @common.actions.play
+      @combat.actions.attack
+      @abilities.actions.ability
+      @take-initiative
+      @pass
+    ]
   }
-  RoundEnd {                                                          // §300.6
-    steps = [Triggers { of = @round-end }, ExpireThisRound {}, DiscardTo { hand = 10 }]
+  RoundEnd {  // §300.6
+    steps = [
+      Triggers { of = @round-end }
+      ExpireThisRound {}
+      DiscardTo { hand = @max-hand }
+    ]
   }
 ]
 
 // §300.4-6 The Lantern.
 initiative = [
   InitiativeToken { name = 'Lantern' }
-  TakeInitiativeAsAction {}, AutoPassAfterTaking { cites = '§300.4' }
-  TakeOncePerRound { cites = '§300.5' }, InitiativePassesIfUntaken { cites = '§300.6d' }
+  TakeInitiativeAsAction {}
+  AutoPassAfterTaking { cites = '§300.4' }
+  TakeOncePerRound { cites = '§300.5' }
+  InitiativePassesIfUntaken { cites = '§300.6d' }
 ]
 
 // Units. §400.1d units enter exhausted; §800.1a damage >= Health defeats.
-units = [UnitsEnterExhausted { cites = '§400.1d' }, DefeatAtHealth { cites = '§800.1' }]
+units = [
+  UnitsEnterExhausted { cites = '§400.1d' }
+  DefeatAtHealth { cites = '§800.1' }
+]
 
 // §600 Attacks.
 combat = [
   AttackerChooses { targets = [unit, hero], cites = '§600.1' }
   AttackerMustBeReady {}
-  GuardiansFirst {}, SneakyIgnoresGuardians {}                        // §600.1
-  CancelledAttackerStaysExhausted {}, NoRetarget {}                   // §600.3
-  SimultaneousDamage {}, DamagePersists { cites = '§600.6' }          // §600.4
+  // §600.1
+  GuardiansFirst {}
+  SneakyIgnoresGuardians {}
+  // §600.3
+  CancelledAttackerStaysExhausted {}
+  NoRetarget {}
+  // §600.4
+  SimultaneousDamage {}
+  DamagePersists { cites = '§600.6' }
   LifeDamage { n = 1, cites = '§600.5' }
 ]
 
 // §500 Ambush.
 responses = [
-  ResponseWindows {                                                   // §500.1
-    name = nameof(Ambush), after = [@spells.events.play, @combat.events.attack]
+  ResponseWindows {  // §500.1
+    name = nameof(Ambush)
+    after = [
+      @spells.events.play
+      @combat.events.attack
+    ]
   }
-  OnePerWindow { n = 1 }, NoNesting {}                                // §500.2, §500.3
-  NotAnAction {}, NoWindowForFreePlays {}                             // §500.5, §500.6
+  // §500.2, §500.3
+  OnePerWindow { n = 1 }
+  NoNesting {}
+  // §500.5, §500.6
+  NotAnAction {}
+  NoWindowForFreePlays {}
 ]
 
 // §800 Triggers and state checks.
 scheduling = [
-  TriggersAfterStateCheck {}, ActingPlayerFirst {}, TriggersOpenNoWindow {}, LossOnStateCheck {}
+  TriggersAfterStateCheck {}
+  ActingPlayerFirst {}
+  TriggersOpenNoWindow {}
+  LossOnStateCheck {}
 ]
 
 // §9.4, §800.5 Heroes. §8 an Awakened Hero may attack and takes no damage doing so.
 hero = [
-  TwoFaces {}, AwakenOnStateCheck {}, AwakenedKeepsExhaustedState {}, AwakenedNeverReverts {}
+  TwoFaces {}
+  AwakenOnStateCheck {}
+  AwakenedKeepsExhaustedState {}
+  AwakenedNeverReverts {}
   HeroAttacksWhenAwakened { takes-no-damage = true, cites = '§8' }
   PowerOncePerRound { cites = '§400.3' }
 ]

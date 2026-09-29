@@ -14,13 +14,11 @@
 //
 // Seven parts: the state model, operations, queries and hooks, input, the scheduler, the loop
 // skeleton, and the log with its visibility. Randomness closes it.
-core-operations = CoreOperations
+#type CoreOperations
 
-core = '1'
-
-// The root type of this document.
+// The root type of this document. It has the schema version core.alex states.
 type CoreOperations {
-  core: text
+  core: text?                     // deprecated: the contract has core.alex's schema-version
   object-fields: [text: Field]
   player-fields: [text: Field]
   game-fields: [text: Field]

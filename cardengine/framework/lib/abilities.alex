@@ -1,11 +1,10 @@
 // abilities: a player-activated ability on any card, with an optional cost, usable as an
 // action (tap abilities, ignition effects, reap and fight, hero powers). Depends on common for
 // Cost.
-abilities = Library
+#type Library
 
 name = 'Activated abilities'
 version = '0.1'
-core = '1'
 requires = [@common]
 
 extension Card {

@@ -681,6 +681,203 @@ Files are not programs; they evaluate to one typed object graph and **the engine
 - Bridge is a test of the primitives, not a target: it needs auction, trick-taking and scoring **modules**, a
   second product family; the primitives must bend without changing. Survey records player counts and teams.
 
+## Core changes from the walkthrough review (owner, 2026-09-28)
+
+Approved while reading the TCG walkthrough (`docs/tcg/walkthrough.md`, whose "The finished game"
+is the target, and `cardengine/samples/hello-tcg/`). Core 1 is a draft that may grow but not
+change shape, so every change is additive: old fields stay as deprecated, optional aliases, and a
+document written before the change still binds and means the same.
+
+- **`engine-version` replaces `core`.** `Game.engine-version: int?`, written `engine-version = 1`:
+  readable, and a number. Only the game states it; a set takes its game's version, a library and
+  core-operations take the engine's, so `core = '1'` is gone from every set and library file. The
+  core document says `engine-version = 1`. Compatibility: `Game.core`, `Set.core`, `Library.core`,
+  `CoreOperations.core` and `Core.version` stay as optional, deprecated fields. On a game,
+  `core = '1'` reads as `engine-version = 1`; setting both, or neither, is a checker error (so the
+  field is `int?` in the type and required by the checker, since an old game has only `core`).
+- **Defaults instead of boilerplate on `Game`.** `uses`, `sets`, `types` and `zones` default to
+  `empty`, `players` to `Players {}` (two players, clockwise). A new game file needs only `name`,
+  `engine-version`, `rulebook` and `sets`. `Rulebook.sections` defaults to `empty` too, since a
+  new project's rulebook has only a title. Folkborn dropped its `players` line.
+- **Named numbers, one source of truth.** `Game.numbers: [text: int] = empty`
+  (`numbers = [starting-life = 10, opening-hand = 3]`). How the type system says "int or a number
+  reference": **no new type.** A `numbers` entry is an int member of the game, and a reference to
+  an int member is accepted wherever an int is, by the rule that references are orthogonal to
+  types. So `LifeCounter { start = @starting-life }` needs no change to `LifeCounter`, and every
+  int field of every rule (and step, and card) takes a number without the libraries being edited.
+  Rejected: a `Number = int | NamedNumber` alias, which would have changed the declared type of
+  about a hundred library fields and put a second spelling of "int" into every schema, for
+  nothing the reference rule does not already give. An unknown `@name` in a rule is the binder's
+  ordinary unresolved-reference error. Rulebook section text embeds numbers as `{@starting-life}`
+  (`{{` for a literal brace); this is the tools' convention for rulebook text, not Alex syntax.
+  The checker errors on a `{@name}` that `Game.numbers` lacks and notes digits written straight
+  into section text. Folkborn names its deck size, copies, Fabled total, Candles, opening hand,
+  mulligan, setup Offerings, draw per round, maximum hand, Yard size and round limit.
+- **`Section.title: text?`.** A rendered rulebook needs a heading:
+  `Section { number = '1', title = 'Winning', text = @winning }`. Optional because it is new; a
+  section without one renders by number.
+- **No repeated names (owner, via the TCG Developer Platform session).** A game's card types are
+  exactly the subtypes of a card record its game file declares (`type Creature : UnitCard {}`);
+  `Game.types` is deprecated and defaults to empty. A type whose display name or citation differs
+  from its identifier fixes them on the declaration: `Card.type-name: text?`,
+  `Card.type-cites: Section | text | nic`, both "fixed by the type" like `Ability.holders`. A rule
+  field that named a `CardType` now takes `CardType | text`, the text being `nameof(Hero)`
+  (`TypeCount`, `CopyLimit`, `StartsInZone`, `LifeObjects`, `SacrificeCost`, `BuildBoard`,
+  `Token.type`), checked to name a declared card type. `nameof` rather than `@Hero` because
+  references name values and a card type is a type, as `holders = [nameof(UnitCard)]` already does.
+  And a record under a key in a keyed map takes its `name` from the key: `name` became `text?` on
+  `Zone`, `Counter`, `Keyword` (so `Mechanic`), `Card` (so `Token`), `Deck`, `CardType`, `Family`
+  and every `ResourceRule` record, and the loader fills an omitted name with the key. An explicit
+  `name` wins (`AmbushOnAttack = Ambush { name = 'Ambush' }`); outside a keyed map such a record
+  must set its name, and the checker says so. The keyed map already is the "enum of records"; what
+  made it noisy was repeating each key. Records that live in lists (`LifeCounter`, `LifeStack`,
+  `InitiativeToken`, `ResponseWindows`, `Phase`) keep a required `name`.
+- **Files start with `#type`** (Alex change, made by the mochi Alex session): `#type Game`,
+  `#type Set`, `#type Rules`, `#type Library`, `#type Core`, `#type CoreOperations`. The file's
+  base name is its name, so `@folkborn` and `@common` resolve as before. A text table filling one
+  of the file's own fields is `@@@ .field`. `#type` and a named root in one file is an error; the
+  named root stays legal for other Alex projects. Every cardengine file is converted.
+- **Two binding errors found by the Alex session's re-bind, fixed.** `reveal`'s `CheckToPlay`
+  clashed with `resources`' (type names are one namespace across schemas); the reveal one is now
+  `RevealToPlay`. The `scenarios` verb `pass` made `@pass` ambiguous with the core's `pass` action
+  in every game using `scenarios`; the verb is now `passes`, so `@pass` stays the action.
+
+### An ability carries its numbers (owner approved, 2026-09-28)
+
+Card text drifted from its handler the way the rulebook drifted from the rules: Spark printed
+"Deal 2 damage to your opponent." and its handler said `damage-life(2)`, two copies of one
+number. The same fix, one level down:
+
+```
+spark = Spell {
+  name = 'Spark', cost = 1
+  abilities = [OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }]
+}
+effect damage-opponent { opponent.damage-life(ability.damage) }
+```
+
+- `Ability.numbers: [text: int] = empty`, a new optional field, so every existing card is unchanged.
+- The text embeds them as `{name}`, without `@`; `{@name}` stays the game's `numbers`, so the two
+  can't be confused.
+- A handler reads them through a new core selector, `ability`: the ability the running handler is
+  attached to (`ability.damage`). `ability` was appended to `ParamType` for it. A handler shared by
+  several cards reads each card's own number.
+- The checker errors on a `{name}` in the text that the ability lacks, and on a number the text
+  never shows, since players would be playing with a hidden number. It notes a digit written
+  straight into a handler body.
+- `draw()` with no count draws 1 (`common.draw`'s `count` is optional), so "draw a card" needs no
+  number.
+- A playtest or patch varies a card by its number, and the printed text follows.
+- The core's `ability` selector made Folkborn's `@ability` (the `abilities` library's action)
+  ambiguous, so Folkborn now writes `@abilities.actions.ability`.
+- Not settled: whether keyword parameters (`Applied { n }`) join the same scheme.
+
+### Printing first: cards, constants, schema-version (owner, 2026-09-28, second pass)
+
+The owner reread the walkthrough in two parts (cards and a rulebook to print, then the same game
+made playable) and asked for these changes. The targets are the two samples on branch
+`claude/tcg-id-planning-5d3ed1`: `cardengine/samples/hello-tcg-print/` (no engine concepts at
+all) and `cardengine/samples/hello-tcg/`. Core 1 is still a draft, so every change is additive
+where possible: the fields this replaces stay as deprecated, and Folkborn's files, written
+before, still mean the same. Where a change isn't additive, it says so.
+
+- **`Game.schema-version: int?` replaces `engine-version`.** It is the version of the file
+  format, like a .NET project's target framework, and names no engine, since a printed game has
+  none. `engine-version` (added earlier today) and `core` stay as deprecated fields; either reads
+  as `schema-version = 1`, and a game setting more than one of the three, or none, is a checker
+  error. `Cards` and `Set` documents take the game's, libraries and core-operations the core's.
+  The core document says `schema-version = 1`; `Core.schema-version` was added for it.
+- **`constants` replaces `numbers`, on `Game` and on `Card`.** `Game.constants: [text: int]`;
+  rules take one as `@starting-life` (a reference to an int member is an int, as decided for
+  `numbers`) and rulebook text shows it as `{@starting-life}`. `Card.constants: [text: int]`,
+  shown in the card's text as `{bonus}` (no `@`) and read by its handlers through a new core
+  selector, `card`: the card the running handler is attached to, as printed (`card.bonus`). A
+  handler shared by several cards reads each card's own. Checker: an unknown name in text is an
+  error; a card constant its text never shows is an error (a hidden number); a digit typed into
+  rulebook text, card text or a handler is a note. Scenario bodies may use digits: they set up
+  positions, they aren't rules. `Game.numbers`, `Ability.numbers`, the `ability` selector and the
+  `ability` ParamType member are deprecated and still read; a game may not set both `numbers`
+  and `constants`, and a name may not be both an ability number and a card constant. Why the
+  numbers moved from the ability to the card: with the handler attached by slot, a card needs no
+  ability record to carry them.
+- **A `Cards` document type** (`#type Cards`): `cards`, `decks` and `draft: bool = false`, with
+  no id and no name. Every `Cards` document in the game's folder is part of the game without
+  being listed, so a single release needs no `Game.sets`, and cards can be split across files
+  freely; `draft = true` holds one out. Its cards and decks join the game's namespace like a
+  set's (duplicate names across a game's documents are errors). `Rules.for: Cards | Set`
+  (`for = @cards`). Not in `Cards` yet: counters, keywords and tokens. Hello TCG needs none; when
+  a printable game does, they are added to `Cards` as optional fields.
+- **`Set` is opt-in**, for a game that publishes expansions. It still joins through `Game.sets`,
+  since a release is a decision rather than a file in a folder. `Set.code: text?` (the code
+  printed on its cards) and `Set.symbol: text?` (an asset) were added now; collector numbers and
+  boosters wait for a game that needs them. Folkborn keeps its two sets: it publishes
+  expansions, and its sets carry families and mechanics.
+- **`Card.text: text?`**, the printed rules text, and **handlers attach by slot**
+  (`@hello.on-enter = draw-a-card`, `@cheer.static = ...`, `@spark.on-play = ...`). The slot
+  names when the handler runs, so no ability record is needed to say it. Linker: every card with
+  text has at least one handler, and every handler belongs to a card with text.
+  **How `abilities` coexists:** it stays legal, for what a slot can't carry: an ability's own
+  data (`once-per-round`, and what a kind fixes: `responding`, `hidden`) and a card that prints
+  several abilities, each on its own line. Hero faces and mechanics have no `text` field and
+  keep `abilities`. A card uses one way or the other: with `abilities`, each ability has exactly
+  its handler and each handler its ability (the rule as before), the card's printed text is its
+  abilities' texts in order, and setting `text` too is an error. Folkborn: every card whose only
+  ability was one text-only ability now says `text = '...'` (the wiring in its rules files was
+  already by slot and is unchanged); Sanguine and Sakura (`once-per-round`), the hero faces and
+  the mechanics keep `abilities`.
+- **A game declares its own card types on `Card`, and maps them onto the libraries' records.**
+  `type Creature : Card { cost: int, power: int, health: int }` declares what it prints; the
+  libraries' card records (`UnitCard`, `SpellCard`) are engine concepts. A playable game maps its
+  types with one rule per record, in the library's area:
+  `units = [UnitCards { types = [@Creature] }]`, `spells = [SpellCards { types = [@Spell] }]`.
+  Added, one per card record: `UnitCards`, `SpellCards`, `ClimaxCards`, `AttachmentCards`,
+  `PermanentCards`, `HeroCards`, `WeaponCards`, `ObjectiveCards`, `MissionCards`, `PlotCards`,
+  `EncounterCards`, `EnemyCards`, `StageCards`, `StatCards`. `spells`, `attachments` and
+  `permanents` had no area, so each got a rule base and an area (`SpellRule` / `Game.spells`,
+  `AttachmentRule` / `Game.attachments`, `PermanentRule` / `Game.permanents`);
+  `OneClimaxPerTurn` stays a plain `Rule` in `rules`.
+  Conformance is structural: the mapped type declares or inherits every required field of the
+  record with the same type, and reads the record's optional fields it lacks as their defaults
+  (a Hello TCG Creature has no `unique`, so it is `false`). A mapped type gains the record's
+  extension members from every loaded library (`on-enter` from units, `on-attack` from combat),
+  so its cards have the handler slots and the library's rules apply to them. A type may be
+  mapped onto several records whose members don't clash. Declaring a type as a subtype of a
+  library's record (`type Creature : UnitCard {}`) stays legal and needs no mapping; Folkborn
+  keeps that form, since it has always been a playable game and its types fix library fields
+  (`unique`, `per-unit`).
+  **This needs an Alex language change**, as the mochi Alex session confirmed: today a
+  reference can't name a type declaration, and a type gets extension members only from its own
+  bases. Proposed, and taken up for Alex 0.6.0 by a new Alex session: a field type `type R`
+  (`types: [type UnitCard]`) whose value is a reference to a type declaration (`@Creature`),
+  checked for structural conformance to `R`; the named type is then viewed as an `R` and gains
+  `R`'s extension members; two mapped records giving one member name is an error at the mapping.
+  Until 0.6.0 lands, the mapping rules and the samples' slots don't bind in C# Alex.
+  Rejected: `nameof(Creature)` in the samples (it binds today, but the owner wrote `@Creature`,
+  and a reference is what a reader expects), and making the game declare the slots
+  (`extension Creature { on-enter: effect? }`), which puts engine concepts back into the game.
+  Not changed yet: rule fields that name a card type (`TypeCount { type = nameof(Hero) }`) still
+  take `CardType | text`; whether they move to `type Card` references is open.
+- **`Game.card-back: text?`**, an asset reference to the back every printed card shares.
+- **`Section.title: text`, required.** It was added as optional earlier today; the owner wants
+  every section to have a heading. Not additive, but core 1 is a draft and no document has a
+  section without a title.
+- **Defaults** (done in the first pass): `uses`, `types`, `zones` and `sets` default to `empty`,
+  `players` to `Players {}`; a record under a key in a keyed map takes its `name` from the key.
+  A new game needs only `name` and `schema-version`.
+- **Formatting (owner requirement), applied to Folkborn's game and set files:** a collection
+  lists one item per line unless it sits in a record that fits on one line; a record that
+  doesn't fit on one line lists one field per line, except that a card keeps its identity
+  (`name`, `family`, `rarity`) and its stats (`cost`, `power`, `health`) on a line each, as the
+  samples do; a deck entry `[@card, 3]` is one item; a comment that described several items on
+  one line now sits above them. Records and lists that were already split over lines stay split.
+  Rules documents were not reformatted: their bodies are code.
+- To do, left as checker notes: Folkborn's card text and handlers still type their numbers
+  ('Deal 2 damage to a unit.', `damage(2)`); moving them into card constants is a content change
+  to its cards and rules files. Folkborn names no `card-back` yet.
+- The planning branch isn't merged into main here. Its `docs/tcg/tcg-developer-platform.md`
+  conflicts with main's (both rewrote the "Core changes" list); the TCG Developer Platform
+  session owns that file and resolves the conflict when it next merges main.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

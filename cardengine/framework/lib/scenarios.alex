@@ -1,11 +1,10 @@
 // scenarios: the vocabulary of `scenario` blocks in rules documents: how to set up a position,
 // what to do, and what to assert. A library rather than host code so every engine implements
 // the same words. Depends on the core only; other libraries add their own scenario words.
-scenarios = Library
+#type Library
 
 name = 'Scenario vocabulary'
 version = '0.1'
-core = '1'
 
 selectors = [
   me = Selector { yields = player }
@@ -30,7 +29,8 @@ verbs = [
   attack = Verb { params = [by = unit, target = target], only-in = scenario }
   respond = Verb { on = player, params = [with = card], only-in = scenario }
   activate = Verb { on = unit, only-in = scenario }
-  pass = Verb { on = player, only-in = scenario }
+  // Not `pass`: a game's `@pass` means the core's pass action, and one name may not mean two.
+  passes = Verb { on = player, only-in = scenario }
   defeat = Verb { on = unit, only-in = scenario }
   end-round = Verb { only-in = scenario }
   // then

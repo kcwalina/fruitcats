@@ -1,10 +1,9 @@
 // objects: what happens to objects that change zones, stack under others, or are tokens.
 // Depends on the core only.
-objects = Library
+#type Library
 
 name = 'Objects'
 version = '0.1'
-core = '1'
 
 type ObjectRule : Rule {}
 extension Game { objects: [ObjectRule] = empty }

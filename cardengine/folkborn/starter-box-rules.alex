@@ -1,7 +1,7 @@
 // Starter Box rules: a program document. Effects, statics and conditions, then the wiring that
 // attaches them to the set's cards, faces and mechanics. `this` is the object a declaration is
 // attached to. Code points at data; the set file knows nothing about this document.
-starter-box-rules = Rules
+#type Rules
 
 for = @starter-box
 

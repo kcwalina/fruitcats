@@ -324,6 +324,16 @@ has:
   save is a commit), or storage we host for designers who don't use GitHub. Every save goes to the
   owner's provider, an artist's upload included. Nothing in the front end or the core knows which
   provider it has, so providers can be added, or the default changed, later.
+- **Who writes a physical designer's rules: an LLM, mostly.** A physical game's designer usually
+  isn't a programmer, so an LLM (an agent in the online designer) writes the game's rules and card
+  handlers in Alex from their rulebook and card text, and the designer judges them by playtesting.
+- **A graphical designer for simple handlers is a research project.** Can a designer build the
+  simple cases in the IDE, with something like "when this card enters play, deal 2 damage to a
+  Creature" picked from menus? The handler limits (no loops except `each`, no user functions, only
+  the libraries' vocabulary) were chosen so that any handler can be shown as a form, which makes
+  it plausible. Whether it is viable is not known. If it is, it covers the common, simple
+  abilities and nothing more: it will not scale to everything. **The long tail is an LLM, or the
+  designer learning a little Alex.**
 
 ## How cards look
 
@@ -543,6 +553,9 @@ The earlier order continues on the core:
    storage and GitHub first), card design and the artist workflow (the Artist Studio folded in),
    print files, and nightly automatic playtests with a results page. That last part is the
    product's main value.
+   **Research, alongside:** a graphical designer for simple handlers (trigger, target, effect,
+   picked from the libraries' vocabulary). Decide whether it is viable from a prototype on the
+   common handlers of Folkborn and Hello TCG before building it for real.
 8. **Services.**
 
 Then **Folkborn in Alex**, compared against today's hard-coded engine (`packages/engine`): win
@@ -671,9 +684,6 @@ Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
 
 - Are the language server and VS Code extension free (part of the toolchain) or part of the paid
   IDE? Recommended: free.
-- Who makes a physical designer's game playable in the online designer. They aren't programmers,
-  so presumably an agent writes the rules in Alex from their rulebook and card text, and the
-  designer judges it by the playtest results. How much of that they see or confirm is open.
 - The product's name.
 - **Scenarios (given / when / then, `tcg test`, the `scenarios` library) are not designed yet** (the owner,
   2026-09-28). They get designed properly near the end: after cards and the rulebook, the IDE, printing, the

@@ -296,14 +296,34 @@ has:
   §6) redraws the card on every mouse move, so the card renderer runs in the browser, in the
   core, not behind a request to `tcg`. Clicking an event to jump to the rule that caused it
   (§13) needs the core to carry source positions through loading into the event log.
-- **A hosted host, later.** The same front end over a workspace in the cloud, a copy of a repo,
-  never the place a game lives. It is how people who don't use git work: artists, playtesters,
-  co-designers. The Artist Studio's card previews become this front end's, and its briefs,
-  comments and approvals become services on top.
+- **An online host** for the online designer (next section): the same front end over a workspace
+  that lives in storage instead of on the designer's disk.
 - **A desktop window is optional** and cheap: the same front end in a WebView2 or Photino
   window, if the owner ever wants file associations and a window of its own.
 - **Playing is a separate app on the same core.** Studio's Play tab runs the working files; the
   player app is its own polished shell that loads a published, frozen version of a game.
+
+### Two products on one core (owner, 2026-09-29)
+
+- **Studio (local)** is the full IDE, like Visual Studio, for **digital game designers**: people
+  who build a game the computer plays, in a repo, with `tcg` and agents.
+- **The online designer** is what the Artist Studio grows into: an online IDE for people who
+  design **physical games** to print and sell. They are not developers and do not care about
+  shipping on Steam. In it they add and design cards (not only fill in the art for a packet we
+  prepared), work with artists (uploads, comments, approvals), and make print files. Artists,
+  card designers and, later, playtesters use it.
+- **Playtesting is the main value of the online designer.** Many websites already design cards,
+  and we don't compete with them on that alone. What they don't do is play the game: here the
+  game runs on the engine, bots play it overnight, and the designer reads the results in the
+  morning. So the engine and the playtesting portal are part of the online product, not only of
+  Studio.
+- **Both products share the front end's components and the core.** They differ in their host and
+  in what they put first: code and rules in Studio, cards, art and playtest results online.
+- **Where files live is behind the workspace protocol.** The designer owns the project. A
+  **storage provider** decides where its files are kept: a local folder, a GitHub repository (a
+  save is a commit), or storage we host for designers who don't use GitHub. Every save goes to the
+  owner's provider, an artist's upload included. Nothing in the front end or the core knows which
+  provider it has, so providers can be added, or the default changed, later.
 
 ## How cards look
 
@@ -353,6 +373,39 @@ card design exactly:
 - **Finishes:** a game declares `enum Finish { standard, foil }` and a `finish` field; a type can fix
   it (`finish = foil` on `Hero`). `tcg cards --print` groups foil cards as their own order.
 
+### Text looks the same whatever language the core is written in (owner, 2026-09-29)
+
+The core may be rewritten in another language that compiles to WebAssembly, and the cards must
+not change when that happens: not a font size, not a line break, not a glyph's position. What
+decides those is text layout: measuring words, fitting a text box, breaking lines and placing
+glyphs. A shaping library such as HarfBuzz (rustybuzz in Rust) is effectively its own
+specification, and a rewrite couldn't reproduce its output without porting it. So:
+
+- **The core owns text layout, and the algorithm is written down.** It covers glyph lookup
+  (`cmap`), advance widths (`hmtx`), pair kerning (the `kern` table and GPOS pair adjustment),
+  line breaking, fitting by stepping the size down to the part's `smallest`, and emphasis. There
+  are no ligatures and no complex shaping. Positions are integers in 1/64 pixel with rounding
+  stated at each step, so no two implementations can disagree over a float.
+- **Fonts are the project's data.** The font files are assets in the game's folder, so every
+  metric the algorithm uses comes from a file, not from a library or the operating system.
+  Reading them (tables and glyph outlines) is either a small pure-Rust reader such as
+  `ttf-parser` or our own. Both are fine, because the file format defines what they read exactly.
+- **The contract is the draw list, not the pixels.** Laying out a card produces a draw list:
+  every image with its rectangle, and every glyph with its font, glyph id, size, position and
+  colour, in order. It is text and deterministic. Golden draw lists for every card of Folkborn
+  and Hello TCG are committed as fixtures, and any implementation of the core must reproduce them
+  byte for byte, exactly as the Alex dumps are compared today.
+- **Pixels come from rasterising the draw list,** and the rasteriser is the replaceable part.
+  `tiny-skia` is allowed there. A different rasteriser can differ only in the antialiasing at a
+  glyph's edge, never in size, position or line breaks. Image comparisons allow that small
+  tolerance and nothing more.
+- **No rustybuzz.** Scripts that need complex shaping (Arabic, the Indic scripts) are out of
+  scope until a game needs them. Then their rules are added to the written algorithm, not handed
+  to a library.
+- Moving from SkiaSharp can shift glyphs by fractions of a pixel from today's cards. The first
+  cards the core draws are compared with today's for layout: the same sizes chosen and the same
+  line breaks. From then on, the core's draw lists are the goldens.
+
 Still to explore, as a survey like the rules survey: the elements cards have across many TCGs
 (rarity marks, set symbols and collector numbers, faction frames, icons in text, finishes such as
 foil, two-faced cards) and the layout parts they need.
@@ -361,8 +414,11 @@ foil, two-faced cards) and the layout parts they need.
 
 - **Free:** the toolchain: the `tcg` CLI, Alex, the engine, bots, local play, the rulebook and card
   rendering.
-- **Paid:** Studio, the IDE where you see composed cards and design graphically.
-- **Services (later):** cloud playtests, online hosting, storage, printing partners.
+- **Paid:** Studio, the local IDE for digital game designers.
+- **Paid:** the online designer for physical games. Its core is the nightly automatic playtests;
+  storage for designers without GitHub goes with it.
+- **Services (later):** cloud playtests for Studio users, online hosting of playable games,
+  printing partners.
 
 ## Where it lives
 
@@ -449,14 +505,20 @@ which is verified on Linux but not yet on Windows.
 
 ### Stage 4: the card renderer in the core
 
-Needs the open question on font and drawing libraries answered first.
+As decided in "Text looks the same whatever language the core is written in":
 
-1. Layout (boxes, templates, text fitting, emphasis, frames, icons, two faces, finishes) and
-   drawing, from `card-layout.alex`, ported from `cardengine/tcg/Renderer.cs` and `Faces.cs`.
-2. *Done when* the core draws every released Folkborn card pixel for pixel like `tcg cards` does
-   today (a per-card image diff, with a stated tolerance if antialiasing differs). Then `tcg cards`
-   draws through the core, and SkiaSharp leaves `tcg`.
-3. Studio shows finished cards drawn in the page.
+1. **Write the text layout algorithm down first**, as a short spec beside the code: glyph lookup,
+   advances, kerning, line breaking, fitting, emphasis, and 1/64-pixel integer positions with
+   their rounding.
+2. **Layout to a draw list** from `card-layout.alex` (boxes, templates, text fitting, emphasis,
+   frames, icons, two faces, finishes), ported from `cardengine/tcg/Renderer.cs` and `Faces.cs`.
+   Fonts are read from the project's font files. No rustybuzz.
+3. **Rasterise the draw list** with `tiny-skia`.
+4. *Done when:* every released Folkborn card has the same font sizes and line breaks as
+   `tcg cards` draws today, and differs from it only by antialiasing within a stated tolerance.
+   Then the core's draw lists are committed as goldens, `tcg cards` draws through the core, and
+   SkiaSharp leaves `tcg`.
+5. Studio shows finished cards drawn in the page.
 
 ### Stage 5: Studio edits
 
@@ -477,8 +539,10 @@ The earlier order continues on the core:
    hot-seat, then online through the match host (a C# server running the core).
 5. **`tcg rulebook`.**
 6. **Print files** from `tcg cards --print`.
-7. **The hosted workspace and the Artist Studio as a mode of it**, after the open questions on
-   hosting are answered.
+7. **The online designer for physical games:** the online host with storage providers (our
+   storage and GitHub first), card design and the artist workflow (the Artist Studio folded in),
+   print files, and nightly automatic playtests with a results page. That last part is the
+   product's main value.
 8. **Services.**
 
 Then **Folkborn in Alex**, compared against today's hard-coded engine (`packages/engine`): win
@@ -607,14 +671,9 @@ Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
 
 - Are the language server and VS Code extension free (part of the toolchain) or part of the paid
   IDE? Recommended: free.
-- Who the hosted Studio is for: artists, playtesters and co-designers only, or also developers who
-  don't want to install anything (a much fuller host, closer to Codespaces).
-- Whether the Artist Studio's workflow (briefs, rounds of comments, approvals) is a platform
-  feature every game gets, or Folkborn's own process that stays a separate app for now.
-- In a hosted workspace, how an artist's upload reaches the repo: a commit, or a branch the
-  designer accepts.
-- Whether the core may use pure-Rust libraries for the card renderer's font shaping and
-  rasterising (rustybuzz, tiny-skia), vendored, or writes its own. The parser needs none.
+- Who makes a physical designer's game playable in the online designer. They aren't programmers,
+  so presumably an agent writes the rules in Alex from their rulebook and card text, and the
+  designer judges it by the playtest results. How much of that they see or confirm is open.
 - The product's name.
 - **Scenarios (given / when / then, `tcg test`, the `scenarios` library) are not designed yet** (the owner,
   2026-09-28). They get designed properly near the end: after cards and the rulebook, the IDE, printing, the

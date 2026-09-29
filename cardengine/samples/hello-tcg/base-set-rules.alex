@@ -16,18 +16,18 @@ effect destroy-a-creature { choose(all).destroy() }
 
 scenario 'Hello draws a card when it enters' {
   given hand(me, @hello)
-  given deck(me, @friend)
-  given counter-is(me, @Energy, 2)
+    deck(me, @friend)
+    counter-is(me, @Energy, 2)
   when play(me, @hello)
   then in-zone(@friend, @Hand)
 }
 
 scenario 'Goodbye destroys the chosen Creature' {
   given controls(opponent, @cheer)
-  given controls(opponent, @friend)
-  given hand(me, @goodbye)
-  given counter-is(me, @Energy, 3)
+    controls(opponent, @friend)
+    hand(me, @goodbye)
+    counter-is(me, @Energy, 3)
   when play(me, @goodbye, target: @cheer)
   then in-zone(@cheer, @Discard)
-  then power(@friend) == 1
+    power(@friend) == 1
 }

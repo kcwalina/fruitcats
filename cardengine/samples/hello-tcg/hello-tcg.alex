@@ -3,6 +3,7 @@
 name = 'Hello TCG'
 engine-version = 1
 rulebook = @rulebook
+card-back = 'art/card-back.png'
 uses = [
   @common
   @units

@@ -327,6 +327,8 @@ dialect's headers were `# name`, with a space, so the two can't be confused. The
 legal for other projects that use Alex until nothing needs it. To settle in the Alex spec: how a
 text table fills one of the file's own fields (today `@@@ root-name.field`).
 
+Needed for printing: **`Game.card-back: text?`**, an asset reference to the back every printed card shares.
+
 Still open: **a heading per rulebook section.** The walkthrough writes `Section { number, title,
 text }`; the core's `Section` has no `title` yet. Asked of the TCG Alex session.
 

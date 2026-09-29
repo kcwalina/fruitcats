@@ -624,11 +624,14 @@ game, from a bot run or from online play, can be replayed this way.
 
 ## 8. A card that does something
 
-Now a card with an ability. Add **Hello** to `cards` in `base-set.alex`:
+Now a card with an ability. Save a picture for it as `art/hello.png`, and add **Hello** to `cards`
+in `base-set.alex`:
 
 ```
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
+    art = 'art/hello.png'
+    flavor = 'Nice to meet you.'
     abilities = [
       OnEnter { text = 'When Hello enters, draw a card.' }
     ]
@@ -677,8 +680,8 @@ handler:
 ```
 scenario 'Hello draws a card when it enters' {
   given hand(me, @hello)
-  given deck(me, @friend)
-  given counter-is(me, @Energy, 2)
+    deck(me, @friend)
+    counter-is(me, @Energy, 2)
   when play(me, @hello)
   then in-zone(@friend, @Hand)
 }
@@ -703,11 +706,13 @@ you whether a card still does what its text says.
 ## 9. Three more cards
 
 **Cheer** makes your other Creatures stronger for as long as it is on the board. That is a
-*static* ability. Add it to `cards`:
+*static* ability. Save its picture as `art/cheer.png`, and add it to `cards`:
 
 ```
   cheer = Creature {
     name = 'Cheer', cost = 2, power = 1, health = 2
+    art = 'art/cheer.png'
+    flavor = 'Louder together.'
     abilities = [
       Static {
         text = 'Your other Creatures have +{bonus} Power.'
@@ -758,11 +763,13 @@ uses = [
 type Spell : SpellCard {}
 ```
 
-The cards:
+The cards, with their pictures in `art/spark.png` and `art/goodbye.png`:
 
 ```
   spark = Spell {
     name = 'Spark', cost = 1
+    art = 'art/spark.png'
+    flavor = 'Small, bright, rude.'
     abilities = [
       OnPlay {
         text = 'Deal {damage} damage to your opponent.'
@@ -772,6 +779,8 @@ The cards:
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
+    art = 'art/goodbye.png'
+    flavor = 'See you around.'
     abilities = [
       OnPlay { text = 'Destroy a Creature.' }
     ]
@@ -797,12 +806,12 @@ A scenario with a choice in it:
 ```
 scenario 'Goodbye destroys the chosen Creature' {
   given controls(opponent, @cheer)
-  given controls(opponent, @friend)
-  given hand(me, @goodbye)
-  given counter-is(me, @Energy, 3)
+    controls(opponent, @friend)
+    hand(me, @goodbye)
+    counter-is(me, @Energy, 3)
   when play(me, @goodbye, target: @cheer)
   then in-zone(@cheer, @Discard)
-  then power(@friend) == 1
+    power(@friend) == 1
 }
 ```
 
@@ -1028,7 +1037,15 @@ and a rule with no citation, or a section no rule cites, is a note.
 
 ## 13. Print your cards
 
-When you want the game on a table, not just on a screen:
+When you want the game on a table, not just on a screen. Printed cards need a back, the same
+for every card in the game. Save an image as `art/card-back.png` and name it in
+`hello-tcg.alex`:
+
+```
+card-back = 'art/card-back.png'
+```
+
+Then:
 
 ```bash
 tcg cards --print --decks swarm big
@@ -1098,10 +1115,15 @@ hello-tcg/
   art/
     friend.png
     big-friend.png
+    hello.png
+    cheer.png
+    spark.png
+    goodbye.png
+    card-back.png
   AGENTS.md
 ```
 
-These are the complete Alex files. The two images are whatever pictures you chose.
+These are the complete Alex files. The images are whatever pictures you chose.
 
 ### hello-tcg.alex
 
@@ -1111,6 +1133,7 @@ These are the complete Alex files. The two images are whatever pictures you chos
 name = 'Hello TCG'
 engine-version = 1
 rulebook = @rulebook
+card-back = 'art/card-back.png'
 uses = [
   @common
   @units
@@ -1281,12 +1304,16 @@ cards = [
   }
   hello = Creature {
     name = 'Hello', cost = 2, power = 1, health = 1
+    art = 'art/hello.png'
+    flavor = 'Nice to meet you.'
     abilities = [
       OnEnter { text = 'When Hello enters, draw a card.' }
     ]
   }
   cheer = Creature {
     name = 'Cheer', cost = 3, power = 1, health = 2
+    art = 'art/cheer.png'
+    flavor = 'Louder together.'
     abilities = [
       Static {
         text = 'Your other Creatures have +{bonus} Power.'
@@ -1296,6 +1323,8 @@ cards = [
   }
   spark = Spell {
     name = 'Spark', cost = 1
+    art = 'art/spark.png'
+    flavor = 'Small, bright, rude.'
     abilities = [
       OnPlay {
         text = 'Deal {damage} damage to your opponent.'
@@ -1305,6 +1334,8 @@ cards = [
   }
   goodbye = Spell {
     name = 'Goodbye', cost = 3
+    art = 'art/goodbye.png'
+    flavor = 'See you around.'
     abilities = [
       OnPlay { text = 'Destroy a Creature.' }
     ]
@@ -1354,19 +1385,19 @@ effect destroy-a-creature { choose(all).destroy() }
 
 scenario 'Hello draws a card when it enters' {
   given hand(me, @hello)
-  given deck(me, @friend)
-  given counter-is(me, @Energy, 2)
+    deck(me, @friend)
+    counter-is(me, @Energy, 2)
   when play(me, @hello)
   then in-zone(@friend, @Hand)
 }
 
 scenario 'Goodbye destroys the chosen Creature' {
   given controls(opponent, @cheer)
-  given controls(opponent, @friend)
-  given hand(me, @goodbye)
-  given counter-is(me, @Energy, 3)
+    controls(opponent, @friend)
+    hand(me, @goodbye)
+    counter-is(me, @Energy, 3)
   when play(me, @goodbye, target: @cheer)
   then in-zone(@cheer, @Discard)
-  then power(@friend) == 1
+    power(@friend) == 1
 }
 ```

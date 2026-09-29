@@ -49,7 +49,7 @@ discussed by editing them instead of re-pasting them into chat.
 
 ## Dependencies: the platform never depends on Folkborn
 
-`cardengine/` is the platform (TDP; see "Products and names" in
+`cardengine/` is the platform (Kardix Platform; see "Products and names" in
 `docs/tcg/tcg-developer-platform.md`). It moves to its own repository once the engine plays
 Folkborn from its Alex rules, so it must be movable as a folder today:
 

@@ -49,7 +49,7 @@ work around it: use the new words.
 
 ## The platform and Folkborn
 
-`cardengine/` is the TCG developer platform, a separate product that moves to its own repository once its engine
+`cardengine/` is the Kardix platform (the TCG developer platform), a separate product that moves to its own repository once its engine
 plays Folkborn. Nothing in `cardengine/` may refer to Folkborn's code or data (`packages/`, `apps/`, `content/`,
 `playtest/`, `games/`, `art/`) or carry Folkborn's numbers or conventions; Folkborn uses the platform only through
 the `tcg` command and, later, the core's `.wasm`. The rule and its known exceptions: `cardengine/README.md`,

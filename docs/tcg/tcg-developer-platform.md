@@ -432,21 +432,26 @@ foil, two-faced cards) and the layout parts they need.
 
 ## Products and names (owner, 2026-09-29)
 
-Five products. The names below are **code names** for talking and planning. The real names come
-from one brand word, not yet chosen, over plain descriptive names: `<Brand> Platform`,
-`<Brand> Studio`, `<Brand> Designer`, `<Brand> Playtest`. "TCG" is not a brand: it is a generic
-term, and it undersells the scope.
+**The brand is Kardix**, an invented word ("card" + "-ix"). An invented word was chosen over a real
+one (Talon, Tabula) so that the domain and the trademark can be owned outright. Every product is
+`Kardix` plus a plain descriptive word:
 
-| Code name | Product | For |
-|---|---|---|
-| **Folkborn** | the game: Steam, web, iOS and Android | players; the platform's first real game |
-| **TDP**, the TCG Developer Platform | the free, low-level tools: the core, `tcg.exe`, Alex, the framework and libraries | anyone, and agents |
-| **TPS**, the TCG Programmer Studio | the local IDE on TDP (Studio, above) | digital game designers |
-| **TDS**, the TCG Designer Studio | the online IDE on TDP (the online designer, above; what the Artist Studio grows into) | physical game designers and their artists |
-| **TPA**, the TCG Playtesting App | the online playtesting service: the core run in the cloud, bots overnight, reports | anyone with a game: TDS users, TPS users, and people who use only the free tools with an LLM |
+| Product | Code name used until now | What it is | For |
+|---|---|---|---|
+| **Folkborn** | Folkborn | the game: Steam, web, iOS and Android | players; the platform's first real game |
+| **Kardix Platform** | TDP | the free, low-level tools: the core, the `kardix` command (today `tcg`), Alex, the framework and libraries | anyone, and agents |
+| **Kardix Studio** | TPS | the local IDE (Studio, above) | digital game designers |
+| **Kardix Designer** | TDS | the online IDE (the online designer, above; what the Artist Studio grows into) | physical game designers and their artists |
+| **Kardix Playtest** | TPA | the online playtesting service: the core run in the cloud, bots overnight, reports | anyone with a game: Designer and Studio users, and people who use only the free tools with an LLM |
 
-TPA is sold on its own as well as with the studios. Someone can write a game with the free tools
-and an LLM, and pay only for playtesting.
+Kardix Playtest is sold on its own as well as with the studios. Someone can write a game with the
+free tools and an LLM, and pay only for playtesting.
+
+**Before the name is used in public:** register `kardix.com` (and `.gg`), and run a trademark
+search in classes 9, 41 and 42 (software, games, SaaS). Only web searches have been done so far,
+and they found no product called Kardix. The known risk is **Kardex**, a large storage-automation
+company one letter away, in a different field. A trademark attorney should judge whether that
+matters in class 9.
 
 **Scope: TCGs first, card games in general next, and the door stays open.** The owner's
 favourites are card-driven board games such as *Race for the Galaxy*, and supporting a game like
@@ -455,26 +460,26 @@ TCGs come first, until they work end to end. Nothing in names, folders or the co
 "trading" card games. Anything TCG-specific belongs in a library, never in the core, which is
 already the rule for the libraries.
 
-**Brand candidates.** These had quick web searches only, not a trademark or domain search.
+**Competitors seen while choosing the name.** Two aim at the same value, design plus automatic
+playtesting: Decklab AI (decklab.ai, "AI card game design, prototyping and playtesting") and
+ShuffleKit. Board Game Lab, Dextrous and Tabletop Creator do design and manual play. They are
+worth a proper look before settling Kardix Playtest's positioning.
 
-- **Talon**: the pile of undealt cards in many European card games, the stock the game is drawn
-  from. It is about card games without being about TCGs, short, and says "the thing a game comes
-  out of". No card-design or playtest product of that name turned up. The word is common elsewhere
-  in software, so it needs a real trademark check.
-- **Kibitzer**: the onlooker at a card table who comments on the play. It is apt for TPA, where
-  bots play and an LLM comments, and is perhaps better as TPA's own name under the brand than as
-  the brand itself. Small chess and Go apps use "Kibitz".
-- **Tabula**: an ancient Roman board game, Latin for "board" and "table". It leaves the most room
-  for board games, but a game studio called Tabula Gaming exists.
-- Ruled out: Deckwright (a D&D card maker), Cardwright (a proxy printer), Tablewright (a virtual
-  tabletop), ProtoPlay (a festival), Foundry (Foundry VTT), Forge (the MTG engine).
-- **Competitors seen while searching** that aim at the same value (design plus automatic
-  playtesting): Decklab AI (decklab.ai, "AI card game design, prototyping and playtesting") and
-  ShuffleKit. Board Game Lab, Dextrous and Tabletop Creator do design and manual play. Worth a
-  proper look before committing to TPA's positioning.
+**Renaming in the code.** It is planned here but not done yet, and must happen before anyone
+outside uses the tools:
 
-**The command-line tool's name follows the brand.** `tcg` is a code name too. Rename it once, when
-the brand is chosen, before anyone outside uses it.
+- The command `tcg` becomes `kardix` (`kardix new`, `kardix check`, `kardix studio`, …): the
+  project `cardengine/tcg/` and its assembly name, `npm run cards` in fruitcats, and every
+  `tcg …` in this doc, the walkthrough and the READMEs. The walkthrough's reader-facing text uses
+  the new name.
+- The core's module `tcg_engine.wasm` becomes `kardix.wasm`, and the crate `tcg-engine` becomes
+  `kardix-core`. Its exports lose the `tcg_` prefix (`kardix_alloc`, `kardix_free`); hosts change
+  in the same commit.
+- The folder `cardengine/` stays until the platform moves to its own repository, `kardix`, where
+  the folders become `core/`, `cli/`, `framework/`, `studio/`, `designer/`, `playtest/`. Renaming
+  it twice would only break links.
+- "TCG developer platform" in prose becomes "Kardix". This document keeps its file name until the
+  move, so links to it keep working.
 
 ## Where it lives
 
@@ -486,7 +491,7 @@ session).
 **When it moves to its own repo (owner, 2026-09-29):** once the engine can play Folkborn from its
 Alex rules. Until then the separation is by folder, with the dependency rule written where every
 session reads it (`cardengine/README.md`, "Dependencies", and fruitcats' `CLAUDE.md`). Folkborn's
-own LLM playtester (`playtest/`) stays until then too. Afterwards it is replaced by TPA, which
+own LLM playtester (`playtest/`) stays until then too. Afterwards it is replaced by Kardix Playtest, which
 Folkborn uses like any other game.
 
 ## Folkborn's game folder
@@ -543,6 +548,9 @@ which is verified on Linux but not yet on Windows.
 
 ### Stage 2: `tcg.exe` runs the core
 
+0. **Rename first** (see "Products and names", "Renaming in the code"): `tcg` becomes `kardix`, and
+   `tcg_engine.wasm` becomes `kardix.wasm`, while few files use them. The rest of this plan says `tcg`
+   for what is `kardix` from here on.
 1. Move `EngineModule` (the Wasmtime host) from `cardengine/conformance` into `tcg`, and embed
    `tcg_engine.wasm` as a resource.
 2. `tcg check` runs through the core.

@@ -309,9 +309,9 @@ deprecated fields.
 - Fixed from the Alex session's re-bind: `reveal`'s `CheckToPlay` is `RevealToPlay` (it clashed
   with `resources`'), and the scenario verb `pass` is `passes`, so `@pass` in a game that uses
   `scenarios` means the core's pass action without qualifying it.
-
-Next, proposed in `cardengine/decisions.md` and not implemented: an ability carries its numbers
-(`numbers = [damage = 2]`), used by both its printed text (`{@damage}`) and its handler.
+- Done: **an ability carries its numbers.** `Ability.numbers` (`numbers = [damage = 2]`), shown
+  in its text as `{damage}` and read by its handler as `ability.damage` through the new core
+  selector `ability`.
 
 ## Open questions
 

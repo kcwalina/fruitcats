@@ -110,7 +110,10 @@ turns = [
     ]
   }
   Actions {                                                           // §6.2
-    allowed = [@common.actions.play, @combat.actions.attack, @ability, @take-initiative, @pass]
+    allowed = [
+      @common.actions.play, @combat.actions.attack, @abilities.actions.ability, @take-initiative
+      @pass
+    ]
   }
   RoundEnd {                                                          // §300.6
     steps = [Triggers { of = @round-end }, ExpireThisRound {}, DiscardTo { hand = @max-hand }]

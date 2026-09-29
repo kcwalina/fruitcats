@@ -92,6 +92,8 @@ discussed by editing them instead of re-pasting them into chat.
 - Numbers that shape a game are named once in `numbers = [starting-life = 10, ...]` on the game.
   Rules refer to them (`start = @starting-life`) and rulebook text embeds them
   (`{@starting-life}`); the checker notes digits written straight into rulebook text.
+- An ability names the numbers its text prints: `numbers = [damage = 2]`, embedded in the text
+  as `{damage}` and read by its handler as `ability.damage`.
 - `nic` (Polish for "nothing") is the no-value. A field is required exactly when its type doesn't
   include `nic`; `T?` is sugar for `T | nic` on a single type; a union with nothing is spelled
   out, never parenthesised. Omitted means `nic` in a document and unchanged in a patch.

@@ -237,6 +237,7 @@ enum ParamType {
   targets
   card                            // a card definition, not an object in play
   moment, pending, rules, zone, coords, object, objects, faces
+  ability                         // the ability a handler is attached to; `.name` reads a number
 }
 enum BlockKind { effect, condition, static, scenario }
 
@@ -251,8 +252,15 @@ enum BlockKind { effect, condition, static, scenario }
 // handler in a rules document, assigned to the holder's slot named after the kind
 // (`OnEnter` -> `on-enter`). The linker requires each declared ability to have its handler and
 // each handler to have its declared ability.
+// An ability carries the numbers its text prints, so the text and the handler share one copy:
+// `OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }` and
+// `effect damage-opponent { opponent.damage-life(ability.damage) }`. The text embeds them as
+// `{name}` (`{@name}` is the game's `numbers`); the handler reads them through the `ability`
+// selector. The checker errors on a `{name}` the ability lacks and on a number its text never
+// shows (a hidden number), and notes a digit written straight into a handler body.
 type Ability {
   text: text?                     // the printed text; the designer's, not generated
+  numbers: [text: int] = empty
   once-per-round: bool = false
   holders: [text]                 // fixed by the kind: record types it may sit on
   event: text?                    // fixed by the kind: the event the handler receives, if any
@@ -297,6 +305,8 @@ selectors = [
   this = Selector { yields = unit }
   target = Selector { yields = unit }             // the one binding an effect may make
   event = Selector { yields = event }
+  // The ability the running handler is attached to; `ability.damage` is one of its numbers.
+  ability = Selector { yields = ability }
   own = Selector { yields = player }
   opponent = Selector { yields = player }         // legal only when players.max == 2
   opponents = Selector { yields = players }

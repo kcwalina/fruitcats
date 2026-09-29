@@ -742,30 +742,35 @@ document written before the change still binds and means the same.
   `RevealToPlay`. The `scenarios` verb `pass` made `@pass` ambiguous with the core's `pass` action
   in every game using `scenarios`; the verb is now `passes`, so `@pass` stays the action.
 
-### Proposal, not implemented: an ability carries its numbers
+### An ability carries its numbers (owner approved, 2026-09-28)
 
-Card text drifts from its handler the way the rulebook drifted from the rules: Spark prints "Deal
-2 damage to your opponent." and its handler says `damage-life(2)`, two copies of one number. The
-same fix, one level down:
+Card text drifted from its handler the way the rulebook drifted from the rules: Spark printed
+"Deal 2 damage to your opponent." and its handler said `damage-life(2)`, two copies of one
+number. The same fix, one level down:
 
 ```
 spark = Spell {
   name = 'Spark', cost = 1
-  abilities = [OnPlay { text = 'Deal {@damage} damage to your opponent.', numbers = [damage = 2] }]
+  abilities = [OnPlay { text = 'Deal {damage} damage to your opponent.', numbers = [damage = 2] }]
 }
-effect spark { opponent.damage-life(damage) }
+effect damage-opponent { opponent.damage-life(ability.damage) }
 ```
 
 - `Ability.numbers: [text: int] = empty`, a new optional field, so every existing card is unchanged.
-- The handler wired to an ability sees that ability's numbers as read-only names. A handler shared
-  by several cards (`draw-a-card`) becomes one handler with each card's own `n`.
-- Printed text embeds them as `{@damage}`, and may embed the game's `numbers` too. The checker
-  errors on a name in the text or the handler that the ability and the game lack, and notes digits
-  in ability text, as it does for the rulebook.
-- A playtest or patch varies a card by its number (`@spark.abilities.0.numbers.damage = 3`), and
-  the printed text follows.
-- To settle with the owner: how a handler names them (bare `damage` or `ability.damage`), and
-  whether keyword parameters (`Applied { n }`) join the same scheme.
+- The text embeds them as `{name}`, without `@`; `{@name}` stays the game's `numbers`, so the two
+  can't be confused.
+- A handler reads them through a new core selector, `ability`: the ability the running handler is
+  attached to (`ability.damage`). `ability` was appended to `ParamType` for it. A handler shared by
+  several cards reads each card's own number.
+- The checker errors on a `{name}` in the text that the ability lacks, and on a number the text
+  never shows, since players would be playing with a hidden number. It notes a digit written
+  straight into a handler body.
+- `draw()` with no count draws 1 (`common.draw`'s `count` is optional), so "draw a card" needs no
+  number.
+- A playtest or patch varies a card by its number, and the printed text follows.
+- The core's `ability` selector made Folkborn's `@ability` (the `abilities` library's action)
+  ambiguous, so Folkborn now writes `@abilities.actions.ability`.
+- Not settled: whether keyword parameters (`Applied { n }`) join the same scheme.
 
 ## Open
 

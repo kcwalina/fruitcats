@@ -8,7 +8,7 @@
 // Units are named by where they stand: Y1…Y6 in your Yard, T1…T6 in theirs; cards in hand are H1…Hn.
 
 import { behaviour, CARDS, keywords, MECHANICS } from './cards';
-import { HAND_LIMIT, MULLIGAN_MAX, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
+import { HAND_LIMIT, MULLIGAN_MAX, apply, cardName, findUnit, heroSide, isGuardian, isSneaky, legalActions, other, readyTreats, unitHealth, unitKeywords, unitPower } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 import { viewFor, type PlayerView } from './view';
 import TERMS from './terms.json';
@@ -16,16 +16,16 @@ import TERMS from './terms.json';
 /** The core rules, before the keyword list: the same whatever sets are loaded. */
 const CORE_RULES = `FOLKBORN: RULES IN BRIEF
 Two players, 50-card decks, each led by a Hero. Win by blowing out the opponent's ninth and last Candle.
-- Candles: each player starts with 9 face-down Candle cards. When you lose a Candle, that card goes into your hand. If it is Lucky you may play it for free right away.
+- Candles: each player starts with 9 face-down Candle cards. When you lose a Candle, that card goes into your hand. If it is Lucky you may play it for free right away (whenever the Candle is lost, even in your opponent's turn); if you don't, it stays in your hand as a normal card. Heroes have no Health: a hit on a Hero blows out Candles.
 - Offerings pay for cards. Each Offering is a card you offered face-down; a card costing N exhausts N ready Offerings. Offerings ready again each round. Offer at most one card per round (at the start of the round); an Offering is permanent, so offer what you need least.
 - Round: Start (everything readies, draw 2, may offer 1; skipped in round 1), then Actions, then End (hand limit ${HAND_LIMIT}; "this round" effects end).
 - Actions: starting with the Lantern holder, players alternate ONE action at a time until both pass in a row. An action is: play a card, attack, use your Hero's ability, take the Lantern, or pass. Passing is not final: if the opponent acts again, you may act again.
-- Take the Lantern: you act first next round, but for the rest of this round you may only pass. Only one player may take it per round; if nobody does, the Lantern goes to the other player.
+- Take the Lantern: you act first next round, but for the rest of this round you may only pass. You may still Ambush in your opponent's windows and play a Lucky Candle you lose, and your opponent keeps acting until they pass. Only one player may take it per round (you may take it while you already hold it, to keep it); if nobody takes it, the Lantern goes to the other player at the end of the round.
 - Units (Creatures and Fabled cards) enter the Yard exhausted, so they can't attack the round they arrive (unless Swift). A Yard holds at most 6 units. Talismans attach to a unit you control. Charms do their effect and go to the Mist.
 - Attack: exhaust a ready unit (or your Awakened Hero) and pick a target: an enemy unit, or the enemy Hero. If the enemy has a Guardian you must attack a Guardian, unless your attacker is Sneaky.
   Unit vs unit: both deal their Power to each other at once; damage stays between rounds; a unit with damage >= Health is defeated.
   Unit vs Hero: a hit. The defender loses 1 Candle (2 if the attacker is Fierce) and the attacker takes no damage.
-- Ambush: when your opponent plays a card or declares an attack, you may answer with ONE Ambush card (paying its cost). It resolves first. No Ambush on an Ambush. Ready Offerings you keep are a threat the opponent must respect.
+- Ambush: when your opponent plays a card or declares an attack, you may answer with ONE Ambush card, paying its cost from your own ready Offerings. It resolves first, before their card or attack. No Ambush on an Ambush. An Ambush isn't an action: it doesn't use your turn. If an Ambush cancels an attack, nobody deals damage and the attacker stays exhausted. Ready Offerings you keep are a threat the opponent must respect.
 - Hero: starts on its first side, which cannot attack. Its "Exhaust:" ability can be used once a round (exhausting the Hero). When its Awaken condition becomes true it flips to its Awakened side for good: stronger ability, and it can attack (it takes no damage attacking).
 - If you must draw from an empty deck, you lose a Candle instead.`;
 
@@ -172,7 +172,7 @@ const stats = (u: Unit) => `${unitPower(u)}/${unitHealth(u) - u.damage}`;
 function attackPreview(s: GameState, seat: PlayerId, a: Extract<Action, { t: 'attack' }>): string {
   const fierce = a.attacker.kind === 'hero' ? !!heroSide(s, seat).keywords?.includes('Fierce') : !!findUnit(s, a.attacker.uid) && unitKeywords(findUnit(s, a.attacker.uid)!.unit, s).fierce;
   const power = a.attacker.kind === 'hero' ? heroSide(s, seat).power ?? 0 : unitPower(findUnit(s, a.attacker.uid)!.unit, s);
-  if (a.target.kind === 'hero') return `they lose ${fierce ? 2 : 1} Life${fierce ? 's (Fierce)' : ''}; your attacker takes no damage`;
+  if (a.target.kind === 'hero') return `they lose ${fierce ? `2 ${TERMS.candles} (Fierce)` : `1 ${TERMS.candle}`}; your attacker takes no damage`;
   const target = findUnit(s, a.target.uid)!.unit;
   const dealt = Math.max(0, power - unitKeywords(target, s).tough);
   const left = unitHealth(target, s) - target.damage - dealt;
@@ -184,6 +184,17 @@ function attackPreview(s: GameState, seat: PlayerId, a: Extract<Action, { t: 'at
   return `${theirs}; your ${cardName(mine.id)} ${myLeft <= 0 ? 'is defeated' : `survives with ${myLeft} Health`}`;
 }
 
+/** Whether a unit played by this action is ready once it's in the Yard: its own Hello may ready it (Pari at the Pool's
+ * "Company: enters ready"), which only playing it on a copy of the game shows. The opponent lets it happen. */
+function arrivesReady(s: GameState, seat: PlayerId, a: Extract<Action, { t: 'play' | 'pounce' }>): boolean {
+  try {
+    const w = structuredClone(s);
+    apply(w, a);
+    for (let i = 0; i < 5 && w.prompt?.kind === 'pounce' && w.prompt.player !== seat; i++) apply(w, { t: 'decline' });
+    return w.players[seat].yard.some((u) => u.uid === a.uid && !u.exhausted);
+  } catch { return false; }
+}
+
 function detailed(s: GameState, seat: PlayerId, a: Action, base: string): string {
   const me = s.players[seat];
   const card = (uid: number) => me.hand.find((c) => c.uid === uid);
@@ -192,7 +203,8 @@ function detailed(s: GameState, seat: PlayerId, a: Action, base: string): string
     case 'play': case 'pounce': {
       const c = CARDS[card(a.uid)!.id];
       const unit = c.type === 'Critter' || c.type === 'Cat';
-      const arrives = unit ? (keywords(c.id).zoomies ? 'arrives ready (Swift): can attack this round' : 'arrives exhausted: can attack next round') : '';
+      const arrives = !unit ? '' : keywords(c.id).zoomies ? 'arrives ready (Swift): can attack this round'
+        : arrivesReady(s, seat, a) ? 'arrives ready: can attack this round' : 'arrives exhausted: can attack next round';
       const target = a.target?.kind === 'unit' && findUnit(s, a.target.uid) ? ` (${stats(findUnit(s, a.target.uid)!.unit)})` : '';
       return `${base}${target} — ${[unit ? `${c.power}/${c.health}` : TERMS.types[c.type as keyof typeof TERMS.types] ?? c.type, c.text?.replace(/\.$/, ''), arrives].filter(Boolean).join('. ')}. Leaves ${ready - (c.cost ?? 0)} ready Offering(s).`;
     }
@@ -225,7 +237,7 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
       const text = heroSide(s, seat).text.split('\n').find((l) => /Exhaust/.test(l)) ?? ability?.effect ?? '';
       return `Use your Hero's ability (${text.trim()})${on(a.target)}`;
     }
-    case 'takeYarn': return 'Take the Lantern (act first next round; you may only pass for the rest of this round)';
+    case 'takeYarn': return 'Take the Lantern (act first next round; for the rest of this round you may only pass, Ambush, or play a Lucky Candle)';
     case 'pass': return 'Pass';
     case 'plant': { const c = card(a.uid)!; return `Offer ${cardName(c.id)} as an Offering`; }
     case 'skipPlant': return "Don't offer a card this round";
@@ -254,7 +266,7 @@ export function listChoices(s: GameState, o: ChoiceOptions = {}): Choices {
     plant: 'Start of round: offer one card from your hand as an Offering, or not.',
     action: 'Your action.',
     pounce: 'Your opponent just acted: Ambush, or let it happen?',
-    lucky: 'The Life you just lost is Lucky: play it for free?',
+    lucky: `The ${TERMS.candle} you just lost is Lucky: play it for free?`,
     choose: `Choose a target for ${cardName(prompt.kind === 'choose' ? prompt.sourceId : '')}.`,
   }[prompt.kind];
   const options = legalActions(s).map((action, i) => ({ n: i + 1, label: label(s, seat, action, o), action }));

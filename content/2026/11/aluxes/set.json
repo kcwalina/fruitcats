@@ -30,7 +30,7 @@
         "name": "rain",
         "power": 1,
         "health": 1,
-        "log": "{name} grows in the rain (+{n}/+{n})."
+        "log": "{name} grows in the rain: now +{n}/+{n}."
       },
       "abilities": [
         {

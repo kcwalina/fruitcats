@@ -989,6 +989,17 @@ would lose player counters that aren't resources (poison, lore).
 framework, Folkborn and both Hello TCG samples as of fruitcats 49bb669, with 382 of 382 Alex tests
 passing; the Alex session is landing it to mochi main.
 
+### The engine is one WebAssembly module, written in Rust (owner, 2026-09-29)
+
+Supersedes "TypeScript first" above and the TypeScript engine in earlier entries. Everything that must behave the
+same on every host (Alex, the loader, the runtime, the bots, the card renderer) is one WebAssembly module, the
+core, in `cardengine/engine/`, which the browser, `tcg.exe` (through Wasmtime) and the servers all run. It is pure:
+bytes in, bytes out, no host calls. Rust because it compiles to WebAssembly without a runtime inside; the hosts see
+only the `.wasm` file, so the language can change later without them. C# stays for the tools and servers, and a thin
+TypeScript front end draws. The first piece, Alex's parser, is identical to the C# Alex on every `.alex` file in
+fruitcats and mochi and on 8,000 broken copies (`cardengine/conformance`). The full record is in
+`docs/tcg/tcg-developer-platform.md`, "The core".
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

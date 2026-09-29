@@ -40,6 +40,12 @@ discussed by editing them instead of re-pasting them into chat.
   and `starter-box-rules.alex` and `berry-picnic-rules.alex` are program documents: effects,
   statics, conditions, scenarios, and the wiring that attaches them to cards
   (`@citron-fox.on-enter = zest-damage`). Code points at data; data never points at code.
+- `engine/`: the core, the one WebAssembly module every host runs (Rust, no dependencies). It holds
+  Alex's parser today; the loader, the runtime, the bots and the card renderer join it. See its
+  README.
+- `conformance/`: parses every `.alex` file with the C# Alex and with the core, and compares them
+  byte for byte. It is also the first C# host of the module (Wasmtime).
+- `tcg/`: the `tcg` command-line tool (C#).
 
 ## Principles
 

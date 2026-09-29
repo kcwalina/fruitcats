@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Alex conformance check: parses every .alex file with the C# Alex (mochi.agents/alex, referenced as source
+       from the mochi repository checked out beside this one, as tcg does) and with the engine's WebAssembly module
+       (cardengine/engine, run through Wasmtime), and compares their canonical dumps byte for byte. It is also the
+       first C# host of that module: how tcg.exe will run it. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>alex-conformance</AssemblyName>
+    <RootNamespace>Conformance</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <MochiRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), 'mochi/mochi.agents/alex/src/Alex/ViaMochi.Alex.csproj'))</MochiRoot>
+    <AlexSrc>$(MochiRoot)/mochi/mochi.agents/alex/src</AlexSrc>
+  </PropertyGroup>
+
+  <Target Name="RequireAlex" BeforeTargets="ResolveProjectReferences" Condition="'$(MochiRoot)' == ''">
+    <Error Text="The conformance check needs the mochi repository checked out beside this one (for example C:\git\mochi next to C:\git\fruitcats): it builds the C# Alex from mochi.agents\alex." />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="$(AlexSrc)/Alex/ViaMochi.Alex.csproj" />
+    <PackageReference Include="Wasmtime" Version="48.0.2" />
+  </ItemGroup>
+
+</Project>

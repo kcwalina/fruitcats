@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engine Check</title>
+<style>
+  :root {
+    --page: #f6f5f2; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e3e1db;
+    --accent: #2f6f5e; --warn: #a3471f; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --gap: 16px; --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9a988f; --line: #33322f; --accent: #6cc0a7; --warn: #e58a60; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px var(--gap) 48px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 20px; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 20px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  label.pick { display: inline-block; background: var(--accent); color: var(--page); padding: 8px 14px; border-radius: var(--radius); cursor: pointer; font-weight: 600; }
+  label.pick input { display: none; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); margin-top: 20px; }
+  @media (max-width: 760px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: auto; max-height: 70vh; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.file { cursor: pointer; }
+  tr.file:hover, tr.file.selected { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .bad { color: var(--warn); font-weight: 600; }
+  pre { margin: 0; padding: 10px 12px; font: 12px/1.4 var(--mono); white-space: pre; }
+  .empty { padding: 16px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Engine check</h1>
+  <p class="lead">The engine's WebAssembly module, running in this page. Pick a game folder: its <code>.alex</code> files are read from your disk and parsed here, and nothing is uploaded.</p>
+
+  <div class="stats">
+    <div class="stat"><b id="module-size">…</b><span>module size</span></div>
+    <div class="stat"><b id="module-load">…</b><span>fetch, compile, instantiate</span></div>
+    <div class="stat"><b id="file-count">–</b><span>.alex files</span></div>
+    <div class="stat"><b id="parse-time">–</b><span>parse, all files</span></div>
+    <div class="stat"><b id="diagnostic-count">–</b><span>diagnostics</span></div>
+  </div>
+
+  <label class="pick">Open a game folder<input id="folder" type="file" webkitdirectory multiple></label>
+
+  <div class="layout">
+    <div class="panel"><table>
+      <thead><tr><th>File</th><th class="num">KB</th><th class="num">Diagnostics</th><th class="num">ms</th></tr></thead>
+      <tbody id="files"><tr><td colspan="4" class="empty">No folder yet.</td></tr></tbody>
+    </table></div>
+    <div class="panel"><pre id="dump" class="empty">Pick a file to see its syntax tree.</pre></div>
+  </div>
+</main>
+
+<script type="module">
+import { loadEngine } from './engine.js';
+
+const params = new URLSearchParams(location.search);
+const wasmUrl = params.get('wasm') ?? '../target/wasm32-unknown-unknown/release/tcg_engine.wasm';
+const engine = await loadEngine(wasmUrl);
+const entry = performance.getEntriesByName(new URL(wasmUrl, location.href).href)[0];
+document.getElementById('module-size').textContent = entry ? (entry.decodedBodySize / 1024).toFixed(1) + ' KB' : '?';
+document.getElementById('module-load').textContent = engine.loadMilliseconds.toFixed(1) + ' ms';
+
+let parsed = [];
+
+function show(files) {
+  parsed = [];
+  let totalMilliseconds = 0;
+  let totalDiagnostics = 0;
+  for (const file of files) {
+    const started = performance.now();
+    const diagnostics = engine.check(file.bytes);
+    const milliseconds = performance.now() - started;
+    totalMilliseconds += milliseconds;
+    totalDiagnostics += diagnostics;
+    parsed.push({ ...file, diagnostics, milliseconds });
+  }
+
+  document.getElementById('file-count').textContent = String(parsed.length);
+  document.getElementById('parse-time').textContent = totalMilliseconds.toFixed(1) + ' ms';
+  document.getElementById('diagnostic-count').textContent = String(totalDiagnostics);
+
+  const body = document.getElementById('files');
+  body.replaceChildren();
+  for (const [index, file] of parsed.entries()) {
+    const row = document.createElement('tr');
+    row.className = 'file';
+    row.dataset.index = String(index);
+    row.innerHTML = '<td></td><td class="num"></td><td class="num"></td><td class="num"></td>';
+    row.children[0].textContent = file.name;
+    row.children[1].textContent = (file.bytes.length / 1024).toFixed(1);
+    row.children[2].textContent = String(file.diagnostics);
+    if (file.diagnostics > 0) row.children[2].className = 'num bad';
+    row.children[3].textContent = file.milliseconds.toFixed(2);
+    body.append(row);
+  }
+  if (parsed.length === 0) body.innerHTML = '<tr><td colspan="4" class="empty">No .alex files in that folder.</td></tr>';
+
+  window.engineResults = {
+    moduleBytes: entry ? entry.decodedBodySize : null,
+    loadMilliseconds: engine.loadMilliseconds,
+    files: parsed.length,
+    bytes: parsed.reduce((sum, file) => sum + file.bytes.length, 0),
+    parseMilliseconds: totalMilliseconds,
+    diagnostics: totalDiagnostics,
+    dumps: params.has('dumps') ? parsed.map(file => ({ name: file.name, program: engine.dump(file.bytes, 0), data: engine.dump(file.bytes, 1) })) : undefined,
+  };
+}
+
+document.getElementById('files').addEventListener('click', event => {
+  const row = event.target.closest('tr.file');
+  if (!row) return;
+  for (const selected of document.querySelectorAll('tr.selected')) selected.classList.remove('selected');
+  row.classList.add('selected');
+  const dump = document.getElementById('dump');
+  dump.className = '';
+  dump.textContent = engine.dump(parsed[Number(row.dataset.index)].bytes);
+});
+
+document.getElementById('folder').addEventListener('change', async event => {
+  const files = [];
+  for (const file of event.target.files) {
+    if (file.name.endsWith('.alex')) files.push({ name: file.webkitRelativePath || file.name, bytes: new Uint8Array(await file.arrayBuffer()) });
+  }
+  files.sort((a, b) => a.name < b.name ? -1 : 1);
+  show(files);
+});
+
+// ?files=a.alex,b.alex fetches those files instead, for measuring without a person.
+if (params.has('files')) {
+  const files = [];
+  for (const url of params.get('files').split(',')) {
+    const response = await fetch(url);
+    files.push({ name: url, bytes: new Uint8Array(await response.arrayBuffer()) });
+  }
+  show(files);
+}
+window.engineReady = true;
+</script>
+</body>
+</html>

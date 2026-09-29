@@ -31,7 +31,7 @@ cloud playtests, online hosting, storage and printing.
   later. Every tool reads and writes those files. Nothing lives elsewhere.
 - **Layers, not a ball of twine.** Each layer depends only on the layers below it and is simple on
   its own. The bottom is a command-line toolchain; everything else builds on it.
-- **A game's logic and data are written in Alex,** next to its assets. Custom TypeScript is not supported at first. A future escape
+- **A game's logic and data are written in Alex,** next to its assets. Custom code is not supported at first. A future escape
   hatch, like interop in .NET, is for the rare very advanced developer.
 - **Built-in rules first.** A game is mostly a selection of rules from the libraries. A custom rule
   written in Alex should be extremely rare.
@@ -40,19 +40,58 @@ cloud playtests, online hosting, storage and printing.
 
 ## Architecture
 
-### Two languages, one source format
+### The core: one WebAssembly module (decided 2026-09-29)
 
-- **C# for the tools.** The full Alex implementation (parse, bind, type-check, diagnostics), the
-  `tcg` command-line tool, the language server and the VS Code extension. Alex already lives in C#
-  (`mochi/mochi.agents/alex`) and other C# projects use it.
-- **TypeScript for the engine.** Everything that plays a game: the runtime, the bots, the table
-  and card renderers, the Studio front end and the online match host. It has to run in a browser.
-- **Both read `.alex` source directly.** There is no compiled intermediate format: converting Alex
-  to JSON would lose what Alex was designed to keep. The TypeScript side parses and binds what
-  running a game needs. A shared conformance suite (Alex files with their expected parse trees
-  and diagnostics) keeps both implementations in step. Both stay long term.
+Everything that must behave identically wherever it runs is written once, as **the core**, and
+compiled to one WebAssembly module: Alex (parse, bind, types, diagnostics, the byte-exact round
+trip that lets designers edit files), the game loader, the runtime, the bots, and the card
+renderer. Every host runs that same file: the browser (Studio, the game table, the player app),
+`tcg.exe` through Wasmtime, and the servers.
+
+- **The core is pure computation.** Bytes in, bytes out: no I/O, no clock, no network, no calls
+  back to the host. That is what makes it portable, deterministic (the same seed and actions give
+  the same game on every host, which replays and online play need) and a sandbox (an online server
+  runs games other people wrote).
+- **Written in Rust** (`cardengine/engine/`), because it compiles to small WebAssembly with no
+  runtime inside it. .NET's WebAssembly carries its runtime (about 2 MB before any of our code) and
+  interprets IL by default; that ruled C# out for the core, not the language itself. The choice is
+  not binding: hosts only see a `.wasm` file and its byte interface (`cardengine/engine/src/abi.rs`),
+  so the core can be rewritten in another language that compiles to WebAssembly without the layers
+  above it changing.
+- **C# for everything around it:** `tcg.exe` (NativeAOT, trimmed, one file, with the module and
+  the Studio front end embedded), file watching, the local Studio host, printing jobs, the servers.
+  `tcg cards` draws with SkiaSharp in C# today; the core's renderer replaces it once it draws the
+  same cards pixel for pixel, so the card in Studio, on the table and in the print files is one
+  drawing.
+- **A thin front end** for Studio and the player app: plain TypeScript bundled into one file, no
+  framework and no runtime dependencies. It draws and handles input; the core decides everything.
+- **No compiled intermediate format.** The core reads `.alex` source directly: converting Alex to
+  JSON would lose what Alex was designed to keep.
 - **The engine never assumes `tcg check` ran.** An online server loads games other people wrote,
-  so the TypeScript loader refuses a malformed game with a clear error instead of misbehaving.
+  so the loader refuses a malformed game with a clear error instead of misbehaving.
+- **Two Alex parsers while both are used, kept identical.** The C# Alex stays for mochi's own
+  uses (agent configurations, prompts). `cardengine/conformance` parses every `.alex` file in
+  fruitcats and mochi, plus 25 seeded broken copies of each, with both, and compares their
+  canonical dumps (tree, spans, trivia, diagnostics, round trip) byte for byte. Rejected: a
+  TypeScript engine with a TypeScript Alex beside the C# tools. It would have needed a JavaScript
+  runtime inside `tcg.exe` to run `tcg sim` and `tcg playtest`, and native Node add-ons to render
+  cards.
+
+**The spike (2026-09-29)** proved it on Alex's parser, ported to Rust from `AlexParser.cs`:
+
+| | Result |
+|---|---|
+| Module size | 98 KB (the parser, the writer and the dump; no dependencies) |
+| Load in Chromium | fetch, compile and instantiate in 10–40 ms |
+| Load in C# (Wasmtime) | compile and instantiate in 70–85 ms |
+| Conformance | 320 dumps of 160 real files and 8,000 of broken copies identical to the C# Alex; the browser's 70 dumps of Folkborn and the framework identical too |
+| Speed | 50–57 MB/s through Wasmtime, input copied in each call; the C# Alex about 47 MB/s once warm |
+| Folkborn + framework in the browser | 35 files, 135 KB, parsed in about 8 ms |
+
+`cargo test` in `cardengine/engine` round-trips every `.alex` file natively;
+`dotnet run -c Release` in `cardengine/conformance` runs the comparison and the timings; and
+`cardengine/engine/web/` is the browser page, which reads a game folder from disk and parses it
+in the page, uploading nothing.
 
 ### Layers
 
@@ -60,13 +99,15 @@ Each layer depends only on the ones below it.
 
 | Layer | What it is | Language |
 |---|---|---|
-| L6 Services | cloud playtests, online hosting and lobbies, storage, printing | TS / C# |
-| L5 Tools | the `tcg` CLI, the language server, Studio (the IDE) | C# (+ TS front end) |
-| L4 Presentation | the game table, the card renderer, the rulebook renderer (HTML, PDF) | TS |
-| L3 Drivers | seat drivers (human, search bot, LLM player), the match host, the playtest runner | TS |
-| L2 Runtime | the engine: plays a game from its Alex source | TS |
-| L1 Game loader | loads a project, links it, checks it enough to run safely | TS |
-| L0 Alex | parse, bind, types, diagnostics, byte-exact round trip | C# and TS |
+| L6 Services | cloud playtests, online hosting and lobbies, storage, printing | C# (running the core) |
+| L5 Tools | the `tcg` CLI, the language server, Studio (the IDE) | C# (+ a thin TS front end) |
+| L4 Presentation | the game table, the card renderer, the rulebook renderer (HTML, PDF) | the core draws; a thin TS front end shows |
+| L3 Drivers | seat drivers (human, search bot, LLM player), the match host, the playtest runner | the core (bots); C# (match host, runner) |
+| L2 Runtime | the engine: plays a game from its Alex source | the core |
+| L1 Game loader | loads a project, links it, checks it enough to run safely | the core |
+| L0 Alex | parse, bind, types, diagnostics, byte-exact round trip | the core (C# Alex kept identical for mochi) |
+
+"The core" is the one WebAssembly module above, written in Rust.
 
 What each layer promises:
 
@@ -96,7 +137,7 @@ The TCG Alex session designed it from a survey of 156 TCGs. It lives in `cardeng
 - `lib/*.alex`: the libraries (units, spells, combat, life, resources, turns, decks, setup and
   more). A game chooses libraries and lists rules from them.
 
-The TypeScript runtime implements exactly this contract. **Alex itself has no game semantics**:
+The core's runtime implements exactly this contract. **Alex itself has no game semantics**:
 it is a general-purpose data language, closer to JSON than to C#. Our engine gives these
 documents their meaning, and it implements every library rule's behaviour.
 
@@ -105,7 +146,7 @@ documents their meaning, and it implements every library rule's behaviour.
 A game's rules come two ways:
 
 1. **Picked from a library** (almost always). Each library rule, such as `GuardiansFirst` or
-   `LifeCounter`, is implemented in the TypeScript engine; the game just lists it. The broad
+   `LifeCounter`, is implemented in the core; the game just lists it. The broad
    survey (`cardengine/survey/broad/summary.md`) found that 83% of 156 games fit with library
    additions only, and 4% need a small core change (grids, change of controller, ownerless
    objects, dice pools). The plan is to implement every rule the surveys found as a built-in
@@ -234,7 +275,35 @@ LaTeX does for documents, with a card list generated from the card data.
 A local web app that `tcg studio` opens on the project folder. It shows composed cards, the
 running game and the rulebook, and has graphical designers (a card's property grid, deck
 builder, rule pickers) that write to the Alex files behind the scenes. The code view is the file
-itself. A hosted Studio can come later without a rewrite.
+itself.
+
+**One front end, several hosts (decided 2026-09-29).** Studio is one web front end over a small
+**workspace protocol**: list, read and write files; watch for changes; diagnostics; render a
+card; run a game. A host implements that protocol, and the front end never knows which one it
+has:
+
+- **The local host, first.** `tcg studio` is the `tcg` process: it serves the front end on
+  localhost from inside `tcg.exe` and exposes the folder it runs in. Nothing is uploaded, so a
+  game with thousands of cards and gigabytes of art costs nothing extra: images are read from the
+  disk. A file watcher pushes every change to the page, so an edit made in a text editor or by an
+  agent in another terminal shows within a second. Git stays the designer's: Studio edits files
+  and never commits.
+- **Designers edit through the core.** A change in a property grid is an edit request; the core's
+  Alex applies it as the smallest text change to the file (the byte-exact round trip), the
+  watcher sees the file change, and every view refreshes, the code view included. There is one
+  place that edits Alex.
+- **Instant previews run in the page.** Dragging a part's box in the layout editor (walkthrough
+  §6) redraws the card on every mouse move, so the card renderer runs in the browser, in the
+  core, not behind a request to `tcg`. Clicking an event to jump to the rule that caused it
+  (§13) needs the core to carry source positions through loading into the event log.
+- **A hosted host, later.** The same front end over a workspace in the cloud, a copy of a repo,
+  never the place a game lives. It is how people who don't use git work: artists, playtesters,
+  co-designers. The Artist Studio's card previews become this front end's, and its briefs,
+  comments and approvals become services on top.
+- **A desktop window is optional** and cheap: the same front end in a WebView2 or Photino
+  window, if the owner ever wants file associations and a window of its own.
+- **Playing is a separate app on the same core.** Studio's Play tab runs the working files; the
+  player app is its own polished shell that loads a published, frozen version of a game.
 
 ## How cards look
 
@@ -276,8 +345,8 @@ card design exactly:
 - `tcg` has no Folkborn numbers in it: sizes, paddings and baselines are in the layout, required where
   there's no neutral default. `text-spacing = whole-pixels` sets text the way the old composer did.
 - `tcg` references the C# Alex's projects directly, as source in the mochi repository checked out beside
-  this one (`C:/git/mochi` next to `C:/git/fruitcats`, kept on main): one copy of Alex, no packages. The
-  TypeScript Alex, when it's written, is used the same way: its source imported directly, never published.
+  this one (`C:/git/mochi` next to `C:/git/fruitcats`, kept on main): one copy of Alex, no packages. `tcg`
+  moves onto the core (the WebAssembly module) as the core grows past the parser.
 - **Two-faced cards:** `Card.back` holds a second face (the Hero's Awakened side). It prints on the
   card's back instead of the game's card back, with its own type's frame; it shows its own fields
   and the front's for the ones its type doesn't have (number, rarity, family).
@@ -318,7 +387,8 @@ art prompts, tale banners); engine files move into the game folder as Alex-based
 1. **The walkthrough** ([walkthrough.md](walkthrough.md)): the tutorial as it will read on release
    day. Nothing in it works yet; it is the spec, and each of its steps later becomes an acceptance
    test. The product is done when the walkthrough is true.
-2. **Alex in TypeScript:** parser and binder, passing the conformance suite shared with C#.
+2. **Alex in the core** (Rust, compiled to WebAssembly): the parser is done and identical to the C# Alex
+   (2026-09-29); next the binder, then the round-trip editing Studio's designers need.
 3. **The runtime** plays Hello TCG from its Alex source.
 4. **`tcg` basics:** `new`, `check`, `test`, `sim` with a random bot.
 5. **Search bot and `tcg playtest`.**
@@ -376,11 +446,11 @@ the owner signs off. This session builds on them and sends gaps back.
   broad survey's recommended additions (2-D coordinates, change of controller, ownerless objects,
   dice as face lists, optional unit health and cost) are not approved yet.
 - **Conformance.** These files are the acceptance fixtures of Alex 0.4.0 in mochi
-  (`mochi.agents/alex`), so the C# Alex binds them today. The TS Alex must bind them identically;
+  (`mochi.agents/alex`), so the C# Alex binds them today. The core's Alex must bind them identically;
   the conformance suite is the mochi test project's fixture tests.
 - **Validation lives in both.** The host checks in C# (library use; every ability has its slot
-  handler and every handler its ability; one kind per object; holders) must exist in the TS
-  engine too, or the two implementations will accept different games.
+  handler and every handler its ability; one kind per object; holders) must exist in the
+  core too, or the two implementations will accept different games.
 - **The DSL.** The body limits above match the program-layer brief. `each` over a selection is new
   and goes into the Alex spec.
 
@@ -449,7 +519,14 @@ Asked after the real-card samples (2026-09-28). **Done** (0051e31), recorded in
 
 - Are the language server and VS Code extension free (part of the toolchain) or part of the paid
   IDE? Recommended: free.
-- Is Studio a local web app opened by `tcg studio` (recommended), or a desktop app?
+- Who the hosted Studio is for: artists, playtesters and co-designers only, or also developers who
+  don't want to install anything (a much fuller host, closer to Codespaces).
+- Whether the Artist Studio's workflow (briefs, rounds of comments, approvals) is a platform
+  feature every game gets, or Folkborn's own process that stays a separate app for now.
+- In a hosted workspace, how an artist's upload reaches the repo: a commit, or a branch the
+  designer accepts.
+- Whether the core may use pure-Rust libraries for the card renderer's font shaping and
+  rasterising (rustybuzz, tiny-skia), vendored, or writes its own. The parser needs none.
 - The product's name.
 - **Scenarios (given / when / then, `tcg test`, the `scenarios` library) are not designed yet** (the owner,
   2026-09-28). They get designed properly near the end: after cards and the rulebook, the IDE, printing, the

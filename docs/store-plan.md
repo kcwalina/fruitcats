@@ -381,10 +381,55 @@ a refund always lands. Paying is for testers (`STORE=testers`) or everyone (`STO
    `adjustment.created`, `adjustment.updated`. Its **secret key** is the webhook secret.
 4. **Checkout → Checkout settings:** default payment link `https://fruitcats.viamochi.com/`.
 5. The three values go into `fruitcats-api`'s app settings (`PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`,
-   `PADDLE_CLIENT_TOKEN`), with `STORE_PAYMENTS=sandbox` and `STORE=testers` for the owner's own account: in the
-   portal, or put in a file for Claude to set through the deploy identity without printing them. Never in chat.
+   `PADDLE_CLIENT_TOKEN`), with `STORE_PAYMENTS=sandbox`: in the portal, or put in a file for Claude to set through
+   the deploy identity without printing them. Never in chat.
 6. **Later, live:** after the sandbox drills and the lawyer's review, apply for the live account (Paddle reviews the
    website, Terms, Refund Policy and prices), then the same three values from live, and `STORE_PAYMENTS=live`.
+
+### Enabling purchasing: the checklist
+
+Written 2026-09-29, to pick up when the owner decides to go ahead. The git tag **`pre-paddle`** (`f929182`) marks
+main with all the payment code merged and deployed, buying off and no Paddle keys set: the state to return to if
+anything goes wrong. Steps in order; each one leaves players seeing "Coming soon" until step 8.
+
+1. **Owner: the Paddle sandbox** ([Setting up Paddle](#setting-up-paddle-the-owners-steps), steps 1–4). The three
+   values go in a text file on the owner's computer; the owner gives Claude its path, never the values.
+2. **Claude: the sandbox keys on the API.** Set `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_CLIENT_TOKEN` and
+   `STORE_PAYMENTS=sandbox` on `fruitcats-api` in one settings change, through the deploy identity, without printing
+   them. Keep `STORE=preview`, so everyone else's Store is unchanged.
+3. **Claude: let the owner pay in sandbox while the Store stays in preview.** Today the API offers payment only with
+   `STORE=testers` (which makes the Store private to everyone else) or `STORE=open`. A small change: accounts on
+   `STORE_TESTERS` may pay while `STORE=preview`. With a test proving no one else can.
+4. **Owner and Claude: sandbox drills with the real Paddle.** On the dev server (`npm run dev`, then
+   `?store=1&buy=1`, against the live API): buy a deck with a Paddle test card; close the window halfway; double tap;
+   refund one line and a whole order in Paddle's dashboard; a chargeback (sandbox lets you simulate one). Each must
+   end with the right cards, checked in the Store and in the Collection. Fix anything found, with a test.
+5. **Owner: decide what's open** (see [Open questions](#open-questions)):
+   - prices: deck $9.99, Signature $19.99, singles $0.49 / $0.99 / $1.49 / $4.99, $4.99 minimum order;
+   - sets on sale at launch (Heat Wave only today, `STORE_SETS=HW1`);
+   - tax shown included in the price (`PADDLE_TAX_MODE=internal`, the default) or added at checkout;
+   - the deck page's "the rest are taken off the price" (true: keep, or reword to "Cards you already have are taken
+     off the price");
+   - the refund window (the draft says 14 days, any reason);
+   - how payment alerts reach the owner (today only error lines in the log; suggested: an email through
+     viamochi-id, which the accounts work owns).
+6. **Owner: the lawyer's review** of the Terms, the Privacy Policy and the [Refund Policy](legal/refund-policy.md),
+   using the [brief](legal/lawyer-brief.md). Then remove the DRAFT notes and publish them.
+7. **Owner: the live Paddle account.** Apply (Paddle reviews the website, the Terms, the refund policy and the
+   prices), then create the same three values in live Paddle, with the same webhook address and payment link. Claude
+   swaps them in with `STORE_PAYMENTS=live`.
+8. **Owner's explicit go, then Claude opens it:**
+   - turn `BUYING` on in `apps/web/src/flags.ts` (it's off in every build by the owner's rule; see
+     [Payments: what's built](#payments-whats-built-2026-09-25)) and release a new build;
+   - `STORE=testers` with the owner, then friends and family, making real small purchases and refunding some (soft
+     launch);
+   - then `STORE=open` and `STORE_TEST_CHECKOUT=off` (launch).
+   - **Rollback** at any point: `STORE=preview` on the API (nobody can pay; refunds still land), or `BUYING` off in a
+     new build.
+
+Also before launch, not blocking the sandbox: Legend Pawtraits unlocking with their card (needs a service endpoint
+on `viamochi-id`, see [From the accounts work](#from-the-accounts-work)), and the permanent `purchases` log
+(purchases are in the security log, kept a year, until then).
 
 ### 1. Take the payment (Paddle)
 

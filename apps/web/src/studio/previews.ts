@@ -3,12 +3,8 @@
 //  - on the card: the card's frame as tcg draws it for the Studio (content/tcg.ts), with the picture in its
 //    see-through window (stretched to 666 × 444 there, as the card's art box in games/folkborn/card-layout.alex);
 //  - in the game: the board's unit and hero tiles, at their sizes in apps/web/src/style.css;
-//  - as a wallpaper: the game's own wallpaper maker (src/wallpaper.ts).
 
-import { CARDS, type Rarity } from '@fruitcats/engine';
-import { artBases, esc } from '../ui';
-import { renderWallpaper, type Device } from '../wallpaper';
-import type { Finish } from '../collection';
+import { artBases, esc } from '../site';
 import type { BriefPicture } from './brief';
 import type { StudioCard } from './cards';
 
@@ -114,27 +110,3 @@ export function announcementPreview(art: string | null, setName: string): string
     <figure><div class="pv-banner" style="${bg}"><b>${esc(setName)}</b></div><figcaption>At the top of the announcement page</figcaption></figure>
   </div>`;
 }
-
-// ── Wallpapers ───────────────────────────────────────────────────────────────────────────────────
-
-const wallpapers = new Map<string, Promise<string>>();
-
-/** A wallpaper made by the game's own wallpaper maker, as an image address. Made once per picture and device. */
-export function wallpaper(p: BriefPicture, art: string, artId: string, device: Device): Promise<string> | null {
-  if (!p.card || !CARDS[p.card]) return null;
-  const finish: Finish = p.tier === 'foil' ? 'foil' : p.tier === 'gold' ? 'gold' : p.tier === 'signature' ? 'signature' : 'standard';
-  const id = `${artId}|${device}|${finish}`;
-  let url = wallpapers.get(id);
-  if (!url) {
-    const rarity = (CARDS[p.card].rarity ?? 'Common') as Rarity;
-    url = renderWallpaper(p.card, p.side ?? null, finish, rarity, p.card, device, art).then((b) => URL.createObjectURL(b));
-    url.catch(() => wallpapers.delete(id));
-    wallpapers.set(id, url);
-  }
-  return url;
-}
-
-export const DEVICES: [Device, string][] = [['phone', 'Phone lock screen'], ['tablet', 'Tablet'], ['computer', 'Computer']];
-
-/** The clock a phone's lock screen draws over the wallpaper, roughly where an iPhone puts it. */
-export const LOCK_CLOCK = `<div class="pv-lock"><small>Wednesday, 24 September</small><b>9:41</b></div>`;

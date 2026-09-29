@@ -1001,6 +1001,17 @@ The owner removed the Starter Box, the original fruit-cat cards, from the game a
 and `starter-box-rules.alex` are gone, and `folkborn.alex` lists no sets. The Starter Box examples above stay as
 the record of how the design was reached.
 
+### The engine is one WebAssembly module, written in Rust (owner, 2026-09-29)
+
+Supersedes "TypeScript first" above and the TypeScript engine in earlier entries. Everything that must behave the
+same on every host (Alex, the loader, the runtime, the bots, the card renderer) is one WebAssembly module, the
+core, in `cardengine/engine/` (on branch `claude/tcg-developer-ide-architecture-xy9f9d` until merged), which the browser, `tcg.exe` (through Wasmtime) and the servers all run. It is pure:
+bytes in, bytes out, no host calls. Rust because it compiles to WebAssembly without a runtime inside; the hosts see
+only the `.wasm` file, so the language can change later without them. C# stays for the tools and servers, and a thin
+TypeScript front end draws. The first piece, Alex's parser, is identical to the C# Alex on every `.alex` file in
+fruitcats and mochi and on 8,000 broken copies (`cardengine/conformance`). The full record is in
+`docs/tcg/tcg-developer-platform.md`, "The core".
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

@@ -1,519 +1,522 @@
-# Library rules in Alex, on paper
+# Rules as data, on paper
 
-The runtime's step 3 (docs/tcg/runtime-design.md) makes games playable end to end: a round, playing a card, paying for
-it, attacking, defeating, awakening, winning. The owner decided that every library rule is written in Alex, not Rust
-in the engine. This page writes out, before any code, every library rule Hello TCG lists, so the language they need
-can be reviewed first. Folkborn's rules follow the same patterns; its extra ones (the Lantern, Ambush, Candles) come
-after Hello TCG plays.
+*The owner's decision (2026-09-30): Alex is a purely data modelling language.* Its program layer (statements run in
+order, variables, `if` statements, routine bodies) goes. What a card or a rule does is written as **data**: effects are
+records, choices are records, order is a list, and conditions and amounts are **formulas**, pure expressions like a
+spreadsheet's that read the game without changing it. Nothing here runs yet: this page is for review before the
+language, the runtime and the games' files change.
 
-Nothing here runs yet. Each block is a rule's type as a library's `.alex` file would declare it.
+It covers:
+- the four ideas (effects, formulas, choices, effect types defined from others);
+- the core's own effects, the only behaviour written in Rust;
+- Folkborn's rules files and Hello TCG's, rewritten as data;
+- the library rules the runtime's step 3 needs (`docs/tcg/runtime-design.md`), rewritten as data;
+- what changes in Alex, and questions for the owner.
 
-*Revised at the owner's review (2026-09-30).* Earlier drafts attached behaviour to engine hooks and events from
-outside the rule, and read like configuration. The owner's proposal: a rule is a type, and its behaviour is members
-of that type, next to its settings, like a class with methods.
+## The four ideas
 
-## How a library rule reads
-
-```
-// A unit enters play exhausted.
-type UnitsEnterExhausted : UnitRule {
-  on-unit-enter = unit.exhaust()
-}
-```
-
-Read it as: *the rule UnitsEnterExhausted: when a unit enters play, exhaust it.*
-
-- The rule is a type, as it is today. A game lists it (`units = [UnitsEnterExhausted {}]`), and its behaviour runs only
-  in games that list it.
-- `on-unit-enter` is a moment: a member every rule has, declared once on the core's `Rule` type. Setting it to code,
-  as a type already sets a member's value (`type TokenCreature : Creature { finishes = [standard] }`), gives the rule
-  that behaviour.
-- The moment's parameters are named where it is declared: `on-unit-enter(unit)`. So the handler says `unit`.
-- `this` is the rule, so its settings are `this.n`, `this.lose-at`.
-
-A handler of more than one statement is written like a method:
+**1. An effect is a record.** What a card does is the effects it lists, in order:
 
 ```
-// A player's turn lasts until they pass; then the next player's starts.
-type FullTurns : TurnRule {
-  first-player: FirstPlayer
-  on-player-pass(player) {
-    game.end-turn()
-    if game.turns-this-round < game.players.count {
-      game.start-turn(player.next)
-    }
-  }
-}
+@klobuk.on-enter = Draw {}
+@a-domowiks-temper.on-play = Damage { target = Choose { from = all }, amount = card.damage }
 ```
 
-Handlers of one moment run in the order the game lists its rules.
-
-## Abilities carry their own behaviour
-
-An ability (Swift, Guardian) is a type too, and its behaviour is its members, the same way. *Ability* is the engine's
-word for what cards and rulebooks call a keyword (the owner's choice, 2026-09-30): a named behaviour a card can have,
-gain or lose.
+A list is data too, and its order is the order the effects happen:
 
 ```
-// A unit with this ability enters ready.
-type EntersReady : Ability {
-  on-unit-enter = unit.ready()
-}
-
-// While the defender has a unit with this ability, only such units may be attacked.
-type AttackedFirst : Ability {
-  can-attack(attacker, target) {
-    if target.controller.has-unit-with(this) {
-      return target.has(this)
-    }
-    return true
-  }
-}
-```
-
-The game gives each its own name when it declares its abilities, and a card lists the ones it has:
-
-```
-abilities = [
-  Swift = EntersReady {}
-  Guardian = AttackedFirst {}
+@saucer-of-milk.on-play = [
+  Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+  ReadyResources { count = one }
 ]
+```
 
-keeper-of-the-door = Creature {
-  name = 'Keeper of the Door', cost = 3, power = 2, health = 5
-  abilities = [@Guardian]
+**2. A formula is a value computed from the game.** Amounts, conditions and targets may be formulas: `card.damage`,
+`units(own).count >= card.units`, `if @has-company then card.company-damage else card.damage`. A formula reads the
+game and never changes it, like a cell in a spreadsheet. A condition on an effect is its `only-if`:
+
+```
+@kikimora.on-enter = Draw { count = card.draw, only-if = @is-well-fed }
+```
+
+**3. A choice is a value.** `Choose { from = own }` stands for the unit its player will choose. The engine asks when
+the effect runs (or, for a card that is played, when it is played, before the opponent may answer), and every effect
+that names it applies to that one unit. Several effects share one target through `Effect { target, do }`:
+
+```
+// Ready an exhausted unit you control. Heal 2 from it.
+@choicest-odours.on-play = Effect {
+  target = Choose { from = own, filter = exhausted }
+  do = [
+    Ready {}
+    Heal { amount = card.heal }
+  ]
 }
 ```
 
-- An ability's unit moments run only for units that have it, so `EntersReady` needs no "if the unit has it".
-- An ability's questions run in every game that declares it, and `this` is the ability (`has-unit-with(this)`).
-- An ability a game declares as plain `Ability {}` has no behaviour: it is a word printed on its cards. A printable-only
-  game declares all its abilities that way.
-- An ability's moments run after the rules' for the same moment, so a Swift unit is exhausted (`UnitsEnterExhausted`),
-  then readied.
-- A card gains and loses abilities (`unit.gain(sneaky, until: this-round)`), and has them by name (`unit.has(@Swift)`).
-
-This replaces the rules that only gave a game's keyword its meaning (`EntersReady { keyword = @Swift }`,
-`GuardiansFirst { keyword = @Guardian }`, `HitCostsLife`, `PlayFreeWhenLost`…), and it is how Folkborn's family
-abilities already work (Feather Coat, Rain-Fed and Pearl Tears carry their own handlers).
-
-**What the rename touches.** Today's files say `Keyword`: the core's type, `keywords` on a game, a set and a card, the
-libraries' keyword types, and the card layout's `{keywords}`. They become `Ability` and `abilities`, with the old names
-kept as deprecated forms so every existing file still means the same (the core's rule: nothing is removed or renamed
-outright). Today's `Ability` records (`OnEnter { text = ... }`, the old way a card declared that it has a handler)
-merge into the new meaning: a card's `abilities` lists what it has, and a handler slot says what one does.
-Descriptive tags that cards filter on (a creature type, a tribe) are not abilities; a game that needs them gets its own
-small concept, as Folkborn has families.
-
-## Kinds of card carry their own behaviour
-
-A unit, a spell and a Hero are types in the libraries (`UnitCard`, `SpellCard`, `HeroCard`), and what every card of
-that kind does is their members. In a card type's members, `this` is the card:
+**4. An effect type may be defined from others.** A library writes what `Draw` means as the core effects it is made
+of, with its own fields as parameters:
 
 ```
-// A unit: played from hand by paying its cost, it enters the board.
-type UnitCard : Card {
-  cost: Cost?
-  power: int
-  health: int?
-  can-play() {
-    return this.in-hand and this.owner.can-pay(this.cost)
-  }
-  on-played() {
-    this.owner.pay(this.cost)
-    this.move-to(this.owner.board)
-  }
+type Draw : Effect {
+  player: Formula = own
+  count: Formula = one
+  do = Move { target = this.player.deck.top(this.count), to = this.player.hand }
 }
 ```
 
-A game's card types take these as bases. A printable-only game's types are plain cards; making the game playable
-changes each type's base, one word, as an ability goes from `Ability {}` to `EntersReady {}`:
+So a library's whole vocabulary (`Draw`, `Heal`, `Sprout`, `Pay`) is data made of a few core effects, and a game can
+define its own the same way.
 
-```
-// Printable only: a Creature is a card.
-type Creature : Printed { cost: int, power: int, health: int }
+**What an effect acts on.** An effect about a unit acts on `this` (the card whose handler it is) unless it names a
+`target`; one about a player acts on `own` unless it names a `player`. A target may be a set (`units(own)`): the
+effect happens to each. That is what replaces loops.
 
-// Playable: a Creature is also a unit, and gets everything a unit does.
-type Creature : Printed, UnitCard { cost: int, power: int, health: int }
-```
+## The core's effects
 
-A type may have more than one base (`Printed` for what Folkborn and Hello TCG print on every card, `UnitCard` for what
-a unit does). Two bases that declare the same member must agree on its type. This replaces the rules that mapped a
-game's types onto a library's (`UnitCards { types = [@Creature] }`) and the `[type UnitCard]` they needed.
+These are the only behaviour the engine implements; everything else is defined from them. Each is one of the core's
+operations (`core-operations.alex`) as a record:
 
-## Moments and questions
-
-The core's `Rule` declares every moment and question once, so any rule may handle any of them. The area base types
-(`UnitRule`, `CombatRule`, `HeroRule`…) stay as they are: they say which list of the game a rule goes in.
-
-**Moments** are when something happens; a handler does something:
-
-| Moment | When |
+| Effect | What it does |
 |---|---|
-| `on-game-start()`, `on-round-start()`, `on-round-end()` | the game starts; a round starts or ends |
-| `on-player-game-start(player)` | the game starts, once for each player |
-| `on-player-turn-start(player)`, `on-player-turn-end(player)` | a player's turn starts or ends |
-| `on-player-pass(player)` | a player passes |
-| `on-unit-enter(unit)`, `on-unit-leave(unit)` | a unit enters or leaves play (moving it onto or off the board) |
-| `on-played()` | a player plays the card (a card type's member, `this` the card) |
-| `on-unit-damaged(unit)`, `on-unit-turn-end(unit)` | a unit is dealt damage; a turn ends, for each unit in play |
-| `on-attack(attacker, target)` | an attack is declared |
-| `on-hero-used(hero)` | a player uses a Hero's ability |
-| `on-player-check(player)`, `on-unit-check(unit)`, `on-hero-check(hero)` | the state check, after every action and effect: what must happen at once |
+| `Move { target, to, at }` | moves cards to a zone (their owner's zone of that name) |
+| `Shuffle { zone }` | shuffles zones |
+| `Flip { target, face }` | turns a card to a face |
+| `Exhaust`, `Ready { target }` | sets or clears a card's exhausted state |
+| `SetState { target, state, on }` | any other state |
+| `AddCounter { target, counter, by }`, `SetCounter { target, counter, value }` | a card's or a player's number |
+| `Create { card, zone }` | makes a token |
+| `Destroy { target }` | removes a token from the game |
+| `Reveal { target, to }`, `Conceal { target }` | shows cards |
+| `StartTurn { player }`, `EndTurn {}`, `SetFirstPlayer { player }` | the turn |
+| `Lose { player }`, `Win { player }`, `DrawGame {}` | the game's end |
+| `Effect { target, do }` | several effects sharing a target |
 
-**Questions** have an answer; a handler returns it:
+Every effect also takes `only-if` (a condition formula) and `once-per-round` (at most once a round for the card whose
+handler it is).
 
-| Question | Asked of |
-|---|---|
-| `can-play()` | each card in the acting player's hand (a card type's member, `this` the card) |
-| `attack-targets(attacker)` | each unit or Hero the acting player controls: what it may attack |
-| `can-attack(attacker, target)` | each of those targets |
-| `can-use(hero)` | the acting player's Hero |
-| `can-act(player, kind)` | the acting player, for each kind of action |
-| `is-round-over()` | the game, after each action |
+## Folkborn, rewritten as data
 
-A handler answers yes, no, or `nothing`: this rule has no say. An action is allowed when some rule says yes and none
-says no. The engine asks the questions and offers the player what is allowed; no handler builds a list of actions.
+Each set's rules file, as it would read. Nothing in the sets' card files changes.
 
-## Hello TCG's rules
-
-### Setup (`setup.alex`)
+### `folkborn-rules.alex` (shared)
 
 ```
-// A card of this type starts in this zone, not in the deck.
+boost-own-and-ready-an-offering = [
+  Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+  ReadyResources { count = one }
+]
+```
+
+### `domowiki-rules.alex`
+
+```
+@dziadzius.exhaust = ReadyResources { count = one }
+@dziadzius.awaken = own.resources.count >= card.offerings
+@dziadzius.back.exhaust = ReadyResources { count = two }
+
+@stove-keeper.on-enter = ReadyResources { count = one }
+
+// §850.1 If the deck runs out, the rest does nothing; it never costs a Candle.
+sprout = OfferFromDeck { count = card.sprout, exhausted = true }
+@moving-day-domowik.on-enter = @sprout
+
+// §850.2 Ready or exhausted Offerings both count.
+is-well-fed = own.resources.count >= @well-fed-at
+@ovinnik-of-the-drying-barn.static = CantAttack { only-if = not @is-well-fed }
+
+@bread-and-salt-greeter.on-enter = Heal { target = units(own), amount = card.heal }
+@kikimora.on-enter = Draw { count = card.draw, only-if = @is-well-fed }
+@bowl-of-kasha.on-play = @sprout
+@a-domowiks-temper.on-play = Damage { target = Choose { from = all }, amount = card.damage }
+@saucer-of-milk.on-play = @boost-own-and-ready-an-offering
+@old-bast-shoe.static = Grant { target = attached, power = card.boost, health = card.extra-health }
+@domowik-in-a-cats-shape.on-enter = @sprout
+@babunia.on-enter = ReadyResources { count = one }
+@klobuk.on-enter = Draw {}
+@warm-hand-in-the-night.on-play = Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+@knotted-mane.on-play = Exhaust { target = Choose { from = opponents } }
+```
+
+### `pari-rules.alex`
+
+```
+// §850.4 Feather Coat is a Goodbye.
+@feather-coat.on-defeated = Summon { card = @dove }
+
+@parijan.exhaust = Gain { target = Choose { from = own }, abilities = [@Sneaky], until = this-round }
+@parijan.awaken = units(own).count >= card.units
+@parijan.back.exhaust = Gain { target = Choose { from = own }, power = card.boost, abilities = [@Sneaky], until = this-round }
+
+// §850.0 Orange-Peri is one of the cards played this round, so "2 other cards" means 3 in all.
+@orange-peri.on-enter = Damage { amount = card.damage, only-if = own.played-this-round <= card.others }
+
+// §850.3 Counted when the effect is checked; a unit that just entered counts itself.
+has-company = units(own).count >= @company-at
+@pari-at-the-pool.on-enter = Ready { only-if = @has-company }
+
+// Súči of the Hunt and Mountain Gale: "Deal {damage} damage to a unit. Company: deal {company-damage} instead."
+company-damage = Damage {
+  target = Choose { from = all }
+  amount = if @has-company then card.company-damage else card.damage
+}
+@suci-of-the-hunt.on-enter = @company-damage
+
+@khangi.on-enter = Draw {}
+@falling-star.on-play = Damage { target = Choose { from = all }, amount = card.damage }
+@mountain-gale.on-play = @company-damage
+@choicest-odours.on-play = Effect {
+  target = Choose { from = own, filter = exhausted }
+  do = [
+    Ready {}
+    Heal { amount = card.heal }
+  ]
+}
+@zangwar.on-play = Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+@carried-off-asleep.on-play = Exhaust { target = Choose { from = opponents } }
+@pari-banus-pocket-tent.static = Grant { target = attached, health = card.extra-health }
+@manar-al-sana.on-enter = Ready { target = Choose { from = own, filter = other } }
+@asman-pari.on-enter = Damage { target = units(opponents), amount = card.damage }
+@schaibar.on-defeats-in-combat = Ready { once-per-round = true }
+```
+
+### `aluxes-rules.alex`
+
+```
+// §850.5 The rain counter's `max` stops it at +2/+2.
+@rain-fed.on-round-start = AddCounter { counter = @rain, by = one }
+
+@aluxito.exhaust = Heal { target = Choose { from = own }, amount = card.heal }
+@aluxito.awaken = own.life.count <= card.candles
+@aluxito.back.exhaust = Effect {
+  target = Choose { from = own }
+  do = [
+    Heal { amount = card.heal }
+    Gain { abilities = [@Guardian], until = this-round }
+  ]
+}
+
+@saka-bearing-alux.on-enter = Heal { target = Choose { from = all }, amount = card.heal }
+@corn-tending-alux.on-enter = Draw { only-if = units(own, @Guardian).any }
+@tool-hiding-alux.on-enter = Exhaust { target = Choose { from = opponents } }
+// §600.3 The attacker stays exhausted.
+@a-whistle-in-the-dark.on-play = CancelAttack {}
+@honey-and-tortillas.on-play = [
+  Heal { target = Choose { from = own }, amount = card.heal }
+  Draw {}
+]
+@pots-and-pans-flung.on-play = Damage { target = Choose { from = all, filter = exhausted }, amount = card.damage }
+@kahtal-alux.static = Grant { target = attached, health = card.extra-health, abilities = [@Guardian] }
+@the-roadside-alux.on-you-heal = Draw { once-per-round = true }
+@the-alux-of-the-sacred-cenote.on-round-start = Heal { target = units(own), amount = card.heal }
+@toh.on-enter = Draw {}
+@a-sweet-on-the-doorstep.on-play = Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+@lost-in-the-monte.on-play = Exhaust { target = Choose { from = opponents } }
+```
+
+### `jiaoren-rules.alex`
+
+```
+// §850.6
+@pearl-tears.on-survives-damage = ReadyResources { count = one }
+
+@zhu-er.static = Grant { target = units(own), abilities = [@pearl-tears] }
+@zhu-er.exhaust = Heal { target = Choose { from = own }, amount = card.heal }
+// Both players' Mists count, as today's engine counts them.
+@zhu-er.awaken = cards(@Mist, all, unit-card).count >= card.fallen
+@zhu-er.back.static = Grant { target = units(own), health = card.extra-health, abilities = [@pearl-tears] }
+@zhu-er.back.exhaust = ReadyResources { count = two }
+
+@the-spring-guest.on-defeated = ReadyResources { count = two }
+@weaver-of-the-sea-hall.on-enter = Draw {}
+@dragon-silk.static = Grant { target = attached, health = card.extra-health, abilities = [@Guardian] }
+@pearl-oyster.on-enter = ReadyResources { count = one }
+@jiaoren-pearl-healer.on-enter = Heal { target = units(own), amount = card.heal }
+@muke.on-enter = Draw {}
+@a-plate-of-pearls.on-play = @boost-own-and-ready-an-offering
+@the-sea-turns-rough.on-play = Damage { target = Choose { from = all }, amount = card.damage }
+@moonlit-sea.on-play = Exhaust { target = Choose { from = opponents } }
+@frost-white-silk.static = Grant { target = attached, health = card.extra-health, abilities = [@pearl-tears] }
+@quanxian.on-enter = ReadyResources { count = two }
+@the-muke-poet.on-defeated = Draw { count = card.draw }
+@tears-of-gratitude.on-play = Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+```
+
+### `hui-hai-rules.alex`
+
+```
+// §850.7 Its owner picks the enemy unit.
+@stone-for-stone.on-survives-damage = Damage { target = Choose { from = opponents }, amount = one }
+
+@pebble.exhaust = Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+// Both players' Mists count, as today's engine counts them.
+@pebble.awaken = cards(@Mist, all, unit-card).count >= card.fallen
+@pebble.back.static = Grant { target = units(own), health = card.extra-health, abilities = [@stone-for-stone] }
+@pebble.back.exhaust = Damage { target = Choose { from = opponents }, amount = card.damage }
+
+@hui-hai-of-the-stream.on-enter = Damage { target = Choose { from = opponents }, amount = card.damage }
+@ya-hui-hai.on-enter = Damage { target = Choose { from = opponents }, amount = card.damage }
+@a-pebble-at-your-feet.on-play = Damage { target = Choose { from = opponents }, amount = card.damage }
+@gohlou.on-enter = Draw {}
+@moss-mender-ya-hui-hai.on-enter = Heal { target = units(own), amount = card.heal }
+@stones-from-nowhere.on-play = Damage { target = units(opponents), amount = card.damage }
+@the-forest-remembers.on-play = Damage { target = Choose { from = all }, amount = card.damage }
+@nobody-threw-it.on-play = Exhaust { target = Choose { from = opponents } }
+@a-pouch-of-river-pebbles.static = Grant { target = attached, power = card.boost, abilities = [@stone-for-stone] }
+@grandfather-hui-hai.on-enter = Damage { target = Choose { from = opponents }, amount = card.damage }
+@the-hidden-village.on-enter = Damage { target = units(opponents), amount = card.damage }
+@small-but-strong.on-play = Gain { target = Choose { from = own }, power = card.boost, until = this-round }
+```
+
+### `mochi-rules.alex`
+
+```
+@mochi-the-sweet-spirit.on-enter = Draw {}
+@mochi-the-sweet-spirit.on-defeated = ReadyResources { count = two }
+```
+
+Every one of Folkborn's handlers fits. They use 14 effect types (`Draw`, `Damage`, `Heal`, `Ready`, `Exhaust`,
+`Gain` for this round, `Grant` for while the card is in play, `CantAttack`, `ReadyResources`, `OfferFromDeck`,
+`Summon`, `AddCounter`, `CancelAttack`, `Effect`), each defined in a library from the core's effects.
+
+## Hello TCG, rewritten as data
+
+```
+@dziadzius.exhaust = Gain { resource = @Energy, amount = card.energy }
+@dziadzius.back.exhaust = Gain { resource = @Energy, amount = card.energy }
+@dziadzius.awaken = units(own).count >= card.creatures
+@klobuk.on-enter = Draw {}
+@bread-and-salt-greeter.on-enter = Heal { target = units(own), amount = card.heal }
+@domowiks-temper.on-play = Damage { target = Choose { from = all }, amount = card.damage }
+```
+
+Its scenarios become records too:
+
+```
+klobuk-draws = Scenario {
+  title = 'Kłobuk draws a card when it enters'
+  given = [
+    Hand { player = me, cards = [@klobuk] }
+    Deck { player = me, cards = [@hearth-cricket] }
+    CounterIs { player = me, counter = @Energy, value = 3 }
+  ]
+  when = Play { player = me, card = @klobuk }
+  then = [InZone { card = @hearth-cricket, zone = @Hand }]
+}
+```
+
+## The library rules, rewritten as data
+
+What the runtime's step 3 needs: every library rule Hello TCG lists. A rule is a type as today; its behaviour is its
+members, set to effects (for a moment) or formulas (for a question), as the earlier drafts of this page decided. The
+moments and questions are declared once on the core's `Rule`, each with the names it gives its formulas (`unit`,
+`player`, `attacker`, `target`); `this` is the rule, the ability or the card.
+
+### Setup
+
+```
 type StartsInZone : SetupRule {
   type: CardType | text
   zone: Zone
-  face: int = 1
-  on-player-game-start(player) {
-    for card in player.deck.cards-of-type(this.type) {
-      card.move-to(player.zone(this.zone))
-    }
-  }
+  on-game-start = Move { target = all.deck.cards-of-type(this.type), to = this.zone }
 }
-
 type ShuffleDeck : SetupRule {
-  zone: Zone?
-  on-player-game-start = player.deck.shuffle()
+  on-game-start = Shuffle { zone = all.deck }
 }
-
 type OpeningHand : SetupRule {
   n: int
-  on-player-game-start = player.draw(this.n)
+  on-game-start = Draw { player = all, count = this.n }
 }
 ```
 
-### Turns (`turns.alex`)
+### Turns
 
 ```
-// A player's turn lasts until they pass; then the next player's starts. A round is every player's turn once.
 enum FirstPlayer { random, initiative-holder, loser-of-last-game }
 
+// A player's turn lasts until they pass; then the next player's starts. A round is every player's turn once.
 type FullTurns : TurnRule {
   first-player: FirstPlayer
-  on-game-start() {
-    if this.first-player == random {
-      game.set-first-player(random(game.players))
-    }
-  }
-  on-round-start = game.start-turn(game.first-player)
-  on-player-pass(player) {
-    game.end-turn()
-    if game.turns-this-round < game.players.count {
-      game.start-turn(player.next)
-    }
-  }
-  is-round-over() {
-    return game.turns-this-round == game.players.count and not game.in-turn
-  }
+  on-game-start = SetFirstPlayer { player = random(game.players), only-if = this.first-player == random }
+  on-round-start = StartTurn { player = game.first-player }
+  on-player-pass = [
+    EndTurn {}
+    StartTurn { player = player.next, only-if = game.turns-this-round < game.players.count }
+  ]
+  is-round-over = game.turns-this-round == game.players.count and not game.in-turn
 }
 
-// Each phase's steps, in order, at the start of a player's turn.
+// Each phase's steps, in order, at the start of a player's turn. A step is an effect.
 type Phases : TurnRule {
   phases: [Phase]
-  on-player-turn-start(player) {
-    for phase in this.phases {
-      for step in phase.steps {
-        step.run(player)
-      }
-    }
-  }
+  on-player-turn-start = this.phases.steps
 }
 
-type ReadyAll : Step {
-  run(player) {
-    for card in player.cards-in-play {
-      card.ready()
-    }
-  }
-}
-
-type Draw : Step {
-  count: int
-  skip-very-first-turn: bool = false
-  run(player) {
-    if not (this.skip-very-first-turn and game.turn == 1) {
-      player.draw(this.count)
-    }
-  }
+type ReadyAll : Effect {
+  do = Ready { target = player.cards-in-play }
 }
 
 // Only the kinds of action the game lists may be taken.
 type Actions : TurnRule {
   allowed: [ActionKind]
-  can-act(player, kind) {
-    return this.allowed.has(kind)
-  }
+  can-act = this.allowed.has(kind)
 }
 ```
 
-`FullTurns` picks the first player itself only for `random`. The other choices are set by the rules that know them:
-the initiative library's rule makes the Lantern's holder the first player, and a match (a best of three) makes the
-loser of the last game the first. `first-player` was `first: First` before this draft; the old name stays as a
-deprecated form.
+Hello TCG's phase becomes `steps = [ReadyAll {}, Draw { count = 1, only-if = game.turn > 1 }]`: its own
+`skip-very-first-turn` is the formula `game.turn > 1`.
 
-A step is a type too: `run(player)` is its one member, and `step.run(player)` calls it.
-
-### Resources (`resources.alex`)
+### Resources
 
 ```
-// A number that rises to a cap (mana crystals): a capacity that grows, and what is left of it this turn.
 type GrowingCounter : ResourceRule {
-  name: text?
   start: int
   max: int
-  pay-by: PayBy
-  on-player-game-start = player.set(this.name, this.start)
+  on-player-game-start = SetCounter { counter = this.name, value = this.start }
 }
-
 type GrowsAt : ResourcePolicy {
   resource: ResourceRule
-  moment: Moment
   by: int
-  on-player-turn-start = player.grow(this.resource, this.by)
+  on-player-turn-start = SetCapacity {
+    resource = this.resource
+    value = min(player.capacity(this.resource) + this.by, this.resource.max)
+  }
 }
-
 type RefillsAt : ResourcePolicy {
   resource: ResourceRule
-  moment: Moment
-  on-player-turn-start = player.refill(this.resource)
+  on-player-turn-start = SetCounter { counter = this.resource.name, value = player.capacity(this.resource) }
 }
 ```
 
-`grow`, `refill` and `pay` are the resources library's own routines, with parameters:
-
-```
-routine grow(player: player, resource: GrowingCounter, by: int) {
-  player.set-capacity(resource, min(player.capacity(resource) + by, resource.max))
-}
-```
-
-Hello TCG's `GrowsAt { moment = @turn-start }` names its moment; the members above fix it to the start of a turn
-(question 3).
-
-### Units (`units.alex`)
+### Units, spells and Heroes
 
 ```
 // A unit: played from hand by paying its cost, it enters the board.
 type UnitCard : Card {
-  cost: Cost?
-  power: int
-  health: int?
-  can-play() {
-    return this.in-hand and this.owner.can-pay(this.cost)
-  }
-  on-played() {
-    this.owner.pay(this.cost)
-    this.move-to(this.owner.board)
-  }
+  can-play = this.in-hand and this.owner.can-pay(this.cost)
+  on-played = [
+    Pay { cost = this.cost }
+    Move { target = this, to = this.owner.board }
+  ]
 }
-
 type UnitsEnterExhausted : UnitRule {
-  on-unit-enter = unit.exhaust()
+  on-unit-enter = Exhaust { target = unit }
 }
-
-// A unit with this ability enters ready (Hello TCG: Swift = EntersReady {}).
-type EntersReady : Ability {
-  on-unit-enter = unit.ready()
-}
-
-// Damage equal to or more than a unit's Health defeats it.
 type DefeatAtHealth : UnitRule {
-  on-unit-check = if unit.damage >= unit.health { unit.defeat() }
+  on-unit-check = Defeat { target = unit, only-if = unit.damage >= unit.health }
 }
-```
 
-Playing a unit moves it onto the board, which is its `on-unit-enter`: the rules' (exhaust it, ready it if Swift) and
-the card's own `on-enter` (Kłobuk draws a card). `defeat()` moves a unit to its owner's discard, which runs its
-`on-defeated`.
-
-### Spells (`spells.alex`)
-
-```
 // A spell: played from hand by paying its cost, it does what it says, then goes to the discard.
 type SpellCard : Card {
-  cost: Cost?
-  can-play() {
-    return this.in-hand and this.owner.can-pay(this.cost)
-  }
-  on-played() {
-    this.owner.pay(this.cost)
-    this.move-to(this.owner.discard)
-    this.do-what-it-says()
-  }
-}
-```
-
-`do-what-it-says()` runs the card's own `on-play` (A Domowik's Temper deals its damage).
-
-### Heroes (`heroes.alex`)
-
-```
-// A Hero: always in play, with a second face it may flip to (Folkborn's and Hello TCG's Awakened side).
-type HeroCard : Card {
-  back: Card?
+  can-play = this.in-hand and this.owner.can-pay(this.cost)
+  on-played = [
+    Pay { cost = this.cost }
+    Move { target = this, to = this.owner.discard }
+    this.on-play
+  ]
 }
 
-// A Hero flips to its second face as soon as its Awaken condition holds, and never back.
 type AwakenOnStateCheck : HeroRule {
-  on-hero-check = if hero.face == 1 and hero.can-awaken() { hero.flip() }
+  on-hero-check = Flip { target = hero, face = 2, only-if = hero.face == 1 and hero.awaken }
 }
-
-// A Hero's Exhaust ability, used by exhausting it: at most once a round.
 type PowerOncePerRound : HeroRule {
-  can-use(hero) {
-    return hero.ready
-  }
-  on-hero-used(hero) {
-    hero.exhaust()
-    hero.use-ability()
-  }
+  can-use = hero.ready
+  on-hero-used = [
+    Exhaust { target = hero }
+    hero.exhaust
+  ]
 }
-
-// An Awakened Hero may attack, like a unit, and takes no damage doing so when the game says.
 type HeroAttacksWhenAwakened : HeroRule {
   takes-no-damage: bool
-  attack-targets(attacker) {
-    if attacker.is-hero and attacker.face == 2 {
-      return attacker.enemy-units + attacker.enemy-players
-    }
-    return nothing
-  }
+  attack-targets = if attacker.is-hero and attacker.face == 2 then attacker.enemy-units + attacker.enemy-players else nothing
 }
 ```
 
-`TwoFaces` and `AwakenedNeverReverts` have no members to set: nothing flips a Hero back.
+`this.on-play` and `hero.exhaust` are the card's own handler, which is data: listing it runs it.
 
-### Combat (`combat.alex`)
+### Abilities and combat
 
 ```
-// The attacker chooses its target: an enemy unit, or the defending player's life.
+type EntersReady : Ability {
+  on-unit-enter = Ready { target = unit }
+}
+type AttackedFirst : Ability {
+  can-attack = not target.controller.has-unit-with(this) or target.has(this)
+}
+
 type AttackerChooses : CombatRule {
   targets: [CombatTarget]
-  attack-targets(attacker) {
-    if not attacker.is-unit {
-      return nothing
-    }
-    if this.targets.has(life) {
-      return attacker.enemy-units + attacker.enemy-players
-    }
-    return attacker.enemy-units
-  }
+  attack-targets = if not attacker.is-unit then nothing
+    else if this.targets.has(life) then attacker.enemy-units + attacker.enemy-players
+    else attacker.enemy-units
 }
-
 type AttackerMustBeReady : CombatRule {
-  can-attack(attacker, target) {
-    return attacker.ready
-  }
+  can-attack = attacker.ready
 }
 
-// While the defender has a unit with this ability, only such units may be attacked (Hello TCG: Guardian =
-// AttackedFirst {}).
-type AttackedFirst : Ability {
-  can-attack(attacker, target) {
-    if target.controller.has-unit-with(this) {
-      return target.has(this)
-    }
-    return true
-  }
-}
-
-// An attack exhausts the attacker. A unit it attacks and the attacker deal their Power to each other at once.
+// An attack exhausts the attacker. A unit it attacks and the attacker deal their Power to each other.
 type CombatDamageEqualsPower : CombatRule {
-  on-attack(attacker, target) {
-    attacker.exhaust()
-    if target.is-unit {
-      dealt = attacker.power
-      taken = target.power
-      target.damage(dealt)
-      if not (attacker.is-hero and game.rule(HeroAttacksWhenAwakened).takes-no-damage) {
-        attacker.damage(taken)
-      }
+  on-attack = [
+    Exhaust { target = attacker }
+    Damage { target = target, amount = attacker.power, only-if = target.is-unit }
+    Damage {
+      target = attacker
+      amount = target.power
+      only-if = target.is-unit and not (attacker.is-hero and game.rule(HeroAttacksWhenAwakened).takes-no-damage)
     }
-  }
+  ]
 }
-
-// A hit on a player costs them life equal to the attacker's Power.
 type LifeDamageEqualsPower : CombatRule {
-  on-attack = if target.is-player { target.lose-life(attacker.power) }
+  on-attack = LoseLife { player = target, amount = attacker.power, only-if = target.is-player }
 }
-
-// Damage stays on a unit until the end of the turn.
 type DamageClearsAt : CombatRule {
-  moment: Moment
-  on-unit-turn-end = unit.heal(unit.damage)
+  on-unit-turn-end = Heal { target = unit, amount = unit.damage }
 }
 ```
 
-`SimultaneousDamage` is the order written in `on-attack`: both amounts are read before either is dealt.
+Damage doesn't change Power, and defeat waits for the state check, so the two `Damage` effects are simultaneous in
+effect: the second still reads the defender's Power.
 
-### Life (`life.alex`)
+### Life
 
 ```
-// A player's life as a number. A player whose life falls to the limit loses; the core ends the game when one player is
-// left, and they win.
 type LifeCounter : LifeRule {
   name: text
   start: int
   lose-at: int
-  on-player-game-start = player.set(this.name, this.start)
-  on-player-check = if player.counter(this.name) <= this.lose-at { player.lose() }
+  on-player-game-start = SetCounter { counter = this.name, value = this.start }
+  on-player-check = Lose { player = player, only-if = player.counter(this.name) <= this.lose-at }
 }
 ```
 
-## What the language gains
+## What changes in Alex
 
-1. **Members whose value is code.** A type sets a moment or question to one statement (`on-unit-enter = unit.exhaust()`)
-   or to a body (`can-attack(attacker, target) { ... }`). In it, `this` is the rule, the ability or the card, and the
-   member's parameters are named where the core declares it.
-2. **More than one base type:** `type Creature : Printed, UnitCard { ... }`. It replaces the type-mapping rules and
-   `[type UnitCard]`, which stay as deprecated forms.
-3. **`return`**, for a question's answer, with `nothing` for "no say".
-4. **`for x in list { ... }`**: the one loop. It goes over a finite list (cards, players, a rule's list), so every
-   handler still finishes.
-5. **Any name in a binding**: `dealt = attacker.power`. Today only `target` may be bound.
-6. **`game.rule(RuleType)`**: another rule as the game lists it, or nothing (question 2).
+**Goes (kept only as deprecated forms that still read, until the files that use them are rewritten):**
 
-The words handlers call (`move-to`, `exhaust`, `draw`, `enemy-units`, `can-pay`…) are the libraries' and the core's
-vocabulary, each declared once.
+- routine bodies and every statement: a sequence of statements, `target = …` bindings, `if … { } else { }`, `+=`;
+- program mode, the parse mode rules files use today: a rules file becomes a data document;
+- the proposals of earlier drafts of this page that never shipped: `for`, `return`, bindings with any name, members
+  written as method bodies.
 
-A card could take the same form: a card's slots (`on-enter`) are members of its type, so a rules file's
-`@klobuk.on-enter = draw()` sets a member of one card, as a rule's type sets a member of every instance of the rule
-(question 4).
+**Stays:** everything Alex's data layer is today, and `@card.slot = value`, which sets a member of another document's
+value: data pointing at data.
+
+**Comes:**
+
+1. **Formulas as values:** a field whose type allows it may hold a pure expression: names in scope (`this`, `card`,
+   `own`, `unit`, `target`…), member access, calls to the vocabulary's queries (`units(own)`, `target.has(this)`),
+   comparisons, `and`/`or`/`not`, arithmetic, and `if … then … else …` as a value. A formula never changes the game.
+2. **Several base types:** `type Creature : Printed, UnitCard`, approved.
+3. **A type's member set to a value that is an effect or a formula**, which types already do for data
+   (`type TokenCreature : Creature { finishes = [standard] }`).
 
 ## Questions for the owner
 
-1. **Does this read like code you would want to write?**
-2. **Reading another rule's values.** `CombatDamageEqualsPower` needs `HeroAttacksWhenAwakened`'s `takes-no-damage`.
-   The proposal is `game.rule(HeroAttacksWhenAwakened).takes-no-damage`, which is nothing when the game doesn't list
-   that rule. Another option is for the two rules to be one.
-3. **Rules that work at a moment the game chooses.** Hello TCG writes `GrowsAt { moment = @turn-start }`. Either the
-   rule fixes its moment (`on-player-turn-start`, as above) and a game that grows at another moment lists another
-   rule, or the rule names its moment and the engine runs it then. The first is simpler.
-4. **Cards.** A card's handlers stay in the game's rules files (`@klobuk.on-enter = draw()`), since a set's file is
-   data and its rules file code. Is that still right, now that rules put code in their types?
-5. **What stays in Rust.** The core's operations, the loop, the scheduler, randomness and the words that read the
-   game's state stay in the engine. Everything that is a rule of some game is Alex. Is that the line?
-
-Once this is agreed, the language changes are made in both Alex implementations, the rules' members go into the
-libraries, and the runtime runs them, until two random bots play whole Hello TCG games.
+1. **Formulas.** Are pure expressions (`units(own).count >= card.units`, `if … then … else …`) data enough for Alex?
+   They compute; they never change anything. Without them, every condition would need its own record type
+   (`AtLeast { what = units(own), n = card.units }`), which reads worse and still needs `units(own)`.
+2. **Which fields may hold a formula.** Everywhere a value is expected, or only fields whose type says so
+   (`amount: Formula`)? The second keeps ordinary data free of formulas; the first is simpler to write.
+3. **`only-if`** as the name of an effect's condition (`if` alone is Alex's for the `if … then … else` formula).
+4. **Reading another rule's values.** `game.rule(HeroAttacksWhenAwakened).takes-no-damage`, or one rule instead of
+   two?

@@ -1291,6 +1291,24 @@ Making a printable game playable changes each type's base, as an ability goes fr
 `initiative-holder` and `loser-of-last-game`; the old field and enum stay as deprecated forms. Built with the step 3
 language work.
 
+### Alex is a purely data modelling language (owner, 2026-09-30)
+
+Supersedes the program layer (decided 2026-09-28) and the step 3 drafts that extended it. The owner worried that
+imperative constructs would cost Alex its strength, the balance of simplicity and power a data language has. So what
+a card or a rule does is data:
+
+- **Effects are records** (`Draw {}`, `Damage { target, amount }`), and a list of them happens in its order.
+- **Choices are records** (`Choose { from = own }`): the unit a player will choose, shared by the effects that name it.
+- **Conditions and amounts are formulas**: pure expressions read from the game (`units(own).count >= card.units`,
+  `if @has-company then card.company-damage else card.damage`), which never change it. `only-if` is an effect's
+  condition.
+- **An effect type may be defined from others** (`type Draw : Effect { do = Move { ... } }`), so a library's vocabulary
+  is data made of a few core effects, which are the only behaviour in Rust.
+
+Goes, deprecated until the files using them are rewritten: routine bodies, statements in sequence, `target = ...`
+bindings, `if` statements, `+=`, and program mode. Written out on paper, with every Folkborn and Hello TCG handler and
+every library rule step 3 needs, in `docs/tcg/library-rules-on-paper.md`, for the owner's review before the code.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

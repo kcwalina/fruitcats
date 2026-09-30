@@ -18,10 +18,9 @@ libraries, listed below. Closing them is the work to do before the runtime can p
 | `sets/<set>/<set>.alex` | Today's set files, with the numbers in a card's text as its constants and Aluxes's rain counter (below). Mochi's is unchanged, so it isn't copied here. |
 
 The rules are about 380 lines: 200 in the game file, and 176 in the rules files. The 106 cards (the Dove token
-included) need 88 lines that give a card's slot its handler. In 74 of them the handler is written right there, one
-statement (gap 18). 10 handlers have names: those of several statements, the conditions other handlers read
-(`@is-well-fed`, `@has-company`), a set's mechanic that three cards share (`sprout`), and the two that need "once
-per round" (gap 7).
+included) need 88 lines that give a card's slot its handler. In 76 of them the handler is written right there, one
+statement (gap 18). 8 handlers have names: those of several statements, the conditions other handlers read
+(`@is-well-fed`, `@has-company`), and a set's mechanic that three cards share (`sprout`).
 
 ## How it reads
 
@@ -67,6 +66,12 @@ routine sprout { offer-from-deck(card.sprout, exhausted: true) }
 
 Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the game's keyword rules cover them.
 
+"Once per round" is a condition in the handler:
+
+```
+@schaibar.on-defeats-in-combat = if once-per-round { this.ready() }
+```
+
 ## What changes in today's files
 
 - **Numbers become constants.** A card's text shows its numbers as `{name}`, and the card lists them:
@@ -86,13 +91,12 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
 
 ## What the checker says
 
-Laid over `games/folkborn/`, the draft gets 49 errors (2026-09-29, after gaps 1 to 3, 5, 8 to 10 and 17 to 19),
-all from gaps 4, 6, 7, 11 to 14 below; it got 115 before the libraries' gaps were closed. The check also reports 6
-errors in the Flower Souls prototype (`games/folkborn/prototypes/`), whose rules aren't written yet; they aren't
-counted here. Many are repeats: a missing slot is reported on every card that uses it. Before its handlers were written
-inline it got 147: a named handler whose slot is missing is also reported on its own, since, attached to nothing,
-it can't see any card's constants. Written inline, it isn't checked until its slot exists, so closing gap 4 will
-show some errors that are hidden today. "Folkborn" in the Fix column
+Laid over `games/folkborn/`, the draft gets 4 errors (2026-09-29, after gaps 1 to 12 and 17 to 19): 3 from gap 13
+(Mochi's key) and 1 from gap 14 (`MaxRounds` has no `winner` yet). It got 115 before gaps 1 to 12 were closed, and 49
+with only the libraries' gaps closed. The check also reports 6 errors in the Flower Souls prototype
+(`games/folkborn/prototypes/`), whose rules aren't written yet; they aren't counted here. Before its handlers were
+written inline it got 147: a named handler whose slot is missing is also reported on its own, since, attached to nothing,
+it can't see any card's constants. Written inline, it isn't checked until its slot exists. "Folkborn" in the Fix column
 means the fix is in Folkborn's own files; the other fixes are in the platform.
 
 | # | Gap | Where it shows | Fix |
@@ -100,15 +104,15 @@ means the fix is in Folkborn's own files; the other fixes are in the platform.
 | 1 | The libraries declare `Rarity` and `Card.rarity` (common), and `Family` and `Card.family` (families). Folkborn prints its own, so the names clash. Hello TCG has the same error. | 28 errors: 4 here, and each set's `family` fails | Done. Alex (both implementations, C# Alex 0.11.0): a game's own type hides a library's of the same name for the game's documents, and a field its type declares hides the member a library's extension gives the base; the libraries keep meaning theirs. The libraries still declare `Rarity`, `Family`, `Card.rarity` and `Card.family` for games that want them. |
 | 2 | A library Hero has `face1`/`face2` records. Folkborn and Hello TCG print a Hero with a `back`, and put `exhaust`, `awaken` and `static` on the Hero and on its back. | 31 errors, and more in handlers that can't see the Hero's constants | Done, differently from the proposal: `HeroCards { types = [@Hero], second-face = @Awakened }` names the back's type, not the field (`second-face = back`), since a field's name isn't a value Alex has. `face1` is optional; the Hero card and the `HeroFaceCard` its back is mapped onto have `exhaust`, `awaken` and `static`, and a handler on the back reads the back's constants. |
 | 3 | A Talisman must carry `attached: Grant` as data, so its `static` slot is never reached. | 14 errors, and more in handlers | Done. Library: `attached: Grant?`. A Talisman's grant is a static handler reading the card's constants. |
-| 4 | Keywords have no handler slots. Feather Coat, Rain-Fed, Pearl Tears and Stone for Stone are behaviour on a keyword. | 4 errors | Core: a keyword takes the slots of the cards that carry it, and a unit with it runs its handlers. |
+| 4 | Keywords have no handler slots. Feather Coat, Rain-Fed, Pearl Tears and Stone for Stone are behaviour on a keyword. | 4 errors | Done, in the libraries rather than the core: a keyword has all of a unit's slots (`on-enter`, `on-defeated`, `on-round-start`, `on-attack`, `on-defeats-in-combat`, `static`…), since the unit that has it, printed or granted, runs its handlers, with `this` that unit. Each library that gives `UnitCard` a slot declares the same one on `Keyword`, beside it (`extension Keyword { ... }`), so no language change was needed. With gap 5, `on-survives-damage` is one of them. |
 | 5 | No "damaged and survives" moment. | hidden behind gap 4 | Done. Library (units): `on-survives-damage` on units, with the ability kind `OnSurvivesDamage`. On keywords with gap 4. |
-| 6 | A keyword word in a handler (`grant(pearl-tears)`) must be one of the game's keywords. A set's own keywords aren't found. | 5 errors | Checker: look in the game's sets too. |
-| 7 | "Once per round" can't be said in a handler (Schaibar, The Roadside Alux). | 6 errors | Core: a `once-per-round { ... }` block. The alternative, `abilities = [...]` on the card, can't carry "Fierce." in the printed text. |
+| 6 | A keyword word in a handler (`grant(pearl-tears)`) must be one of the game's keywords. A set's own keywords aren't found. | 5 errors | Done: the checker looks in the game's sets too. The Heroes' and Talismans' `grant`s are still behind gaps 2 and 3. |
+| 7 | "Once per round" can't be said in a handler (Schaibar, The Roadside Alux). | 6 errors | Done, differently from the proposal: no block and no language change. The core has a condition, `once-per-round`, true the first time in a round that the card's handler asks: `@schaibar.on-defeats-in-combat = if once-per-round { this.ready() }`. It is the word for what `Ability.once-per-round` says as data, used with the `if` handlers already have. Both handlers are now one line. |
 | 8 | A rules file is for one set; handlers that several sets share have nowhere to go. | done | Core: rules documents no longer say `for = @set` (the owner, 2026-09-29): a rules file is part of the game by being in its folder, like a cards file, and its handlers name the cards they attach to. `for` stays as a deprecated field with no effect. |
 | 9 | No way to count cards in a zone ("5 or more Fabled and Creatures are in the Mist"). | hidden behind gap 2: the count is written on the Heroes' Awaken slots | Done. `cards(zone, players, filters)` in `common`, and the `unit-card` filter in `units`, since it is about `UnitCard`. |
 | 10 | `summon` takes a `Token` record; Folkborn's Dove is a card of a token type. | 1 error | Done. `summon` takes a card: a `Token`, or a card of the game's own token type (`summon(@dove)`). A reference to a card or a zone now stands where a handler's `card` or `zone` parameter is. |
-| 11 | A card whose text is only keywords must have a handler. | 27 errors | Checker: text made only of the card's keywords needs none. |
-| 12 | A card's constants share names with the game's: Aluxito's `candles` makes the game's `@candles` ambiguous. | 1 error | Core: a card's constants belong to the card, not the game's namespace. |
+| 11 | A card whose text is only keywords must have a handler. | 27 errors | Done: text whose every sentence is one of the card's keywords as printed ("Guardian. Fierce.", "Tough 1" from `Applied`) needs none. Text with anything more still does. |
+| 12 | A card's constants share names with the game's: Aluxito's `candles` makes the game's `@candles` ambiguous. | 1 error | Done, as an Alex rule (both implementations, Alex 0.10.0): in a map inside another map's entry, a plain value (a number, a text) belongs to the entry and is reached through it, so a card's constants are `card.candles` in its handlers and never `@candles`. Records there are still named, since art briefs name their pictures. |
 | 13 | Mochi's set and its one card are both named `mochi`, so `@mochi.on-enter` names the set. | 3 errors | Folkborn: give the card its own key (`mochi-the-sweet-spirit`). |
 | 14 | `MaxRounds` doesn't say who wins at the limit. | not an error yet | Decided by the owner (2026-09-29, now rulebook §300.7): after round 40, more Candles wins, then more Health left on units in play, else a draw. Library: `MaxRounds { n, winner = [most-life, most-unit-health] }`, the tiebreaks in order, a draw when all are equal; built with the runtime. |
 | 15 | Setup order across areas isn't defined: the Candles are dealt (a `life` rule) after the shuffle and before the opening hand (`setup` rules). | not an error | Library: a setup step that deals the life stack, placed in `setup`. |
@@ -132,7 +136,7 @@ cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check
 
 ## Next
 
-Close the rest of gaps 1 to 13 in the core and Folkborn's files (Hello TCG, which needed gaps 1 and 2, checks with
-no errors). Then Folkborn checks clean, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
+Gaps 1 to 12 are closed. Gap 13 is in Folkborn's own files (Hello TCG, which needed gaps 1 and 2, checks with no
+errors). Then Folkborn checks clean but for gap 14's `winner`, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
 the runtime behaves, so they are settled when it is built. The runtime starts with Hello TCG, then plays Folkborn,
 compared game for game with today's engine.

@@ -38,5 +38,4 @@ routine ready-and-heal {
 @manar-al-sana.on-enter = choose(own, other).ready()
 @asman-pari.on-enter = units(opponents).damage(card.damage)
 
-routine ready-after-a-win { once-per-round { this.ready() } }
-@schaibar.on-defeats-in-combat = ready-after-a-win
+@schaibar.on-defeats-in-combat = if once-per-round { this.ready() }

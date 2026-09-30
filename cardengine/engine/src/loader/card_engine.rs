@@ -380,11 +380,19 @@ impl RulesScope {
         matches!(&model.types[value].kind, TypeKind::Function { kind, .. } if kind == "condition") && is_named(model, target, "bool")
     }
 
+    /// A keyword of the game or of one of its sets.
     fn is_keyword(&self, model: &Model, word: &str) -> bool {
         let Some(root) = self.request.root(&self.game) else { return false };
-        let Some(keywords) = value_of(model, root, "keywords") else { return false };
-        let Some(keywords) = model.object(keywords) else { return false };
-        keywords.properties.iter().any(|p| p.name.eq_ignore_ascii_case(word))
+        let mut holders = vec![root];
+        if let Some(sets) = value_of(model, root, "sets") {
+            if let ValueKind::Array(items) = &model.values[sets].kind {
+                holders.extend(items.iter().filter_map(|s| final_target(model, *s)));
+            }
+        }
+        holders.into_iter().any(|holder| {
+            let Some(keywords) = value_of(model, holder, "keywords").and_then(|k| model.object(k)) else { return false };
+            keywords.properties.iter().any(|p| p.name.eq_ignore_ascii_case(word))
+        })
     }
 
     /// Whether the ability the declaration implements gives it an event.
@@ -815,7 +823,10 @@ fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key:
     }
 
     if has_text {
-        if object.extensions.is_empty() {
+        // Text made only of the card's keywords ("Guardian. Tough 1.") is the keywords' rules, and needs no handler.
+        let model = context.model();
+        let only_keywords = text.as_ref().and_then(|t| final_target(model, t.value)).and_then(|v| textual(model, v)).map(|t| is_only_keywords(model, holder, t)).unwrap_or(false);
+        if object.extensions.is_empty() && !only_keywords {
             if let Some(where_) = context.document_of(holder) {
                 let message = format!("{} has text, and no rules document gives it a handler ('@{}.on-enter = ...', or whichever slot runs it).", name, key);
                 context.error(where_.index, text.unwrap().name_span, message);
@@ -882,7 +893,12 @@ fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key:
         }
     }
 
+    // A holder without abilities (a keyword) has its slots' handlers with nothing to declare.
+    let has_abilities = object.record_type.map(|t| context.model().field_of(t, "abilities").is_some()).unwrap_or(false);
     for (member, assigned) in &object.extensions {
+        if !has_abilities {
+            break;
+        }
         let ValueKind::Declaration(declaration) = context.model().values[*assigned].kind else { continue };
         if declared.contains(member) {
             continue;
@@ -896,6 +912,46 @@ fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key:
             let Some(rules_document) = context.document(&rules) else { continue };
             context.error(rules_document.index, attachment.span, format!("{} assigns {} on {}, which declares no such ability", rules, member, name));
         }
+    }
+}
+
+/// Whether every sentence of `text` is one of the card's keywords as printed: its name ('Guardian'), with its number when
+/// it is applied ('Tough 1').
+fn is_only_keywords(model: &Model, card: ValueId, text: &str) -> bool {
+    let mut printed: Vec<String> = Vec::new();
+    if let Some(keywords) = value_of(model, card, "keywords") {
+        if let ValueKind::Array(items) = &model.values[keywords].kind {
+            for written in items {
+                let Some(item) = final_target(model, *written) else { continue };
+                let applied = model.object(item).and_then(|o| o.record_type).map(|t| model.record_name(t) == "Applied").unwrap_or(false);
+                if applied {
+                    let n = value_of(model, item, "n").and_then(|n| final_target(model, n)).and_then(|n| match &model.values[n].kind {
+                        ValueKind::Integer(n) => Some(n.to_string()),
+                        _ => None,
+                    });
+                    if let (Some(name), Some(n)) = (value_of(model, item, "keyword").and_then(|k| keyword_name(model, k)), n) {
+                        printed.push(format!("{} {}", name, n));
+                    }
+                } else if let Some(name) = keyword_name(model, *written) {
+                    printed.push(name);
+                }
+            }
+        }
+    }
+    let sentences: Vec<&str> = text.split('.').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+    !sentences.is_empty() && sentences.iter().all(|s| printed.iter().any(|p| p == s))
+}
+
+/// A keyword's printed name, `written` being where the card names it: the keyword's `name`, or the key a reference to it
+/// ends with (`@Guardian`).
+fn keyword_name(model: &Model, written: ValueId) -> Option<String> {
+    let keyword = final_target(model, written)?;
+    if let Some(name) = value_of(model, keyword, "name").and_then(|n| final_target(model, n)).and_then(|n| textual(model, n)) {
+        return Some(name.to_string());
+    }
+    match &model.values[written].kind {
+        ValueKind::Reference { path, .. } => path.last().cloned(),
+        _ => None,
     }
 }
 

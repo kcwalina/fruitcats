@@ -28,8 +28,7 @@ routine heal-own-and-draw {
 @pots-and-pans-flung.on-play = choose(all, exhausted).damage(card.damage)
 @kahtal-alux.static = attached.grant(health: card.extra-health, guardian)
 
-routine draw-once-a-round { once-per-round { draw() } }
-@the-roadside-alux.on-you-heal = draw-once-a-round
+@the-roadside-alux.on-you-heal = if once-per-round { draw() }
 
 @the-alux-of-the-sacred-cenote.on-round-start = units(own).heal(card.heal)
 @toh.on-enter = draw()

@@ -1271,6 +1271,20 @@ replaces the rules that only pointed a library's behaviour at a game's keyword (
   same. Today's `Ability` records (`OnEnter { text = ... }`) merge into the new meaning. Designed in
   `docs/tcg/library-rules-on-paper.md`.
 
+### Kinds of card carry their behaviour; a type may have several bases (owner, 2026-09-30)
+
+`[type UnitCard]` (a list of types, Alex 0.6.0) existed only so a rule could map a game's card types onto a library's
+record (`UnitCards { types = [@Creature] }`). The owner found it unlike any familiar language. Now what every unit,
+spell or Hero does is members of the library's `UnitCard`, `SpellCard` and `HeroCard` (`can-play()`, `on-played()`,
+with `this` the card), and a game's type takes the record as a base: `type Creature : Printed, UnitCard { ... }`.
+Making a printable game playable changes each type's base, as an ability goes from `Ability {}` to
+`EntersReady {}`.
+
+- **Several bases** is the one language addition: Folkborn's and Hello TCG's types already derive from `Printed`
+  (number, rarity, family). Two bases that declare the same member must agree on its type.
+- **Deprecated, still read:** the mapping rules (`UnitCards`, `SpellCards`, `HeroCards`…) and `type R` fields.
+- Designed in `docs/tcg/library-rules-on-paper.md`; built with the step 3 language work.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

@@ -29,19 +29,19 @@ Read it as: *the rule UnitsEnterExhausted: when a unit enters play, exhaust it.*
   as a type already sets a member's value (`type TokenCreature : Creature { finishes = [standard] }`), gives the rule
   that behaviour.
 - The moment's parameters are named where it is declared: `on-unit-enter(unit)`. So the handler says `unit`.
-- `this` is the rule, so its settings are `this.types`, `this.n`.
+- `this` is the rule, so its settings are `this.n`, `this.lose-at`.
 
 A handler of more than one statement is written like a method:
 
 ```
-// A unit card may be played from hand when its player can pay for it.
-type UnitCards : UnitRule {
-  types: [type UnitCard]
-  can-play(card) {
-    if card.is(this.types) {
-      return card.in-hand and card.owner.can-pay(card.cost)
+// A player's turn lasts until they pass; then the next player's starts.
+type FullTurns : TurnRule {
+  first: First
+  on-player-pass(player) {
+    game.end-turn()
+    if game.turns-this-round < game.players.count {
+      game.start-turn(player.next)
     }
-    return nothing
   }
 }
 ```
@@ -105,6 +105,42 @@ merge into the new meaning: a card's `abilities` lists what it has, and a handle
 Descriptive tags that cards filter on (a creature type, a tribe) are not abilities; a game that needs them gets its own
 small concept, as Folkborn has families.
 
+## Kinds of card carry their own behaviour
+
+A unit, a spell and a Hero are types in the libraries (`UnitCard`, `SpellCard`, `HeroCard`), and what every card of
+that kind does is their members. In a card type's members, `this` is the card:
+
+```
+// A unit: played from hand by paying its cost, it enters the board.
+type UnitCard : Card {
+  cost: Cost?
+  power: int
+  health: int?
+  can-play() {
+    return this.in-hand and this.owner.can-pay(this.cost)
+  }
+  on-played() {
+    this.owner.pay(this.cost)
+    this.move-to(this.owner.board)
+  }
+}
+```
+
+A game's card types take these as bases. A printable-only game's types are plain cards; making the game playable
+changes each type's base, one word, as an ability goes from `Ability {}` to `EntersReady {}`:
+
+```
+// Printable only: a Creature is a card.
+type Creature : Printed { cost: int, power: int, health: int }
+
+// Playable: a Creature is also a unit, and gets everything a unit does.
+type Creature : Printed, UnitCard { cost: int, power: int, health: int }
+```
+
+A type may have more than one base (`Printed` for what Folkborn and Hello TCG print on every card, `UnitCard` for what
+a unit does). Two bases that declare the same member must agree on its type. This replaces the rules that mapped a
+game's types onto a library's (`UnitCards { types = [@Creature] }`) and the `[type UnitCard]` they needed.
+
 ## Moments and questions
 
 The core's `Rule` declares every moment and question once, so any rule may handle any of them. The area base types
@@ -119,7 +155,7 @@ The core's `Rule` declares every moment and question once, so any rule may handl
 | `on-player-turn-start(player)`, `on-player-turn-end(player)` | a player's turn starts or ends |
 | `on-player-pass(player)` | a player passes |
 | `on-unit-enter(unit)`, `on-unit-leave(unit)` | a unit enters or leaves play (moving it onto or off the board) |
-| `on-unit-played(unit)`, `on-spell-played(spell)` | a player plays the card |
+| `on-played()` | a player plays the card (a card type's member, `this` the card) |
 | `on-unit-damaged(unit)`, `on-unit-turn-end(unit)` | a unit is dealt damage; a turn ends, for each unit in play |
 | `on-attack(attacker, target)` | an attack is declared |
 | `on-hero-used(hero)` | a player uses a Hero's ability |
@@ -129,7 +165,7 @@ The core's `Rule` declares every moment and question once, so any rule may handl
 
 | Question | Asked of |
 |---|---|
-| `can-play(card)` | each card in the acting player's hand |
+| `can-play()` | each card in the acting player's hand (a card type's member, `this` the card) |
 | `attack-targets(attacker)` | each unit or Hero the acting player controls: what it may attack |
 | `can-attack(attacker, target)` | each of those targets |
 | `can-use(hero)` | the acting player's Hero |
@@ -269,18 +305,17 @@ Hello TCG's `GrowsAt { moment = @turn-start }` names its moment; the members abo
 ### Units (`units.alex`)
 
 ```
-// Which of the game's card types are units. A unit card may be played from hand when its player can pay for it.
-type UnitCards : UnitRule {
-  types: [type UnitCard]
-  can-play(card) {
-    if card.is(this.types) {
-      return card.in-hand and card.owner.can-pay(card.cost)
-    }
-    return nothing
+// A unit: played from hand by paying its cost, it enters the board.
+type UnitCard : Card {
+  cost: Cost?
+  power: int
+  health: int?
+  can-play() {
+    return this.in-hand and this.owner.can-pay(this.cost)
   }
-  on-unit-played(unit) {
-    unit.owner.pay(unit.cost)
-    unit.move-to(unit.owner.board)
+  on-played() {
+    this.owner.pay(this.cost)
+    this.move-to(this.owner.board)
   }
 }
 
@@ -306,20 +341,16 @@ the card's own `on-enter` (Kłobuk draws a card). `defeat()` moves a unit to its
 ### Spells (`spells.alex`)
 
 ```
-// Which of the game's card types are spells. A spell may be played from hand when its player can pay for it; it does
-// what it says, then goes to the discard.
-type SpellCards : SpellRule {
-  types: [type SpellCard]
-  can-play(card) {
-    if card.is(this.types) {
-      return card.in-hand and card.owner.can-pay(card.cost)
-    }
-    return nothing
+// A spell: played from hand by paying its cost, it does what it says, then goes to the discard.
+type SpellCard : Card {
+  cost: Cost?
+  can-play() {
+    return this.in-hand and this.owner.can-pay(this.cost)
   }
-  on-spell-played(spell) {
-    spell.owner.pay(spell.cost)
-    spell.move-to(spell.owner.discard)
-    spell.do-what-it-says()
+  on-played() {
+    this.owner.pay(this.cost)
+    this.move-to(this.owner.discard)
+    this.do-what-it-says()
   }
 }
 ```
@@ -329,6 +360,11 @@ type SpellCards : SpellRule {
 ### Heroes (`heroes.alex`)
 
 ```
+// A Hero: always in play, with a second face it may flip to (Folkborn's and Hello TCG's Awakened side).
+type HeroCard : Card {
+  back: Card?
+}
+
 // A Hero flips to its second face as soon as its Awaken condition holds, and never back.
 type AwakenOnStateCheck : HeroRule {
   on-hero-check = if hero.face == 1 and hero.can-awaken() { hero.flip() }
@@ -439,13 +475,15 @@ type LifeCounter : LifeRule {
 ## What the language gains
 
 1. **Members whose value is code.** A type sets a moment or question to one statement (`on-unit-enter = unit.exhaust()`)
-   or to a body (`can-attack(attacker, target) { ... }`). In it, `this` is the rule, and the member's parameters are
-   named where the core declares it.
-2. **`return`**, for a question's answer, with `nothing` for "no say".
-3. **`for x in list { ... }`**: the one loop. It goes over a finite list (cards, players, a rule's list), so every
+   or to a body (`can-attack(attacker, target) { ... }`). In it, `this` is the rule, the ability or the card, and the
+   member's parameters are named where the core declares it.
+2. **More than one base type:** `type Creature : Printed, UnitCard { ... }`. It replaces the type-mapping rules and
+   `[type UnitCard]`, which stay as deprecated forms.
+3. **`return`**, for a question's answer, with `nothing` for "no say".
+4. **`for x in list { ... }`**: the one loop. It goes over a finite list (cards, players, a rule's list), so every
    handler still finishes.
-4. **Any name in a binding**: `dealt = attacker.power`. Today only `target` may be bound.
-5. **`game.rule(RuleType)`**: another rule as the game lists it, or nothing (question 2).
+5. **Any name in a binding**: `dealt = attacker.power`. Today only `target` may be bound.
+6. **`game.rule(RuleType)`**: another rule as the game lists it, or nothing (question 2).
 
 The words handlers call (`move-to`, `exhaust`, `draw`, `enemy-units`, `can-pay`…) are the libraries' and the core's
 vocabulary, each declared once.

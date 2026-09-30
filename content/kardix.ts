@@ -83,7 +83,7 @@ export function cardSources(root: string, game = GAME): [string, string][] {
   const own = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.alex')).sort() : [];
   const shared: [string, string][] = [
     ...readdirSync(game).filter((f) => f.endsWith('.alex')).map((f): [string, string] => [`game/${f}`, join(game, f)]),
-    ...walk(join(game, 'art')).map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
+    ...[...walk(join(game, 'art')), ...walk(join(game, 'fonts'))].map((f): [string, string] => [`game/${relative(game, f).replace(/\\/g, '/')}`, f]),
     ...walk(KARDIX, (f) => /\.(cs|csproj)$/.test(f)).map((f): [string, string] => [`kardix/${relative(KARDIX, f).replace(/\\/g, '/')}`, f]),
     // The core draws the cards: its source, the crates it builds with, and the framework it binds games against.
     ...[...walk(join(ENGINE, 'src'), (f) => f.endsWith('.rs')), ...['Cargo.toml', 'Cargo.lock', '.cargo/config.toml', 'build.rs'].map((f) => join(ENGINE, f))]
@@ -94,7 +94,7 @@ export function cardSources(root: string, game = GAME): [string, string][] {
 }
 
 /** Text a checkout may store with either line ending; its fingerprint mustn't depend on which. */
-export const isText = (file: string) => /\.(alex|cs|csproj|json|md|rs|toml|lock)$/.test(file);
+export const isText = (file: string) => /\.(alex|cs|csproj|json|md|rs|toml|lock|txt)$/.test(file);
 
 /**
  * Renders the finished cards of the set in `root` into `out` (card faces there; finishes in subfolders), with a

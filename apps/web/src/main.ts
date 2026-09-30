@@ -34,7 +34,7 @@ import {
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
-  legalActions, other, readyTreats, unitHealth, unitPower, MULLIGAN_MAX,
+  legalActions, other, readyTreats, unitHealth, unitPower, HAND_LIMIT, MULLIGAN_MAX,
   type Action, type DeckList, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
 
@@ -1573,16 +1573,17 @@ function renderRules(): string {
       <h2>Quick rules</h2>
       <p><b>Goal:</b> knock out all 9 of the rival Hero’s Candles.</p>
       <p><b>Each round:</b> ready everything, draw 2, and you may offer 1 card face-down as an <b>Offering</b>. Offerings pay for cards — any card can be an Offering.</p>
-      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one; you can still Ambush), or pass. The round ends when both pass in a row. If nobody takes the Lantern, it goes to the other player.</p>
+      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one; you can still Ambush or play a Lucky Candle, and your opponent keeps acting until they pass), or pass. The round ends when both pass in a row. Holding the Lantern just means you act first. If nobody takes it, it goes to the other player; you may take it while you hold it, to keep it.</p>
       <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
       <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again. The book button opens the story so far: everything that has happened in this game.</p>
       <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
       <p><b>Families (classes):</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
-      <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first, paid from your ready Offerings. It doesn’t use up your turn.</p>
-      <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free.</p>
-      <p><b>Awaken:</b> when its condition is met, your Hero Awakens — stronger ability, and it can attack.</p>
+      <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first, paid from your ready Offerings. It doesn’t use up your turn. One Ambush per card or attack, and none on an Ambush.</p>
+      <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free right away, even in your opponent’s turn; kept, it costs its full price later.</p>
+      <p><b>Awaken:</b> when its condition is met, your Hero Awakens — stronger ability, and it can attack. If it is still ready, it can act the same round.</p>
+      <p><b>Hand limit:</b> at the end of a round, discard down to ${HAND_LIMIT} cards.</p>
       <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>
       ${summary() ? `<p class="progress-note">On this device: ${summary()}.</p>` : ''}
       <button class="primary" data-click="ui:rules">Got it</button>

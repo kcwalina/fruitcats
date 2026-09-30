@@ -1,5 +1,5 @@
 import { describe as suite, expect, it } from 'vitest';
-import { apply, chooseAction, createGame, describe, listChoices, other, parseChoice, type GameState, type PlayerId } from '../src/index';
+import { apply, chooseAction, createGame, describe, legalActions, listChoices, other, parseChoice, type GameState, type PlayerId } from '../src/index';
 import TERMS from '../src/terms.json';
 
 function rng(seed: number) {
@@ -121,4 +121,91 @@ suite('what a play says about arriving', () => {
     }
     expect(checked).toBeGreaterThan(100);
   });
+});
+
+suite('what the log and the Lucky question say (playtests of 2026-09-30)', () => {
+  function* games(n: number): Generator<GameState> {
+    const decks = ['pari', 'domowiki', 'aluxes', 'jiaoren', 'hui-hai'];
+    for (let g = 0; g < n; g++) {
+      const s = createGame({ decks: [decks[g % 5], decks[(g + 1) % 5]], seed: 1700 + g });
+      const r = rng(g + 11);
+      while (s.winner === null) {
+        yield s;
+        apply(s, chooseAction(s, { random: r }));
+      }
+    }
+  }
+
+  // "Bot's Parijan attacks LLM's Parijan" read as a unit fight: players asked why they lost Candles "with no direct hits".
+  it('names the Hero as a Hero when it is attacked', () => {
+    let checked = 0;
+    for (const s of games(10)) {
+      if (s.prompt?.kind !== 'action') continue;
+      const hero = legalActions(s).find((a) => a.t === 'attack' && a.target.kind === 'hero');
+      if (!hero || checked >= 30) continue;
+      const w = structuredClone(s);
+      const before = w.log.length;
+      apply(w, hero);
+      const foe = w.players[other(s.prompt.player)];
+      expect(w.log.slice(before).map((e) => e.text).join('\n')).toContain(`attacks ${foe.name}'s Hero `);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(20);
+  }, 60_000);
+
+  // "Both players took the Lantern in one round": a holder keeping it was logged as taking it again.
+  it('says who holds the Lantern each round, and that a holder keeps it', () => {
+    let kept = 0, rounds = 0;
+    for (const s of games(10)) {
+      if (s.prompt?.kind !== 'action' || !legalActions(s).some((a) => a.t === 'takeYarn')) continue;
+      if (s.yarn !== s.prompt.player) continue;
+      const w = structuredClone(s);
+      const before = w.log.length;
+      apply(w, { t: 'takeYarn' });
+      expect(w.log[before].text).toContain('keeps the Lantern');
+      kept++;
+    }
+    for (let g = 0; g < 3; g++) {
+      const s = createGame({ decks: ['pari', 'aluxes'], seed: 1800 + g });
+      const r = rng(g + 5);
+      while (s.winner === null) apply(s, chooseAction(s, { random: r }));
+      const lines = s.log.map((e) => e.text);
+      lines.forEach((t, i) => { if (/^— Round \d+ —$/.test(t)) { expect(lines[i + 1]).toMatch(/holds the Lantern and acts first\.$/); rounds++; } });
+    }
+    expect(kept).toBeGreaterThan(5);
+    expect(rounds).toBeGreaterThan(5);
+  }, 60_000);
+
+  // "Why did one hit cost me two Candles?" (about 20 reports), and damage from Charms that left no trace in the log.
+  it('says a 2-Candle hit is Fierce, and logs damage from cards and abilities', () => {
+    let fierce = 0, hurt = 0;
+    for (const s of games(10)) {
+      const before = s.log.length, events = s.events.length;
+      const r = rng(s.actions + 1);
+      if (s.winner !== null || !s.prompt) continue;
+      const w = structuredClone(s);
+      apply(w, chooseAction(w, { random: r }));
+      const lines = w.log.slice(before).map((e) => e.text);
+      for (const t of lines.filter((x) => /^Hit! .* loses 2 /.test(x))) { expect(t).toContain('(Fierce)'); fierce++; }
+      const damaged = w.events.slice(events).filter((e) => e.t === 'damage');
+      if (damaged.length) {
+        expect(lines.filter((x) => / takes \d+\.$/.test(x)).length).toBeGreaterThanOrEqual(damaged.length);
+        hurt++;
+      }
+    }
+    expect(fierce).toBeGreaterThan(0);
+    expect(hurt).toBeGreaterThan(0);
+  }, 60_000);
+
+  // A Fierce hit asked about a Lucky Candle between its two Candles; the player thought playing it cost the last one.
+  it('tells a player how many Candles they have left when a lost Candle is Lucky', () => {
+    let asked = 0;
+    for (const s of games(12)) {
+      if (s.prompt?.kind !== 'lucky') continue;
+      const left = s.players[s.prompt.player].lives.length;
+      expect(listChoices(s).question).toContain(`You have ${left} Candle${left === 1 ? '' : 's'} left`);
+      asked++;
+    }
+    expect(asked).toBeGreaterThan(5);
+  }, 60_000);
 });

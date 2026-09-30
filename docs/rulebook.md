@@ -153,7 +153,7 @@ Starting with the player holding the Lantern, players **alternate taking one act
 | **Play a card** | Exhaust Offerings equal to its cost. A unit enters your Yard **exhausted**. A Talisman attaches to one of your units. A Charm does its effect and goes to the Mist. |
 | **Attack** | Exhaust one of your ready units (or your Awakened Hero) to attack. See section 8. |
 | **Use an ability** | Pay the cost shown on a card you control (often "Exhaust:") and do what it says. |
-| **Take the Lantern** | Take the Lantern (or keep it). You will act first next round. *For the rest of this round you may only pass.* Only one player may Take the Lantern each round. |
+| **Take the Lantern** | Take the Lantern (or keep it). You will act first next round. *For the rest of this round you may only pass* — you can still Ambush and play a Lucky Candle, and your opponent keeps acting until they pass. Only one player may Take the Lantern each round. Holding the Lantern only means you act first; it doesn't limit you. |
 | **Pass** | Do nothing. You may still act later this round if your opponent does something. |
 
 The Action Phase ends when **both players pass in a row**.

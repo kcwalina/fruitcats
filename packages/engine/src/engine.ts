@@ -539,7 +539,7 @@ function validateSubset(s: GameState, p: PlayerId, uids: number[], size?: number
 
 function describeTarget(s: GameState, target?: Target): string {
   if (!target) return '';
-  if (target.kind === 'hero') return `${s.players[target.player].name}'s ${cardName(s.players[target.player].hero.id)}`;
+  if (target.kind === 'hero') return `${s.players[target.player].name}'s Hero ${cardName(s.players[target.player].hero.id)}`;
   const found = findUnit(s, target.uid);
   return found ? cardName(found.unit.id) : 'a unit';
 }
@@ -628,7 +628,7 @@ export function apply(s: GameState, action: Action): GameState {
     case 'takeYarn':
       s.yarnTaken = p;
       s.passes = 0;
-      log(s, `${me.name} takes the ${TERMS.lantern} and will act first next round.`, p);
+      log(s, `${me.name} ${s.yarn === p ? 'keeps' : 'takes'} the ${TERMS.lantern} and will act first next round.`, p);
       s.queue.unshift({ t: 'afterAction' });
       break;
     case 'pass':
@@ -650,7 +650,7 @@ export function apply(s: GameState, action: Action): GameState {
     case 'lucky': {
       const card = takeFromHand(s, p, (prompt as { uid: number }).uid);
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
-      log(s, `Lucky! ${me.name} plays ${cardName(card.id)} for free.`, p);
+      log(s, `Lucky! ${me.name} plays ${cardName(card.id)} for free${action.target ? ` targeting ${describeTargets(s, action)}` : ''}.`, p);
       emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, how: 'lucky', target: action.target });
       s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, target2: action.target2, closesWindow: false });
       break;
@@ -761,6 +761,7 @@ function exec(s: GameState, step: Step): void {
         return;
       }
       log(s, `— Round ${s.round} —`);
+      log(s, `${s.players[s.yarn].name} holds the ${TERMS.lantern} and acts first.`);
       emit(s, { t: 'round', n: s.round });
       for (const [q, pl] of s.players.entries()) {
         pl.hero.exhausted = false;
@@ -925,7 +926,7 @@ function resolveAttack(s: GameState): void {
 
   if (w.target.kind === 'hero') {
     const n = attackerFierce(s, w.attacker) ? 2 : 1;
-    log(s, `Hit! ${s.players[defender].name} loses ${n} ${n > 1 ? TERMS.candles : TERMS.candle}.`, w.by);
+    log(s, `Hit! ${s.players[defender].name} loses ${n} ${n > 1 ? `${TERMS.candles} (Fierce)` : TERMS.candle}.`, w.by);
     emit(s, { t: 'heroHit', attacker: w.attacker, p: defender, lives: n });
     s.queue.unshift({ t: 'loseLife', p: defender, n });
     return;
@@ -1095,6 +1096,7 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
 /** Damage from a card or ability (not combat, which `resolveAttack` reports as one clash). */
 function hurt(s: GameState, p: PlayerId, u: Unit, amount: number): void {
   const dealt = dealDamage(s, u, amount);
+  log(s, `${cardName(u.id)} takes ${dealt}.`, p);
   emit(s, { t: 'damage', uid: u.uid, amount: dealt, p });
   if (dealt) queueDamaged(s, u);
 }

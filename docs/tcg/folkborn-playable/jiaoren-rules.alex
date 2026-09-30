@@ -1,0 +1,34 @@
+#type Rules
+
+for = @jiaoren
+
+// §850.6
+effect pearl-tear { ready-resources(1) }
+
+static pearl-tears-for-all { units(own).grant(pearl-tears) }
+static stronger-pearl-tears-for-all { units(own).grant(health: card.extra-health, pearl-tears) }
+
+effect draw-cards { draw(card.draw) }
+static attached-health-and-pearl-tears { attached.grant(health: card.extra-health, pearl-tears) }
+
+@pearl-tears.on-survives-damage = pearl-tear
+
+@zhu-er.static = pearl-tears-for-all
+@zhu-er.exhaust = heal-own
+@zhu-er.awaken = mist-is-full
+@zhu-er.back.static = stronger-pearl-tears-for-all
+@zhu-er.back.exhaust = ready-two-offerings
+
+@the-spring-guest.on-defeated = ready-two-offerings
+@weaver-of-the-sea-hall.on-enter = draw-a-card
+@dragon-silk.static = attached-health-and-guardian
+@pearl-oyster.on-enter = ready-an-offering
+@jiaoren-pearl-healer.on-enter = heal-each-own
+@muke.on-enter = draw-a-card
+@a-plate-of-pearls.on-play = boost-own-and-ready-an-offering
+@the-sea-turns-rough.on-play = damage-a-unit
+@moonlit-sea.on-play = exhaust-an-enemy
+@frost-white-silk.static = attached-health-and-pearl-tears
+@quanxian.on-enter = ready-two-offerings
+@the-muke-poet.on-defeated = draw-cards
+@tears-of-gratitude.on-play = boost-own

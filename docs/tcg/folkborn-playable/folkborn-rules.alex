@@ -1,0 +1,28 @@
+// What cards in several families do. Each set's rules file attaches these to its cards, and a handler reads the
+// numbers of the card it's attached to (`card.damage`).
+#type Rules
+
+for = @folkborn
+
+effect draw-a-card { draw() }
+
+effect ready-an-offering { ready-resources(1) }
+effect ready-two-offerings { ready-resources(2) }
+
+effect damage-a-unit { choose(all).damage(card.damage) }
+effect damage-each-enemy { units(opponents).damage(card.damage) }
+effect exhaust-an-enemy { choose(opponents).exhaust() }
+
+effect heal-own { choose(own).heal(card.heal) }
+effect heal-each-own { units(own).heal(card.heal) }
+
+effect boost-own { choose(own).buff(power: card.boost, until: this-round) }
+effect boost-own-and-ready-an-offering {
+  choose(own).buff(power: card.boost, until: this-round)
+  ready-resources(1)
+}
+
+// Zhu'er and Pebble awaken on it. Both players' Mists count, as today's engine counts them.
+condition mist-is-full { cards(@Mist, all, unit-card).count >= card.fallen }
+
+static attached-health-and-guardian { attached.grant(health: card.extra-health, guardian) }

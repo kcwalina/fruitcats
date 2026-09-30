@@ -1,0 +1,31 @@
+#type Rules
+
+for = @hui-hai
+
+// §850.7 Its owner picks the enemy unit.
+effect throw-a-stone { choose(opponents).damage(1) }
+
+static stronger-stones-for-all { units(own).grant(health: card.extra-health, stone-for-stone) }
+
+effect damage-an-enemy { choose(opponents).damage(card.damage) }
+static attached-power-and-stones { attached.grant(power: card.boost, stone-for-stone) }
+
+@stone-for-stone.on-survives-damage = throw-a-stone
+
+@pebble.exhaust = boost-own
+@pebble.awaken = mist-is-full
+@pebble.back.static = stronger-stones-for-all
+@pebble.back.exhaust = damage-an-enemy
+
+@hui-hai-of-the-stream.on-enter = damage-an-enemy
+@ya-hui-hai.on-enter = damage-an-enemy
+@a-pebble-at-your-feet.on-play = damage-an-enemy
+@gohlou.on-enter = draw-a-card
+@moss-mender-ya-hui-hai.on-enter = heal-each-own
+@stones-from-nowhere.on-play = damage-each-enemy
+@the-forest-remembers.on-play = damage-a-unit
+@nobody-threw-it.on-play = exhaust-an-enemy
+@a-pouch-of-river-pebbles.static = attached-power-and-stones
+@grandfather-hui-hai.on-enter = damage-an-enemy
+@the-hidden-village.on-enter = damage-each-enemy
+@small-but-strong.on-play = boost-own

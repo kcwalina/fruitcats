@@ -1,0 +1,220 @@
+#type FamilySet
+
+id = 'domowiki'
+name = 'Domowiki'
+code = 'DW1'
+
+family = Family {
+  name = 'Domowiki'
+  main = '#5B3F9E'
+  dark = '#2E1F5C'
+  tint = '#EEE8FB'
+}
+
+keywords = [
+  well-fed = Keyword { name = 'Well-Fed' }
+]
+
+cards = [
+  dziadzius = Hero {
+    name = 'Dziadziuś', epithet = 'Heart of the House'
+    number = 'DW1-H01', rarity = legendary
+    frame = gold
+    art = 'art/DW1-H01-kitten.webp'
+    text = @dziadzius-text
+    constants = [offerings = 8]
+    flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'
+    back = Awakened {
+      name = 'Dziadziuś', epithet = 'Master of the House', power = 4
+      art = 'art/DW1-H01-bigcat.webp'
+      keywords = [@Fierce]
+      text = 'Fierce. Exhaust: Ready two of your Offerings.'
+    }
+  }
+  stove-keeper = Creature {
+    name = 'Stove Keeper'
+    cost = 1, power = 1, health = 2
+    number = 'DW1-D01', rarity = common
+    art = 'art/DW1-D01.webp'
+    text = 'Hello: Ready one of your Offerings.'
+    flavor = 'Keeps the embers warm until morning.'
+  }
+  moving-day-domowik = Creature {
+    name = 'Moving-Day Domowik'
+    cost = 1, power = 1, health = 1
+    number = 'DW1-D02', rarity = common
+    art = 'art/DW1-D02.webp'
+    text = 'Hello: Sprout {sprout}.'
+    constants = [sprout = 1]
+    flavor = 'Carry the old fire, and the home comes with you.'
+  }
+  mane-braiding-domowik = Creature {
+    name = 'Mane-Braiding Domowik'
+    cost = 2, power = 2, health = 2
+    number = 'DW1-D03', rarity = common
+    art = 'art/DW1-D03.webp'
+    keywords = [@Swift]
+    text = 'Swift.'
+    flavor = 'The horse he favours wakes with braids in its mane.'
+  }
+  keeper-of-the-door = Creature {
+    name = 'Keeper of the Door'
+    cost = 3, power = 2, health = 6
+    number = 'DW1-D04', rarity = common
+    art = 'art/DW1-D04.webp'
+    keywords = [@Guardian]
+    text = 'Guardian.'
+    flavor = 'Nothing crosses the threshold without his nod.'
+  }
+  ovinnik-of-the-drying-barn = Creature {
+    name = 'Ovinnik of the Drying Barn'
+    cost = 2, power = 2, health = 3
+    number = 'DW1-D05', rarity = common
+    art = 'art/DW1-D05.webp'
+    text = 'Can''t attack unless you''re Well-Fed.'
+    flavor = 'Keeps the fire that dries the grain. Feed him first, or no one gets bread.'
+  }
+  bread-and-salt-greeter = Creature {
+    name = 'Bread-and-Salt Greeter'
+    cost = 4, power = 3, health = 5
+    number = 'DW1-D06', rarity = uncommon
+    art = 'art/DW1-D06.webp'
+    text = 'Hello: Heal {heal} from each unit you control.'
+    constants = [heal = 2]
+    flavor = 'Every guest is welcome. Every crumb is counted.'
+  }
+  kikimora = Creature {
+    name = 'Kikimora', epithet = 'the Night Spinner'
+    cost = 5, power = 5, health = 5
+    number = 'DW1-D07', rarity = uncommon
+    art = 'art/DW1-D07.webp'
+    text = 'Hello: If you''re Well-Fed, draw {draw} cards.'
+    constants = [draw = 2]
+    flavor = 'Spins by the stove all night. The yarn tells tomorrow.'
+  }
+  dvorovoi = Creature {
+    name = 'Dvorovoi', epithet = 'Lord of the Yard'
+    cost = 8, power = 6, health = 7
+    number = 'DW1-D08', rarity = uncommon
+    art = 'art/DW1-D08.webp'
+    keywords = [@Guardian, @Fierce]
+    text = 'Guardian. Fierce.'
+    flavor = 'The house belongs to his cousin. Everything outside is his.'
+  }
+  bowl-of-kasha = Charm {
+    name = 'Bowl of Kasha'
+    cost = 3
+    number = 'DW1-D09', rarity = uncommon
+    art = 'art/DW1-D09.webp'
+    text = 'Sprout {sprout}.'
+    constants = [sprout = 2]
+    flavor = 'A bowl by the stove, the first spoonful for him.'
+  }
+  a-domowiks-temper = Charm {
+    name = 'A Domowik''s Temper'
+    cost = 4
+    number = 'DW1-D10', rarity = uncommon
+    art = 'art/DW1-D10.webp'
+    keywords = [@Lucky]
+    text = 'Lucky. Deal {damage} damage to a unit.'
+    constants = [damage = 5]
+    flavor = 'Slam a door in his house and he slams back.'
+  }
+  saucer-of-milk = Charm {
+    name = 'Saucer of Milk'
+    cost = 1
+    number = 'DW1-D11', rarity = uncommon
+    art = 'art/DW1-D11.webp'
+    keywords = [@Ambush]
+    text = 'Ambush. A unit you control gets +{boost} Power this round. Ready one of your Offerings.'
+    constants = [boost = 2]
+    flavor = 'Warm milk in the stable keeps the whole barn happy.'
+  }
+  old-bast-shoe = Talisman {
+    name = 'Old Bast Shoe'
+    cost = 2
+    number = 'DW1-D12', rarity = uncommon
+    art = 'art/DW1-D12.webp'
+    text = 'Attached unit gets +{boost} Power and +{extra-health} Health.'
+    constants = [
+      boost = 2
+      extra-health = 2
+    ]
+    flavor = 'His ride to every new home.'
+  }
+  domowik-in-a-cats-shape = Fabled {
+    name = 'Domowik in a Cat''s Shape'
+    cost = 3, power = 2, health = 4
+    number = 'DW1-D13', rarity = rare
+    art = 'art/DW1-D13.webp'
+    text = 'Hello: Sprout {sprout}.'
+    constants = [sprout = 1]
+    flavor = 'The family cat sleeps in the stove corner. Or does it?'
+  }
+  babunia = Fabled {
+    name = 'Babunia', epithet = 'Lady of the Cellar'
+    cost = 5, power = 4, health = 5
+    number = 'DW1-D14', rarity = rare
+    art = 'art/DW1-D14.webp'
+    keywords = [@Guardian]
+    text = 'Guardian. Hello: Ready one of your Offerings.'
+    flavor = 'Some say she was the first spirit of the house. He only moved in later.'
+  }
+  bannik-of-the-bathhouse = Fabled {
+    name = 'Bannik of the Bathhouse'
+    cost = 8, power = 8, health = 8
+    number = 'DW1-D15', rarity = rare
+    art = 'art/DW1-D15.webp'
+    keywords = [@Fierce, @Sneaky]
+    text = 'Fierce. Sneaky.'
+    flavor = 'Always leave the last steam for him.'
+  }
+  hearth-cricket = Creature {
+    name = 'Hearth Cricket'
+    cost = 1, power = 2, health = 1
+    number = 'DW1-D16', rarity = common
+    art = 'art/DW1-D16.webp'
+    flavor = 'Sings behind the stove, where the Domowik sleeps.'
+  }
+  the-house-snake = Creature {
+    name = 'The House Snake'
+    cost = 2, power = 1, health = 4
+    number = 'DW1-D17', rarity = common
+    art = 'art/DW1-D17.webp'
+    keywords = [@Guardian, @Lucky]
+    text = 'Guardian. Lucky.'
+    flavor = 'Lives under the doorstep. Harm it, and the family''s luck goes with it.'
+  }
+  klobuk = Creature {
+    name = 'Kłobuk', epithet = 'the Soggy Chick'
+    cost = 3, power = 2, health = 3
+    number = 'DW1-D18', rarity = common
+    art = 'art/DW1-D18.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
+  }
+  warm-hand-in-the-night = Charm {
+    name = 'Warm Hand in the Night'
+    cost = 1
+    number = 'DW1-D19', rarity = uncommon
+    art = 'art/DW1-D19.webp'
+    keywords = [@Ambush]
+    text = 'Ambush. A unit you control gets +{boost} Power this round.'
+    constants = [boost = 2]
+    flavor = 'A soft, warm, furry hand on your cheek means good luck.'
+  }
+  knotted-mane = Charm {
+    name = 'Knotted Mane'
+    cost = 1
+    number = 'DW1-D20', rarity = uncommon
+    art = 'art/DW1-D20.webp'
+    keywords = [@Lucky]
+    text = 'Lucky. Exhaust an enemy unit.'
+    flavor = 'Anger the Domowik and wake up with tangled hair.'
+  }
+]
+
+@@@ dziadzius-text
+Exhaust: Ready one of your Offerings.
+Awaken: You have {offerings} or more Offerings.
+@@@

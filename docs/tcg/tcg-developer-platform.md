@@ -713,6 +713,10 @@ As decided in "Text looks the same whatever language the core is written in":
 
 The earlier order continues on the core:
 
+0. **Folkborn on paper** (2026-09-29, the owner's request before any runtime code): the whole game
+   and every card's handler written in Alex, in `docs/tcg/folkborn-playable/`, and run through the
+   core's checker. It found 16 gaps in the core and libraries; its README lists them with a fix each.
+   Gaps 1 to 13 are closed before the runtime, so that Hello TCG and Folkborn both check clean.
 1. **The runtime** plays Hello TCG from its Alex source.
 2. **`kardix` basics:** `new`, `test`, `sim` with a random bot.
 3. **Search bot and `kardix playtest`.**

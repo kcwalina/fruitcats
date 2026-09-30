@@ -1,0 +1,56 @@
+#type Rules
+
+for = @pari
+
+// §850.3 Counted when the effect is checked; a unit that just entered counts itself.
+condition has-company { units(own).count >= @company-at }
+
+// §850.4 Feather Coat is a Goodbye.
+effect summon-a-dove { summon(@dove) }
+
+effect sneaky-this-round { choose(own).buff(sneaky, until: this-round) }
+effect boost-and-sneaky { choose(own).buff(power: card.boost, sneaky, until: this-round) }
+condition enough-units { units(own).count >= card.units }
+
+// Mountain Gale and Súči of the Hunt: "Deal {damage} damage to a unit. Company: deal {company-damage} instead."
+effect company-damage {
+  target = choose(all)
+  if @has-company { target.damage(card.company-damage) } else { target.damage(card.damage) }
+}
+
+effect company-enters-ready { if @has-company { this.ready() } }
+
+// §850.0 Orange-Peri is one of the cards played this round, so "2 other cards" means 3 in all.
+effect unless-busy { if own.played-this-round <= card.others { this.damage(card.damage) } }
+
+effect ready-another { choose(own, other).ready() }
+
+effect ready-and-heal {
+  target = choose(own, exhausted)
+  target.ready()
+  target.heal(card.heal)
+}
+
+effect ready-after-a-win { once-per-round { this.ready() } }
+
+static attached-health { attached.grant(health: card.extra-health) }
+
+@feather-coat.on-defeated = summon-a-dove
+
+@parijan.exhaust = sneaky-this-round
+@parijan.awaken = enough-units
+@parijan.back.exhaust = boost-and-sneaky
+
+@orange-peri.on-enter = unless-busy
+@pari-at-the-pool.on-enter = company-enters-ready
+@suci-of-the-hunt.on-enter = company-damage
+@khangi.on-enter = draw-a-card
+@falling-star.on-play = damage-a-unit
+@mountain-gale.on-play = company-damage
+@choicest-odours.on-play = ready-and-heal
+@zangwar.on-play = boost-own
+@carried-off-asleep.on-play = exhaust-an-enemy
+@pari-banus-pocket-tent.static = attached-health
+@manar-al-sana.on-enter = ready-another
+@asman-pari.on-enter = damage-each-enemy
+@schaibar.on-defeats-in-combat = ready-after-a-win

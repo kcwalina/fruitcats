@@ -144,26 +144,26 @@ The TCG Alex session designed it from a survey of 156 TCGs. It lives in `cardeng
   more). A game chooses libraries and lists rules from them.
 
 The core's runtime implements exactly this contract. **Alex itself has no game semantics**:
-it is a general-purpose data language, closer to JSON than to C#. Our engine gives these
-documents their meaning, and it implements every library rule's behaviour.
+it is a general-purpose data language, closer to JSON than to C#. The engine runs the core's
+contract, and the libraries' rules are routines written in Alex on its hooks (below).
 
-### Rules: built in, rarely custom
+### Rules: from libraries, written in Alex
 
-A game's rules come two ways:
+A game's rules are picked from libraries (almost always) or, rarely, written for the game. Both are
+the same thing: **routines in Alex on the core's hooks** (decided by the owner, 2026-09-29; the design
+is [runtime-design.md](runtime-design.md)). A library rule such as `GuardiansFirst` is a routine in
+`combat.alex`, attached to the `filter legal-actions` hook, that reads the values the game listed
+(`rule.keyword`). The engine knows only the core: objects, zones, players, the operations, the
+scheduler, the hooks, and how to run routines. No game rule is written in Rust.
 
-1. **Picked from a library** (almost always). Each library rule, such as `GuardiansFirst` or
-   `LifeCounter`, is implemented in the core; the game just lists it. The broad
-   survey (`cardengine/survey/broad/summary.md`) found that 83% of 156 games fit with library
-   additions only, and 4% need a small core change (grids, change of controller, ownerless
-   objects, dice pools). The plan is to implement every rule the surveys found as a built-in
-   rule, unless one is so specific to one obscure game that it isn't worth the added complexity
-   for everyone.
-2. **Written in Alex** (extremely rare). A `rule` declaration on one of the core's hook points,
-   built from the core's primitives. Deferred until a concrete game needs it; we look at that
-   scenario before designing it. The direction the owner is considering (2026-09-29), for when
-   the runtime is built: the library rules themselves (`GuardiansFirst`, `LifeStack`,
-   `AlternatingActions`…) written in Alex as routines on the core's hooks, instead of built into
-   the engine in Rust. See `cardengine/decisions.md`, "Routines".
+- **The libraries cover almost every game.** The broad survey (`cardengine/survey/broad/summary.md`)
+  found that 83% of 156 games fit with library additions only, and 4% need a small core change
+  (grids, change of controller, ownerless objects, dice pools). Every rule the surveys found gets a
+  library routine, unless one is so specific to one obscure game that it isn't worth it.
+- **A game may add its own rule** the same way, in its own files, without an engine change.
+- **Speed.** The core compiles each routine once when a game loads. A rule measured too slow for bots
+  may get a Rust version that must behave identically, checked by running both; that is an escape
+  hatch, not the plan.
 
 Card abilities are separate and not optional: every card ability has a small handler in a rules
 document, a `routine` or a `static`. A routine does something (`routine draw-a-card { draw() }`), or
@@ -732,6 +732,7 @@ The earlier order continues on the core:
    core's checker. It found 16 gaps in the core and libraries; its README lists them with a fix each.
    Gaps 1 to 13 are closed before the runtime, so that Hello TCG and Folkborn both check clean.
 1. **The runtime** plays Hello TCG from its Alex source.
+   Designed on paper first: [runtime-design.md](runtime-design.md), for the owner's review (2026-09-29).
 2. **`kardix` basics:** `new`, `test`, `sim` with a random bot.
 3. **Search bot and `kardix playtest`.**
 4. **The game table:** Studio's Play tab (§13, with events linked to their rules) and `kardix play`

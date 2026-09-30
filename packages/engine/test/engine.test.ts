@@ -362,6 +362,42 @@ describe('events', () => {
   });
 });
 
+describe('round limit (rulebook 300.7)', () => {
+  /** Both players at round 40 with 5 Candles each and one Kłobuk (2/3) apiece, damaged as given; then both pass. */
+  const endAfterRound40 = (myDamage: number, theirDamage: number) => {
+    const s = toFirstAction(['domowiki', 'pari'], 9);
+    s.round = 40;
+    for (const pl of s.players) { pl.lives = pl.lives.slice(0, 5); pl.yard = []; }
+    myUnit(s, 7301);
+    enemyUnit(s, 'DW1-D18', 3);
+    s.players[0].yard[0].damage = myDamage;
+    s.players[1].yard[0].damage = theirDamage;
+    for (let i = 0; i < 200 && s.winner === null; i++) apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
+    return s;
+  };
+
+  it('with the same Candles, the side with more Health left on its units wins', () => {
+    const s = endAfterRound40(0, 1);
+    expect(s.winner).toBe(0);
+    expect(s.log.at(-1)!.text).toContain('more Health left (3 to 2)');
+    expect(endAfterRound40(2, 0).winner).toBe(1);
+  });
+
+  it('with the same Candles and the same Health left, the game is a draw', () => {
+    expect(endAfterRound40(1, 1).winner).toBe('draw');
+  });
+
+  it('more Candles still wins, whatever the Health', () => {
+    const s = toFirstAction(['domowiki', 'pari'], 9);
+    s.round = 40;
+    s.players[0].lives = s.players[0].lives.slice(0, 4);
+    s.players[1].lives = s.players[1].lives.slice(0, 5);
+    s.players[0].yard = [];
+    for (let i = 0; i < 200 && s.winner === null; i++) apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
+    expect(s.winner).toBe(1);
+  });
+});
+
 describe('full games', () => {
   it('random agents always finish a game, for every deck pairing', () => {
     const keys = Object.keys(DECKS);

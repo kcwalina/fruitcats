@@ -749,9 +749,14 @@ function exec(s: GameState, step: Step): void {
     case 'startRound': {
       s.round++;
       if (s.round > MAX_ROUNDS) {
-        const [a, b] = s.players.map((pl) => pl.lives.length);
+        const candles = s.players.map((pl) => pl.lives.length);
+        const health = s.players.map((pl) => pl.yard.reduce((sum, u) => sum + unitHealth(u, s) - u.damage, 0));
+        const [a, b] = candles[0] !== candles[1] ? candles : health;
         s.winner = a === b ? 'draw' : a > b ? 0 : 1;
         log(s, `Round limit reached.`);
+        if (s.winner === 'draw') log(s, `Same Candles (${candles[0]}) and same Health left (${health[0]}): the game is a draw.`);
+        else if (candles[0] !== candles[1]) log(s, `${s.players[s.winner].name} wins with more Candles (${candles[s.winner]} to ${candles[other(s.winner)]}).`);
+        else log(s, `Same Candles (${candles[0]}). ${s.players[s.winner].name} wins with more Health left (${health[s.winner]} to ${health[other(s.winner)]}).`);
         emit(s, { t: 'win', p: s.winner });
         return;
       }

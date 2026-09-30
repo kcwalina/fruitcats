@@ -1136,6 +1136,30 @@ shared by several families needed (gap 8 of `docs/tcg/folkborn-playable/`). The 
   sets, so a prototype set's rules stay out until the set joins). If the runtime needs a rules file scoped to
   something, that is raised with the owner and designed then; `for` is not revived as it was.
 
+### Library rules are routines in Alex (owner, 2026-09-29)
+
+The runtime's one big decision (`docs/tcg/runtime-design.md`): every library rule (`GuardiansFirst`, `LifeStack`,
+`AlternatingActions`…) is a routine in its library's `.alex` file, attached to one of the core's hooks
+(`core-operations.alex`), instead of Rust code in the engine. The engine runs only the core's contract and routines.
+Supersedes "every library rule is implemented in the core" in the plan and in the entries above.
+
+- **Why:** fewer concepts. What Guardian does is five lines of Alex in `combat.alex`, in the language the cards use;
+  a game can add a rule no library has without an engine change; and about a hundred rules don't each become Rust to
+  write and keep identical.
+- **What routines gain for it:** attachment to a hook (`after moved`, `filter legal-actions`, `provide next-actor`),
+  `rule` (the rule record the game listed), `each` over a selection, and actions as values a routine can inspect and
+  remove. The design writes five of Folkborn's rules this way.
+- **Speed:** routines are compiled once when a game loads. A rule measured too slow may get a Rust twin that must
+  behave identically, checked by running both.
+
+### Folkborn's round limit (owner, 2026-09-29)
+
+Today's engine ended a game after round 40 and gave it to the player with more Candles; the rulebook didn't say so.
+The owner kept the rule and settled ties: more Candles wins, then the greater total Health left on the units in
+play (each unit's current Health minus its damage), and a draw if both are equal. It is rulebook §300.7 and a §900
+parameter. On the platform, `MaxRounds` gains its tiebreaks in order (`winner = [most-life, most-unit-health]`),
+built with the runtime. Today's engine gets the Health tiebreak in its own change.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

@@ -35,11 +35,24 @@ pub fn of_statement<'t>(statement: &'t Statement, tokens: &mut Vec<&'t Token>) {
                 of_type(alias, tokens);
             }
         }
-        Statement::EnumDeclaration { keyword, name, open, members, close } => {
+        Statement::EnumDeclaration { keyword, name, colon, backing, open, members, close } => {
             tokens.push(keyword);
             tokens.push(name);
+            push_optional(colon, tokens);
+            if let Some(backing) = backing {
+                tokens.push(&backing.type_name);
+                push_optional(&backing.open, tokens);
+                push_optional(&backing.size, tokens);
+                push_optional(&backing.close, tokens);
+            }
             tokens.push(open);
-            of_separated(members, tokens, |member, tokens| tokens.push(member));
+            of_separated(members, tokens, |member, tokens| {
+                tokens.push(&member.name);
+                push_optional(&member.equals, tokens);
+                if let Some(value) = &member.value {
+                    of_value(value, tokens);
+                }
+            });
             tokens.push(close);
         }
         Statement::TextTable { token } => tokens.push(token),
@@ -296,6 +309,12 @@ pub fn span(tokens: &[&Token]) -> TextSpan {
         return TextSpan::default();
     }
     TextSpan::from_bounds(start as usize, start.max(end) as usize)
+}
+
+pub fn value_span(value: &Value) -> TextSpan {
+    let mut tokens: Vec<&Token> = Vec::new();
+    of_value(value, &mut tokens);
+    span(&tokens)
 }
 
 pub fn path_span(path: &Path) -> TextSpan {

@@ -140,8 +140,19 @@ impl<'m> Dumper<'m> {
                 }
                 self.depth -= 1;
             }
-            TypeKind::Enum { members, .. } => {
+            TypeKind::Enum { members, backing: None, .. } => {
                 let text = format!("enum {} {{ {} }}", name, members.join(", "));
+                self.line(&text);
+            }
+            TypeKind::Enum { members, backing: Some(backing), .. } => {
+                let shown: Vec<String> = members
+                    .iter()
+                    .map(|m| match backing.value_of(m) {
+                        Some(value) => format!("{} = {}", m, self.shown(Some(value))),
+                        None => m.clone(),
+                    })
+                    .collect();
+                let text = format!("enum {} : {} {{ {} }}", name, backing.name(), shown.join(", "));
                 self.line(&text);
             }
             TypeKind::Alias { target, .. } => {

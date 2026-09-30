@@ -172,6 +172,13 @@ Card abilities are separate and not optional: every card ability has a small han
 - expressions: arithmetic, comparison, property access, `if` / `else`
 - calls only to vocabulary the core and libraries declare
 
+**Numbers in handlers are words (owner, 2026-09-29).** A handler doesn't type a digit. A number printed
+on the card is the card's constant (`card.damage`); a number the text spells out ("Ready two of your
+Offerings") is a member of `Count`, a backed enum in the `common` library: `ready-resources(two)`.
+Alex's backed enums (`enum Count : int { one = 1, two = 2 }`, or `: text(n)`) stand for their value
+wherever that value's type is expected, in handlers and in data. The record is in
+`cardengine/decisions.md`, "Backed enums".
+
 In return every rule finishes, the tools can list what a rule reads and changes, Studio can show
 any rule as a form, and agents have fewer ways to be wrong. When a game needs more, the answer is
 a new library rule, not a more powerful language.

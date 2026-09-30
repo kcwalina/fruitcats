@@ -1022,6 +1022,32 @@ The names the owner chose ("Products and names" in docs/tcg/tcg-developer-platfo
 `tcg` is `kardix` (`cardengine/kardix/`), the core's crate `kardix-core` and its module `kardix.wasm`, with exports
 `kardix_alloc` and `kardix_free`. Entries above keep the names they were written with.
 
+### Backed enums (owner, 2026-09-29)
+
+The owner asked for Alex enums whose members carry a value, as C# enums are backed by integers, so that handlers
+stop typing digits. Done in both implementations (C# Alex 0.7.0 in mochi, the core's Alex here), which conformance
+compares.
+
+- **Syntax.** `enum Count : int { one = 1, two = 2 }` backs the members with whole numbers, and
+  `enum Code : text(3) { domowiki = 'DW1' }` with text of at most 3 characters. `text(n)` is written only after an
+  enum's name; it is not a type anywhere else, so it adds no concept to type expressions.
+- **The checker errors** on a member of a backed enum with no value, a member of an unbacked enum with one, a value
+  of the wrong kind, text longer than `n`, a size that isn't a whole number from 1, `int(n)`, and any backing other
+  than `int` or `text(n)`. **Values may repeat** (`a = 1, one = 1`), as in C#.
+- **The conversion is implicit, in handlers and in data.** A member stands for its value wherever that value's type is
+  expected (`int`, `float` for an int-backed enum, or `text`): `ready-resources(two)` passes 2, and `count = two` in
+  an `int` field binds to 2. One rule for both, so there is nothing to learn about where it applies. A bare member is
+  looked up among every backed enum of the documents bound together whose backing the position takes; where two have
+  it, data writes `Count.two` and a body, which cannot qualify it, gets an error saying to rename one. Where the enum
+  itself is expected, a member is a member, as before. An int-backed member is a number to a comparison
+  (`own.resources.count >= two`). `data` and `any` positions don't convert: a bare member there still needs its enum.
+- **Unbacked enums** mean exactly what they meant.
+- **`Count` is in the `common` library:** `a = 1, one = 1, two = 2` up to `ten = 10`. None of its members is a name in
+  scope in a handler (`this`, `card`, `own`, the selectors and verbs), and names in scope win anyway: a backed enum's
+  member is the last thing a bare word in a body is tried as.
+- **The digit note.** The note on a digit typed into a handler (decided above, not yet built) now has its answer: use
+  `Count`. A number that is the card's own, printed on it, stays a constant (`card.damage`).
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

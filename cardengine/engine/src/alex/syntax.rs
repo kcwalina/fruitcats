@@ -220,8 +220,16 @@ pub enum Statement {
         equals: Option<Token>,
         alias: Option<Type>,
     },
-    /// `enum Name { member, member }`.
-    EnumDeclaration { keyword: Token, name: Token, open: Token, members: Separated<Token>, close: Token },
+    /// `enum Name { member, member }`, or a backed enum: `enum Count : int { one = 1 }`.
+    EnumDeclaration {
+        keyword: Token,
+        name: Token,
+        colon: Option<Token>,
+        backing: Option<EnumBacking>,
+        open: Token,
+        members: Separated<EnumMember>,
+        close: Token,
+    },
     /// `@@@ name`, the lines below it verbatim, and the `@@@` that closes it: one token.
     TextTable { token: Token },
     /// `effect zing { ... }` or `scenario 'Title' { ... }`.
@@ -230,6 +238,23 @@ pub enum Statement {
     Extension { keyword: Token, type_name: Token, members: FieldList },
     /// `@citron-fox.on-enter = zing`.
     ReferenceAssignment { at: Token, target: Path, equals: Token, value: Value },
+}
+
+/// What backs an enum's members: `int`, or `text(3)` with the most characters a value may have.
+#[derive(Clone, Debug)]
+pub struct EnumBacking {
+    pub type_name: Token,
+    pub open: Option<Token>,
+    pub size: Option<Token>,
+    pub close: Option<Token>,
+}
+
+/// One member of an enum declaration, with its value in a backed enum: `two = 2`.
+#[derive(Clone, Debug)]
+pub struct EnumMember {
+    pub name: Token,
+    pub equals: Option<Token>,
+    pub value: Option<Value>,
 }
 
 /// The braces of a record type or an extension.

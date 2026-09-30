@@ -61,7 +61,7 @@ constants = [
   well-fed-at = 7
   company-at = 3
   rain-fed-max = 2
-  // Not in the rulebook: today's engine ends a game after round 40, and the player with more Candles wins.
+  // §300.7
   max-rounds = 40
 ]
 
@@ -203,7 +203,14 @@ cost-resource = @folkborn.resources.Offerings
 // §300 Rounds.
 turns = [
   AlternatingActions { first = initiative-holder, ends-when = all-pass-in-a-row, cites = '§300.3' }
-  MaxRounds { n = @max-rounds }
+  MaxRounds {
+    n = @max-rounds
+    winner = [
+      most-life
+      most-unit-health
+    ]
+    cites = '§300.7'
+  }
   RoundStart {
     skip-round = 1
     steps = [
@@ -269,7 +276,7 @@ attachments = [
 
 // §9.4, §800.5 Heroes. §8 An Awakened Hero may attack, and takes no damage doing so.
 hero = [
-  HeroCards { types = [@Hero], second-face = back }
+  HeroCards { types = [@Hero], second-face = @Awakened }
   TwoFaces {}
   AwakenOnStateCheck { cites = '§800.1b' }
   AwakenedKeepsExhaustedState { cites = '§800.5' }

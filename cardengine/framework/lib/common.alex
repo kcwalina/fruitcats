@@ -35,11 +35,14 @@ selectors = [
   // Sample n cards from the printed pool (not the deck), show them to the acting player, they
   // keep one. Built on the core's `pick` random operation and player-only visibility.
   discover = Selector { yields = unit, params = [count = int], optional = [filters = filters] }
+  // The cards in a zone of the given players: 'cards(@Mist, all, unit-card).count'.
+  cards = Selector { yields = units, params = [zone = zone, from = players], optional = [filters = filters] }
 ]
 
 verbs = [
   draw = Verb { on = player, optional = [count = int] }
-  summon = Verb { on = player, params = [token = token], optional = [count = int] }
+  // A Token, or a card of the game's own token type ('summon(@dove)').
+  summon = Verb { on = player, params = [token = card], optional = [count = int] }
   destroy = Verb { on = units }
   move = Verb { on = units, params = [to = zone], optional = [at = text] }
   discard = Verb { on = units }
@@ -51,7 +54,7 @@ verbs = [
   }
   // Look at the top n cards; the effect then places them with move (hand, bottom, discard).
   look-top = Verb { on = player, params = [count = int], yields = units }
-  gain = Verb { on = player, params = [counter = counter, amount = int] }
+  gain = Verb { on = player, params = [counter = counter-or-resource, amount = int] }
   // Take up to `amount` of a counter from another player, clamped to what they have.
   capture = Verb { on = player, params = [counter = counter, amount = int, from = player] }
   adjust-game = Verb { params = [counter = counter, delta = int] }

@@ -9,7 +9,7 @@ requires = [@common, @units]
 type AttachmentCard : Card {
   cost: Cost
   per-unit: int = 1               // fixed by the game's type; how many may sit on one unit
-  attached: Grant
+  attached: Grant?                // what it grants, as data; printed text grants it with a static handler
 }
 
 // Rules about attachments, listed in the game's `attachments` area. `AttachmentCards` says which

@@ -1174,6 +1174,68 @@ new concepts; two differ from the proposals there.
   aren't named members" is. Records there stay named: the first version, which hid everything inside an entry,
   broke `@mochi-portrait`, a picture an art brief names from inside a group. Across both repositories' files the only
   other change is that a stray `@common` no longer finds an icon path.
+### Library rules are routines in Alex (owner, 2026-09-29)
+
+The runtime's one big decision (`docs/tcg/runtime-design.md`): every library rule (`GuardiansFirst`, `LifeStack`,
+`AlternatingActions`…) is a routine in its library's `.alex` file, attached to one of the core's hooks
+(`core-operations.alex`), instead of Rust code in the engine. The engine runs only the core's contract and routines.
+Supersedes "every library rule is implemented in the core" in the plan and in the entries above.
+
+- **Why:** fewer concepts. What Guardian does is five lines of Alex in `combat.alex`, in the language the cards use;
+  a game can add a rule no library has without an engine change; and about a hundred rules don't each become Rust to
+  write and keep identical.
+- **What routines gain for it:** attachment to a hook (`after moved`, `filter legal-actions`, `provide next-actor`),
+  `rule` (the rule record the game listed), `each` over a selection, and actions as values a routine can inspect and
+  remove. The design writes five of Folkborn's rules this way.
+- **Speed:** routines are compiled once when a game loads. A rule measured too slow may get a Rust twin that must
+  behave identically, checked by running both.
+
+### Folkborn's round limit (owner, 2026-09-29)
+
+Today's engine ended a game after round 40 and gave it to the player with more Candles; the rulebook didn't say so.
+The owner kept the rule and settled ties: more Candles wins, then the greater total Health left on the units in
+play (each unit's current Health minus its damage), and a draw if both are equal. It is rulebook §300.7 and a §900
+parameter. On the platform, `MaxRounds` gains its tiebreaks in order (`winner = [most-life, most-unit-health]`),
+built with the runtime. Today's engine gets the Health tiebreak in its own change.
+
+### The libraries' gaps for Folkborn and Hello TCG (owner approved, 2026-09-29)
+
+Gaps 1, 2, 3, 5, 9 and 10 of `docs/tcg/folkborn-playable/`, and Hello TCG's two errors, the step before the
+runtime. Every change is additive: nothing is removed or renamed, and what binds today means the same. Hello TCG
+now checks with no errors.
+
+- **A game's own type wins over a library's** (gap 1; an Alex rule, C# Alex 0.11.0 and the core's Alex). A
+  document may declare a type a schema already has (`enum Rarity`, `type Family`): in the game's documents the name
+  means the game's, and the libraries keep meaning their own, since a schema never sees a document. A field a
+  game's type declares hides a member of that name a library's extension gives its base (`type Printed : Card {
+  rarity: Rarity }` beside `common`'s `extension Card { rarity: Rarity = common }`), and a mapped type still
+  conforms to `UnitCard` through the `Card` both share. So `common` and `families` keep declaring `Rarity`,
+  `Family`, `Card.rarity` and `Card.family` for games that want them, and a game that prints its own isn't stopped.
+  Two documents declaring one type, or two libraries, are still errors. Rejected: dropping them from the libraries,
+  which removes names a game may use.
+- **Heroes a game maps** (gap 2). `HeroCard.face1` is optional, so a game's `Hero` can be mapped
+  (`HeroCards { types = [@Hero] }`). The Hero card itself has `exhaust`, `awaken` and `static`. Its other side is
+  named by type: `second-face = @Awakened`, a new record `HeroFaceCard` with the same three slots, onto which the
+  mapping maps `Awakened`. A handler on the back (`@dziadzius.back.exhaust`) reads the back's constants, as any
+  handler reads those of the card it is attached to. **This differs from the proposal `second-face = back`**, which
+  named the field: a field's name isn't a value Alex has, and adding one (a field-name type, and mapping the field's
+  type through it) would be a new language concept for one rule. The type says the same thing and binds as the
+  existing type mappings do; the runtime finds the Hero's field of that type. Hello TCG, the Folkborn draft and the
+  walkthrough say `second-face = @Awakened`.
+- **Talismans** (gap 3). `AttachmentCard.attached` is `Grant?`. A Talisman grants what its text prints with a
+  static handler (`@old-bast-shoe.static = attached.grant(power: card.boost, health: card.extra-health)`); a game
+  that keeps it as data still can.
+- **`on-survives-damage`** (gap 5), a unit's slot in `units` with its ability kind `OnSurvivesDamage`: the unit was
+  dealt damage and is still in play. On keywords once they take a unit's slots (gap 4).
+- **Counting cards in a zone** (gap 9). `common`'s selector `cards(zone, players, filters)` and `units`' filter
+  `unit-card`: `cards(@Mist, all, unit-card).count >= card.fallen`. `unit-card` is in `units` rather than
+  `common`, since it is about `UnitCard`.
+- **`summon` takes a card** (gap 10): `summon(@dove)`, a `Token` or a card of the game's own token type. A
+  reference to a card now stands where a `card` parameter is, and one to a zone where a `zone` parameter is
+  (`accepts` in the card engine's host and in mochi's `CardEngineHost.cs`); before, no reference fit either, so
+  `play-free(@x)` and `of-type(@Rookie)` couldn't have bound.
+- **Hello TCG.** `gain` takes `counter-or-resource`, as `counter-is` does ("Scenario words for resources"), so
+  `gain(@Energy, card.energy)` binds. `heroes` adds the scenario verb `awakened(@dziadzius)`.
 
 ## Open
 

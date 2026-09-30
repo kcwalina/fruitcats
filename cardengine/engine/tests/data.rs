@@ -91,3 +91,62 @@ fn a_named_argument_the_type_lacks_is_an_error_as_in_a_record() {
     let compilation = bind(SCHEMA, "#type Schema\n\nhit = Damage(3, power: 2)\n");
     assert!(errors(&compilation).iter().any(|e| e.contains("has no field 'power'")), "{:?}", errors(&compilation));
 }
+
+// ── formulas ─────────────────────────────────────────────────────────────────────────────────────
+
+const RULES: &str = "#type Schema
+
+type Schema { awaken: formula?, hit: Damage?, name: text?, pick: Choose? }
+type Effect { only-if: formula? }
+type Damage : Effect { amount: int | formula, target: Choose | formula | nic }
+type Choose { from: formula, filter: formula? }
+";
+
+fn kind(compilation: &Compilation, name: &str) -> String {
+    let model = &compilation.model;
+    let root = compilation.documents.iter().find(|d| !d.is_schema).unwrap().root;
+    let value = model.object(root).unwrap().get(name).unwrap().value;
+    match &model.values[value].kind {
+        ValueKind::Formula { .. } => "formula".to_string(),
+        other => format!("{:?}", other).split([' ', '(', '{']).next().unwrap().to_string(),
+    }
+}
+
+#[test]
+fn a_formula_is_the_value_of_a_formula_field() {
+    let compilation = bind(RULES, "#type Schema\n\nawaken = units(own).count >= card.units\n");
+    assert_eq!(errors(&compilation), Vec::<String>::new());
+    assert_eq!(kind(&compilation, "awaken"), "formula");
+}
+
+#[test]
+fn a_formula_chooses_a_value_with_if_then_else() {
+    let compilation = bind(RULES, "#type Schema\n\nhit = Damage(if @x then card.company-damage else card.damage, target: Choose(all))\n");
+    assert!(errors(&compilation).iter().all(|e| e.contains("'x'") || e.contains("@x")), "{:?}", errors(&compilation));
+}
+
+#[test]
+fn then_and_else_may_start_their_own_lines() {
+    let compilation = bind(RULES, "#type Schema\n\nawaken = if not attacker.is-unit then false\n  else if this.ready then true\n  else false\n");
+    assert_eq!(errors(&compilation), Vec::<String>::new());
+    assert_eq!(kind(&compilation, "awaken"), "formula");
+}
+
+#[test]
+fn a_formula_field_takes_a_bare_word_a_number_or_a_formula() {
+    let compilation = bind(RULES, "#type Schema\n\npick = Choose(own, filter: exhausted)\nhit = Damage(3, only-if: own.played-this-round <= card.others + 1)\n");
+    assert_eq!(errors(&compilation), Vec::<String>::new());
+}
+
+#[test]
+fn a_formula_anywhere_else_is_an_error() {
+    let compilation = bind(RULES, "#type Schema\n\nname = card.name\n");
+    assert!(errors(&compilation).iter().any(|e| e.contains("only a field whose type is formula holds one")), "{:?}", errors(&compilation));
+}
+
+#[test]
+fn a_plain_value_stays_a_plain_value() {
+    let compilation = bind(RULES, "#type Schema\n\nname = 'Kłobuk'\n");
+    assert_eq!(errors(&compilation), Vec::<String>::new());
+    assert_eq!(kind(&compilation, "name"), "String");
+}

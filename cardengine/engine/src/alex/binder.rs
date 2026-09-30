@@ -1060,6 +1060,7 @@ impl<'h> Binder<'h> {
                 }
                 self.model.add_value(ValueKind::String(last), span)
             }
+            syntax::Value::Formula { expression } => self.model.add_value(ValueKind::Formula { expression: Box::new(expression.clone()), document: s }, span),
             syntax::Value::Missing { .. } | syntax::Value::InlineStatement { .. } => self.model.add_value(ValueKind::Invalid, span),
         }
     }
@@ -1674,6 +1675,14 @@ impl<'h> Binder<'h> {
         }
 
         let span = self.model.values[value].span;
+        if matches!(self.model.values[value].kind, ValueKind::Formula { .. }) && !self.accepts_formula(type_id) {
+            let message = format!(
+                "This is a formula, and only a field whose type is formula holds one; this one holds {}.",
+                self.model.type_string(type_id)
+            );
+            self.report(sink, s, message, span);
+            return value;
+        }
         match self.model.types[type_id].kind.clone() {
             TypeKind::Optional(inner) => {
                 if matches!(self.model.values[value].kind, ValueKind::Nic) {
@@ -2055,6 +2064,16 @@ impl<'h> Binder<'h> {
         }
     }
 
+    /// Whether a field of this type may hold a formula: it is `formula`, or a union or optional that includes it.
+    fn accepts_formula(&self, type_id: TypeId) -> bool {
+        match &self.model.types[self.model.resolved(type_id)].kind {
+            TypeKind::Named { name, .. } => name == "formula",
+            TypeKind::Optional(inner) => self.accepts_formula(*inner),
+            TypeKind::Union(alternatives) => alternatives.iter().any(|a| self.accepts_formula(*a)),
+            _ => false,
+        }
+    }
+
     pub fn flatten(&mut self, type_id: TypeId, alternatives: &mut Vec<TypeId>) {
         let resolved = self.model.resolved(type_id);
         match self.model.types[resolved].kind.clone() {
@@ -2377,6 +2396,7 @@ pub(super) fn named_accepts(name: &str, kind: &ValueKind) -> bool {
         "any" => true,
         "string" => matches!(kind, ValueKind::String(_)),
         "number" => matches!(kind, ValueKind::Float(_) | ValueKind::Integer(_)),
+        "formula" => !matches!(kind, ValueKind::Declaration(_) | ValueKind::Object(_)),
         _ => !matches!(kind, ValueKind::Nic),
     }
 }

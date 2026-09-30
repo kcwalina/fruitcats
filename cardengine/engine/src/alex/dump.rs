@@ -338,6 +338,10 @@ impl<'o> Dumper<'o> {
                 self.node("InlineStatement");
                 self.body_statement(statement);
             }
+            Value::Formula { expression } => {
+                self.node("Formula");
+                self.expression(expression);
+            }
         }
         self.end();
     }
@@ -512,6 +516,15 @@ impl<'o> Dumper<'o> {
             Expression::Missing { missing } => {
                 self.node("MissingExpression");
                 self.token(missing);
+            }
+            Expression::Conditional { if_keyword, condition, then_keyword, then, else_keyword, otherwise } => {
+                self.node("ConditionalExpression");
+                self.token(if_keyword);
+                self.expression(condition);
+                self.token(then_keyword);
+                self.expression(then);
+                self.token(else_keyword);
+                self.expression(otherwise);
             }
         }
         self.end();

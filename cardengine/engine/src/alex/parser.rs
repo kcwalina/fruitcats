@@ -864,21 +864,31 @@ on a line of its own.",
     }
 
     fn parse_comparison(&mut self) -> Expression {
-        let left = self.parse_postfix();
+        let left = self.parse_sum();
         if !is_comparison(self.kind()) || !self.can_continue() {
             return left;
         }
 
         let operator = self.take();
-        let right = self.parse_postfix();
+        let right = self.parse_sum();
         let mut result = Expression::Binary { left: Box::new(left), operator, right: Box::new(right) };
         while is_comparison(self.kind()) && self.can_continue() {
             self.error(self.current().span, "Comparisons do not chain. Write each one and join them: 'a < b and b < c'.");
             let extra = self.take();
-            let right = self.parse_postfix();
+            let right = self.parse_sum();
             result = Expression::Binary { left: Box::new(result), operator: extra, right: Box::new(right) };
         }
         result
+    }
+
+    fn parse_sum(&mut self) -> Expression {
+        let mut left = self.parse_postfix();
+        while self.kind() == TokenKind::Plus && self.can_continue() {
+            let operator = self.take();
+            let right = self.parse_postfix();
+            left = Expression::Binary { left: Box::new(left), operator, right: Box::new(right) };
+        }
+        left
     }
 
     fn parse_postfix(&mut self) -> Expression {
@@ -968,7 +978,7 @@ on a line of its own.",
             TokenKind::OpenParen => {
                 let open = self.take();
                 self.parenthesis_depth += 1;
-                let inner = self.parse_expression();
+                let inner = self.parse_formula();
                 self.parenthesis_depth -= 1;
                 let close = self.expect_close(TokenKind::CloseParen, &open, "'('", "')'");
                 Expression::Parenthesized { open, inner: Box::new(inner), close }
@@ -1087,6 +1097,10 @@ be nothing: 'A | B | nic'.",
     // ── values ──────────────────────────────────────────────────────────────────────────────────
 
     fn parse_value(&mut self) -> Value {
+        if self.at_formula() {
+            let expression = self.parse_formula();
+            return Value::Formula { expression };
+        }
         match self.kind() {
             TokenKind::Number => {
                 let kind = if self.is_float(self.current()) { LiteralKind::Float } else { LiteralKind::Integer };
@@ -1115,6 +1129,74 @@ it reads ('power: +card.bonus').",
 '[...]', '@name' or 'nameof(name)'.",
             ),
         }
+    }
+
+    /// Whether the value starting here is a formula rather than a plain value: `if` or `not` first, a name read
+    /// through (`card.damage`) or called (`units(own)`), a parenthesis, or a plain value an operator continues
+    /// (`@x >= 1`, `2 + card.bonus`).
+    fn at_formula(&self) -> bool {
+        let is_operator = |kind: TokenKind, token: &Token| {
+            is_comparison(kind) || kind == TokenKind::Plus || (kind == TokenKind::Identifier && (token.is(self.source, b"and") || token.is(self.source, b"or")))
+        };
+        let continues = |offset: usize| {
+            let next = self.peek(offset);
+            (self.parenthesis_depth > 0 || !next.starts_line) && is_operator(next.kind, next)
+        };
+        match self.kind() {
+            TokenKind::OpenParen => true,
+            TokenKind::Number | TokenKind::String => continues(1),
+            TokenKind::At => {
+                let mut offset = 1;
+                if self.peek(offset).kind != TokenKind::Identifier {
+                    return false;
+                }
+                offset += 1;
+                while self.peek(offset).kind == TokenKind::Dot && self.peek(offset + 1).kind == TokenKind::Identifier {
+                    offset += 2;
+                }
+                continues(offset)
+            }
+            TokenKind::Identifier => {
+                if self.current_is(b"if") || self.current_is(b"not") {
+                    return true;
+                }
+                if self.current_is_type_name() || self.current_is(b"nic") || self.current_is(b"empty") || self.current_is(b"nameof") {
+                    return false;
+                }
+                let next = self.peek(1);
+                let touching = self.current().touches_next(next);
+                (next.kind == TokenKind::Dot && touching) || (next.kind == TokenKind::OpenParen && touching) || continues(1)
+            }
+            _ => false,
+        }
+    }
+
+    /// A formula: `if condition then value else value`, or an expression. `then` and `else` may start a line.
+    fn parse_formula(&mut self) -> Expression {
+        if self.kind() == TokenKind::Identifier && self.current_is(b"if") {
+            let if_keyword = self.take();
+            let condition = self.parse_expression();
+            let then_keyword = self.expect_word(b"then", "Expected 'then' after the condition: 'if condition then value else value'.");
+            let then = self.parse_formula();
+            let else_keyword = self.expect_word(b"else", "Expected 'else': a formula's 'if' gives a value either way.");
+            let otherwise = self.parse_formula();
+            return Expression::Conditional {
+                if_keyword,
+                condition: Box::new(condition),
+                then_keyword,
+                then: Box::new(then),
+                else_keyword,
+                otherwise: Box::new(otherwise),
+            };
+        }
+        self.parse_expression()
+    }
+
+    fn expect_word(&mut self, word: &[u8], message: &str) -> Token {
+        if self.kind() == TokenKind::Identifier && self.current_is(word) {
+            return self.take();
+        }
+        self.missing_token(TokenKind::Identifier, message)
     }
 
     fn parse_word_value(&mut self) -> Value {

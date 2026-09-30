@@ -233,6 +233,10 @@ impl<'g> Run<'g> {
                 })
             }
             Expression::Parenthesized { inner, .. } => self.eval(inner),
+            Expression::Conditional { condition, then, otherwise, .. } => {
+                let condition = self.eval(condition)?;
+                if self.truthy(&condition) { self.eval(then) } else { self.eval(otherwise) }
+            }
             Expression::Missing { .. } => fail("The routine has a missing expression."),
         }
     }

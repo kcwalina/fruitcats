@@ -250,6 +250,10 @@ impl<'m> Dumper<'m> {
             ValueKind::Reference { path, target } => format!("ref @{} -> {}", path.join("."), self.shown(*target)),
             ValueKind::TypeValue(t) => format!("type @{}", self.model.record_name(*t)),
             ValueKind::Declaration(d) => format!("declaration {} {}", self.model.declarations[*d].kind, self.model.declaration_string(*d)),
+            ValueKind::Formula { .. } => {
+                let span = self.model.values[value].span;
+                format!("formula {}+{}", span.start, span.length)
+            }
             ValueKind::Object(_) | ValueKind::Array(_) => match self.ids.get(&value) {
                 Some(id) => format!("#{}", id),
                 None => {

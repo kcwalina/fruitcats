@@ -191,8 +191,8 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        // '+card.bonus': a sign on a quantity a body reads. The parser allows it only there.
-        if current == b'+' && (identifiers::is_start(next) || next == b'@' || next == b'(') {
+        // '+card.bonus': a sign on a quantity a body reads; 'a + b', with a space after it: a formula adding.
+        if current == b'+' && (identifiers::is_start(next) || next == b'@' || next == b'(' || next == b' ' || next == b'\t') {
             self.position += 1;
             return TokenKind::Plus;
         }
@@ -365,7 +365,7 @@ field with 'name = value', and use '//' for a comment."
             .to_string(),
         b'"' => "Strings use single quotes: 'text'. A double quote is only ever part of a string.".to_string(),
         b'-' => "A '-' must start a number here. List items are written in brackets: [a, b].".to_string(),
-        b'+' => "A '+' must start a number here ('+1'). There is no arithmetic in Alex; '+=' adds to a call.".to_string(),
+        b'+' => "A '+' adds ('a + b', with spaces) or starts a number ('+1').".to_string(),
         b'!' => "'!' is only part of '!='. Write 'not' to negate.".to_string(),
         _ => format!("'{}' is not part of Alex syntax.", shown),
     }

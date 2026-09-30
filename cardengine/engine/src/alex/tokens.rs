@@ -174,6 +174,7 @@ pub fn of_value<'t>(value: &'t Value, tokens: &mut Vec<&'t Token>) {
         }
         Value::Missing { missing } => tokens.push(missing),
         Value::InlineStatement { statement } => of_body_statement(statement, tokens),
+        Value::Formula { expression } => of_expression(expression, tokens),
     }
 }
 
@@ -299,6 +300,14 @@ pub fn of_expression<'t>(expression: &'t Expression, tokens: &mut Vec<&'t Token>
             tokens.push(close);
         }
         Expression::Missing { missing } => tokens.push(missing),
+        Expression::Conditional { if_keyword, condition, then_keyword, then, else_keyword, otherwise } => {
+            tokens.push(if_keyword);
+            of_expression(condition, tokens);
+            tokens.push(then_keyword);
+            of_expression(then, tokens);
+            tokens.push(else_keyword);
+            of_expression(otherwise, tokens);
+        }
     }
 }
 

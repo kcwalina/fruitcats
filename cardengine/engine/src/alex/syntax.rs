@@ -343,6 +343,9 @@ pub enum Value {
     /// One body statement as the value of `@card.slot = `: `@klobuk.on-enter = draw()`. It is bound as a declaration of
     /// the slot's kind, with no name, whose body is this statement.
     InlineStatement { statement: Box<BodyStatement> },
+    /// A formula: a pure expression computed from the game, which never changes it (`units(own).count >= card.units`).
+    /// Only a field whose type is `formula` holds one.
+    Formula { expression: Expression },
 }
 
 /// One argument of a construction: `value`, or `name: value`.
@@ -420,6 +423,15 @@ pub enum Expression {
     Signed { sign: Token, operand: Box<Expression> },
     Binary { left: Box<Expression>, operator: Token, right: Box<Expression> },
     Parenthesized { open: Token, inner: Box<Expression>, close: Token },
+    /// `if condition then value else value`: a formula's choice between two values.
+    Conditional {
+        if_keyword: Token,
+        condition: Box<Expression>,
+        then_keyword: Token,
+        then: Box<Expression>,
+        else_keyword: Token,
+        otherwise: Box<Expression>,
+    },
     Missing { missing: Token },
 }
 

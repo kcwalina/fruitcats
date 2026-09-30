@@ -56,6 +56,8 @@ pub enum ValueKind {
     Reference { path: Vec<String>, target: Option<ValueId> },
     TypeValue(TypeId),
     Declaration(DeclarationId),
+    /// A formula, as written, in the document it is written in (for its tokens' text): computed by the host.
+    Formula { expression: Box<crate::alex::syntax::Expression>, document: usize },
     Array(Vec<ValueId>),
     Object(Object),
 }
@@ -224,7 +226,7 @@ pub struct Model {
 }
 
 pub fn is_builtin_name(name: &str) -> bool {
-    matches!(name, "text" | "int" | "float" | "bool" | "nic" | "data" | "any")
+    matches!(name, "text" | "int" | "float" | "bool" | "nic" | "data" | "any" | "formula")
 }
 
 impl Model {
@@ -534,6 +536,7 @@ impl Model {
             ValueKind::Reference { path, .. } => format!("a reference to '{}'", path.join(".")),
             ValueKind::TypeValue(t) => format!("the type '{}'", self.record_name(*t)),
             ValueKind::Declaration(d) => format!("the {} '{}'", self.declarations[*d].kind, self.declaration_string(*d)),
+            ValueKind::Formula { .. } => "a formula".to_string(),
             ValueKind::Invalid => "unreadable".to_string(),
         }
     }

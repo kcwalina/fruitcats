@@ -266,6 +266,13 @@ fn write_value(project: &Project, id: ValueId, out: &mut String, open: &mut Hash
         ValueKind::Enum { member, .. } => out.push_str(&string(member)),
         ValueKind::String(t) | ValueKind::Text(t) => out.push_str(&string(t)),
         ValueKind::TypeValue(t) => out.push_str(&format!("{{\"$typeName\":{}}}", string(model.record_name(*t)))),
+        ValueKind::Formula { expression, document } => {
+            let mut tokens = Vec::new();
+            crate::alex::tokens::of_expression(expression, &mut tokens);
+            let span = crate::alex::tokens::span(&tokens);
+            let text = project.sources.get(*document).and_then(|b| b.get(span.range())).map(|b| String::from_utf8_lossy(b).into_owned()).unwrap_or_default();
+            out.push_str(&format!("{{\"$formula\":{}}}", string(&text)));
+        }
         ValueKind::Declaration(d) => {
             let declaration = &model.declarations[*d];
             out.push_str(&format!(

@@ -979,7 +979,7 @@ impl<'p> Layout<'p> {
             },
             ValueKind::TypeValue(t) => self.model.record_name(*t).to_string(),
             ValueKind::Array(items) => items.iter().map(|i| self.scalar(Some(*i))).collect::<Vec<_>>().join(", "),
-            ValueKind::Declaration(_) | ValueKind::Object(_) => String::new(),
+            ValueKind::Declaration(_) | ValueKind::Object(_) | ValueKind::Formula { .. } => String::new(),
         }
     }
 

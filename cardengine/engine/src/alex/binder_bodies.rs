@@ -314,6 +314,12 @@ impl BodyChecker<'_, '_> {
             }
             Expression::Binary { left, operator, right } => self.binary(left, operator, right),
             Expression::Parenthesized { inner, .. } => self.expression(inner, expected),
+            Expression::Conditional { condition, then, otherwise, .. } => {
+                self.expression(condition, None);
+                let chosen = self.expression(then, expected);
+                self.expression(otherwise, expected);
+                chosen
+            }
             Expression::Missing { .. } => None,
         }
     }

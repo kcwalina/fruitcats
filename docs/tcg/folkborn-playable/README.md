@@ -81,9 +81,8 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
 - **Aluxes declares its rain counter:** `counters = [rain = StatCounter { power = 1, health = 1, max = @rain-fed-max }]`.
 - **The game file gains its rules.** An older playable version of it, written for the retired cat cards, is still
   in `cardengine/folkborn/folkborn.alex`; this draft replaces it.
-- **The game's constants are the rulebook's tunable parameters** (§900), plus one the rulebook lacks: today's
-  engine ends a game after round 40 and the player with more Candles wins. Either the rulebook says so or the
-  rule goes.
+- **The game's constants are the rulebook's tunable parameters** (§900), including the round limit: the game ends
+  after round 40 (§300.7, added to the rulebook on 2026-09-29 at the owner's decision).
 
 ## What the checker says
 
@@ -109,7 +108,7 @@ means the fix is in Folkborn's own files; the other fixes are in the platform.
 | 11 | A card whose text is only keywords must have a handler. | 27 errors | Checker: text made only of the card's keywords needs none. |
 | 12 | A card's constants share names with the game's: Aluxito's `candles` makes the game's `@candles` ambiguous. | 1 error | Core: a card's constants belong to the card, not the game's namespace. |
 | 13 | Mochi's set and its one card are both named `mochi`, so `@mochi.on-enter` names the set. | 3 errors | Folkborn: give the card its own key (`mochi-the-sweet-spirit`). |
-| 14 | `MaxRounds` doesn't say who wins at the limit. | not an error | Library: `MaxRounds { n, winner = most-life }`. |
+| 14 | `MaxRounds` doesn't say who wins at the limit. | not an error yet | Decided by the owner (2026-09-29, now rulebook §300.7): after round 40, more Candles wins, then more Health left on units in play, else a draw. Library: `MaxRounds { n, winner = [most-life, most-unit-health] }`, the tiebreaks in order, a draw when all are equal; built with the runtime. |
 | 15 | Setup order across areas isn't defined: the Candles are dealt (a `life` rule) after the shuffle and before the opening hand (`setup` rules). | not an error | Library: a setup step that deals the life stack, placed in `setup`. |
 | 16 | A Whistle in the Dark has Ambush but may only answer an attack. | not an error | Checker: a handler that uses the attack it answers (`event.cancel()`) makes the card playable only in an attack's window. |
 | 17 | Alex enums are names only. Handlers want `ready-resources(two)`, with `two` standing for 2. | 6 errors (the owner's request, 2026-09-29) | Done. Alex (both implementations): enums backed by a number or a short fixed-size string (`enum Count : int { one = 1, two = 2 }`, `enum Code : text(3) { ... }`), a member standing for its value wherever that value's type is expected, as C# enums are; `Count` in `common`. |

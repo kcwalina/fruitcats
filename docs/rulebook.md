@@ -211,6 +211,10 @@ When a player loses their **ninth and final Candle**, they lose the game immedia
 
 If you must draw a card and your deck is empty, you **lose 1 Candle instead** (that Candle card goes to your hand as usual).
 
+**The game ends after round 40.** If nobody has won by then, the player with more Candles left wins. With the same
+number of Candles, the player whose units in their Yard have more Health left in total (each unit's Health minus its
+damage) wins. If that is equal too, the game is a draw.
+
 ### 9.4 Awaken
 
 Every Hero has an **Awaken** condition printed on it (for example, *"Awaken: your opponent has 5 or fewer Candles"*). As soon as the condition is true, flip your Hero to its **Awakened** side. It stays ready or exhausted as it was. An Awakened Hero never turns back.
@@ -321,6 +325,7 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **300.4** A player who has Taken the Lantern this round automatically passes whenever they would take an action. They may still use Ambush windows.
 - **300.5** Take the Lantern may be performed by at most one player per round. The player may perform it even if they already hold the Lantern (to stop it from passing).
 - **300.6** *End Phase.* In order: (a) "at end of round" triggers resolve, Lantern holder's first; (b) "this round" effects end; (c) each player with more than 10 cards in hand discards down to 10; (d) if no player Took the Lantern this round, the Lantern passes to the other player.
+- **300.7** *Round limit.* If the game has not ended by the end of round 40, it ends then. The player with more Candles wins. If both have the same number, the player whose units have the greater total remaining Health wins: each unit's current Health minus the damage marked on it, added up over their Yard. If that is equal too, the game is a draw.
 
 ### 400. Actions
 
@@ -393,6 +398,7 @@ The following values are deliberately isolated so playtesting can adjust them wi
 | Ambush allowed after Taking the Lantern | yes |
 | Lantern passes if nobody takes it | yes |
 | Second-player compensation in round 1 | none |
+| Round limit | 40 rounds |
 | Copy limit / Fabled limit | 3 / 6 (1 copy each) |
 | Rain-Fed maximum | +2/+2 |
 | Well-Fed threshold | 7 Offerings |
@@ -414,4 +420,4 @@ The following values are deliberately isolated so playtesting can adjust them wi
 
 **Lost Candle:** goes to your hand. **Lucky?** Play it free.
 
-**Win:** blow out the ninth Candle.
+**Win:** blow out the ninth Candle. After round 40: more Candles wins, then more Health left on your units.

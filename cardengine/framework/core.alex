@@ -29,6 +29,10 @@
 // text (`Card.text`) and its handlers attach by slot; a game declares its own card types on
 // `Card` and maps them onto the libraries' card records; a game names its card back and its card
 // layout; library rules give a game's own plain keywords their meaning.
+// From the owner's decision of 2026-09-29: `effect` and `condition` are one concept, the routine.
+// `routine name { ... }` does something and `routine name : bool { ... }` answers yes or no;
+// `effect` and `condition` still bind, as deprecated spellings of those two, and stay the names of
+// the slot types that want them (`on-enter: effect?`, `awaken: condition?`).
 #type Core
 
 schema-version = 1
@@ -504,8 +508,9 @@ type Italic : Emphasis {}
 // Program layer: the plug points for behaviour. Libraries declare the actual events, verbs,
 // selectors and properties; the core declares what those declarations look like.
 
-// A rules document. Its members are declarations of the registered kinds (`effect`, `static`,
-// `condition`, `scenario`) and assignments to extension members of the objects it references.
+// A rules document. Its members are declarations of the registered kinds (`routine`, `static`,
+// `scenario`, and `effect` and `condition`, the deprecated spellings of a routine without and with
+// `: bool`) and assignments to extension members of the objects it references.
 // It is for the cards of one `Cards` document or one set (`for = @cards`); the cards never name
 // their rules document, since code points at data.
 type Rules { for: Cards | Set }
@@ -520,7 +525,11 @@ enum ParamType {
   ability                         // deprecated with `Ability.numbers`: see the `card` selector
   counter-or-resource             // a named number a player holds: a counter or a resource
 }
-enum BlockKind { effect, condition, static, scenario }
+// A routine binds as `effect` when it returns nothing and as `condition` when it returns bool, so
+// `effect` and `condition` here name those two kinds of routine; `routine` names the declaration
+// as written. A routine may take typed parameters (`routine deal(n: int)`), for library code; a
+// card's handler takes none and reads its numbers from the card (`card.damage`).
+enum BlockKind { effect, condition, static, scenario, routine }
 
 // Parameters are in call order; positional arguments bind in that order and any parameter may
 // be given by name; `optional` parameters follow `params` in call order and may be omitted. A
@@ -541,7 +550,7 @@ type Ability {
   once-per-round: bool = false
   holders: [text]                 // fixed by the kind: record types it may sit on
   event: text?                    // fixed by the kind: the event the handler receives, if any
-  kind: BlockKind = effect        // fixed by the kind: effect, condition or static
+  kind: BlockKind = effect        // fixed by the kind: effect, condition (the two routines) or static
   responding: [text] = empty      // fixed by the kind: events it may be played in response to
   hidden: bool = false            // fixed by the kind: fires without revealing itself (secrets)
 }
@@ -580,7 +589,7 @@ moments = [
 ]
 selectors = [
   this = Selector { yields = unit }
-  target = Selector { yields = unit }             // the one binding an effect may make
+  target = Selector { yields = unit }             // the one binding a routine may make
   event = Selector { yields = event }
   // The card the running handler is attached to, as printed: `card.bonus` is one of its
   // constants. A handler shared by several cards reads each card's own.

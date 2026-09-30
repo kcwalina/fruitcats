@@ -2,20 +2,20 @@
 
 for = @cards
 
-effect gain-energy { gain(@Energy, card.energy) }
+routine gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy
 @dziadzius.back.exhaust = gain-energy
 
-condition enough-creatures { units(own).count >= card.creatures }
+routine enough-creatures : bool { units(own).count >= card.creatures }
 @dziadzius.awaken = enough-creatures
 
-effect draw-a-card { draw() }
+routine draw-a-card { draw() }
 @klobuk.on-enter = draw-a-card
 
-effect heal-own-creatures { units(own).heal(card.heal) }
+routine heal-own-creatures { units(own).heal(card.heal) }
 @bread-and-salt-greeter.on-enter = heal-own-creatures
 
-effect damage-a-creature { choose(all).damage(card.damage) }
+routine damage-a-creature { choose(all).damage(card.damage) }
 @domowiks-temper.on-play = damage-a-creature
 
 scenario 'Kłobuk draws a card when it enters' {

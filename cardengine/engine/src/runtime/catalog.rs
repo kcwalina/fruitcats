@@ -118,13 +118,10 @@ impl Catalog {
             for entry in &map.properties {
                 let card = final_target(model, entry.value);
                 let Some(object) = model.object(card) else { continue };
-                let mut types = Vec::new();
-                let mut current = object.record_type;
-                while let Some(t) = current {
-                    let Some(record) = model.record(t) else { break };
-                    types.push(record.name.clone());
-                    current = record.base;
-                }
+                let types: Vec<String> = object
+                    .record_type
+                    .map(|record| model.chain(record).iter().filter_map(|t| model.record(*t)).map(|r| r.name.clone()).collect())
+                    .unwrap_or_default();
                 let mut faces = vec![reader.face(card)];
                 if let Some(back) = reader.field(card, "back").filter(|b| model.object(*b).is_some()) {
                     faces.push(reader.face(back));

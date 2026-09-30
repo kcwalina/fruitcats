@@ -108,15 +108,7 @@ fn is_in_game(context: &dyn ValidationContext, game: &str, root: ValueId) -> boo
 }
 
 fn is_or_extends(model: &Model, record: TypeId, name: &str) -> bool {
-    let mut current = Some(record);
-    while let Some(t) = current {
-        let Some(r) = model.record(t) else { return false };
-        if r.name == name {
-            return true;
-        }
-        current = r.base;
-    }
-    false
+    model.chain(record).iter().any(|t| model.record(*t).is_some_and(|r| r.name == name))
 }
 
 /// A slot runs its routine with no arguments, so a routine with parameters cannot be attached to one. A card's handler

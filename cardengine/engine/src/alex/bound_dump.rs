@@ -119,7 +119,8 @@ impl<'m> Dumper<'m> {
     fn type_line(&mut self, name: &str, type_id: TypeId) {
         match &self.model.types[type_id].kind {
             TypeKind::Record(record) => {
-                let base = record.base.map(|b| format!(" : {}", self.model.record_name(b))).unwrap_or_default();
+                let bases: Vec<String> = record.base.into_iter().chain(record.other_bases.iter().copied()).map(|b| self.model.record_name(b).to_string()).collect();
+                let base = if bases.is_empty() { String::new() } else { format!(" : {}", bases.join(", ")) };
                 self.line(&format!("record {}{}{}", name, base, if record.asserts_data { " asserts-data" } else { "" }));
                 self.depth += 1;
                 for field in record.own_fields.clone() {

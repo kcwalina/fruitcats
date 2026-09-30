@@ -326,12 +326,23 @@ belong to a program document.",
             } else {
                 self.missing_token(TokenKind::Identifier, "Expected the base type's name, or 'data', after ':'.")
             };
+            let mut other_bases = Vec::new();
+            while self.kind() == TokenKind::Comma && !self.starts_line() {
+                let comma = self.take();
+                let base = if self.kind() == TokenKind::Identifier && !self.starts_line() {
+                    self.take()
+                } else {
+                    self.missing_token(TokenKind::Identifier, "Expected another base type's name after ','.")
+                };
+                other_bases.push((comma, base));
+            }
             let fields = self.parse_field_list(&name);
             return Statement::TypeDeclaration {
                 keyword,
                 name,
                 colon: Some(colon),
                 base_name: Some(base_name),
+                other_bases,
                 fields: Some(fields),
                 equals: None,
                 alias: None,
@@ -345,6 +356,7 @@ belong to a program document.",
                 name,
                 colon: None,
                 base_name: None,
+                other_bases: Vec::new(),
                 fields: Some(fields),
                 equals: None,
                 alias: None,
@@ -359,6 +371,7 @@ belong to a program document.",
                 name,
                 colon: None,
                 base_name: None,
+                other_bases: Vec::new(),
                 fields: None,
                 equals: Some(equals),
                 alias: Some(alias),
@@ -380,6 +393,7 @@ belong to a program document.",
             name,
             colon: None,
             base_name: None,
+            other_bases: Vec::new(),
             fields: Some(fields),
             equals: None,
             alias: None,

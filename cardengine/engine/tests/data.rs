@@ -150,3 +150,60 @@ fn a_plain_value_stays_a_plain_value() {
     assert_eq!(errors(&compilation), Vec::<String>::new());
     assert_eq!(kind(&compilation, "name"), "String");
 }
+
+// ── several bases ────────────────────────────────────────────────────────────────────────────────
+
+const CARDS: &str = "#type Schema
+
+type Schema { cards: [text: Card] = empty }
+type Card { name: text? }
+type Printed : Card { number: text, rarity: text? }
+type UnitCard : Card { cost: int | formula | nic, power: int, health: int? }
+type Creature : Printed, UnitCard { cost: int, health: int }
+";
+
+#[test]
+fn a_type_has_every_field_of_every_base() {
+    let compilation = bind(CARDS, "#type Schema\n\ncards = [\n  klobuk = Creature { name = 'Kłobuk', number = 'DW1-D18', cost = 3, power = 2, health = 3 }\n]\n");
+    assert_eq!(errors(&compilation), Vec::<String>::new());
+}
+
+#[test]
+fn a_type_is_each_of_its_bases() {
+    let compilation = bind(CARDS, "#type Schema\n\ncards = []\n");
+    let model = &compilation.model;
+    let find = |name: &str| compilation.types.iter().find(|(n, _)| n == name).unwrap().1;
+    let creature = find("Creature");
+    assert!(model.is_or_extends(creature, find("Printed")));
+    assert!(model.is_or_extends(creature, find("UnitCard")));
+    assert!(model.is_or_extends(creature, find("Card")));
+    let names: Vec<&str> = model.chain(creature).iter().map(|t| model.record_name(*t)).collect();
+    assert_eq!(names, ["Creature", "Printed", "Card", "UnitCard"], "each once, the first base's chain first");
+}
+
+#[test]
+fn a_field_the_type_lacks_is_still_an_error() {
+    let compilation = bind(CARDS, "#type Schema\n\ncards = [\n  klobuk = Creature { number = 'x', cost = 3, power = 2, health = 3, flavor = 'hi' }\n]\n");
+    assert!(errors(&compilation).iter().any(|e| e.contains("has no field 'flavor'")), "{:?}", errors(&compilation));
+}
+
+#[test]
+fn a_type_may_narrow_an_inherited_field_but_not_change_it() {
+    let schema = "#type Schema\n\ntype Schema { cards: [text: Card] = empty }\ntype Card { name: text? }\ntype UnitCard : Card { power: int }\ntype Odd : Card, UnitCard { power: text }\n";
+    let compilation = bind(schema, "#type Schema\n\ncards = []\n");
+    assert!(errors(&compilation).iter().any(|e| e.contains("may narrow an inherited field's type, not change it")), "{:?}", errors(&compilation));
+}
+
+#[test]
+fn two_bases_that_disagree_about_a_field_are_an_error() {
+    let schema = "#type Schema\n\ntype Schema { cards: [text: Card] = empty }\ntype Card {}\ntype A : Card { size: int }\ntype B : Card { size: text }\ntype Both : A, B {}\n";
+    let compilation = bind(schema, "#type Schema\n\ncards = []\n");
+    assert!(errors(&compilation).iter().any(|e| e.contains("both declare 'size'")), "{:?}", errors(&compilation));
+}
+
+#[test]
+fn bases_that_extend_each_other_in_a_circle_are_an_error() {
+    let schema = "#type Schema\n\ntype Schema { cards: [text: A] = empty }\ntype A : B {}\ntype B : C, A {}\ntype C {}\n";
+    let compilation = bind(schema, "#type Schema\n\ncards = []\n");
+    assert!(errors(&compilation).iter().any(|e| e.contains("extends itself through its bases")), "{:?}", errors(&compilation));
+}

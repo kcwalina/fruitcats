@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use super::draw::{DrawList, Paint, Rect};
 use super::font::Font;
 use super::text::{self, Emphasis, Sized, BOLD, ITALIC, REGULAR};
-use crate::alex::model::{Model, TypeId, ValueId, ValueKind};
+use crate::alex::model::{Model, ValueId, ValueKind};
 use crate::loader::project::Project;
 use crate::loader::queries::is_a;
 
@@ -688,11 +688,8 @@ impl<'p> Layout<'p> {
     fn type_chain(&self, face: &Face) -> Vec<String> {
         let mut chain = Vec::new();
         let object = self.model.object(face.values);
-        let mut current: Option<TypeId> = object.and_then(|o| o.record_type);
-        while let Some(t) = current {
-            let Some(record) = self.model.record(t) else { break };
-            chain.push(record.name.clone());
-            current = record.base;
+        if let Some(record) = object.and_then(|o| o.record_type) {
+            chain.extend(self.model.chain(record).iter().filter_map(|t| self.model.record(*t)).map(|r| r.name.clone()));
         }
         if chain.is_empty() {
             chain.push(object.and_then(|o| o.type_name.clone()).unwrap_or_else(|| "Card".to_string()));
@@ -737,16 +734,11 @@ impl<'p> Layout<'p> {
 
     /// Whether a value's type, or a type it derives from that the game's own files declare, declares the field.
     fn game_declares(&self, value: ValueId, name: &str) -> bool {
-        let mut current = self.model.object(value).and_then(|o| o.record_type);
-        while let Some(t) = current {
-            let Some(record) = self.model.record(t) else { return false };
+        let Some(record) = self.model.object(value).and_then(|o| o.record_type) else { return false };
+        self.model.chain(record).into_iter().any(|t| {
             let own = self.project.documents().any(|(_, d)| d.types.iter().any(|(_, declared)| *declared == t));
-            if own && record.own_fields.iter().any(|f| self.model.fields[*f].name == name) {
-                return true;
-            }
-            current = record.base;
-        }
-        false
+            own && self.model.record(t).is_some_and(|r| r.own_fields.iter().any(|f| self.model.fields[*f].name == name))
+        })
     }
 
     /// A field a set gives for all its cards: one the core's `Set` or `Cards` doesn't declare.
@@ -754,13 +746,11 @@ impl<'p> Layout<'p> {
         let root = self.project.compilation.documents[document].root;
         let object = self.model.object(root)?;
         let property = object.get(name).filter(|p| !p.is_default)?;
-        let mut current = object.record_type;
-        while let Some(t) = current {
+        for t in object.record_type.map(|r| self.model.chain(r)).unwrap_or_default() {
             let record = self.model.record(t)?;
             if (record.name == "Set" || record.name == "Cards") && record.own_fields.iter().any(|f| self.model.fields[*f].name == name) {
                 return None;
             }
-            current = record.base;
         }
         Some(property.value)
     }

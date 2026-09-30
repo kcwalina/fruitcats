@@ -355,6 +355,7 @@ impl<'h> Binder<'h> {
                         TypeKind::Record(RecordType {
                             name: text,
                             base: None,
+                            other_bases: Vec::new(),
                             asserts_data: false,
                             own_fields: Vec::new(),
                             own_extension_members: Vec::new(),
@@ -428,7 +429,9 @@ impl<'h> Binder<'h> {
             if self.model.record(d.type_id).is_some() && self.has_base_cycle(d.type_id) {
                 let name = self.model.record_name(d.type_id).to_string();
                 self.error(d.document, format!("'{}' extends itself through its bases.", name), name_span);
-                self.model.record_mut(d.type_id).unwrap().base = None;
+                let record = self.model.record_mut(d.type_id).unwrap();
+                record.base = None;
+                record.other_bases.clear();
             }
             if self.model.is_alias(d.type_id) && self.model.is_alias(self.model.resolved(d.type_id)) {
                 let name = self.model.declared_name(d.type_id).unwrap_or_default().to_string();
@@ -443,18 +446,51 @@ impl<'h> Binder<'h> {
 
         for d in self.declared.clone() {
             let Some(record) = self.model.record(d.type_id) else { continue };
-            let Some(base) = record.base else { continue };
-            for field in record.own_fields.clone() {
+            let own_fields = record.own_fields.clone();
+            let bases = self.model.bases(d.type_id);
+            for field in own_fields {
                 let name = self.model.fields[field].name.clone();
-                if self.model.field_of(base, &name).is_some() {
-                    let message = format!(
-                        "'{}' declares '{}', which its base '{}' already declares.",
-                        self.model.record_name(d.type_id),
-                        name,
-                        self.model.record_name(base)
-                    );
-                    let span = self.model.fields[field].span;
-                    self.error(d.document, message, span);
+                let own_type = self.model.fields[field].field_type;
+                for base in &bases {
+                    let Some(inherited) = self.model.field_of(*base, &name) else { continue };
+                    let inherited_type = self.model.fields[inherited].field_type;
+                    if !self.includes(inherited_type, own_type) {
+                        let message = format!(
+                            "'{}' declares '{}', which its base '{}' declares as {}; a type may narrow an inherited field's type, not change it.",
+                            self.model.record_name(d.type_id),
+                            name,
+                            self.model.record_name(*base),
+                            self.model.type_string(inherited_type)
+                        );
+                        let span = self.model.fields[field].span;
+                        self.error(d.document, message, span);
+                    }
+                }
+            }
+            // Two bases that declare one field must agree on its type, unless the type declares the field itself.
+            for (i, first) in bases.iter().enumerate() {
+                for second in bases.iter().skip(i + 1) {
+                    for f in self.model.fields_of(*first) {
+                        let name = self.model.fields[f].name.clone();
+                        let Some(g) = self.model.field_of(*second, &name) else { continue };
+                        if f == g || self.model.record(d.type_id).unwrap().own_fields.iter().any(|o| self.model.fields[*o].name == name) {
+                            continue;
+                        }
+                        let (a, b) = (self.model.fields[f].field_type, self.model.fields[g].field_type);
+                        if !(self.includes(a, b) && self.includes(b, a)) {
+                            let message = format!(
+                                "'{}' and '{}' both declare '{}', as {} and {}; '{}' declares it itself to say which.",
+                                self.model.record_name(*first),
+                                self.model.record_name(*second),
+                                name,
+                                self.model.type_string(a),
+                                self.model.type_string(b),
+                                self.model.record_name(d.type_id)
+                            );
+                            let span = self.model.types[d.type_id].span;
+                            self.error(d.document, message, span);
+                        }
+                    }
                 }
             }
         }
@@ -481,7 +517,8 @@ impl<'h> Binder<'h> {
                 continue;
             }
             let name = value_text(name_token, &bytes);
-            let base = self.model.record(record).unwrap().base;
+            let bases = self.model.bases(record);
+            let base = bases.iter().copied().find(|b| self.model.field_of(*b, &name).is_some()).or(bases.first().copied());
             let inherited = base.and_then(|b| self.model.field_of(b, &name));
             let record_name = self.model.record_name(record).to_string();
             if inherited.is_none() {
@@ -556,6 +593,24 @@ impl<'h> Binder<'h> {
             }
         }
 
+        if let Statement::TypeDeclaration { other_bases, .. } = statement {
+            for (_, base_token) in other_bases.iter().filter(|(_, t)| !t.is_missing) {
+                let base_text = value_text(base_token, &bytes);
+                let base_type = self.type_named(&base_text, s);
+                match base_type.map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) {
+                    Some(base_record) => self.model.record_mut(record).unwrap().other_bases.push(base_record),
+                    None => {
+                        let message = if base_type.is_none() {
+                            format!("Nothing declares a record type named '{}' for '{}' to extend.", base_text, record_name)
+                        } else {
+                            format!("'{}' can only extend a record type, and '{}' is not one.", record_name, base_text)
+                        };
+                        self.error(s, message, base_token.span);
+                    }
+                }
+            }
+        }
+
         let Some(fields) = fields else { return };
         let mut seen: HashSet<String> = HashSet::new();
         for item in items(&fields.fields) {
@@ -580,15 +635,15 @@ impl<'h> Binder<'h> {
     }
 
     fn has_base_cycle(&self, record: TypeId) -> bool {
-        let mut seen: HashSet<TypeId> = HashSet::new();
-        let mut current = Some(record);
-        while let Some(c) = current {
-            if !seen.insert(c) {
-                return true;
+        fn reaches(model: &Model, from: TypeId, target: TypeId, seen: &mut HashSet<TypeId>) -> bool {
+            for base in model.bases(from) {
+                if base == target || (seen.insert(base) && reaches(model, base, target, seen)) {
+                    return true;
+                }
             }
-            current = self.model.record(c).and_then(|r| r.base);
+            false
         }
-        false
+        reaches(&self.model, record, record, &mut HashSet::new())
     }
 
     pub fn bind_type(&mut self, syntax_type: &syntax::Type, s: usize) -> TypeId {
@@ -1620,7 +1675,7 @@ impl<'h> Binder<'h> {
             let Some(record) = self.model.record(d.type_id) else { continue };
             let own_fields = record.own_fields.clone();
             let fixed_names: Vec<String> = record.own_fixed.iter().map(|(n, _)| n.clone()).collect();
-            let base = record.base;
+            let bases = self.model.bases(d.type_id);
             for field in own_fields {
                 let Some(default) = self.model.fields[field].default else { continue };
                 let field_type = self.model.fields[field].field_type;
@@ -1628,7 +1683,7 @@ impl<'h> Binder<'h> {
                 self.model.fields[field].default = Some(checked);
             }
             for name in fixed_names {
-                let Some(inherited) = base.and_then(|b| self.model.field_of(b, &name)) else { continue };
+                let Some(inherited) = bases.iter().find_map(|b| self.model.field_of(*b, &name)) else { continue };
                 let value = self.model.record(d.type_id).unwrap().own_fixed.iter().find(|(n, _)| *n == name).map(|(_, v)| *v).unwrap();
                 let field_type = self.model.fields[inherited].field_type;
                 let checked = self.check_value(value, Some(field_type), d.document, Sink::Document);

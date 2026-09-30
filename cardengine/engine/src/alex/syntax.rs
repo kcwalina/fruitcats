@@ -216,6 +216,8 @@ pub enum Statement {
         name: Token,
         colon: Option<Token>,
         base_name: Option<Token>,
+        /// `, UnitCard` in `type Creature : Printed, UnitCard { ... }`: each further base, after its comma.
+        other_bases: Vec<(Token, Token)>,
         fields: Option<FieldList>,
         equals: Option<Token>,
         alias: Option<Type>,

@@ -22,11 +22,15 @@ pub fn of_statement<'t>(statement: &'t Statement, tokens: &mut Vec<&'t Token>) {
             tokens.push(equals);
             of_value(value, tokens);
         }
-        Statement::TypeDeclaration { keyword, name, colon, base_name, fields, equals, alias } => {
+        Statement::TypeDeclaration { keyword, name, colon, base_name, other_bases, fields, equals, alias } => {
             tokens.push(keyword);
             tokens.push(name);
             push_optional(colon, tokens);
             push_optional(base_name, tokens);
+            for (comma, base) in other_bases {
+                tokens.push(comma);
+                tokens.push(base);
+            }
             if let Some(fields) = fields {
                 of_field_list(fields, tokens);
             }

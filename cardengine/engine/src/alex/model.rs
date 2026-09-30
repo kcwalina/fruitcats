@@ -162,6 +162,8 @@ pub enum TypeKind {
 pub struct RecordType {
     pub name: String,
     pub base: Option<TypeId>,
+    /// The bases after the first: `UnitCard` in `type Creature : Printed, UnitCard`.
+    pub other_bases: Vec<TypeId>,
     pub asserts_data: bool,
     pub own_fields: Vec<FieldId>,
     pub own_extension_members: Vec<FieldId>,
@@ -346,17 +348,29 @@ impl Model {
     }
 
     /// This record type and its bases, nearest first; each once, at most 64.
+    /// This type and every type it derives from, each once: itself, then its first base's chain, then each further
+    /// base's.
     pub fn chain(&self, id: TypeId) -> Vec<TypeId> {
         let mut chain: Vec<TypeId> = Vec::new();
-        let mut current = Some(id);
-        while let Some(c) = current {
-            if chain.len() >= 64 || chain.contains(&c) {
-                break;
-            }
-            chain.push(c);
-            current = self.record(c).and_then(|r| r.base);
-        }
+        self.walk_bases(id, &mut chain);
         chain
+    }
+
+    fn walk_bases(&self, id: TypeId, chain: &mut Vec<TypeId>) {
+        if chain.len() >= 64 || chain.contains(&id) {
+            return;
+        }
+        chain.push(id);
+        let Some(record) = self.record(id) else { return };
+        let bases: Vec<TypeId> = record.base.into_iter().chain(record.other_bases.iter().copied()).collect();
+        for base in bases {
+            self.walk_bases(base, chain);
+        }
+    }
+
+    /// A type's bases, first to last.
+    pub fn bases(&self, id: TypeId) -> Vec<TypeId> {
+        self.record(id).map(|r| r.base.into_iter().chain(r.other_bases.iter().copied()).collect()).unwrap_or_default()
     }
 
     /// Every field, the bases' first. A field a subtype declares hides a base's of its name, which only a schema's
@@ -407,19 +421,7 @@ impl Model {
     }
 
     pub fn is_or_extends(&self, id: TypeId, other: TypeId) -> bool {
-        let mut current = Some(id);
-        let mut depth = 0;
-        while let Some(c) = current {
-            if depth >= 64 {
-                break;
-            }
-            depth += 1;
-            if c == other {
-                return true;
-            }
-            current = self.record(c).and_then(|r| r.base);
-        }
-        false
+        self.chain(id).contains(&other)
     }
 
     /// This type, its bases, the types they are mapped onto, and so on: each once, nearest first.

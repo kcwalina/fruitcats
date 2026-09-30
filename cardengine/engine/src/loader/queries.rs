@@ -111,15 +111,7 @@ fn cards(project: &Project) -> String {
 /// Whether a record type is `name` or derives from it: a game's own set type (`type FamilySet : Set`) is a set.
 pub fn is_a(project: &Project, record: Option<TypeId>, name: &str) -> bool {
     let model = &project.compilation.model;
-    let mut current = record;
-    while let Some(t) = current {
-        let Some(r) = model.record(t) else { return false };
-        if r.name == name {
-            return true;
-        }
-        current = r.base;
-    }
-    false
+    record.is_some_and(|record| model.chain(record).iter().any(|t| model.record(*t).is_some_and(|r| r.name == name)))
 }
 
 fn error(message: &str) -> String {

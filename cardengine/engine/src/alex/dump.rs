@@ -140,12 +140,16 @@ impl<'o> Dumper<'o> {
                 self.token(equals);
                 self.value(value);
             }
-            Statement::TypeDeclaration { keyword, name, colon, base_name, fields, equals, alias } => {
+            Statement::TypeDeclaration { keyword, name, colon, base_name, other_bases, fields, equals, alias } => {
                 self.node("TypeDeclaration");
                 self.token(keyword);
                 self.token(name);
                 self.optional(colon);
                 self.optional(base_name);
+                for (comma, base) in other_bases {
+                    self.token(comma);
+                    self.token(base);
+                }
                 if let Some(fields) = fields {
                     self.field_list(fields);
                 }

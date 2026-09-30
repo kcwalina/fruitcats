@@ -29,32 +29,65 @@ Read it as: *the rule UnitsEnterExhausted: when a unit enters play, exhaust it.*
   as a type already sets a member's value (`type TokenCreature : Creature { finishes = [standard] }`), gives the rule
   that behaviour.
 - The moment's parameters are named where it is declared: `on-unit-enter(unit)`. So the handler says `unit`.
-- `this` is the rule, so its settings are `this.keyword`, `this.types`:
-
-```
-// A unit with the keyword (Swift) enters ready.
-type EntersReady : UnitRule {
-  keyword: Keyword
-  on-unit-enter = if unit.has(this.keyword) { unit.ready() }
-}
-```
+- `this` is the rule, so its settings are `this.types`, `this.n`.
 
 A handler of more than one statement is written like a method:
 
 ```
-// While the defender has a Guardian, only Guardians may be attacked.
-type GuardiansFirst : CombatRule {
-  keyword: Keyword?
+// A unit card may be played from hand when its player can pay for it.
+type UnitCards : UnitRule {
+  types: [type UnitCard]
+  can-play(card) {
+    if card.is(this.types) {
+      return card.in-hand and card.owner.can-pay(card.cost)
+    }
+    return nothing
+  }
+}
+```
+
+Handlers of one moment run in the order the game lists its rules.
+
+## Keywords carry their own behaviour
+
+A keyword (Swift, Guardian) is a type too, and its behaviour is its members, the same way:
+
+```
+// A unit with this keyword enters ready.
+type EntersReady : Keyword {
+  on-unit-enter = unit.ready()
+}
+
+// While the defender has a unit with this keyword, only such units may be attacked.
+type AttackedFirst : Keyword {
   can-attack(attacker, target) {
-    if target.controller.has-unit-with(this.keyword) {
-      return target.has(this.keyword)
+    if target.controller.has-unit-with(this) {
+      return target.has(this)
     }
     return true
   }
 }
 ```
 
-Handlers of one moment run in the order the game lists its rules, so a Swift unit is exhausted, then readied.
+The game gives each its own name when it declares its keywords:
+
+```
+keywords = [
+  Swift = EntersReady {}
+  Guardian = AttackedFirst {}
+]
+```
+
+- A keyword's unit moments run only for units that have it, so `EntersReady` needs no "if the unit has it".
+- A keyword's questions run in every game that declares it, and `this` is the keyword (`has-unit-with(this)`).
+- A keyword a game declares as plain `Keyword {}` has no behaviour: it is a word printed on its cards. A printable-only
+  game declares all its keywords that way.
+- A keyword's moments run after the rules' for the same moment, so a Swift unit is exhausted (`UnitsEnterExhausted`),
+  then readied.
+
+This replaces the rules that only gave a game's keyword its meaning (`EntersReady { keyword = @Swift }`,
+`GuardiansFirst { keyword = @Guardian }`, `HitCostsLife`, `PlayFreeWhenLost`…), and it is how Folkborn's family
+keywords already work (Feather Coat, Rain-Fed and Pearl Tears carry their own handlers).
 
 ## Moments and questions
 
@@ -239,9 +272,9 @@ type UnitsEnterExhausted : UnitRule {
   on-unit-enter = unit.exhaust()
 }
 
-type EntersReady : UnitRule {
-  keyword: Keyword
-  on-unit-enter = if unit.has(this.keyword) { unit.ready() }
+// A unit with this keyword enters ready (Hello TCG: Swift = EntersReady {}).
+type EntersReady : Keyword {
+  on-unit-enter = unit.ready()
 }
 
 // Damage equal to or more than a unit's Health defeats it.
@@ -333,12 +366,12 @@ type AttackerMustBeReady : CombatRule {
   }
 }
 
-// While the defender has a Guardian, only Guardians may be attacked.
-type GuardiansFirst : CombatRule {
-  keyword: Keyword?
+// While the defender has a unit with this keyword, only such units may be attacked (Hello TCG: Guardian =
+// AttackedFirst {}).
+type AttackedFirst : Keyword {
   can-attack(attacker, target) {
-    if target.controller.has-unit-with(this.keyword) {
-      return target.has(this.keyword)
+    if target.controller.has-unit-with(this) {
+      return target.has(this)
     }
     return true
   }

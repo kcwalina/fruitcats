@@ -45,3 +45,21 @@ fn the_samples_bind_with_the_framework_and_their_rules_attach() {
         }
     }
 }
+
+#[test]
+fn a_handler_passes_a_count_where_an_int_is_expected() {
+    let cardengine = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let mut sources: Vec<Source> = files(&cardengine.join("framework")).iter().map(|f| source(f, Role::Schema)).collect();
+    for file in files(&cardengine.join("samples").join("hello-tcg")) {
+        let role = if file.to_string_lossy().ends_with("-rules.alex") { Role::Any } else { Role::Data };
+        let mut source = source(&file, role);
+        if file.ends_with("card-rules.alex") {
+            source.bytes.extend_from_slice(b"\neffect draw-two { draw(two) }\ncondition two-offered { own.resources.count >= two }\n");
+        }
+        sources.push(source);
+    }
+
+    let compilation = binder::bind(sources, &CardEngineHost::new("hello-tcg"), false);
+    let messages: Vec<&str> = compilation.documents.iter().flat_map(|d| d.diagnostics.iter().map(|x| x.message.as_str())).collect();
+    assert!(!messages.iter().any(|m| m.contains("'two'")), "{:?}", messages);
+}

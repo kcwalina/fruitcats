@@ -216,7 +216,19 @@ internal sealed class BoundDump
                 break;
 
             case AlexEnumType enumType:
-                Line("enum " + name + " { " + string.Join(", ", enumType.Members) + " }");
+                if (enumType.Backing is null)
+                {
+                    Line("enum " + name + " { " + string.Join(", ", enumType.Members) + " }");
+                    break;
+                }
+
+                List<string> members = new();
+                foreach (string member in enumType.Members)
+                {
+                    members.Add(enumType.ValueOf(member) is { } value ? member + " = " + Shown(value) : member);
+                }
+
+                Line("enum " + name + " : " + enumType.BackingName + " { " + string.Join(", ", members) + " }");
                 break;
 
             case AlexAliasType alias:

@@ -154,12 +154,29 @@ impl<'o> Dumper<'o> {
                     self.type_syntax(alias);
                 }
             }
-            Statement::EnumDeclaration { keyword, name, open, members, close } => {
+            Statement::EnumDeclaration { keyword, name, colon, backing, open, members, close } => {
                 self.node("EnumDeclaration");
                 self.token(keyword);
                 self.token(name);
+                self.optional(colon);
+                if let Some(backing) = backing {
+                    self.node("EnumBacking");
+                    self.token(&backing.type_name);
+                    self.optional(&backing.open);
+                    self.optional(&backing.size);
+                    self.optional(&backing.close);
+                    self.end();
+                }
                 self.token(open);
-                self.separated(members, |dumper, member| dumper.named_token("EnumMemberDeclaration", member));
+                self.separated(members, |dumper, member| {
+                    dumper.node("EnumMemberDeclaration");
+                    dumper.token(&member.name);
+                    dumper.optional(&member.equals);
+                    if let Some(value) = &member.value {
+                        dumper.value(value);
+                    }
+                    dumper.end();
+                });
                 self.token(close);
             }
             Statement::TextTable { token } => {

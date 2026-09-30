@@ -119,6 +119,25 @@ pub struct Type {
     pub span: TextSpan,
 }
 
+/// What backs a backed enum's members (`int`, or `text` with at most `max_length` characters), and each member's value.
+#[derive(Clone, Debug)]
+pub struct EnumBacking {
+    pub type_name: String,
+    pub max_length: usize,
+    pub values: Vec<(String, ValueId)>,
+}
+
+impl EnumBacking {
+    /// The backing as written: `int` or `text(3)`.
+    pub fn name(&self) -> String {
+        if self.type_name == "text" { format!("text({})", self.max_length) } else { self.type_name.clone() }
+    }
+
+    pub fn value_of(&self, member: &str) -> Option<ValueId> {
+        self.values.iter().find(|(m, _)| m == member).map(|(_, v)| *v)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum TypeKind {
     /// A built-in (text, int, float, bool, nic, data, any), or an opaque type a host names.
@@ -126,7 +145,7 @@ pub enum TypeKind {
     Record(RecordType),
     /// `type R`.
     TypeOfType { record: TypeId },
-    Enum { name: String, members: Vec<String> },
+    Enum { name: String, members: Vec<String>, backing: Option<EnumBacking> },
     Alias { name: String, target: Option<TypeId> },
     Optional(TypeId),
     Union(Vec<TypeId>),
@@ -457,6 +476,13 @@ impl Model {
 
     pub fn enum_contains(&self, id: TypeId, member: &str) -> bool {
         matches!(&self.types[id].kind, TypeKind::Enum { members, .. } if members.iter().any(|m| m == member))
+    }
+
+    pub fn enum_backing(&self, id: TypeId) -> Option<&EnumBacking> {
+        match &self.types[id].kind {
+            TypeKind::Enum { backing, .. } => backing.as_ref(),
+            _ => None,
+        }
     }
 
     pub fn enum_name(&self, id: TypeId) -> &str {

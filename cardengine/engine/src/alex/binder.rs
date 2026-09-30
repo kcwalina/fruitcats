@@ -350,7 +350,7 @@ impl<'h> Binder<'h> {
                     };
                     (name, kind)
                 }
-                Statement::EnumDeclaration { name, .. } => (name, TypeKind::Enum { name: value_text(name, &bytes), members: Vec::new() }),
+                Statement::EnumDeclaration { name, .. } => (name, TypeKind::Enum { name: value_text(name, &bytes), members: Vec::new(), backing: None }),
                 _ => continue,
             };
 
@@ -390,28 +390,8 @@ impl<'h> Binder<'h> {
                         *t = Some(target);
                     }
                 }
-                (TypeKind::Enum { .. }, Statement::EnumDeclaration { members, .. }) => {
-                    for member in items(members) {
-                        if member.is_missing {
-                            continue;
-                        }
-                        let text = value_text(member, &bytes);
-                        let added = match &mut self.model.types[d.type_id].kind {
-                            TypeKind::Enum { members, .. } => {
-                                if members.contains(&text) {
-                                    false
-                                } else {
-                                    members.push(text.clone());
-                                    true
-                                }
-                            }
-                            _ => true,
-                        };
-                        if !added {
-                            let name = self.model.enum_name(d.type_id).to_string();
-                            self.error(d.document, format!("'{}' is already a member of '{}'.", text, name), member.span);
-                        }
-                    }
+                (TypeKind::Enum { .. }, Statement::EnumDeclaration { backing, members, .. }) => {
+                    self.complete_enum(d.type_id, backing.as_ref(), members, d.document, &bytes);
                 }
                 _ => {}
             }
@@ -1078,6 +1058,109 @@ impl<'h> Binder<'h> {
         }
     }
 
+    /// Adds an enum's members, and in a backed enum (`enum Count : int { one = 1 }`) their values. A backing that means
+    /// nothing is reported once, and its members' values are then not checked.
+    fn complete_enum(&mut self, type_id: TypeId, backing: Option<&syntax::EnumBacking>, members: &syntax::Separated<syntax::EnumMember>, s: usize, bytes: &[u8]) {
+        let enum_name = self.model.enum_name(type_id).to_string();
+        let mut bound: Option<EnumBacking> = None;
+        if let Some(backing) = backing.filter(|b| !b.type_name.is_missing) {
+            let name = value_text(&backing.type_name, bytes);
+            if name == "int" {
+                bound = Some(EnumBacking { type_name: name, max_length: 0, values: Vec::new() });
+                if let Some(open) = &backing.open {
+                    self.error(s, "An int has no size; only text does: 'text(n)'.".to_string(), open.span);
+                }
+            } else if name == "text" {
+                match &backing.size {
+                    None => self.error(
+                        s,
+                        "A text-backed enum says the most characters a value may have: 'text(n)', such as 'text(3)'.".to_string(),
+                        backing.type_name.span,
+                    ),
+                    Some(size) if !size.is_missing => {
+                        let text = value_text(size, bytes);
+                        match text.parse::<i32>() {
+                            Ok(n) if n >= 1 && text.bytes().all(|b| b.is_ascii_digit()) => {
+                                bound = Some(EnumBacking { type_name: name, max_length: n as usize, values: Vec::new() });
+                            }
+                            _ => self.error(s, format!("'{}' is not a size: it is a whole number of characters, 1 or more.", text), size.span),
+                        }
+                    }
+                    _ => {}
+                }
+            } else {
+                self.error(s, format!("An enum is backed by 'int' or 'text(n)'; '{}' is neither.", name), backing.type_name.span);
+            }
+        }
+        let backing_name = bound.as_ref().map(|b| b.name());
+        let is_int = bound.as_ref().map(|b| b.type_name == "int").unwrap_or(false);
+        let max_length = bound.as_ref().map(|b| b.max_length).unwrap_or(0);
+        if let TypeKind::Enum { backing: b, .. } = &mut self.model.types[type_id].kind {
+            *b = bound;
+        }
+
+        for member in items(members) {
+            if member.name.is_missing {
+                continue;
+            }
+            let name = value_text(&member.name, bytes);
+            let added = match &mut self.model.types[type_id].kind {
+                TypeKind::Enum { members, .. } if !members.contains(&name) => {
+                    members.push(name.clone());
+                    true
+                }
+                _ => false,
+            };
+            if !added {
+                self.error(s, format!("'{}' is already a member of '{}'.", name, enum_name), member.name.span);
+                continue;
+            }
+
+            let Some(value) = &member.value else {
+                if let Some(backing_name) = &backing_name {
+                    let message = format!("'{}' needs a value: '{}' is backed by {}, so every member has one.", name, enum_name, backing_name);
+                    self.error(s, message, member.name.span);
+                }
+                continue;
+            };
+            let value_span = tokens::value_span(value);
+            if backing.is_none() {
+                let message = format!(
+                    "'{}' has a value, but '{}' is not backed. To give its members values, write 'enum {} : int' or 'enum {} : text(n)'.",
+                    name, enum_name, enum_name, enum_name
+                );
+                self.error(s, message, value_span);
+                continue;
+            }
+            let Some(backing_name) = &backing_name else { continue };
+            if matches!(value, syntax::Value::Missing { .. }) {
+                continue;
+            }
+            let wanted = if is_int { syntax::LiteralKind::Integer } else { syntax::LiteralKind::String };
+            if let syntax::Value::Literal { kind, token } = value {
+                if *kind == wanted {
+                    let built = self.build_literal(*kind, token, s);
+                    if let ValueKind::String(text) = &self.model.values[built].kind {
+                        let length = text.chars().count();
+                        if length > max_length {
+                            let message = format!("'{}' is {} characters, and {} has at most {}.", text, length, with_article(&enum_name), max_length);
+                            self.error(s, message, value_span);
+                        }
+                    }
+                    if !matches!(self.model.values[built].kind, ValueKind::Invalid) {
+                        if let TypeKind::Enum { backing: Some(b), .. } = &mut self.model.types[type_id].kind {
+                            b.values.push((name.clone(), built));
+                        }
+                    }
+                    continue;
+                }
+            }
+            let what = if is_int { "a whole number." } else { "text in single quotes." };
+            let message = format!("'{}' is {}, which is backed by {}: its value is {}", name, with_article(&enum_name), backing_name, what);
+            self.error(s, message, value_span);
+        }
+    }
+
     fn build_enum_member(&mut self, enum_name: Option<&Token>, member: &Token, span: TextSpan, s: usize) -> ValueId {
         let bytes = self.states[s].bytes.clone();
         let member_text = value_text(member, &bytes);
@@ -1529,7 +1612,12 @@ impl<'h> Binder<'h> {
                     self.check_untyped(value, s, sink)
                 }
             }
-            TypeKind::Named { name, .. } => self.check_named(value, &name, s, sink),
+            TypeKind::Named { name, .. } => {
+                if let Some(converted) = self.from_backed_member(value, &name, s, sink) {
+                    return converted;
+                }
+                self.check_named(value, &name, s, sink)
+            }
             TypeKind::Function { kind, .. } => {
                 if let ValueKind::Declaration(d) = self.model.values[value].kind {
                     if self.model.declarations[d].kind == kind {
@@ -1760,6 +1848,13 @@ impl<'h> Binder<'h> {
                 self.report(sink, s, message, span);
                 return value;
             }
+            for alternative in &alternatives {
+                if let TypeKind::Named { name, .. } = self.model.types[*alternative].kind.clone() {
+                    if let Some(converted) = self.from_backed_member(value, &name, s, sink) {
+                        return converted;
+                    }
+                }
+            }
             let message = format!("'{}' is not {}.{}", self.model.enum_value_name(value), union_string, self.enum_members(&alternatives));
             self.report(sink, s, message, span);
             return value;
@@ -1794,6 +1889,57 @@ impl<'h> Binder<'h> {
         }
 
         self.check_value(value, Some(candidates[0]), s, sink)
+    }
+
+    /// A backed enum's member where its backing type is expected stands for its value: `two` is `2` where an int is. A bare
+    /// member is looked up among every backed enum. None when `value` is no such member, so the ordinary check reports it.
+    fn from_backed_member(&mut self, value: ValueId, expected: &str, s: usize, sink: Sink) -> Option<ValueId> {
+        let ValueKind::Enum { member, enum_type } = self.model.values[value].kind.clone() else { return None };
+        let enums: Vec<TypeId> = match enum_type {
+            None => self.backed_enums_with(&member, expected),
+            Some(t) if self.backs(t, expected) => vec![t],
+            Some(_) => Vec::new(),
+        };
+        if enums.is_empty() {
+            return None;
+        }
+        let span = self.model.values[value].span;
+        if enums.len() > 1 {
+            let message = format!(
+                "'{}' is a member of more than one enum here; write which, such as '{}.{}'.",
+                member,
+                self.model.enum_name(enums[0]),
+                member
+            );
+            self.report(sink, s, message, span);
+            return Some(value);
+        }
+
+        if let ValueKind::Enum { enum_type: t, .. } = &mut self.model.values[value].kind {
+            *t = Some(enums[0]);
+        }
+        let backing_value = self.model.enum_backing(enums[0]).and_then(|b| b.value_of(&member));
+        match backing_value.map(|v| self.model.values[v].kind.clone()) {
+            Some(kind @ (ValueKind::Integer(_) | ValueKind::String(_))) => Some(self.model.add_value(kind, span)),
+            _ => Some(value),
+        }
+    }
+
+    /// The backed enums that have `member` and are backed by what the built-in type `expected` accepts.
+    pub(super) fn backed_enums_with(&self, member: &str, expected: &str) -> Vec<TypeId> {
+        self.type_names
+            .iter()
+            .map(|(_, t)| *t)
+            .filter(|t| self.model.enum_contains(*t, member) && self.backs(*t, expected))
+            .collect()
+    }
+
+    /// Whether an enum is backed by a type the built-in `expected` accepts; an int is accepted where a float is.
+    pub(super) fn backs(&self, enum_type: TypeId, expected: &str) -> bool {
+        match self.model.enum_backing(enum_type) {
+            Some(backing) => backing.type_name == expected || (backing.type_name == "int" && expected == "float"),
+            None => false,
+        }
     }
 
     /// Whether `value` is the kind of thing `type_id` holds, without looking inside it.

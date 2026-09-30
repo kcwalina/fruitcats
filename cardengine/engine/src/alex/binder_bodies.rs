@@ -319,7 +319,7 @@ impl BodyChecker<'_, '_> {
         if let Some(expected) = expected {
             let mut alternatives = Vec::new();
             self.binder.flatten(expected, &mut alternatives);
-            for alternative in alternatives {
+            for alternative in alternatives.iter().copied() {
                 if matches!(self.binder.model.types[alternative].kind, TypeKind::Enum { .. }) {
                     if self.binder.model.enum_contains(alternative, &word) {
                         return Some(alternative);
@@ -329,6 +329,30 @@ impl BodyChecker<'_, '_> {
             }
             if let Some(meaning) = self.scope.word(&mut self.binder.model, &word, expected) {
                 return Some(meaning);
+            }
+
+            // A backed enum's member where its backing type is expected: 'two' where an int is.
+            let mut backed: Vec<TypeId> = Vec::new();
+            for alternative in alternatives {
+                let TypeKind::Named { name, .. } = &self.binder.model.types[alternative].kind else { continue };
+                for found in self.binder.backed_enums_with(&word, name) {
+                    if !backed.contains(&found) {
+                        backed.push(found);
+                    }
+                }
+            }
+            if backed.len() == 1 {
+                return Some(backed[0]);
+            }
+            if backed.len() > 1 {
+                let names: Vec<&str> = backed.iter().map(|e| self.binder.model.enum_name(*e)).collect();
+                let message = format!(
+                    "'{}' is a member of more than one enum: {}. A body cannot say which, so give the member another name in one of them.",
+                    word,
+                    names.join(", ")
+                );
+                self.error(message, identifier.span);
+                return None;
             }
         }
 
@@ -580,6 +604,11 @@ impl BodyChecker<'_, '_> {
             _ => {}
         }
 
+        if let (TypeKind::Enum { .. }, TypeKind::Named { name, .. }) = (&self.binder.model.types[from].kind, &self.binder.model.types[to].kind) {
+            if self.binder.backs(from, name) {
+                return true;
+            }
+        }
         let model = &self.binder.model;
         if let (TypeKind::Named { name: from_name, .. }, TypeKind::Named { name: to_name, .. }) = (&model.types[from].kind, &model.types[to].kind) {
             if from_name == to_name || (from_name == "int" && to_name == "float") {
@@ -600,7 +629,11 @@ impl BodyChecker<'_, '_> {
 
     fn is_number(&self, type_id: TypeId) -> bool {
         let resolved = self.binder.model.resolved(type_id);
-        matches!(&self.binder.model.types[resolved].kind, TypeKind::Named { name, .. } if name == "int" || name == "float")
+        match &self.binder.model.types[resolved].kind {
+            TypeKind::Named { name, .. } => name == "int" || name == "float",
+            TypeKind::Enum { backing: Some(backing), .. } => backing.type_name == "int",
+            _ => false,
+        }
     }
 
     fn require_bool(&mut self, found: Option<TypeId>, expression: &Expression, what: &str) {

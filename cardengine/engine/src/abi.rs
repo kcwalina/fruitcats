@@ -236,7 +236,7 @@ pub unsafe extern "C" fn game_new(project_handle: u32, pointer: *const u8, lengt
         let project = projects.get((project_handle as usize).wrapping_sub(1)).and_then(|p| p.as_ref()).ok_or("No project has that handle.")?;
         let mut words = text.split_whitespace();
         let seed: u64 = words.next().and_then(|w| w.parse().ok()).ok_or("Start a game with a seed and each seat's deck: 42 hearth threshold.")?;
-        let seats = words.map(|deck| crate::runtime::SeatSetup { deck: deck.to_string() }).collect();
+        let seats = words.map(|deck| crate::runtime::SeatSetup { deck: deck.to_string(), ..Default::default() }).collect();
         let catalog = std::rc::Rc::new(crate::runtime::Catalog::read(project)?);
         crate::runtime::Game::new(catalog, &crate::runtime::Setup { seats, seed })
     });
@@ -286,6 +286,33 @@ pub extern "C" fn game_view(handle: u32, seat: u32) -> u64 {
 pub extern "C" fn game_log(handle: u32, seat: u32, from: u32) -> u64 {
     let log = with_game(handle, |game| game.log_json(seat_of(seat), from as usize)).unwrap_or_default();
     hand_out(log.into_bytes())
+}
+
+/// The decision the game waits for, as UTF-8 JSON seen by `seat`: the deciding seat gets the question and its options;
+/// anyone else only who decides. `null` when nothing waits.
+#[unsafe(no_mangle)]
+pub extern "C" fn game_decision(handle: u32, seat: u32) -> u64 {
+    let json = with_game(handle, |game| match game.decision() {
+        None => "null".to_string(),
+        Some(d) if seat_of(seat).is_none_or(|s| s == d.seat) => format!(
+            "{{\"seat\":{},\"question\":{},\"options\":[{}],\"optional\":{}}}",
+            d.seat,
+            queries::string(&d.question),
+            d.options.iter().map(|&o| format!("{{\"id\":{},\"card\":{}}}", o, queries::string(game.card_key(o)))).collect::<Vec<_>>().join(","),
+            d.optional
+        ),
+        Some(d) => format!("{{\"seat\":{}}}", d.seat),
+    })
+    .unwrap_or_else(|| "null".to_string());
+    hand_out(json.into_bytes())
+}
+
+/// Answers the waiting decision for `seat`: an index into its options (or, when it is optional, the number of options,
+/// to decline), then runs on. Answers an empty string, or why the answer was refused.
+#[unsafe(no_mangle)]
+pub extern "C" fn game_answer(handle: u32, seat: u32, answer: u32) -> u64 {
+    let result = with_game(handle, |game| game.answer(seat as usize, answer as usize)).unwrap_or_else(|| Err("No game has that handle.".to_string()));
+    hand_out(result.err().unwrap_or_default().into_bytes())
 }
 
 /// A copy of a game, as a new handle: a bot tries moves on it.

@@ -179,6 +179,23 @@ Each step ends with its *done when* shown working.
      revealed.
 2. **Routines run.** The interpreter, pausing on `choose`, and the scheduler. *Done when* Hello TCG's card
    handlers run in scenario-sized tests: Kłobuk draws a card, the Temper defeats a Creature.
+   *Done 2026-09-30,* in `cardengine/engine/src/runtime/` (`rules.rs`, `interpret.rs`, `schedule.rs`):
+   - **Handlers.** When a game starts, the catalog finds every handler and which slot of which card face (or
+     keyword) it is attached to, with each face's constants.
+   - **The interpreter** runs a body against the game, changing it only through the core's operations, so every
+     change is logged with its cause ("Kłobuk, on-enter").
+   - **Pausing.** A queued routine runs on a copy of the game. If it reaches a `choose` it has no answer for, the
+     copy is dropped and the game waits with the decision; the answer runs the routine again from the start with it.
+     A waiting game is plain data, so it clones and replays like any other.
+   - **Tests.** `tests/routines.rs`: Kłobuk draws, the Greeter heals only your Creatures, the Temper waits for its
+     player's choice and deals 5 (the defeat itself is a library rule, step 3), a waiting game's copies each go
+     their own way, and Dziadziuś awakens at 3 Creatures while each face gains its own Energy. Every Folkborn
+     handler that does something (69) runs once without an error.
+   - **The words handlers call** (`draw`, `choose`, `damage`, `heal`, `ready-resources`…) are Rust for now; they
+     move into the libraries' Alex with hooks, in step 3. Statics (`grant`, `cant`) and events (`event.cancel()`)
+     also come in step 3.
+   - **Found on the way.** A seat may list its deck's cards instead of naming a deck, as a deck a player built needs.
+     Folkborn's decks are still only in `set.json`; they move into its Alex before step 5.
 3. **Rules on hooks.** The hook machinery, and Hello TCG's library rules written in Alex. *Done when* two random
    bots play whole Hello TCG games to a winner, and a recorded game replays to the same log.
 4. **`kardix sim`.** Plays games with random bots and prints the log. *Done when* it plays 1,000 Hello TCG games

@@ -2,7 +2,7 @@
 //! counters and flags, plus the random generator and the log. It is plain data: a clone is an independent game, which
 //! is what a bot searches with. It changes only through the operations (`ops.rs`).
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::rc::Rc;
 
 use super::catalog::Catalog;
@@ -52,10 +52,12 @@ pub struct Zone {
     pub objects: Vec<ObjectId>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct SeatSetup {
     /// The deck's key, as the game's files name it.
     pub deck: String,
+    /// Or the deck's cards by key, one per copy: a deck a player built, which the game's files don't hold.
+    pub cards: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -88,6 +90,12 @@ pub struct Game {
     /// The rule the operations now running carry out, and its citation: written into every event they log, the
     /// answer to "why did that happen?".
     pub cause: Option<String>,
+    /// Routines queued to run (`schedule.rs`).
+    pub pending: VecDeque<super::schedule::Task>,
+    /// The routine that waits for a player's decision, with the decision.
+    pub waiting: Option<super::schedule::Waiting>,
+    /// Which object's routine has used its once this round: `if once-per-round { ... }`.
+    pub used_once: BTreeSet<(ObjectId, usize)>,
 }
 
 impl Game {
@@ -113,6 +121,9 @@ impl Game {
             outcome: None,
             log: Vec::new(),
             cause: None,
+            pending: VecDeque::new(),
+            waiting: None,
+            used_once: BTreeSet::new(),
         };
         for (def, zone) in catalog.zones.iter().enumerate() {
             if zone.shared {
@@ -124,12 +135,19 @@ impl Game {
             }
         }
         for (seat, seat_setup) in setup.seats.iter().enumerate() {
-            let deck = catalog.deck(&seat_setup.deck).ok_or_else(|| format!("The game has no deck {}.", seat_setup.deck))?;
             let zone = game.zone_of(deck_zone, Some(seat)).expect("every seat has the deck zone");
-            let deck = &catalog.decks[deck];
-            let mut cards: Vec<usize> = deck.hero.into_iter().collect();
-            for &(card, count) in &deck.cards {
-                cards.extend(std::iter::repeat_n(card, count as usize));
+            let mut cards: Vec<usize> = Vec::new();
+            if seat_setup.cards.is_empty() {
+                let deck = catalog.deck(&seat_setup.deck).ok_or_else(|| format!("The game has no deck {}.", seat_setup.deck))?;
+                let deck = &catalog.decks[deck];
+                cards.extend(deck.hero);
+                for &(card, count) in &deck.cards {
+                    cards.extend(std::iter::repeat_n(card, count as usize));
+                }
+            } else {
+                for key in &seat_setup.cards {
+                    cards.push(catalog.card(key).ok_or_else(|| format!("The game has no card {}.", key))?);
+                }
             }
             for card in cards {
                 let id = game.objects.len();

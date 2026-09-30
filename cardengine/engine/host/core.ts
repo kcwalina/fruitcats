@@ -16,6 +16,8 @@ interface Exports {
   game_view(handle: number, seat: number): bigint;
   game_log(handle: number, seat: number, from: number): bigint;
   game_clone(handle: number): number;
+  game_decision(handle: number, seat: number): bigint;
+  game_answer(handle: number, seat: number, answer: number): bigint;
   game_free(handle: number): void;
 }
 
@@ -129,6 +131,16 @@ export class Core {
   }
 
   /** @internal */
+  gameDecision(handle: number, seat: number): string {
+    return decoder.decode(this.takeResult(this.exports.game_decision(handle, seat)));
+  }
+
+  /** @internal */
+  gameAnswer(handle: number, seat: number, answer: number): string {
+    return decoder.decode(this.takeResult(this.exports.game_answer(handle, seat, answer)));
+  }
+
+  /** @internal */
   gameClone(handle: number): Game {
     return new Game(this, this.exports.game_clone(handle));
   }
@@ -212,6 +224,17 @@ export class Game {
   /** The log from entry `from` on, as `seat` sees it: one JSON object per line. */
   log(seat: number = ALL_SEATS, from = 0): string {
     return this.core.gameLog(this.handle, seat, from);
+  }
+
+  /** The decision the game waits for, as `seat` sees it (JSON text: `null` when nothing waits). */
+  decision(seat: number = ALL_SEATS): string {
+    return this.core.gameDecision(this.handle, seat);
+  }
+
+  /** Answers the waiting decision: an option's index. Throws with the core's reason when it is refused. */
+  answer(seat: number, answer: number): void {
+    const refused = this.core.gameAnswer(this.handle, seat, answer);
+    if (refused) throw new Error(refused);
   }
 
   /** An independent copy. */

@@ -36,7 +36,7 @@ A handler of more than one statement is written like a method:
 ```
 // A player's turn lasts until they pass; then the next player's starts.
 type FullTurns : TurnRule {
-  first: First
+  first-player: FirstPlayer
   on-player-pass(player) {
     game.end-turn()
     if game.turns-this-round < game.players.count {
@@ -207,12 +207,16 @@ type OpeningHand : SetupRule {
 
 ```
 // A player's turn lasts until they pass; then the next player's starts. A round is every player's turn once.
+enum FirstPlayer { random, initiative-holder, loser-of-last-game }
+
 type FullTurns : TurnRule {
-  first: First
+  first-player: FirstPlayer
   on-game-start() {
-    game.set-first(random(game.players))
+    if this.first-player == random {
+      game.set-first-player(random(game.players))
+    }
   }
-  on-round-start = game.start-turn(game.first)
+  on-round-start = game.start-turn(game.first-player)
   on-player-pass(player) {
     game.end-turn()
     if game.turns-this-round < game.players.count {
@@ -262,6 +266,11 @@ type Actions : TurnRule {
   }
 }
 ```
+
+`FullTurns` picks the first player itself only for `random`. The other choices are set by the rules that know them:
+the initiative library's rule makes the Lantern's holder the first player, and a match (a best of three) makes the
+loser of the last game the first. `first-player` was `first: First` before this draft; the old name stays as a
+deprecated form.
 
 A step is a type too: `run(player)` is its one member, and `step.run(player)` calls it.
 

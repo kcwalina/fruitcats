@@ -1285,6 +1285,12 @@ Making a printable game playable changes each type's base, as an ability goes fr
 - **Deprecated, still read:** the mapping rules (`UnitCards`, `SpellCards`, `HeroCards`…) and `type R` fields.
 - Designed in `docs/tcg/library-rules-on-paper.md`; built with the step 3 language work.
 
+### `first-player`, not `first` (owner, 2026-09-30)
+
+`FullTurns { first: First }` read like a riddle. It is `first-player: FirstPlayer`, with the members `random`,
+`initiative-holder` and `loser-of-last-game`; the old field and enum stay as deprecated forms. Built with the step 3
+language work.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

@@ -6,81 +6,89 @@ in the engine. This page writes out, before any code, every library rule Hello T
 can be reviewed first. Folkborn's rules follow the same patterns; its extra ones (the Lantern, Ambush, Candles) come
 after Hello TCG plays.
 
-Nothing here runs yet. Each block is what a library's `.alex` file would hold, beside the rule's record.
+Nothing here runs yet. Each block is a rule's type as a library's `.alex` file would declare it.
 
-*Revised at the owner's review (2026-09-30).* Earlier drafts attached routines to engine hooks (`after move`), then to
-engine events (`@UnitsEnterExhausted.on-moved = ...`). Both read like configuration: the behaviour was written in one
-place and attached in another, names like `rule` and `event` appeared from nowhere, and a rule about a unit had to dig
-the unit out of a generic "something moved" event. Now a rule is written from the point of view of what it is about,
-the way a game script is: a unit, a spell, a Hero, a player, or the game.
+*Revised at the owner's review (2026-09-30).* Earlier drafts attached behaviour to engine hooks and events from
+outside the rule, and read like configuration. The owner's proposal: a rule is a type, and its behaviour is members
+of that type, next to its settings, like a class with methods.
 
 ## How a library rule reads
 
 ```
 // A unit enters play exhausted.
-UnitsEnterExhausted.unit.on-enter() {
-  this.exhaust()
+type UnitsEnterExhausted : UnitRule {
+  on-unit-enter = unit.exhaust()
 }
 ```
 
 Read it as: *the rule UnitsEnterExhausted: when a unit enters play, exhaust it.*
 
-- `UnitsEnterExhausted` is the rule. The handler runs only in games that list it.
-- `.unit` says what the handler is about: every unit. `this` is that unit, as `this` is the card in a card's handler.
-- `.on-enter()` is the moment: the same moment a card's own handler uses (`klobuk.on-enter`).
-- When the rule has settings, the handler reads them as `rule`:
+- The rule is a type, as it is today. A game lists it (`units = [UnitsEnterExhausted {}]`), and its behaviour runs only
+  in games that list it.
+- `on-unit-enter` is a moment: a member every rule has, declared once on the core's `Rule` type. Setting it to code,
+  as a type already sets a member's value (`type TokenCreature : Creature { finishes = [standard] }`), gives the rule
+  that behaviour.
+- The moment's parameters are named where it is declared: `on-unit-enter(unit)`. So the handler says `unit`.
+- `this` is the rule, so its settings are `this.keyword`, `this.types`:
 
 ```
 // A unit with the keyword (Swift) enters ready.
-EntersReady.unit.on-enter() {
-  if this.has(rule.keyword) {
-    this.ready()
+type EntersReady : UnitRule {
+  keyword: Keyword
+  on-unit-enter = if unit.has(this.keyword) { unit.ready() }
+}
+```
+
+A handler of more than one statement is written like a method:
+
+```
+// While the defender has a Guardian, only Guardians may be attacked.
+type GuardiansFirst : CombatRule {
+  keyword: Keyword?
+  can-attack(attacker, target) {
+    if target.controller.has-unit-with(this.keyword) {
+      return target.has(this.keyword)
+    }
+    return true
   }
 }
 ```
 
 Handlers of one moment run in the order the game lists its rules, so a Swift unit is exhausted, then readied.
 
-Some questions have an answer rather than an effect. Their handlers return it:
+## Moments and questions
 
-```
-// While the defender has a Guardian, only Guardians may be attacked.
-GuardiansFirst.card.can-attack(target) {
-  if target.controller.has-unit-with(rule.keyword) {
-    return target.has(rule.keyword)
-  }
-  return true
-}
-```
+The core's `Rule` declares every moment and question once, so any rule may handle any of them. The area base types
+(`UnitRule`, `CombatRule`, `HeroRule`…) stay as they are: they say which list of the game a rule goes in.
 
-An action is allowed when every rule's handler of the question says yes. The engine asks `can-play()` of each card in
-the acting player's hand, `can-attack(target)` of each attacker and target, and so on, and offers the player what is
-allowed. No handler ever builds a list of actions.
+**Moments** are when something happens; a handler does something:
 
-## What a handler can be about, and when it runs
-
-What a handler is about decides what `this` is:
-
-| Written as | `this` is |
+| Moment | When |
 |---|---|
-| `Rule.unit.…`, `Rule.spell.…`, `Rule.hero.…` | a card of that kind (the game's types mapped onto units, spells, heroes) |
-| `Rule.card.…` | any card |
-| `Rule.player.…` | a player |
-| `Rule.…` | nothing: the handler is about the game |
+| `on-game-start()`, `on-round-start()`, `on-round-end()` | the game starts; a round starts or ends |
+| `on-player-game-start(player)` | the game starts, once for each player |
+| `on-player-turn-start(player)`, `on-player-turn-end(player)` | a player's turn starts or ends |
+| `on-player-pass(player)` | a player passes |
+| `on-unit-enter(unit)`, `on-unit-leave(unit)` | a unit enters or leaves play (moving it onto or off the board) |
+| `on-unit-played(unit)`, `on-spell-played(spell)` | a player plays the card |
+| `on-unit-damaged(unit)`, `on-unit-turn-end(unit)` | a unit is dealt damage; a turn ends, for each unit in play |
+| `on-attack(attacker, target)` | an attack is declared |
+| `on-hero-used(hero)` | a player uses a Hero's ability |
+| `on-player-check(player)`, `on-unit-check(unit)`, `on-hero-check(hero)` | the state check, after every action and effect: what must happen at once |
 
-The moments (`on-…`) and the questions (`can-…`, `is-…`, `…-targets`) each belong to what they are about:
+**Questions** have an answer; a handler returns it:
 
-- **A card's moments:** `on-enter`, `on-leave`, `on-played`, `on-damaged`, `on-defeated`, `on-attack(target)`, `on-used`,
-  `on-turn-start`, `on-turn-end`, `on-check`.
-- **A card's questions:** `can-play()`, `can-attack(target)`, `attack-targets()`, `can-use()`.
-- **A player's moments:** `on-game-start`, `on-turn-start`, `on-turn-end`, `on-pass`, `on-check`.
-- **A player's questions:** `can-act(kind)`.
-- **The game's moments and questions:** `on-game-start`, `on-round-start`, `on-round-end`, `is-round-over()`.
+| Question | Asked of |
+|---|---|
+| `can-play(card)` | each card in the acting player's hand |
+| `attack-targets(attacker)` | each unit or Hero the acting player controls: what it may attack |
+| `can-attack(attacker, target)` | each of those targets |
+| `can-use(hero)` | the acting player's Hero |
+| `can-act(player, kind)` | the acting player, for each kind of action |
+| `is-round-over()` | the game, after each action |
 
-`on-check` is the state check: the engine runs it after every action and effect, for whatever must happen at once
-(a unit with too much damage is defeated, a Hero awakens, a player out of life loses).
-
-Moving a card raises its moments: a card moved onto the board has `on-enter`, one moved off it `on-leave`.
+A handler answers yes, no, or `nothing`: this rule has no say. An action is allowed when some rule says yes and none
+says no. The engine asks the questions and offers the player what is allowed; no handler builds a list of actions.
 
 ## Hello TCG's rules
 
@@ -88,18 +96,25 @@ Moving a card raises its moments: a card moved onto the board has `on-enter`, on
 
 ```
 // A card of this type starts in this zone, not in the deck.
-StartsInZone.player.on-game-start() {
-  for card in this.deck.cards-of-type(rule.type) {
-    card.move-to(this.zone(rule.zone))
+type StartsInZone : SetupRule {
+  type: CardType | text
+  zone: Zone
+  face: int = 1
+  on-player-game-start(player) {
+    for card in player.deck.cards-of-type(this.type) {
+      card.move-to(player.zone(this.zone))
+    }
   }
 }
 
-ShuffleDeck.player.on-game-start() {
-  this.deck.shuffle()
+type ShuffleDeck : SetupRule {
+  zone: Zone?
+  on-player-game-start = player.deck.shuffle()
 }
 
-OpeningHand.player.on-game-start() {
-  this.draw(rule.n)
+type OpeningHand : SetupRule {
+  n: int
+  on-player-game-start = player.draw(this.n)
 }
 ```
 
@@ -107,68 +122,87 @@ OpeningHand.player.on-game-start() {
 
 ```
 // A player's turn lasts until they pass; then the next player's starts. A round is every player's turn once.
-FullTurns.on-game-start() {
-  game.first = random(game.players)
-}
-
-FullTurns.on-round-start() {
-  game.start-turn(game.first)
-}
-
-FullTurns.player.on-pass() {
-  game.end-turn()
-  if game.turns-this-round < game.players.count {
-    game.start-turn(this.next)
+type FullTurns : TurnRule {
+  first: First
+  on-game-start() {
+    game.set-first(random(game.players))
+  }
+  on-round-start = game.start-turn(game.first)
+  on-player-pass(player) {
+    game.end-turn()
+    if game.turns-this-round < game.players.count {
+      game.start-turn(player.next)
+    }
+  }
+  is-round-over() {
+    return game.turns-this-round == game.players.count and not game.in-turn
   }
 }
 
-FullTurns.is-round-over() {
-  return game.turns-this-round == game.players.count and not game.in-turn
-}
-
 // Each phase's steps, in order, at the start of a player's turn.
-Phases.player.on-turn-start() {
-  for phase in rule.phases {
-    for step in phase.steps {
-      step.run(this)
+type Phases : TurnRule {
+  phases: [Phase]
+  on-player-turn-start(player) {
+    for phase in this.phases {
+      for step in phase.steps {
+        step.run(player)
+      }
     }
   }
 }
 
-ReadyAll.on-run(player) {
-  for card in player.cards-in-play {
-    card.ready()
+type ReadyAll : Step {
+  run(player) {
+    for card in player.cards-in-play {
+      card.ready()
+    }
   }
 }
 
-Draw.on-run(player) {
-  if not (rule.skip-very-first-turn and game.turn == 1) {
-    player.draw(rule.count)
+type Draw : Step {
+  count: int
+  skip-very-first-turn: bool = false
+  run(player) {
+    if not (this.skip-very-first-turn and game.turn == 1) {
+      player.draw(this.count)
+    }
   }
 }
 
 // Only the kinds of action the game lists may be taken.
-Actions.player.can-act(kind) {
-  return rule.allowed.has(kind)
+type Actions : TurnRule {
+  allowed: [ActionKind]
+  can-act(player, kind) {
+    return this.allowed.has(kind)
+  }
 }
 ```
 
-A step is a record like a rule: `step.run(player)` runs its `on-run`, and in it `rule` is the step (`rule.count`).
+A step is a type too: `run(player)` is its one member, and `step.run(player)` calls it.
 
 ### Resources (`resources.alex`)
 
 ```
 // A number that rises to a cap (mana crystals): a capacity that grows, and what is left of it this turn.
-GrowingCounter.player.on-game-start() {
-  this.set(rule.name, rule.start)
+type GrowingCounter : ResourceRule {
+  name: text?
+  start: int
+  max: int
+  pay-by: PayBy
+  on-player-game-start = player.set(this.name, this.start)
 }
 
-GrowsAt.player.on-turn-start() {
-  this.grow(rule.resource, rule.by)
+type GrowsAt : ResourcePolicy {
+  resource: ResourceRule
+  moment: Moment
+  by: int
+  on-player-turn-start = player.grow(this.resource, this.by)
 }
 
-RefillsAt.player.on-turn-start() {
-  this.refill(rule.resource)
+type RefillsAt : ResourcePolicy {
+  resource: ResourceRule
+  moment: Moment
+  on-player-turn-start = player.refill(this.resource)
 }
 ```
 
@@ -180,56 +214,64 @@ routine grow(player: player, resource: GrowingCounter, by: int) {
 }
 ```
 
-Hello TCG's `GrowsAt { moment = @turn-start }` names its moment; the handlers above fix it to `on-turn-start`
+Hello TCG's `GrowsAt { moment = @turn-start }` names its moment; the members above fix it to the start of a turn
 (question 3).
 
 ### Units (`units.alex`)
 
 ```
-// A unit card may be played from hand when its player can pay for it.
-UnitCards.unit.can-play() {
-  return this.in-hand and this.owner.can-pay(this.cost)
-}
-
-UnitCards.unit.on-played() {
-  this.owner.pay(this.cost)
-  this.move-to(this.owner.board)
-}
-
-UnitsEnterExhausted.unit.on-enter() {
-  this.exhaust()
-}
-
-EntersReady.unit.on-enter() {
-  if this.has(rule.keyword) {
-    this.ready()
+// Which of the game's card types are units. A unit card may be played from hand when its player can pay for it.
+type UnitCards : UnitRule {
+  types: [type UnitCard]
+  can-play(card) {
+    if card.is(this.types) {
+      return card.in-hand and card.owner.can-pay(card.cost)
+    }
+    return nothing
   }
+  on-unit-played(unit) {
+    unit.owner.pay(unit.cost)
+    unit.move-to(unit.owner.board)
+  }
+}
+
+type UnitsEnterExhausted : UnitRule {
+  on-unit-enter = unit.exhaust()
+}
+
+type EntersReady : UnitRule {
+  keyword: Keyword
+  on-unit-enter = if unit.has(this.keyword) { unit.ready() }
 }
 
 // Damage equal to or more than a unit's Health defeats it.
-DefeatAtHealth.unit.on-check() {
-  if this.damage >= this.health {
-    this.defeat()
-  }
+type DefeatAtHealth : UnitRule {
+  on-unit-check = if unit.damage >= unit.health { unit.defeat() }
 }
 ```
 
-A unit's `on-played` moves it onto the board, which raises its `on-enter`: the rules' (exhaust it, ready it if Swift)
-and the card's own (Kłobuk draws a card). `defeat()` moves a unit to its owner's discard, which raises its
+Playing a unit moves it onto the board, which is its `on-unit-enter`: the rules' (exhaust it, ready it if Swift) and
+the card's own `on-enter` (Kłobuk draws a card). `defeat()` moves a unit to its owner's discard, which runs its
 `on-defeated`.
 
 ### Spells (`spells.alex`)
 
 ```
-// A spell may be played from hand when its player can pay for it. It does what it says, then goes to the discard.
-SpellCards.spell.can-play() {
-  return this.in-hand and this.owner.can-pay(this.cost)
-}
-
-SpellCards.spell.on-played() {
-  this.owner.pay(this.cost)
-  this.move-to(this.owner.discard)
-  this.do-what-it-says()
+// Which of the game's card types are spells. A spell may be played from hand when its player can pay for it; it does
+// what it says, then goes to the discard.
+type SpellCards : SpellRule {
+  types: [type SpellCard]
+  can-play(card) {
+    if card.is(this.types) {
+      return card.in-hand and card.owner.can-pay(card.cost)
+    }
+    return nothing
+  }
+  on-spell-played(spell) {
+    spell.owner.pay(spell.cost)
+    spell.move-to(spell.owner.discard)
+    spell.do-what-it-says()
+  }
 }
 ```
 
@@ -239,79 +281,93 @@ SpellCards.spell.on-played() {
 
 ```
 // A Hero flips to its second face as soon as its Awaken condition holds, and never back.
-AwakenOnStateCheck.hero.on-check() {
-  if this.face == 1 and this.can-awaken() {
-    this.flip()
-  }
+type AwakenOnStateCheck : HeroRule {
+  on-hero-check = if hero.face == 1 and hero.can-awaken() { hero.flip() }
 }
 
 // A Hero's Exhaust ability, used by exhausting it: at most once a round.
-PowerOncePerRound.hero.can-use() {
-  return this.ready
-}
-
-PowerOncePerRound.hero.on-used() {
-  this.exhaust()
-  this.use-ability()
-}
-
-// An Awakened Hero may attack, like a unit.
-HeroAttacksWhenAwakened.hero.attack-targets() {
-  if this.face == 2 {
-    return this.enemy-units + this.enemy-players
+type PowerOncePerRound : HeroRule {
+  can-use(hero) {
+    return hero.ready
   }
-  return nothing
+  on-hero-used(hero) {
+    hero.exhaust()
+    hero.use-ability()
+  }
+}
+
+// An Awakened Hero may attack, like a unit, and takes no damage doing so when the game says.
+type HeroAttacksWhenAwakened : HeroRule {
+  takes-no-damage: bool
+  attack-targets(attacker) {
+    if attacker.is-hero and attacker.face == 2 {
+      return attacker.enemy-units + attacker.enemy-players
+    }
+    return nothing
+  }
 }
 ```
 
-`TwoFaces` and `AwakenedNeverReverts` need no handler: nothing flips a Hero back.
+`TwoFaces` and `AwakenedNeverReverts` have no members to set: nothing flips a Hero back.
 
 ### Combat (`combat.alex`)
 
 ```
 // The attacker chooses its target: an enemy unit, or the defending player's life.
-AttackerChooses.unit.attack-targets() {
-  if rule.targets.has(life) {
-    return this.enemy-units + this.enemy-players
+type AttackerChooses : CombatRule {
+  targets: [CombatTarget]
+  attack-targets(attacker) {
+    if not attacker.is-unit {
+      return nothing
+    }
+    if this.targets.has(life) {
+      return attacker.enemy-units + attacker.enemy-players
+    }
+    return attacker.enemy-units
   }
-  return this.enemy-units
 }
 
-AttackerMustBeReady.card.can-attack(target) {
-  return this.ready
+type AttackerMustBeReady : CombatRule {
+  can-attack(attacker, target) {
+    return attacker.ready
+  }
 }
 
 // While the defender has a Guardian, only Guardians may be attacked.
-GuardiansFirst.card.can-attack(target) {
-  if target.controller.has-unit-with(rule.keyword) {
-    return target.has(rule.keyword)
+type GuardiansFirst : CombatRule {
+  keyword: Keyword?
+  can-attack(attacker, target) {
+    if target.controller.has-unit-with(this.keyword) {
+      return target.has(this.keyword)
+    }
+    return true
   }
-  return true
 }
 
 // An attack exhausts the attacker. A unit it attacks and the attacker deal their Power to each other at once.
-CombatDamageEqualsPower.card.on-attack(target) {
-  this.exhaust()
-  if target.is-unit {
-    dealt = this.power
-    taken = target.power
-    target.damage(dealt)
-    if not (this.is-hero and game.rule(HeroAttacksWhenAwakened).takes-no-damage) {
-      this.damage(taken)
+type CombatDamageEqualsPower : CombatRule {
+  on-attack(attacker, target) {
+    attacker.exhaust()
+    if target.is-unit {
+      dealt = attacker.power
+      taken = target.power
+      target.damage(dealt)
+      if not (attacker.is-hero and game.rule(HeroAttacksWhenAwakened).takes-no-damage) {
+        attacker.damage(taken)
+      }
     }
   }
 }
 
 // A hit on a player costs them life equal to the attacker's Power.
-LifeDamageEqualsPower.card.on-attack(target) {
-  if target.is-player {
-    target.lose-life(this.power)
-  }
+type LifeDamageEqualsPower : CombatRule {
+  on-attack = if target.is-player { target.lose-life(attacker.power) }
 }
 
 // Damage stays on a unit until the end of the turn.
-DamageClearsAt.unit.on-turn-end() {
-  this.heal(this.damage)
+type DamageClearsAt : CombatRule {
+  moment: Moment
+  on-unit-turn-end = unit.heal(unit.damage)
 }
 ```
 
@@ -320,34 +376,34 @@ DamageClearsAt.unit.on-turn-end() {
 ### Life (`life.alex`)
 
 ```
-LifeCounter.player.on-game-start() {
-  this.set(rule.name, rule.start)
-}
-
-// A player whose life falls to the limit loses. The core ends the game when one player is left: they win.
-LifeCounter.player.on-check() {
-  if this.counter(rule.name) <= rule.lose-at {
-    this.lose()
-  }
+// A player's life as a number. A player whose life falls to the limit loses; the core ends the game when one player is
+// left, and they win.
+type LifeCounter : LifeRule {
+  name: text
+  start: int
+  lose-at: int
+  on-player-game-start = player.set(this.name, this.start)
+  on-player-check = if player.counter(this.name) <= this.lose-at { player.lose() }
 }
 ```
 
 ## What the language gains
 
-1. **A handler written in place:** `Rule.unit.on-enter() { ... }`: the rule, what the handler is about, and the moment
-   or question, with the moment's parameters (`on-attack(target)`). `this` is what it is about; `rule` is the rule's
-   settings.
-2. **`return`**, for a handler that answers a question (`can-play()`, `is-round-over()`).
+1. **Members whose value is code.** A type sets a moment or question to one statement (`on-unit-enter = unit.exhaust()`)
+   or to a body (`can-attack(attacker, target) { ... }`). In it, `this` is the rule, and the member's parameters are
+   named where the core declares it.
+2. **`return`**, for a question's answer, with `nothing` for "no say".
 3. **`for x in list { ... }`**: the one loop. It goes over a finite list (cards, players, a rule's list), so every
    handler still finishes.
-4. **Any name in a binding**: `dealt = this.power`. Today only `target` may be bound.
+4. **Any name in a binding**: `dealt = attacker.power`. Today only `target` may be bound.
 5. **`game.rule(RuleType)`**: another rule as the game lists it, or nothing (question 2).
 
 The words handlers call (`move-to`, `exhaust`, `draw`, `enemy-units`, `can-pay`…) are the libraries' and the core's
 vocabulary, each declared once.
 
-A card's handler could take the same form (`klobuk.on-enter() { draw() }`), with the one-line
-`@klobuk.on-enter = draw()` kept for one-statement handlers. That would be one form for cards and rules (question 4).
+A card could take the same form: a card's slots (`on-enter`) are members of its type, so a rules file's
+`@klobuk.on-enter = draw()` sets a member of one card, as a rule's type sets a member of every instance of the rule
+(question 4).
 
 ## Questions for the owner
 
@@ -356,12 +412,12 @@ A card's handler could take the same form (`klobuk.on-enter() { draw() }`), with
    The proposal is `game.rule(HeroAttacksWhenAwakened).takes-no-damage`, which is nothing when the game doesn't list
    that rule. Another option is for the two rules to be one.
 3. **Rules that work at a moment the game chooses.** Hello TCG writes `GrowsAt { moment = @turn-start }`. Either the
-   handler fixes its moment (`GrowsAt.player.on-turn-start()`, as above) and a game that grows at another moment lists
-   another rule, or the rule names its moment and the engine runs it then. The first is simpler.
-4. **Cards in the same form.** Should a game's rules files also write `klobuk.on-enter() { draw() }`, keeping
-   `@klobuk.on-enter = draw()` for one statement?
+   rule fixes its moment (`on-player-turn-start`, as above) and a game that grows at another moment lists another
+   rule, or the rule names its moment and the engine runs it then. The first is simpler.
+4. **Cards.** A card's handlers stay in the game's rules files (`@klobuk.on-enter = draw()`), since a set's file is
+   data and its rules file code. Is that still right, now that rules put code in their types?
 5. **What stays in Rust.** The core's operations, the loop, the scheduler, randomness and the words that read the
    game's state stay in the engine. Everything that is a rule of some game is Alex. Is that the line?
 
-Once this is agreed, the language changes are made in both Alex implementations, the handlers go into the libraries,
-and the runtime runs them, until two random bots play whole Hello TCG games.
+Once this is agreed, the language changes are made in both Alex implementations, the rules' members go into the
+libraries, and the runtime runs them, until two random bots play whole Hello TCG games.

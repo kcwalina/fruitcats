@@ -3,7 +3,7 @@
 for = @aluxes
 
 // §850.5 The rain counter's `max` stops it at +2/+2.
-effect rain-falls { this.counter(@rain, 1) }
+effect rain-falls { this.counter(@rain, one) }
 
 condition few-candles { own.life.count <= card.candles }
 effect heal-and-guard {

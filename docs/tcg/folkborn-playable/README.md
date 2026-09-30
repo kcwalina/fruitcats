@@ -46,7 +46,7 @@ Falling Star. One handler serves both.
 A family's mechanic is a handler attached to its keyword, so every unit with the keyword has it:
 
 ```
-effect pearl-tear { ready-resources(1) }
+effect pearl-tear { ready-resources(one) }
 @pearl-tears.on-survives-damage = pearl-tear
 ```
 
@@ -69,6 +69,9 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
   `damage`, `heal`, `boost` (extra Power), `extra-health`, `draw`, `sprout`, `company-damage`, `others`
   (Orange-Peri), and on the Heroes `offerings`, `units`, `candles` and `fallen` (their Awaken conditions). 45
   cards change.
+- **Numbers the text spells as words** ("Ready two of your Offerings", Stone for Stone's "deal 1 damage") are
+  members of a number-backed enum, `Count` in the `common` library: `ready-resources(two)`. No handler types a
+  digit. This needs gap 17.
 - **Aluxes declares its rain counter:** `counters = [rain = StatCounter { power = 1, health = 1, max = @rain-fed-max }]`.
 - **The game file gains its rules.** An older playable version of it, written for the retired cat cards, is still
   in `cardengine/folkborn/folkborn.alex`; this draft replaces it.
@@ -78,7 +81,7 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
 
 ## What the checker says
 
-Laid over `games/folkborn/`, the draft gets 137 errors. They all come from the 16 gaps below. Many are
+Laid over `games/folkborn/`, the draft got 137 errors, all from the first 16 gaps below (gap 17 came later). Many are
 repeats: a missing slot is reported on every card that uses it, and the handler it would have run is reported
 too, because it can't see that card's constants. "Folkborn" in the Fix column means the fix is in Folkborn's own
 files; the other fixes are in the platform.
@@ -101,6 +104,7 @@ files; the other fixes are in the platform.
 | 14 | `MaxRounds` doesn't say who wins at the limit. | not an error | Library: `MaxRounds { n, winner = most-life }`. |
 | 15 | Setup order across areas isn't defined: the Candles are dealt (a `life` rule) after the shuffle and before the opening hand (`setup` rules). | not an error | Library: a setup step that deals the life stack, placed in `setup`. |
 | 16 | A Whistle in the Dark has Ambush but may only answer an attack. | not an error | Checker: a handler that uses the attack it answers (`event.cancel()`) makes the card playable only in an attack's window. |
+| 17 | Alex enums are names only. Handlers want `ready-resources(two)`, with `two` standing for 2. | 6 errors (the owner's request, 2026-09-29) | Alex (both implementations): enums backed by a number or a short fixed-size string (`enum Count : int { one = 1, two = 2 }`), accepted where that number or string is expected, as C# enums are; `Count` in `common`. Being done in its own session. |
 
 Everything else binds as written: the zones, setup, rounds, the Lantern, Offerings, Candles, combat, Ambush,
 scheduling, the keyword rules (Swift, Guardian, Sneaky, Fierce, Tough, Lucky, Ambush), the constants, and
@@ -117,7 +121,7 @@ cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check
 
 ## Next
 
-Close gaps 1 to 13 in the core and the libraries, which Hello TCG needs too (gaps 1 and 2 are among its
+Close gaps 1 to 13 and 17 in the core and the libraries, which Hello TCG needs too (gaps 1 and 2 are among its
 errors). Then Folkborn checks clean, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
 the runtime behaves, so they are settled when it is built. The runtime starts with Hello TCG, then plays Folkborn,
 compared game for game with today's engine.

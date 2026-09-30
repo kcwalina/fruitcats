@@ -6,8 +6,8 @@ for = @folkborn
 
 effect draw-a-card { draw() }
 
-effect ready-an-offering { ready-resources(1) }
-effect ready-two-offerings { ready-resources(2) }
+effect ready-an-offering { ready-resources(one) }
+effect ready-two-offerings { ready-resources(two) }
 
 effect damage-a-unit { choose(all).damage(card.damage) }
 effect damage-each-enemy { units(opponents).damage(card.damage) }
@@ -19,7 +19,7 @@ effect heal-each-own { units(own).heal(card.heal) }
 effect boost-own { choose(own).buff(power: card.boost, until: this-round) }
 effect boost-own-and-ready-an-offering {
   choose(own).buff(power: card.boost, until: this-round)
-  ready-resources(1)
+  ready-resources(one)
 }
 
 // Zhu'er and Pebble awaken on it. Both players' Mists count, as today's engine counts them.

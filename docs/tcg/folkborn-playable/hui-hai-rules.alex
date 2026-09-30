@@ -3,7 +3,7 @@
 for = @hui-hai
 
 // §850.7 Its owner picks the enemy unit.
-effect throw-a-stone { choose(opponents).damage(1) }
+effect throw-a-stone { choose(opponents).damage(one) }
 
 static stronger-stones-for-all { units(own).grant(health: card.extra-health, stone-for-stone) }
 

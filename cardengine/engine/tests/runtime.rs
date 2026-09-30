@@ -30,7 +30,7 @@ fn hello_tcg() -> Project {
 
 fn new_game(seed: u64) -> Game {
     let catalog = Rc::new(Catalog::read(&hello_tcg()).unwrap());
-    let setup = Setup { seats: vec![SeatSetup { deck: "hearth".to_string() }, SeatSetup { deck: "threshold".to_string() }], seed };
+    let setup = Setup { seats: vec![SeatSetup { deck: "hearth".to_string(), ..Default::default() }, SeatSetup { deck: "threshold".to_string(), ..Default::default() }], seed };
     Game::new(catalog, &setup).unwrap()
 }
 

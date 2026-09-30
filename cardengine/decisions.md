@@ -1136,6 +1136,45 @@ shared by several families needed (gap 8 of `docs/tcg/folkborn-playable/`). The 
   sets, so a prototype set's rules stay out until the set joins). If the runtime needs a rules file scoped to
   something, that is raised with the owner and designed then; `for` is not revived as it was.
 
+### Keywords, once per round and card constants (owner-approved gaps, 2026-09-29)
+
+Gaps 4, 6, 7, 11 and 12 of `docs/tcg/folkborn-playable/`, the step before the runtime. Each was done with the fewest
+new concepts; two differ from the proposals there.
+
+- **A keyword has a unit's slots.** `@feather-coat.on-defeated = summon(@dove)` attaches behaviour to a keyword, and
+  every unit that has it, printed or granted (`units(own).grant(pearl-tears)`), runs it, with `this` that unit.
+  Which slots: all of a unit card's, not those of the card types that list the keyword. The handlers run on a unit,
+  whatever type of card it was printed on, and which cards carry a keyword is data the type system can't see.
+  How: each library that gives `UnitCard` a slot declares the same slot on `Keyword` beside it
+  (`extension Keyword { on-defeated: effect? ... }` in units, combat and board), so no language or host change was
+  needed. The cost is that a library adding a unit slot adds it twice; the two blocks sit together so a reader sees
+  both. Rejected: a host hook that lends one record's slots to another (an Alex API change in both implementations
+  for what two short blocks say), and viewing `Keyword` as a `UnitCard` (a keyword would then be accepted wherever a
+  unit card is). The linker's "every slot stands for an ability the object declares" now applies only to objects
+  that can declare abilities (whose record has `abilities`), so a keyword's handlers need none.
+- **A set's keywords are words in handlers.** `grant(pearl-tears)` looks in the game's `keywords` and in those of
+  every set the game lists.
+- **Once per round is a condition, not a block.** The core has `once-per-round`, a selector that is true the first time
+  in a round that the card's handler asks and false after: `@schaibar.on-defeats-in-combat = if once-per-round
+  { this.ready() }`. It is the handler's word for what `Ability.once-per-round` already says as data, used with the
+  `if` handlers already have, so it adds a word and no concept, and no language change. Rejected: a
+  `once-per-round { ... }` block (new syntax in both Alex implementations, and a second way to make a statement
+  conditional) and `abilities = [...]` with `once-per-round = true` (the card's text is then its abilities' texts,
+  so "Fierce." can't be printed). A game that counts turns will want `once-per-turn` beside it when one needs it.
+  The runtime keeps, per card and handler, whether it has asked this round.
+- **Text made only of keywords needs no handler.** When every sentence of a card's text is one of its keywords as
+  printed (the keyword's `name`, or its key: "Guardian"; with its number for `Applied`: "Tough 1"), the keywords'
+  rules are what the text says, so the linker doesn't ask for a handler. Anything more ("Rain-Fed. Hello: ...") still
+  needs one. The comparison is exact, as the text is printed.
+- **A card's constants are the card's (Alex 0.10.0, both implementations).** Named members were every map entry at
+  any depth, so Aluxito's `constants = [candles = 6]` made the game's `@candles` ambiguous. Now, in a map inside
+  another map's entry, a plain value (a number, text, truth value, enum member, reference or list) belongs to that
+  entry and is reached through it (`@aluxes.cards.aluxito.constants.candles`, or `card.candles` in its handlers).
+  It's a language rule rather than one about `constants`, as the spec's existing "record fields below the root
+  aren't named members" is. Records there stay named: the first version, which hid everything inside an entry,
+  broke `@mochi-portrait`, a picture an art brief names from inside a group. Across both repositories' files the only
+  other change is that a stray `@common` no longer finds an icon path.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

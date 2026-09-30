@@ -69,6 +69,16 @@ extension UnitCard {
   on-use: effect?                 // exhaust the unit for value instead of attacking (reap)
   static: static?
 }
+// A keyword has a unit's slots: behaviour on a keyword (`@undying.on-defeated = summon(@spirit)`)
+// is run by every unit that has the keyword, printed or granted, with `this` that unit. Each library that gives UnitCard a slot gives Keyword
+// the same one, beside it.
+extension Keyword {
+  on-enter: effect?
+  on-defeated: effect?
+  on-round-start: effect?
+  on-use: effect?
+  static: static?
+}
 
 moments = [
   unit-enters = Moment { name = 'A unit enters play' }

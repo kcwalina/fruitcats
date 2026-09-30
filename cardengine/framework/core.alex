@@ -605,6 +605,9 @@ selectors = [
   units = Selector { yields = units, params = [from = players], optional = [filters = filters] }
   pending = Selector { yields = pending }         // effects waiting in the scheduler
   adjacent = Selector { yields = units, params = [to = unit], optional = [range = int] }
+  // "Once per round": true the first time in a round that this card's handler asks, false after,
+  // so `if once-per-round { this.ready() }` does it once. What `Ability.once-per-round` says as data.
+  once-per-round = Selector { yields = bool }
 ]
 properties = [
   count = Property { on = units, yields = int }

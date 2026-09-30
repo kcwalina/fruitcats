@@ -1308,7 +1308,7 @@ impl<'h> Binder<'h> {
             for (name, value) in properties {
                 let path = vec![name.clone()];
                 self.add_member(&name, value, path.clone(), s);
-                self.index_value(value, path, s);
+                self.index_value(value, path, s, false);
             }
 
             for (name, text) in self.states[s].texts.clone() {
@@ -1323,7 +1323,9 @@ impl<'h> Binder<'h> {
         }
     }
 
-    fn index_value(&mut self, value: ValueId, path: Vec<String>, s: usize) {
+    /// Inside a map's entry, a map's plain values (numbers, texts) are the entry's own, reached through it: a card's
+    /// `constants` are not the game's. Its records and maps are named members wherever they are.
+    fn index_value(&mut self, value: ValueId, path: Vec<String>, s: usize, in_entry: bool) {
         match &self.model.values[value].kind {
             ValueKind::Object(object) => {
                 let is_map = object.is_map;
@@ -1332,15 +1334,15 @@ impl<'h> Binder<'h> {
                 for (name, child_value) in properties {
                     let mut child = path.clone();
                     child.push(name.clone());
-                    if is_map {
+                    if is_map && (!in_entry || self.model.object(child_value).is_some()) {
                         self.add_member(&name, child_value, child.clone(), s);
                     }
-                    self.index_value(child_value, child, s);
+                    self.index_value(child_value, child, s, in_entry || is_map);
                 }
             }
             ValueKind::Array(array) => {
                 for item in array.clone() {
-                    self.index_value(item, path.clone(), s);
+                    self.index_value(item, path.clone(), s, in_entry);
                 }
             }
             _ => {}

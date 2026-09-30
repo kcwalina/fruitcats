@@ -107,6 +107,12 @@ extension UnitCard {
   on-defeats-in-combat: effect?
   on-you-heal: effect?
 }
+extension Keyword {               // a keyword has a unit's slots (units)
+  on-attack: effect?
+  on-attacked: effect?
+  on-defeats-in-combat: effect?
+  on-you-heal: effect?
+}
 
 // Ability kinds this library declares; a card constructs one to say it has the ability.
 type OnAttack : Ability { holders = [nameof(UnitCard)], event = nameof(events.attack) }

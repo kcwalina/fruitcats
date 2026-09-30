@@ -99,7 +99,7 @@ What that needs beyond today's routines, all small:
 - **Actions as values** the routine can look at and remove (`attack.target`), and `answer(...)` for a hook that
   provides one value.
 
-**My recommendation: B.** It is fewer concepts in total:
+**Decided: B** (the owner, 2026-09-29). It is fewer concepts in total:
 - The engine knows no game at all. Nobody reads Rust to learn what Guardian does; it is five lines in
   `combat.alex`, in the same language as the cards.
 - A game can add a rule no library has without an engine change, written the way library rules are.
@@ -170,9 +170,9 @@ Each step ends with its *done when* shown working.
 
 Scenarios (the tests in rules files) run from step 2 on, since they are small games.
 
-## Questions for the owner
+## Decided with the owner (2026-09-29)
 
-1. **Library rules in Alex (B)?** Recommended. If yes, the plan's section "Rules: built in, rarely custom" is
-   rewritten to say so.
-2. **Folkborn's round limit.** Today's engine ends a game after round 40, and the player with more Candles wins.
-   The rulebook doesn't say so. Should the rulebook get the rule, or should it go? (Gap 14 in the draft.)
+1. **Library rules are written in Alex (B).** The plan's section "Rules: from libraries, written in Alex" says so.
+2. **Folkborn's round limit is a rule.** After round 40 the game ends: more Candles wins, then more Health left on
+   the units in play, and a draw if both are equal (rulebook §300.7). The library's `MaxRounds` gains its tiebreaks
+   in order (`winner = [most-life, most-unit-health]`); gap 14 of the Folkborn draft.

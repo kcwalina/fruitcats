@@ -304,6 +304,10 @@ impl<'o> Dumper<'o> {
                 self.node("MissingValue");
                 self.token(missing);
             }
+            Value::InlineStatement { statement } => {
+                self.node("InlineStatement");
+                self.body_statement(statement);
+            }
         }
         self.end();
     }

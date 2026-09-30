@@ -86,7 +86,7 @@ Folkborn from its Alex rules, so it must be movable as a folder today:
   libraries and maps its types onto their card records (`UnitCards { types = [@Creature] }`).
   The libraries' card records are engine concepts a printed game never sees.
 - **A card's text is data; what it does is code.** A card prints `text = '...'`; its handler lives
-  in a rules document, attached to one of the card's slots (`@hello.on-enter = draw-a-card`), and
+  in a rules document, attached to one of the card's slots (`@hello.on-enter = draw()`, or a named handler), and
   the slot says when it runs. The linker requires every card with text to have a handler and every
   handler to belong to a card with text; the first is the IDE's fill-in-the-blank, the second keeps
   code from giving a card behaviour it doesn't print. A card whose ability needs data of its own

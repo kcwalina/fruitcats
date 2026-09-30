@@ -326,6 +326,11 @@ internal sealed class CSharpDump
                 Token(missing.Missing);
                 break;
 
+            case InlineStatementSyntax inline:
+                Node("InlineStatement");
+                BodyStatement(inline.Statement);
+                break;
+
             default:
                 throw new InvalidOperationException("The dump does not know the value " + value.GetType().Name + ".");
         }

@@ -6,17 +6,10 @@ effect gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy
 @dziadzius.back.exhaust = gain-energy
 
-condition enough-creatures { units(own).count >= card.creatures }
-@dziadzius.awaken = enough-creatures
-
-effect draw-a-card { draw() }
-@klobuk.on-enter = draw-a-card
-
-effect heal-own-creatures { units(own).heal(card.heal) }
-@bread-and-salt-greeter.on-enter = heal-own-creatures
-
-effect damage-a-creature { choose(all).damage(card.damage) }
-@domowiks-temper.on-play = damage-a-creature
+@dziadzius.awaken = units(own).count >= card.creatures
+@klobuk.on-enter = draw()
+@bread-and-salt-greeter.on-enter = units(own).heal(card.heal)
+@domowiks-temper.on-play = choose(all).damage(card.damage)
 
 scenario 'Kłobuk draws a card when it enters' {
   given hand(me, @klobuk)

@@ -968,26 +968,21 @@ Each card's text says what it does, in words. For the engine, that needs a small
 
 for = @cards
 
-effect draw-a-card { draw() }
-@klobuk.on-enter = draw-a-card
+@klobuk.on-enter = draw()
 ```
 
 `for = @cards` says which cards this file programs. The cards file never mentions its rules file,
 so the cards read the same, and print the same, whether or not they're programmed.
 
-`effect draw-a-card { draw() }` is the program: draw a card. `@klobuk.on-enter = draw-a-card`
-attaches it to Kłobuk, and says when it runs: when Kłobuk enters play, which is what "Hello:"
-means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
+`draw()` is the program: draw a card. `@klobuk.on-enter` attaches it to Kłobuk, and says when it
+runs: when Kłobuk enters play, which is what "Hello:" means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
 `damage`, `gain`, `choose`…), and each one is a line or two.
 
 The Greeter and the Temper:
 
 ```
-effect heal-own-creatures { units(own).heal(card.heal) }
-@bread-and-salt-greeter.on-enter = heal-own-creatures
-
-effect damage-a-creature { choose(all).damage(card.damage) }
-@domowiks-temper.on-play = damage-a-creature
+@bread-and-salt-greeter.on-enter = units(own).heal(card.heal)
+@domowiks-temper.on-play = choose(all).damage(card.damage)
 ```
 
 - The Greeter heals each of your Creatures by `card.heal`, the constant printed on the card.
@@ -1003,14 +998,15 @@ effect gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy
 @dziadzius.back.exhaust = gain-energy
 
-condition enough-creatures { units(own).count >= card.creatures }
-@dziadzius.awaken = enough-creatures
+@dziadzius.awaken = units(own).count >= card.creatures
 ```
 
-- Both faces' Exhaust abilities use the same handler. `card.energy` is the number printed on the
-  face in play: 1 on the front, 2 on the Awakened back.
-- `condition` is a handler that answers yes or no: here, "do I control 3 or more Creatures?". The
-  moment it's yes, the Hero awakens.
+- Both faces' Exhaust abilities use the same handler, so it gets a name: `effect gain-energy`
+  declares it once, and each face attaches it by that name. A handler of several lines is written
+  the same way. `card.energy` is the number printed on the face in play: 1 on the front, 2 on the
+  Awakened back.
+- Awaken's handler answers yes or no: here, "do I control 3 or more Creatures?". The moment it's
+  yes, the Hero awakens.
 
 Every card with text must have a handler, and every handler must belong to a card with text, so
 the card and what it does can't disagree silently. Cards whose only rules are keywords, like

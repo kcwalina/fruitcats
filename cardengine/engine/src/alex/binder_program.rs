@@ -451,7 +451,7 @@ impl Binder<'_> {
                 continue;
             }
 
-            let Some(declaration) = self.resolve_declaration(value, extension, s) else { continue };
+            let Some(declaration) = self.resolve_declaration(value, extension, s, index) else { continue };
 
             self.assigned.insert((target_object, member.clone()), (s, target_span));
             let extensions = &mut self.model.object_mut(target_object).unwrap().extensions;
@@ -473,7 +473,7 @@ impl Binder<'_> {
     }
 
     /// The declaration an assignment's value names, checked against the member's kind, or none (reported).
-    fn resolve_declaration(&mut self, value: &syntax::Value, member: FieldId, s: usize) -> Option<ValueId> {
+    fn resolve_declaration(&mut self, value: &syntax::Value, member: FieldId, s: usize, statement: usize) -> Option<ValueId> {
         let bytes = self.states[s].bytes.clone();
         let member_type = self.model.fields[member].field_type;
         let member_name = self.model.fields[member].name.clone();
@@ -497,6 +497,7 @@ impl Binder<'_> {
         let wanted = kinds.join(" or ");
         match value {
             syntax::Value::Missing { .. } => None,
+            syntax::Value::InlineStatement { statement: inline } => self.inline_declaration(inline, span, &member_name, &kinds, s, statement),
             syntax::Value::EnumMember { enum_name: None, member: word, .. } => {
                 // Resolved like an enum member against its enum: against the declarations of the member's kind.
                 let name = value_text(word, &bytes);
@@ -568,11 +569,62 @@ impl Binder<'_> {
                 None
             }
             _ => {
-                let message = format!("'{}' holds {}: write the name of one, as in '= zing'.", member_name, with_article(&wanted));
+                let message = format!(
+                    "'{}' holds {}: write the name of one, as in '= zing', or one statement, as in '= draw()'.",
+                    member_name,
+                    with_article(&wanted)
+                );
                 self.error(s, message, span);
                 None
             }
         }
+    }
+
+    /// `@card.slot = draw()`: a declaration of the slot's kind, with no name, whose body is the one statement. It is checked
+    /// as a one-line body attached to that slot would be.
+    fn inline_declaration(&mut self, inline: &BodyStatement, span: TextSpan, member_name: &str, kinds: &[String], s: usize, statement: usize) -> Option<ValueId> {
+        if kinds.len() > 1 {
+            let message = format!(
+                "'{}' holds {}, so a statement here could be either; declare one with a name and write its name.",
+                member_name,
+                with_article(&kinds.join(" or "))
+            );
+            self.error(s, message, span);
+            return None;
+        }
+
+        let kind = kinds[0].clone();
+        let function = self.function_type(&kind)?;
+        let TypeKind::Function { shape, .. } = self.model.types[function].kind else { return None };
+        let fits = match shape {
+            BodyShape::Statements => !matches!(inline, BodyStatement::Section { .. }),
+            BodyShape::Expression => matches!(inline, BodyStatement::Expression(_)),
+            BodyShape::Scenario => false,
+        };
+        if !fits {
+            let message = if shape == BodyShape::Expression {
+                format!("'{}' holds {}, which is one expression: '= own.resources.count >= card.offerings'.", member_name, with_article(&kind))
+            } else {
+                format!("'{}' holds {}, which is written as a declaration with a name.", member_name, with_article(&kind))
+            };
+            self.error(s, message, span);
+            return None;
+        }
+
+        self.model.declarations.push(Declaration {
+            kind,
+            function_type: function,
+            name: None,
+            title: None,
+            document_name: self.states[s].root_name.clone(),
+            attachments: Vec::new(),
+            document: s,
+            statement,
+        });
+        let declaration = self.model.declarations.len() - 1;
+        let value = self.model.add_value(ValueKind::Declaration(declaration), span);
+        self.states[s].declarations.push(value);
+        Some(value)
     }
 
     fn declaration_of(&self, value: ValueId) -> &Declaration {

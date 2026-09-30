@@ -6,11 +6,11 @@ dpi = 300
 text-spacing = whole-pixels
 
 fonts = [
-  black = 'seguibl.ttf'
-  bold = 'segoeuib.ttf'
-  bold-italic = 'segoeuiz.ttf'
-  regular = 'segoeui.ttf'
-  italic = 'segoeuii.ttf'
+  black = 'fonts/Nunito-Black.ttf'
+  bold = 'fonts/Nunito-Bold.ttf'
+  bold-italic = 'fonts/Nunito-BoldItalic.ttf'
+  regular = 'fonts/Nunito-Regular.ttf'
+  italic = 'fonts/Nunito-Italic.ttf'
 ]
 
 finishes = [

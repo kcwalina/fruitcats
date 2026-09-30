@@ -659,7 +659,7 @@ As decided in "Text looks the same whatever language the core is written in":
    *Done 2026-09-29:* `src/render/` (`font.rs` reads `head`, `hhea`, `hmtx` and `cmap`; `text.rs` measures, marks
    emphasis and breaks lines; `layout.rs` is the port; `draw.rs` writes the list). The core answers `fonts`,
    `faces [<set>]`, `draw <set> <card> <front|back> <finish>` and `draw-lists [<set>]`, with `frame=<name>` and
-   `no-art`. A host passes the fonts in as files of the project; Folkborn's are Segoe UI, which a host reads from the
+   `no-art`. A host passes the fonts in as files of the project; Folkborn's were Segoe UI then, which a host reads from the
    system when the game's folder doesn't have them. To check the port, `kardix cards --draw-list` records what SkiaSharp
    draws in the same format: on all 442 Folkborn faces, the 88 Domowiki faces with `--no-art --frame image` and the 20
    Flower Souls faces in another frame, every shape, colour, image, font size, line break and glyph is the same, and a
@@ -692,10 +692,14 @@ As decided in "Text looks the same whatever language the core is written in":
 5. Studio shows finished cards drawn in the page.
    *Done 2026-09-29:* the page lays every face out with one `draw-lists` query, fetches the fonts and pictures each
    draw list names (`project_add` hands them to the loaded project) and draws it with `project_png`. `kardix studio`
-   serves a font the project doesn't have from the system's fonts, so Folkborn's Segoe UI works on Windows. A face
+   serves a font the project doesn't have from the system's fonts (Folkborn used Segoe UI then). A face
    whose draw list didn't change, and whose pictures didn't, isn't drawn again: on Folkborn (111 faces) a saved
    edit to one card showed 0.42 s later, the other 110 kept. The first drawing of all of them takes about 30 s.
    A project whose cards can't be drawn (Hello TCG: no font files) shows their data, and says why.
+   *Fonts, 2026-09-29:* the owner chose Nunito, the app's font, for Folkborn's cards, from a comparison with Noto
+   Sans, Source Sans 3 and Open Sans. Its five styles are in `games/folkborn/fonts/` with their licence (SIL Open
+   Font License), so the cards draw the same on any machine and in any browser. Every card's rules text kept its
+   size and line count. The Hello TCG samples have the same files, so their cards draw too.
 
 ### Stage 5: Studio edits
 

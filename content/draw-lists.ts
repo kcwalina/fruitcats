@@ -4,8 +4,8 @@
 //
 //   npm run draw-lists      writes them again, after a change to a card, the layout or the renderer that is meant
 //
-// Folkborn's fonts are Segoe UI, which Windows has and the game's folder doesn't: a font the layout names that isn't in
-// the folder is read from the system's fonts, as kardix reads it.
+// Folkborn's fonts are Nunito, in its folder (games/folkborn/fonts). A font the layout names that isn't in the folder
+// is read from the system's fonts, as kardix reads it.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';

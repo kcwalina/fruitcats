@@ -8,6 +8,11 @@ version = '0.1'
 
 enum Rarity { common, uncommon, rare, epic, legendary, mythic }
 
+// Numbers as card text spells them. A handler writes 'ready-resources(two)' where an int is expected.
+enum Count : int {
+  a = 1, one = 1, two = 2, three = 3, four = 4, five = 5, six = 6, seven = 7, eight = 8, nine = 9, ten = 10
+}
+
 // A number is paid in the game's cost resource (see the resources library). A map names
 // resources or a resource's kinds: [credits = 3, clicks = 1], [red = 1, any = 2].
 type Cost = int | [text: int]

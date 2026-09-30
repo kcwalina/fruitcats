@@ -150,8 +150,26 @@ internal sealed class CSharpDump
                 Node("EnumDeclaration");
                 Token(enumeration.Keyword);
                 Token(enumeration.Name);
+                Optional(enumeration.Colon);
+                if (enumeration.Backing is { } backing)
+                {
+                    Node("EnumBacking");
+                    Token(backing.Type);
+                    Optional(backing.OpenParen);
+                    Optional(backing.Size);
+                    Optional(backing.CloseParen);
+                    End();
+                }
+
                 Token(enumeration.OpenBrace);
-                Separated(enumeration.Members, member => NamedToken("EnumMemberDeclaration", member.Name));
+                Separated(enumeration.Members, member =>
+                {
+                    Node("EnumMemberDeclaration");
+                    Token(member.Name);
+                    Optional(member.EqualsToken);
+                    if (member.Value is not null) { Value(member.Value); }
+                    End();
+                });
                 Token(enumeration.CloseBrace);
                 break;
 

@@ -443,19 +443,43 @@ belong to a program document.",
     fn parse_enum_declaration(&mut self) -> Statement {
         let keyword = self.take();
         let name = self.take();
+        let mut colon = None;
+        let mut backing = None;
+        if self.kind() == TokenKind::Colon {
+            colon = Some(self.take());
+            backing = Some(self.parse_enum_backing());
+        }
+
         let message = format!("Expected '{{' and the members of '{}'.", self.text_of(&name));
         let open = self.expect(TokenKind::OpenBrace, &message);
         if open.is_missing {
             let close = self.missing(TokenKind::CloseBrace);
-            return Statement::EnumDeclaration { keyword, name, open, members: Separated::empty(), close };
+            return Statement::EnumDeclaration { keyword, name, colon, backing, open, members: Separated::empty(), close };
         }
 
         let members = self.parse_separated(TokenKind::CloseBrace, Parser::parse_enum_member);
         let close = self.expect_close(TokenKind::CloseBrace, &open, "'{'", "'}'");
-        Statement::EnumDeclaration { keyword, name, open, members, close }
+        Statement::EnumDeclaration { keyword, name, colon, backing, open, members, close }
     }
 
-    fn parse_enum_member(&mut self) -> Option<Token> {
+    /// `int` or `text(3)` after an enum's name. Which names mean anything is the binder's to say.
+    fn parse_enum_backing(&mut self) -> EnumBacking {
+        let type_name = if self.kind() == TokenKind::Identifier && !self.starts_line() {
+            self.take()
+        } else {
+            self.missing_token(TokenKind::Identifier, "Expected what backs the enum's members after ':': 'int' or 'text(n)'.")
+        };
+        if type_name.is_missing || self.kind() != TokenKind::OpenParen {
+            return EnumBacking { type_name, open: None, size: None, close: None };
+        }
+
+        let open = self.take();
+        let size = self.expect(TokenKind::Number, "Expected the most characters a value may have, such as 'text(3)'.");
+        let close = self.expect_close(TokenKind::CloseParen, &open, "'('", "')'");
+        EnumBacking { type_name, open: Some(open), size: Some(size), close: Some(close) }
+    }
+
+    fn parse_enum_member(&mut self) -> Option<EnumMember> {
         if self.kind() != TokenKind::Identifier {
             self.error(self.current().span, "Expected an enum member: a lowercase name.");
             return None;
@@ -472,7 +496,12 @@ belong to a program document.",
             let message = format!("'{}' is a keyword and cannot be an enum member.", self.text_of(&member));
             self.error(member.span, &message);
         }
-        Some(member)
+        if self.kind() != TokenKind::Equals {
+            return Some(EnumMember { name: member, equals: None, value: None });
+        }
+        let equals = self.take();
+        let value = self.parse_value();
+        Some(EnumMember { name: member, equals: Some(equals), value: Some(value) })
     }
 
     // ── the program layer ───────────────────────────────────────────────────────────────────────

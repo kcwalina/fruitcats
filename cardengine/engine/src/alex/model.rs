@@ -543,9 +543,10 @@ impl Model {
 
     pub fn declaration_string(&self, id: DeclarationId) -> String {
         let declaration = &self.declarations[id];
-        match &declaration.name {
-            Some(name) => name.clone(),
-            None => format!("'{}'", declaration.title.clone().unwrap_or_default()),
+        match (&declaration.name, &declaration.title) {
+            (Some(name), _) => name.clone(),
+            (None, Some(title)) => format!("'{}'", title),
+            (None, None) => "(inline)".to_string(),
         }
     }
 

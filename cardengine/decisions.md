@@ -1100,6 +1100,25 @@ returns `bool`; a `provide` hook returns its query's result), which the host can
 `routine_kinds`, each a kind of its own. The limits (no loops but over a selection, no recursion) would hold there
 too, so every rule still finishes.
 
+### A wiring line may be one statement (owner, 2026-09-29)
+
+Most handlers were one call, each written twice: `effect draw-a-card { draw() }` and
+`@klobuk.on-enter = draw-a-card`. Now the right side of `@card.slot = ...` is either a named handler, as
+before, or one statement: `@klobuk.on-enter = draw()`. Done in both Alex implementations (C# Alex 0.8.0).
+
+- **How it's told apart.** A name or `@name` alone on the rest of the line names a handler. Anything else
+  starting with a name, an `@` or a parenthesis is a statement, so a chain is one too
+  (`@a-domowiks-temper.on-play = choose(all).damage(card.damage)`). There is no `= draw` without
+  parentheses: that names a handler called `draw`. One spelling each.
+- **It is bound as an unnamed handler of the slot's kind**, attached to that slot, and checked exactly as a
+  one-line body attached there: the same scope (`this`, `card`, `own`, `event`â€¦), the same checks, and the
+  linker's "every card with text has a handler", which it satisfies.
+- **Slot kinds.** An `effect` or `static` slot takes one statement; a `condition` slot takes one
+  true-or-false expression (`@dziadzius.awaken = own.resources.count >= card.offerings`). A slot that holds
+  more than one kind needs a named handler, since a statement there could be either.
+- **Named handlers stay** for bodies of several statements and for behaviour several cards or faces share
+  (`gain-energy` on both of DziadziuÅ›'s faces). Hello TCG's sample now writes its single-use handlers inline.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

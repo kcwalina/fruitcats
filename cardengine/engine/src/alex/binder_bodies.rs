@@ -108,6 +108,18 @@ impl BodyChecker<'_, '_> {
         let kind = declaration.kind.clone();
         let TypeKind::Function { shape, .. } = self.binder.model.types[declaration.function_type].kind else { return };
         let tree = self.binder.states[document].tree.clone();
+        if let Statement::ReferenceAssignment { value: syntax::Value::InlineStatement { statement: inline }, .. } = &tree.root.statements[statement] {
+            if let (BodyStatement::Expression(expression), BodyShape::Expression) = (inline.as_ref(), shape) {
+                let boolean = self.types.boolean;
+                let found = self.expression(expression, Some(boolean));
+                self.require_bool(found, expression, &format!("The body of {}", with_article(&kind)));
+                return;
+            }
+            self.locals.push(Vec::new());
+            self.check_statement(inline);
+            self.locals.pop();
+            return;
+        }
         let Statement::Declaration { kind: kind_token, body, .. } = &tree.root.statements[statement] else { return };
         let bytes = self.bytes();
         let parameters: Vec<(String, Option<TypeId>)> =

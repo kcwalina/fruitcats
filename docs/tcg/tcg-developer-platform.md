@@ -236,7 +236,7 @@ are engine concepts, so a playable game maps its types onto them (`UnitCards { t
 [@Creature] }`), and `kardix check` confirms the types have the fields the library needs.
 
 **Card text and handlers.** A card's printed rules text is `text = '...'`. Its handlers attach to
-the card by slot (`@hello.on-enter = draw-a-card`, `@cheer.static = ...`, `@spark.on-play = ...`);
+the card by slot (`@hello.on-enter = draw()`, `@cheer.static = ...`, `@spark.on-play = ...`);
 the slot names when the handler runs. The linker checks both ways: every card with text has a
 handler, every handler belongs to a card with text.
 

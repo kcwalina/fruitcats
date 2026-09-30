@@ -1015,7 +1015,7 @@ impl<'h> Binder<'h> {
                 }
                 self.model.add_value(ValueKind::String(last), span)
             }
-            syntax::Value::Missing { .. } => self.model.add_value(ValueKind::Invalid, span),
+            syntax::Value::Missing { .. } | syntax::Value::InlineStatement { .. } => self.model.add_value(ValueKind::Invalid, span),
         }
     }
 
@@ -1123,7 +1123,7 @@ impl<'h> Binder<'h> {
                 }
                 continue;
             };
-            let value_span = tokens::value_span(value);
+            let value_span = value_span(value);
             if backing.is_none() {
                 let message = format!(
                     "'{}' has a value, but '{}' is not backed. To give its members values, write 'enum {} : int' or 'enum {} : text(n)'.",

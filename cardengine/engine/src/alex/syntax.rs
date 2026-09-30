@@ -337,6 +337,9 @@ pub enum Value {
     Reference { at: Token, path: Path },
     Nameof { keyword: Token, open: Token, path: Path, close: Token },
     Missing { missing: Token },
+    /// One body statement as the value of `@card.slot = `: `@klobuk.on-enter = draw()`. It is bound as a declaration of
+    /// the slot's kind, with no name, whose body is this statement.
+    InlineStatement { statement: Box<BodyStatement> },
 }
 
 #[derive(Clone, Debug)]

@@ -163,6 +163,7 @@ pub fn of_value<'t>(value: &'t Value, tokens: &mut Vec<&'t Token>) {
             tokens.push(close);
         }
         Value::Missing { missing } => tokens.push(missing),
+        Value::InlineStatement { statement } => of_body_statement(statement, tokens),
     }
 }
 
@@ -324,12 +325,6 @@ pub fn span(tokens: &[&Token]) -> TextSpan {
         return TextSpan::default();
     }
     TextSpan::from_bounds(start as usize, start.max(end) as usize)
-}
-
-pub fn value_span(value: &Value) -> TextSpan {
-    let mut tokens: Vec<&Token> = Vec::new();
-    of_value(value, &mut tokens);
-    span(&tokens)
 }
 
 pub fn path_span(path: &Path) -> TextSpan {

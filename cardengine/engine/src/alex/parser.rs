@@ -541,10 +541,41 @@ belong to a program document.",
         let equals = self.expect(TokenKind::Equals, &message);
         let value = if self.looks_like_next_statement() {
             self.missing_value("A value is missing after '='.")
+        } else if self.is_inline_statement_start() {
+            // None only after a stray 'else', which is reported and skipped.
+            match self.parse_body_statement() {
+                Some(statement) => Value::InlineStatement { statement: Box::new(statement) },
+                None => Value::Missing { missing: self.missing(TokenKind::Identifier) },
+            }
         } else {
             self.parse_value()
         };
         Statement::ReferenceAssignment { at, target, equals, value }
+    }
+
+    /// Whether the value of `@card.slot = ` is one body statement (`draw()`) rather than a declaration's name: a name or
+    /// `@name` alone on the rest of the line names one, and anything else that starts with a name, an `@` or a
+    /// parenthesis is a statement. A scenario section (`given ...`) is not one: it would read on across the lines below.
+    fn is_inline_statement_start(&self) -> bool {
+        if self.kind() == TokenKind::OpenParen {
+            return true;
+        }
+        if self.is_section_start() {
+            return false;
+        }
+        let mut offset;
+        if self.kind() == TokenKind::Identifier && !self.current_is_type_name() {
+            offset = 1;
+        } else if self.kind() == TokenKind::At && self.peek(1).kind == TokenKind::Identifier {
+            offset = 2;
+            while self.peek(offset).kind == TokenKind::Dot && self.peek(offset + 1).kind == TokenKind::Identifier {
+                offset += 2;
+            }
+        } else {
+            return false;
+        }
+        let next = self.peek(offset);
+        next.kind != TokenKind::EndOfFile && !next.starts_line
     }
 
     fn parse_declaration(&mut self) -> Statement {

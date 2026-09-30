@@ -732,6 +732,7 @@ The earlier order continues on the core:
    core's checker. It found 16 gaps in the core and libraries; its README lists them with a fix each.
    Gaps 1 to 13 are closed before the runtime, so that Hello TCG and Folkborn both check clean.
 1. **The runtime** plays Hello TCG from its Alex source.
+   Designed on paper first: [runtime-design.md](runtime-design.md), for the owner's review (2026-09-29).
 2. **`kardix` basics:** `new`, `test`, `sim` with a random bot.
 3. **Search bot and `kardix playtest`.**
 4. **The game table:** Studio's Play tab (§13, with events linked to their rules) and `kardix play`

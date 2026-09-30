@@ -43,9 +43,24 @@ pub fn of_statement<'t>(statement: &'t Statement, tokens: &mut Vec<&'t Token>) {
             tokens.push(close);
         }
         Statement::TextTable { token } => tokens.push(token),
-        Statement::Declaration { kind, name, body } => {
+        Statement::Declaration { kind, name, parameters, colon, result, body } => {
             tokens.push(kind);
             tokens.push(name);
+            if let Some(list) = parameters {
+                tokens.push(&list.open);
+                of_separated(&list.parameters, tokens, |parameter, tokens| {
+                    tokens.push(&parameter.name);
+                    tokens.push(&parameter.colon);
+                    of_type(&parameter.parameter_type, tokens);
+                });
+                tokens.push(&list.close);
+            }
+            if let Some(colon) = colon {
+                tokens.push(colon);
+            }
+            if let Some(result) = result {
+                of_type(result, tokens);
+            }
             of_body(body, tokens);
         }
         Statement::Extension { keyword, type_name, members } => {

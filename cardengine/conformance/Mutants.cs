@@ -16,6 +16,7 @@ internal static class Mutants
         "else "u8.ToArray(), "given "u8.ToArray(), ":"u8.ToArray(), "|"u8.ToArray(), "?"u8.ToArray(), "."u8.ToArray(),
         "=="u8.ToArray(), "<"u8.ToArray(), "not "u8.ToArray(), "\""u8.ToArray(), "Ä"u8.ToArray(), new byte[] { 0xFF },
         " X "u8.ToArray(), "nameof("u8.ToArray(), "1.5e"u8.ToArray(), "effect e "u8.ToArray(),
+        "routine r "u8.ToArray(), "routine r(n: int) "u8.ToArray(), " : bool "u8.ToArray(), "(n: "u8.ToArray(),
     };
 
     public static List<byte[]> Make(byte[] source, int count, int seed)

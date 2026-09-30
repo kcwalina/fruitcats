@@ -90,6 +90,9 @@ impl<'m> Dumper<'m> {
             let span = self.model.values[*value].span;
             self.line(&format!("{} {} {}+{}", declaration.kind, self.model.declaration_string(d), span.start, span.length));
             self.depth += 1;
+            for parameter in &declaration.parameters {
+                self.line(&format!("parameter {}: {}", parameter.name, self.model.type_string(parameter.parameter_type)));
+            }
             for attachment in &declaration.attachments {
                 let shown = format!("@{}.{}", attachment.path.join("."), self.model.fields[attachment.member].name);
                 let target = self.shown(Some(attachment.target));

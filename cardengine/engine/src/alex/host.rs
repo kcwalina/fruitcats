@@ -149,6 +149,12 @@ pub trait ValidationContext {
 /// The host: kinds of declaration, an environment for bodies, and validation. `None`'s defaults add nothing.
 pub trait Host {
     fn kinds(&self) -> Vec<(String, BodyShape)>;
+    /// The results a `routine` may declare, each with the kind of declaration a routine with that result is: `""` for
+    /// one that returns nothing (`routine zing { ... }`), a type name for one that returns a value
+    /// (`routine zest-on : bool { ... }`). Each kind named is one of `kinds`. Empty: `routine` is no kind of declaration.
+    fn routine_kinds(&self) -> Vec<(String, String)> {
+        Vec::new()
+    }
     /// Whether bodies are checked against an environment at all.
     fn has_environment(&self) -> bool {
         false
@@ -162,10 +168,15 @@ pub trait Host {
 /// A host that registers kinds of declaration and nothing else: bodies are checked only for their shape.
 pub struct KindsHost {
     pub kinds: Vec<(String, BodyShape)>,
+    pub routines: Vec<(String, String)>,
 }
 
 impl Host for KindsHost {
     fn kinds(&self) -> Vec<(String, BodyShape)> {
         self.kinds.clone()
+    }
+
+    fn routine_kinds(&self) -> Vec<(String, String)> {
+        self.routines.clone()
     }
 }

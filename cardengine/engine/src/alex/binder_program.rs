@@ -9,6 +9,9 @@ use super::model::*;
 use super::syntax::{self, Body, BodyStatement, Statement, TextSpan};
 use super::tokens;
 
+/// The kind of declaration whose result, written after a colon, says which of the host's kinds it is.
+const ROUTINE: &str = "routine";
+
 impl Binder<'_> {
     // ── kinds ────────────────────────────────────────────────────────────────────────────────
 
@@ -25,6 +28,9 @@ impl Binder<'_> {
 
     fn kind_list(&self) -> String {
         let mut kinds: Vec<&str> = self.kinds.iter().map(|(k, _)| k.as_str()).collect();
+        if self.has_routines() {
+            kinds.push(ROUTINE);
+        }
         kinds.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
         kinds.join(", ")
     }
@@ -149,12 +155,33 @@ impl Binder<'_> {
         let bytes = self.states[s].bytes.clone();
         let mut names_seen: HashSet<String> = HashSet::new();
         for (index, statement) in tree.root.statements.iter().enumerate() {
-            let Statement::Declaration { kind, name, body } = statement else { continue };
+            let Statement::Declaration { kind, name, parameters, colon, result, .. } = statement else { continue };
             if kind.is_missing {
                 continue;
             }
 
-            let kind_text = value_text(kind, &bytes);
+            let mut kind_text = value_text(kind, &bytes);
+            let is_routine = self.is_routine(kind, &bytes);
+            if is_routine {
+                let result_text = routine_result(result, &bytes);
+                let Some(routine_kind) = self.routines.iter().find(|(r, _)| *r == result_text).map(|(_, k)| k.clone()) else {
+                    let message = format!("'{}' is not what a routine returns here. A routine returns {}.", result_text, self.routine_result_list());
+                    let span = result.as_ref().map(type_span).unwrap_or(name.span);
+                    self.error(s, message, span);
+                    continue;
+                };
+                kind_text = routine_kind;
+            } else {
+                if let Some(list) = parameters {
+                    let message = format!("Only a routine has parameters; '{} {}' cannot.", kind_text, value_text(name, &bytes));
+                    self.error(s, message, parameter_list_span(list));
+                }
+                if let Some(colon) = colon {
+                    let message = format!("Only a routine declares what it returns; '{} {}' cannot.", kind_text, value_text(name, &bytes));
+                    self.error(s, message, colon.span);
+                }
+            }
+
             let Some(function) = self.function_type(&kind_text) else {
                 let message = if self.kinds.is_empty() {
                     format!(
@@ -169,7 +196,8 @@ impl Binder<'_> {
                 continue;
             };
 
-            self.check_shape(&kind_text, name, body, function, s);
+            self.check_shape(statement, function, s);
+            let routine_parameters = if is_routine { self.bind_parameters(statement, s) } else { Vec::new() };
             let titled = name.kind == syntax::TokenKind::String;
             let declaration_name = if titled { None } else { Some(value_text(name, &bytes)) };
             let title = if titled { Some(string_literal_text(name, &bytes)) } else { None };
@@ -191,6 +219,7 @@ impl Binder<'_> {
                 title,
                 document_name: self.states[s].root_name.clone(),
                 attachments: Vec::new(),
+                parameters: routine_parameters,
                 document: s,
                 statement: index,
             });
@@ -201,55 +230,138 @@ impl Binder<'_> {
     }
 
     /// Reports a body that does not have its kind's shape.
-    fn check_shape(&mut self, kind: &str, name: &syntax::Token, body: &Body, function: TypeId, s: usize) {
+    fn check_shape(&mut self, statement: &Statement, function: TypeId, s: usize) {
+        let Statement::Declaration { kind: kind_token, name, result, body, .. } = statement else { return };
         let bytes = self.states[s].bytes.clone();
-        let TypeKind::Function { shape, .. } = self.model.types[function].kind else { return };
+        let TypeKind::Function { ref kind, shape } = self.model.types[function].kind else { return };
+        let kind = kind.clone();
         let name_text = value_text(name, &bytes);
+        let described = self.describe_declaration(kind_token, &kind, &bytes);
+        let head = if self.is_routine(kind_token, &bytes) {
+            let returns = if result.is_none() { String::new() } else { format!(" : {}", routine_result(result, &bytes)) };
+            format!("{} {}{}", ROUTINE, name_text, returns)
+        } else {
+            format!("{} {}", kind, name_text)
+        };
         match shape {
             BodyShape::Statements => match body {
                 Body::Expression { equals, .. } => {
-                    self.error(s, format!("The body of {} is statements in braces: '{} {} {{ ... }}'.", with_article(kind), kind, name_text), equals.span);
+                    self.error(s, format!("The body of {} is statements in braces: '{} {{ ... }}'.", described, head), equals.span);
                 }
-                Body::Block(block) => self.report_sections(block, kind, s),
+                Body::Block(block) => self.report_sections(block, &described, s),
             },
             BodyShape::Expression => {
                 if let Body::Block(block) = body {
                     if !block.open.is_missing && (block.statements.len() != 1 || !matches!(block.statements[0], BodyStatement::Expression(_))) {
-                        self.error(
-                            s,
-                            format!("The body of {} is one expression: '{} {} {{ a >= 2 }}', or '= a >= 2'.", with_article(kind), kind, name_text),
-                            block.open.span,
-                        );
+                        self.error(s, format!("The body of {} is one expression: '{} {{ a >= 2 }}', or '= a >= 2'.", described, head), block.open.span);
                     }
                 }
             }
             BodyShape::Scenario => match body {
-                Body::Block(block) => self.check_sections(block, kind, s),
+                Body::Block(block) => self.check_sections(block, &kind, s),
                 _ => {
                     let span = body_span(body);
-                    self.error(s, format!("The body of {} is its sections in braces: 'given ...', 'when ...', 'then ...'.", with_article(kind)), span);
+                    self.error(s, format!("The body of {} is its sections in braces: 'given ...', 'when ...', 'then ...'.", described), span);
                 }
             },
         }
     }
 
-    fn report_sections(&mut self, block: &syntax::Block, kind: &str, s: usize) {
+    fn report_sections(&mut self, block: &syntax::Block, described: &str, s: usize) {
         let bytes = self.states[s].bytes.clone();
         for statement in &block.statements {
             match statement {
                 BodyStatement::Section { label, .. } => {
-                    let message = format!("'{}' starts a section of a scenario, and this is {}.", value_text(label, &bytes), with_article(kind));
+                    let message = format!("'{}' starts a section of a scenario, and this is {}.", value_text(label, &bytes), described);
                     self.error(s, message, label.span);
                 }
                 BodyStatement::If { then, otherwise, .. } => {
-                    self.report_sections(then, kind, s);
+                    self.report_sections(then, described, s);
                     if let Some(otherwise) = otherwise {
-                        self.report_sections(otherwise, kind, s);
+                        self.report_sections(otherwise, described, s);
                     }
                 }
                 _ => {}
             }
         }
+    }
+
+    // ── routines ─────────────────────────────────────────────────────────────────────────────
+
+    fn has_routines(&self) -> bool {
+        !self.routines.is_empty() && !self.kinds.iter().any(|(k, _)| k == ROUTINE)
+    }
+
+    /// Whether a declaration is a routine: the host has routines and it is spelled `routine`.
+    pub(super) fn is_routine(&self, kind: &syntax::Token, bytes: &[u8]) -> bool {
+        self.has_routines() && kind.is(bytes, ROUTINE.as_bytes())
+    }
+
+    fn routine_result_list(&self) -> String {
+        let mut results: Vec<String> = self.routines.iter().map(|(r, _)| if r.is_empty() { "nothing".to_string() } else { r.clone() }).collect();
+        results.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
+        match results.len() {
+            1 => results[0].clone(),
+            n => format!("{} or {}", results[..n - 1].join(", "), results[n - 1]),
+        }
+    }
+
+    /// The result a routine of `kind` returns (empty for nothing), or none when the kind is no routine's.
+    fn result_of_kind(&self, kind: &str) -> Option<String> {
+        if !self.has_routines() {
+            return None;
+        }
+        self.routines.iter().find(|(_, k)| k == kind).map(|(r, _)| r.clone())
+    }
+
+    /// "a routine that returns bool" for a routine's kind, whichever way it was spelled; "a static" otherwise.
+    pub(super) fn describe_kind(&self, kind: &str) -> String {
+        match self.result_of_kind(kind) {
+            Some(result) => returns_phrase(&result),
+            None => with_article(kind),
+        }
+    }
+
+    /// "a routine that returns bool" for a routine, "an effect" for a declaration spelled by its kind.
+    pub(super) fn describe_declaration(&self, kind_token: &syntax::Token, kind: &str, bytes: &[u8]) -> String {
+        if self.is_routine(kind_token, bytes) { self.describe_kind(kind) } else { with_article(kind) }
+    }
+
+    /// What a member of these kinds holds: "an effect (a routine that returns nothing)".
+    fn wanted_phrase(&self, kinds: &[String]) -> String {
+        let phrases: Vec<String> = kinds
+            .iter()
+            .map(|kind| match self.result_of_kind(kind) {
+                Some(result) => format!("{} ({})", with_article(kind), returns_phrase(&result)),
+                None => with_article(kind),
+            })
+            .collect();
+        phrases.join(" or ")
+    }
+
+    /// A routine's parameters, each with its type; a name written twice is reported and left out.
+    fn bind_parameters(&mut self, statement: &Statement, s: usize) -> Vec<RoutineParameter> {
+        let mut parameters: Vec<RoutineParameter> = Vec::new();
+        let Statement::Declaration { name: declaration_name, parameters: Some(list), .. } = statement else { return parameters };
+        let bytes = self.states[s].bytes.clone();
+        for parameter in items(&list.parameters) {
+            if parameter.name.is_missing {
+                continue;
+            }
+            let name = value_text(&parameter.name, &bytes);
+            let parameter_type = self.bind_type(&parameter.parameter_type, s);
+            if parameters.iter().any(|p| p.name == name) {
+                let message = format!(
+                    "'{}' is a parameter of '{}' twice; each parameter has a name of its own.",
+                    name,
+                    value_text(declaration_name, &bytes)
+                );
+                self.error(s, message, parameter.name.span);
+                continue;
+            }
+            parameters.push(RoutineParameter { name, parameter_type, span: parameter.name.span });
+        }
+        parameters
     }
 
     fn check_sections(&mut self, block: &syntax::Block, kind: &str, s: usize) {
@@ -532,9 +644,9 @@ impl Binder<'_> {
                     let message = format!(
                         "'{}' is {}, and '{}' holds {}.",
                         name,
-                        with_article(&self.declaration_of(named[0]).kind),
+                        self.describe_kind(&self.declaration_of(named[0]).kind),
                         member_name,
-                        with_article(&wanted)
+                        self.wanted_phrase(&kinds)
                     );
                     self.error(s, message, span);
                     return None;
@@ -563,7 +675,7 @@ impl Binder<'_> {
                         return Some(target);
                     }
                 }
-                let message = format!("'@{}' names {}, and '{}' holds {}.", shown, self.model.describe(target), member_name, with_article(&wanted));
+                let message = format!("'@{}' names {}, and '{}' holds {}.", shown, self.model.describe(target), member_name, self.wanted_phrase(&kinds));
                 self.error(s, message, span);
                 None
             }
@@ -710,4 +822,36 @@ fn body_statement_span(statement: &BodyStatement) -> TextSpan {
     let mut list = Vec::new();
     tokens::of_body_statement(statement, &mut list);
     tokens::span(&list)
+}
+
+/// What a routine returns, as the host's `routine_kinds` names it: empty for nothing.
+fn routine_result(result: &Option<syntax::Type>, bytes: &[u8]) -> String {
+    match result {
+        None | Some(syntax::Type::Missing { .. }) => String::new(),
+        Some(result) => {
+            let mut list = Vec::new();
+            tokens::of_type(result, &mut list);
+            list.iter().map(|t| value_text(t, bytes)).collect()
+        }
+    }
+}
+
+fn returns_phrase(result: &str) -> String {
+    format!("a routine that returns {}", if result.is_empty() { "nothing" } else { result })
+}
+
+fn parameter_list_span(list: &syntax::ParameterList) -> TextSpan {
+    let mut all = vec![&list.open];
+    for parameter in items(&list.parameters) {
+        all.push(&parameter.name);
+        all.push(&parameter.colon);
+        tokens::of_type(&parameter.parameter_type, &mut all);
+    }
+    for element in &list.parameters.elements {
+        if let syntax::Element::Separator(separator) = element {
+            all.push(separator);
+        }
+    }
+    all.push(&list.close);
+    tokens::span(&all)
 }

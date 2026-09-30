@@ -108,8 +108,13 @@ impl BodyChecker<'_, '_> {
         let kind = declaration.kind.clone();
         let TypeKind::Function { shape, .. } = self.binder.model.types[declaration.function_type].kind else { return };
         let tree = self.binder.states[document].tree.clone();
-        let Statement::Declaration { body, .. } = &tree.root.statements[statement] else { return };
+        let Statement::Declaration { kind: kind_token, body, .. } = &tree.root.statements[statement] else { return };
         let bytes = self.bytes();
+        let parameters: Vec<(String, Option<TypeId>)> =
+            self.binder.model.declarations[self.declaration].parameters.iter().map(|p| (p.name.clone(), Some(p.parameter_type))).collect();
+        if !parameters.is_empty() {
+            self.locals.push(parameters);
+        }
 
         match shape {
             BodyShape::Statements => {
@@ -129,7 +134,8 @@ impl BodyChecker<'_, '_> {
                 if let Some(expression) = expression {
                     let boolean = self.types.boolean;
                     let found = self.expression(expression, Some(boolean));
-                    self.require_bool(found, expression, &format!("The body of {}", with_article(&kind)));
+                    let described = self.binder.describe_declaration(kind_token, &kind, &bytes);
+                    self.require_bool(found, expression, &format!("The body of {}", described));
                 }
             }
             BodyShape::Scenario => {

@@ -164,6 +164,24 @@ internal sealed class CSharpDump
                 Node("Declaration");
                 Token(declaration.Kind);
                 Token(declaration.Name);
+                if (declaration.Parameters is { } parameters)
+                {
+                    Node("ParameterList");
+                    Token(parameters.OpenParenthesis);
+                    Separated(parameters.Parameters, parameter =>
+                    {
+                        Node("Parameter");
+                        Token(parameter.Name);
+                        Token(parameter.Colon);
+                        Type(parameter.Type);
+                        End();
+                    });
+                    Token(parameters.CloseParenthesis);
+                    End();
+                }
+
+                Optional(declaration.Colon);
+                if (declaration.Result is not null) { Type(declaration.Result); }
                 Body(declaration.Body);
                 break;
 

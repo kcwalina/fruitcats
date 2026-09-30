@@ -166,10 +166,27 @@ impl<'o> Dumper<'o> {
                 self.node("TextTable");
                 self.token(token);
             }
-            Statement::Declaration { kind, name, body } => {
+            Statement::Declaration { kind, name, parameters, colon, result, body } => {
                 self.node("Declaration");
                 self.token(kind);
                 self.token(name);
+                if let Some(list) = parameters {
+                    self.node("ParameterList");
+                    self.token(&list.open);
+                    self.separated(&list.parameters, |dumper, parameter| {
+                        dumper.node("Parameter");
+                        dumper.token(&parameter.name);
+                        dumper.token(&parameter.colon);
+                        dumper.type_syntax(&parameter.parameter_type);
+                        dumper.end();
+                    });
+                    self.token(&list.close);
+                    self.end();
+                }
+                self.optional(colon);
+                if let Some(result) = result {
+                    self.type_syntax(result);
+                }
                 self.body(body);
             }
             Statement::Extension { keyword, type_name, members } => {

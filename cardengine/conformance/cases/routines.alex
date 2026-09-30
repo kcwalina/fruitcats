@@ -1,0 +1,37 @@
+// Routines, right and wrong, so both implementations bind and report them the same way. The mistakes are deliberate.
+
+type Unit { name: text }
+type Box { units: [text: Unit] = empty }
+extension Unit {
+  on-enter: effect?
+  ready-when: condition?
+}
+
+routines = Box
+
+units = [
+  fox = Unit { name = 'Fox' }
+  owl = Unit { name = 'Owl' }
+  elk = Unit { name = 'Elk' }
+]
+
+routine draw-one { draw(1) }
+routine is-busy : bool { own.hand.count >= 2 }
+routine is-idle : bool = own.hand.count < 2
+routine deal(n: int, times: int) { choose(all).damage(n) }
+
+routine counts : int { 2 }
+routine loud = own.hand.count >= 2
+routine quiet : bool {
+  draw(1)
+  draw(2)
+}
+routine twice(n: int, n: int) { draw(n) }
+effect with-parameters(n: int) { draw(n) }
+condition with-result : bool { own.hand.count >= 2 }
+
+@fox.on-enter = draw-one
+@fox.ready-when = is-busy
+@owl.on-enter = is-idle
+@owl.ready-when = draw-one
+@elk.on-enter = deal

@@ -38,6 +38,12 @@ impl Host for CardEngineHost {
         ]
     }
 
+    // A routine that returns nothing is an effect, one that returns bool a condition; 'effect' and 'condition' are their
+    // deprecated spellings, and the slot types' names.
+    fn routine_kinds(&self) -> Vec<(String, String)> {
+        vec![(String::new(), "effect".to_string()), ("bool".to_string(), "condition".to_string())]
+    }
+
     fn has_environment(&self) -> bool {
         true
     }
@@ -71,6 +77,30 @@ impl Host for CardEngineHost {
                 check_abilities(context, document.root, &key, &mut HashSet::new());
             }
         }
+
+        for document in &documents {
+            check_attached_parameters(context, document);
+        }
+    }
+}
+
+/// A slot runs its routine with no arguments, so a routine with parameters cannot be attached to one. A card's handler
+/// reads its numbers from the card instead, which keeps them the numbers its text prints.
+fn check_attached_parameters(context: &mut dyn ValidationContext, document: &DocumentView) {
+    let mut found: Vec<(TextSpan, String)> = Vec::new();
+    for declaration in context.model().declarations.iter().filter(|d| d.document == document.index) {
+        let (Some(parameter), Some(attachment)) = (declaration.parameters.first(), declaration.attachments.first()) else { continue };
+        let message = format!(
+            "'{}' takes parameters, and @{}.{} runs it with none. A card's handler reads its numbers from the card ('card.{}', a constant it prints), so the text and the rules stay linked.",
+            declaration.name.clone().unwrap_or_default(),
+            attachment.path.join("."),
+            context.model().fields[attachment.member].name,
+            parameter.name
+        );
+        found.push((parameter.span, message));
+    }
+    for (span, message) in found {
+        context.error(document.index, span, message);
     }
 }
 

@@ -92,8 +92,8 @@ fn read_sources(input: &[u8]) -> Option<(Box<dyn Host>, Vec<binder::Source>)> {
 
     let mut reader = Reader { input, at: 0 };
     let host: Box<dyn Host> = match reader.number()? {
-        0 => Box::new(KindsHost { kinds: Vec::new() }),
-        1 => Box::new(KindsHost { kinds: CardEngineHost::new("").kinds() }),
+        0 => Box::new(KindsHost { kinds: Vec::new(), routines: Vec::new() }),
+        1 => Box::new(KindsHost { kinds: CardEngineHost::new("").kinds(), routines: CardEngineHost::new("").routine_kinds() }),
         _ => {
             let length = reader.number()? as usize;
             let game = String::from_utf8_lossy(reader.bytes(length)?).into_owned();

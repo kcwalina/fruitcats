@@ -531,6 +531,14 @@ belong to a program document.",
             self.error(TextSpan::from_bounds(kind.span.start as usize, name.span.end()), &message);
         }
 
+        let parameters = if self.kind() == TokenKind::OpenParen && !self.starts_line() { Some(self.parse_parameter_list()) } else { None };
+        let mut colon = None;
+        let mut result = None;
+        if self.kind() == TokenKind::Colon && !self.starts_line() {
+            colon = Some(self.take());
+            result = Some(self.parse_type_expression());
+        }
+
         let body = if self.kind() == TokenKind::OpenBrace {
             Body::Block(self.parse_block())
         } else if self.kind() == TokenKind::Equals && !self.starts_line() {
@@ -546,7 +554,31 @@ belong to a program document.",
             Body::Block(self.missing_block(&message))
         };
 
-        Statement::Declaration { kind, name, body }
+        Statement::Declaration { kind, name, parameters, colon, result, body }
+    }
+
+    fn parse_parameter_list(&mut self) -> ParameterList {
+        let open = self.take();
+        let parameters = self.parse_separated(TokenKind::CloseParen, Self::parse_parameter);
+        let close = self.expect_close(TokenKind::CloseParen, &open, "'('", "')'");
+        ParameterList { open, parameters, close }
+    }
+
+    fn parse_parameter(&mut self) -> Option<Parameter> {
+        if self.kind() != TokenKind::Identifier {
+            self.error(self.current().span, "Expected a parameter: 'name: type'.");
+            return None;
+        }
+
+        let name = self.take();
+        let message = format!("Expected ':' and the type of parameter '{}'.", self.text_of(&name));
+        let colon = self.expect(TokenKind::Colon, &message);
+        let parameter_type = if colon.is_missing && self.kind() != TokenKind::Identifier && self.kind() != TokenKind::OpenBracket {
+            Type::Missing { missing: self.missing(TokenKind::Identifier) }
+        } else {
+            self.parse_type_expression()
+        };
+        Some(Parameter { name, colon, parameter_type })
     }
 
     fn parse_block(&mut self) -> Block {

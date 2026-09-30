@@ -224,12 +224,29 @@ pub enum Statement {
     EnumDeclaration { keyword: Token, name: Token, open: Token, members: Separated<Token>, close: Token },
     /// `@@@ name`, the lines below it verbatim, and the `@@@` that closes it: one token.
     TextTable { token: Token },
-    /// `effect zing { ... }` or `scenario 'Title' { ... }`.
-    Declaration { kind: Token, name: Token, body: Body },
+    /// `routine zing { ... }`, `routine zest-on : bool = ...`, `effect zing { ... }` or `scenario 'Title' { ... }`. Only a
+    /// routine may have parameters and a result type.
+    Declaration { kind: Token, name: Token, parameters: Option<ParameterList>, colon: Option<Token>, result: Option<Type>, body: Body },
     /// `extension UnitCard { on-enter: effect? }`.
     Extension { keyword: Token, type_name: Token, members: FieldList },
     /// `@citron-fox.on-enter = zing`.
     ReferenceAssignment { at: Token, target: Path, equals: Token, value: Value },
+}
+
+/// `(n: int, from: player)`: a routine's parameters.
+#[derive(Clone, Debug)]
+pub struct ParameterList {
+    pub open: Token,
+    pub parameters: Separated<Parameter>,
+    pub close: Token,
+}
+
+/// `n: int`.
+#[derive(Clone, Debug)]
+pub struct Parameter {
+    pub name: Token,
+    pub colon: Token,
+    pub parameter_type: Type,
 }
 
 /// The braces of a record type or an extension.

@@ -170,9 +170,19 @@ pub struct Declaration {
     pub title: Option<String>,
     pub document_name: Option<String>,
     pub attachments: Vec<Attachment>,
+    /// A routine's parameters, in order; empty for any other declaration.
+    pub parameters: Vec<RoutineParameter>,
     /// Where it is written: the document's index in the binding, and the statement's in the document.
     pub document: usize,
     pub statement: usize,
+}
+
+/// `n: int` of `routine deal(n: int)`: its name, its type, and where the name is written.
+#[derive(Clone, Debug)]
+pub struct RoutineParameter {
+    pub name: String,
+    pub parameter_type: TypeId,
+    pub span: TextSpan,
 }
 
 #[derive(Clone, Debug)]

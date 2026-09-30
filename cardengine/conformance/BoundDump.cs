@@ -105,7 +105,15 @@ internal sealed class BoundDump
             ["scenario"] = AlexBodyShape.Scenario,
         };
 
+        private static readonly Dictionary<string, string> Routines = new(StringComparer.Ordinal)
+        {
+            [""] = "effect",
+            ["bool"] = "condition",
+        };
+
         public override IReadOnlyDictionary<string, AlexBodyShape> DeclarationKinds => Kinds;
+
+        public override IReadOnlyDictionary<string, string> RoutineKinds => Routines;
     }
 
     private void Document(string role, AlexDocument document)
@@ -152,6 +160,7 @@ internal sealed class BoundDump
         {
             Line(declaration.Kind + " " + declaration + " " + declaration.Span.Start + "+" + declaration.Span.Length);
             _depth++;
+            foreach (AlexRoutineParameter parameter in declaration.Parameters) { Line("parameter " + parameter.Name + ": " + parameter.Type); }
             foreach (AlexAttachment attachment in declaration.Attachments) { Line("attached " + attachment + " on " + Shown(attachment.Target)); }
             _depth--;
         }

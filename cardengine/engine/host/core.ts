@@ -11,7 +11,16 @@ interface Exports {
   project_png(handle: number, address: number, length: number): bigint;
   project_add(handle: number, address: number, length: number): number;
   project_free(handle: number): void;
+  game_new(project: number, address: number, length: number): number;
+  game_error(): bigint;
+  game_view(handle: number, seat: number): bigint;
+  game_log(handle: number, seat: number, from: number): bigint;
+  game_clone(handle: number): number;
+  game_free(handle: number): void;
 }
+
+/** A seat number that means every seat: a view or log with nothing hidden. */
+export const ALL_SEATS = 0xffffffff;
 
 /** One file of a project: its path within the project's folder, with forward slashes, and its bytes. */
 export interface ProjectFile {
@@ -99,6 +108,36 @@ export class Core {
     this.exports.project_free(handle);
   }
 
+  /** @internal */
+  startGame(project: number, setup: string): Game {
+    const input = encoder.encode(setup);
+    const address = this.copyIn(input);
+    const handle = this.exports.game_new(project, address, input.length);
+    this.exports.kardix_free(address, input.length);
+    if (handle === 0) throw new Error(decoder.decode(this.takeResult(this.exports.game_error())));
+    return new Game(this, handle);
+  }
+
+  /** @internal */
+  gameView(handle: number, seat: number): string {
+    return decoder.decode(this.takeResult(this.exports.game_view(handle, seat)));
+  }
+
+  /** @internal */
+  gameLog(handle: number, seat: number, from: number): string {
+    return decoder.decode(this.takeResult(this.exports.game_log(handle, seat, from)));
+  }
+
+  /** @internal */
+  gameClone(handle: number): Game {
+    return new Game(this, this.exports.game_clone(handle));
+  }
+
+  /** @internal */
+  gameFree(handle: number): void {
+    this.exports.game_free(handle);
+  }
+
   private copyIn(bytes: Uint8Array): number {
     const address = this.exports.kardix_alloc(bytes.length);
     new Uint8Array(this.exports.memory.buffer, address, bytes.length).set(bytes);
@@ -151,8 +190,37 @@ export class Project {
     return bytes;
   }
 
+  /** Starts a game: `<seed> <deck> <deck>…`, each seat's deck by its key. Throws with the core's reason when it can't. */
+  startGame(setup: string): Game {
+    return this.core.startGame(this.handle, setup);
+  }
+
   free(): void {
     this.core.free(this.handle);
+  }
+}
+
+/** A game in play (cardengine/engine/src/runtime): what each seat sees of it, and its log. Free it when done. */
+export class Game {
+  constructor(private readonly core: Core, private readonly handle: number) {}
+
+  /** The table as `seat` sees it (`ALL_SEATS`: everything), as JSON text. */
+  view(seat: number = ALL_SEATS): string {
+    return this.core.gameView(this.handle, seat);
+  }
+
+  /** The log from entry `from` on, as `seat` sees it: one JSON object per line. */
+  log(seat: number = ALL_SEATS, from = 0): string {
+    return this.core.gameLog(this.handle, seat, from);
+  }
+
+  /** An independent copy. */
+  clone(): Game {
+    return this.core.gameClone(this.handle);
+  }
+
+  free(): void {
+    this.core.gameFree(this.handle);
   }
 }
 

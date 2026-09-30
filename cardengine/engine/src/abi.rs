@@ -209,6 +209,106 @@ pub extern "C" fn project_free(handle: u32) {
     });
 }
 
+// ── games ────────────────────────────────────────────────────────────────────────────────────────
+
+struct GameSlot {
+    game: crate::runtime::Game,
+}
+
+thread_local! {
+    static GAMES: std::cell::RefCell<Vec<Option<GameSlot>>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// A seat number that means every seat: a view or log with nothing hidden, for a replay viewer, a judge or a test.
+pub const ALL_SEATS: u32 = u32::MAX;
+
+/// Starts a game of a loaded project (docs/tcg/runtime-design.md). The input is UTF-8: the seed, then each seat's deck
+/// by its key, separated by spaces (`42 hearth threshold`). Answers a handle for the game's other calls (never 0), or 0
+/// when the game can't start; `game_error` says why.
+///
+/// # Safety
+/// `pointer` and `length` must describe readable memory in this module.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn game_new(project_handle: u32, pointer: *const u8, length: u32) -> u32 {
+    let text = String::from_utf8_lossy(unsafe { std::slice::from_raw_parts(pointer, length as usize) }).into_owned();
+    let started = PROJECTS.with(|projects| {
+        let projects = projects.borrow();
+        let project = projects.get((project_handle as usize).wrapping_sub(1)).and_then(|p| p.as_ref()).ok_or("No project has that handle.")?;
+        let mut words = text.split_whitespace();
+        let seed: u64 = words.next().and_then(|w| w.parse().ok()).ok_or("Start a game with a seed and each seat's deck: 42 hearth threshold.")?;
+        let seats = words.map(|deck| crate::runtime::SeatSetup { deck: deck.to_string() }).collect();
+        let catalog = std::rc::Rc::new(crate::runtime::Catalog::read(project)?);
+        crate::runtime::Game::new(catalog, &crate::runtime::Setup { seats, seed })
+    });
+    match started {
+        Ok(game) => GAMES.with(|games| {
+            let mut games = games.borrow_mut();
+            games.push(Some(GameSlot { game }));
+            games.len() as u32
+        }),
+        Err(message) => {
+            LAST_ERROR.with(|e| *e.borrow_mut() = message);
+            0
+        }
+    }
+}
+
+thread_local! {
+    static LAST_ERROR: std::cell::RefCell<String> = const { std::cell::RefCell::new(String::new()) };
+}
+
+/// Why the last `game_new` answered 0, as UTF-8 text.
+#[unsafe(no_mangle)]
+pub extern "C" fn game_error() -> u64 {
+    hand_out(LAST_ERROR.with(|e| e.borrow().clone()).into_bytes())
+}
+
+fn with_game<T>(handle: u32, f: impl FnOnce(&mut crate::runtime::Game) -> T) -> Option<T> {
+    GAMES.with(|games| {
+        let mut games = games.borrow_mut();
+        games.get_mut((handle as usize).wrapping_sub(1)).and_then(|g| g.as_mut()).map(|slot| f(&mut slot.game))
+    })
+}
+
+fn seat_of(seat: u32) -> Option<usize> {
+    if seat == ALL_SEATS { None } else { Some(seat as usize) }
+}
+
+/// The table as a seat sees it, as UTF-8 JSON (`ALL_SEATS`: everything).
+#[unsafe(no_mangle)]
+pub extern "C" fn game_view(handle: u32, seat: u32) -> u64 {
+    let view = with_game(handle, |game| game.view_json(seat_of(seat))).unwrap_or_else(|| "{\"error\":\"No game has that handle.\"}".to_string());
+    hand_out(view.into_bytes())
+}
+
+/// The log from entry `from` on, as a seat sees it: one JSON object per line.
+#[unsafe(no_mangle)]
+pub extern "C" fn game_log(handle: u32, seat: u32, from: u32) -> u64 {
+    let log = with_game(handle, |game| game.log_json(seat_of(seat), from as usize)).unwrap_or_default();
+    hand_out(log.into_bytes())
+}
+
+/// A copy of a game, as a new handle: a bot tries moves on it.
+#[unsafe(no_mangle)]
+pub extern "C" fn game_clone(handle: u32) -> u32 {
+    let Some(copy) = with_game(handle, |game| game.clone()) else { return 0 };
+    GAMES.with(|games| {
+        let mut games = games.borrow_mut();
+        games.push(Some(GameSlot { game: copy }));
+        games.len() as u32
+    })
+}
+
+/// Frees a game.
+#[unsafe(no_mangle)]
+pub extern "C" fn game_free(handle: u32) {
+    GAMES.with(|games| {
+        if let Some(slot) = games.borrow_mut().get_mut((handle as usize).wrapping_sub(1)) {
+            *slot = None;
+        }
+    });
+}
+
 fn read_project_files(input: &[u8]) -> Option<Vec<project::ProjectFile>> {
     let mut at = 0usize;
     let mut take = |length: usize| -> Option<&[u8]> {

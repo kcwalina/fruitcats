@@ -159,6 +159,24 @@ Each step ends with its *done when* shown working.
 1. **The table.** Game state, the core's operations, the log with visibility, the seeded shuffle. *Done when* a
    test sets up Hello TCG's table (decks shuffled, hands drawn, the Hero in its zone) the same way from the same
    seed.
+   *Done 2026-09-29,* in `cardengine/engine/src/runtime/`:
+   - **What a game starts from.** The catalog (zones, cards and decks read from the loaded project once) and the
+     state (players, each seat's zones, objects).
+   - **The operations.** Every operation of the contract but the two grid ones (`turn`, `create-zone`), which come
+     with the first game on a grid. Each logs one event, with the rule that caused it.
+   - **Randomness.** xoshiro256\*\* seeded from the game's seed, in the state.
+   - **What each seat sees.** A seat sees a card's identity where its zone shows it: an Offering to its owner, the
+     top of a `top-card` pile, and what `reveal` showed until the card moves. The log leaves out the id of an object
+     a seat can't see, since an id seen once would follow the card. A seat's view of a pile it can't see into is
+     only the pile's count.
+   - **The exports.** `game_new`, `game_view`, `game_log`, `game_clone` and `game_free`, wrapped in
+     `host/core.ts` (`project.startGame('42 hearth threshold')`).
+   - **Tests.** `tests/runtime.rs` sets up Hello TCG with the operations as its setup rules will: the same seed
+     gives the same table and log, other seeds deal other hands, a player's log hides the opponent's draws, and a
+     clone is independent.
+   - **Two things decided on the way.** A game starts with each deck, its Hero included, in the deck zone: setup
+     rules move the Hero out, as Hello TCG's and Folkborn's list `StartsInZone` first. A moved card is no longer
+     revealed.
 2. **Routines run.** The interpreter, pausing on `choose`, and the scheduler. *Done when* Hello TCG's card
    handlers run in scenario-sized tests: Kłobuk draws a card, the Temper defeats a Creature.
 3. **Rules on hooks.** The hook machinery, and Hello TCG's library rules written in Alex. *Done when* two random

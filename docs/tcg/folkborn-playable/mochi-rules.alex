@@ -1,0 +1,6 @@
+#type Rules
+
+for = @mochi
+
+@mochi.on-enter = draw-a-card
+@mochi.on-defeated = ready-two-offerings

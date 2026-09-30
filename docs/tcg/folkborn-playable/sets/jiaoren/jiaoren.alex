@@ -1,0 +1,227 @@
+#type FamilySet
+
+id = 'jiaoren'
+name = 'Jiaoren'
+code = 'JR1'
+
+family = Family {
+  name = 'Jiaoren'
+  main = '#D9735F'
+  dark = '#7A2E2A'
+  tint = '#FCE9E3'
+}
+
+keywords = [
+  pearl-tears = Keyword { name = 'Pearl Tears' }
+]
+
+cards = [
+  zhu-er = Hero {
+    name = 'Zhu''er', epithet = 'the Littlest Jiaoren'
+    number = 'JR1-H01', rarity = legendary
+    frame = gold
+    art = 'art/JR1-H01-kitten.webp'
+    text = @zhu-er-text
+    constants = [
+      heal = 2
+      fallen = 4
+    ]
+    flavor = 'Her name means Little Pearl. She has never cried a tear that wasn''t one.'
+    back = Awakened {
+      name = 'Zhu''er', epithet = 'Pearl of the Moonlit Sea', power = 3
+      art = 'art/JR1-H01-bigcat.webp'
+      text = @zhu-er-back-text
+      constants = [extra-health = 1]
+    }
+  }
+  the-spring-guest = Creature {
+    name = 'The Spring Guest'
+    cost = 3, power = 2, health = 3
+    number = 'JR1-D01', rarity = uncommon
+    art = 'art/JR1-D01.webp'
+    text = 'Goodbye: Ready two of your Offerings.'
+    flavor = @the-spring-guest-flavor
+  }
+  weaver-of-the-sea-hall = Creature {
+    name = 'Weaver of the Sea Hall'
+    cost = 3, power = 2, health = 3
+    number = 'JR1-D02', rarity = common
+    art = 'art/JR1-D02.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'Deep under the South Sea, her loom never stops.'
+  }
+  dragon-silk = Talisman {
+    name = 'Dragon Silk'
+    cost = 2
+    number = 'JR1-D03', rarity = uncommon
+    art = 'art/JR1-D03.webp'
+    text = 'Attached unit gets +{extra-health} Health and Guardian.'
+    constants = [extra-health = 3]
+    flavor = 'Woven by the jiaoren. A robe of it goes into the sea and comes out dry.'
+  }
+  pearl-oyster = Creature {
+    name = 'Pearl Oyster'
+    cost = 1, power = 1, health = 2
+    number = 'JR1-D04', rarity = common
+    art = 'art/JR1-D04.webp'
+    text = 'Hello: Ready one of your Offerings.'
+    flavor = 'When the moon is full, the oysters are full. When the moon is dark, they are empty.'
+  }
+  jiaoren-of-the-tide-pools = Creature {
+    name = 'Jiaoren of the Tide Pools'
+    cost = 1, power = 1, health = 2
+    number = 'JR1-D05', rarity = common
+    art = 'art/JR1-D05.webp'
+    keywords = [@pearl-tears]
+    text = 'Pearl Tears.'
+    flavor = 'Lives in the water like a fish, and cries like one of us.'
+  }
+  ice-silkworm = Creature {
+    name = 'Ice Silkworm'
+    cost = 1, power = 2, health = 1
+    number = 'JR1-D06', rarity = common
+    art = 'art/JR1-D06.webp'
+    flavor = @ice-silkworm-flavor
+  }
+  jiaoren-children-at-play = Creature {
+    name = 'Jiaoren Children at Play'
+    cost = 2, power = 2, health = 2
+    number = 'JR1-D07', rarity = common
+    art = 'art/JR1-D07.webp'
+    keywords = [@Swift]
+    text = 'Swift.'
+    flavor = 'Racing the fish through the Dragon-Silk Palace.'
+  }
+  guest-from-the-deep = Creature {
+    name = 'Guest from the Deep'
+    cost = 2, power = 1, health = 3
+    number = 'JR1-D08', rarity = common
+    art = 'art/JR1-D08.webp'
+    keywords = [@Guardian, @pearl-tears]
+    text = 'Guardian. Pearl Tears.'
+    flavor = 'The guests from the deep are moved to tears, and weep pearls.'
+  }
+  keeper-of-the-dragon-silk-palace = Creature {
+    name = 'Keeper of the Dragon-Silk Palace'
+    cost = 3, power = 2, health = 4
+    number = 'JR1-D09', rarity = common
+    art = 'art/JR1-D09.webp'
+    keywords = [@Guardian, @pearl-tears]
+    text = 'Guardian. Pearl Tears.'
+    flavor = 'Some of the silk inside is as white as frost. She lets no one near it.'
+  }
+  jiaoren-pearl-healer = Creature {
+    name = 'Jiaoren Pearl-Healer'
+    cost = 4, power = 3, health = 5
+    number = 'JR1-D10', rarity = uncommon
+    art = 'art/JR1-D10.webp'
+    text = 'Hello: Heal {heal} from each unit you control.'
+    constants = [heal = 2]
+    flavor = 'A little pearl, ground to powder, for every hurt.'
+  }
+  muke = Creature {
+    name = 'Muke', epithet = 'the Wood Guests'
+    cost = 5, power = 5, health = 5
+    number = 'JR1-D11', rarity = uncommon
+    art = 'art/JR1-D11.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'They leave timber under the tree and take a fair price. Nobody ever sees their faces.'
+  }
+  elder-of-the-south-sea = Creature {
+    name = 'Elder of the South Sea'
+    cost = 8, power = 7, health = 7
+    number = 'JR1-D12', rarity = uncommon
+    art = 'art/JR1-D12.webp'
+    keywords = [@Guardian, @Fierce, @pearl-tears]
+    text = 'Guardian. Fierce. Pearl Tears.'
+    flavor = 'The jiaoren live beyond the South Sea. He has seen every wave of it.'
+  }
+  a-plate-of-pearls = Charm {
+    name = 'A Plate of Pearls'
+    cost = 1
+    number = 'JR1-D13', rarity = uncommon
+    art = 'art/JR1-D13.webp'
+    keywords = [@Ambush]
+    text = 'Ambush. A unit you control gets +{boost} Power this round. Ready one of your Offerings.'
+    constants = [boost = 2]
+    flavor = 'The thank-you gift of a guest from the sea.'
+  }
+  the-sea-turns-rough = Charm {
+    name = 'The Sea Turns Rough'
+    cost = 4
+    number = 'JR1-D14', rarity = uncommon
+    art = 'art/JR1-D14.webp'
+    keywords = [@Lucky]
+    text = 'Lucky. Deal {damage} damage to a unit.'
+    constants = [damage = 5]
+    flavor = 'The South Sea is calm, until it isn''t.'
+  }
+  moonlit-sea = Charm {
+    name = 'Moonlit Sea', epithet = 'Pearls with Tears'
+    cost = 1
+    number = 'JR1-D15', rarity = uncommon
+    art = 'art/JR1-D15.webp'
+    keywords = [@Lucky]
+    text = 'Lucky. Exhaust an enemy unit.'
+    flavor = 'A line from the poet Li Shangyin. Even enemies stop to look.'
+  }
+  frost-white-silk = Talisman {
+    name = 'Frost-White Silk'
+    cost = 1
+    number = 'JR1-D16', rarity = uncommon
+    art = 'art/JR1-D16.webp'
+    text = 'Attached unit gets +{extra-health} Health and Pearl Tears.'
+    constants = [extra-health = 2]
+    flavor = 'The finest jiaoren silk, white as frost.'
+  }
+  quanxian = Fabled {
+    name = 'Quanxian', epithet = 'First of the Springs'
+    cost = 5, power = 4, health = 5
+    number = 'JR1-D17', rarity = rare
+    art = 'art/JR1-D17.webp'
+    keywords = [@Guardian, @pearl-tears]
+    text = 'Guardian. Pearl Tears. Hello: Ready two of your Offerings.'
+    flavor = 'The jiaoren are also called the spring guests. She came first.'
+  }
+  the-muke-poet = Fabled {
+    name = 'The Muke Poet'
+    cost = 4, power = 3, health = 4
+    number = 'JR1-D18', rarity = rare
+    art = 'art/JR1-D18.webp'
+    text = 'Goodbye: Draw {draw} cards.'
+    constants = [draw = 2]
+    flavor = '"The town is all noise and dust. Back to the mountain, to play with the moon."'
+  }
+  the-oldest-weaver = Fabled {
+    name = 'The Oldest Weaver'
+    cost = 8, power = 8, health = 8
+    number = 'JR1-D19', rarity = rare
+    art = 'art/JR1-D19.webp'
+    keywords = [@Fierce, @pearl-tears]
+    text = 'Fierce. Pearl Tears.'
+    flavor = 'The jiaoren never stop weaving. She hasn''t stopped for a thousand years.'
+  }
+  tears-of-gratitude = Charm {
+    name = 'Tears of Gratitude'
+    cost = 1
+    number = 'JR1-D20', rarity = uncommon
+    art = 'art/JR1-D20.webp'
+    keywords = [@Ambush]
+    text = 'Ambush. A unit you control gets +{boost} Power this round.'
+    constants = [boost = 2]
+    flavor = 'Moved by a kindness, a jiaoren weeps pearls.'
+  }
+]
+
+@@@ zhu-er-text
+Your units have Pearl Tears.
+Exhaust: Heal {heal} from a unit you control.
+Awaken: {fallen} or more Fabled and Creatures are in the Mist.
+@@@ zhu-er-back-text
+Your units get +{extra-health} Health and Pearl Tears.
+Exhaust: Ready two of your Offerings.
+@@@ the-spring-guest-flavor
+She stayed a few days to sell her silk. Leaving, she wept a plate of pearls for her host.
+@@@ ice-silkworm-flavor
+Covered in frost and snow, it spins a cocoon a foot long. Its silk won't wet or burn.
+@@@

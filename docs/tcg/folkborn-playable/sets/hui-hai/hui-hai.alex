@@ -1,0 +1,228 @@
+#type FamilySet
+
+id = 'hui-hai'
+name = 'Hui Hai'
+code = 'HH1'
+
+family = Family {
+  name = 'Hui Hai'
+  main = '#4E9A3A'
+  dark = '#24501A'
+  tint = '#E9F5E1'
+}
+
+keywords = [
+  stone-for-stone = Keyword { name = 'Stone for Stone' }
+]
+
+cards = [
+  pebble = Hero {
+    name = 'Pebble', epithet = 'the Littlest Hui Hai'
+    number = 'HH1-H01', rarity = legendary
+    frame = gold
+    art = 'art/HH1-H01-kitten.webp'
+    text = @pebble-text
+    constants = [
+      boost = 1
+      fallen = 5
+    ]
+    flavor = 'Nobody has ever seen her. Plenty of people have met her pebbles.'
+    back = Awakened {
+      name = 'Pebble', epithet = 'Keeper of the Stream', power = 3
+      art = 'art/HH1-H01-bigcat.webp'
+      text = @pebble-back-text
+      constants = [
+        extra-health = 1
+        damage = 2
+      ]
+    }
+  }
+  hui-hai-of-the-stream = Creature {
+    name = 'Hui Hai of the Stream'
+    cost = 2, power = 1, health = 2
+    number = 'HH1-D01', rarity = common
+    art = 'art/HH1-D01.webp'
+    text = 'Hello: Deal {damage} damage to an enemy unit.'
+    constants = [damage = 1]
+    flavor = 'A ripple where there is no fish. A splash where there is no stone.'
+  }
+  ya-hui-hai = Fabled {
+    name = 'Yă Hui Hai', epithet = 'Lady of the Ferns'
+    cost = 4, power = 3, health = 4
+    number = 'HH1-D02', rarity = rare
+    art = 'art/HH1-D02.webp'
+    keywords = [@Guardian]
+    text = 'Guardian. Hello: Deal {damage} damage to an enemy unit.'
+    constants = [damage = 2]
+    flavor = 'Small enough to sleep in a fern. Strong enough to move the rock beside it.'
+  }
+  a-pebble-at-your-feet = Charm {
+    name = 'A Pebble at Your Feet'
+    cost = 1
+    number = 'HH1-D03', rarity = uncommon
+    art = 'art/HH1-D03.webp'
+    keywords = [@Ambush]
+    text = 'Ambush. Deal {damage} damage to an enemy unit.'
+    constants = [damage = 2]
+    flavor = 'Behave badly in the forest, and a stone lands beside you. Nobody threw it.'
+  }
+  hui-hai-in-the-ferns = Creature {
+    name = 'Hui Hai in the Ferns'
+    cost = 1, power = 1, health = 2
+    number = 'HH1-D04', rarity = common
+    art = 'art/HH1-D04.webp'
+    keywords = [@stone-for-stone]
+    text = 'Stone for Stone.'
+    flavor = 'The fern moved. There was no wind.'
+  }
+  pebble-thrower = Creature {
+    name = 'Pebble-Thrower'
+    cost = 1, power = 2, health = 1
+    number = 'HH1-D05', rarity = common
+    art = 'art/HH1-D05.webp'
+    flavor = 'No taller than your thumb. Throws harder than you do.'
+  }
+  hui-hai-at-the-spring = Creature {
+    name = 'Hui Hai at the Spring'
+    cost = 2, power = 1, health = 3
+    number = 'HH1-D06', rarity = common
+    art = 'art/HH1-D06.webp'
+    keywords = [@Guardian, @stone-for-stone]
+    text = 'Guardian. Stone for Stone.'
+    flavor = 'Muddy the spring, and see what comes back out of it.'
+  }
+  boulder-pusher = Creature {
+    name = 'Boulder-Pusher'
+    cost = 3, power = 4, health = 2
+    number = 'HH1-D07', rarity = common
+    art = 'art/HH1-D07.webp'
+    flavor = 'The boulder was on the path in the evening. In the morning it wasn''t.'
+  }
+  hui-hai-in-the-bamboo = Creature {
+    name = 'Hui Hai in the Bamboo'
+    cost = 2, power = 2, health = 2
+    number = 'HH1-D08', rarity = common
+    art = 'art/HH1-D08.webp'
+    keywords = [@Swift]
+    text = 'Swift.'
+    flavor = 'You hear the bamboo knock. You never see who knocked.'
+  }
+  keeper-of-the-old-forest = Creature {
+    name = 'Keeper of the Old Forest'
+    cost = 3, power = 2, health = 4
+    number = 'HH1-D09', rarity = common
+    art = 'art/HH1-D09.webp'
+    keywords = [@Guardian, @stone-for-stone]
+    text = 'Guardian. Stone for Stone.'
+    flavor = 'The forest is theirs to keep, and they keep it well.'
+  }
+  gohlou = Creature {
+    name = 'Gơhlŏu', epithet = 'the Sweet-Smelling'
+    cost = 3, power = 2, health = 3
+    number = 'HH1-D10', rarity = uncommon
+    art = 'art/HH1-D10.webp'
+    text = 'Hello: Draw a card.'
+    flavor = 'Something lives in the trees. Nobody has seen it, but it smells wonderful.'
+  }
+  moss-mender-ya-hui-hai = Creature {
+    name = 'Moss-Mender Yă Hui Hai'
+    cost = 4, power = 3, health = 5
+    number = 'HH1-D11', rarity = uncommon
+    art = 'art/HH1-D11.webp'
+    text = 'Hello: Heal {heal} from each unit you control.'
+    constants = [heal = 2]
+    flavor = 'She tucks moss into every scrape, grumbling the whole time.'
+  }
+  old-one-of-the-waterfall = Creature {
+    name = 'Old One of the Waterfall'
+    cost = 7, power = 6, health = 6
+    number = 'HH1-D12', rarity = uncommon
+    art = 'art/HH1-D12.webp'
+    keywords = [@Guardian, @Fierce, @stone-for-stone]
+    text = 'Guardian. Fierce. Stone for Stone.'
+    flavor = 'The waterfall has been loud for a thousand years. Some of that is him.'
+  }
+  stones-from-nowhere = Charm {
+    name = 'Stones from Nowhere'
+    cost = 4
+    number = 'HH1-D13', rarity = uncommon
+    art = 'art/HH1-D13.webp'
+    text = 'Deal {damage} damage to each enemy unit.'
+    constants = [damage = 1]
+    flavor = 'A whole hillside of pebbles, and not one hand to be seen.'
+  }
+  the-forest-remembers = Charm {
+    name = 'The Forest Remembers'
+    cost = 4
+    number = 'HH1-D14', rarity = uncommon
+    art = 'art/HH1-D14.webp'
+    keywords = [@Lucky]
+    text = 'Lucky. Deal {damage} damage to a unit.'
+    constants = [damage = 4]
+    flavor = 'Cut a tree for nothing, and the forest will not forget your face.'
+  }
+  nobody-threw-it = Charm {
+    name = 'Nobody Threw It'
+    cost = 1
+    number = 'HH1-D15', rarity = uncommon
+    art = 'art/HH1-D15.webp'
+    keywords = [@Lucky]
+    text = 'Lucky. Exhaust an enemy unit.'
+    flavor = 'The hunter turned around. The path behind him was empty.'
+  }
+  a-pouch-of-river-pebbles = Talisman {
+    name = 'A Pouch of River Pebbles'
+    cost = 1
+    number = 'HH1-D16', rarity = uncommon
+    art = 'art/HH1-D16.webp'
+    text = 'Attached unit gets +{boost} Power and Stone for Stone.'
+    constants = [boost = 1]
+    flavor = 'Smooth, round, and exactly the right size for throwing.'
+  }
+  grandfather-hui-hai = Fabled {
+    name = 'Grandfather Hui Hai', epithet = 'Mover of Rocks'
+    cost = 5, power = 4, health = 5
+    number = 'HH1-D17', rarity = rare
+    art = 'art/HH1-D17.webp'
+    keywords = [@Guardian, @stone-for-stone]
+    text = 'Guardian. Stone for Stone. Hello: Deal {damage} damage to an enemy unit.'
+    constants = [damage = 2]
+    flavor = 'The strongest of them, and the smallest beard in the forest.'
+  }
+  the-hidden-village = Fabled {
+    name = 'The Hidden Village'
+    cost = 4, power = 3, health = 3
+    number = 'HH1-D18', rarity = rare
+    art = 'art/HH1-D18.webp'
+    text = 'Hello: Deal {damage} damage to each enemy unit.'
+    constants = [damage = 1]
+    flavor = 'A whole village lives in this clearing. You are standing in it.'
+  }
+  the-rock-that-moved-in-the-night = Fabled {
+    name = 'The Rock That Moved in the Night'
+    cost = 8, power = 8, health = 8
+    number = 'HH1-D19', rarity = rare
+    art = 'art/HH1-D19.webp'
+    keywords = [@Fierce, @stone-for-stone]
+    text = 'Fierce. Stone for Stone.'
+    flavor = 'Everyone saw it on the hill. Nobody saw how it got there.'
+  }
+  small-but-strong = Charm {
+    name = 'Small but Strong'
+    cost = 1
+    number = 'HH1-D20', rarity = uncommon
+    art = 'art/HH1-D20.webp'
+    keywords = [@Ambush]
+    text = 'Ambush. A unit you control gets +{boost} Power this round.'
+    constants = [boost = 2]
+    flavor = 'Tiny hands. Enormous shove.'
+  }
+]
+
+@@@ pebble-text
+Exhaust: A unit you control gets +{boost} Power this round.
+Awaken: {fallen} or more Fabled and Creatures are in the Mist.
+@@@ pebble-back-text
+Your units get +{extra-health} Health and Stone for Stone.
+Exhaust: Deal {damage} damage to an enemy unit.
+@@@

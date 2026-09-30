@@ -3,7 +3,8 @@
 // game still reads set.json, so the two must say the same thing; check-set compares them on every deploy.
 //
 // This reads only what those files hold: cards with name, epithet, cost, power, health, rarity, number, text and
-// flavor, a Hero's back, and text tables. It is not an Alex parser; the TypeScript Alex will replace it.
+// flavor, a Hero's back, text tables, and each face's constants, which fill its text's `{name}`s as the card prints
+// them. It is not an Alex parser.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -44,10 +45,23 @@ export function printedCards(folder: string): Map<string, PrintedCard> | undefin
   let card: Record<string, unknown> | undefined;
   let face: Record<string, unknown> | undefined;
   let inCards = false;
+  let constants: Record<string, number> | undefined;
+  const constantsOf = (f: Record<string, unknown>) => (f.constants ??= {}) as Record<string, number>;
   for (const line of lines.slice(0, table >= 0 ? table : undefined)) {
     if (line === 'cards = [') { inCards = true; continue; }
     if (line === ']') { inCards = false; continue; }
     if (!inCards) continue;
+    if (constants) {
+      if (/^\s+\]$/.test(line)) constants = undefined;
+      else for (const m of line.matchAll(PAIR)) constants[m[1]] = Number(m[2]);
+      continue;
+    }
+    const inline = /^\s+constants = \[(.*)\]$/.exec(line);
+    if (inline && face) {
+      for (const m of inline[1].matchAll(PAIR)) constantsOf(face)[m[1]] = Number(m[2]);
+      continue;
+    }
+    if (/^\s+constants = \[$/.test(line) && face) { constants = constantsOf(face); continue; }
     if (/^ {2}[\w-]+ = \w+ \{$/.test(line)) { card = {}; face = card; continue; }
     if (/^ {4}back = \w+ \{$/.test(line) && card) { face = {}; card.back = face; continue; }
     if (/^ {4}\}$/.test(line) && card) { face = card; continue; }
@@ -65,7 +79,9 @@ export function printedCards(folder: string): Map<string, PrintedCard> | undefin
     for (const f of [c, c.back].filter(Boolean) as PrintedFace[]) {
       const epithet = (f as unknown as { epithet?: string }).epithet;
       if (epithet) f.name = `${f.name}, ${epithet}`;
-      f.text ??= '';
+      const own = (f as unknown as { constants?: Record<string, number> }).constants ?? {};
+      f.text = (f.text ?? '').replace(/\{([\w-]+)\}/g, (all, name: string) => (name in own ? String(own[name]) : all));
+      delete (f as unknown as { constants?: unknown }).constants;
       f.flavor ??= '';
     }
   }

@@ -191,7 +191,7 @@ internal sealed class BoundDump
         switch (type)
         {
             case AlexRecordType record:
-                Line("record " + name + (record.Base is { } baseType ? " : " + baseType.Name : string.Empty) + (record.AssertsData ? " asserts-data" : string.Empty));
+                Line("record " + name + (record.Bases.Count > 0 ? " : " + BaseNames(record) : string.Empty) + (record.AssertsData ? " asserts-data" : string.Empty));
                 _depth++;
                 foreach (AlexRecordField field in record.OwnFields) { Field("field", field); }
                 foreach (AlexRecordField member in record.OwnExtensionMembers) { Field("member", member); }
@@ -313,9 +313,22 @@ internal sealed class BoundDump
         AlexReference reference => "ref @" + reference.Name + " -> " + Shown(reference.Target),
         AlexTypeValue named => "type @" + named.Name,
         AlexDeclaration declaration => "declaration " + declaration.Kind + " " + declaration,
+        AlexFormula => "formula " + Span(value),
         AlexObject or AlexArray => _ids.TryGetValue(value, out int id) ? "#" + id : "unwritten " + Span(value),
         _ => "other",
     };
+
+    private static string BaseNames(AlexRecordType record)
+    {
+        StringBuilder names = new();
+        foreach (AlexRecordType baseType in record.Bases)
+        {
+            if (names.Length > 0) { names.Append(", "); }
+            names.Append(baseType.Name);
+        }
+
+        return names.ToString();
+    }
 
     private static string Span(AlexValue value) => value.Span.Start + "+" + value.Span.Length;
 

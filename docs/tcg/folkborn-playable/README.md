@@ -13,13 +13,15 @@ libraries, listed below. Closing them is the work to do before the runtime can p
 | File | What it is |
 |---|---|
 | `folkborn.alex` | The game. It is today's `games/folkborn/folkborn.alex` (card types, keywords, finishes) plus the rules: zones, setup, rounds, the Lantern, Offerings, Candles, attacks, Ambush, heroes, deck building. Each rule cites its section of [the rulebook](../../rulebook.md), part 13. |
-| `folkborn-rules.alex` | Handlers that cards in several families share: draw a card, deal damage to a unit, exhaust an enemy unit, and so on. |
-| `domowiki-rules.alex`, `pari-rules.alex`, `aluxes-rules.alex`, `jiaoren-rules.alex`, `hui-hai-rules.alex`, `mochi-rules.alex` | Each set's own handlers (its mechanic, its unusual cards) and the lines that attach a handler to each of its cards. |
+| `folkborn-rules.alex` | The named handlers cards in several families share: a boost that also readies an Offering, and the Mist condition Zhu'er and Pebble awaken on. |
+| `domowiki-rules.alex`, `pari-rules.alex`, `aluxes-rules.alex`, `jiaoren-rules.alex`, `hui-hai-rules.alex`, `mochi-rules.alex` | Each set's lines that give each of its cards its handler, and the few handlers it names. |
 | `sets/<set>/<set>.alex` | Today's set files, with the numbers in a card's text as its constants and Aluxes's rain counter (below). Mochi's is unchanged, so it isn't copied here. |
 
-The rules are about 370 lines: 200 in the game file, and 170 in the rules files. The 106 cards (the Dove token
-included) need 48 handlers, most of them one line long, and 88 lines attach them. 12 of the handlers are shared by
-cards of several families.
+The rules are about 380 lines: 200 in the game file, and 176 in the rules files. The 106 cards (the Dove token
+included) need 88 lines that give a card's slot its handler. In 74 of them the handler is written right there, one
+statement (gap 18). 11 handlers have names: those of several statements, the conditions other handlers read
+(`@is-well-fed`, `@has-company`), a set's mechanic that three cards share (`sprout`), the Mist condition two Heroes
+awaken on, and the two that need "once per round" (gap 7).
 
 ## How it reads
 
@@ -33,30 +35,34 @@ combat = [
 ]
 ```
 
-A card's handler is one line in its set's rules file, and a second line attaches it to the card:
+A card's handler is usually one line in its set's rules file, written where it is attached to the card's slot:
 
 ```
-routine damage-a-unit { choose(all).damage(card.damage) }
-@a-domowiks-temper.on-play = damage-a-unit
+@a-domowiks-temper.on-play = choose(all).damage(card.damage)
 ```
 
 `card.damage` is the number printed on the card that the handler is attached to: 5 on A Domowik's Temper, 2 on
-Falling Star. One handler serves both.
+Falling Star, which has the same line.
 
 A family's mechanic is a handler attached to its keyword, so every unit with the keyword has it:
 
 ```
-routine pearl-tear { ready-resources(one) }
-@pearl-tears.on-survives-damage = pearl-tear
+@pearl-tears.on-survives-damage = ready-resources(one)
 ```
 
 A Hero has a handler for each labelled line of its text:
 
 ```
-routine enough-offerings : bool { own.resources.count >= card.offerings }
-@dziadzius.exhaust = ready-an-offering
-@dziadzius.awaken = enough-offerings
-@dziadzius.back.exhaust = ready-two-offerings
+@dziadzius.exhaust = ready-resources(one)
+@dziadzius.awaken = own.resources.count >= card.offerings
+@dziadzius.back.exhaust = ready-resources(two)
+```
+
+A handler of several statements, or one that other handlers read, has a name, and a card's slot names it:
+
+```
+routine sprout { offer-from-deck(card.sprout, exhausted: true) }
+@moving-day-domowik.on-enter = sprout
 ```
 
 Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the game's keyword rules cover them.
@@ -71,7 +77,7 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
   cards change.
 - **Numbers the text spells as words** ("Ready two of your Offerings", Stone for Stone's "deal 1 damage") are
   members of a number-backed enum, `Count` in the `common` library: `ready-resources(two)`. No handler types a
-  digit. This needs gap 17.
+  digit (gap 17, done).
 - **Aluxes declares its rain counter:** `counters = [rain = StatCounter { power = 1, health = 1, max = @rain-fed-max }]`.
 - **The game file gains its rules.** An older playable version of it, written for the retired cat cards, is still
   in `cardengine/folkborn/folkborn.alex`; this draft replaces it.
@@ -81,10 +87,12 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
 
 ## What the checker says
 
-Laid over `games/folkborn/`, the draft got 137 errors, all from the first 16 gaps below (gap 17 came later). Many are
-repeats: a missing slot is reported on every card that uses it, and the handler it would have run is reported
-too, because it can't see that card's constants. "Folkborn" in the Fix column means the fix is in Folkborn's own
-files; the other fixes are in the platform.
+Laid over `games/folkborn/`, the draft gets 128 errors (2026-09-29, after gaps 17 to 19), all from gaps 1 to 13
+below. Many are repeats: a missing slot is reported on every card that uses it. Before its handlers were written
+inline it got 147: a named handler whose slot is missing is also reported on its own, since, attached to nothing,
+it can't see any card's constants. Written inline, it isn't checked until its slot exists, so closing gaps 2 to 4
+will show some errors that are hidden today (such as `grant(pearl-tears)`, gap 6). "Folkborn" in the Fix column
+means the fix is in Folkborn's own files; the other fixes are in the platform.
 
 | # | Gap | Where it shows | Fix |
 |---|---|---|---|
@@ -104,7 +112,8 @@ files; the other fixes are in the platform.
 | 14 | `MaxRounds` doesn't say who wins at the limit. | not an error | Library: `MaxRounds { n, winner = most-life }`. |
 | 15 | Setup order across areas isn't defined: the Candles are dealt (a `life` rule) after the shuffle and before the opening hand (`setup` rules). | not an error | Library: a setup step that deals the life stack, placed in `setup`. |
 | 16 | A Whistle in the Dark has Ambush but may only answer an attack. | not an error | Checker: a handler that uses the attack it answers (`event.cancel()`) makes the card playable only in an attack's window. |
-| 17 | Alex enums are names only. Handlers want `ready-resources(two)`, with `two` standing for 2. | 6 errors (the owner's request, 2026-09-29) | Alex (both implementations): enums backed by a number or a short fixed-size string (`enum Count : int { one = 1, two = 2 }`), accepted where that number or string is expected, as C# enums are; `Count` in `common`. Being done in its own session. |
+| 17 | Alex enums are names only. Handlers want `ready-resources(two)`, with `two` standing for 2. | 6 errors (the owner's request, 2026-09-29) | Done. Alex (both implementations): enums backed by a number or a short fixed-size string (`enum Count : int { one = 1, two = 2 }`, `enum Code : text(3) { ... }`), a member standing for its value wherever that value's type is expected, as C# enums are; `Count` in `common`. |
+| 18 | Every handler had to be named, even one call: `routine draw-a-card { draw() }` and `@klobuk.on-enter = draw-a-card`. | not an error (the owner's request, 2026-09-29) | Done. Alex (both implementations): the right side of `@card.slot = ...` is a named handler or one statement, bound as a handler of the slot's kind: `@klobuk.on-enter = draw()`. This draft writes its one-statement handlers that way. |
 | 19 | `effect` (a handler that does something) and `condition` (one that answers yes or no) were two concepts for one thing. | not an error (the owner's decision, 2026-09-29) | Done. Alex (both implementations): `routine`. `routine x { ... }` is an effect and `routine x : bool { ... }` a condition; the slot says which it wants. This draft's handlers are routines. `effect` and `condition` still bind. |
 
 Everything else binds as written: the zones, setup, rounds, the Lantern, Offerings, Candles, combat, Ambush,
@@ -122,7 +131,7 @@ cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check
 
 ## Next
 
-Close gaps 1 to 13 and 17 in the core and the libraries, which Hello TCG needs too (gaps 1 and 2 are among its
+Close gaps 1 to 13 in the core and the libraries, which Hello TCG needs too (gaps 1 and 2 are among its
 errors). Then Folkborn checks clean, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
 the runtime behaves, so they are settled when it is built. The runtime starts with Hello TCG, then plays Folkborn,
 compared game for game with today's engine.

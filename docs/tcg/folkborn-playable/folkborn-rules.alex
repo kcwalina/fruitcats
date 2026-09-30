@@ -4,19 +4,6 @@
 
 for = @folkborn
 
-routine draw-a-card { draw() }
-
-routine ready-an-offering { ready-resources(one) }
-routine ready-two-offerings { ready-resources(two) }
-
-routine damage-a-unit { choose(all).damage(card.damage) }
-routine damage-each-enemy { units(opponents).damage(card.damage) }
-routine exhaust-an-enemy { choose(opponents).exhaust() }
-
-routine heal-own { choose(own).heal(card.heal) }
-routine heal-each-own { units(own).heal(card.heal) }
-
-routine boost-own { choose(own).buff(power: card.boost, until: this-round) }
 routine boost-own-and-ready-an-offering {
   choose(own).buff(power: card.boost, until: this-round)
   ready-resources(one)
@@ -24,5 +11,3 @@ routine boost-own-and-ready-an-offering {
 
 // Zhu'er and Pebble awaken on it. Both players' Mists count, as today's engine counts them.
 routine mist-is-full : bool { cards(@Mist, all, unit-card).count >= card.fallen }
-
-static attached-health-and-guardian { attached.grant(health: card.extra-health, guardian) }

@@ -3,29 +3,22 @@
 for = @hui-hai
 
 // §850.7 Its owner picks the enemy unit.
-routine throw-a-stone { choose(opponents).damage(one) }
+@stone-for-stone.on-survives-damage = choose(opponents).damage(one)
 
-static stronger-stones-for-all { units(own).grant(health: card.extra-health, stone-for-stone) }
-
-routine damage-an-enemy { choose(opponents).damage(card.damage) }
-static attached-power-and-stones { attached.grant(power: card.boost, stone-for-stone) }
-
-@stone-for-stone.on-survives-damage = throw-a-stone
-
-@pebble.exhaust = boost-own
+@pebble.exhaust = choose(own).buff(power: card.boost, until: this-round)
 @pebble.awaken = mist-is-full
-@pebble.back.static = stronger-stones-for-all
-@pebble.back.exhaust = damage-an-enemy
+@pebble.back.static = units(own).grant(health: card.extra-health, stone-for-stone)
+@pebble.back.exhaust = choose(opponents).damage(card.damage)
 
-@hui-hai-of-the-stream.on-enter = damage-an-enemy
-@ya-hui-hai.on-enter = damage-an-enemy
-@a-pebble-at-your-feet.on-play = damage-an-enemy
-@gohlou.on-enter = draw-a-card
-@moss-mender-ya-hui-hai.on-enter = heal-each-own
-@stones-from-nowhere.on-play = damage-each-enemy
-@the-forest-remembers.on-play = damage-a-unit
-@nobody-threw-it.on-play = exhaust-an-enemy
-@a-pouch-of-river-pebbles.static = attached-power-and-stones
-@grandfather-hui-hai.on-enter = damage-an-enemy
-@the-hidden-village.on-enter = damage-each-enemy
-@small-but-strong.on-play = boost-own
+@hui-hai-of-the-stream.on-enter = choose(opponents).damage(card.damage)
+@ya-hui-hai.on-enter = choose(opponents).damage(card.damage)
+@a-pebble-at-your-feet.on-play = choose(opponents).damage(card.damage)
+@gohlou.on-enter = draw()
+@moss-mender-ya-hui-hai.on-enter = units(own).heal(card.heal)
+@stones-from-nowhere.on-play = units(opponents).damage(card.damage)
+@the-forest-remembers.on-play = choose(all).damage(card.damage)
+@nobody-threw-it.on-play = choose(opponents).exhaust()
+@a-pouch-of-river-pebbles.static = attached.grant(power: card.boost, stone-for-stone)
+@grandfather-hui-hai.on-enter = choose(opponents).damage(card.damage)
+@the-hidden-village.on-enter = units(opponents).damage(card.damage)
+@small-but-strong.on-play = choose(own).buff(power: card.boost, until: this-round)

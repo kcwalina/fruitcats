@@ -3,32 +3,24 @@
 for = @jiaoren
 
 // §850.6
-routine pearl-tear { ready-resources(one) }
+@pearl-tears.on-survives-damage = ready-resources(one)
 
-static pearl-tears-for-all { units(own).grant(pearl-tears) }
-static stronger-pearl-tears-for-all { units(own).grant(health: card.extra-health, pearl-tears) }
-
-routine draw-cards { draw(card.draw) }
-static attached-health-and-pearl-tears { attached.grant(health: card.extra-health, pearl-tears) }
-
-@pearl-tears.on-survives-damage = pearl-tear
-
-@zhu-er.static = pearl-tears-for-all
-@zhu-er.exhaust = heal-own
+@zhu-er.static = units(own).grant(pearl-tears)
+@zhu-er.exhaust = choose(own).heal(card.heal)
 @zhu-er.awaken = mist-is-full
-@zhu-er.back.static = stronger-pearl-tears-for-all
-@zhu-er.back.exhaust = ready-two-offerings
+@zhu-er.back.static = units(own).grant(health: card.extra-health, pearl-tears)
+@zhu-er.back.exhaust = ready-resources(two)
 
-@the-spring-guest.on-defeated = ready-two-offerings
-@weaver-of-the-sea-hall.on-enter = draw-a-card
-@dragon-silk.static = attached-health-and-guardian
-@pearl-oyster.on-enter = ready-an-offering
-@jiaoren-pearl-healer.on-enter = heal-each-own
-@muke.on-enter = draw-a-card
+@the-spring-guest.on-defeated = ready-resources(two)
+@weaver-of-the-sea-hall.on-enter = draw()
+@dragon-silk.static = attached.grant(health: card.extra-health, guardian)
+@pearl-oyster.on-enter = ready-resources(one)
+@jiaoren-pearl-healer.on-enter = units(own).heal(card.heal)
+@muke.on-enter = draw()
 @a-plate-of-pearls.on-play = boost-own-and-ready-an-offering
-@the-sea-turns-rough.on-play = damage-a-unit
-@moonlit-sea.on-play = exhaust-an-enemy
-@frost-white-silk.static = attached-health-and-pearl-tears
-@quanxian.on-enter = ready-two-offerings
-@the-muke-poet.on-defeated = draw-cards
-@tears-of-gratitude.on-play = boost-own
+@the-sea-turns-rough.on-play = choose(all).damage(card.damage)
+@moonlit-sea.on-play = choose(opponents).exhaust()
+@frost-white-silk.static = attached.grant(health: card.extra-health, pearl-tears)
+@quanxian.on-enter = ready-resources(two)
+@the-muke-poet.on-defeated = draw(card.draw)
+@tears-of-gratitude.on-play = choose(own).buff(power: card.boost, until: this-round)

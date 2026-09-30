@@ -15,7 +15,7 @@ libraries, listed below. Closing them is the work to do before the runtime can p
 | `folkborn.alex` | The game. It is today's `games/folkborn/folkborn.alex` (card types, keywords, finishes) plus the rules: zones, setup, rounds, the Lantern, Offerings, Candles, attacks, Ambush, heroes, deck building. Each rule cites its section of [the rulebook](../../rulebook.md), part 13. |
 | `folkborn-rules.alex` | Handlers that cards in several families share: draw a card, deal damage to a unit, exhaust an enemy unit, and so on. |
 | `domowiki-rules.alex`, `pari-rules.alex`, `aluxes-rules.alex`, `jiaoren-rules.alex`, `hui-hai-rules.alex`, `mochi-rules.alex` | Each set's own handlers (its mechanic, its unusual cards) and the lines that attach a handler to each of its cards. |
-| `sets/<set>/<set>.alex` | Today's set files with one change: the numbers in a card's text are its constants (below). Mochi's has no numbers, so it is unchanged and not copied here. |
+| `sets/<set>/<set>.alex` | Today's set files, with the numbers in a card's text as its constants and Aluxes's rain counter (below). Mochi's is unchanged, so it isn't copied here. |
 
 The rules are about 370 lines: 200 in the game file, and 170 in the rules files. The 106 cards (the Dove token
 included) need 48 handlers, most of them one line long, and 88 lines attach them. 12 of the handlers are shared by
@@ -109,7 +109,7 @@ handler words such as `choose(own, exhausted)`, `offer-from-deck(card.sprout, ex
 
 ## To check it yourself
 
-Copy `games/folkborn/`, lay this folder's `.alex` files over the copy, add Aluxes's `counters` line, and run:
+Copy `games/folkborn/`, lay this folder's `.alex` files over the copy (its `sets` folder too), and run:
 
 ```bash
 cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check -- <the copy>

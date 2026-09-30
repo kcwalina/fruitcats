@@ -131,8 +131,9 @@ handler words such as `choose(own, exhausted)`, `offer-from-deck(card.sprout, ex
 cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check -- games/folkborn
 ```
 
-It reports no problem in Folkborn's sets. The Flower Souls prototype (`games/folkborn/prototypes/`) still reports 6:
-its cards have text and no handlers yet, since a set's rules are written once its cards are final with the artist.
+Folkborn checks clean: 0 problems. The Flower Souls prototype (`games/folkborn/prototypes/`) isn't in the game's
+`sets`, so its cards aren't required to have handlers yet; its rules are written once its cards are final with the
+artist. Everything else about it is still checked.
 
 ## Next
 

@@ -1238,6 +1238,21 @@ now checks with no errors.
 - **Hello TCG.** `gain` takes `counter-or-resource`, as `counter-is` does ("Scenario words for resources"), so
   `gain(@Energy, card.energy)` binds. `heroes` adds the scenario verb `awakened(@dziadzius)`.
 
+### Handlers are required only of the game's cards (2026-09-30)
+
+A card is part of the game when its document is one of the sets the game lists (`Game.sets`) or a `Cards` document
+that isn't a draft: the rule `kardix cards` and the runtime's catalog already use. The checker requires handlers only
+of those cards: a card with text has a handler, a declared ability is implemented, and a member a library requires a
+program to assign (a spell's `on-play`) is assigned. A set the game doesn't list is a prototype, whose rules are
+written once its cards are final, so it may have cards with text and no handlers. Everything else is still checked
+in every document, prototypes included: the constants a text shows, text and abilities not both set, types and
+references. A document that holds no cards (the game, a library, a rules document) is always checked in full.
+
+The required-member check is Alex's, not the host's, so Alex asks the host first: `requires_assignments` in the
+core's `Host`, `AlexHost.RequiresAssignments` in C# Alex 0.12.0. The binder now runs that check just before the
+host's validation, where the host can see the documents. Tests: `engine/tests/playable.rs` and mochi's
+`Only_the_sets_the_game_lists_need_handlers`.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

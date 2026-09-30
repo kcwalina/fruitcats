@@ -162,6 +162,11 @@ pub trait Host {
     fn scope_for(&self, _model: &mut Model, _request: &ScopeRequest) -> Option<Box<dyn Scope>> {
         None
     }
+    /// Whether the document's objects must have the required members a program assigns. A host says no for a document
+    /// that is written but not yet part of what its programs run.
+    fn requires_assignments(&self, _context: &mut dyn ValidationContext, _document: &DocumentView) -> bool {
+        true
+    }
     fn validate(&self, _context: &mut dyn ValidationContext) {}
 }
 

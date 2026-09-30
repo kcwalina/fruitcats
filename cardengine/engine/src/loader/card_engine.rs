@@ -60,6 +60,10 @@ impl Host for CardEngineHost {
         Some(Box::new(RulesScope::new(model, request, &self.game, &vocabulary)))
     }
 
+    fn requires_assignments(&self, context: &mut dyn ValidationContext, document: &DocumentView) -> bool {
+        is_in_game(context, &self.game, document.root)
+    }
+
     fn validate(&self, context: &mut dyn ValidationContext) {
         let used = used_libraries(context.model(), &|name| context.document(name).map(|d| d.root), &self.game, &self.libraries);
         let documents = context.documents();
@@ -74,7 +78,8 @@ impl Host for CardEngineHost {
             }
             if any_program {
                 let key = document.name.clone().unwrap_or_else(|| "root".to_string());
-                check_abilities(context, document.root, &key, &mut HashSet::new());
+                let playable = is_in_game(context, &self.game, document.root);
+                check_abilities(context, document.root, &key, playable, &mut HashSet::new());
             }
         }
 
@@ -82,6 +87,36 @@ impl Host for CardEngineHost {
             check_attached_parameters(context, document);
         }
     }
+}
+
+/// Whether the document is part of the game, so its cards must be playable: one of the sets the game lists, a `Cards`
+/// document that isn't a draft, or a document that holds no cards (the game, its libraries and rules). Without the game
+/// every document is.
+fn is_in_game(context: &dyn ValidationContext, game: &str, root: ValueId) -> bool {
+    let Some(game_root) = context.document(game).map(|d| d.root) else { return true };
+    let model = context.model();
+    let Some(record) = model.object(root).and_then(|o| o.record_type) else { return true };
+    if is_or_extends(model, record, "Cards") {
+        return !matches!(value_of(model, root, "draft").map(|v| &model.values[v].kind), Some(ValueKind::Boolean(true)));
+    }
+    if is_or_extends(model, record, "Set") {
+        let Some(sets) = value_of(model, game_root, "sets") else { return false };
+        let ValueKind::Array(items) = &model.values[sets].kind else { return false };
+        return items.iter().any(|s| final_target(model, *s) == Some(root));
+    }
+    true
+}
+
+fn is_or_extends(model: &Model, record: TypeId, name: &str) -> bool {
+    let mut current = Some(record);
+    while let Some(t) = current {
+        let Some(r) = model.record(t) else { return false };
+        if r.name == name {
+            return true;
+        }
+        current = r.base;
+    }
+    false
 }
 
 /// A slot runs its routine with no arguments, so a routine with parameters cannot be attached to one. A card's handler
@@ -769,29 +804,31 @@ fn unused_library(context: &dyn ValidationContext, document: Option<&DocumentVie
 
 /// Every ability an object declares is implemented by the slot named after its kind, and every slot a rules document
 /// fills stands for an ability the object declares. One ability of a kind per object.
-fn check_abilities(context: &mut dyn ValidationContext, value: ValueId, key: &str, seen: &mut HashSet<ValueId>) {
+/// Handlers are required only of `playable` objects, the game's: a set it doesn't list may have cards whose rules are
+/// not written yet.
+fn check_abilities(context: &mut dyn ValidationContext, value: ValueId, key: &str, playable: bool, seen: &mut HashSet<ValueId>) {
     match context.model().values[value].kind.clone() {
         ValueKind::Object(object) => {
             if !seen.insert(value) {
                 return;
             }
-            check_abilities_of(context, value, key);
+            check_abilities_of(context, value, key, playable);
             for property in &object.properties {
                 if !matches!(context.model().values[property.value].kind, ValueKind::Reference { .. }) {
-                    check_abilities(context, property.value, &property.name, seen);
+                    check_abilities(context, property.value, &property.name, playable, seen);
                 }
             }
         }
         ValueKind::Array(items) => {
             for item in items {
-                check_abilities(context, item, key, seen);
+                check_abilities(context, item, key, playable, seen);
             }
         }
         _ => {}
     }
 }
 
-fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key: &str) {
+fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key: &str, playable: bool) {
     let model = context.model();
     let object = model.object(holder).unwrap().clone();
     let name = value_of(model, holder, "name").and_then(|v| textual(model, v)).map(|t| t.to_string()).unwrap_or_else(|| key.to_string());
@@ -826,7 +863,7 @@ fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key:
         // Text made only of the card's keywords ("Guardian. Tough 1.") is the keywords' rules, and needs no handler.
         let model = context.model();
         let only_keywords = text.as_ref().and_then(|t| final_target(model, t.value)).and_then(|v| textual(model, v)).map(|t| is_only_keywords(model, holder, t)).unwrap_or(false);
-        if object.extensions.is_empty() && !only_keywords {
+        if playable && object.extensions.is_empty() && !only_keywords {
             if let Some(where_) = context.document_of(holder) {
                 let message = format!("{} has text, and no rules document gives it a handler ('@{}.on-enter = ...', or whichever slot runs it).", name, key);
                 context.error(where_.index, text.unwrap().name_span, message);
@@ -884,7 +921,7 @@ fn check_abilities_of(context: &mut dyn ValidationContext, holder: ValueId, key:
             }
 
             let implemented = object.extensions.iter().any(|(n, v)| *n == slot && matches!(context.model().values[*v].kind, ValueKind::Declaration(_)));
-            if !implemented {
+            if playable && !implemented {
                 if let Some(where_) = where_ {
                     let span = constructor_span(context.model(), ability);
                     context.error(where_.index, span, format!("{} declares {} {} ability that no rules document implements", name, article(&slot), slot));

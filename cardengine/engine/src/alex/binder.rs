@@ -315,10 +315,10 @@ impl<'h> Binder<'h> {
             self.check_accept(s);
         }
         self.bind_reference_assignments();
-        self.check_required_extension_members();
         self.check_bodies();
         self.report_unresolved_references();
         self.check_nameofs();
+        self.check_required_extension_members();
         let host = self.host;
         host.validate(self);
 
@@ -2456,7 +2456,7 @@ pub(super) fn format_float(value: f64) -> String {
 // ── what a host's validation sees ────────────────────────────────────────────────────────────────
 
 impl Binder<'_> {
-    fn view(&self, index: usize) -> super::host::DocumentView {
+    pub(super) fn view(&self, index: usize) -> super::host::DocumentView {
         let state = &self.states[index];
         super::host::DocumentView { index, name: state.root_name.clone(), is_schema: state.is_schema, is_program: state.is_program, root: state.root }
     }

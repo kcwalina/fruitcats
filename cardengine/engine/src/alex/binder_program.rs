@@ -787,6 +787,11 @@ impl Binder<'_> {
                 continue;
             }
             let Some(root_name) = self.states[s].root_name.clone() else { continue };
+            let host = self.host;
+            let view = self.view(s);
+            if !host.requires_assignments(self, &view) {
+                continue;
+            }
             let root = self.states[s].root;
             let root_span = self.states[s].root_span;
             self.require_extension_members(root, &root_name, root_span, s, &mut seen);

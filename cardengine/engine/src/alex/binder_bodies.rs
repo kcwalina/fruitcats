@@ -112,7 +112,7 @@ impl BodyChecker<'_, '_> {
             if let (BodyStatement::Expression(expression), BodyShape::Expression) = (inline.as_ref(), shape) {
                 let boolean = self.types.boolean;
                 let found = self.expression(expression, Some(boolean));
-                self.require_bool(found, expression, &format!("The body of {}", with_article(&kind)));
+                self.require_bool(found, expression, &format!("The body of {}", self.binder.describe_kind(&kind)));
                 return;
             }
             self.locals.push(Vec::new());

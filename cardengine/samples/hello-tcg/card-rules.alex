@@ -6,13 +6,6 @@ routine gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy
 @dziadzius.back.exhaust = gain-energy
 
-routine enough-creatures : bool { units(own).count >= card.creatures }
-
-routine draw-a-card { draw() }
-
-routine heal-own-creatures { units(own).heal(card.heal) }
-
-routine damage-a-creature { choose(all).damage(card.damage) }
 @dziadzius.awaken = units(own).count >= card.creatures
 @klobuk.on-enter = draw()
 @bread-and-salt-greeter.on-enter = units(own).heal(card.heal)

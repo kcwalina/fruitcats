@@ -968,19 +968,11 @@ Each card's text says what it does, in words. For the engine, that needs a small
 
 for = @cards
 
-routine draw-a-card { draw() }
-@klobuk.on-enter = draw-a-card
-
 @klobuk.on-enter = draw()
 ```
 
 `for = @cards` says which cards this file programs. The cards file never mentions its rules file,
 so the cards read the same, and print the same, whether or not they're programmed.
-
-`routine draw-a-card { draw() }` is the program: draw a card. A **routine** is a named body that
-the engine runs; it can't loop or call itself, so it always finishes. `@klobuk.on-enter =
-draw-a-card` attaches it to Kłobuk, and says when it runs: when Kłobuk enters play, which is what
-"Hello:" means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
 
 `draw()` is the program: draw a card. `@klobuk.on-enter` attaches it to Kłobuk, and says when it
 runs: when Kłobuk enters play, which is what "Hello:" means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
@@ -989,12 +981,6 @@ runs: when Kłobuk enters play, which is what "Hello:" means. Handlers are short
 The Greeter and the Temper:
 
 ```
-routine heal-own-creatures { units(own).heal(card.heal) }
-@bread-and-salt-greeter.on-enter = heal-own-creatures
-
-routine damage-a-creature { choose(all).damage(card.damage) }
-@domowiks-temper.on-play = damage-a-creature
-
 @bread-and-salt-greeter.on-enter = units(own).heal(card.heal)
 @domowiks-temper.on-play = choose(all).damage(card.damage)
 ```
@@ -1012,26 +998,21 @@ routine gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy
 @dziadzius.back.exhaust = gain-energy
 
-routine enough-creatures : bool { units(own).count >= card.creatures }
-@dziadzius.awaken = enough-creatures
-```
-
-- `: bool` makes a routine answer yes or no: here, "do I control 3 or more Creatures?". The
-  moment it's yes, the Hero awakens. The slot says which kind it wants: `awaken` wants a yes or no,
-  `exhaust` and `on-enter` want a routine that does something, and `kardix check` says so if you
-  attach the wrong one.
-- A handler takes no parameters. It reads its numbers from the card (`card.creatures`), so the
-  number the card prints and the number the rules use are the same one.
-
 @dziadzius.awaken = units(own).count >= card.creatures
 ```
 
-- Both faces' Exhaust abilities use the same handler, so it gets a name: `effect gain-energy`
+- Both faces' Exhaust abilities use the same handler, so it gets a name: `routine gain-energy`
   declares it once, and each face attaches it by that name. A handler of several lines is written
   the same way. `card.energy` is the number printed on the face in play: 1 on the front, 2 on the
   Awakened back.
 - Awaken's handler answers yes or no: here, "do I control 3 or more Creatures?". The moment it's
   yes, the Hero awakens.
+- A named handler is a **routine**. It can't loop or call itself, so it always finishes. With
+  `: bool` it answers yes or no, as `routine enough-creatures : bool { ... }` would here. The slot says
+  which kind it wants: `awaken` wants a yes or no, `exhaust` and `on-enter` want one that does
+  something, and `kardix check` says so if you attach the wrong one.
+- A handler takes no parameters. It reads its numbers from the card (`card.creatures`), so the
+  number the card prints and the number the rules use are the same one.
 
 Every card with text must have a handler, and every handler must belong to a card with text, so
 the card and what it does can't disagree silently. Cards whose only rules are keywords, like

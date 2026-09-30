@@ -684,7 +684,7 @@ impl Binder<'_> {
                 let message = format!(
                     "'{}' holds {}: write the name of one, as in '= zing', or one statement, as in '= draw()'.",
                     member_name,
-                    with_article(&wanted)
+                    self.wanted_phrase(&kinds)
                 );
                 self.error(s, message, span);
                 None
@@ -699,7 +699,7 @@ impl Binder<'_> {
             let message = format!(
                 "'{}' holds {}, so a statement here could be either; declare one with a name and write its name.",
                 member_name,
-                with_article(&kinds.join(" or "))
+                self.wanted_phrase(kinds)
             );
             self.error(s, message, span);
             return None;
@@ -715,9 +715,9 @@ impl Binder<'_> {
         };
         if !fits {
             let message = if shape == BodyShape::Expression {
-                format!("'{}' holds {}, which is one expression: '= own.resources.count >= card.offerings'.", member_name, with_article(&kind))
+                format!("'{}' holds {}, which is one expression: '= own.resources.count >= card.offerings'.", member_name, self.wanted_phrase(std::slice::from_ref(&kind)))
             } else {
-                format!("'{}' holds {}, which is written as a declaration with a name.", member_name, with_article(&kind))
+                format!("'{}' holds {}, which is written as a declaration with a name.", member_name, self.wanted_phrase(std::slice::from_ref(&kind)))
             };
             self.error(s, message, span);
             return None;

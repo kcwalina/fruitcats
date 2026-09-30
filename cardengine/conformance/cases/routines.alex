@@ -13,6 +13,7 @@ units = [
   fox = Unit { name = 'Fox' }
   owl = Unit { name = 'Owl' }
   elk = Unit { name = 'Elk' }
+  bat = Unit { name = 'Bat' }
 ]
 
 routine draw-one { draw(1) }
@@ -35,3 +36,4 @@ condition with-result : bool { own.hand.count >= 2 }
 @owl.on-enter = is-idle
 @owl.ready-when = draw-one
 @elk.on-enter = deal
+@bat.ready-when = draw(1)

@@ -1,7 +1,5 @@
 #type Rules
 
-for = @cards
-
 routine gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy
 @dziadzius.back.exhaust = gain-energy

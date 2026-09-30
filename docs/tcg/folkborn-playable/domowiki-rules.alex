@@ -1,20 +1,19 @@
 #type Rules
 
-for = @domowiki
-
-// §850.2 Ready or exhausted Offerings both count.
-routine is-well-fed : bool { own.resources.count >= @well-fed-at }
-
-// §850.1 If the deck runs out, the rest does nothing; it never costs a Candle.
-routine sprout { offer-from-deck(card.sprout, exhausted: true) }
-
 @dziadzius.exhaust = ready-resources(one)
 @dziadzius.awaken = own.resources.count >= card.offerings
 @dziadzius.back.exhaust = ready-resources(two)
 
 @stove-keeper.on-enter = ready-resources(one)
+
+// §850.1 If the deck runs out, the rest does nothing; it never costs a Candle.
+routine sprout { offer-from-deck(card.sprout, exhausted: true) }
 @moving-day-domowik.on-enter = sprout
+
+// §850.2 Ready or exhausted Offerings both count.
+routine is-well-fed : bool { own.resources.count >= @well-fed-at }
 @ovinnik-of-the-drying-barn.static = if not @is-well-fed { this.cant(attack) }
+
 @bread-and-salt-greeter.on-enter = units(own).heal(card.heal)
 @kikimora.on-enter = if @is-well-fed { draw(card.draw) }
 @bowl-of-kasha.on-play = sprout

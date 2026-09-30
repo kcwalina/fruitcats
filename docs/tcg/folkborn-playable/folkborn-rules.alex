@@ -2,12 +2,7 @@
 // numbers of the card it's attached to (`card.damage`).
 #type Rules
 
-for = @folkborn
-
 routine boost-own-and-ready-an-offering {
   choose(own).buff(power: card.boost, until: this-round)
   ready-resources(one)
 }
-
-// Zhu'er and Pebble awaken on it. Both players' Mists count, as today's engine counts them.
-routine mist-is-full : bool { cards(@Mist, all, unit-card).count >= card.fallen }

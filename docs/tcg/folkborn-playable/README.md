@@ -19,9 +19,9 @@ libraries, listed below. Closing them is the work to do before the runtime can p
 
 The rules are about 380 lines: 200 in the game file, and 176 in the rules files. The 106 cards (the Dove token
 included) need 88 lines that give a card's slot its handler. In 74 of them the handler is written right there, one
-statement (gap 18). 11 handlers have names: those of several statements, the conditions other handlers read
-(`@is-well-fed`, `@has-company`), a set's mechanic that three cards share (`sprout`), the Mist condition two Heroes
-awaken on, and the two that need "once per round" (gap 7).
+statement (gap 18). 10 handlers have names: those of several statements, the conditions other handlers read
+(`@is-well-fed`, `@has-company`), a set's mechanic that three cards share (`sprout`), and the two that need "once
+per round" (gap 7).
 
 ## How it reads
 
@@ -87,8 +87,8 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
 
 ## What the checker says
 
-Laid over `games/folkborn/`, the draft gets 128 errors (2026-09-29, after gaps 17 to 19), all from gaps 1 to 13
-below. Many are repeats: a missing slot is reported on every card that uses it. Before its handlers were written
+Laid over `games/folkborn/`, the draft gets 115 errors (2026-09-29, after gaps 8 and 17 to 19), all from gaps 1
+to 13 below. Many are repeats: a missing slot is reported on every card that uses it. Before its handlers were written
 inline it got 147: a named handler whose slot is missing is also reported on its own, since, attached to nothing,
 it can't see any card's constants. Written inline, it isn't checked until its slot exists, so closing gaps 2 to 4
 will show some errors that are hidden today (such as `grant(pearl-tears)`, gap 6). "Folkborn" in the Fix column
@@ -103,8 +103,8 @@ means the fix is in Folkborn's own files; the other fixes are in the platform.
 | 5 | No "damaged and survives" moment. | hidden behind gap 4 | Library (units): an `on-survives-damage` slot. |
 | 6 | A keyword word in a handler (`grant(pearl-tears)`) must be one of the game's keywords. A set's own keywords aren't found. | 5 errors | Checker: look in the game's sets too. |
 | 7 | "Once per round" can't be said in a handler (Schaibar, The Roadside Alux). | 6 errors | Core: a `once-per-round { ... }` block. The alternative, `abilities = [...]` on the card, can't carry "Fierce." in the printed text. |
-| 8 | A rules file is for one set; handlers that several sets share have nowhere to go. | 1 error | Core: `Rules.for` also takes the game. |
-| 9 | No way to count cards in a zone ("5 or more Fabled and Creatures are in the Mist"). | 1 error | Library (common): a `cards(zone, players, filters)` selector and a `unit-card` filter. |
+| 8 | A rules file is for one set; handlers that several sets share have nowhere to go. | done | Core: rules documents no longer say `for = @set` (the owner, 2026-09-29): a rules file is part of the game by being in its folder, like a cards file, and its handlers name the cards they attach to. `for` stays as a deprecated field with no effect. |
+| 9 | No way to count cards in a zone ("5 or more Fabled and Creatures are in the Mist"). | hidden behind gap 2: the count is written on the Heroes' Awaken slots | Library (common): a `cards(zone, players, filters)` selector and a `unit-card` filter. |
 | 10 | `summon` takes a `Token` record; Folkborn's Dove is a card of a token type. | 1 error | Library: `summon` takes a card of a token type. |
 | 11 | A card whose text is only keywords must have a handler. | 27 errors | Checker: text made only of the card's keywords needs none. |
 | 12 | A card's constants share names with the game's: Aluxito's `candles` makes the game's `@candles` ambiguous. | 1 error | Core: a card's constants belong to the card, not the game's namespace. |

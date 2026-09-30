@@ -140,7 +140,7 @@ Folkborn from its Alex rules, so it must be movable as a folder today:
   library's record (`type Creature : UnitCard {}`); there is no list of them.
 - A game's folder is the game: one `Game` document, every `Cards` document that isn't
   `draft = true`, the sets `Game.sets` lists (only for games that publish expansions), the
-  rulebook, and the `Rules` documents whose `for` names those cards (`for = @cards`).
+  rulebook, and every `Rules` document in the folder.
 - The game states its file-format version, `schema-version = 1`; cards files, sets and libraries
   take it. It names no engine: a printed game has none.
 - Numbers that shape a game are named once in `constants = [starting-life = 10, ...]` on the

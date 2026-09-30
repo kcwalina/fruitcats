@@ -1,24 +1,5 @@
 #type Rules
 
-for = @pari
-
-// §850.3 Counted when the effect is checked; a unit that just entered counts itself.
-routine has-company : bool { units(own).count >= @company-at }
-
-// Mountain Gale and Súči of the Hunt: "Deal {damage} damage to a unit. Company: deal {company-damage} instead."
-routine company-damage {
-  target = choose(all)
-  if @has-company { target.damage(card.company-damage) } else { target.damage(card.damage) }
-}
-
-routine ready-and-heal {
-  target = choose(own, exhausted)
-  target.ready()
-  target.heal(card.heal)
-}
-
-routine ready-after-a-win { once-per-round { this.ready() } }
-
 // §850.4 Feather Coat is a Goodbye.
 @feather-coat.on-defeated = summon(@dove)
 
@@ -28,15 +9,34 @@ routine ready-after-a-win { once-per-round { this.ready() } }
 
 // §850.0 Orange-Peri is one of the cards played this round, so "2 other cards" means 3 in all.
 @orange-peri.on-enter = if own.played-this-round <= card.others { this.damage(card.damage) }
+
+// §850.3 Counted when the effect is checked; a unit that just entered counts itself.
+routine has-company : bool { units(own).count >= @company-at }
 @pari-at-the-pool.on-enter = if @has-company { this.ready() }
+
+// Súči of the Hunt and Mountain Gale: "Deal {damage} damage to a unit. Company: deal {company-damage} instead."
+routine company-damage {
+  target = choose(all)
+  if @has-company { target.damage(card.company-damage) } else { target.damage(card.damage) }
+}
 @suci-of-the-hunt.on-enter = company-damage
+
 @khangi.on-enter = draw()
 @falling-star.on-play = choose(all).damage(card.damage)
 @mountain-gale.on-play = company-damage
+
+routine ready-and-heal {
+  target = choose(own, exhausted)
+  target.ready()
+  target.heal(card.heal)
+}
 @choicest-odours.on-play = ready-and-heal
+
 @zangwar.on-play = choose(own).buff(power: card.boost, until: this-round)
 @carried-off-asleep.on-play = choose(opponents).exhaust()
 @pari-banus-pocket-tent.static = attached.grant(health: card.extra-health)
 @manar-al-sana.on-enter = choose(own, other).ready()
 @asman-pari.on-enter = units(opponents).damage(card.damage)
+
+routine ready-after-a-win { once-per-round { this.ready() } }
 @schaibar.on-defeats-in-combat = ready-after-a-win

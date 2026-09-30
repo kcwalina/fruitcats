@@ -1,25 +1,16 @@
 #type Rules
 
-for = @aluxes
+// §850.5 The rain counter's `max` stops it at +2/+2.
+@rain-fed.on-round-start = this.counter(@rain, one)
+
+@aluxito.exhaust = choose(own).heal(card.heal)
+@aluxito.awaken = own.life.count <= card.candles
 
 routine heal-and-guard {
   target = choose(own)
   target.heal(card.heal)
   target.buff(guardian, until: this-round)
 }
-
-routine heal-own-and-draw {
-  choose(own).heal(card.heal)
-  draw()
-}
-
-routine draw-once-a-round { once-per-round { draw() } }
-
-// §850.5 The rain counter's `max` stops it at +2/+2.
-@rain-fed.on-round-start = this.counter(@rain, one)
-
-@aluxito.exhaust = choose(own).heal(card.heal)
-@aluxito.awaken = own.life.count <= card.candles
 @aluxito.back.exhaust = heal-and-guard
 
 @saka-bearing-alux.on-enter = choose(all).heal(card.heal)
@@ -27,10 +18,19 @@ routine draw-once-a-round { once-per-round { draw() } }
 @tool-hiding-alux.on-enter = choose(opponents).exhaust()
 // §600.3 The attacker stays exhausted.
 @a-whistle-in-the-dark.on-play = event.cancel()
+
+routine heal-own-and-draw {
+  choose(own).heal(card.heal)
+  draw()
+}
 @honey-and-tortillas.on-play = heal-own-and-draw
+
 @pots-and-pans-flung.on-play = choose(all, exhausted).damage(card.damage)
 @kahtal-alux.static = attached.grant(health: card.extra-health, guardian)
+
+routine draw-once-a-round { once-per-round { draw() } }
 @the-roadside-alux.on-you-heal = draw-once-a-round
+
 @the-alux-of-the-sacred-cenote.on-round-start = units(own).heal(card.heal)
 @toh.on-enter = draw()
 @a-sweet-on-the-doorstep.on-play = choose(own).buff(power: card.boost, until: this-round)

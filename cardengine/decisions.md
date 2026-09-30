@@ -1111,13 +1111,30 @@ before, or one statement: `@klobuk.on-enter = draw()`. Done in both Alex impleme
   (`@a-domowiks-temper.on-play = choose(all).damage(card.damage)`). There is no `= draw` without
   parentheses: that names a handler called `draw`. One spelling each.
 - **It is bound as an unnamed handler of the slot's kind**, attached to that slot, and checked exactly as a
-  one-line body attached there: the same scope (`this`, `card`, `own`, `event`â€¦), the same checks, and the
+  one-line body attached there: the same scope (`this`, `card`, `own`, `event`…), the same checks, and the
   linker's "every card with text has a handler", which it satisfies.
 - **Slot kinds.** An `effect` or `static` slot takes one statement; a `condition` slot takes one
   true-or-false expression (`@dziadzius.awaken = own.resources.count >= card.offerings`). A slot that holds
   more than one kind needs a named handler, since a statement there could be either.
 - **Named handlers stay** for bodies of several statements and for behaviour several cards or faces share
-  (`gain-energy` on both of DziadziuÅ›'s faces). Hello TCG's sample now writes its single-use handlers inline.
+  (`gain-energy` on both of Dziadziuś's faces). Hello TCG's sample now writes its single-use handlers inline.
+
+### Rules documents don't say `for` (owner, 2026-09-29)
+
+A rules document had to say which cards it programs (`for = @cards`, `for = @aluxes`). It did nothing: the loader
+takes every rules document in the game's folder, and a handler finds its card by name (`@kahtal-alux.static = ...`)
+in the game's shared namespace, so a line attached to a Pari card binds the same in any rules file. The one thing
+`for` did was stop a rules file from being for the whole game (`for = @folkborn`), which Folkborn's handlers
+shared by several families needed (gap 8 of `docs/tcg/folkborn-playable/`). The owner removed it.
+
+- **A rules document is part of the game by being in its folder**, like a `Cards` document. The cards still never
+  name their rules document.
+- **`Rules.for` stays as an optional, deprecated field with no effect**, under the core's evolution rules, so files
+  that set it (mochi's Alex tests, the surveys in `cardengine/survey/`) still bind. Hello TCG and Folkborn's draft
+  no longer set it.
+- **Not built:** the membership `core.alex` described (a game includes the rules documents whose `for` names its
+  sets, so a prototype set's rules stay out until the set joins). If the runtime needs a rules file scoped to
+  something, that is raised with the owner and designed then; `for` is not revived as it was.
 
 ## Open
 

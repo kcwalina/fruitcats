@@ -1,6 +1,4 @@
 #type Rules
 
-for = @mochi
-
 @mochi.on-enter = draw()
 @mochi.on-defeated = ready-resources(two)

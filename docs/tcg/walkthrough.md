@@ -966,13 +966,12 @@ Each card's text says what it does, in words. For the engine, that needs a small
 ```
 #type Rules
 
-for = @cards
-
 @klobuk.on-enter = draw()
 ```
 
-`for = @cards` says which cards this file programs. The cards file never mentions its rules file,
-so the cards read the same, and print the same, whether or not they're programmed.
+Like a cards file, a rules file is part of the game because it's in the game's folder. The cards
+file never mentions its rules file, so the cards read the same, and print the same, whether or not
+they're programmed.
 
 `draw()` is the program: draw a card. `@klobuk.on-enter` attaches it to Kłobuk, and says when it
 runs: when Kłobuk enters play, which is what "Hello:" means. Handlers are short on purpose: they use the words the libraries give you (`draw`, `heal`,
@@ -1782,8 +1781,6 @@ parts = [
 
 ```
 #type Rules
-
-for = @cards
 
 routine gain-energy { gain(@Energy, card.energy) }
 @dziadzius.exhaust = gain-energy

@@ -220,7 +220,7 @@ my-game/
   AGENTS.md           for Claude, Codex and other agents: the spec, the commands, the conventions
 ```
 
-A rules file (`card-rules.alex`, `for = @cards`: handlers and scenarios) is added when the game is
+A rules file (`card-rules.alex`: handlers and scenarios) is added when the game is
 made playable.
 
 **Cards, not sets (decided 2026-09-28).** A beginner writes a `Cards` file: cards and decks, with
@@ -265,8 +265,8 @@ a handler is a note. Constants are also the knobs a playtest can vary.
 **How a project loads.** `kardix` and the engine read every `.alex` file in the folder. Each file
 holds one value, of the type its `#type` directive names; the file's name is its name
 (`@rulebook` is `rulebook.alex`). The folder holds exactly one `Game` and any number of `Cards`
-files, all part of it; the rulebook joins by reference (`rulebook = @rulebook`), and each `Rules`
-document by its `for = @cards` (the cards never name their rules file: code points at data).
+files, all part of it; the rulebook joins by reference (`rulebook = @rulebook`), and every `Rules`
+document in the folder joins too (the cards never name their rules file: code points at data).
 Assets are referred to by their path in the folder.
 
 **The rulebook is source.** Its sections are Alex, and every rule cites the section that explains

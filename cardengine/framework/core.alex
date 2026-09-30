@@ -109,8 +109,7 @@ type Moment { name: text }
 
 // A new game needs only `name` and `schema-version`; every other field has a default. The folder
 // is the game: its one `Game` document, every `Cards` document in it that isn't a draft, the
-// sets `sets` lists, the rulebook it references, and every `Rules` document whose `for` is one
-// of those. A game's card types are the card types its file declares: on the core `Card` for
+// sets `sets` lists, the rulebook it references, and every `Rules` document in it. A game's card types are the card types its file declares: on the core `Card` for
 // what the cards print (`type Creature : Card { cost: int, power: int, health: int }`), mapped
 // onto the libraries' card records by their rules once the game is playable
 // (`UnitCards { types = [@Creature] }`), or as a subtype of a library's record
@@ -511,9 +510,11 @@ type Italic : Emphasis {}
 // A rules document. Its members are declarations of the registered kinds (`routine`, `static`,
 // `scenario`, and `effect` and `condition`, the deprecated spellings of a routine without and with
 // `: bool`) and assignments to extension members of the objects it references.
-// It is for the cards of one `Cards` document or one set (`for = @cards`); the cards never name
-// their rules document, since code points at data.
-type Rules { for: Cards | Set }
+// It joins the game by being in its folder, like a `Cards` document, and its handlers name the
+// cards they attach to; the cards never name their rules document, since code points at data.
+type Rules {
+  for: Cards | Set | nic          // deprecated: has no effect; a rules document is for the whole game
+}
 
 enum ParamType {
   int, bool, text, unit, units, token, counter, resource, player, players, keyword, grant

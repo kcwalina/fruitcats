@@ -1,12 +1,11 @@
 #type Rules
 
-for = @hui-hai
-
 // §850.7 Its owner picks the enemy unit.
 @stone-for-stone.on-survives-damage = choose(opponents).damage(one)
 
 @pebble.exhaust = choose(own).buff(power: card.boost, until: this-round)
-@pebble.awaken = mist-is-full
+// Both players' Mists count, as today's engine counts them.
+@pebble.awaken = cards(@Mist, all, unit-card).count >= card.fallen
 @pebble.back.static = units(own).grant(health: card.extra-health, stone-for-stone)
 @pebble.back.exhaust = choose(opponents).damage(card.damage)
 

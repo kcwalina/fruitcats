@@ -1,13 +1,12 @@
 #type Rules
 
-for = @jiaoren
-
 // §850.6
 @pearl-tears.on-survives-damage = ready-resources(one)
 
 @zhu-er.static = units(own).grant(pearl-tears)
 @zhu-er.exhaust = choose(own).heal(card.heal)
-@zhu-er.awaken = mist-is-full
+// Both players' Mists count, as today's engine counts them.
+@zhu-er.awaken = cards(@Mist, all, unit-card).count >= card.fallen
 @zhu-er.back.static = units(own).grant(health: card.extra-health, pearl-tears)
 @zhu-er.back.exhaust = ready-resources(two)
 

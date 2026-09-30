@@ -20,7 +20,7 @@ wants to print, unless they ask.
 - `rulebook.alex` (`#type Rulebook`): the text players read.
 - `cards.alex` (`#type Cards`): the cards and the decks. Every cards file in the folder is part of
   the game.
-- `card-rules.alex` (`#type Rules`, `for = @cards`), once the game is playable: what the cards' text
+- `card-rules.alex` (`#type Rules`), once the game is playable: what the cards' text
   does (handlers), and scenarios that test them.
 - `art/`: images, referred to by path: card paintings, the card back, and frames in `art/frames/`.
   Frames are 822 × 1122 (750 × 1050 plus 36 px bleed each side) with a transparent art window.

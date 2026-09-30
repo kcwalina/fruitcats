@@ -1174,6 +1174,7 @@ new concepts; two differ from the proposals there.
   aren't named members" is. Records there stay named: the first version, which hid everything inside an entry,
   broke `@mochi-portrait`, a picture an art brief names from inside a group. Across both repositories' files the only
   other change is that a stray `@common` no longer finds an icon path.
+
 ### Library rules are routines in Alex (owner, 2026-09-29)
 
 The runtime's one big decision (`docs/tcg/runtime-design.md`): every library rule (`GuardiansFirst`, `LifeStack`,

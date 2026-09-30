@@ -160,10 +160,17 @@ A game's rules come two ways:
    for everyone.
 2. **Written in Alex** (extremely rare). A `rule` declaration on one of the core's hook points,
    built from the core's primitives. Deferred until a concrete game needs it; we look at that
-   scenario before designing it.
+   scenario before designing it. The direction the owner is considering (2026-09-29), for when
+   the runtime is built: the library rules themselves (`GuardiansFirst`, `LifeStack`,
+   `AlternatingActions`…) written in Alex as routines on the core's hooks, instead of built into
+   the engine in Rust. See `cardengine/decisions.md`, "Routines".
 
-Card abilities are separate and not optional: every card ability has a small handler (`effect`,
-`static`, `condition`) in a rules document. The same limits apply to both:
+Card abilities are separate and not optional: every card ability has a small handler in a rules
+document, a `routine` or a `static`. A routine does something (`routine draw-a-card { draw() }`), or
+answers yes or no when it returns `bool` (`routine enough-creatures : bool { ... }`); the slot it is
+attached to says which it wants. `effect` and `condition`, the two names these had before
+(2026-09-29), still bind. A `static` stays apart: it is a standing rule while its card is in play,
+not something that runs. The same limits apply to both:
 
 - no user functions, no recursion
 - no loops except `each` over a selection

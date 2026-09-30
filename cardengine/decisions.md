@@ -1048,6 +1048,58 @@ compares.
 - **The digit note.** The note on a digit typed into a handler (decided above, not yet built) now has its answer: use
   `Count`. A number that is the card's own, printed on it, stays a constant (`card.damage`).
 
+### Routines (owner, 2026-09-29)
+
+`effect` (a named body that does something) and `condition` (one that answers yes or no) were the same thing with
+different results, so they are one concept, the routine. Done in both implementations (C# Alex in mochi, the core's
+Alex here), which conformance compares.
+
+```
+routine boost-own-and-ready-an-offering {
+  choose(own).buff(power: card.boost, until: this-round)
+  ready-resources(one)
+}
+routine is-well-fed : bool { own.resources.count >= @well-fed-at }
+```
+
+- **What a routine is.** A routine with no result is today's effect; `: bool` is today's condition. The language
+  learns the syntax (optional parameters and a result type after a declaration's name); the host says which results a
+  routine may have and which of its kinds each one is (`AlexHost.RoutineKinds`, `Host::routine_kinds`). The card
+  engine lists two: nothing is `effect`, `bool` is `condition`. So a routine binds as exactly the declaration it
+  replaces, and every slot check, scope and runtime path that knew effects and conditions works unchanged. Any other
+  result is an error that lists what a routine may return.
+- **The slot says what it needs.** An Awaken slot (`awaken: condition?`) wants a routine that returns `bool`.
+  Attaching the wrong kind is an error that says both sides: "'draw-one' is a routine that returns nothing, and
+  'awaken' holds a condition (a routine that returns bool)."
+- **The slot types keep their names.** `effect?`, `condition?` and `static?` stay as they are in the libraries, as the
+  names of the two kinds of routine and of a static. Why: `core.alex` is append-only and every library and extension
+  already uses these names; a new spelling (`routine?`, `routine : bool?`) would add type syntax to Alex and give each
+  type two names, which is more concepts, not fewer; and a slot's type reads as what it wants ("awaken holds a
+  condition"). If library code later needs routines with parameters in slots (see below), a routine type form with
+  parameters can be added then, beside these names.
+- **Compatibility.** `routine` is appended to `BlockKind`. `effect` and `condition` still bind, as deprecated
+  spellings of a routine without and with `: bool`; nothing warns about them yet. `static` stays a separate kind (a
+  standing rule while its card is in play, not something that runs), and `scenario` stays (a test).
+- **Parameters.** A routine may take typed parameters (`routine deal(n: int) { ... }`), in scope in its body; one can't
+  be bound again, and a name written twice is an error. Only a routine has parameters or a result; `effect x(n: int)`
+  is an error. Nothing calls a routine with arguments yet: they are for library code. A card's handler takes none:
+  the card engine refuses a routine with parameters in a slot and says why, since a handler reads its numbers from
+  the card (`card.damage`) so the printed text and the rules stay linked. Parameter types are Alex types (`int`,
+  `bool`, `text`, a declared type); the host's own types (`unit`, `player`) can't be written yet.
+- **The limits stay.** No loops, no recursion (a routine can't call itself or another by name), no variables beyond
+  `target`. Every routine finishes.
+- **Inline wiring** (`@klobuk.on-enter = draw()`, done in its own session) is an unnamed routine: it binds as the
+  slot's kind, as a named routine would.
+
+**The intended direction, not built:** for when the runtime is built, the owner is considering library rules
+(`GuardiansFirst`, `LifeStack`, `AlternatingActions`…) written in Alex as routines on the core's hooks
+(`framework/core-operations.alex`: `provide`, `filter`, `before`, `after`, `replace`), instead of built into the engine
+in Rust. Nothing here rules it out: a hook's routine would take the hook's parameters (the query's or the operation's
+`params`), which routines can now declare, and would return what the hook answers (a `before` hook that may cancel
+returns `bool`; a `provide` hook returns its query's result), which the host can allow by listing more results in
+`routine_kinds`, each a kind of its own. The limits (no loops but over a selection, no recursion) would hold there
+too, so every rule still finishes.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

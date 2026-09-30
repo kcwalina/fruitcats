@@ -3,11 +3,11 @@
 for = @hui-hai
 
 // §850.7 Its owner picks the enemy unit.
-effect throw-a-stone { choose(opponents).damage(one) }
+routine throw-a-stone { choose(opponents).damage(one) }
 
 static stronger-stones-for-all { units(own).grant(health: card.extra-health, stone-for-stone) }
 
-effect damage-an-enemy { choose(opponents).damage(card.damage) }
+routine damage-an-enemy { choose(opponents).damage(card.damage) }
 static attached-power-and-stones { attached.grant(power: card.boost, stone-for-stone) }
 
 @stone-for-stone.on-survives-damage = throw-a-stone

@@ -36,7 +36,7 @@ combat = [
 A card's handler is one line in its set's rules file, and a second line attaches it to the card:
 
 ```
-effect damage-a-unit { choose(all).damage(card.damage) }
+routine damage-a-unit { choose(all).damage(card.damage) }
 @a-domowiks-temper.on-play = damage-a-unit
 ```
 
@@ -46,14 +46,14 @@ Falling Star. One handler serves both.
 A family's mechanic is a handler attached to its keyword, so every unit with the keyword has it:
 
 ```
-effect pearl-tear { ready-resources(one) }
+routine pearl-tear { ready-resources(one) }
 @pearl-tears.on-survives-damage = pearl-tear
 ```
 
 A Hero has a handler for each labelled line of its text:
 
 ```
-condition enough-offerings { own.resources.count >= card.offerings }
+routine enough-offerings : bool { own.resources.count >= card.offerings }
 @dziadzius.exhaust = ready-an-offering
 @dziadzius.awaken = enough-offerings
 @dziadzius.back.exhaust = ready-two-offerings
@@ -105,6 +105,7 @@ files; the other fixes are in the platform.
 | 15 | Setup order across areas isn't defined: the Candles are dealt (a `life` rule) after the shuffle and before the opening hand (`setup` rules). | not an error | Library: a setup step that deals the life stack, placed in `setup`. |
 | 16 | A Whistle in the Dark has Ambush but may only answer an attack. | not an error | Checker: a handler that uses the attack it answers (`event.cancel()`) makes the card playable only in an attack's window. |
 | 17 | Alex enums are names only. Handlers want `ready-resources(two)`, with `two` standing for 2. | 6 errors (the owner's request, 2026-09-29) | Alex (both implementations): enums backed by a number or a short fixed-size string (`enum Count : int { one = 1, two = 2 }`), accepted where that number or string is expected, as C# enums are; `Count` in `common`. Being done in its own session. |
+| 19 | `effect` (a handler that does something) and `condition` (one that answers yes or no) were two concepts for one thing. | not an error (the owner's decision, 2026-09-29) | Done. Alex (both implementations): `routine`. `routine x { ... }` is an effect and `routine x : bool { ... }` a condition; the slot says which it wants. This draft's handlers are routines. `effect` and `condition` still bind. |
 
 Everything else binds as written: the zones, setup, rounds, the Lantern, Offerings, Candles, combat, Ambush,
 scheduling, the keyword rules (Swift, Guardian, Sneaky, Fierce, Tough, Lucky, Ambush), the constants, and

@@ -3,27 +3,27 @@
 for = @aluxes
 
 // §850.5 The rain counter's `max` stops it at +2/+2.
-effect rain-falls { this.counter(@rain, one) }
+routine rain-falls { this.counter(@rain, one) }
 
-condition few-candles { own.life.count <= card.candles }
-effect heal-and-guard {
+routine few-candles : bool { own.life.count <= card.candles }
+routine heal-and-guard {
   target = choose(own)
   target.heal(card.heal)
   target.buff(guardian, until: this-round)
 }
 
-effect heal-a-unit { choose(all).heal(card.heal) }
-effect draw-if-guardian { if units(own, guardian).any { draw() } }
-effect heal-own-and-draw {
+routine heal-a-unit { choose(all).heal(card.heal) }
+routine draw-if-guardian { if units(own, guardian).any { draw() } }
+routine heal-own-and-draw {
   choose(own).heal(card.heal)
   draw()
 }
-effect damage-an-exhausted-unit { choose(all, exhausted).damage(card.damage) }
+routine damage-an-exhausted-unit { choose(all, exhausted).damage(card.damage) }
 
 // §600.3 The attacker stays exhausted.
-effect cancel-the-attack { event.cancel() }
+routine cancel-the-attack { event.cancel() }
 
-effect draw-once-a-round { once-per-round { draw() } }
+routine draw-once-a-round { once-per-round { draw() } }
 
 @rain-fed.on-round-start = rain-falls
 

@@ -158,7 +158,8 @@ Folkborn from its Alex rules, so it must be movable as a folder today:
   next marker ends it, a bare `@@@` ends the table.
 - Two layers, one language. The data layer is everything a data-mode parse accepts; `data` is its
   widest type, asserted with `type Set : data` and required with `accept = data`. The program
-  layer adds `effect`, `static`, `condition` and `scenario` declarations with bodies, `extension
+  layer adds `routine`, `static` and `scenario` declarations with bodies (a routine returns
+  nothing or `bool`; `effect` and `condition` are its older spellings), `extension
   Type { field: T }` blocks (a data-typed member is an ordinary field once its schema is loaded; a
   function-typed member is program-only), and assignments through references to those members
   (`@citron-fox.on-enter = zest-damage`), which may only target extension members and are set once

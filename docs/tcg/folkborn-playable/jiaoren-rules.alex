@@ -3,12 +3,12 @@
 for = @jiaoren
 
 // §850.6
-effect pearl-tear { ready-resources(one) }
+routine pearl-tear { ready-resources(one) }
 
 static pearl-tears-for-all { units(own).grant(pearl-tears) }
 static stronger-pearl-tears-for-all { units(own).grant(health: card.extra-health, pearl-tears) }
 
-effect draw-cards { draw(card.draw) }
+routine draw-cards { draw(card.draw) }
 static attached-health-and-pearl-tears { attached.grant(health: card.extra-health, pearl-tears) }
 
 @pearl-tears.on-survives-damage = pearl-tear

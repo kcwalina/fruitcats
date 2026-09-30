@@ -3,14 +3,14 @@
 for = @domowiki
 
 // §850.2 Ready or exhausted Offerings both count.
-condition is-well-fed { own.resources.count >= @well-fed-at }
+routine is-well-fed : bool { own.resources.count >= @well-fed-at }
 
 // §850.1 If the deck runs out, the rest does nothing; it never costs a Candle.
-effect sprout { offer-from-deck(card.sprout, exhausted: true) }
+routine sprout { offer-from-deck(card.sprout, exhausted: true) }
 
-effect well-fed-draw { if @is-well-fed { draw(card.draw) } }
+routine well-fed-draw { if @is-well-fed { draw(card.draw) } }
 static hungry { if not @is-well-fed { this.cant(attack) } }
-condition enough-offerings { own.resources.count >= card.offerings }
+routine enough-offerings : bool { own.resources.count >= card.offerings }
 
 @dziadzius.exhaust = ready-an-offering
 @dziadzius.awaken = enough-offerings

@@ -1253,6 +1253,24 @@ core's `Host`, `AlexHost.RequiresAssignments` in C# Alex 0.12.0. The binder now 
 host's validation, where the host can see the documents. Tests: `engine/tests/playable.rs` and mochi's
 `Only_the_sets_the_game_lists_need_handlers`.
 
+### Abilities, not keywords (owner, 2026-09-30)
+
+The engine's word for Swift, Guardian, Fierce, Tough 1, Feather Coat and the like is **ability**: a named behaviour a
+card can have, gain or lose. Cards and rulebooks keep calling the bold ones keywords, the players' word. An ability is
+a type that carries its own behaviour as members (`type EntersReady : Ability { on-unit-enter = unit.ready() }`); a
+game names it (`abilities = [Swift = EntersReady {}]`) and a card lists what it has (`abilities = [@Guardian]`). This
+replaces the rules that only pointed a library's behaviour at a game's keyword (`EntersReady { keyword = @Swift }`).
+
+- **Why Ability:** it covers every case the surveys show: behaviour, a value (Tough 1), restrictions (Defender), a
+  game's own mechanics, and gaining and losing ("gains Sneaky this round"), with precedent (Magic's "keyword
+  abilities"). Rejected: Trait (fine, but less familiar to designers), Property and Mechanic (taken in Alex), Tag (no
+  behaviour), Attribute (reads as a stat).
+- **What it isn't:** descriptive tags cards filter on (a creature type, a tribe) and states (exhausted, stunned).
+- **The rename**, with the step 3 language work: `Keyword` and `keywords` (core, libraries, games, the card layout's
+  `{keywords}`) become `Ability` and `abilities`, the old names kept as deprecated forms so existing files mean the
+  same. Today's `Ability` records (`OnEnter { text = ... }`) merge into the new meaning. Designed in
+  `docs/tcg/library-rules-on-paper.md`.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

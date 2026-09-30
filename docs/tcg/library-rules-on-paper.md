@@ -48,18 +48,20 @@ type UnitCards : UnitRule {
 
 Handlers of one moment run in the order the game lists its rules.
 
-## Keywords carry their own behaviour
+## Abilities carry their own behaviour
 
-A keyword (Swift, Guardian) is a type too, and its behaviour is its members, the same way:
+An ability (Swift, Guardian) is a type too, and its behaviour is its members, the same way. *Ability* is the engine's
+word for what cards and rulebooks call a keyword (the owner's choice, 2026-09-30): a named behaviour a card can have,
+gain or lose.
 
 ```
-// A unit with this keyword enters ready.
-type EntersReady : Keyword {
+// A unit with this ability enters ready.
+type EntersReady : Ability {
   on-unit-enter = unit.ready()
 }
 
-// While the defender has a unit with this keyword, only such units may be attacked.
-type AttackedFirst : Keyword {
+// While the defender has a unit with this ability, only such units may be attacked.
+type AttackedFirst : Ability {
   can-attack(attacker, target) {
     if target.controller.has-unit-with(this) {
       return target.has(this)
@@ -69,25 +71,39 @@ type AttackedFirst : Keyword {
 }
 ```
 
-The game gives each its own name when it declares its keywords:
+The game gives each its own name when it declares its abilities, and a card lists the ones it has:
 
 ```
-keywords = [
+abilities = [
   Swift = EntersReady {}
   Guardian = AttackedFirst {}
 ]
+
+keeper-of-the-door = Creature {
+  name = 'Keeper of the Door', cost = 3, power = 2, health = 5
+  abilities = [@Guardian]
+}
 ```
 
-- A keyword's unit moments run only for units that have it, so `EntersReady` needs no "if the unit has it".
-- A keyword's questions run in every game that declares it, and `this` is the keyword (`has-unit-with(this)`).
-- A keyword a game declares as plain `Keyword {}` has no behaviour: it is a word printed on its cards. A printable-only
-  game declares all its keywords that way.
-- A keyword's moments run after the rules' for the same moment, so a Swift unit is exhausted (`UnitsEnterExhausted`),
+- An ability's unit moments run only for units that have it, so `EntersReady` needs no "if the unit has it".
+- An ability's questions run in every game that declares it, and `this` is the ability (`has-unit-with(this)`).
+- An ability a game declares as plain `Ability {}` has no behaviour: it is a word printed on its cards. A printable-only
+  game declares all its abilities that way.
+- An ability's moments run after the rules' for the same moment, so a Swift unit is exhausted (`UnitsEnterExhausted`),
   then readied.
+- A card gains and loses abilities (`unit.gain(sneaky, until: this-round)`), and has them by name (`unit.has(@Swift)`).
 
 This replaces the rules that only gave a game's keyword its meaning (`EntersReady { keyword = @Swift }`,
 `GuardiansFirst { keyword = @Guardian }`, `HitCostsLife`, `PlayFreeWhenLost`…), and it is how Folkborn's family
-keywords already work (Feather Coat, Rain-Fed and Pearl Tears carry their own handlers).
+abilities already work (Feather Coat, Rain-Fed and Pearl Tears carry their own handlers).
+
+**What the rename touches.** Today's files say `Keyword`: the core's type, `keywords` on a game, a set and a card, the
+libraries' keyword types, and the card layout's `{keywords}`. They become `Ability` and `abilities`, with the old names
+kept as deprecated forms so every existing file still means the same (the core's rule: nothing is removed or renamed
+outright). Today's `Ability` records (`OnEnter { text = ... }`, the old way a card declared that it has a handler)
+merge into the new meaning: a card's `abilities` lists what it has, and a handler slot says what one does.
+Descriptive tags that cards filter on (a creature type, a tribe) are not abilities; a game that needs them gets its own
+small concept, as Folkborn has families.
 
 ## Moments and questions
 
@@ -272,8 +288,8 @@ type UnitsEnterExhausted : UnitRule {
   on-unit-enter = unit.exhaust()
 }
 
-// A unit with this keyword enters ready (Hello TCG: Swift = EntersReady {}).
-type EntersReady : Keyword {
+// A unit with this ability enters ready (Hello TCG: Swift = EntersReady {}).
+type EntersReady : Ability {
   on-unit-enter = unit.ready()
 }
 
@@ -366,9 +382,9 @@ type AttackerMustBeReady : CombatRule {
   }
 }
 
-// While the defender has a unit with this keyword, only such units may be attacked (Hello TCG: Guardian =
+// While the defender has a unit with this ability, only such units may be attacked (Hello TCG: Guardian =
 // AttackedFirst {}).
-type AttackedFirst : Keyword {
+type AttackedFirst : Ability {
   can-attack(attacker, target) {
     if target.controller.has-unit-with(this) {
       return target.has(this)

@@ -1,41 +1,33 @@
 #type Rules
 
-// §850.4 Feather Coat is a Goodbye.
-@feather-coat.on-defeated = summon(@dove)
+values = [
+  // §850.3 Counted when the effect is checked; a unit that just entered counts itself.
+  has-company = units(own).count >= @company-at
+  // Súči of the Hunt and Mountain Gale: "Deal {damage} damage to a unit. Company: deal {company-damage} instead."
+  company-damage = Damage(if @has-company then card.company-damage else card.damage, target: Choose(all))
+]
 
-@parijan.exhaust = choose(own).buff(sneaky, until: this-round)
+// §850.4 Feather Coat is a Goodbye.
+@feather-coat.on-defeated = Summon(@dove)
+
+@parijan.exhaust = Gain(Choose(own), keywords: [@Sneaky], until: this-round)
 @parijan.awaken = units(own).count >= card.units
-@parijan.back.exhaust = choose(own).buff(power: card.boost, sneaky, until: this-round)
+@parijan.back.exhaust = Gain(Choose(own), power: card.boost, keywords: [@Sneaky], until: this-round)
 
 // §850.0 Orange-Peri is one of the cards played this round, so "2 other cards" means 3 in all.
-@orange-peri.on-enter = if own.played-this-round <= card.others { this.damage(card.damage) }
-
-// §850.3 Counted when the effect is checked; a unit that just entered counts itself.
-routine has-company : bool { units(own).count >= @company-at }
-@pari-at-the-pool.on-enter = if @has-company { this.ready() }
-
-// Súči of the Hunt and Mountain Gale: "Deal {damage} damage to a unit. Company: deal {company-damage} instead."
-routine company-damage {
-  target = choose(all)
-  if @has-company { target.damage(card.company-damage) } else { target.damage(card.damage) }
-}
-@suci-of-the-hunt.on-enter = company-damage
-
-@khangi.on-enter = draw()
-@falling-star.on-play = choose(all).damage(card.damage)
-@mountain-gale.on-play = company-damage
-
-routine ready-and-heal {
-  target = choose(own, exhausted)
-  target.ready()
-  target.heal(card.heal)
-}
-@choicest-odours.on-play = ready-and-heal
-
-@zangwar.on-play = choose(own).buff(power: card.boost, until: this-round)
-@carried-off-asleep.on-play = choose(opponents).exhaust()
-@pari-banus-pocket-tent.static = attached.grant(health: card.extra-health)
-@manar-al-sana.on-enter = choose(own, other).ready()
-@asman-pari.on-enter = units(opponents).damage(card.damage)
-
-@schaibar.on-defeats-in-combat = if once-per-round { this.ready() }
+@orange-peri.on-enter = Damage(card.damage, only-if: own.played-this-round <= card.others)
+@pari-at-the-pool.on-enter = Ready(only-if: @has-company)
+@suci-of-the-hunt.on-enter = @company-damage
+@khangi.on-enter = Draw()
+@falling-star.on-play = Damage(card.damage, target: Choose(all))
+@mountain-gale.on-play = @company-damage
+@choicest-odours.on-play = With(Choose(own, filter: exhausted), do: [
+  Ready()
+  Heal(card.heal)
+])
+@zangwar.on-play = Gain(Choose(own), power: card.boost, until: this-round)
+@carried-off-asleep.on-play = Exhaust(Choose(opponents))
+@pari-banus-pocket-tent.static = Grant(attached, health: card.extra-health)
+@manar-al-sana.on-enter = Ready(Choose(own, filter: other))
+@asman-pari.on-enter = Damage(card.damage, target: units(opponents))
+@schaibar.on-defeats-in-combat = Ready(once-per-round: true)

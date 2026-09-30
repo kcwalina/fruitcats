@@ -24,7 +24,7 @@ type RevealedCardEffectFires : LifeRule {}        // a lost card's security effe
 type Lucky : Keyword {}
 type PlayFreeWhenLost : LifeRule { keyword: Keyword }
 
-extension Card { on-lost-as-life: effect? }
+extension Card { on-lost-as-life: Effects? }
 
 // Ability kinds this library declares; a card constructs one to say it has the ability.
 type OnLostAsLife : Ability { holders = [nameof(Card)] }

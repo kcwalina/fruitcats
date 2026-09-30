@@ -14,7 +14,7 @@ fn errors(rules: &str, cards: &str) -> Vec<String> {
 name = 'Pocket'
 schema-version = 1
 sets = [@first]
-uses = [@common, @units, @combat]
+uses = [@common, @units, @combat, @turns]
 keywords = [
   Guardian = Keyword {}
   Tough = Keyword {}
@@ -51,9 +51,9 @@ const OWL: &str = "  owl = Creature {
 #[test]
 fn a_keyword_has_a_units_slots() {
     let found = errors(
-        "@nimble-footed.on-defeated = draw()
-@nimble-footed.on-defeats-in-combat = this.ready()
-@owl.on-enter = choose(all).damage(card.candles)",
+        "@nimble-footed.on-defeated = Draw()
+@nimble-footed.on-defeats-in-combat = Ready()
+@owl.on-enter = Damage(card.candles, target: Choose(all))",
         OWL,
     );
     assert!(found.is_empty(), "{}", found.join("\n"));
@@ -62,16 +62,16 @@ fn a_keyword_has_a_units_slots() {
 #[test]
 fn a_sets_keyword_is_a_word_in_a_handler() {
     let found = errors(
-        "@owl.static = units(own).grant(nimble-footed)",
+        "@owl.static = Grant(units(own), keywords: [@nimble-footed])",
         "  owl = Creature { name = 'Owl', power = 2, text = 'Your units have Nimble-Footed.' }",
     );
     assert!(found.is_empty(), "{}", found.join("\n"));
 }
 
 #[test]
-fn once_per_round_is_a_condition() {
+fn once_per_round_is_a_field_of_every_effect() {
     let found = errors(
-        "@owl.on-defeats-in-combat = if once-per-round { this.ready() }",
+        "@owl.on-defeats-in-combat = Ready(once-per-round: true)",
         "  owl = Creature { name = 'Owl', power = 2, text = 'Once per round, after Owl defeats a unit in combat, ready it.' }",
     );
     assert!(found.is_empty(), "{}", found.join("\n"));

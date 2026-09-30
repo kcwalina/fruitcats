@@ -219,7 +219,7 @@ pub struct Attachment {
 
 // ── the arenas ──────────────────────────────────────────────────────────────────────────────────
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Model {
     pub values: Vec<Value>,
     pub types: Vec<Type>,

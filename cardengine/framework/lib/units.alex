@@ -19,12 +19,27 @@ type UnitCard : Card {
 }
 extension Token { power: int, health: int }
 
-// A bundle of stat changes and keywords, granted permanently or for a duration.
-type Grant {
-  power: int = 0
-  health: int = 0
-  keywords: [Keyword] = empty
+// Stat changes and keywords a unit has while what grants them is in play: a Talisman's `attached`, a
+// static (`@old-bast-shoe.static = Grant(attached, power: card.boost, health: card.extra-health)`).
+type Grant : Effect {
+  target: Choose | formula | nic
+  power: int | formula = 0
+  health: int | formula = 0
+  keywords: [formula] = empty
 }
+// The same, for a while: `Gain(Choose(own), power: card.boost, until: this-round)`.
+type Gain : Effect {
+  target: Choose | formula | nic
+  power: int | formula = 0
+  health: int | formula = 0
+  keywords: [formula] = empty
+  until: formula = this-round
+}
+type Damage : Effect { amount: int | formula, target: Choose | formula | nic }
+type Heal : Effect { amount: int | formula, target: Choose | formula | nic }
+// While it applies, the unit can't attack: a static (`CantAttack(only-if: not @is-well-fed)`).
+type CantAttack : Effect { target: Choose | formula | nic }
+type Defeat : Effect { target: Choose | formula | nic }
 enum Duration { this-round, this-turn, permanent }
 
 // A counter that changes a unit's stats; `full-at` makes the `full` filter true.
@@ -63,23 +78,23 @@ type EntersReady : UnitRule { keyword: Keyword }                  // Swift
 type DamageReduction : UnitRule { keyword: Keyword }              // Tough; n from `Applied`
 
 extension UnitCard {
-  on-enter: effect?
-  on-defeated: effect?
-  on-round-start: effect?
-  on-survives-damage: effect?     // damaged and still in play once the damage is dealt
-  on-use: effect?                 // exhaust the unit for value instead of attacking (reap)
-  static: static?
+  on-enter: Effects?
+  on-defeated: Effects?
+  on-round-start: Effects?
+  on-survives-damage: Effects?     // damaged and still in play once the damage is dealt
+  on-use: Effects?                 // exhaust the unit for value instead of attacking (reap)
+  static: Effects?
 }
 // A keyword has a unit's slots: behaviour on a keyword (`@undying.on-defeated = summon(@spirit)`)
 // is run by every unit that has the keyword, printed or granted, with `this` that unit. Each
 // library that gives UnitCard a slot gives Keyword the same one, beside it.
 extension Keyword {
-  on-enter: effect?
-  on-defeated: effect?
-  on-round-start: effect?
-  on-survives-damage: effect?
-  on-use: effect?
-  static: static?
+  on-enter: Effects?
+  on-defeated: Effects?
+  on-round-start: Effects?
+  on-survives-damage: Effects?
+  on-use: Effects?
+  static: Effects?
 }
 
 moments = [

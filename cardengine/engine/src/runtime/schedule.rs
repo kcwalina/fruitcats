@@ -10,7 +10,7 @@ use super::state::{Game, ObjectId, Seat};
 
 #[derive(Clone, Debug)]
 pub struct Task {
-    pub routine: usize,
+    pub handler: usize,
     pub context: Context,
     pub answers: Vec<usize>,
     /// What raised it, for the log: `Kłobuk, on-enter`.
@@ -32,8 +32,8 @@ impl Game {
         let face = (o.face as usize - 1).min(card.faces.len() - 1);
         let Some(routine) = self.catalog.handlers.attached(card.faces[face].value, slot) else { return false };
         let task = Task {
-            routine,
-            context: Context { this: Some(object), card: Some((o.card, face)), controller: o.controller.or(o.owner).unwrap_or(0) },
+            handler: routine,
+            context: Context { this: Some(object), card: Some((o.card, face)), controller: o.controller.or(o.owner).unwrap_or(0), target: None },
             answers: Vec::new(),
             cause: format!("{}, {}", card.name, slot),
         };
@@ -47,7 +47,7 @@ impl Game {
             let Some(task) = self.pending.pop_front() else { break };
             let mut trial = self.clone();
             trial.cause = Some(task.cause.clone());
-            let result = Run::new(&mut trial, task.routine, task.context.clone(), task.answers.clone()).run();
+            let result = Run::new(&mut trial, task.handler, task.context.clone(), task.answers.clone()).run();
             match result {
                 Ok(_) => {
                     trial.cause = None;
@@ -107,7 +107,7 @@ impl Game {
         let card = &self.catalog.cards[o.card];
         let face = (o.face as usize - 1).min(card.faces.len() - 1);
         let Some(routine) = self.catalog.handlers.attached(card.faces[face].value, slot) else { return Ok(None) };
-        let context = Context { this: Some(object), card: Some((o.card, face)), controller: o.controller.or(o.owner).unwrap_or(0) };
+        let context = Context { this: Some(object), card: Some((o.card, face)), controller: o.controller.or(o.owner).unwrap_or(0), target: None };
         let mut trial = self.clone();
         match Run::new(&mut trial, routine, context, Vec::new()).run() {
             Ok(Val::Bool(b)) => Ok(Some(b)),

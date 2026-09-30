@@ -18,7 +18,7 @@ extension Game { spells: [SpellRule] = empty }
 type SpellCards : SpellRule { types: [type SpellCard] }
 type ClimaxCards : SpellRule { types: [type ClimaxCard] }
 
-extension SpellCard { on-play: effect }           // required: every spell must do something
+extension SpellCard { on-play: Effects }           // required: every spell must do something
 
 events = [
   play = Event { fields = [card = unit] }

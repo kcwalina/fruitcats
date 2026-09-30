@@ -1,31 +1,34 @@
-//! Runs a routine's body against a game. Every change it makes goes through the core's operations (`ops.rs`), so it is
-//! logged with its cause. A `choose` the routine reaches before it has an answer stops it (`Stop::Need`); the
-//! scheduler (`schedule.rs`) runs it on a copy of the game, so a stopped routine has changed nothing, and runs it again
-//! with the answers once they are given.
+//! Runs a handler against a game. A handler is data (docs/tcg/library-rules-on-paper.md): an effect record
+//! (`Draw()`, `Damage(card.damage, target: Choose(all))`), a list of them, which happen in order, or a formula, a pure
+//! expression read from the game. Every change goes through the core's operations (`ops.rs`), so it is logged with its
+//! cause. A `Choose` the handler reaches before it has an answer stops it (`Stop::Need`); the scheduler
+//! (`schedule.rs`) runs it on a copy of the game, so a stopped handler has changed nothing, and runs it again with the
+//! answers once they are given.
 //!
-//! The words a body calls (`draw`, `choose`, `units`, `damage`, `heal`…) are the libraries' vocabulary. They are Rust
-//! here for now; they move into the libraries' Alex once routines on hooks run (docs/tcg/runtime-design.md, step 3).
+//! What each effect does is Rust here for now; the libraries will define theirs from the core's effects (an effect
+//! type's `do`) once the runtime reads them (docs/tcg/runtime-design.md, step 3).
 
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use super::catalog::Catalog;
-use super::rules::RoutineBody;
 use super::state::{Game, ObjectId, Seat};
 use super::Position;
-use crate::alex::syntax::{Argument, BodyStatement, Element, Expression, LiteralKind, Separated, Token};
+use crate::alex::model::{Model, ValueId, ValueKind};
+use crate::alex::syntax::{Argument, Element, Expression, LiteralKind, Separated, Token};
 
-/// What a routine runs for: the object it is attached to, the card face whose numbers it reads (`card.damage`), and
-/// the player it acts for (`own`).
+/// What a handler runs for: the object it is attached to, the card face whose numbers it reads (`card.damage`), the
+/// player it acts for (`own`), and, inside a `With`, the target its effects share.
 #[derive(Clone, Debug)]
 pub struct Context {
     pub this: Option<ObjectId>,
     /// The card, by its index in the catalog, and which of its faces: 0 the front, 1 the back.
     pub card: Option<(usize, usize)>,
     pub controller: Seat,
+    pub target: Option<Vec<ObjectId>>,
 }
 
-/// A decision a routine is waiting for: which object `seat` picks, from `options`; with `optional`, answering
+/// A decision a handler is waiting for: which object `seat` picks, from `options`; with `optional`, answering
 /// `options.len()` declines.
 #[derive(Clone, Debug)]
 pub struct Decision {
@@ -46,7 +49,7 @@ pub enum Val {
     Int(i64),
     Bool(bool),
     Text(String),
-    /// A bare word the callee gives a meaning: a filter (`exhausted`), a keyword (`guardian`), a duration.
+    /// A bare word the reader gives a meaning: a filter (`exhausted`), a keyword (`guardian`), a duration.
     Word(String),
     Player(Seat),
     Players(Vec<Seat>),
@@ -57,6 +60,9 @@ pub enum Val {
     Face(usize, usize),
     /// A zone definition, by index in the catalog: `@Mist`.
     Zone(usize),
+    List(Vec<Val>),
+    /// A value of the model a formula named: an effect (`this.on-play`) or a record.
+    Value(ValueId),
 }
 
 type Eval = Result<Val, Stop>;
@@ -68,91 +74,346 @@ fn fail<T>(message: impl Into<String>) -> Result<T, Stop> {
 pub struct Run<'g> {
     pub game: &'g mut Game,
     catalog: Rc<Catalog>,
-    source: usize,
+    model: Rc<Model>,
     context: Context,
-    routine: usize,
+    handler: ValueId,
     answers: Vec<usize>,
     next_answer: usize,
-    locals: BTreeMap<String, Val>,
+    /// The document whose text the formula being read comes from.
+    document: usize,
+    /// Reading a formula: nothing may change the game.
+    reading: bool,
 }
 
 impl<'g> Run<'g> {
-    pub fn new(game: &'g mut Game, routine: usize, context: Context, answers: Vec<usize>) -> Run<'g> {
+    pub fn new(game: &'g mut Game, handler: ValueId, context: Context, answers: Vec<usize>) -> Run<'g> {
         let catalog = game.catalog.clone();
-        let source = catalog.handlers.routines[routine].source;
-        Run { game, catalog, source, context, routine, answers, next_answer: 0, locals: BTreeMap::new() }
+        let model = catalog.handlers.model.clone();
+        Run { game, catalog, model, context, handler, answers, next_answer: 0, document: 0, reading: false }
     }
 
-    /// Runs the routine: nothing for a routine that does something, its answer for one that answers yes or no.
+    /// Runs the handler: nothing for effects, the formula's value for a question (`awaken`).
     pub fn run(&mut self) -> Eval {
-        let body = self.catalog.handlers.routines[self.routine].body.clone();
-        match body {
-            RoutineBody::Block(statements) => {
-                self.block(&statements)?;
+        self.run_value(self.handler)
+    }
+
+    fn run_value(&mut self, value: ValueId) -> Eval {
+        match &self.model.values[value].kind {
+            ValueKind::Reference { target: Some(target), .. } => self.run_value(*target),
+            ValueKind::Array(items) => {
+                for item in items.clone() {
+                    self.run_value(item)?;
+                }
                 Ok(Val::Nothing)
             }
-            RoutineBody::Expression(expression) => self.eval(&expression),
-            RoutineBody::Statement(BodyStatement::Expression(expression)) => self.eval(&expression),
-            RoutineBody::Statement(statement) => {
-                self.statement(&statement)?;
-                Ok(Val::Nothing)
+            ValueKind::Object(object) if !object.is_map => self.run_effect(value),
+            ValueKind::Formula { expression, document } => {
+                let result = self.read(&expression.clone(), *document)?;
+                match result {
+                    Val::Value(named) => self.run_value(named),
+                    other => Ok(other),
+                }
             }
+            _ => self.value(value),
         }
     }
 
-    fn text(&self, token: &Token) -> String {
-        String::from_utf8_lossy(token.text(&self.catalog.handlers.sources[self.source])).into_owned()
+    // ── effects ────────────────────────────────────────────────────────────────────────────────
+
+    fn run_effect(&mut self, effect: ValueId) -> Eval {
+        let types = self.types_of(effect);
+        if let Some(condition) = self.field(effect, "only-if") {
+            let met = self.value(condition)?;
+            if !self.truthy(&met) {
+                return Ok(Val::Nothing);
+            }
+        }
+        if let Some(once) = self.field(effect, "once-per-round") {
+            if matches!(self.model.values[once].kind, ValueKind::Boolean(true)) {
+                let key = (self.context.this.unwrap_or(usize::MAX), effect);
+                if !self.game.used_once.insert(key) {
+                    return Ok(Val::Nothing);
+                }
+            }
+        }
+        let kind = types.iter().find(|t| KNOWN.contains(&t.as_str())).cloned().unwrap_or_default();
+        match kind.as_str() {
+            "With" => {
+                let target = self.targets(effect)?;
+                let saved = self.context.target.replace(target);
+                let result = match self.field(effect, "do") {
+                    Some(effects) => self.run_value(effects),
+                    None => Ok(Val::Nothing),
+                };
+                self.context.target = saved;
+                result?;
+            }
+            "Draw" => {
+                let count = self.int_field(effect, "count", 1)?;
+                for seat in self.players(effect)? {
+                    self.draw(seat, count)?;
+                }
+            }
+            "Damage" => {
+                let amount = self.int_field(effect, "amount", 1)?;
+                for object in self.targets(effect)? {
+                    if amount > 0 {
+                        self.op(|g| g.add_counter(object, "damage", amount))?;
+                    }
+                }
+            }
+            "Heal" => {
+                let amount = self.int_field(effect, "amount", 1)?;
+                for object in self.targets(effect)? {
+                    let damage = self.game.objects[object].counters.get("damage").copied().unwrap_or(0);
+                    let healed = amount.min(damage);
+                    if healed > 0 {
+                        self.op(|g| g.add_counter(object, "damage", -healed))?;
+                    }
+                }
+            }
+            "Exhaust" | "Ready" => {
+                for object in self.targets(effect)? {
+                    self.op(|g| g.set_state(object, "exhausted", kind == "Exhaust"))?;
+                }
+            }
+            "Gain" => {
+                let power = self.int_field(effect, "power", 0)?;
+                let health = self.int_field(effect, "health", 0)?;
+                let keywords = self.words_field(effect, "keywords")?;
+                for object in self.targets(effect)? {
+                    if power != 0 {
+                        self.op(|g| g.add_counter(object, "this-round-power", power))?;
+                    }
+                    if health != 0 {
+                        self.op(|g| g.add_counter(object, "this-round-health", health))?;
+                    }
+                    for keyword in &keywords {
+                        self.op(|g| g.set_state(object, &format!("this-round:{}", keyword), true))?;
+                    }
+                }
+            }
+            // Statics hold while their card is in play; the runtime applies them when it works out a unit's stats and
+            // keywords, not when a handler runs.
+            "Grant" | "CantAttack" => {}
+            "ReadyResources" => {
+                let count = self.int_field(effect, "count", 1)?;
+                for seat in self.players(effect)? {
+                    let exhausted: Vec<ObjectId> = match self.player_property(seat, "resources")? {
+                        Val::Objects(list) => list.into_iter().filter(|&o| self.game.objects[o].states.contains("exhausted")).collect(),
+                        _ => Vec::new(),
+                    };
+                    for object in exhausted.into_iter().take(count.max(0) as usize) {
+                        self.op(|g| g.set_state(object, "exhausted", false))?;
+                    }
+                }
+            }
+            "OfferFromDeck" => {
+                let count = self.int_field(effect, "count", 1)?;
+                let exhausted = self.field(effect, "exhausted").is_some_and(|v| matches!(self.model.values[v].kind, ValueKind::Boolean(true)));
+                for seat in self.players(effect)? {
+                    let (Some(deck), Some(resources)) = (self.zone(seat, "deck"), self.zone(seat, "resource")) else {
+                        return fail("OfferFromDeck needs a deck and a resource zone.");
+                    };
+                    for _ in 0..count {
+                        let Some(&top) = self.game.zones[deck].objects.first() else { break };
+                        self.op(|g| g.move_to(top, resources, Position::Bottom))?;
+                        if exhausted {
+                            self.op(|g| g.set_state(top, "exhausted", true))?;
+                        }
+                    }
+                }
+            }
+            "Summon" => {
+                let Some(card) = self.field(effect, "card") else { return fail("Summon names a card: Summon(@dove).") };
+                let Val::Card(card) = self.value(card)? else { return fail("Summon names a card: Summon(@dove).") };
+                for seat in self.players(effect)? {
+                    let Some(board) = self.zone(seat, "board") else { return fail("Summon needs a zone with role = board.") };
+                    self.game.create(card, Some(seat), board);
+                }
+            }
+            "AddCounter" => {
+                let counter = self.name_field(effect, "counter")?;
+                let by = self.int_field(effect, "by", 1)?;
+                match self.field(effect, "target").map(|t| self.value(t)).transpose()? {
+                    Some(Val::Player(seat)) => self.game.adjust(seat, &counter, by),
+                    Some(Val::Players(seats)) => seats.into_iter().for_each(|seat| self.game.adjust(seat, &counter, by)),
+                    _ => {
+                        for object in self.targets(effect)? {
+                            self.op(|g| g.add_counter(object, &counter, by))?;
+                        }
+                    }
+                }
+            }
+            // The attack a card answers comes with events, in the next step; until then there is none to cancel.
+            "CancelAttack" => {}
+            "" => return fail(format!("The runtime doesn't do a {} yet.", types.first().cloned().unwrap_or_default())),
+            other => return fail(format!("The runtime doesn't do a {} yet.", other)),
+        }
+        Ok(Val::Nothing)
     }
 
-    fn block(&mut self, statements: &[BodyStatement]) -> Result<(), Stop> {
-        for statement in statements {
-            self.statement(statement)?;
+    /// The effect's record type and every type it derives from.
+    fn types_of(&self, value: ValueId) -> Vec<String> {
+        let Some(object) = self.model.object(value) else { return Vec::new() };
+        match object.record_type {
+            Some(t) => self.model.chain(t).iter().map(|t| self.model.record_name(*t).to_string()).collect(),
+            None => object.type_name.clone().into_iter().collect(),
         }
-        Ok(())
     }
 
-    fn statement(&mut self, statement: &BodyStatement) -> Result<(), Stop> {
-        match statement {
-            BodyStatement::Binding { name, value, .. } => {
-                let value = self.eval(value)?;
-                self.locals.insert(self.text(name), value);
-            }
-            BodyStatement::Expression(expression) => {
-                self.eval(expression)?;
-            }
-            BodyStatement::CompoundCall { call, operator, delta } => {
-                let Expression::Call { callee, arguments, .. } = call else { return fail("A += needs a call on its left, such as x.counter(@c).") };
-                let Expression::MemberAccess { receiver, name, .. } = &**callee else { return fail("A += needs a call on its left, such as x.counter(@c).") };
-                if self.text(name) != "counter" {
-                    return fail("Only a counter can be added to with +=.");
-                }
-                let receiver = self.eval(receiver)?;
-                let counter = self.arguments(arguments)?.0.into_iter().next().map(|v| self.word_of(&v)).unwrap_or_default();
-                let delta = self.eval(delta)?;
-                let delta = self.int(&delta)?;
-                let delta = if self.text(operator) == "-=" { -delta } else { delta };
-                for object in self.objects_of(&receiver) {
-                    self.op(|g| g.add_counter(object, &counter, delta))?;
-                }
-            }
-            BodyStatement::If { condition, then, otherwise, .. } => {
-                let condition = self.eval(condition)?;
-                if self.truthy(&condition) {
-                    self.block(&then.statements)?;
-                } else if let Some(otherwise) = otherwise {
-                    self.block(&otherwise.statements)?;
-                }
-            }
-            BodyStatement::Section { .. } => return fail("given/when/then belong in a scenario."),
+    /// A field of a record, when it is set to something (a default of nic isn't).
+    fn field(&self, record: ValueId, name: &str) -> Option<ValueId> {
+        let value = self.model.object(record)?.get(name)?.value;
+        match self.model.values[value].kind {
+            ValueKind::Nic | ValueKind::Invalid => None,
+            _ => Some(value),
         }
-        Ok(())
+    }
+
+    fn int_field(&mut self, record: ValueId, name: &str, default: i64) -> Result<i64, Stop> {
+        match self.field(record, name) {
+            Some(value) => {
+                let read = self.value(value)?;
+                self.int(&read)
+            }
+            None => Ok(default),
+        }
+    }
+
+    /// A field that names something (a counter, a resource): the name a reference or a word gives it.
+    fn name_field(&mut self, record: ValueId, name: &str) -> Result<String, Stop> {
+        let Some(value) = self.field(record, name) else { return fail(format!("The effect names no {}.", name)) };
+        Ok(self.name_of(value))
+    }
+
+    fn name_of(&self, value: ValueId) -> String {
+        match &self.model.values[value].kind {
+            ValueKind::Reference { path, .. } => path.last().cloned().unwrap_or_default(),
+            ValueKind::Enum { member, .. } => member.clone(),
+            ValueKind::String(t) | ValueKind::Text(t) => t.clone(),
+            _ => String::new(),
+        }
+    }
+
+    fn words_field(&mut self, record: ValueId, name: &str) -> Result<Vec<String>, Stop> {
+        let Some(value) = self.field(record, name) else { return Ok(Vec::new()) };
+        match &self.model.values[value].kind {
+            ValueKind::Array(items) => Ok(items.iter().map(|i| self.name_of(*i)).collect()),
+            _ => Ok(vec![self.name_of(value)]),
+        }
+    }
+
+    /// What an effect about cards acts on: its `target`, else a `With`'s shared target, else the card whose handler it
+    /// is. A `Choose` asks its player.
+    fn targets(&mut self, effect: ValueId) -> Result<Vec<ObjectId>, Stop> {
+        let Some(target) = self.field(effect, "target") else {
+            return Ok(match &self.context.target {
+                Some(shared) => shared.clone(),
+                None => self.context.this.into_iter().collect(),
+            });
+        };
+        let read = self.value(target)?;
+        Ok(self.objects_of(&read))
+    }
+
+    /// Who an effect about players acts on: its `player`, else `own`.
+    fn players(&mut self, effect: ValueId) -> Result<Vec<Seat>, Stop> {
+        let Some(player) = self.field(effect, "player") else { return Ok(vec![self.context.controller]) };
+        let read = self.value(player)?;
+        Ok(self.players_of(&read))
+    }
+
+    /// A value as the handler reads it: a literal, a word, a reference, a formula, or a choice.
+    fn value(&mut self, value: ValueId) -> Eval {
+        Ok(match &self.model.values[value].kind {
+            ValueKind::Integer(n) => Val::Int(*n),
+            ValueKind::Boolean(b) => Val::Bool(*b),
+            ValueKind::String(t) | ValueKind::Text(t) => Val::Text(t.clone()),
+            ValueKind::Nic | ValueKind::Empty | ValueKind::Invalid => Val::Nothing,
+            ValueKind::Enum { member, .. } => {
+                let member = member.clone();
+                return self.name(&member);
+            }
+            ValueKind::Formula { expression, document } => {
+                let expression = expression.clone();
+                return self.read(&expression, *document);
+            }
+            ValueKind::Reference { path, target } => {
+                let path = path.clone();
+                return match target {
+                    Some(target) => self.referenced(*target, &path),
+                    None => self.reference(&path),
+                };
+            }
+            ValueKind::Object(object) if object.type_name.as_deref() == Some("Choose") => return self.choice(value),
+            ValueKind::Array(items) => {
+                let mut list = Vec::new();
+                for item in items.clone() {
+                    list.push(self.value(item)?);
+                }
+                Val::List(list)
+            }
+            _ => Val::Value(value),
+        })
+    }
+
+    /// What a reference the binder resolved stands for: a game or card number, a card, a named formula (read), or the
+    /// name it is written with (a keyword, a counter, a resource).
+    fn referenced(&mut self, target: ValueId, path: &[String]) -> Eval {
+        if let Some(card) = self.catalog.cards.iter().position(|c| c.value == target) {
+            return Ok(Val::Card(card));
+        }
+        match &self.model.values[target].kind {
+            ValueKind::Integer(n) => Ok(Val::Int(*n)),
+            ValueKind::Formula { .. } => self.value(target),
+            _ => self.reference(path),
+        }
+    }
+
+    /// `Choose(from, filter: ...)`: the unit its player picks.
+    fn choice(&mut self, choose: ValueId) -> Eval {
+        let from = match self.field(choose, "from") {
+            Some(from) => {
+                let read = self.value(from)?;
+                self.players_of(&read)
+            }
+            None => vec![self.context.controller],
+        };
+        let filters = match self.field(choose, "filter") {
+            Some(filter) => match self.value(filter)? {
+                Val::List(list) => list,
+                one => vec![one],
+            },
+            None => Vec::new(),
+        };
+        let optional = self.field(choose, "optional").is_some_and(|v| matches!(self.model.values[v].kind, ValueKind::Boolean(true)));
+        let options = self.units(&from, &filters);
+        let seat = self.context.controller;
+        self.choose(seat, "Choose a unit.", options, optional)
     }
 
     fn op<T>(&mut self, f: impl FnOnce(&mut Game) -> Result<T, String>) -> Result<T, Stop> {
         f(self.game).map_err(Stop::Fail)
     }
 
-    // ── expressions ────────────────────────────────────────────────────────────────────────────
+    // ── formulas ───────────────────────────────────────────────────────────────────────────────
+
+    /// Reads a formula: its value, computed from the game, which it never changes.
+    fn read(&mut self, expression: &Expression, document: usize) -> Eval {
+        let (saved_document, saved_reading) = (self.document, self.reading);
+        self.document = document;
+        self.reading = true;
+        let result = self.eval(expression);
+        self.document = saved_document;
+        self.reading = saved_reading;
+        result
+    }
+
+    fn text(&self, token: &Token) -> String {
+        let source = self.catalog.handlers.sources.get(self.document).map(|s| s.as_slice()).unwrap_or(&[]);
+        String::from_utf8_lossy(token.text(source)).into_owned()
+    }
 
     fn eval(&mut self, expression: &Expression) -> Eval {
         match expression {
@@ -183,7 +444,7 @@ impl<'g> Run<'g> {
                 Expression::Name { identifier } => {
                     let name = self.text(identifier);
                     let args = self.arguments(arguments)?;
-                    self.call(&name, args)
+                    self.query(&name, args)
                 }
                 Expression::MemberAccess { receiver, name, .. } => {
                     let receiver = self.eval(receiver)?;
@@ -218,6 +479,11 @@ impl<'g> Run<'g> {
                 }
                 let l = self.eval(left)?;
                 let r = self.eval(right)?;
+                if operator == "+" {
+                    if let (Val::Objects(a), Val::Objects(b)) = (&l, &r) {
+                        return Ok(Val::Objects(a.iter().chain(b.iter()).copied().collect()));
+                    }
+                }
                 let (l, r) = (self.int(&l)?, self.int(&r)?);
                 Ok(match operator.as_str() {
                     ">=" => Val::Bool(l >= r),
@@ -227,8 +493,6 @@ impl<'g> Run<'g> {
                     "==" => Val::Bool(l == r),
                     "!=" => Val::Bool(l != r),
                     "+" => Val::Int(l + r),
-                    "-" => Val::Int(l - r),
-                    "*" => Val::Int(l * r),
                     other => return fail(format!("The runtime doesn't know the operator {}.", other)),
                 })
             }
@@ -237,7 +501,7 @@ impl<'g> Run<'g> {
                 let condition = self.eval(condition)?;
                 if self.truthy(&condition) { self.eval(then) } else { self.eval(otherwise) }
             }
-            Expression::Missing { .. } => fail("The routine has a missing expression."),
+            Expression::Missing { .. } => fail("The formula has a missing expression."),
         }
     }
 
@@ -257,9 +521,6 @@ impl<'g> Run<'g> {
     }
 
     fn name(&mut self, name: &str) -> Eval {
-        if let Some(value) = self.locals.get(name) {
-            return Ok(value.clone());
-        }
         let seats = self.game.players.len();
         let own = self.context.controller;
         Ok(match name {
@@ -269,14 +530,8 @@ impl<'g> Run<'g> {
             "opponent" => Val::Player((own + 1) % seats),
             "opponents" => Val::Players((0..seats).filter(|&s| s != own).collect()),
             "all" => Val::Players((0..seats).collect()),
-            // The event a routine answers (an attack it cancels) comes with events, in the next step; until then
-            // there is none, and what is done to it does nothing.
-            "event" => Val::Nothing,
+            "nothing" => Val::Nothing,
             "attached" => self.context.this.and_then(|o| self.game.objects[o].attached_to).map(Val::Object).unwrap_or(Val::Nothing),
-            "once-per-round" => {
-                let key = (self.context.this.unwrap_or(usize::MAX), self.routine);
-                Val::Bool(self.game.used_once.insert(key))
-            }
             _ => match self.catalog.numbers.get(name) {
                 Some(&n) => Val::Int(n),
                 None => Val::Word(name.to_string()),
@@ -284,14 +539,16 @@ impl<'g> Run<'g> {
         })
     }
 
-    /// `@name`: a routine (run, and its answer used), a game constant, a zone, a card, or a name the callee reads
-    /// (a resource, a counter, an action).
+    /// `@name` in a formula: a named effect or formula of the rules files (read), a game constant, a zone, a card, or a
+    /// name the reader reads (a keyword, a counter, a resource).
     fn reference(&mut self, path: &[String]) -> Eval {
         let last = path.last().cloned().unwrap_or_default();
         if path.len() == 1 {
-            if let Some(&routine) = self.catalog.handlers.by_name.get(&last) {
-                let mut nested = Run::new(&mut *self.game, routine, self.context.clone(), Vec::new());
-                return nested.run();
+            if let Some(&named) = self.catalog.handlers.named.get(&last) {
+                return match &self.model.values[named].kind {
+                    ValueKind::Formula { .. } => self.value(named),
+                    _ => Ok(Val::Value(named)),
+                };
             }
             if let Some(&n) = self.catalog.constants.get(&last) {
                 return Ok(Val::Int(n));
@@ -323,10 +580,20 @@ impl<'g> Run<'g> {
             Val::Players(list) if name == "count" => Val::Int(list.len() as i64),
             Val::Object(object) => {
                 let o = &self.game.objects[*object];
-                let face = &self.catalog.cards[o.card].faces[(o.face as usize - 1).min(self.catalog.cards[o.card].faces.len() - 1)];
+                let card = &self.catalog.cards[o.card];
+                let face = &card.faces[(o.face as usize - 1).min(card.faces.len() - 1)];
+                // A card's own handler, as data (`this.on-play`), before its numbers.
+                if let Some(handler) = self.catalog.handlers.attached(face.value, name) {
+                    return Ok(Val::Value(handler));
+                }
                 match o.counters.get(name).or_else(|| face.numbers.get(name)) {
                     Some(&n) => Val::Int(n),
-                    None => Val::Nothing,
+                    None => match name {
+                        "exhausted" => Val::Bool(o.states.contains("exhausted")),
+                        "ready" => Val::Bool(!o.states.contains("exhausted")),
+                        "face" => Val::Int(o.face as i64),
+                        _ => Val::Nothing,
+                    },
                 }
             }
             Val::Player(seat) => self.player_property(*seat, name)?,
@@ -356,28 +623,11 @@ impl<'g> Run<'g> {
         })
     }
 
-    // ── the libraries' words ───────────────────────────────────────────────────────────────────
+    // ── queries a formula may call ─────────────────────────────────────────────────────────────
 
-    fn call(&mut self, name: &str, (args, named): (Vec<Val>, BTreeMap<String, Val>)) -> Eval {
+    fn query(&mut self, name: &str, (args, _named): (Vec<Val>, BTreeMap<String, Val>)) -> Eval {
         let own = self.context.controller;
         match name {
-            "draw" => {
-                let count = match args.first() {
-                    Some(v) => self.int(v)?,
-                    None => 1,
-                };
-                self.draw(own, count)?;
-                Ok(Val::Nothing)
-            }
-            "gain" => {
-                let counter = args.first().map(|v| self.word_of(v)).unwrap_or_default();
-                let amount = match args.get(1) {
-                    Some(v) => self.int(v)?,
-                    None => 1,
-                };
-                self.game.adjust(own, &counter, amount);
-                Ok(Val::Nothing)
-            }
             "units" => {
                 let from = self.players_of(args.first().unwrap_or(&Val::Players(vec![own])));
                 let units = self.units(&from, &args[1.min(args.len())..]);
@@ -396,120 +646,19 @@ impl<'g> Run<'g> {
                 let filtered = self.filter(found, &args[2.min(args.len())..]);
                 Ok(Val::Objects(filtered))
             }
-            "choose" => {
-                let from = self.players_of(args.first().unwrap_or(&Val::Players(vec![own])));
-                let filters = &args[1.min(args.len())..];
-                let optional = filters.iter().any(|f| matches!(f, Val::Word(w) if w == "optional"));
-                let options = self.units(&from, filters);
-                self.choose(own, "Choose a unit.", options, optional)
-            }
-            "ready-resources" => {
-                let count = match args.first() {
-                    Some(v) => self.int(v)?,
-                    None => 1,
-                };
-                let exhausted: Vec<ObjectId> = match self.player_property(own, "resources")? {
-                    Val::Objects(list) => list.into_iter().filter(|&o| self.game.objects[o].states.contains("exhausted")).collect(),
-                    _ => Vec::new(),
-                };
-                for object in exhausted.into_iter().take(count.max(0) as usize) {
-                    self.op(|g| g.set_state(object, "exhausted", false))?;
-                }
-                Ok(Val::Nothing)
-            }
-            "offer-from-deck" => {
-                let count = match args.first() {
-                    Some(v) => self.int(v)?,
-                    None => 1,
-                };
-                let exhausted = named.get("exhausted").map(|v| self.truthy(v)).unwrap_or(false);
-                let (Some(deck), Some(resources)) = (self.zone(own, "deck"), self.zone(own, "resource")) else { return fail("offer-from-deck needs a deck and a resource zone.") };
-                for _ in 0..count {
-                    let Some(&top) = self.game.zones[deck].objects.first() else { break };
-                    self.op(|g| g.move_to(top, resources, Position::Bottom))?;
-                    if exhausted {
-                        self.op(|g| g.set_state(top, "exhausted", true))?;
-                    }
-                }
-                Ok(Val::Nothing)
-            }
-            "summon" => {
-                let Some(Val::Card(card)) = args.first() else { return fail("summon takes a card: summon(@dove).") };
-                let Some(board) = self.zone(own, "board") else { return fail("summon needs a zone with role = board.") };
-                let card = *card;
-                let object = self.game.create(card, Some(own), board);
-                Ok(Val::Object(object))
-            }
-            other => fail(format!("The runtime doesn't run {}() yet.", other)),
+            other => fail(format!("A formula can't call {}(): it reads the game and never changes it.", other)),
         }
     }
 
-    fn method(&mut self, receiver: &Val, name: &str, (args, named): (Vec<Val>, BTreeMap<String, Val>)) -> Eval {
-        if let Val::Player(seat) = receiver {
-            let mut this = Context { controller: *seat, ..self.context.clone() };
-            std::mem::swap(&mut this, &mut self.context);
-            let result = self.call(name, (args, named));
-            std::mem::swap(&mut this, &mut self.context);
-            return result;
-        }
+    fn method(&mut self, receiver: &Val, name: &str, (args, _named): (Vec<Val>, BTreeMap<String, Val>)) -> Eval {
         let objects = self.objects_of(receiver);
         match name {
-            "damage" => {
-                let n = self.int(args.first().unwrap_or(&Val::Int(1)))?;
-                for object in objects {
-                    self.op(|g| g.add_counter(object, "damage", n))?;
-                }
-            }
-            "heal" => {
-                let n = self.int(args.first().unwrap_or(&Val::Int(1)))?;
-                for object in objects {
-                    let damage = self.game.objects[object].counters.get("damage").copied().unwrap_or(0);
-                    let healed = n.min(damage);
-                    if healed > 0 {
-                        self.op(|g| g.add_counter(object, "damage", -healed))?;
-                    }
-                }
-            }
-            "exhaust" | "ready" => {
-                for object in objects {
-                    self.op(|g| g.set_state(object, "exhausted", name == "exhaust"))?;
-                }
-            }
-            "counter" => {
-                let counter = args.first().map(|v| self.word_of(v)).unwrap_or_default();
-                let delta = self.int(args.get(1).unwrap_or(&Val::Int(1)))?;
-                for object in objects {
-                    self.op(|g| g.add_counter(object, &counter, delta))?;
-                }
-            }
-            "buff" => {
-                let power = named.get("power").map(|v| self.int(v)).transpose()?.unwrap_or(0);
-                let health = named.get("health").map(|v| self.int(v)).transpose()?.unwrap_or(0);
-                let keywords: Vec<String> = args.iter().filter_map(|a| match a {
-                    Val::Word(w) => Some(w.clone()),
-                    _ => None,
-                }).collect();
-                for object in objects {
-                    if power != 0 {
-                        self.op(|g| g.add_counter(object, "this-round-power", power))?;
-                    }
-                    if health != 0 {
-                        self.op(|g| g.add_counter(object, "this-round-health", health))?;
-                    }
-                    for keyword in &keywords {
-                        self.op(|g| g.set_state(object, &format!("this-round:{}", keyword), true))?;
-                    }
-                }
-            }
             "has" => {
                 let word = args.first().map(|v| self.word_of(v)).unwrap_or_default();
-                return Ok(Val::Bool(objects.iter().all(|&o| self.has_keyword(o, &word)) && !objects.is_empty()));
+                Ok(Val::Bool(!objects.is_empty() && objects.iter().all(|&o| self.has_keyword(o, &word))))
             }
-            "cancel" if matches!(receiver, Val::Nothing) => {}
-            "grant" | "cant" | "must" => return fail(format!("{}() is for statics, which the runtime doesn't apply yet.", name)),
-            other => return fail(format!("The runtime doesn't run .{}() yet.", other)),
+            other => fail(format!("A formula can't call .{}(): it reads the game and never changes it.", other)),
         }
-        Ok(Val::Nothing)
     }
 
     fn choose(&mut self, seat: Seat, question: &str, options: Vec<ObjectId>, optional: bool) -> Eval {
@@ -531,7 +680,7 @@ impl<'g> Run<'g> {
     // ── helpers ────────────────────────────────────────────────────────────────────────────────
 
     fn draw(&mut self, seat: Seat, count: i64) -> Result<(), Stop> {
-        let (Some(deck), Some(hand)) = (self.zone(seat, "deck"), self.zone(seat, "hand")) else { return fail("draw needs a deck and a hand zone.") };
+        let (Some(deck), Some(hand)) = (self.zone(seat, "deck"), self.zone(seat, "hand")) else { return fail("Draw needs a deck and a hand zone.") };
         for _ in 0..count {
             let Some(&top) = self.game.zones[deck].objects.first() else { break };
             self.op(|g| g.move_to(top, hand, Position::Bottom))?;
@@ -583,13 +732,15 @@ impl<'g> Run<'g> {
         let o = &self.game.objects[object];
         let card = &self.catalog.cards[o.card];
         let face = &card.faces[(o.face as usize - 1).min(card.faces.len() - 1)];
-        face.keywords.iter().any(|(k, _)| k.eq_ignore_ascii_case(keyword)) || o.states.contains(&format!("this-round:{}", keyword))
+        face.keywords.iter().any(|(k, _)| k.eq_ignore_ascii_case(keyword))
+            || o.states.iter().any(|s| s.strip_prefix("this-round:").is_some_and(|k| k.eq_ignore_ascii_case(keyword)))
     }
 
     fn objects_of(&self, value: &Val) -> Vec<ObjectId> {
         match value {
             Val::Object(o) => vec![*o],
             Val::Objects(list) => list.clone(),
+            Val::List(list) => list.iter().flat_map(|v| self.objects_of(v)).collect(),
             _ => Vec::new(),
         }
     }
@@ -632,6 +783,12 @@ impl<'g> Run<'g> {
     }
 }
 
+/// The effects the runtime does itself, by type.
+const KNOWN: &[&str] = &[
+    "With", "Draw", "Damage", "Heal", "Exhaust", "Ready", "Gain", "Grant", "CantAttack", "ReadyResources", "OfferFromDeck",
+    "Summon", "AddCounter", "CancelAttack",
+];
+
 fn items<T>(separated: &Separated<T>) -> Vec<&T> {
     separated.elements.iter().filter_map(|e| match e {
         Element::Item(item) => Some(item),
@@ -652,5 +809,7 @@ fn describe(value: &Val) -> String {
         Val::Card(_) => "a card".to_string(),
         Val::Face(..) => "card".to_string(),
         Val::Zone(_) => "a zone".to_string(),
+        Val::List(_) => "a list".to_string(),
+        Val::Value(_) => "a record".to_string(),
     }
 }

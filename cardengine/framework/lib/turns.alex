@@ -40,7 +40,12 @@ type Step {}
 type ReadyAll : Step {}
 type ResetOncePerRound : Step {}
 type Triggers : Step { of: Moment }
-type Draw : Step { count: int, skip-very-first-turn: bool = false }
+// Draws cards: a card's effect (`@klobuk.on-enter = Draw()`) and a phase's step.
+type Draw : Effect, Step {
+  count: int | formula = 1
+  player: formula = own
+  skip-very-first-turn: bool = false
+}
 type DrawTo : Step { hand: int }                   // draw up to a hand size
 type RefillHandTo : Step { hand: int }
 type DiscardTo : Step { hand: int }

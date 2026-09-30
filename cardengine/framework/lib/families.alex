@@ -33,9 +33,9 @@ extension Set {
 extension Card { family: Family? }
 
 extension Mechanic {
-  mechanic-condition: condition?
-  mechanic-round-start: effect?
-  mechanic-defeated: effect?
+  mechanic-condition: formula?
+  mechanic-round-start: Effects?
+  mechanic-defeated: Effects?
 }
 
 // Deck building may mix at most n families (two ink colours, a hero's family plus one).

@@ -25,7 +25,7 @@ moments = [
   damage-check = Moment { name = 'Damage check' }
 ]
 
-extension Card { on-revealed: effect? }
+extension Card { on-revealed: Effects? }
 type OnRevealed : Ability { holders = [nameof(Card)] }
 
 events = [

@@ -20,9 +20,9 @@ extension Game { permanents: [PermanentRule] = empty }
 type PermanentCards : PermanentRule { types: [type PermanentCard] }
 
 extension PermanentCard {
-  on-enter: effect?
-  on-leave: effect?
-  static: static?
+  on-enter: Effects?
+  on-leave: Effects?
+  static: Effects?
 }
 
 // Ability kinds this library declares; a card constructs one to say it has the ability.

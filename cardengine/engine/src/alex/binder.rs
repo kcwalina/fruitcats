@@ -150,6 +150,9 @@ pub(super) struct Binder<'h> {
     pub declared: Vec<Declared>,
     pub members: HashMap<String, Vec<Member>>,
     pub references: Vec<PendingReference>,
+    /// A wiring line's value for a behaviour member (an effect or a formula), with the member's type: checked once
+    /// everything it refers to is resolved.
+    pub pending_data_assignments: Vec<(ValueId, TypeId, usize)>,
     pub reference_lookup: HashMap<ValueId, usize>,
     pub nameofs: Vec<PendingNameof>,
     pub closed_at: HashMap<ValueId, TextSpan>,
@@ -186,6 +189,7 @@ impl<'h> Binder<'h> {
             declared: Vec::new(),
             members: HashMap::new(),
             references: Vec::new(),
+            pending_data_assignments: Vec::new(),
             reference_lookup: HashMap::new(),
             nameofs: Vec::new(),
             closed_at: HashMap::new(),
@@ -315,6 +319,14 @@ impl<'h> Binder<'h> {
             self.check_accept(s);
         }
         self.bind_reference_assignments();
+        let mut i = 0;
+        while i < self.references.len() {
+            self.resolve(i);
+            i += 1;
+        }
+        for (value, member_type, s) in std::mem::take(&mut self.pending_data_assignments) {
+            self.check_value(value, Some(member_type), s, Sink::Document);
+        }
         self.check_bodies();
         self.report_unresolved_references();
         self.check_nameofs();
@@ -1615,7 +1627,7 @@ impl<'h> Binder<'h> {
         }
     }
 
-    fn resolve_constructors(&mut self, value: ValueId, s: usize) {
+    pub(super) fn resolve_constructors(&mut self, value: ValueId, s: usize) {
         match &self.model.values[value].kind {
             ValueKind::Object(object) => {
                 let needs = !object.is_map && object.type_name.is_some() && object.record_type.is_none() && self.typed;
@@ -1722,6 +1734,13 @@ impl<'h> Binder<'h> {
         }
 
         let type_id = resolved;
+        // In a field that holds a formula, a reference (`@Energy`) or a bare word (`own`) is a name the formula reads.
+        if self.accepts_formula(type_id)
+            && matches!(self.model.values[value].kind, ValueKind::Reference { .. } | ValueKind::Enum { enum_type: None, .. })
+            && !self.accepts_plainly(value, type_id)
+        {
+            return value;
+        }
         if let ValueKind::Reference { .. } = self.model.values[value].kind {
             if let Some(expected_type) = self.type_of_type_for(value, type_id, s) {
                 return if self.reported_type_values.contains(&value) { value } else { self.to_type_value(value, expected_type, s, sink) };
@@ -2117,6 +2136,21 @@ impl<'h> Binder<'h> {
             TypeKind::Union(alternatives) => alternatives.iter().any(|a| self.fits(value, *a)),
             _ => true,
         }
+    }
+
+    /// Whether a value fits a type without being read as a formula: a reference to a record the type's records
+    /// accept (`@sprout` for an Effect), or a member of an enum the type includes.
+    fn accepts_plainly(&mut self, value: ValueId, type_id: TypeId) -> bool {
+        let mut alternatives = Vec::new();
+        self.flatten(type_id, &mut alternatives);
+        alternatives.into_iter().any(|a| {
+            let a = self.model.resolved(a);
+            match (&self.model.types[a].kind, &self.model.values[value].kind) {
+                (TypeKind::Enum { .. }, ValueKind::Enum { member, .. }) => self.model.enum_contains(a, member),
+                (TypeKind::Record(_) | TypeKind::List(_), ValueKind::Reference { .. }) => true,
+                _ => false,
+            }
+        })
     }
 
     /// Whether a field of this type may hold a formula: it is `formula`, or a union or optional that includes it.

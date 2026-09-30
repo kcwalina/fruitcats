@@ -35,8 +35,8 @@ moments = [
   moved = Moment { name = 'A unit moved' }
 ]
 
-extension UnitCard { on-move: effect? }
-extension Keyword { on-move: effect? }           // a keyword has a unit's slots (units)
+extension UnitCard { on-move: Effects? }
+extension Keyword { on-move: Effects? }           // a keyword has a unit's slots (units)
 type OnMove : Ability { holders = [nameof(UnitCard)] }
 
 selectors = [

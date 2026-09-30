@@ -1,36 +1,28 @@
 #type Rules
 
 // §850.5 The rain counter's `max` stops it at +2/+2.
-@rain-fed.on-round-start = this.counter(@rain, one)
+@rain-fed.on-round-start = AddCounter(@rain, by: one)
 
-@aluxito.exhaust = choose(own).heal(card.heal)
+@aluxito.exhaust = Heal(card.heal, target: Choose(own))
 @aluxito.awaken = own.life.count <= card.candles
+@aluxito.back.exhaust = With(Choose(own), do: [
+  Heal(card.heal)
+  Gain(keywords: [@Guardian], until: this-round)
+])
 
-routine heal-and-guard {
-  target = choose(own)
-  target.heal(card.heal)
-  target.buff(guardian, until: this-round)
-}
-@aluxito.back.exhaust = heal-and-guard
-
-@saka-bearing-alux.on-enter = choose(all).heal(card.heal)
-@corn-tending-alux.on-enter = if units(own, guardian).any { draw() }
-@tool-hiding-alux.on-enter = choose(opponents).exhaust()
+@saka-bearing-alux.on-enter = Heal(card.heal, target: Choose(all))
+@corn-tending-alux.on-enter = Draw(only-if: units(own, guardian).any)
+@tool-hiding-alux.on-enter = Exhaust(Choose(opponents))
 // §600.3 The attacker stays exhausted.
-@a-whistle-in-the-dark.on-play = event.cancel()
-
-routine heal-own-and-draw {
-  choose(own).heal(card.heal)
-  draw()
-}
-@honey-and-tortillas.on-play = heal-own-and-draw
-
-@pots-and-pans-flung.on-play = choose(all, exhausted).damage(card.damage)
-@kahtal-alux.static = attached.grant(health: card.extra-health, guardian)
-
-@the-roadside-alux.on-you-heal = if once-per-round { draw() }
-
-@the-alux-of-the-sacred-cenote.on-round-start = units(own).heal(card.heal)
-@toh.on-enter = draw()
-@a-sweet-on-the-doorstep.on-play = choose(own).buff(power: card.boost, until: this-round)
-@lost-in-the-monte.on-play = choose(opponents).exhaust()
+@a-whistle-in-the-dark.on-play = CancelAttack()
+@honey-and-tortillas.on-play = [
+  Heal(card.heal, target: Choose(own))
+  Draw()
+]
+@pots-and-pans-flung.on-play = Damage(card.damage, target: Choose(all, filter: exhausted))
+@kahtal-alux.static = Grant(attached, health: card.extra-health, keywords: [@Guardian])
+@the-roadside-alux.on-you-heal = Draw(once-per-round: true)
+@the-alux-of-the-sacred-cenote.on-round-start = Heal(card.heal, target: units(own))
+@toh.on-enter = Draw()
+@a-sweet-on-the-doorstep.on-play = Gain(Choose(own), power: card.boost, until: this-round)
+@lost-in-the-monte.on-play = Exhaust(Choose(opponents))

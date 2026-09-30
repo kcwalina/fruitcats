@@ -1,27 +1,27 @@
 #type Rules
 
-@dziadzius.exhaust = ready-resources(one)
+values = [
+  // §850.1 If the deck runs out, the rest does nothing; it never costs a Candle.
+  sprout = OfferFromDeck(card.sprout, exhausted: true)
+  // §850.2 Ready or exhausted Offerings both count.
+  is-well-fed = own.resources.count >= @well-fed-at
+]
+
+@dziadzius.exhaust = ReadyResources(one)
 @dziadzius.awaken = own.resources.count >= card.offerings
-@dziadzius.back.exhaust = ready-resources(two)
+@dziadzius.back.exhaust = ReadyResources(two)
 
-@stove-keeper.on-enter = ready-resources(one)
-
-// §850.1 If the deck runs out, the rest does nothing; it never costs a Candle.
-routine sprout { offer-from-deck(card.sprout, exhausted: true) }
-@moving-day-domowik.on-enter = sprout
-
-// §850.2 Ready or exhausted Offerings both count.
-routine is-well-fed : bool { own.resources.count >= @well-fed-at }
-@ovinnik-of-the-drying-barn.static = if not @is-well-fed { this.cant(attack) }
-
-@bread-and-salt-greeter.on-enter = units(own).heal(card.heal)
-@kikimora.on-enter = if @is-well-fed { draw(card.draw) }
-@bowl-of-kasha.on-play = sprout
-@a-domowiks-temper.on-play = choose(all).damage(card.damage)
-@saucer-of-milk.on-play = boost-own-and-ready-an-offering
-@old-bast-shoe.static = attached.grant(power: card.boost, health: card.extra-health)
-@domowik-in-a-cats-shape.on-enter = sprout
-@babunia.on-enter = ready-resources(one)
-@klobuk.on-enter = draw()
-@warm-hand-in-the-night.on-play = choose(own).buff(power: card.boost, until: this-round)
-@knotted-mane.on-play = choose(opponents).exhaust()
+@stove-keeper.on-enter = ReadyResources(one)
+@moving-day-domowik.on-enter = @sprout
+@ovinnik-of-the-drying-barn.static = CantAttack(only-if: not @is-well-fed)
+@bread-and-salt-greeter.on-enter = Heal(card.heal, target: units(own))
+@kikimora.on-enter = Draw(card.draw, only-if: @is-well-fed)
+@bowl-of-kasha.on-play = @sprout
+@a-domowiks-temper.on-play = Damage(card.damage, target: Choose(all))
+@saucer-of-milk.on-play = @boost-own-and-ready-an-offering
+@old-bast-shoe.static = Grant(attached, power: card.boost, health: card.extra-health)
+@domowik-in-a-cats-shape.on-enter = @sprout
+@babunia.on-enter = ReadyResources(one)
+@klobuk.on-enter = Draw()
+@warm-hand-in-the-night.on-play = Gain(Choose(own), power: card.boost, until: this-round)
+@knotted-mane.on-play = Exhaust(Choose(opponents))

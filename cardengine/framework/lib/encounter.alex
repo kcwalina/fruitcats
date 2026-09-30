@@ -26,7 +26,7 @@ type EncounterCards : EncounterRule { types: [type EncounterCard] }
 type EnemyCards : EncounterRule { types: [type EnemyCard] }
 type StageCards : EncounterRule { types: [type StageCard] }
 
-extension EncounterCard { when-revealed: effect?, forced: effect? }
+extension EncounterCard { when-revealed: Effects?, forced: Effects? }
 type WhenRevealed : Ability { holders = [nameof(EncounterCard)] }
 type Forced : Ability { holders = [nameof(EncounterCard)] }
 

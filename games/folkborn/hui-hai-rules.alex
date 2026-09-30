@@ -1,23 +1,23 @@
 #type Rules
 
 // §850.7 Its owner picks the enemy unit.
-@stone-for-stone.on-survives-damage = choose(opponents).damage(one)
+@stone-for-stone.on-survives-damage = Damage(one, target: Choose(opponents))
 
-@pebble.exhaust = choose(own).buff(power: card.boost, until: this-round)
+@pebble.exhaust = Gain(Choose(own), power: card.boost, until: this-round)
 // Both players' Mists count, as today's engine counts them.
 @pebble.awaken = cards(@Mist, all, unit-card).count >= card.fallen
-@pebble.back.static = units(own).grant(health: card.extra-health, stone-for-stone)
-@pebble.back.exhaust = choose(opponents).damage(card.damage)
+@pebble.back.static = Grant(units(own), health: card.extra-health, keywords: [@stone-for-stone])
+@pebble.back.exhaust = Damage(card.damage, target: Choose(opponents))
 
-@hui-hai-of-the-stream.on-enter = choose(opponents).damage(card.damage)
-@ya-hui-hai.on-enter = choose(opponents).damage(card.damage)
-@a-pebble-at-your-feet.on-play = choose(opponents).damage(card.damage)
-@gohlou.on-enter = draw()
-@moss-mender-ya-hui-hai.on-enter = units(own).heal(card.heal)
-@stones-from-nowhere.on-play = units(opponents).damage(card.damage)
-@the-forest-remembers.on-play = choose(all).damage(card.damage)
-@nobody-threw-it.on-play = choose(opponents).exhaust()
-@a-pouch-of-river-pebbles.static = attached.grant(power: card.boost, stone-for-stone)
-@grandfather-hui-hai.on-enter = choose(opponents).damage(card.damage)
-@the-hidden-village.on-enter = units(opponents).damage(card.damage)
-@small-but-strong.on-play = choose(own).buff(power: card.boost, until: this-round)
+@hui-hai-of-the-stream.on-enter = Damage(card.damage, target: Choose(opponents))
+@ya-hui-hai.on-enter = Damage(card.damage, target: Choose(opponents))
+@a-pebble-at-your-feet.on-play = Damage(card.damage, target: Choose(opponents))
+@gohlou.on-enter = Draw()
+@moss-mender-ya-hui-hai.on-enter = Heal(card.heal, target: units(own))
+@stones-from-nowhere.on-play = Damage(card.damage, target: units(opponents))
+@the-forest-remembers.on-play = Damage(card.damage, target: Choose(all))
+@nobody-threw-it.on-play = Exhaust(Choose(opponents))
+@a-pouch-of-river-pebbles.static = Grant(attached, power: card.boost, keywords: [@stone-for-stone])
+@grandfather-hui-hai.on-enter = Damage(card.damage, target: Choose(opponents))
+@the-hidden-village.on-enter = Damage(card.damage, target: units(opponents))
+@small-but-strong.on-play = Gain(Choose(own), power: card.boost, until: this-round)

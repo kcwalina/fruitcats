@@ -1,13 +1,11 @@
 #type Rules
 
-routine gain-energy { gain(@Energy, card.energy) }
-@dziadzius.exhaust = gain-energy
-@dziadzius.back.exhaust = gain-energy
-
+@dziadzius.exhaust = AddCounter(@Energy, by: card.energy, target: own)
+@dziadzius.back.exhaust = AddCounter(@Energy, by: card.energy, target: own)
 @dziadzius.awaken = units(own).count >= card.creatures
-@klobuk.on-enter = draw()
-@bread-and-salt-greeter.on-enter = units(own).heal(card.heal)
-@domowiks-temper.on-play = choose(all).damage(card.damage)
+@klobuk.on-enter = Draw()
+@bread-and-salt-greeter.on-enter = Heal(card.heal, target: units(own))
+@domowiks-temper.on-play = Damage(card.damage, target: Choose(all))
 
 scenario 'Kłobuk draws a card when it enters' {
   given hand(me, @klobuk)

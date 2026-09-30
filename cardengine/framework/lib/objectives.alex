@@ -47,9 +47,9 @@ events = [
 ]
 
 extension ObjectiveCard {
-  on-claim: effect?
-  on-lose: effect?
-  static: static?
+  on-claim: Effects?
+  on-lose: Effects?
+  static: Effects?
 }
 type OnClaim : Ability { holders = [nameof(ObjectiveCard)] }
 type OnLose : Ability { holders = [nameof(ObjectiveCard)] }

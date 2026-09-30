@@ -1,4 +1,4 @@
 #type Rules
 
-@mochi-the-sweet-spirit.on-enter = draw()
-@mochi-the-sweet-spirit.on-defeated = ready-resources(two)
+@mochi-the-sweet-spirit.on-enter = Draw()
+@mochi-the-sweet-spirit.on-defeated = ReadyResources(two)

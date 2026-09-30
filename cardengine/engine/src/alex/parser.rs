@@ -556,6 +556,8 @@ belong to a program document.",
         let equals = self.expect(TokenKind::Equals, &message);
         let value = if self.looks_like_next_statement() {
             self.missing_value("A value is missing after '='.")
+        } else if self.at_formula() {
+            self.parse_value()
         } else if self.is_inline_statement_start() {
             // None only after a stray 'else', which is reported and skipped.
             match self.parse_body_statement() {

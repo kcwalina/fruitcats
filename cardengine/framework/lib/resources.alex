@@ -75,6 +75,11 @@ type ShapeCost : ResourcePolicy { resource: ResourceRule }
 // Costs are paid from any of several pools at will (Genesis).
 type AnyPoolPays : ResourcePolicy { resources: [ResourceRule] }
 
+// Readies exhausted resources: `ReadyResources(one)`.
+type ReadyResources : Effect { count: int | formula, player: formula = own }
+// The top cards of the deck become resources: `OfferFromDeck(card.sprout, exhausted: true)`.
+type OfferFromDeck : Effect { count: int | formula, exhausted: bool = false, player: formula = own }
+
 actions = [
   offer = ActionKind { name = 'Offer a card as a resource' }
   sacrifice = ActionKind { name = 'Sacrifice a unit' }

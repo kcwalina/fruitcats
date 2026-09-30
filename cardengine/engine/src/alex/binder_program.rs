@@ -91,8 +91,9 @@ impl Binder<'_> {
                 let member_type = self.bind_type(field_type, s);
                 let default_value = default.as_ref().map(|d| self.build_value(d, s, false));
 
-                // A data-typed member is an ordinary field once its extension is loaded.
-                let is_extension = !self.is_data(member_type);
+                // A data-typed member is an ordinary field once its extension is loaded, unless it holds behaviour (an
+                // effect or a formula): that is set from a rules document, never in the data it extends.
+                let is_extension = !self.is_data(member_type) || self.is_behaviour(member_type);
                 let span = field_item_span(item);
                 self.model.fields.push(Field { name: text, field_type: member_type, default: default_value, span, declaring_type: Some(record), is_extension });
                 let field = self.model.fields.len() - 1;
@@ -415,6 +416,19 @@ impl Binder<'_> {
     // ── data ─────────────────────────────────────────────────────────────────────────────────
 
     /// Whether `type_id` is data: no function type, nor `any`, anywhere in it by value.
+    /// Whether a type holds behaviour as data: a formula, an effect (a record deriving from the core's `Effect`), or a
+    /// list, union or optional of them.
+    pub(super) fn is_behaviour(&self, type_id: TypeId) -> bool {
+        let resolved = self.model.resolved(type_id);
+        match &self.model.types[resolved].kind {
+            TypeKind::Named { name, .. } => name == "formula",
+            TypeKind::Record(_) => self.model.chain(resolved).iter().any(|t| self.model.record_name(*t) == "Effect"),
+            TypeKind::Optional(inner) | TypeKind::List(inner) => self.is_behaviour(*inner),
+            TypeKind::Union(alternatives) => alternatives.iter().any(|a| self.is_behaviour(*a)),
+            _ => false,
+        }
+    }
+
     pub(super) fn is_data(&self, type_id: TypeId) -> bool {
         self.not_data(type_id, &self.model.type_string(type_id)).is_empty()
     }
@@ -573,7 +587,21 @@ impl Binder<'_> {
                 continue;
             }
 
-            let Some(declaration) = self.resolve_declaration(value, extension, s, index) else { continue };
+            let member_type = self.model.fields[extension].field_type;
+            let declaration = if self.is_behaviour(member_type) {
+                if let syntax::Value::InlineStatement { .. } = value {
+                    let message = "A handler is data now: an effect ('Draw()'), a list of them, or a formula. Statements are no longer Alex.".to_string();
+                    self.error(s, message, value_span(value));
+                    continue;
+                }
+                let built = self.build_value(value, s, false);
+                self.resolve_constructors(built, s);
+                self.pending_data_assignments.push((built, member_type, s));
+                built
+            } else {
+                let Some(declaration) = self.resolve_declaration(value, extension, s, index) else { continue };
+                declaration
+            };
 
             self.assigned.insert((target_object, member.clone()), (s, target_span));
             let extensions = &mut self.model.object_mut(target_object).unwrap().extensions;

@@ -14,7 +14,7 @@ fn errors(sets: &str, cards: &str, draft: bool) -> Vec<String> {
 name = 'Pocket'
 schema-version = 1
 sets = [{}]
-uses = [@common, @units, @spells, @combat]
+uses = [@common, @units, @spells, @combat, @turns]
 
 type Creature : UnitCard {{}}
 type Spell : SpellCard {{}}
@@ -36,7 +36,7 @@ cards = [
 ", draft)),
         file("pocket-rules.alex", "#type Rules
 
-@owl.on-enter = draw()
+@owl.on-enter = Draw()
 "),
     ]);
     project.diagnostics.iter().filter(|d| d.is_error).map(|d| format!("{}({},{}): {}", d.file, d.line, d.column, d.message)).collect()
@@ -56,7 +56,7 @@ fn a_set_the_game_does_not_list_needs_no_handlers() {
 fn a_set_the_game_lists_needs_its_handlers() {
     let found = errors("@first", CARDS, true);
     assert!(found.iter().any(|e| e.contains("Fox has text, and no rules document gives it a handler")), "{}", found.join("\n"));
-    assert!(found.iter().any(|e| e.contains("'spark' is a Spell, and a SpellCard requires 'on-play' (effect), which no program document assigns")), "{}", found.join("\n"));
+    assert!(found.iter().any(|e| e.contains("'spark' is a Spell, and a SpellCard requires 'on-play' (Effects), which no program document assigns")), "{}", found.join("\n"));
     assert!(!found.iter().any(|e| e.contains("Owl")), "{}", found.join("\n"));
     assert!(!found.iter().any(|e| e.contains("Hare")), "{}", found.join("\n"));
 }

@@ -88,6 +88,9 @@ type OpponentsCantChoose : CombatRule { keyword: Keyword }           // Ward
 type MayBlockForOthers : CombatRule { keyword: Keyword }             // Blocker
 type StunSkipsReady : CombatRule { keyword: Keyword }                // Stun
 
+// The attack this answers does nothing (`@a-whistle-in-the-dark.on-play = CancelAttack()`).
+type CancelAttack : Effect {}
+
 actions = [
   attack = ActionKind { name = 'Attack' }
 ]
@@ -102,16 +105,16 @@ events = [
 ]
 
 extension UnitCard {
-  on-attack: effect?
-  on-attacked: effect?
-  on-defeats-in-combat: effect?
-  on-you-heal: effect?
+  on-attack: Effects?
+  on-attacked: Effects?
+  on-defeats-in-combat: Effects?
+  on-you-heal: Effects?
 }
 extension Keyword {               // a keyword has a unit's slots (units)
-  on-attack: effect?
-  on-attacked: effect?
-  on-defeats-in-combat: effect?
-  on-you-heal: effect?
+  on-attack: Effects?
+  on-attacked: Effects?
+  on-defeats-in-combat: Effects?
+  on-you-heal: Effects?
 }
 
 // Ability kinds this library declares; a card constructs one to say it has the ability.

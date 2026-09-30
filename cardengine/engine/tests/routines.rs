@@ -6,6 +6,7 @@ use std::fs;
 use std::path::Path;
 use std::rc::Rc;
 
+use kardix::alex::model::ValueKind;
 use kardix::loader::project::{self, Project, ProjectFile};
 use kardix::runtime::{Catalog, Game, Position, SeatSetup, Setup};
 
@@ -63,9 +64,9 @@ fn every_handler_is_found_and_attached() {
     assert!(handlers.attached(klobuk.faces[0].value, "on-enter").is_some());
     let hero = &catalog.cards[catalog.card("dziadzius").unwrap()];
     assert_eq!(hero.faces.len(), 2);
-    let front = handlers.attached(hero.faces[0].value, "exhaust").unwrap();
-    assert_eq!(handlers.attached(hero.faces[1].value, "exhaust"), Some(front), "both faces share gain-energy");
-    assert!(handlers.routines[handlers.attached(hero.faces[0].value, "awaken").unwrap()].returns_bool);
+    assert!(handlers.attached(hero.faces[0].value, "exhaust").is_some() && handlers.attached(hero.faces[1].value, "exhaust").is_some(), "both faces gain Energy");
+    let awaken = handlers.attached(hero.faces[0].value, "awaken").unwrap();
+    assert!(matches!(handlers.model.values[awaken].kind, ValueKind::Formula { .. }), "awaken is a formula");
     assert_eq!(hero.faces[0].constants.get("energy"), Some(&1));
     assert_eq!(hero.faces[1].constants.get("energy"), Some(&2));
     assert_eq!(catalog.unit_types, ["Creature"]);

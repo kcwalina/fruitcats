@@ -49,24 +49,22 @@ type HeroIsUnit : HeroRule {}                          // the hero fights and ta
 type HeroRespawns : HeroRule { after: int }            // a defeated hero returns after n turns
 
 extension Face {
-  exhaust: effect?
-  awaken: condition?
+  exhaust: Effects?
+  awaken: formula?
 }
 extension HeroCard {
-  exhaust: effect?
-  awaken: condition?
-  static: static?
+  exhaust: Effects?
+  awaken: formula?
+  static: Effects?
 }
 extension HeroFaceCard {
-  exhaust: effect?
-  awaken: condition?
-  static: static?
+  exhaust: Effects?
+  awaken: formula?
+  static: Effects?
 }
 
 verbs = [
   awakened = Verb { on = unit, yields = bool, only-in = scenario }   // then awakened(@dziadzius)
 ]
 
-// Ability kinds this library declares; a card constructs one to say it has the ability.
-type Exhaust : Ability { holders = [nameof(Face)] }
-type Awaken : Ability { holders = [nameof(Face)], kind = condition }
+

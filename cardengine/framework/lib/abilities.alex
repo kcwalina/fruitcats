@@ -11,7 +11,7 @@ extension Card {
   activate-cost: Cost?            // data: what activating costs, if anything
   activate-once-per-turn: bool = false
 }
-extension Card { activate: effect? }
+extension Card { activate: Effects? }
 
 actions = [
   ability = ActionKind { name = 'Use an ability' }

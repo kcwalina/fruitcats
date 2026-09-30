@@ -6,6 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use kardix::alex::binder::{self, Role, Source};
+use kardix::alex::model::ValueKind;
 use kardix::loader::card_engine::CardEngineHost;
 
 fn files(folder: &Path) -> Vec<PathBuf> {
@@ -39,7 +40,15 @@ fn the_samples_bind_with_the_framework_and_their_rules_attach() {
 
         let compilation = binder::bind(sources, &CardEngineHost::new("hello-tcg"), false);
         assert!(compilation.types.iter().any(|(name, _)| name == "Creature"), "{}: no Creature type", sample);
-        let attached: usize = compilation.model.declarations.iter().map(|d| d.attachments.len()).sum();
+        let attached: usize = compilation
+            .model
+            .values
+            .iter()
+            .filter_map(|v| match &v.kind {
+                ValueKind::Object(o) => Some(o.extensions.len()),
+                _ => None,
+            })
+            .sum();
         if sample == "hello-tcg" {
             assert!(attached >= 3, "hello-tcg: only {} handlers attached to cards", attached);
         }
@@ -54,7 +63,7 @@ fn a_handler_passes_a_count_where_an_int_is_expected() {
         let role = if file.to_string_lossy().ends_with("-rules.alex") { Role::Any } else { Role::Data };
         let mut source = source(&file, role);
         if file.ends_with("card-rules.alex") {
-            source.bytes.extend_from_slice(b"\neffect draw-two { draw(two) }\ncondition two-offered { own.resources.count >= two }\n");
+            source.bytes.extend_from_slice(b"\n@hearth-cricket.on-enter = Draw(two, only-if: own.resources.count >= two)\n");
         }
         sources.push(source);
     }

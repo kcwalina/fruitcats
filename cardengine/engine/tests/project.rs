@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::Path;
 
+use kardix::alex::model::ValueKind;
 use kardix::loader::project::{self, ProjectFile};
 use kardix::loader::queries;
 
@@ -105,7 +106,10 @@ nope = 1
 fn hello_tcg_loads_with_its_rules_attached() {
     let project = project::load(folder(&repository().join("cardengine").join("samples").join("hello-tcg")));
     assert_eq!(project.game.as_deref(), Some("hello-tcg"));
-    let attached: usize = project.compilation.model.declarations.iter().map(|d| d.attachments.len()).sum();
+    let attached: usize = project.compilation.model.values.iter().filter_map(|v| match &v.kind {
+        ValueKind::Object(o) => Some(o.extensions.len()),
+        _ => None,
+    }).sum();
     assert!(attached >= 3, "only {} handlers attached", attached);
 }
 

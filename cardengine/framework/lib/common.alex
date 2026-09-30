@@ -23,6 +23,9 @@ extension Token { cost: Cost = 0 }                 // tokens cost nothing unless
 // A zone that holds at most n objects; plays into a full zone are not legal actions.
 type ZoneCapacity : Rule { zone: Zone, n: int }
 
+// A token enters play: `Summon(@dove)`.
+type Summon : Effect { card: formula, player: formula = own }
+
 actions = [
   play = ActionKind { name = 'Play a card' }
 ]

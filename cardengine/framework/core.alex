@@ -504,6 +504,56 @@ type Bold : Emphasis {}
 type Italic : Emphasis {}
 
 // -------------------------------------------------------------------------------------------
+// Effects: what a card or a rule does, as data (docs/tcg/library-rules-on-paper.md). An effect is a
+// record (`Draw()`, `Damage(card.damage, target: Choose(all))`); a list of them happens in its
+// order. Amounts, conditions and targets may be formulas, computed from the game when the effect
+// happens. The effects below are the core's: the engine does them. A library defines its own from
+// them (`type Draw : Effect { ... do = Move(...) }`), and so may a game.
+//
+// An effect about a card acts on `this` (the card whose handler it is) unless it names a target;
+// one about a player acts on `own` unless it names a player. A target may be a set
+// (`units(own)`): the effect happens to each.
+
+type Effect {
+  only-if: formula?               // it happens only when this is true
+  once-per-round: bool = false    // at most once a round for the card whose handler it is
+  do: Effects?                    // what it is made of, for an effect a library or game defines
+}
+// What a handler holds: an effect, a list of effects (and formulas naming them), or a formula
+// naming one (`@sprout`, `this.on-play`).
+type Effects = Effect | [Effect | formula] | formula
+
+// The unit a player chooses when the effect happens, from these players' units that pass the
+// filter. Every effect in a `With` that names it applies to the one chosen.
+type Choose {
+  from: formula
+  filter: formula?
+  optional: bool = false
+}
+// Several effects sharing one target: `With(Choose(own), do: [Ready(), Heal(card.heal)])`.
+type With : Effect { target: Choose | formula }
+
+type Move : Effect { target: Choose | formula, to: formula, at: formula? }
+type Shuffle : Effect { zone: formula }
+type Flip : Effect { target: Choose | formula | nic, face: int = 2 }
+type Exhaust : Effect { target: Choose | formula | nic }
+type Ready : Effect { target: Choose | formula | nic }
+type SetState : Effect { state: text, on: bool = true, target: Choose | formula | nic }
+// A card's or a player's number: `AddCounter(@rain, by: one)`, `AddCounter(@Energy, by: card.energy, target: own)`.
+type AddCounter : Effect { counter: formula, by: int | formula = 1, target: Choose | formula | nic }
+type SetCounter : Effect { counter: formula, value: int | formula, target: Choose | formula | nic }
+type Create : Effect { card: formula, zone: formula? }
+type Destroy : Effect { target: Choose | formula | nic }
+type Reveal : Effect { target: Choose | formula, to: formula = all }
+type Conceal : Effect { target: Choose | formula }
+type StartTurn : Effect { player: formula }
+type EndTurn : Effect {}
+type SetFirstPlayer : Effect { player: formula }
+type Lose : Effect { player: formula = own }
+type Win : Effect { player: formula = own }
+type DrawGame : Effect {}
+
+// -------------------------------------------------------------------------------------------
 // Program layer: the plug points for behaviour. Libraries declare the actual events, verbs,
 // selectors and properties; the core declares what those declarations look like.
 
@@ -514,6 +564,8 @@ type Italic : Emphasis {}
 // cards they attach to; the cards never name their rules document, since code points at data.
 type Rules {
   for: Cards | Set | nic          // deprecated: has no effect; a rules document is for the whole game
+  // Named effects and formulas the handlers share: `@sprout`, `@is-well-fed`.
+  values: [text: Effects] = empty
 }
 
 enum ParamType {

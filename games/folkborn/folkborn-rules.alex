@@ -1,8 +1,10 @@
-// What cards in several families do. Each set's rules file attaches these to its cards, and a handler reads the
-// numbers of the card it's attached to (`card.damage`).
+// What cards in several families do. Each set's rules file attaches these to its cards, and they read the numbers of
+// the card they're attached to (`card.boost`).
 #type Rules
 
-routine boost-own-and-ready-an-offering {
-  choose(own).buff(power: card.boost, until: this-round)
-  ready-resources(one)
-}
+values = [
+  boost-own-and-ready-an-offering = [
+    Gain(Choose(own), power: card.boost, until: this-round)
+    ReadyResources(one)
+  ]
+]

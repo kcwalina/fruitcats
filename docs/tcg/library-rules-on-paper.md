@@ -47,11 +47,11 @@ game and never changes it, like a cell in a spreadsheet. A condition on an effec
 
 **3. A choice is a value.** `Choose(own)` stands for the unit its player will choose. The engine asks when
 the effect runs (or, for a card that is played, when it is played, before the opponent may answer), and every effect
-that names it applies to that one unit. Several effects share one target through `Effect(target, do: [...])`:
+that names it applies to that one unit. Several effects share one target through `With(target, do: [...])`:
 
 ```
 // Ready an exhausted unit you control. Heal 2 from it.
-@choicest-odours.on-play = Effect(Choose(own, filter: exhausted), do: [
+@choicest-odours.on-play = With(Choose(own, filter: exhausted), do: [
   Ready()
   Heal(card.heal)
 ])
@@ -62,8 +62,8 @@ of, with its own fields as parameters:
 
 ```
 type Draw : Effect {
-  player: Formula = own
-  count: Formula = one
+  player: formula = own
+  count: int | formula = one
   do = Move(this.player.deck.top(this.count), to: this.player.hand)
 }
 ```
@@ -93,7 +93,7 @@ operations (`core-operations.alex`) as a record:
 | `Reveal(target, to:)`, `Conceal(target)` | shows cards |
 | `StartTurn(player)`, `EndTurn()`, `SetFirstPlayer(player)` | the turn |
 | `Lose(player)`, `Win(player)`, `DrawGame()` | the game's end |
-| `Effect(target, do:)` | several effects sharing a target |
+| `With(target, do:)` | several effects sharing a target |
 
 Every effect also takes `only-if` (a condition formula) and `once-per-round` (at most once a round for the card whose
 handler it is).
@@ -165,7 +165,7 @@ company-damage = Damage(if @has-company then card.company-damage else card.damag
 @khangi.on-enter = Draw()
 @falling-star.on-play = Damage(card.damage, target: Choose(all))
 @mountain-gale.on-play = @company-damage
-@choicest-odours.on-play = Effect(Choose(own, filter: exhausted), do: [
+@choicest-odours.on-play = With(Choose(own, filter: exhausted), do: [
   Ready()
   Heal(card.heal)
 ])
@@ -185,7 +185,7 @@ company-damage = Damage(if @has-company then card.company-damage else card.damag
 
 @aluxito.exhaust = Heal(card.heal, target: Choose(own))
 @aluxito.awaken = own.life.count <= card.candles
-@aluxito.back.exhaust = Effect(Choose(own), do: [
+@aluxito.back.exhaust = With(Choose(own), do: [
   Heal(card.heal)
   Gain(abilities: [@Guardian], until: this-round)
 ])
@@ -509,7 +509,7 @@ value: data pointing at data.
 The owner approved building this ("let's go for it"), with the recommendations taken where a question was open:
 
 1. **Formulas are data enough:** pure expressions that read the game and never change it.
-2. **A field holds a formula only when its type says so** (`amount: Formula`, `only-if: Formula?`), so ordinary data
+2. **A field holds a formula only when its type says so** (`amount: int | formula`, `only-if: formula?`), so ordinary data
    stays free of them.
 3. **`only-if`** is an effect's condition.
 4. **`game.rule(RuleType)`** reads another rule as the game lists it, or nothing.

@@ -19,9 +19,9 @@ extension Game { attachments: [AttachmentRule] = empty }
 type AttachmentCards : AttachmentRule { types: [type AttachmentCard] }
 
 extension AttachmentCard {
-  on-attach: effect?
-  on-detach: effect?
-  static: static?
+  on-attach: Effects?
+  on-detach: Effects?
+  static: Effects?
 }
 
 selectors = [

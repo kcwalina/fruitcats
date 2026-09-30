@@ -23,11 +23,13 @@ cards = [
     frame = gold
     art = 'art/PR1-H01-kitten.webp'
     text = @parijan-text
+    constants = [units = 3]
     flavor = 'Persians called the pari ''those who are better than we''.'
     back = Awakened {
       name = 'Parijan', epithet = 'Wings over Qāf', power = 2
       art = 'art/PR1-H01-bigcat.webp'
-      text = 'Exhaust: A unit you control gets +2 Power and Sneaky this round.'
+      text = 'Exhaust: A unit you control gets +{boost} Power and Sneaky this round.'
+      constants = [boost = 2]
     }
   }
   dove-shaped-pari = Creature {
@@ -44,7 +46,11 @@ cards = [
     cost = 1, power = 3, health = 1
     number = 'PR1-D02', rarity = common
     art = 'art/PR1-D02.webp'
-    text = 'Hello: Unless you''ve played 2 other cards this round, deal 1 damage to Orange-Peri.'
+    text = 'Hello: Unless you''ve played {others} other cards this round, deal {damage} damage to Orange-Peri.'
+    constants = [
+      others = 2
+      damage = 1
+    ]
     flavor = 'She steps out of an orange and asks for water. Only the third is given some in time.'
   }
   murghatipi = Creature {
@@ -78,7 +84,11 @@ cards = [
     cost = 3, power = 3, health = 3
     number = 'PR1-D06', rarity = common
     art = 'art/PR1-D06.webp'
-    text = 'Hello: Deal 1 damage to a unit. Company: deal 2 instead.'
+    text = 'Hello: Deal {damage} damage to a unit. Company: deal {company-damage} instead.'
+    constants = [
+      damage = 1
+      company-damage = 2
+    ]
     flavor = 'The Kalasha''s mountain fairies help the hunters they like.'
   }
   markhor-of-the-mothers = Creature {
@@ -129,7 +139,8 @@ cards = [
     number = 'PR1-D12', rarity = uncommon
     art = 'art/PR1-D12.webp'
     keywords = [@Ambush, @Lucky]
-    text = 'Ambush. Lucky. Deal 2 damage to a unit.'
+    text = 'Ambush. Lucky. Deal {damage} damage to a unit.'
+    constants = [damage = 2]
     flavor = 'The oldest Persian books call the pari shooting stars.'
   }
   mountain-gale = Charm {
@@ -137,7 +148,11 @@ cards = [
     cost = 3
     number = 'PR1-D13', rarity = uncommon
     art = 'art/PR1-D13.webp'
-    text = 'Deal 3 damage to a unit. Company: deal 5 instead.'
+    text = 'Deal {damage} damage to a unit. Company: deal {company-damage} instead.'
+    constants = [
+      damage = 3
+      company-damage = 5
+    ]
     flavor = 'When the pari ride the wind, the whole valley bends.'
   }
   choicest-odours = Charm {
@@ -145,7 +160,8 @@ cards = [
     cost = 2
     number = 'PR1-D14', rarity = uncommon
     art = 'art/PR1-D14.webp'
-    text = 'Ready an exhausted unit you control. Heal 2 from it.'
+    text = 'Ready an exhausted unit you control. Heal {heal} from it.'
+    constants = [heal = 2]
     flavor = @choicest-odours-flavor
   }
   zangwar = Charm {
@@ -154,7 +170,8 @@ cards = [
     number = 'PR1-D15', rarity = uncommon
     art = 'art/PR1-D15.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +2 Power this round.'
+    text = 'Ambush. A unit you control gets +{boost} Power this round.'
+    constants = [boost = 2]
     flavor = 'In Chitral, people and fairies once marched out together to the same tune.'
   }
   carried-off-asleep = Charm {
@@ -171,7 +188,8 @@ cards = [
     cost = 1
     number = 'PR1-D17', rarity = uncommon
     art = 'art/PR1-D17.webp'
-    text = 'Attached unit gets +3 Health.'
+    text = 'Attached unit gets +{extra-health} Health.'
+    constants = [extra-health = 3]
     flavor = 'It folds small enough to hold in one hand, and opens big enough to shelter an army.'
   }
   manar-al-sana = Fabled {
@@ -188,7 +206,8 @@ cards = [
     cost = 4, power = 3, health = 4
     number = 'PR1-D19', rarity = rare
     art = 'art/PR1-D19.webp'
-    text = 'Hello: Deal 1 damage to each enemy unit.'
+    text = 'Hello: Deal {damage} damage to each enemy unit.'
+    constants = [damage = 1]
     flavor = 'Asman means ''sky''. She ruled the pari of Mount Qāf.'
   }
   schaibar = Fabled {
@@ -211,7 +230,7 @@ cards = [
 
 @@@ parijan-text
 Exhaust: A unit you control gains Sneaky this round.
-Awaken: You control 3 or more units.
+Awaken: You control {units} or more units.
 @@@ markhor-of-the-mothers-flavor
 The fairies own the wild goats. Hunters ask: 'Mother, adopt me, and give me one of your goats.'
 @@@ choicest-odours-flavor

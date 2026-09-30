@@ -14,6 +14,9 @@ family = Family {
 keywords = [
   rain-fed = Keyword { name = 'Rain-Fed' }
 ]
+counters = [
+  rain = StatCounter { power = 1, health = 1, max = @rain-fed-max }
+]
 
 cards = [
   aluxito = Hero {
@@ -22,11 +25,16 @@ cards = [
     frame = gold
     art = 'art/AL1-H01-kitten.webp'
     text = @aluxito-text
+    constants = [
+      heal = 2
+      candles = 6
+    ]
     flavor = 'Knee-high and invisible. Every corn stalk in the field is his.'
     back = Awakened {
       name = 'Aluxito', epithet = 'Caller of the Rain', power = 3
       art = 'art/AL1-H01-bigcat.webp'
-      text = 'Exhaust: Heal 3 from a unit you control. It gains Guardian this round.'
+      text = 'Exhaust: Heal {heal} from a unit you control. It gains Guardian this round.'
+      constants = [heal = 3]
     }
   }
   saka-bearing-alux = Creature {
@@ -34,7 +42,8 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'AL1-D01', rarity = common
     art = 'art/AL1-D01.webp'
-    text = 'Hello: Heal 2 from a unit.'
+    text = 'Hello: Heal {heal} from a unit.'
+    constants = [heal = 2]
     flavor = 'A gourd of sweet corn drink, carried to whoever needs it most.'
   }
   night-patrol-alux = Creature {
@@ -114,7 +123,8 @@ cards = [
     number = 'AL1-D10', rarity = uncommon
     art = 'art/AL1-D10.webp'
     keywords = [@Lucky]
-    text = 'Lucky. Heal 3 from a unit you control. Draw a card.'
+    text = 'Lucky. Heal {heal} from a unit you control. Draw a card.'
+    constants = [heal = 3]
     flavor = 'Left on the little doorstep at dusk. Gone by morning.'
   }
   pots-and-pans-flung = Charm {
@@ -122,7 +132,8 @@ cards = [
     cost = 3
     number = 'AL1-D11', rarity = uncommon
     art = 'art/AL1-D11.webp'
-    text = 'Deal 4 damage to an exhausted unit.'
+    text = 'Deal {damage} damage to an exhausted unit.'
+    constants = [damage = 4]
     flavor = 'Fall asleep without leaving an offering, and the kitchen lets you know.'
   }
   kahtal-alux = Talisman {
@@ -130,7 +141,8 @@ cards = [
     cost = 2
     number = 'AL1-D12', rarity = uncommon
     art = 'art/AL1-D12.webp'
-    text = 'Attached unit gets +3 Health and Guardian.'
+    text = 'Attached unit gets +{extra-health} Health and Guardian.'
+    constants = [extra-health = 3]
     flavor = @kahtal-alux-flavor
   }
   the-roadside-alux = Fabled {
@@ -147,7 +159,8 @@ cards = [
     number = 'AL1-D14', rarity = rare
     art = 'art/AL1-D14.webp'
     keywords = [@Guardian]
-    text = 'Guardian. At the start of each round, heal 1 from each unit you control.'
+    text = 'Guardian. At the start of each round, heal {heal} from each unit you control.'
+    constants = [heal = 1]
     flavor = 'Guards the deep pool where the rain begins.'
   }
   the-bridge-alux-of-cancun = Fabled {
@@ -180,7 +193,8 @@ cards = [
     number = 'AL1-D18', rarity = uncommon
     art = 'art/AL1-D18.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +2 Power this round.'
+    text = 'Ambush. A unit you control gets +{boost} Power this round.'
+    constants = [boost = 2]
     flavor = 'Sweets and fruit in the little house. The alux works twice as hard.'
   }
   lost-in-the-monte = Charm {
@@ -195,8 +209,8 @@ cards = [
 ]
 
 @@@ aluxito-text
-Exhaust: Heal 2 from a unit you control.
-Awaken: You have 6 or fewer Candles.
+Exhaust: Heal {heal} from a unit you control.
+Awaken: You have {candles} or fewer Candles.
 @@@ kahtal-alux-flavor
 A doll-sized house at the edge of the field. Whoever lives in it guards the corn for seven years.
 @@@

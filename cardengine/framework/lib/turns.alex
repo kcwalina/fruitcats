@@ -13,7 +13,10 @@ enum EndsWhen { all-pass-in-a-row, turn-ends, phase-list-done }
 
 type AlternatingActions : TurnRule { first: First, ends-when: EndsWhen }
 type FullTurns : TurnRule { first: First }
-type MaxRounds : TurnRule { n: int }
+// The game ends after round n. `winner` breaks the tie, in order: `most-life` (the most life left, a stack's cards or
+// a counter), then `most-unit-health` (the most health left on units in play, damage taken off). All equal: a draw.
+enum Tiebreak { most-life, most-unit-health }
+type MaxRounds : TurnRule { n: int, winner: [Tiebreak] = empty }
 type RoundStart : TurnRule { skip-round: int?, steps: [Step] }
 type RoundEnd : TurnRule { steps: [Step] }
 type Phases : TurnRule { phases: [Phase] }         // each phase is also a Moment

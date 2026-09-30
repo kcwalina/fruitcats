@@ -731,6 +731,9 @@ The earlier order continues on the core:
    and every card's handler written in Alex, in `docs/tcg/folkborn-playable/`, and run through the
    core's checker. It found 16 gaps in the core and libraries; its README lists them with a fix each.
    Gaps 1 to 13 are closed before the runtime, so that Hello TCG and Folkborn both check clean.
+   *Done 2026-09-29:* the gaps are closed, Hello TCG checks with no errors, and Folkborn's playable source is in
+   `games/folkborn/` (the game file with its rules, a rules file per set, and the sets' numbers as constants). Every
+   one of its 462 printed faces draws exactly as before.
 1. **The runtime** plays Hello TCG from its Alex source.
    Designed on paper first: [runtime-design.md](runtime-design.md), for the owner's review (2026-09-29).
 2. **`kardix` basics:** `new`, `test`, `sim` with a random bot.

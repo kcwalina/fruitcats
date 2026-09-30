@@ -1,21 +1,20 @@
-# Folkborn as a playable game, on paper
+# Folkborn as a playable game: how it was written
 
-This folder is Folkborn written out completely in Alex: the game's rules and every card's handler, so that the
-runtime could play it. It is a draft for review before the runtime is built. Nothing loads it: the site, `kardix`
-and the card renderer still read `games/folkborn/`.
-
-Laid over a copy of `games/folkborn/`, it is a whole game the core can check. The core's checker already binds
-rules code, so this draft has been through it. Most of what it reports comes from 16 gaps in the core and the
-libraries, listed below. Closing them is the work to do before the runtime can play Folkborn.
+Folkborn was written out completely in Alex on 2026-09-29 (the game's rules and every card's handler), first as a
+draft here for the owner to review before the runtime was built, then moved into `games/folkborn/` the same day once
+the core's checker accepted it. **The source is `games/folkborn/`**; this page is the record of how it got there: what
+the files hold, how they read, and the 19 gaps the draft found in the core and the libraries, with how each was closed.
 
 ## The files
+
+In `games/folkborn/`:
 
 | File | What it is |
 |---|---|
 | `folkborn.alex` | The game. It is today's `games/folkborn/folkborn.alex` (card types, keywords, finishes) plus the rules: zones, setup, rounds, the Lantern, Offerings, Candles, attacks, Ambush, heroes, deck building. Each rule cites its section of [the rulebook](../../rulebook.md), part 13. |
 | `folkborn-rules.alex` | The named handlers cards in several families share: a boost that also readies an Offering, and the Mist condition Zhu'er and Pebble awaken on. |
 | `domowiki-rules.alex`, `pari-rules.alex`, `aluxes-rules.alex`, `jiaoren-rules.alex`, `hui-hai-rules.alex`, `mochi-rules.alex` | Each set's lines that give each of its cards its handler, and the few handlers it names. |
-| `sets/<set>/<set>.alex` | Today's set files, with the numbers in a card's text as its constants and Aluxes's rain counter (below). Mochi's is unchanged, so it isn't copied here. |
+| `sets/<set>/<set>.alex` | The set files, with the numbers in a card's text as its constants, and Aluxes's rain counter (below). |
 
 The rules are about 380 lines: 200 in the game file, and 176 in the rules files. The 106 cards (the Dove token
 included) need 88 lines that give a card's slot its handler. In 76 of them the handler is written right there, one
@@ -113,8 +112,8 @@ means the fix is in Folkborn's own files; the other fixes are in the platform.
 | 10 | `summon` takes a `Token` record; Folkborn's Dove is a card of a token type. | 1 error | Done. `summon` takes a card: a `Token`, or a card of the game's own token type (`summon(@dove)`). A reference to a card or a zone now stands where a handler's `card` or `zone` parameter is. |
 | 11 | A card whose text is only keywords must have a handler. | 27 errors | Done: text whose every sentence is one of the card's keywords as printed ("Guardian. Fierce.", "Tough 1" from `Applied`) needs none. Text with anything more still does. |
 | 12 | A card's constants share names with the game's: Aluxito's `candles` makes the game's `@candles` ambiguous. | 1 error | Done, as an Alex rule (both implementations, Alex 0.10.0): in a map inside another map's entry, a plain value (a number, a text) belongs to the entry and is reached through it, so a card's constants are `card.candles` in its handlers and never `@candles`. Records there are still named, since art briefs name their pictures. |
-| 13 | Mochi's set and its one card are both named `mochi`, so `@mochi.on-enter` names the set. | 3 errors | Folkborn: give the card its own key (`mochi-the-sweet-spirit`). |
-| 14 | `MaxRounds` doesn't say who wins at the limit. | not an error yet | Decided by the owner (2026-09-29, now rulebook §300.7): after round 40, more Candles wins, then more Health left on units in play, else a draw. Library: `MaxRounds { n, winner = [most-life, most-unit-health] }`, the tiebreaks in order, a draw when all are equal; built with the runtime. |
+| 13 | Mochi's set and its one card are both named `mochi`, so `@mochi.on-enter` names the set. | 3 errors | Done. The card's key is `mochi-the-sweet-spirit` (its printed name is still Mochi); the Artist Studio's brief refers to it by that key. |
+| 14 | `MaxRounds` doesn't say who wins at the limit. | not an error yet | Decided by the owner (2026-09-29, now rulebook §300.7): after round 40, more Candles wins, then more Health left on units in play, else a draw. Library: `MaxRounds { n, winner = [most-life, most-unit-health] }`, the tiebreaks in order, a draw when all are equal; built with the runtime. The library part is done: `MaxRounds { winner: [Tiebreak] }`, with `most-life` and `most-unit-health`. |
 | 15 | Setup order across areas isn't defined: the Candles are dealt (a `life` rule) after the shuffle and before the opening hand (`setup` rules). | not an error | Library: a setup step that deals the life stack, placed in `setup`. |
 | 16 | A Whistle in the Dark has Ambush but may only answer an attack. | not an error | Checker: a handler that uses the attack it answers (`event.cancel()`) makes the card playable only in an attack's window. |
 | 17 | Alex enums are names only. Handlers want `ready-resources(two)`, with `two` standing for 2. | 6 errors (the owner's request, 2026-09-29) | Done. Alex (both implementations): enums backed by a number or a short fixed-size string (`enum Count : int { one = 1, two = 2 }`, `enum Code : text(3) { ... }`), a member standing for its value wherever that value's type is expected, as C# enums are; `Count` in `common`. |
@@ -126,17 +125,17 @@ scheduling, the keyword rules (Swift, Guardian, Sneaky, Fierce, Tough, Lucky, Am
 handler words such as `choose(own, exhausted)`, `offer-from-deck(card.sprout, exhausted: true)`,
 `units(own, guardian).any`, `own.played-this-round`, `this.cant(attack)` and `event.cancel()`.
 
-## To check it yourself
-
-Copy `games/folkborn/`, lay this folder's `.alex` files over the copy (its `sets` folder too), and run:
+## To check it
 
 ```bash
-cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check -- <the copy>
+cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check -- games/folkborn
 ```
+
+It reports no problem in Folkborn's sets. The Flower Souls prototype (`games/folkborn/prototypes/`) still reports 6:
+its cards have text and no handlers yet, since a set's rules are written once its cards are final with the artist.
 
 ## Next
 
-Gaps 1 to 12 are closed. Gap 13 is in Folkborn's own files (Hello TCG, which needed gaps 1 and 2, checks with no
-errors). Then Folkborn checks clean but for gap 14's `winner`, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
-the runtime behaves, so they are settled when it is built. The runtime starts with Hello TCG, then plays Folkborn,
-compared game for game with today's engine.
+Gaps 1 to 13 are closed, and gap 14's `winner` is in the library. Gaps 14 to 16 are about how the runtime behaves, so
+they are settled as it is built (docs/tcg/runtime-design.md). The runtime starts with Hello TCG, which checks with no
+errors, then plays Folkborn, compared game for game with today's engine.

@@ -22,11 +22,16 @@ cards = [
     frame = gold
     art = 'art/JR1-H01-kitten.webp'
     text = @zhu-er-text
+    constants = [
+      heal = 2
+      fallen = 4
+    ]
     flavor = 'Her name means Little Pearl. She has never cried a tear that wasn''t one.'
     back = Awakened {
       name = 'Zhu''er', epithet = 'Pearl of the Moonlit Sea', power = 3
       art = 'art/JR1-H01-bigcat.webp'
       text = @zhu-er-back-text
+      constants = [extra-health = 1]
     }
   }
   the-spring-guest = Creature {
@@ -50,7 +55,8 @@ cards = [
     cost = 2
     number = 'JR1-D03', rarity = uncommon
     art = 'art/JR1-D03.webp'
-    text = 'Attached unit gets +3 Health and Guardian.'
+    text = 'Attached unit gets +{extra-health} Health and Guardian.'
+    constants = [extra-health = 3]
     flavor = 'Woven by the jiaoren. A robe of it goes into the sea and comes out dry.'
   }
   pearl-oyster = Creature {
@@ -109,7 +115,8 @@ cards = [
     cost = 4, power = 3, health = 5
     number = 'JR1-D10', rarity = uncommon
     art = 'art/JR1-D10.webp'
-    text = 'Hello: Heal 2 from each unit you control.'
+    text = 'Hello: Heal {heal} from each unit you control.'
+    constants = [heal = 2]
     flavor = 'A little pearl, ground to powder, for every hurt.'
   }
   muke = Creature {
@@ -135,7 +142,8 @@ cards = [
     number = 'JR1-D13', rarity = uncommon
     art = 'art/JR1-D13.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings.'
+    text = 'Ambush. A unit you control gets +{boost} Power this round. Ready one of your Offerings.'
+    constants = [boost = 2]
     flavor = 'The thank-you gift of a guest from the sea.'
   }
   the-sea-turns-rough = Charm {
@@ -144,7 +152,8 @@ cards = [
     number = 'JR1-D14', rarity = uncommon
     art = 'art/JR1-D14.webp'
     keywords = [@Lucky]
-    text = 'Lucky. Deal 5 damage to a unit.'
+    text = 'Lucky. Deal {damage} damage to a unit.'
+    constants = [damage = 5]
     flavor = 'The South Sea is calm, until it isn''t.'
   }
   moonlit-sea = Charm {
@@ -161,7 +170,8 @@ cards = [
     cost = 1
     number = 'JR1-D16', rarity = uncommon
     art = 'art/JR1-D16.webp'
-    text = 'Attached unit gets +2 Health and Pearl Tears.'
+    text = 'Attached unit gets +{extra-health} Health and Pearl Tears.'
+    constants = [extra-health = 2]
     flavor = 'The finest jiaoren silk, white as frost.'
   }
   quanxian = Fabled {
@@ -178,7 +188,8 @@ cards = [
     cost = 4, power = 3, health = 4
     number = 'JR1-D18', rarity = rare
     art = 'art/JR1-D18.webp'
-    text = 'Goodbye: Draw 2 cards.'
+    text = 'Goodbye: Draw {draw} cards.'
+    constants = [draw = 2]
     flavor = '"The town is all noise and dust. Back to the mountain, to play with the moon."'
   }
   the-oldest-weaver = Fabled {
@@ -196,17 +207,18 @@ cards = [
     number = 'JR1-D20', rarity = uncommon
     art = 'art/JR1-D20.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +2 Power this round.'
+    text = 'Ambush. A unit you control gets +{boost} Power this round.'
+    constants = [boost = 2]
     flavor = 'Moved by a kindness, a jiaoren weeps pearls.'
   }
 ]
 
 @@@ zhu-er-text
 Your units have Pearl Tears.
-Exhaust: Heal 2 from a unit you control.
-Awaken: 4 or more Fabled and Creatures are in the Mist.
+Exhaust: Heal {heal} from a unit you control.
+Awaken: {fallen} or more Fabled and Creatures are in the Mist.
 @@@ zhu-er-back-text
-Your units get +1 Health and Pearl Tears.
+Your units get +{extra-health} Health and Pearl Tears.
 Exhaust: Ready two of your Offerings.
 @@@ the-spring-guest-flavor
 She stayed a few days to sell her silk. Leaving, she wept a plate of pearls for her host.

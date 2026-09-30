@@ -12,7 +12,7 @@ family = Family {
 }
 
 cards = [
-  mochi = Fabled {
+  mochi-the-sweet-spirit = Fabled {
     name = 'Mochi', epithet = 'the Sweet Spirit'
     cost = 4, power = 3, health = 4
     number = 'MC1-X01', rarity = legendary

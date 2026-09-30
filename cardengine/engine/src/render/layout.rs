@@ -700,19 +700,27 @@ impl<'p> Layout<'p> {
         chain
     }
 
-    /// A field of a face: its own value, its type's, the front's for a field a back doesn't have, or its set's.
+    /// A field of a face: its own value, its type's, the front's for a field a back doesn't have, or its set's. A back
+    /// with only a library's default for a field the front's game type declares and its own doesn't prints the
+    /// front's: a Hero's back shows the Hero's rarity, not the default every card has from the `common` library.
     fn face_field(&self, face: &Face, name: &str) -> Located {
         let own = self.model.object(face.values).and_then(|o| o.get(name));
+        let front = self.model.object(face.card).and_then(|o| o.get(name));
         if let Some(p) = own {
             if !p.is_default {
                 return Located::of(p.value, face.document, Some(name));
+            }
+            if face.is_back && self.game_declares(face.card, name) && !self.game_declares(face.values, name) {
+                if let Some(f) = front.filter(|f| !f.is_default) {
+                    return Located::of(f.value, face.document, Some(name));
+                }
             }
             if !self.is_nothing(p.value) {
                 return Located::of(p.value, self.game, Some(name));
             }
         }
         if face.is_back && own.is_none() {
-            if let Some(p) = self.model.object(face.card).and_then(|o| o.get(name)) {
+            if let Some(p) = front {
                 if !p.is_default {
                     return Located::of(p.value, face.document, Some(name));
                 }
@@ -725,6 +733,20 @@ impl<'p> Layout<'p> {
             return Located::of(value, face.document, Some(name));
         }
         Located::default()
+    }
+
+    /// Whether a value's type, or a type it derives from that the game's own files declare, declares the field.
+    fn game_declares(&self, value: ValueId, name: &str) -> bool {
+        let mut current = self.model.object(value).and_then(|o| o.record_type);
+        while let Some(t) = current {
+            let Some(record) = self.model.record(t) else { return false };
+            let own = self.project.documents().any(|(_, d)| d.types.iter().any(|(_, declared)| *declared == t));
+            if own && record.own_fields.iter().any(|f| self.model.fields[*f].name == name) {
+                return true;
+            }
+            current = record.base;
+        }
+        false
     }
 
     /// A field a set gives for all its cards: one the core's `Set` or `Cards` doesn't declare.

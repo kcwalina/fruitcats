@@ -357,12 +357,18 @@ impl Model {
         chain
     }
 
-    /// Every field, the bases' first.
+    /// Every field, the bases' first. A field a subtype declares hides a base's of its name, which only a schema's
+    /// extension can have given the base.
     pub fn fields_of(&self, id: TypeId) -> Vec<FieldId> {
         let chain = self.chain(id);
         let mut fields = Vec::new();
-        for c in chain.iter().rev() {
-            fields.extend(self.record(*c).unwrap().own_fields.iter().copied());
+        for (i, c) in chain.iter().enumerate().rev() {
+            for field in &self.record(*c).unwrap().own_fields {
+                let name = &self.fields[*field].name;
+                if !chain[..i].iter().any(|d| self.record(*d).unwrap().own_fields.iter().any(|f| self.fields[*f].name == *name)) {
+                    fields.push(*field);
+                }
+            }
         }
         fields
     }

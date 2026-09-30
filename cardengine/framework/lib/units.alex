@@ -66,6 +66,7 @@ extension UnitCard {
   on-enter: effect?
   on-defeated: effect?
   on-round-start: effect?
+  on-survives-damage: effect?     // damaged and still in play once the damage is dealt
   on-use: effect?                 // exhaust the unit for value instead of attacking (reap)
   static: static?
 }
@@ -79,6 +80,7 @@ moments = [
 type OnEnter : Ability { holders = [nameof(UnitCard)] }            // Hello, Battlecry, ETB
 type OnDefeated : Ability { holders = [nameof(UnitCard)] }         // Goodbye, Deathrattle
 type OnRoundStart : Ability { holders = [nameof(UnitCard)] }
+type OnSurvivesDamage : Ability { holders = [nameof(UnitCard)] }
 type Static : Ability { holders = [nameof(UnitCard)], kind = static }
 type OnUse : Ability { holders = [nameof(UnitCard)] }
 
@@ -99,6 +101,7 @@ filters = [
   exhausted = Filter {}
   ready = Filter {}
   full = Filter {}                                      // a StatCounter at its full-at
+  unit-card = Filter {}                                 // a card of a unit type, wherever it is
   of-type = Filter { params = [type = card] }           // units(own, of-type(@Rookie))
 ]
 

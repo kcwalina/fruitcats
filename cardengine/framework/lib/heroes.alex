@@ -7,8 +7,10 @@ name = 'Heroes'
 version = '0.1'
 requires = [@common]
 
+// A hero prints its faces as records (`face1`, `face2`), or a game maps its own hero type, whose
+// card is the first face and whose second face is a card of another type (`HeroCards`).
 type HeroCard : Card {
-  face1: Face
+  face1: Face?
   face2: Face?
   life: int?                      // when the hero card fixes the player's life total
   hand-size: int?                 // when the hero card fixes the hand size (intellect)
@@ -26,8 +28,12 @@ type WeaponCard : Card { cost: Cost, power: int, durability: int }
 type HeroRule : Rule {}
 extension Game { hero: [HeroRule] = empty }
 
-// Which of the game's card types are heroes and weapons; see core.alex on mapping.
-type HeroCards : HeroRule { types: [type HeroCard] }
+// The other side of a mapped hero: a card of the game's own type, held by a field of the hero.
+type HeroFaceCard : Card {}
+
+// Which of the game's card types are heroes and weapons; see core.alex on mapping. `second-face`
+// is the type of the hero's other side (`second-face = @Awakened`, held by `back: Awakened`).
+type HeroCards : HeroRule { types: [type HeroCard], second-face: type HeroFaceCard? }
 type WeaponCards : HeroRule { types: [type WeaponCard] }
 
 type TwoFaces : HeroRule {}                           // face 2 is reached by awakening
@@ -46,6 +52,20 @@ extension Face {
   exhaust: effect?
   awaken: condition?
 }
+extension HeroCard {
+  exhaust: effect?
+  awaken: condition?
+  static: static?
+}
+extension HeroFaceCard {
+  exhaust: effect?
+  awaken: condition?
+  static: static?
+}
+
+verbs = [
+  awakened = Verb { on = unit, yields = bool, only-in = scenario }   // then awakened(@dziadzius)
+]
 
 // Ability kinds this library declares; a card constructs one to say it has the ability.
 type Exhaust : Ability { holders = [nameof(Face)] }

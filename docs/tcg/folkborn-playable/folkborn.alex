@@ -269,7 +269,7 @@ attachments = [
 
 // §9.4, §800.5 Heroes. §8 An Awakened Hero may attack, and takes no damage doing so.
 hero = [
-  HeroCards { types = [@Hero], second-face = back }
+  HeroCards { types = [@Hero], second-face = @Awakened }
   TwoFaces {}
   AwakenOnStateCheck { cites = '§800.1b' }
   AwakenedKeepsExhaustedState { cites = '§800.5' }

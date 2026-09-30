@@ -10,10 +10,10 @@ impl Binder<'_> {
     /// a type is expected into the type it names, mapping that type onto the record.
     pub(super) fn map_type_values(&mut self, value: ValueId, expected: Option<TypeId>, s: usize) -> ValueId {
         let expected = expected.map(|e| self.model.resolved(e));
-        let chosen = self.choose(value, expected);
+        let chosen = self.choose(value, expected, s);
         if let ValueKind::Reference { .. } = self.model.values[value].kind {
             if let Some(chosen) = chosen {
-                if let Some(type_of_type) = self.type_of_type_for(value, chosen) {
+                if let Some(type_of_type) = self.type_of_type_for(value, chosen, s) {
                     return self.to_type_value(value, type_of_type, s, Sink::Document);
                 }
             }
@@ -72,7 +72,7 @@ impl Binder<'_> {
 
     /// Where `type_id` is a union of collections, the one a collection value is walked as: the first whose type values
     /// all fit, judged without changing anything. Any other type is returned as it is.
-    fn choose(&mut self, value: ValueId, type_id: Option<TypeId>) -> Option<TypeId> {
+    fn choose(&mut self, value: ValueId, type_id: Option<TypeId>, s: usize) -> Option<TypeId> {
         let type_id = type_id?;
         let is_collection = match &self.model.values[value].kind {
             ValueKind::Array(_) => true,
@@ -95,7 +95,7 @@ impl Binder<'_> {
             if first.is_none() {
                 first = Some(alternative);
             }
-            if self.type_values_fit(value, alternative) {
+            if self.type_values_fit(value, alternative, s) {
                 return Some(alternative);
             }
         }
@@ -103,7 +103,7 @@ impl Binder<'_> {
     }
 
     /// Whether every reference directly in `value` that stands where a type is expected names a type that conforms.
-    fn type_values_fit(&mut self, value: ValueId, type_id: TypeId) -> bool {
+    fn type_values_fit(&mut self, value: ValueId, type_id: TypeId, s: usize) -> bool {
         let element = match &self.model.types[type_id].kind {
             TypeKind::List(element) => Some(*element),
             TypeKind::Map(_, value_type) => Some(*value_type),
@@ -119,8 +119,8 @@ impl Binder<'_> {
         for item in item_values {
             if let ValueKind::Reference { .. } = self.model.values[item].kind {
                 let resolved = self.model.resolved(element);
-                if let Some(type_of_type) = self.type_of_type_for(item, resolved) {
-                    if !self.type_value_problems(item, type_of_type).0.is_empty() {
+                if let Some(type_of_type) = self.type_of_type_for(item, resolved, s) {
+                    if !self.type_value_problems(item, type_of_type, s).0.is_empty() {
                         return false;
                     }
                 }
@@ -142,7 +142,7 @@ impl Binder<'_> {
 
     /// The `type R` a reference standing where `expected` is expected is read against, or none when it is an ordinary
     /// reference. In a union that also holds values, a reference is a type only when it names one.
-    pub(super) fn type_of_type_for(&mut self, reference: ValueId, expected: TypeId) -> Option<TypeId> {
+    pub(super) fn type_of_type_for(&mut self, reference: ValueId, expected: TypeId, s: usize) -> Option<TypeId> {
         let mut alternatives = Vec::new();
         self.flatten(expected, &mut alternatives);
         let mut type_of_types: Vec<TypeId> = Vec::new();
@@ -162,7 +162,7 @@ impl Binder<'_> {
             ValueKind::Reference { path, .. } => path.clone(),
             _ => Vec::new(),
         };
-        let named = if path.len() == 1 { self.type_named(&path[0]).map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) } else { None };
+        let named = if path.len() == 1 { self.type_named(&path[0], s).map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) } else { None };
         if named.is_none() && others {
             return None;
         }
@@ -181,7 +181,7 @@ impl Binder<'_> {
 
     /// Why `reference` cannot name a type that `expected` takes, one sentence per problem, with the type it names when it
     /// names one. Changes nothing.
-    fn type_value_problems(&mut self, reference: ValueId, expected: TypeId) -> (Vec<String>, Option<TypeId>) {
+    fn type_value_problems(&mut self, reference: ValueId, expected: TypeId, s: usize) -> (Vec<String>, Option<TypeId>) {
         let TypeKind::TypeOfType { record: view } = self.model.types[expected].kind else { return (Vec::new(), None) };
         let path = match &self.model.values[reference].kind {
             ValueKind::Reference { path, .. } => path.clone(),
@@ -199,7 +199,7 @@ impl Binder<'_> {
             return (problems, None);
         }
 
-        let declared = self.type_named(&name);
+        let declared = self.type_named(&name, s);
         let Some(record) = declared.map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) else {
             problems.push(if declared.is_none() {
                 format!(
@@ -232,7 +232,7 @@ impl Binder<'_> {
     /// The type `reference` names, checked to have every field `expected`'s record requires and mapped onto it; or the
     /// reference itself, reported, when it names no such type. In a union's trial it only reports.
     pub(super) fn to_type_value(&mut self, reference: ValueId, expected: TypeId, s: usize, sink: Sink) -> ValueId {
-        let (problems, type_id) = self.type_value_problems(reference, expected);
+        let (problems, type_id) = self.type_value_problems(reference, expected, s);
         let span = self.model.values[reference].span;
         if self.trials > 0 {
             for problem in problems {
@@ -280,6 +280,10 @@ impl Binder<'_> {
             if self.model.fixed_value(view, &wanted_name).is_some() {
                 continue;
             }
+            // A field of a base both share is the type's own, even where its own declaration hides it (8.1).
+            if self.model.fields[wanted].declaring_type.is_some_and(|d| self.model.is_or_extends(type_id, d)) {
+                continue;
+            }
             let wanted_type = self.model.fields[wanted].field_type;
             let Some(has) = self.model.field_of(type_id, &wanted_name) else {
                 if self.model.is_required(wanted) {
@@ -321,9 +325,9 @@ impl Binder<'_> {
         let type_name = self.model.record_name(type_id).to_string();
         let view_name = self.model.record_name(view).to_string();
         let mut affected = vec![type_id];
-        for (_, subtype) in &self.type_names {
-            if self.model.record(*subtype).is_some() && *subtype != type_id && self.model.is_or_extends(*subtype, type_id) {
-                affected.push(*subtype);
+        for subtype in self.all_types() {
+            if self.model.record(subtype).is_some() && subtype != type_id && self.model.is_or_extends(subtype, type_id) {
+                affected.push(subtype);
             }
         }
 

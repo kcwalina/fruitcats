@@ -370,6 +370,13 @@ impl RulesScope {
                 return true;
             }
         }
+        // A reference names a card or a zone by its record: 'summon(@dove)', 'cards(@Mist, all)'.
+        if let (Some(_), TypeKind::Named { name: t, .. }) = (model.record(from), &model.types[to].kind) {
+            let record = if t == "card" { "Card" } else if t == "zone" { "Zone" } else { "" };
+            if !record.is_empty() && model.chain(from).iter().any(|c| model.record_name(*c) == record) {
+                return true;
+            }
+        }
         matches!(&model.types[value].kind, TypeKind::Function { kind, .. } if kind == "condition") && is_named(model, target, "bool")
     }
 

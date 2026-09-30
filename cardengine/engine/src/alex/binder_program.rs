@@ -52,7 +52,7 @@ impl Binder<'_> {
             }
 
             let name = value_text(type_name, &bytes);
-            let declared = self.type_named(&name);
+            let declared = self.type_named(&name, s);
             let Some(record) = declared.map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) else {
                 let message = if declared.is_none() {
                     format!("Nothing declares a record type named '{}' to extend. The record types are: {}.", name, self.record_type_names())
@@ -83,7 +83,7 @@ impl Binder<'_> {
                 }
 
                 let text = value_text(member_name, &bytes);
-                if let Some(conflict) = self.extension_conflict(record, &text) {
+                if let Some(conflict) = self.extension_conflict(record, &text, s) {
                     self.error(s, conflict, member_name.span);
                     continue;
                 }
@@ -107,8 +107,13 @@ impl Binder<'_> {
         }
     }
 
-    /// Why `record` cannot gain an extension member called `name`, or none.
-    fn extension_conflict(&self, record: TypeId, name: &str) -> Option<String> {
+    /// Whether a document, not a schema, declares `field`.
+    fn is_document_field(&self, field: FieldId) -> bool {
+        self.model.fields[field].declaring_type.and_then(|t| self.type_states.get(&t)).is_some_and(|d| !self.states[*d].is_schema)
+    }
+
+    /// Why `record` cannot gain an extension member called `name` from document `s`, or none.
+    fn extension_conflict(&self, record: TypeId, name: &str, s: usize) -> Option<String> {
         let record_name = self.model.record_name(record);
         if let Some(field) = self.model.field_of(record, name) {
             let declaring = self.model.fields[field].declaring_type;
@@ -122,14 +127,19 @@ impl Binder<'_> {
             return Some(format!("'{}' already has an extension member '{}'{}.", record_name, name, from));
         }
 
-        for (_, subtype) in &self.type_names {
-            if self.model.record(*subtype).is_none() || *subtype == record || !self.model.is_or_extends(*subtype, record) {
+        for subtype in self.all_types() {
+            if self.model.record(subtype).is_none() || subtype == record || !self.model.is_or_extends(subtype, record) {
                 continue;
             }
-            if self.model.field_of(*subtype, name).is_some() || self.model.extension_member(*subtype, name).is_some() {
+            // A field a document's type declares hides a schema's member of its name (8.1).
+            let field = self.model.field_of(subtype, name);
+            if self.states[s].is_schema && field.is_some_and(|f| self.is_document_field(f)) {
+                continue;
+            }
+            if field.is_some() || self.model.extension_member(subtype, name).is_some() {
                 return Some(format!(
                     "'{}' extends '{}' and already has a member '{}', so '{}' cannot gain one with that name.",
-                    self.model.record_name(*subtype),
+                    self.model.record_name(subtype),
                     record_name,
                     name,
                     record_name

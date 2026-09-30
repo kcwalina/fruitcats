@@ -126,7 +126,7 @@ spells = [
 ]
 
 hero = [
-  HeroCards { types = [@Hero], second-face = back }
+  HeroCards { types = [@Hero], second-face = @Awakened }
   TwoFaces { cites = @rulebook.sections.heroes }
   AwakenOnStateCheck { cites = @rulebook.sections.heroes }
   AwakenedNeverReverts { cites = @rulebook.sections.heroes }

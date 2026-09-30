@@ -145,6 +145,8 @@ pub(super) struct Binder<'h> {
     pub states: Vec<DocumentState>,
     pub type_names: Vec<(String, TypeId)>,
     pub type_index: HashMap<String, TypeId>,
+    /// A document's types that hide a schema's of the same name, seen only from documents.
+    pub document_types: Vec<(String, TypeId)>,
     pub declared: Vec<Declared>,
     pub members: HashMap<String, Vec<Member>>,
     pub references: Vec<PendingReference>,
@@ -180,6 +182,7 @@ impl<'h> Binder<'h> {
             states: Vec::new(),
             type_names: Vec::new(),
             type_index: HashMap::new(),
+            document_types: Vec::new(),
             declared: Vec::new(),
             members: HashMap::new(),
             references: Vec::new(),
@@ -204,8 +207,19 @@ impl<'h> Binder<'h> {
         self.states[document].diagnostics.push(BoundDiagnostic::error(message, span));
     }
 
-    pub fn type_named(&self, name: &str) -> Option<TypeId> {
+    /// The type `name` names in document `s`: a document's own type hides a schema's, and a schema sees only the schemas'.
+    pub fn type_named(&self, name: &str, s: usize) -> Option<TypeId> {
+        if !self.states[s].is_schema {
+            if let Some((_, shadowing)) = self.document_types.iter().find(|(n, _)| n == name) {
+                return Some(*shadowing);
+            }
+        }
         self.type_index.get(name).copied()
+    }
+
+    /// Every declared type, then the ones documents declare to hide a schema's.
+    pub fn all_types(&self) -> Vec<TypeId> {
+        self.type_names.iter().chain(self.document_types.iter()).map(|(_, t)| *t).collect()
     }
 
     // ── the passes ───────────────────────────────────────────────────────────────────────────
@@ -362,15 +376,23 @@ impl<'h> Binder<'h> {
                 self.error(s, format!("'{}' is a built-in type and cannot be declared again.", text), name.span);
                 continue;
             }
-            if self.type_index.contains_key(&text) {
+            // A document may declare a type a schema has: its own hides the schema's, for the documents (8.1).
+            let shadows = !self.states[s].is_schema
+                && !self.document_types.iter().any(|(n, _)| *n == text)
+                && self.type_index.get(&text).and_then(|t| self.type_states.get(t)).map(|d| self.states[*d].is_schema).unwrap_or(false);
+            if self.type_index.contains_key(&text) && !shadows {
                 self.error(s, format!("A type named '{}' is already declared.", text), name.span);
                 continue;
             }
 
             let span = statement_span(statement);
             let type_id = self.model.add_type(type_kind, span);
-            self.type_index.insert(text.clone(), type_id);
-            self.type_names.push((text.clone(), type_id));
+            if shadows {
+                self.document_types.push((text.clone(), type_id));
+            } else {
+                self.type_index.insert(text.clone(), type_id);
+                self.type_names.push((text.clone(), type_id));
+            }
             self.states[s].types.push((text, type_id));
             self.type_states.insert(type_id, s);
             self.declared.push(Declared { type_id, document: s, statement: index });
@@ -519,7 +541,7 @@ impl<'h> Binder<'h> {
                     );
                 }
             } else {
-                let base_type = self.type_named(&base_text);
+                let base_type = self.type_named(&base_text, s);
                 match base_type.map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) {
                     Some(base_record) => self.model.record_mut(record).unwrap().base = Some(base_record),
                     None => {
@@ -578,7 +600,7 @@ impl<'h> Binder<'h> {
                 if is_builtin_name(&text) {
                     return self.model.add_type(TypeKind::Named { name: text, is_host: false }, span);
                 }
-                if let Some(declared) = self.type_named(&text) {
+                if let Some(declared) = self.type_named(&text, s) {
                     return declared;
                 }
                 if !name.is_type_name(&bytes) {
@@ -600,7 +622,7 @@ impl<'h> Binder<'h> {
             }
             syntax::Type::TypeOfType { record, .. } => {
                 let text = value_text(record, &bytes);
-                let declared = self.type_named(&text);
+                let declared = self.type_named(&text, s);
                 if let Some(resolved) = declared.map(|t| self.model.resolved(t)).filter(|t| self.model.record(*t).is_some()) {
                     return self.model.add_type(TypeKind::TypeOfType { record: resolved }, span);
                 }
@@ -776,7 +798,7 @@ impl<'h> Binder<'h> {
         }
         let name = &target_names[0];
         if let Some(t) = type_name {
-            if let Some(record) = self.declared_record_type(Some(&value_text(t, &bytes))) {
+            if let Some(record) = self.declared_record_type(Some(&value_text(t, &bytes)), s) {
                 if self.model.field_of(record, name).is_some() {
                     return None;
                 }
@@ -843,7 +865,7 @@ impl<'h> Binder<'h> {
     pub fn set_from_root(&mut self, s: usize, path: &[String], value: ValueId, target: TextSpan, span: TextSpan, is_text_table: bool) -> bool {
         let mut container = self.states[s].root;
         let root_type_name = self.model.object(container).unwrap().type_name.clone();
-        let mut container_type: Option<TypeId> = self.declared_record_type(root_type_name.as_deref());
+        let mut container_type: Option<TypeId> = self.declared_record_type(root_type_name.as_deref(), s);
         for i in 0..path.len().saturating_sub(1) {
             let name = &path[i];
             let child_type = self.child_type(container_type, name);
@@ -856,7 +878,7 @@ impl<'h> Binder<'h> {
                 }
                 container = existing;
                 let child_name = self.model.object(existing).unwrap().type_name.clone();
-                container_type = child_type.or_else(|| self.declared_record_type(child_name.as_deref()));
+                container_type = child_type.or_else(|| self.declared_record_type(child_name.as_deref(), s));
                 continue;
             }
 
@@ -1169,7 +1191,7 @@ impl<'h> Binder<'h> {
         };
 
         let name = value_text(enum_name, &bytes);
-        let declared = self.type_named(&name);
+        let declared = self.type_named(&name, s);
         let resolved = declared.map(|t| self.model.resolved(t)).filter(|t| matches!(self.model.types[*t].kind, TypeKind::Enum { .. }));
         let Some(enum_type) = resolved else {
             let message = if declared.is_none() { format!("Nothing declares an enum named '{}'.", name) } else { format!("'{}' is not an enum.", name) };
@@ -1500,7 +1522,7 @@ impl<'h> Binder<'h> {
 
     fn resolve_constructor(&mut self, object: ValueId, s: usize) -> Option<TypeId> {
         let name = self.model.object(object).unwrap().type_name.clone().unwrap();
-        if let Some(declared) = self.type_named(&name) {
+        if let Some(declared) = self.type_named(&name, s) {
             let resolved = self.model.resolved(declared);
             if self.model.record(resolved).is_some() {
                 return Some(resolved);
@@ -1581,7 +1603,7 @@ impl<'h> Binder<'h> {
 
         let type_id = resolved;
         if let ValueKind::Reference { .. } = self.model.values[value].kind {
-            if let Some(expected_type) = self.type_of_type_for(value, type_id) {
+            if let Some(expected_type) = self.type_of_type_for(value, type_id, s) {
                 return if self.reported_type_values.contains(&value) { value } else { self.to_type_value(value, expected_type, s, sink) };
             }
             return self.check_reference(value, type_id, s, sink);
@@ -2169,7 +2191,7 @@ impl<'h> Binder<'h> {
             let path = self.nameofs[i].path.clone();
             let document = self.nameofs[i].document;
             let span = self.nameofs[i].span;
-            if path.len() == 1 && self.type_index.contains_key(&path[0]) {
+            if path.len() == 1 && self.type_named(&path[0], document).is_some() {
                 continue;
             }
 
@@ -2198,8 +2220,8 @@ impl<'h> Binder<'h> {
 
     // ── helpers ──────────────────────────────────────────────────────────────────────────────
 
-    pub fn declared_record_type(&self, name: Option<&str>) -> Option<TypeId> {
-        let declared = self.type_named(name?)?;
+    pub fn declared_record_type(&self, name: Option<&str>, s: usize) -> Option<TypeId> {
+        let declared = self.type_named(name?, s)?;
         let resolved = self.model.resolved(declared);
         if self.model.record(resolved).is_some() { Some(resolved) } else { None }
     }

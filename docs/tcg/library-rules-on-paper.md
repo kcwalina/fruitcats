@@ -24,8 +24,16 @@ type UnitsEnterExhausted : UnitRule {}
 @UnitsEnterExhausted.on-moved = if event.to.role == board and event.object.is-unit { event.object.exhaust() }
 ```
 
-- `@UnitsEnterExhausted` names the rule's type, so the handler serves every game that lists the rule. A card's handler
-  names a card (`@klobuk.on-enter`); a rule's names its type.
+- `@UnitsEnterExhausted` names the rule's type, so the handler serves every game that lists the rule. This is the same
+  line a game's rules file writes for a card, where `@` names the card instead:
+
+  ```
+  // In Hello TCG's rules file: when Kłobuk enters play, its player draws a card.
+  @klobuk.on-enter = draw()
+
+  // In the units library: whenever something moves, a unit that moved onto the board is exhausted.
+  @UnitsEnterExhausted.on-moved = if event.to.role == board and event.object.is-unit { event.object.exhaust() }
+  ```
 - `on-moved` is the slot of the `Moved` event: the core raises one after every move. Each event gives every rule type
   a slot named after it.
 - Inside the handler, `rule` is the rule as the game lists it (`rule.keyword` is Hello TCG's `@Guardian`) and `event`

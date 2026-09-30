@@ -287,6 +287,19 @@ impl<'o> Dumper<'o> {
                 self.node("OpenInstance");
                 self.token(type_name);
             }
+            Value::Construction { type_name, open, arguments, close } => {
+                self.node("Construction");
+                self.token(type_name);
+                self.token(open);
+                self.separated(arguments, |dumper, argument| {
+                    dumper.node("ValueArgument");
+                    dumper.optional(&argument.name);
+                    dumper.optional(&argument.colon);
+                    dumper.value(&argument.value);
+                    dumper.end();
+                });
+                self.token(close);
+            }
             Value::List { open, items, close } => {
                 self.node("List");
                 self.token(open);

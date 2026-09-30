@@ -332,6 +332,9 @@ pub enum Value {
     Record { type_name: Token, open: Token, fields: Separated<FieldValue>, close: Token },
     /// A type name alone: an open instance.
     OpenInstance { type_name: Token },
+    /// `Type(value, name: value)`: a closed instance written as a constructor call. Unnamed arguments fill the type's
+    /// fields in the order it declares them; named ones follow.
+    Construction { type_name: Token, open: Token, arguments: Separated<ValueArgument>, close: Token },
     List { open: Token, items: Separated<Value>, close: Token },
     Map { open: Token, entries: Separated<MapEntry>, close: Token },
     Reference { at: Token, path: Path },
@@ -340,6 +343,14 @@ pub enum Value {
     /// One body statement as the value of `@card.slot = `: `@klobuk.on-enter = draw()`. It is bound as a declaration of
     /// the slot's kind, with no name, whose body is this statement.
     InlineStatement { statement: Box<BodyStatement> },
+}
+
+/// One argument of a construction: `value`, or `name: value`.
+#[derive(Clone, Debug)]
+pub struct ValueArgument {
+    pub name: Option<Token>,
+    pub colon: Option<Token>,
+    pub value: Value,
 }
 
 #[derive(Clone, Debug)]

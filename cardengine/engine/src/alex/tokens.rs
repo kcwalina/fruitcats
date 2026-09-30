@@ -138,6 +138,16 @@ pub fn of_value<'t>(value: &'t Value, tokens: &mut Vec<&'t Token>) {
             tokens.push(close);
         }
         Value::OpenInstance { type_name } => tokens.push(type_name),
+        Value::Construction { type_name, open, arguments, close } => {
+            tokens.push(type_name);
+            tokens.push(open);
+            of_separated(arguments, tokens, |argument, tokens| {
+                push_optional(&argument.name, tokens);
+                push_optional(&argument.colon, tokens);
+                of_value(&argument.value, tokens);
+            });
+            tokens.push(close);
+        }
         Value::List { open, items, close } => {
             tokens.push(open);
             of_separated(items, tokens, of_value);

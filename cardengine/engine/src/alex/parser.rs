@@ -269,6 +269,7 @@ belong to a program document.",
         } else if self.current_is_type_name()
             && self.peek(1).kind != TokenKind::OpenBrace
             && self.peek(1).kind != TokenKind::Dot
+            && !(self.peek(1).kind == TokenKind::OpenParen && self.current().touches_next(self.peek(1)))
         {
             Value::OpenInstance { type_name: self.take() }
         } else {
@@ -1139,6 +1140,10 @@ it reads ('power: +card.bonus').",
                 let type_name = self.take();
                 return self.parse_record(type_name);
             }
+            if next_kind == TokenKind::OpenParen && self.current().touches_next(self.peek(1)) {
+                let type_name = self.take();
+                return self.parse_construction(type_name);
+            }
             if next_kind == TokenKind::Dot {
                 let enum_name = self.take();
                 let dot = self.take();
@@ -1164,6 +1169,51 @@ it reads ('power: +card.bonus').",
         let fields = self.parse_separated(TokenKind::CloseBrace, Parser::parse_field_value);
         let close = self.expect_close(TokenKind::CloseBrace, &open, "'{'", "'}'");
         Value::Record { type_name, open, fields, close }
+    }
+
+    fn parse_construction(&mut self, type_name: Token) -> Value {
+        let open = self.take();
+        self.parenthesis_depth += 1;
+        let mut elements: Vec<Element<ValueArgument>> = Vec::new();
+        let mut named = false;
+        while self.kind() != TokenKind::CloseParen
+            && self.kind() != TokenKind::CloseBrace
+            && self.kind() != TokenKind::CloseBracket
+            && self.kind() != TokenKind::TextTable
+            && !self.at_end()
+        {
+            let argument = if self.kind() == TokenKind::Identifier && !self.current_is_type_name() && self.peek(1).kind == TokenKind::Colon {
+                named = true;
+                let name = self.take();
+                let colon = self.take();
+                let value = self.parse_value();
+                ValueArgument { name: Some(name), colon: Some(colon), value }
+            } else {
+                let value = self.parse_value();
+                if named {
+                    self.error(
+                        super::binder::value_span(&value),
+                        "An argument without a name comes before the named ones: 'Damage(card.damage, target: ...)'.",
+                    );
+                }
+                ValueArgument { name: None, colon: None, value }
+            };
+            elements.push(Element::Item(argument));
+            if self.kind() == TokenKind::Comma {
+                elements.push(Element::Separator(self.take()));
+                continue;
+            }
+            if self.kind() == TokenKind::Identifier && self.current().starts_line {
+                continue;
+            }
+            if self.kind() != TokenKind::CloseParen {
+                self.error(self.current().span, "Expected ',' or ')' after an argument.");
+            }
+            break;
+        }
+        self.parenthesis_depth -= 1;
+        let close = self.expect_close(TokenKind::CloseParen, &open, "'('", "')'");
+        Value::Construction { type_name, open, arguments: Separated { elements }, close }
     }
 
     fn parse_field_value(&mut self) -> Option<FieldValue> {

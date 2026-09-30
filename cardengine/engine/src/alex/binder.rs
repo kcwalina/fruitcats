@@ -979,6 +979,29 @@ impl<'h> Binder<'h> {
                 }
                 result
             }
+            syntax::Value::Construction { type_name, arguments, .. } => {
+                let name = if type_name.is_missing { None } else { Some(value_text(type_name, &bytes)) };
+                let result = self.model.add_value(ValueKind::Object(Object::new(false, name.clone())), span);
+                self.closed_at.insert(result, span);
+                for (position, argument) in items(arguments).into_iter().enumerate() {
+                    // An unnamed argument is named by its position until the record's type says which field it fills.
+                    let (field_name, name_span) = match &argument.name {
+                        Some(n) => (value_text(n, &bytes), n.span),
+                        None => (format!("{}{}", POSITIONAL, position), value_span(&argument.value)),
+                    };
+                    let value = self.build_value(&argument.value, s, false);
+                    let argument_span = value_span(&argument.value);
+                    let added = self.model.try_add(
+                        result,
+                        Property { name: field_name.clone(), value, name_span, span: argument_span, is_default: false },
+                    );
+                    if !added {
+                        let what = name.clone().unwrap_or_else(|| "record".to_string());
+                        self.error(s, format!("'{}' is written twice in this {}.", field_name, what), name_span);
+                    }
+                }
+                result
+            }
             syntax::Value::OpenInstance { type_name } => {
                 let name = value_text(type_name, &bytes);
                 if statement_level {
@@ -1500,6 +1523,42 @@ impl<'h> Binder<'h> {
 
     // ── constructors ─────────────────────────────────────────────────────────────────────────
 
+    /// Names a construction's unnamed arguments: they fill the type's fields in the order it declares them, its own
+    /// first, then its base's, skipping the fields a named argument or the type itself already sets.
+    fn name_positional_arguments(&mut self, value: ValueId, record: TypeId, s: usize) {
+        let positional: Vec<usize> = self.model.object(value).unwrap().properties.iter().enumerate().filter(|(_, p)| p.name.starts_with(POSITIONAL)).map(|(i, _)| i).collect();
+        if positional.is_empty() {
+            return;
+        }
+        let taken: Vec<String> = self.model.object(value).unwrap().properties.iter().filter(|p| !p.name.starts_with(POSITIONAL)).map(|p| p.name.clone()).collect();
+        let mut order: Vec<FieldId> = Vec::new();
+        for t in self.model.chain(record) {
+            let Some(r) = self.model.record(t) else { continue };
+            for f in &r.own_fields {
+                let field_name = &self.model.fields[*f].name;
+                if !order.iter().any(|o| self.model.fields[*o].name == *field_name) {
+                    order.push(*f);
+                }
+            }
+        }
+        let open: Vec<String> = order
+            .iter()
+            .map(|f| self.model.fields[*f].name.clone())
+            .filter(|n| !taken.contains(n) && self.model.fixed_by(record, n).is_none())
+            .collect();
+        let type_name = self.model.record_name(record).to_string();
+        for (k, index) in positional.into_iter().enumerate() {
+            match open.get(k) {
+                Some(field_name) => self.model.object_mut(value).unwrap().properties[index].name = field_name.clone(),
+                None => {
+                    let span = self.model.object(value).unwrap().properties[index].name_span;
+                    let message = format!("A {} has no field left for this argument; name it ('field: value'). Its fields are: {}.", type_name, self.model.field_list(record));
+                    self.error(s, message, span);
+                }
+            }
+        }
+    }
+
     fn resolve_constructors(&mut self, value: ValueId, s: usize) {
         match &self.model.values[value].kind {
             ValueKind::Object(object) => {
@@ -1508,6 +1567,9 @@ impl<'h> Binder<'h> {
                 if needs {
                     let resolved = self.resolve_constructor(value, s);
                     self.model.object_mut(value).unwrap().record_type = resolved;
+                    if let Some(record) = resolved {
+                        self.name_positional_arguments(value, record, s);
+                    }
                 }
                 for child in children {
                     self.resolve_constructors(child, s);
@@ -2355,6 +2417,9 @@ pub(super) fn statement_span(statement: &Statement) -> TextSpan {
     tokens::of_statement(statement, &mut list);
     tokens::span(&list)
 }
+
+/// What an unnamed argument of a construction is called until its record's type names it: `\u{1}0`, `\u{1}1`.
+const POSITIONAL: &str = "\u{1}";
 
 pub(super) fn value_span(value: &syntax::Value) -> TextSpan {
     let mut list = Vec::new();

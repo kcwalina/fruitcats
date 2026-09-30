@@ -774,7 +774,7 @@ uses = [
 Tell the libraries what your card types are: your Creatures are what the `units` library calls
 unit cards (cards that stay in play with power and health), your Charms are what the `spells`
 library calls spell cards, and your Heroes are the `heroes` library's hero cards, whose second
-face is their `back`. `kardix check` confirms that your types have the fields each library needs.
+face is an Awakened (the card in their `back`). `kardix check` confirms that your types have the fields each library needs.
 
 ```
 units = [
@@ -786,7 +786,7 @@ spells = [
 ]
 
 hero = [
-  HeroCards { types = [@Hero], second-face = back }
+  HeroCards { types = [@Hero], second-face = @Awakened }
 ]
 ```
 
@@ -892,7 +892,7 @@ units = [
 ]
 
 hero = [
-  HeroCards { types = [@Hero], second-face = back }
+  HeroCards { types = [@Hero], second-face = @Awakened }
   TwoFaces { cites = @rulebook.sections.heroes }
   AwakenOnStateCheck { cites = @rulebook.sections.heroes }
   AwakenedNeverReverts { cites = @rulebook.sections.heroes }
@@ -1460,7 +1460,7 @@ spells = [
 ]
 
 hero = [
-  HeroCards { types = [@Hero], second-face = back }
+  HeroCards { types = [@Hero], second-face = @Awakened }
   TwoFaces { cites = @rulebook.sections.heroes }
   AwakenOnStateCheck { cites = @rulebook.sections.heroes }
   AwakenedNeverReverts { cites = @rulebook.sections.heroes }

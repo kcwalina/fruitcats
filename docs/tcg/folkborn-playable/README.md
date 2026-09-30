@@ -86,25 +86,27 @@ Cards whose text is only keywords ("Guardian. Fierce.") need no handler: the gam
 
 ## What the checker says
 
-Laid over `games/folkborn/`, the draft gets 115 errors (2026-09-29, after gaps 8 and 17 to 19), all from gaps 1
-to 13 below. Many are repeats: a missing slot is reported on every card that uses it. Before its handlers were written
+Laid over `games/folkborn/`, the draft gets 49 errors (2026-09-29, after gaps 1 to 3, 5, 8 to 10 and 17 to 19),
+all from gaps 4, 6, 7, 11 to 14 below; it got 115 before the libraries' gaps were closed. The check also reports 6
+errors in the Flower Souls prototype (`games/folkborn/prototypes/`), whose rules aren't written yet; they aren't
+counted here. Many are repeats: a missing slot is reported on every card that uses it. Before its handlers were written
 inline it got 147: a named handler whose slot is missing is also reported on its own, since, attached to nothing,
-it can't see any card's constants. Written inline, it isn't checked until its slot exists, so closing gaps 2 to 4
-will show some errors that are hidden today (such as `grant(pearl-tears)`, gap 6). "Folkborn" in the Fix column
+it can't see any card's constants. Written inline, it isn't checked until its slot exists, so closing gap 4 will
+show some errors that are hidden today. "Folkborn" in the Fix column
 means the fix is in Folkborn's own files; the other fixes are in the platform.
 
 | # | Gap | Where it shows | Fix |
 |---|---|---|---|
-| 1 | The libraries declare `Rarity` and `Card.rarity` (common), and `Family` and `Card.family` (families). Folkborn prints its own, so the names clash. Hello TCG has the same error. | 28 errors: 4 here, and each set's `family` fails | Library: rarity and families are what cards print, not rules, so they belong to the game. The libraries drop them or give way to a game's own. |
-| 2 | A library Hero has `face1`/`face2` records. Folkborn and Hello TCG print a Hero with a `back`, and put `exhaust`, `awaken` and `static` on the Hero and on its back. | 31 errors, and more in handlers that can't see the Hero's constants | Library: `HeroCards { second-face = back }`, with the slots on the Hero card and on its second face. |
-| 3 | A Talisman must carry `attached: Grant` as data, so its `static` slot is never reached. | 14 errors, and more in handlers | Library: `attached` becomes optional. What a Talisman grants is printed text, so it is a static handler reading the card's constants. |
+| 1 | The libraries declare `Rarity` and `Card.rarity` (common), and `Family` and `Card.family` (families). Folkborn prints its own, so the names clash. Hello TCG has the same error. | 28 errors: 4 here, and each set's `family` fails | Done. Alex (both implementations, C# Alex 0.11.0): a game's own type hides a library's of the same name for the game's documents, and a field its type declares hides the member a library's extension gives the base; the libraries keep meaning theirs. The libraries still declare `Rarity`, `Family`, `Card.rarity` and `Card.family` for games that want them. |
+| 2 | A library Hero has `face1`/`face2` records. Folkborn and Hello TCG print a Hero with a `back`, and put `exhaust`, `awaken` and `static` on the Hero and on its back. | 31 errors, and more in handlers that can't see the Hero's constants | Done, differently from the proposal: `HeroCards { types = [@Hero], second-face = @Awakened }` names the back's type, not the field (`second-face = back`), since a field's name isn't a value Alex has. `face1` is optional; the Hero card and the `HeroFaceCard` its back is mapped onto have `exhaust`, `awaken` and `static`, and a handler on the back reads the back's constants. |
+| 3 | A Talisman must carry `attached: Grant` as data, so its `static` slot is never reached. | 14 errors, and more in handlers | Done. Library: `attached: Grant?`. A Talisman's grant is a static handler reading the card's constants. |
 | 4 | Keywords have no handler slots. Feather Coat, Rain-Fed, Pearl Tears and Stone for Stone are behaviour on a keyword. | 4 errors | Core: a keyword takes the slots of the cards that carry it, and a unit with it runs its handlers. |
-| 5 | No "damaged and survives" moment. | hidden behind gap 4 | Library (units): an `on-survives-damage` slot. |
+| 5 | No "damaged and survives" moment. | hidden behind gap 4 | Done. Library (units): `on-survives-damage` on units, with the ability kind `OnSurvivesDamage`. On keywords with gap 4. |
 | 6 | A keyword word in a handler (`grant(pearl-tears)`) must be one of the game's keywords. A set's own keywords aren't found. | 5 errors | Checker: look in the game's sets too. |
 | 7 | "Once per round" can't be said in a handler (Schaibar, The Roadside Alux). | 6 errors | Core: a `once-per-round { ... }` block. The alternative, `abilities = [...]` on the card, can't carry "Fierce." in the printed text. |
 | 8 | A rules file is for one set; handlers that several sets share have nowhere to go. | done | Core: rules documents no longer say `for = @set` (the owner, 2026-09-29): a rules file is part of the game by being in its folder, like a cards file, and its handlers name the cards they attach to. `for` stays as a deprecated field with no effect. |
-| 9 | No way to count cards in a zone ("5 or more Fabled and Creatures are in the Mist"). | hidden behind gap 2: the count is written on the Heroes' Awaken slots | Library (common): a `cards(zone, players, filters)` selector and a `unit-card` filter. |
-| 10 | `summon` takes a `Token` record; Folkborn's Dove is a card of a token type. | 1 error | Library: `summon` takes a card of a token type. |
+| 9 | No way to count cards in a zone ("5 or more Fabled and Creatures are in the Mist"). | hidden behind gap 2: the count is written on the Heroes' Awaken slots | Done. `cards(zone, players, filters)` in `common`, and the `unit-card` filter in `units`, since it is about `UnitCard`. |
+| 10 | `summon` takes a `Token` record; Folkborn's Dove is a card of a token type. | 1 error | Done. `summon` takes a card: a `Token`, or a card of the game's own token type (`summon(@dove)`). A reference to a card or a zone now stands where a handler's `card` or `zone` parameter is. |
 | 11 | A card whose text is only keywords must have a handler. | 27 errors | Checker: text made only of the card's keywords needs none. |
 | 12 | A card's constants share names with the game's: Aluxito's `candles` makes the game's `@candles` ambiguous. | 1 error | Core: a card's constants belong to the card, not the game's namespace. |
 | 13 | Mochi's set and its one card are both named `mochi`, so `@mochi.on-enter` names the set. | 3 errors | Folkborn: give the card its own key (`mochi-the-sweet-spirit`). |
@@ -130,7 +132,7 @@ cargo run --release --manifest-path cardengine/engine/Cargo.toml --example check
 
 ## Next
 
-Close gaps 1 to 13 in the core and the libraries, which Hello TCG needs too (gaps 1 and 2 are among its
-errors). Then Folkborn checks clean, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
+Close the rest of gaps 1 to 13 in the core and Folkborn's files (Hello TCG, which needed gaps 1 and 2, checks with
+no errors). Then Folkborn checks clean, and this folder moves into `games/folkborn/`. Gaps 14 to 16 are about how
 the runtime behaves, so they are settled when it is built. The runtime starts with Hello TCG, then plays Folkborn,
 compared game for game with today's engine.

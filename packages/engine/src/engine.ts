@@ -1,45 +1,55 @@
-// The Fruitcats rules engine: a deterministic state machine that implements docs/rulebook.md §13.
+// The Folkborn rules engine: a deterministic state machine that implements docs/rulebook.md §13.
 //
 //   registerSet(domowiki);                       // cards come from outside: see content/index.ts
 //   const s = createGame({ decks: ['domowiki', 'pari'], seed: 42 });
-//   while (!s.winner) apply(s, pickOneOf(legalActions(s)));
+//   for (let seat = nextSeat(s); seat !== null; seat = nextSeat(s)) apply(s, pickOneOf(legalActions(s, seat)), seat);
 //
-// `apply` mutates the state in place (clone first with `structuredClone` to keep history). All
-// randomness comes from the seed stored in the state, so a seed plus the action list replays a game.
+// A round has three parts. In the Start, players ready their units, get their income and draw. In the Muster both
+// players build at once and in secret: they play units into their six lanes, move them, set Ambushes, aim Charms at
+// the enemy's lanes and level up their Hero, each until they are Ready. Then the Clash plays itself: the units fight
+// in bouts until one side has none standing, the loser blows out Candles for the winner's survivors, and the board
+// stands up again for the next round. Nothing fielded is lost in a Clash.
 //
-// The engine knows the rules and a fixed vocabulary of card abilities (triggers, conditions, targets,
-// actions: src/types.ts), never a particular card. Cards are data; what data can't express, a set's
-// plugin adds as named conditions and actions (src/cards.ts, Plugin).
+// `apply` mutates the state in place (clone first with `structuredClone` to keep history). All randomness comes from
+// the seed stored in the state, so a seed plus the list of (seat, action) replays a game.
+//
+// The engine knows the rules and a fixed vocabulary of card abilities (triggers, conditions, targets, actions:
+// src/types.ts), never a particular card. Cards are data; what data can't express, a set's plugin adds as named
+// conditions and actions (src/cards.ts, Plugin).
 
 import TERMS from './terms.json';
 import {
   AURA_HEROES, AURA_SOURCES, CARDS, MECHANICS, PLUGINS, abilitiesOf, abilityAt, deckCardIds, findAbility, isUnitCard, keywords, keywordsFrom,
   resolveDeck, setConditionEvaluator, type DeckList, type Keywords, type PluginContext,
 } from './cards';
+import { rulesWith } from './rules';
 import type {
-  Ability, AbilityRef, Act, Action, CardInst, Condition, GameEvent, GameState, PlayerId, PlayerState, Prompt, Step,
-  Target, TargetSel, Unit, UnitFilter, Window,
+  Ability, AbilityRef, Act, Action, CardInst, Condition, GameEvent, GameState, Pending, PlayerId, PlayerState, Rules, Step,
+  Target, TargetSel, Unit, UnitFilter,
 } from './types';
 
 /**
  * Bump when a change to the rules, the card data or the shape of GameState means a game saved by an
  * older build can no longer be continued (the web client throws such saves away).
  * 2: cards as data (unit counters and buffKeywords instead of ripe / buffSneaky / buffGuardian).
+ * 3: the Muster and the Clash (Folkborn 0.4): Offerings are money, units fight on their own.
  */
-export const RULES_VERSION = 2;
+export const RULES_VERSION = 3;
 
 export const LIVES = 9;
 export const DECK_SIZE = 50;
 export const STARTING_HAND = 6;
-export const SETUP_TREATS = 2;
 export const DRAW_PER_ROUND = 2;
-export const YARD_LIMIT = 6;
+/** Lanes on each side of the board: the most units a player can field. */
+export const LANES = 6;
+export const YARD_LIMIT = LANES;
 export const HAND_LIMIT = 10;
 /** The most cards a mulligan may swap (the owner's call, 2026-09-27: swapping the whole hand is not a mulligan). */
 export const MULLIGAN_MAX = 3;
-export const MAX_ROUNDS = 40;
 /** Triggered abilities allowed in a row before the engine stops the chain (two cards triggering each other). */
 export const TRIGGER_CHAIN_LIMIT = 200;
+/** What a card nobody may see is called in a view (view.ts) and in the opponent's snapshot. */
+export const HIDDEN = '?';
 
 export const other = (p: PlayerId): PlayerId => (1 - p) as PlayerId;
 export const cardName = (id: string): string => CARDS[id]?.name.split(',')[0] ?? id;
@@ -68,41 +78,36 @@ export interface GameOptions {
   decks: [string | DeckList, string | DeckList];
   names?: [string, string];
   seed?: number;
-  /** Force the starting Yarn Ball holder (random otherwise). */
+  /** Force the starting Lantern holder (random otherwise). */
   firstPlayer?: PlayerId;
   /**
-   * Lives each player starts with (1 to 9; 9 when left out). A player may give some up as a handicap, so a friend who
-   * is new to the game has a fairer match. The Lives given up stay in the deck.
+   * Candles each player starts with (1 to 9; 9 when left out). A player may give some up as a handicap, so a friend
+   * who is new to the game has a fairer match. The Candles given up stay in the deck.
    */
   lives?: [number, number];
-  /**
-   * Online play: always ask the defender about a Pounce, and a player who loses a Life about Lucky, even with nothing
-   * to play. Otherwise the pause while they decide tells the other player they hold a Pounce, or that the Life was
-   * Lucky (future-plans.md, Pounce timing leak). Nothing to play means the only choice is to let it happen.
-   */
-  alwaysAsk?: boolean;
+  /** Other numbers for the rules (a playtest trying them). */
+  rules?: Partial<Rules>;
 }
 
 export function createGame(options: GameOptions): GameState {
+  const rules = rulesWith(options.rules);
   const s: GameState = {
     seed: (options.seed ?? Math.floor(Math.random() * 2 ** 31)) | 0,
     round: 1,
     yarn: 0,
-    yarnTaken: null,
-    active: 0,
-    passes: 0,
     players: [] as unknown as [PlayerState, PlayerState],
     prompt: null,
     queue: [],
-    window: null,
     winner: null,
     nextUid: 1,
     log: [],
     events: [],
     actions: 0,
     startingYarn: 0,
+    phase: 'setup',
+    clock: [0, 0],
+    rules,
   };
-  if (options.alwaysAsk) s.alwaysAsk = true;
   for (const p of [0, 1] as PlayerId[]) {
     const list = resolveDeck(options.decks[p]);
     // A deck kept from before a set was taken out of the game (the Starter Box) can't be played: refuse it now, not
@@ -120,31 +125,26 @@ export function createGame(options: GameOptions): GameState {
     s.players[p] = {
       name: options.names?.[p] ?? `Player ${p + 1}`,
       deckName: list.name,
-      hero: { id: list.hero, grown: false, exhausted: false },
-      deck, hand, lives, pantry: [], yard: [], compost: [], playedThisRound: 0,
+      hero: { id: list.hero, grown: false, exhausted: false, level: rules.levelStart },
+      deck, hand, lives, offerings: rules.startOfferings, yard: [], compost: [], playedThisRound: 0,
     };
     if (startingLives < LIVES) s.players[p].handicap = LIVES - startingLives;
   }
   s.yarn = options.firstPlayer ?? (random(s) < 0.5 ? 0 : 1);
   s.startingYarn = s.yarn;
-  s.active = s.yarn;
   log(s, `${s.players[s.yarn].name} starts with the ${TERMS.lantern}.`);
-  s.queue.push(
-    { t: 'mulliganPrompt', p: 0 }, { t: 'mulliganPrompt', p: 1 },
-    { t: 'setupPlantPrompt', p: 0 }, { t: 'setupPlantPrompt', p: 1 },
-    { t: 'beginActions' },
-  );
+  s.queue.push({ t: 'mulliganPrompt', p: 0 }, { t: 'mulliganPrompt', p: 1 }, { t: 'beginMuster' });
   run(s);
   return s;
 }
 
 function log(s: GameState, text: string, player?: PlayerId): void {
-  s.log.push({ round: s.round, player, text });
+  s.log.push(s.acting === undefined ? { round: s.round, player, text } : { round: s.round, player, text, secret: s.acting });
 }
 
-/** Record what happened for the screen to animate (`??=`: games saved before events existed). */
+/** Record what happened for the screen. During the Muster it is the acting player's secret until the Clash. */
 function emit(s: GameState, event: GameEvent): void {
-  (s.events ??= []).push(event);
+  (s.events ??= []).push(s.acting === undefined ? event : { ...event, secret: s.acting });
 }
 
 // ── Queries: units ───────────────────────────────────────────────────────────────────────────────
@@ -157,10 +157,25 @@ export function findUnit(s: GameState, uid: number): { unit: Unit; owner: Player
   return null;
 }
 
+/** The unit standing in a player's lane, if any. */
+export function laneUnit(s: GameState, p: PlayerId, lane: number): Unit | undefined {
+  return s.players[p].yard.find((u) => u.slot === lane);
+}
+
+/** Lanes nobody of the player's stands in, nor lies in (a unit that went down keeps its lane until the Clash ends). */
+export function freeLanes(s: GameState, p: PlayerId): number[] {
+  const pl = s.players[p];
+  const taken = new Set([...pl.yard, ...(pl.fallen ?? [])].map((u) => u.slot));
+  return Array.from({ length: LANES }, (_, i) => i).filter((i) => !taken.has(i));
+}
+
+/** Units the player has on the board, standing or down: what the Hero's Level limits. */
+export const unitCount = (s: GameState, p: PlayerId): number => s.players[p].yard.length + (s.players[p].fallen?.length ?? 0);
+
 interface Grant { power: number; health: number; keywords: string[] }
 const NO_GRANT: Readonly<Grant> = { power: 0, health: 0, keywords: [] };
 
-/** What a Toy gives the unit it's attached to. */
+/** What a Talisman gives the unit it's attached to. */
 function toyGrant(u: Unit): Grant {
   if (!u.toy) return NO_GRANT;
   const g: Grant = { power: 0, health: 0, keywords: [] };
@@ -173,7 +188,7 @@ function toyGrant(u: Unit): Grant {
   return g;
 }
 
-/** A unit's keywords before any aura: printed, from its Toy, and granted this round. */
+/** A unit's keywords before any aura: printed, from its Talisman, and granted this round. */
 function baseKeywordList(u: Unit): string[] {
   return [...keywords(u.id).all, ...toyGrant(u).keywords, ...(u.buffKeywords ?? [])];
 }
@@ -210,7 +225,7 @@ function auraGrant(s: GameState, u: Unit): Grant {
         if (!st?.grant || st.to === 'attached') continue;
         if (st.to === 'self' || st.to === undefined) {
           if (src.uid !== u.uid) continue;
-        } else if (!matchesUnit(s, q, u, found.owner, { each: st.to.each, other: st.to.other, filter: st.to.filter }, src.uid, true)) {
+        } else if (!matchesUnit(q, u, found.owner, { each: st.to.each, other: st.to.other, filter: st.to.filter }, src.uid)) {
           continue;
         }
         if (st.while !== undefined && !evaluateCondition(s, q, st.while)) continue;
@@ -221,7 +236,7 @@ function auraGrant(s: GameState, u: Unit): Grant {
   return g;
 }
 
-/** Power from a unit's counters (Rain-Fed's rain, Heat), as each mechanic prices a point of it. */
+/** Power from a unit's counters (Rain-Fed's rain), as each mechanic prices a point of it. */
 function counterBonus(u: Unit): { power: number; health: number } {
   const bonus = { power: 0, health: 0 };
   if (!u.counters) return bonus;
@@ -236,25 +251,25 @@ function counterBonus(u: Unit): { power: number; health: number } {
 }
 
 /**
- * A unit's Power: its card's, plus its Toy, counters and this round's buffs, plus auras in play.
- * Pass the game state to include auras (Ancho's +1 for Heat units); without it they're left out.
+ * A unit's Power: its card's (once per star), plus its Talisman, counters and this round's buffs, plus auras in play.
+ * Pass the game state to include auras; without it they're left out.
  */
 export function unitPower(u: Unit, s?: GameState): number {
   const aura = s ? auraGrant(s, u).power : 0;
-  return Math.max(0, (CARDS[u.id]?.power ?? 0) + toyGrant(u).power + counterBonus(u).power + u.buffPower + aura);
+  return Math.max(0, (CARDS[u.id]?.power ?? 0) * (u.stars ?? 1) + toyGrant(u).power + counterBonus(u).power + u.buffPower + aura);
 }
 
 export function unitHealth(u: Unit, s?: GameState): number {
   const aura = s ? auraGrant(s, u).health : 0;
-  return (CARDS[u.id]?.health ?? 0) + toyGrant(u).health + counterBonus(u).health + aura;
+  return (CARDS[u.id]?.health ?? 0) * (u.stars ?? 1) + toyGrant(u).health + counterBonus(u).health + (u.buffHealth ?? 0) + aura;
 }
 
 /**
- * Everything a unit is right now: printed keywords, its Toy's, this round's, and auras (with a state).
+ * Everything a unit is right now: printed keywords, its Talisman's, this round's, and auras (with a state).
  * `thisRound: false` leaves out this round's buffs (the bot values a unit by what lasts).
  */
 export function unitKeywords(u: Unit, s?: GameState, thisRound = true): Keywords {
-  // Most units: printed keywords only (no Toy, no buff this round, no aura in play), already cached.
+  // Most units: printed keywords only (no Talisman, no buff this round, no aura in play), already cached.
   if (!u.toy && !(thisRound && u.buffKeywords?.length) && !(s && aurasInPlay(s))) return keywords(u.id);
   const lasting = [...keywords(u.id).all, ...toyGrant(u).keywords];
   const list = [...lasting, ...(thisRound ? u.buffKeywords ?? [] : []), ...(s ? auraGrant(s, u).keywords : [])];
@@ -264,24 +279,37 @@ export function unitKeywords(u: Unit, s?: GameState, thisRound = true): Keywords
 export const isGuardian = (u: Unit, s?: GameState): boolean => unitKeywords(u, s).guardian;
 export const isSneaky = (u: Unit, s?: GameState): boolean => unitKeywords(u, s).sneaky;
 
+/**
+ * Where a unit stands in the enemy's order of attack: Guardians (3) are hit first, then plain units (2), then
+ * Elusive ones (1), then Lures (0). Sneaky attackers go the other way round.
+ */
+export function targetRank(u: Unit, s?: GameState): number {
+  const k = unitKeywords(u, s);
+  if (k.guardian) return 3;
+  if (k.lure) return 0;
+  if (k.elusive) return 1;
+  return 2;
+}
+
 export const heroSide = (s: GameState, p: PlayerId) => {
   const hero = s.players[p].hero;
   return hero.grown ? CARDS[hero.id].bigCat! : CARDS[hero.id].kitten!;
 };
 
-export const readyTreats = (s: GameState, p: PlayerId): number =>
-  s.players[p].pantry.filter((t) => !t.exhausted).length;
-
-function attackerPower(s: GameState, attacker: Target): number {
-  if (attacker.kind === 'hero') return heroSide(s, attacker.player).power ?? 0;
-  const found = findUnit(s, attacker.uid);
-  return found ? unitPower(found.unit, s) : 0;
+/** What the next Level costs this player, or null at the top. */
+export function levelCost(s: GameState, p: PlayerId): number | null {
+  const level = s.players[p].hero.level;
+  return level >= s.rules.levelMax ? null : s.rules.levelCost[level] ?? null;
 }
 
-function attackerFierce(s: GameState, attacker: Target): boolean {
-  if (attacker.kind === 'hero') return !!heroSide(s, attacker.player).keywords?.includes('Fierce');
-  const found = findUnit(s, attacker.uid);
-  return !!found && unitKeywords(found.unit, s).fierce;
+/** The interest a pool of Offerings earns at the Start. */
+export const interestOn = (s: GameState, offerings: number): number =>
+  Math.min(s.rules.interestMax, Math.floor(offerings / s.rules.interestPer));
+
+/** This round's base income (round 1 has none: the starting Offerings stand for it). */
+export function baseIncome(s: GameState, round = s.round): number {
+  const table = s.rules.income;
+  return round <= 1 ? 0 : table[Math.min(round - 2, table.length - 1)] ?? 0;
 }
 
 // ── Conditions ───────────────────────────────────────────────────────────────────────────────────
@@ -307,11 +335,12 @@ export function evaluateCondition(s: GameState, p: PlayerId, c: Condition, ctx: 
   const me = s.players[p];
   if ('not' in c) return !evaluateCondition(s, p, c.not, ctx);
   if ('playedThisRound' in c) return (me.playedThisRound ?? 0) >= c.playedThisRound.atLeast;
-  if ('treats' in c) return me.pantry.length >= c.treats.atLeast;
+  if ('treats' in c) return me.offerings >= c.treats.atLeast;
   if ('lives' in c) return me.lives.length <= c.lives.atMost;
   if ('opponentLives' in c) return s.players[other(p)].lives.length <= c.opponentLives.atMost;
   if ('yardHas' in c) return me.yard.some((u) => unitKeywords(u, s).all.includes(c.yardHas.keyword));
   if ('unitsInComposts' in c) return s.players.reduce((n, pl) => n + pl.compost.filter((x) => isUnitCard(x.id)).length, 0) >= c.unitsInComposts.atLeast;
+  if ('unitsDown' in c) return s.players.reduce((n, pl) => n + (pl.downed ?? 0), 0) >= c.unitsDown.atLeast;
   if ('compost' in c) return me.compost.length >= c.compost.atLeast;
   if ('controlUnits' in c) return me.yard.length >= c.controlUnits.atLeast;
   if ('unitHasCounter' in c) {
@@ -343,10 +372,8 @@ function passesFilter(u: Unit, f: UnitFilter | undefined): boolean {
 
 /** Whether unit u (owned by `owner`) is one that a selector means, from player p's side. */
 function matchesUnit(
-  s: GameState, p: PlayerId, u: Unit, owner: PlayerId,
-  sel: { unit?: string; each?: string; other?: boolean; filter?: UnitFilter }, selfUid?: number, noState = false,
+  p: PlayerId, u: Unit, owner: PlayerId, sel: { unit?: string; each?: string; other?: boolean; filter?: UnitFilter }, selfUid?: number,
 ): boolean {
-  void s; void noState;
   const who = sel.unit ?? sel.each;
   const own = owner === p;
   if ((who === 'own' && !own) || (who === 'enemy' && own)) return false;
@@ -354,13 +381,24 @@ function matchesUnit(
   return passesFilter(u, sel.filter);
 }
 
-/** The units a player may choose for a "choose a unit" selector (`excludeUid`: the ability's own unit). */
+/** The units on the board a "choose a unit" selector may pick, from player p's side (`excludeUid`: its own unit). */
 export function targetsFor(s: GameState, p: PlayerId, sel: TargetSel, excludeUid?: number): Target[] {
   if (!isUnitSel(sel)) return [];
   const result: Target[] = [];
   for (const owner of [0, 1] as PlayerId[])
     for (const u of s.players[owner].yard)
-      if (matchesUnit(s, p, u, owner, sel, excludeUid)) result.push({ kind: 'unit', uid: u.uid });
+      if (matchesUnit(p, u, owner, sel, excludeUid)) result.push({ kind: 'unit', uid: u.uid });
+  return result;
+}
+
+/**
+ * The targets a player may choose during the Muster: units of their own as they stand, and the enemy's lanes, all
+ * six (the enemy's board is still being built, so what stands there is only known at the Clash).
+ */
+export function musterTargets(s: GameState, p: PlayerId, sel: TargetSel, excludeUid?: number): Target[] {
+  if (!isUnitSel(sel)) return [];
+  const result: Target[] = sel.unit === 'enemy' ? [] : targetsFor(s, p, { ...sel, unit: 'own' }, excludeUid);
+  if (sel.unit !== 'own') for (let lane = 0; lane < LANES; lane++) result.push({ kind: 'lane', player: other(p), lane });
   return result;
 }
 
@@ -368,18 +406,24 @@ export function targetsFor(s: GameState, p: PlayerId, sel: TargetSel, excludeUid
 function eachUnit(s: GameState, p: PlayerId, sel: EachSel, selfUid?: number): Unit[] {
   const units: Unit[] = [];
   for (const owner of [0, 1] as PlayerId[])
-    for (const u of s.players[owner].yard) if (matchesUnit(s, p, u, owner, sel, selfUid)) units.push(u);
+    for (const u of s.players[owner].yard) if (matchesUnit(p, u, owner, sel, selfUid)) units.push(u);
   return units;
 }
 
-const sameTarget = (a?: Target, b?: Target): boolean =>
-  !!a && !!b && a.kind === b.kind && (a.kind === 'unit' ? a.uid === (b as typeof a).uid : a.player === (b as typeof a).player);
+const sameTarget = (a?: Target, b?: Target): boolean => !!a && !!b && JSON.stringify(a) === JSON.stringify(b);
 
 function isLegalTarget(s: GameState, p: PlayerId, sel: TargetSel, target: Target | undefined, excludeUid?: number): boolean {
   return !!target && targetsFor(s, p, sel, excludeUid).some((t) => sameTarget(t, target));
 }
 
-/** The ability that playing a card starts: a Trick's "play", a unit's Hello. */
+/** Whether an ability reaches the enemy's units, so it waits for the Clash when made in the Muster. */
+function reachesEnemy(ability: Ability, target?: Target, target2?: Target): boolean {
+  if (target?.kind === 'lane' || target2?.kind === 'lane') return true;
+  const sel = ability.target;
+  return isEachSel(sel) && sel.each !== 'own';
+}
+
+/** The ability that playing a card starts: a Charm's "play", a unit's Hello. */
 function mainAbility(id: string): { ability: Ability; ref: AbilityRef } | null {
   const type = CARDS[id]?.type;
   if (type === 'Trick') return findAbility(id, 'play');
@@ -387,38 +431,41 @@ function mainAbility(id: string): { ability: Ability; ref: AbilityRef } | null {
   return null;
 }
 
-/** One way to play a card: its chosen target(s), if any. */
-export interface PlayChoice { target?: Target; target2?: Target }
+/** A unit of the player's that a copy of this card would merge into (never a Fabled: they are one of a kind). */
+export function mergeTwin(s: GameState, p: PlayerId, id: string): Unit | undefined {
+  if (CARDS[id]?.type !== 'Critter') return undefined;
+  return s.players[p].yard.find((u) => u.id === id && (u.stars ?? 1) < s.rules.maxStars);
+}
 
-/**
- * The ways a card in hand can be played right now. Empty means it can't be played. `mode` is how:
- * a normal action, in a Pounce window, or free via Lucky.
- */
-export function playChoices(s: GameState, p: PlayerId, card: CardInst, mode: 'action' | 'pounce' | 'lucky'): PlayChoice[] {
+/** One way to play a card: the lane a new unit goes to, and its chosen target(s), if any. */
+export interface PlayChoice { slot?: number; target?: Target; target2?: Target }
+
+/** The ways a card in hand can be played right now (`free`: a Lucky Candle's). Empty means it can't be. */
+export function playChoices(s: GameState, p: PlayerId, card: CardInst, free = false): PlayChoice[] {
   const def = CARDS[card.id];
-  const k = keywords(card.id);
+  const me = s.players[p];
   const main = mainAbility(card.id)?.ability;
-  if (mode === 'pounce' && !k.pounce) return [];
-  if (mode === 'action' && main?.pounceOnly) return [];
-  if (mode === 'pounce' && main?.pounceOnly === 'attack' && s.window?.kind !== 'attack') return [];
-  if (mode !== 'lucky' && (def.cost ?? 0) > readyTreats(s, p)) return [];
-  const yard = s.players[p].yard;
+  if (main?.pounceOnly) return [];
+  if (!free && (def.cost ?? 0) > me.offerings) return [];
 
   if (isUnitCard(card.id)) {
-    if (yard.length >= YARD_LIMIT) return [];
-    if (def.type === 'Cat' && yard.some((u) => u.id === card.id)) return [];
-    if (!isUnitSel(main?.target)) return [{}];
-    const targets = targetsFor(s, p, main!.target!).map((target) => ({ target }));
-    if (main!.optional) return [{}, ...targets];
-    return targets.length ? targets : [{}];
+    if (mergeTwin(s, p, card.id)) return [{}];
+    if (unitCount(s, p) >= me.hero.level) return [];
+    if (def.type === 'Cat' && me.yard.some((u) => u.id === card.id)) return [];
+    let hellos: PlayChoice[] = [{}];
+    if (isUnitSel(main?.target)) {
+      const targets = musterTargets(s, p, main!.target!).map((target) => ({ target }));
+      hellos = main!.optional ? [{}, ...targets] : targets.length ? targets : [{}];
+    }
+    return freeLanes(s, p).flatMap((slot) => hellos.map((h) => ({ slot, ...h })));
   }
   if (def.type === 'Toy') return targetsFor(s, p, { unit: 'own', filter: { noToy: true } }).map((target) => ({ target }));
-  // Trick
+  // Charm
   if (!isUnitSel(main?.target)) return [{}];
-  const firsts = targetsFor(s, p, main!.target!);
+  const firsts = musterTargets(s, p, main!.target!);
   let choices: PlayChoice[] = firsts.map((target) => ({ target }));
   if (isUnitSel(main!.target2)) {
-    const seconds = targetsFor(s, p, main!.target2);
+    const seconds = musterTargets(s, p, main!.target2);
     choices = firsts.flatMap((target) => seconds.filter((t2) => !sameTarget(t2, target)).map((target2) => ({ target, target2 })));
   }
   if (choices.length) return choices;
@@ -426,93 +473,103 @@ export function playChoices(s: GameState, p: PlayerId, card: CardInst, mode: 'ac
 }
 
 /** The targets a card can be played on (the first target of each way to play it). */
-export function playOptions(s: GameState, p: PlayerId, card: CardInst, mode: 'action' | 'pounce' | 'lucky'): (Target | undefined)[] {
-  return playChoices(s, p, card, mode).map((c) => c.target);
+export function playOptions(s: GameState, p: PlayerId, card: CardInst, free = false): (Target | undefined)[] {
+  return playChoices(s, p, card, free).map((c) => c.target);
 }
 
-function withChoice<T extends object>(action: T, c: PlayChoice): T {
-  return { ...action, ...(c.target ? { target: c.target } : {}), ...(c.target2 ? { target2: c.target2 } : {}) };
+/** The ways to set a card with Ambush face-down: one of your lanes without an Ambush (and, for a card aimed at "a unit", whose lane it watches). */
+export function ambushChoices(s: GameState, p: PlayerId, card: CardInst): { lane: number; target?: Target }[] {
+  if (!keywords(card.id).pounce) return [];
+  const me = s.players[p];
+  if ((CARDS[card.id].cost ?? 0) > me.offerings) return [];
+  const sel = mainAbility(card.id)?.ability.target;
+  const used = new Set((me.ambushes ?? []).map((a) => a.lane));
+  const out: { lane: number; target?: Target }[] = [];
+  for (let lane = 0; lane < LANES; lane++) {
+    if (used.has(lane)) continue;
+    if (isUnitSel(sel) && sel.unit === 'any') {
+      out.push({ lane, target: { kind: 'lane', player: p, lane } }, { lane, target: { kind: 'lane', player: other(p), lane } });
+    } else out.push({ lane });
+  }
+  return out;
+}
+
+/** An action with its parts in a fixed order: legality is checked by comparing actions as JSON. */
+function withChoice(action: { t: 'play' | 'lucky'; uid: number }, c: PlayChoice): Action {
+  return {
+    ...action,
+    ...(c.slot !== undefined ? { slot: c.slot } : {}),
+    ...(c.target ? { target: c.target } : {}),
+    ...(c.target2 ? { target2: c.target2 } : {}),
+  };
 }
 
 /** Whether a unit is barred from attacking right now (Ovinnik unless you're Well-Fed). */
-function cantAttack(s: GameState, owner: PlayerId, u: Unit): boolean {
+export function cantAttack(s: GameState, owner: PlayerId, u: Unit): boolean {
   return abilitiesOf(u.id).some((a) => a.static?.cantAttack && (a.static.while === undefined || evaluateCondition(s, owner, a.static.while)));
 }
 
-function attackOptions(s: GameState, p: PlayerId): Action[] {
-  const me = s.players[p];
-  const foe = s.players[other(p)];
-  const attackers: { ref: Target; sneaky: boolean }[] = me.yard
-    .filter((u) => !u.exhausted && !cantAttack(s, p, u))
-    .map((u) => ({ ref: { kind: 'unit', uid: u.uid }, sneaky: isSneaky(u, s) }));
-  if (me.hero.grown && !me.hero.exhausted) attackers.push({ ref: { kind: 'hero', player: p }, sneaky: false });
-
-  const guardians = foe.yard.filter((u) => isGuardian(u, s));
-  const actions: Action[] = [];
-  for (const a of attackers) {
-    const pool = guardians.length && !a.sneaky ? guardians : foe.yard;
-    for (const u of pool) actions.push({ t: 'attack', attacker: a.ref, target: { kind: 'unit', uid: u.uid } });
-    if (!guardians.length || a.sneaky) actions.push({ t: 'attack', attacker: a.ref, target: { kind: 'hero', player: other(p) } });
-  }
-  return actions;
-}
-
-/** The Hero Cat's "exhaust" ability on the face it shows now. */
-function heroAbility(s: GameState, p: PlayerId): { ability: Ability; ref: AbilityRef } | null {
+/** The Hero's "exhaust" ability on the face it shows now. */
+export function heroAbility(s: GameState, p: PlayerId): { ability: Ability; ref: AbilityRef } | null {
   const hero = s.players[p].hero;
   return findAbility(hero.id, 'exhaust', hero.grown ? 'bigCat' : 'kitten');
 }
 
+/** Whether `seat` is one of the players the game is waiting on. */
+export function mayAct(s: GameState, seat: PlayerId): boolean {
+  const prompt = s.prompt;
+  if (!prompt || s.winner !== null) return false;
+  if (prompt.kind === 'muster') return !!s.muster?.open[seat];
+  return prompt.player === seat;
+}
+
+/** A player the game is waiting on (the Lantern holder first when both are), or null when it is over. */
+export function nextSeat(s: GameState): PlayerId | null {
+  if (!s.prompt || s.winner !== null) return null;
+  if (s.prompt.kind !== 'muster') return s.prompt.player;
+  if (s.muster?.open[s.yarn]) return s.yarn;
+  return s.muster?.open[other(s.yarn)] ? other(s.yarn) : null;
+}
+
+/** The count a move online must quote for this seat: it moves with every one of their decisions and every public turn. */
+export const clockFor = (s: GameState, seat: PlayerId): number => s.clock[seat];
+
 /**
- * Every legal action for the player the game is waiting on. Multi-select prompts (mulligan, setup
- * plant, discard) return [] — any valid subset is legal; see `apply` for their rules.
+ * Every legal action for a player (the one the prompt names when no seat is given). A mulligan returns []: any set
+ * of up to MULLIGAN_MAX cards in hand is legal; see `apply`.
  */
-export function legalActions(s: GameState): Action[] {
+export function legalActions(s: GameState, seat?: PlayerId): Action[] {
   const prompt = s.prompt;
   if (!prompt || s.winner !== null) return [];
-  const p = prompt.player;
+  const p = seat ?? prompt.player;
+  if (!mayAct(s, p) || prompt.kind === 'mulligan') return [];
   const me = s.players[p];
-
-  switch (prompt.kind) {
-    case 'mulligan':
-    case 'setupPlant':
-    case 'discard':
-      return [];
-    case 'plant':
-      return [...me.hand.map((c): Action => ({ t: 'plant', uid: c.uid })), { t: 'skipPlant' }];
-    case 'action': {
-      const actions: Action[] = [];
-      for (const card of me.hand)
-        for (const c of playChoices(s, p, card, 'action')) actions.push(withChoice({ t: 'play', uid: card.uid }, c));
-      actions.push(...attackOptions(s, p));
-      if (!me.hero.exhausted) {
-        const found = heroAbility(s, p);
-        const ability = found?.ability;
-        // Don't offer an ability that would do nothing (readying Treats when none are spent).
-        const pointless = !!ability?.do?.length && ability.do.every((a) => 'readyTreats' in a) && !me.pantry.some((t) => t.exhausted);
-        if (ability && isUnitSel(ability.target)) for (const target of targetsFor(s, p, ability.target)) actions.push({ t: 'ability', target });
-        else if (ability && !pointless) actions.push({ t: 'ability' });
-      }
-      if (s.yarnTaken === null) actions.push({ t: 'takeYarn' });
-      actions.push({ t: 'pass' });
-      return actions;
-    }
-    case 'pounce': {
-      const actions: Action[] = [];
-      for (const card of me.hand)
-        for (const c of playChoices(s, p, card, 'pounce')) actions.push(withChoice({ t: 'pounce', uid: card.uid }, c));
-      actions.push({ t: 'decline' });
-      return actions;
-    }
-    case 'lucky': {
-      const card = me.hand.find((c) => c.uid === prompt.uid)!;
-      // Asked about every lost Life (alwaysAsk): only a Lucky one may be played.
-      if (!keywords(card.id).lucky) return [{ t: 'keepLucky' }];
-      return [...playChoices(s, p, card, 'lucky').map((c) => withChoice({ t: 'lucky' } as Action, c)), { t: 'keepLucky' }];
-    }
-    case 'choose':
-      return targetsFor(s, p, prompt.spec, prompt.selfUid).map((target): Action => ({ t: 'choose', target }));
+  const actions: Action[] = [];
+  const free = new Set(me.free ?? []);
+  for (const card of me.hand) {
+    for (const c of playChoices(s, p, card)) actions.push(withChoice({ t: 'play', uid: card.uid }, c));
+    if (free.has(card.uid)) for (const c of playChoices(s, p, card, true)) actions.push(withChoice({ t: 'lucky', uid: card.uid }, c));
+    for (const a of ambushChoices(s, p, card)) actions.push({ t: 'ambush', uid: card.uid, lane: a.lane, ...(a.target ? { target: a.target } : {}) });
   }
+  for (const u of me.yard) {
+    for (let slot = 0; slot < LANES; slot++) {
+      if (slot === u.slot) continue;
+      const there = laneUnit(s, p, slot);
+      if (there && there.uid < u.uid) continue; // a swap, listed once
+      actions.push({ t: 'move', uid: u.uid, slot });
+    }
+  }
+  if (!me.hero.exhausted) {
+    const ability = heroAbility(s, p)?.ability;
+    if (ability && isUnitSel(ability.target)) for (const target of musterTargets(s, p, ability.target)) actions.push({ t: 'ability', target });
+    else if (ability) actions.push({ t: 'ability' });
+  }
+  const cost = levelCost(s, p);
+  if (cost !== null && me.offerings >= cost) actions.push({ t: 'levelUp' });
+  for (const card of me.hand) actions.push({ t: 'offer', uid: card.uid });
+  for (const u of me.yard) actions.push({ t: 'offer', uid: u.uid });
+  if (me.hand.length <= HAND_LIMIT) actions.push({ t: 'ready' });
+  return actions;
 }
 
 // ── Applying actions ─────────────────────────────────────────────────────────────────────────────
@@ -526,20 +583,17 @@ function takeFromHand(s: GameState, p: PlayerId, uid: number): CardInst {
   return hand.splice(i, 1)[0];
 }
 
-function pay(s: GameState, p: PlayerId, cost: number): void {
-  let left = cost;
-  for (const t of s.players[p].pantry) if (left > 0 && !t.exhausted) { t.exhausted = true; left--; }
-}
-
-function validateSubset(s: GameState, p: PlayerId, uids: number[], size?: number): void {
+function validateSubset(s: GameState, p: PlayerId, uids: number[]): void {
   const hand = new Set(s.players[p].hand.map((c) => c.uid));
   if (new Set(uids).size !== uids.length || uids.some((u) => !hand.has(u))) throw new IllegalAction('cards must be distinct cards in hand');
-  if (size !== undefined && uids.length !== size) throw new IllegalAction(`choose exactly ${size} card(s)`);
 }
 
-function describeTarget(s: GameState, target?: Target): string {
+const laneName = (lane: number): string => `lane ${lane + 1}`;
+
+export function describeTarget(s: GameState, target?: Target): string {
   if (!target) return '';
   if (target.kind === 'hero') return `${s.players[target.player].name}'s Hero ${cardName(s.players[target.player].hero.id)}`;
+  if (target.kind === 'lane') return `${s.players[target.player].name}'s ${laneName(target.lane)}`;
   const found = findUnit(s, target.uid);
   return found ? cardName(found.unit.id) : 'a unit';
 }
@@ -547,24 +601,39 @@ function describeTarget(s: GameState, target?: Target): string {
 const describeTargets = (s: GameState, a: { target?: Target; target2?: Target }) =>
   a.target2 ? `${describeTarget(s, a.target)} and ${describeTarget(s, a.target2)}` : describeTarget(s, a.target);
 
-/** Apply an action for the player the game is waiting on, then run the game until the next decision. */
-export function apply(s: GameState, action: Action): GameState {
+/**
+ * Apply an action for a player the game is waiting on (`seat`; the one the prompt names when left out), then run the
+ * game until the next decision. During the Muster either player may act until they are Ready.
+ */
+export function apply(s: GameState, action: Action, seat?: PlayerId): GameState {
+  return perform(s, action, seat, true);
+}
+
+/** `apply` without checking the action against `legalActions`: for the bot's own searches, which only try legal ones. */
+export function applyTrusted(s: GameState, action: Action, seat?: PlayerId): GameState {
+  return perform(s, action, seat, false);
+}
+
+function perform(s: GameState, action: Action, seat: PlayerId | undefined, check: boolean): GameState {
   const prompt = s.prompt;
   if (!prompt || s.winner !== null) throw new IllegalAction('the game is not waiting for an action');
-  const p = prompt.player;
+  const p = seat ?? prompt.player;
+  if (!mayAct(s, p)) throw new IllegalAction(`the game is not waiting for ${s.players[p].name}`);
   const me = s.players[p];
 
-  const multi = prompt.kind === 'mulligan' || prompt.kind === 'setupPlant' || prompt.kind === 'discard';
-  if (!multi) {
+  if (prompt.kind === 'mulligan') {
+    if (action.t !== 'mulligan') throw new IllegalAction('expected mulligan');
+  } else if (check) {
     const key = JSON.stringify(action);
-    if (!legalActions(s).some((a) => JSON.stringify(a) === key)) throw new IllegalAction(`illegal action ${key}`);
-  } else if (action.t !== prompt.kind) {
-    throw new IllegalAction(`expected ${prompt.kind}`);
+    if (!legalActions(s, p).some((a) => JSON.stringify(a) === key)) throw new IllegalAction(`illegal action ${key}`);
   }
 
   s.prompt = null;
   s.actions++;
+  s.clock[p]++;
   s.chain = 0;
+  const mustering = prompt.kind === 'muster';
+  if (mustering) s.acting = p;
 
   switch (action.t) {
     case 'mulligan': {
@@ -577,102 +646,94 @@ export function apply(s: GameState, action: Action): GameState {
       log(s, aside.length ? `${me.name} mulligans ${aside.length} card(s).` : `${me.name} keeps their hand.`, p);
       break;
     }
-    case 'setupPlant': {
-      validateSubset(s, p, action.uids, (prompt as { count: number }).count);
-      for (const uid of action.uids) me.pantry.push({ card: takeFromHand(s, p, uid), exhausted: false });
-      log(s, `${me.name} makes ${action.uids.length} ${TERMS.offerings}.`, p);
-      break;
-    }
-    case 'discard': {
-      validateSubset(s, p, action.uids, (prompt as { count: number }).count);
-      for (const uid of action.uids) me.compost.push(takeFromHand(s, p, uid));
-      log(s, `${me.name} discards ${action.uids.length} card(s) down to ${HAND_LIMIT}.`, p);
-      break;
-    }
-    case 'plant':
-      me.pantry.push({ card: takeFromHand(s, p, action.uid), exhausted: false });
-      log(s, `${me.name} makes an ${TERMS.offering} (${me.pantry.length} total).`, p);
-      break;
-    case 'skipPlant':
-      break;
-    case 'play': {
+    case 'play':
+    case 'lucky': {
       const card = takeFromHand(s, p, action.uid);
-      pay(s, p, CARDS[card.id].cost ?? 0);
+      if (action.t === 'play') me.offerings -= CARDS[card.id].cost ?? 0;
+      else me.free = (me.free ?? []).filter((uid) => uid !== card.uid);
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
-      s.passes = 0;
-      log(s, `${me.name} plays ${cardName(card.id)}${action.target ? ` targeting ${describeTargets(s, action)}` : ''}.`, p);
-      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, target: action.target });
-      s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, target2: action.target2, closesWindow: true }, { t: 'afterAction' });
-      openWindow(s, { kind: 'play', by: p, card, target: action.target, target2: action.target2 });
+      const where = action.slot !== undefined ? ` in ${laneName(action.slot)}` : '';
+      const on = action.target ? ` targeting ${describeTargets(s, action)}` : '';
+      log(s, action.t === 'lucky' ? `Lucky! ${me.name} plays ${cardName(card.id)} for free${where}${on}.` : `${me.name} plays ${cardName(card.id)}${where}${on}.`, p);
+      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, ...(action.target ? { target: action.target } : {}), ...(action.t === 'lucky' ? { how: 'lucky' as const } : {}) });
+      s.queue.unshift({ t: 'resolvePlay', p, card, slot: action.slot, target: action.target, target2: action.target2 });
       break;
     }
-    case 'attack': {
-      if (action.attacker.kind === 'hero') me.hero.exhausted = true;
-      else findUnit(s, action.attacker.uid)!.unit.exhausted = true;
-      s.passes = 0;
-      log(s, `${me.name}'s ${describeTarget(s, action.attacker).replace(`${me.name}'s `, '')} attacks ${describeTarget(s, action.target)}.`, p);
-      emit(s, { t: 'attack', p, attacker: action.attacker, target: action.target });
-      s.queue.unshift({ t: 'resolveAttack' }, { t: 'afterAction' });
-      openWindow(s, { kind: 'attack', by: p, attacker: action.attacker, target: action.target, cancelled: false });
+    case 'ambush': {
+      const card = takeFromHand(s, p, action.uid);
+      me.offerings -= CARDS[card.id].cost ?? 0;
+      (me.ambushes ??= []).push({ card, lane: action.lane, ...(action.target ? { target: action.target } : {}) });
+      log(s, `${me.name} sets ${cardName(card.id)} face-down in ${laneName(action.lane)}.`, p);
+      emit(s, { t: 'ambushSet', p, lane: action.lane });
+      break;
+    }
+    case 'move': {
+      const u = me.yard.find((x) => x.uid === action.uid)!;
+      const there = laneUnit(s, p, action.slot);
+      if (there) there.slot = u.slot;
+      u.slot = action.slot;
+      sortYard(me);
+      log(s, `${me.name} moves ${cardName(u.id)} to ${laneName(action.slot)}${there ? ` (${cardName(there.id)} takes its place)` : ''}.`, p);
+      emit(s, { t: 'move', p, uid: u.uid, slot: action.slot });
+      break;
+    }
+    case 'offer': {
+      let cardId: string | undefined;
+      const inHand = me.hand.some((c) => c.uid === action.uid);
+      if (inHand) {
+        const card = takeFromHand(s, p, action.uid);
+        me.compost.push(card);
+        cardId = card.id;
+        me.free = me.free?.filter((uid) => uid !== card.uid);
+      } else {
+        const u = me.yard.find((x) => x.uid === action.uid)!;
+        me.yard = me.yard.filter((x) => x !== u);
+        if (u.toy) me.compost.push(u.toy);
+        if (!CARDS[u.id]?.token) me.compost.push({ uid: u.uid, id: u.id });
+        cardId = u.id;
+      }
+      me.offerings++;
+      log(s, `${me.name} offers ${inHand ? 'a card' : cardName(cardId)}: ${me.offerings} ${TERMS.offerings}.`, p);
+      emit(s, { t: 'offer', p, cardId, offerings: me.offerings });
       break;
     }
     case 'ability': {
       me.hero.exhausted = true;
-      s.passes = 0;
-      const { ref } = heroAbility(s, p)!;
+      const { ability, ref } = heroAbility(s, p)!;
       log(s, `${me.name}'s ${cardName(me.hero.id)} uses their ability${action.target ? ` on ${describeTarget(s, action.target)}` : ''}.`, p);
-      emit(s, { t: 'ability', p, heroId: me.hero.id, target: action.target });
-      s.queue.unshift({ t: 'ability', p, ref, target: action.target, sourceId: me.hero.id }, { t: 'afterAction' });
+      emit(s, { t: 'ability', p, heroId: me.hero.id, ...(action.target ? { target: action.target } : {}) });
+      if (reachesEnemy(ability, action.target)) (me.pending ??= []).push({ ref, sourceId: me.hero.id, ...(action.target ? { target: action.target } : {}) });
+      else s.queue.unshift({ t: 'ability', p, ref, target: action.target, sourceId: me.hero.id });
       break;
     }
-    case 'takeYarn':
-      s.yarnTaken = p;
-      s.passes = 0;
-      log(s, `${me.name} ${s.yarn === p ? 'keeps' : 'takes'} the ${TERMS.lantern} and will act first next round.`, p);
-      s.queue.unshift({ t: 'afterAction' });
-      break;
-    case 'pass':
-      s.passes++;
-      log(s, `${me.name} passes.`, p);
-      s.queue.unshift({ t: 'afterAction' });
-      break;
-    case 'pounce': {
-      const card = takeFromHand(s, p, action.uid);
-      pay(s, p, CARDS[card.id].cost ?? 0);
-      me.playedThisRound = (me.playedThisRound ?? 0) + 1;
-      log(s, `${me.name} AMBUSHES with ${cardName(card.id)}${action.target ? ` on ${describeTargets(s, action)}` : ''}!`, p);
-      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, how: 'pounce', target: action.target });
-      s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, target2: action.target2, closesWindow: false });
+    case 'levelUp': {
+      me.offerings -= levelCost(s, p)!;
+      me.hero.level++;
+      log(s, `${me.name}'s ${cardName(me.hero.id)} reaches Level ${me.hero.level}: ${me.hero.level} lanes.`, p);
+      emit(s, { t: 'levelUp', p, level: me.hero.level });
       break;
     }
-    case 'decline':
+    case 'ready':
+      s.muster!.open[p] = false;
+      log(s, `${me.name} is ready.`, p);
+      emit(s, { t: 'readyUp', p });
       break;
-    case 'lucky': {
-      const card = takeFromHand(s, p, (prompt as { uid: number }).uid);
-      me.playedThisRound = (me.playedThisRound ?? 0) + 1;
-      log(s, `Lucky! ${me.name} plays ${cardName(card.id)} for free${action.target ? ` targeting ${describeTargets(s, action)}` : ''}.`, p);
-      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, how: 'lucky', target: action.target });
-      s.queue.unshift({ t: 'resolvePlay', p, card, target: action.target, target2: action.target2, closesWindow: false });
-      break;
-    }
-    case 'keepLucky':
-      break;
-    case 'choose': {
-      const pr = prompt as Extract<Prompt, { kind: 'choose' }>;
-      s.queue.unshift({ t: 'ability', p, ref: pr.ref, target: action.target, sourceId: pr.sourceId, selfUid: pr.selfUid, trigger: true });
-      break;
-    }
   }
   stateCheck(s);
   run(s);
+  delete s.acting;
+  if (mustering && s.winner === null) {
+    if (s.muster!.open[0] || s.muster!.open[1]) s.prompt = { kind: 'muster', player: s.muster!.open[s.yarn] ? s.yarn : other(s.yarn) };
+    else {
+      s.queue.unshift({ t: 'clashStart' });
+      run(s);
+    }
+  }
   return s;
 }
 
-function openWindow(s: GameState, window: Window): void {
-  s.window = window;
-  const defender = other(window.by);
-  const canPounce = s.players[defender].hand.some((c) => playChoices(s, defender, c, 'pounce').length > 0);
-  if (canPounce || s.alwaysAsk) s.prompt = { kind: 'pounce', player: defender };
+function sortYard(pl: PlayerState): void {
+  pl.yard.sort((a, b) => a.slot - b.slot);
 }
 
 // ── The step machine ─────────────────────────────────────────────────────────────────────────────
@@ -686,16 +747,7 @@ function run(s: GameState): void {
   }
 }
 
-function continueTurn(s: GameState): void {
-  for (;;) {
-    if (s.passes >= 2) { s.queue.unshift({ t: 'endRound' }); return; }
-    if (s.yarnTaken === s.active) { s.passes++; s.active = other(s.active); continue; }
-    s.prompt = { kind: 'action', player: s.active };
-    return;
-  }
-}
-
-/** Every ability a unit has with this trigger: its card's, and its keywords' mechanics' (Rain-Fed, Heat). */
+/** Every ability a unit has with this trigger: its card's, and its keywords' mechanics' (Rain-Fed, Pearl Tears). */
 function unitAbilities(s: GameState, u: Unit, when: string, inline?: boolean): { ability: Ability; ref: AbilityRef }[] {
   const out: { ability: Ability; ref: AbilityRef }[] = [];
   abilitiesOf(u.id).forEach((ability, index) => {
@@ -709,64 +761,127 @@ function unitAbilities(s: GameState, u: Unit, when: string, inline?: boolean): {
   return out;
 }
 
+/** What the opponent may see of a player during the Muster: the player as they stand now, their secrets hidden. */
+function snapshot(pl: PlayerState): PlayerState {
+  const c = structuredClone({ ...pl, shown: undefined });
+  delete c.shown;
+  c.hand = c.hand.map((x) => ({ uid: x.uid, id: HIDDEN }));
+  c.deck = c.deck.map(() => ({ uid: 0, id: HIDDEN }));
+  c.lives = c.lives.map(() => ({ uid: 0, id: HIDDEN }));
+  c.ambushes = (c.ambushes ?? []).map((a) => ({ card: { uid: a.card.uid, id: HIDDEN }, lane: a.lane }));
+  c.pending = [];
+  c.free = [];
+  return c;
+}
+
 function exec(s: GameState, step: Step): void {
   switch (step.t) {
     case 'mulliganPrompt':
       s.prompt = { kind: 'mulligan', player: step.p };
       break;
-    case 'setupPlantPrompt': {
-      const count = Math.min(SETUP_TREATS, s.players[step.p].hand.length);
-      if (count) s.prompt = { kind: 'setupPlant', player: step.p, count };
+    case 'beginMuster': {
+      s.phase = 'muster';
+      s.muster = { open: [true, true] };
+      s.clock = [s.clock[0] + 1, s.clock[1] + 1];
+      s.musterStart = { nextUid: s.nextUid, actions: s.actions, clock: [s.clock[0], s.clock[1]] };
+      for (const pl of s.players) pl.shown = snapshot(pl);
+      s.prompt = { kind: 'muster', player: s.yarn };
       break;
     }
-    case 'plantPrompt':
-      if (s.players[step.p].hand.length) s.prompt = { kind: 'plant', player: step.p };
-      break;
-    case 'discardCheck': {
-      const over = s.players[step.p].hand.length - HAND_LIMIT;
-      if (over > 0) s.prompt = { kind: 'discard', player: step.p, count: over };
-      break;
-    }
-    case 'beginActions':
-      s.passes = 0;
-      s.active = s.yarn;
-      continueTurn(s);
-      break;
-    case 'afterAction':
-      s.active = other(s.active);
-      continueTurn(s);
-      break;
-    case 'endRound':
-      for (const pl of s.players) for (const u of pl.yard) { u.buffPower = 0; delete u.buffKeywords; }
+    case 'clashStart': {
+      s.phase = 'clash';
+      delete s.muster;
+      for (const pl of s.players) { delete pl.shown; pl.free = []; }
+      s.clash = { bout: 0, dealt: 0, struck: [false, false] };
+      log(s, `— Clash —`);
+      emit(s, { t: 'clash', n: s.round });
+      for (const [q, pl] of s.players.entries()) {
+        const board = pl.yard.map((u) => `${cardName(u.id)}${u.stars ? ` ${'★'.repeat(u.stars)}` : ''} (${unitPower(u, s)}/${unitHealth(u, s) - u.damage}) in ${laneName(u.slot)}`);
+        log(s, `${pl.name}: ${board.length ? board.join(', ') : 'no units'}.`, q as PlayerId);
+      }
+      const first = s.yarn, second = other(first);
       s.queue.unshift(
-        { t: 'discardCheck', p: s.yarn }, { t: 'discardCheck', p: other(s.yarn) }, { t: 'rollYarn' }, { t: 'startRound' },
+        { t: 'pending', p: first }, { t: 'pending', p: second },
+        { t: 'ambushes', p: first }, { t: 'ambushes', p: second },
+        { t: 'heroStrike', p: first }, { t: 'heroStrike', p: second },
+        { t: 'bout', n: 1 },
       );
       break;
-    case 'rollYarn':
-      s.yarn = s.yarnTaken ?? other(s.yarn);
-      s.yarnTaken = null;
+    }
+    case 'pending': {
+      const pl = s.players[step.p];
+      const list: Pending[] = pl.pending ?? [];
+      pl.pending = [];
+      s.queue.unshift(...list.map((x): Step => ({
+        t: 'ability', p: step.p, ref: x.ref, sourceId: x.sourceId, target: x.target, target2: x.target2, selfUid: x.selfUid, card: x.card,
+      })));
+      break;
+    }
+    case 'ambushes':
+      fireAmbushes(s, step.p);
+      break;
+    case 'heroStrike':
+      heroStrike(s, step.p);
+      break;
+    case 'bout': {
+      const clash = s.clash!;
+      const standing = s.players.map((pl) => pl.yard.length);
+      const stalled = step.n > 1 && clash.dealt === 0;
+      if (!standing[0] || !standing[1] || step.n > s.rules.boutCap || stalled) {
+        if (stalled) log(s, `Nobody can hurt anybody any more.`);
+        s.queue.unshift({ t: 'clashEnd' });
+        break;
+      }
+      clash.bout = step.n;
+      clash.dealt = 0;
+      s.chain = 0;
+      log(s, `Bout ${step.n}.`);
+      emit(s, { t: 'bout', n: step.n });
+      s.queue.unshift({ t: 'strike', n: step.n, swift: true }, { t: 'strike', n: step.n, swift: false }, { t: 'bout', n: step.n + 1 });
+      break;
+    }
+    case 'strike':
+      strike(s, step.swift);
+      break;
+    case 'clashEnd':
+      clashEnd(s);
+      break;
+    case 'reset': {
+      for (const pl of s.players) {
+        const all = [...pl.yard, ...(pl.fallen ?? [])].filter((u) => !CARDS[u.id]?.token);
+        for (const u of all) u.damage = 0;
+        pl.yard = all;
+        pl.fallen = [];
+        sortYard(pl);
+      }
+      delete s.clash;
+      break;
+    }
+    case 'endRound':
+      for (const pl of s.players) for (const u of pl.yard) { u.buffPower = 0; delete u.buffHealth; delete u.buffKeywords; }
+      s.yarn = other(s.yarn);
+      s.queue.unshift({ t: 'startRound' });
       break;
     case 'startRound': {
       s.round++;
-      if (s.round > MAX_ROUNDS) {
+      if (s.round > s.rules.maxRounds) {
         const candles = s.players.map((pl) => pl.lives.length);
         const health = s.players.map((pl) => pl.yard.reduce((sum, u) => sum + unitHealth(u, s) - u.damage, 0));
         const [a, b] = candles[0] !== candles[1] ? candles : health;
         s.winner = a === b ? 'draw' : a > b ? 0 : 1;
         log(s, `Round limit reached.`);
-        if (s.winner === 'draw') log(s, `Same Candles (${candles[0]}) and same Health left (${health[0]}): the game is a draw.`);
-        else if (candles[0] !== candles[1]) log(s, `${s.players[s.winner].name} wins with more Candles (${candles[s.winner]} to ${candles[other(s.winner)]}).`);
-        else log(s, `Same Candles (${candles[0]}). ${s.players[s.winner].name} wins with more Health left (${health[s.winner]} to ${health[other(s.winner)]}).`);
+        if (s.winner === 'draw') log(s, `Same ${TERMS.candles} (${candles[0]}) and same Health on the board (${health[0]}): the game is a draw.`);
+        else if (candles[0] !== candles[1]) log(s, `${s.players[s.winner].name} wins with more ${TERMS.candles} (${candles[s.winner]} to ${candles[other(s.winner)]}).`);
+        else log(s, `Same ${TERMS.candles} (${candles[0]}). ${s.players[s.winner].name} wins with more Health on the board (${health[s.winner]} to ${health[other(s.winner)]}).`);
         emit(s, { t: 'win', p: s.winner });
         return;
       }
       log(s, `— Round ${s.round} —`);
-      log(s, `${s.players[s.yarn].name} holds the ${TERMS.lantern} and acts first.`);
+      log(s, `${s.players[s.yarn].name} holds the ${TERMS.lantern}.`);
       emit(s, { t: 'round', n: s.round });
       for (const [q, pl] of s.players.entries()) {
         pl.hero.exhausted = false;
         pl.playedThisRound = 0;
-        for (const t of pl.pantry) t.exhausted = false;
         for (const u of pl.yard) {
           u.exhausted = false;
           u.usedOnce = false;
@@ -781,10 +896,20 @@ function exec(s: GameState, step: Step): void {
         for (const u of s.players[q].yard)
           for (const { ref } of unitAbilities(s, u, 'roundStart')) steps.push({ t: 'ability', p: q, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
       steps.push(
+        { t: 'income', p: first }, { t: 'income', p: second },
         { t: 'draw', p: first, n: DRAW_PER_ROUND }, { t: 'draw', p: second, n: DRAW_PER_ROUND },
-        { t: 'plantPrompt', p: first }, { t: 'plantPrompt', p: second }, { t: 'beginActions' },
+        { t: 'beginMuster' },
       );
       s.queue.unshift(...steps);
+      break;
+    }
+    case 'income': {
+      const pl = s.players[step.p];
+      const interest = interestOn(s, pl.offerings);
+      const gained = baseIncome(s) + interest;
+      pl.offerings += gained;
+      log(s, `${pl.name} gets ${gained} ${TERMS.offerings}${interest ? ` (${interest} of it interest)` : ''}: ${pl.offerings} in all.`, step.p);
+      emit(s, { t: 'income', p: step.p, gained, offerings: pl.offerings });
       break;
     }
     case 'draw': {
@@ -807,7 +932,7 @@ function exec(s: GameState, step: Step): void {
       const card = pl.lives.shift();
       if (!card) { s.winner = other(step.p); break; }
       pl.hand.push(card);
-      log(s, `${pl.name} loses a ${TERMS.candle} — ${pl.lives.length} left.`, step.p);
+      log(s, `${pl.name} loses a ${TERMS.candle}: ${pl.lives.length} left.`, step.p);
       emit(s, { t: 'lifeLost', p: step.p, left: pl.lives.length });
       if (!pl.lives.length) {
         s.winner = other(step.p);
@@ -815,39 +940,16 @@ function exec(s: GameState, step: Step): void {
         emit(s, { t: 'win', p: s.winner });
         break;
       }
+      // A Lucky Candle may be played for free in the next Muster.
+      if (keywords(card.id).lucky) (pl.free ??= []).push(card.uid);
       if (step.n > 1) s.queue.unshift({ t: 'loseLife', p: step.p, n: step.n - 1 });
-      if (s.alwaysAsk || (keywords(card.id).lucky && playChoices(s, step.p, card, 'lucky').length))
-        s.prompt = { kind: 'lucky', player: step.p, uid: card.uid };
       break;
     }
     case 'resolvePlay':
       resolvePlay(s, step);
       break;
-    case 'resolveAttack':
-      resolveAttack(s);
-      break;
-    case 'ability': {
-      const ability = abilityAt(step.ref);
-      if (!ability) break;
-      if (step.trigger) {
-        s.chain = (s.chain ?? 0) + 1;
-        if (s.chain > TRIGGER_CHAIN_LIMIT) {
-          if (s.chain === TRIGGER_CHAIN_LIMIT + 1) log(s, `The chain of effects stops here.`);
-          break;
-        }
-      }
-      let self: Unit | undefined;
-      if (step.selfUid !== undefined) {
-        self = findUnit(s, step.selfUid)?.unit;
-        // "…and survives": a unit defeated by the damage has no trigger left to run.
-        if (!self && ability.when === 'damagedAndSurvives') break;
-      }
-      runAbility(s, step.p, ability, { target: step.target, target2: step.target2, self });
-      break;
-    }
-    case 'choosePrompt':
-      if (targetsFor(s, step.p, step.spec, step.selfUid).length)
-        s.prompt = { kind: 'choose', player: step.p, ref: step.ref, spec: step.spec, sourceId: step.sourceId, selfUid: step.selfUid };
+    case 'ability':
+      runStep(s, step);
       break;
     case 'combatWin': {
       const found = findUnit(s, step.uid);
@@ -864,24 +966,129 @@ function exec(s: GameState, step: Step): void {
   }
 }
 
+/** Run a queued ability: find a lane's unit for an effect that waited for the Clash, and pick targets for triggers. */
+function runStep(s: GameState, step: Extract<Step, { t: 'ability' }>): void {
+  const ability = abilityAt(step.ref);
+  const done = () => { if (step.card) s.players[step.p].compost.push(step.card); };
+  if (!ability) return done();
+  if (step.trigger) {
+    s.chain = (s.chain ?? 0) + 1;
+    if (s.chain > TRIGGER_CHAIN_LIMIT) {
+      if (s.chain === TRIGGER_CHAIN_LIMIT + 1) log(s, `The chain of effects stops here.`);
+      return;
+    }
+  }
+  let self: Unit | undefined;
+  if (step.selfUid !== undefined) {
+    self = findUnit(s, step.selfUid)?.unit;
+    // "…and survives": a unit that went down has no trigger left to run.
+    if (!self && ability.when === 'damagedAndSurvives') return;
+  }
+  if (step.trigger && ability.oncePerRound && self) {
+    if (self.usedOnce) return;
+    self.usedOnce = true;
+  }
+  const target = laneToUnit(s, step.target);
+  const target2 = laneToUnit(s, step.target2);
+  if ((step.target && !target) || (step.target2 && !target2)) {
+    log(s, `${cardName(step.sourceId)} finds nobody in ${describeTarget(s, step.target)} and fizzles.`, step.p);
+    emit(s, { t: 'fizzled', cardId: step.sourceId });
+    return done();
+  }
+  let ctx: AbilityContext = { target, target2, self };
+  if (isUnitSel(ability.target)) {
+    if (!target) {
+      const picked = autoTarget(s, step.p, ability, self);
+      if (!picked) return done();
+      ctx = { ...ctx, target: picked };
+    } else if (!isLegalTarget(s, step.p, ability.target, target, step.selfUid)) {
+      log(s, `${cardName(step.sourceId)} has no legal target and fizzles.`, step.p);
+      emit(s, { t: 'fizzled', cardId: step.sourceId });
+      return done();
+    }
+  }
+  runAbility(s, step.p, ability, ctx);
+  done();
+}
+
+/** A lane target becomes the unit standing there now (undefined if nobody does); other targets stay as they are. */
+function laneToUnit(s: GameState, t: Target | undefined): Target | undefined {
+  if (t?.kind !== 'lane') return t;
+  const u = laneUnit(s, t.player, t.lane);
+  return u ? { kind: 'unit', uid: u.uid } : undefined;
+}
+
+/** Whether an ability helps whatever it touches (a heal, a buff), or harms it (damage, exhaust). */
+function helpful(ability: Ability): boolean {
+  const acts = [...(ability.do ?? []), ...(ability.instead?.do ?? [])].map((a) => Object.keys(a)[0]);
+  return !acts.some((a) => a === 'damage' || a === 'exhaust' || a === 'cancelAttack' || a === 'fight');
+}
+
+/**
+ * The unit a triggered ability picks when it needs one (nobody chooses during the Clash): for a harmful effect the
+ * enemy unit the player's units would attack first (across from the ability's own unit when it can), for a helpful
+ * one the player's own unit in the lowest lane.
+ */
+function autoTarget(s: GameState, p: PlayerId, ability: Ability, self?: Unit): Target | undefined {
+  const sel = ability.target as UnitSel;
+  const options = targetsFor(s, p, sel, sel.other ? self?.uid : undefined)
+    .map((t) => findUnit(s, (t as { uid: number }).uid)!).filter(Boolean);
+  if (!options.length) return undefined;
+  const enemies = options.filter((o) => o.owner !== p).map((o) => o.unit);
+  const own = options.filter((o) => o.owner === p).map((o) => o.unit);
+  const wantEnemy = !helpful(ability);
+  const pool = wantEnemy ? (enemies.length ? enemies : []) : (own.length ? own : []);
+  if (!pool.length) return undefined;
+  const u = wantEnemy ? pickFrom(s, pool, self?.slot ?? 0, false) : pool[0];
+  return { kind: 'unit', uid: u.uid };
+}
+
+/** The unit an attacker in `slot` hits among `enemies`: by rank first (Sneaky from the bottom), then across, then nearest. */
+function pickFrom(s: GameState, enemies: Unit[], slot: number, sneaky: boolean): Unit {
+  const ranks = enemies.map((u) => targetRank(u, s));
+  const want = sneaky ? Math.min(...ranks) : Math.max(...ranks);
+  const pool = enemies.filter((_, i) => ranks[i] === want);
+  return pool.reduce((best, u) => {
+    const d = Math.abs(u.slot - slot), bd = Math.abs(best.slot - slot);
+    return d < bd || (d === bd && u.slot < best.slot) ? u : best;
+  });
+}
+
+/** The enemy unit a unit of player p's attacks now, or undefined when none stands. */
+export function attackTarget(s: GameState, p: PlayerId, attacker: Unit): Unit | undefined {
+  const enemies = s.players[other(p)].yard;
+  return enemies.length ? pickFrom(s, enemies, attacker.slot, isSneaky(attacker, s)) : undefined;
+}
+
 function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): void {
-  if (step.closesWindow) s.window = null;
   const { p, card, target, target2 } = step;
   const pl = s.players[p];
   const def = CARDS[card.id];
-  const main = mainAbility(card.id)?.ability;
+  const main = mainAbility(card.id);
 
   if (isUnitCard(card.id)) {
-    if (pl.yard.length >= YARD_LIMIT || (def.type === 'Cat' && pl.yard.some((u) => u.id === card.id))) {
+    const twin = mergeTwin(s, p, card.id);
+    if (twin) {
+      twin.stars = (twin.stars ?? 1) + 1;
       pl.compost.push(card);
-      log(s, `${cardName(card.id)} has no room in the Yard.`, p);
+      log(s, `${cardName(card.id)} joins its twin: ${'★'.repeat(twin.stars)} (${unitPower(twin, s)}/${unitHealth(twin, s)}).`, p);
+      emit(s, { t: 'merge', p, uid: twin.uid, stars: twin.stars });
       return;
     }
-    const unit: Unit = { uid: card.uid, id: card.id, damage: 0, exhausted: !keywords(card.id).zoomies, buffPower: 0, usedOnce: false };
+    const slot = step.slot ?? freeLanes(s, p)[0];
+    if (slot === undefined || unitCount(s, p) >= pl.hero.level || laneUnit(s, p, slot)) {
+      pl.compost.push(card);
+      log(s, `${cardName(card.id)} has no room on the board.`, p);
+      return;
+    }
+    const unit: Unit = { uid: card.uid, id: card.id, slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false };
     pl.yard.push(unit);
+    sortYard(pl);
     if (main) {
-      if (!isUnitSel(main.target)) runAbility(s, p, main, { self: unit });
-      else if (isLegalTarget(s, p, main.target, target, card.uid)) runAbility(s, p, main, { target, self: unit });
+      const { ability, ref } = main;
+      if (reachesEnemy(ability, target)) (pl.pending ??= []).push({ ref, sourceId: card.id, selfUid: unit.uid, ...(target ? { target } : {}) });
+      else if (!isUnitSel(ability.target)) runAbility(s, p, ability, { self: unit });
+      else if (isLegalTarget(s, p, ability.target, target, card.uid)) runAbility(s, p, ability, { target, self: unit });
     }
     return;
   }
@@ -896,63 +1103,111 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
     }
     return;
   }
-  // Trick
-  if (main) {
-    const legal = !isUnitSel(main.target) ||
-      (isLegalTarget(s, p, main.target, target) && (!isUnitSel(main.target2) || isLegalTarget(s, p, main.target2, target2)));
-    if (legal) runAbility(s, p, main, { target, target2 });
-    else if (main.optionalTarget && !target) runAbility(s, p, main, {});
-    else {
-      log(s, `${cardName(card.id)} has no legal target and fizzles.`, p);
-      emit(s, { t: 'fizzled', cardId: card.id });
-    }
+  // Charm
+  if (!main) { pl.compost.push(card); return; }
+  const { ability, ref } = main;
+  if (reachesEnemy(ability, target, target2)) {
+    (pl.pending ??= []).push({ ref, sourceId: card.id, card, ...(target ? { target } : {}), ...(target2 ? { target2 } : {}) });
+    return;
+  }
+  const legal = !isUnitSel(ability.target) ||
+    (isLegalTarget(s, p, ability.target, target) && (!isUnitSel(ability.target2) || isLegalTarget(s, p, ability.target2, target2)));
+  if (legal) runAbility(s, p, ability, { target, target2 });
+  else if (ability.optionalTarget && !target) runAbility(s, p, ability, {});
+  else {
+    log(s, `${cardName(card.id)} has no legal target and fizzles.`, p);
+    emit(s, { t: 'fizzled', cardId: card.id });
   }
   pl.compost.push(card);
 }
 
-function resolveAttack(s: GameState): void {
-  const w = s.window;
-  s.window = null;
-  if (!w || w.kind !== 'attack') return;
-  if (w.cancelled) { log(s, `The attack is cancelled!`); emit(s, { t: 'cancelled', attacker: w.attacker }); return; }
-  const defender = other(w.by);
-
-  const attackerUnit = w.attacker.kind === 'unit' ? findUnit(s, w.attacker.uid) : null;
-  if (w.attacker.kind === 'unit' && !attackerUnit) {
-    log(s, `The attacker is gone; the attack fizzles.`);
-    emit(s, { t: 'fizzled', attacker: w.attacker });
-    return;
+/** At the start of the Clash, each face-down Ambush whose lane holds what it needs is revealed and happens. */
+function fireAmbushes(s: GameState, p: PlayerId): void {
+  const pl = s.players[p];
+  const kept = [];
+  const fired: Step[] = [];
+  for (const a of pl.ambushes ?? []) {
+    const main = mainAbility(a.card.id);
+    if (!main) { pl.compost.push(a.card); continue; }
+    const sel = main.ability.target;
+    let watch: Target | undefined;
+    if (sel === 'attack' || (isUnitSel(sel) && sel.unit === 'enemy')) watch = { kind: 'lane', player: other(p), lane: a.lane };
+    else if (isUnitSel(sel) && sel.unit === 'own') watch = { kind: 'lane', player: p, lane: a.lane };
+    else if (isUnitSel(sel)) watch = a.target ?? { kind: 'lane', player: other(p), lane: a.lane };
+    const target = laneToUnit(s, watch);
+    if (watch && !target) { kept.push(a); continue; }
+    log(s, `${pl.name}'s Ambush in ${laneName(a.lane)}: ${cardName(a.card.id)}!`, p);
+    emit(s, { t: 'ambush', p, lane: a.lane, cardId: a.card.id });
+    pl.playedThisRound = (pl.playedThisRound ?? 0) + 1;
+    fired.push({ t: 'ability', p, ref: main.ref, sourceId: a.card.id, card: a.card, ...(target ? { target } : {}) });
   }
+  pl.ambushes = kept;
+  s.queue.unshift(...fired);
+}
 
-  if (w.target.kind === 'hero') {
-    const n = attackerFierce(s, w.attacker) ? 2 : 1;
-    log(s, `Hit! ${s.players[defender].name} loses ${n} ${n > 1 ? `${TERMS.candles} (Fierce)` : TERMS.candle}.`, w.by);
-    emit(s, { t: 'heroHit', attacker: w.attacker, p: defender, lives: n });
-    s.queue.unshift({ t: 'loseLife', p: defender, n });
-    return;
+/** An Awakened Hero that wasn't exhausted for its ability strikes once as the Clash begins, and takes nothing back. */
+function heroStrike(s: GameState, p: PlayerId): void {
+  const pl = s.players[p];
+  const side = heroSide(s, p);
+  if (!pl.hero.grown || pl.hero.exhausted || !side.power) return;
+  const enemies = s.players[other(p)].yard;
+  s.clash!.struck[p] = true;
+  if (!enemies.length) return;
+  const u = pickFrom(s, enemies, 0, !!side.keywords?.includes('Sneaky'));
+  const dealt = dealDamage(s, u, side.power);
+  log(s, `${pl.name}'s Hero ${cardName(pl.hero.id)} strikes ${cardName(u.id)} for ${dealt}.`, p);
+  emit(s, { t: 'hit', from: { kind: 'hero', player: p }, uid: u.uid, dealt });
+  if (dealt) queueDamaged(s, u);
+}
+
+/** One strike of a bout: every standing, ready unit (only Swift ones first) hits its target, all at once. */
+function strike(s: GameState, swift: boolean): void {
+  const hits: { from: Unit; owner: PlayerId; to: Unit; power: number }[] = [];
+  for (const owner of [s.yarn, other(s.yarn)]) {
+    for (const u of s.players[owner].yard) {
+      if (u.exhausted || cantAttack(s, owner, u) || unitKeywords(u, s).zoomies !== swift) continue;
+      const to = attackTarget(s, owner, u);
+      if (to) hits.push({ from: u, owner, to, power: unitPower(u, s) });
+    }
   }
-  const targetUnit = findUnit(s, w.target.uid);
-  if (!targetUnit) {
-    log(s, `The target is gone; the attack fizzles.`);
-    emit(s, { t: 'fizzled', attacker: w.attacker });
-    return;
+  const hurtUnits = new Set<Unit>();
+  for (const h of hits) {
+    const dealt = dealDamage(s, h.to, h.power);
+    s.clash!.dealt += dealt;
+    log(s, `${cardName(h.from.id)} hits ${cardName(h.to.id)} for ${dealt}.`, h.owner);
+    emit(s, { t: 'hit', from: { kind: 'unit', uid: h.from.uid }, uid: h.to.uid, dealt });
+    if (dealt) hurtUnits.add(h.to);
+    if (unitAbilities(s, h.from, 'defeatsInCombat').length) s.queue.unshift({ t: 'combatWin', uid: h.from.uid, foeUid: h.to.uid });
   }
+  for (const u of hurtUnits) queueDamaged(s, u);
+}
 
-  // Both strike at once: each deals the Power it has before either is hurt.
-  const attackPower = attackerPower(s, w.attacker);
-  const backPower = unitPower(targetUnit.unit, s);
-  const dealt = dealDamage(s, targetUnit.unit, attackPower);
-  let taken = 0;
-  if (attackerUnit) taken = dealDamage(s, attackerUnit.unit, backPower);
-  log(s, `${cardName(targetUnit.unit.id)} takes ${dealt}${attackerUnit ? `, ${cardName(attackerUnit.unit.id)} takes ${taken}` : ''}.`);
-  emit(s, { t: 'clash', attacker: w.attacker, target: targetUnit.unit.uid, dealt, taken });
-
-  if (attackerUnit && unitAbilities(s, attackerUnit.unit, 'defeatsInCombat').length)
-    s.queue.unshift({ t: 'combatWin', uid: attackerUnit.unit.uid, foeUid: targetUnit.unit.uid });
-  if (attackerUnit && unitAbilities(s, targetUnit.unit, 'defeatsInCombat').length)
-    s.queue.unshift({ t: 'combatWin', uid: targetUnit.unit.uid, foeUid: attackerUnit.unit.uid });
-  if (taken && attackerUnit) queueDamaged(s, attackerUnit.unit);
-  if (dealt) queueDamaged(s, targetUnit.unit);
+/** The Clash is over: the side with units standing wins, and the loser blows out a Candle for each of them. */
+function clashEnd(s: GameState): void {
+  const standing = s.players.map((pl) => pl.yard.length) as [number, number];
+  const worth = (p: PlayerId): number => {
+    let n = s.players[p].yard.reduce((sum, u) => sum + (unitKeywords(u, s).fierce ? 2 : 1), 0);
+    if (s.clash?.struck[p]) n += heroSide(s, p).keywords?.includes('Fierce') ? 2 : 1;
+    return n;
+  };
+  const cap = s.rules.clashCandleCap;
+  const lost: [number, number] = [0, 0];
+  if (standing[0] && !standing[1]) lost[1] = Math.min(cap, worth(0));
+  else if (standing[1] && !standing[0]) lost[0] = Math.min(cap, worth(1));
+  else if (standing[0] && standing[1] && s.rules.overtimeBothLose) {
+    lost[0] = Math.min(cap, worth(1));
+    lost[1] = Math.min(cap, worth(0));
+  }
+  if (lost[0] && lost[1]) log(s, `Both sides still stand: each loses ${TERMS.candles} for the other's units.`);
+  else if (lost[0] || lost[1]) {
+    const w = lost[0] ? 1 : 0;
+    log(s, `${s.players[w].name} wins the Clash with ${standing[w]} unit(s) standing.`);
+  } else log(s, `Nobody wins the Clash.`);
+  emit(s, { t: 'clashEnd', standing, lost });
+  const steps: Step[] = [];
+  for (const q of [s.yarn, other(s.yarn)]) if (lost[q]) steps.push({ t: 'loseLife', p: q, n: lost[q] });
+  steps.push({ t: 'reset' }, { t: 'endRound' });
+  s.queue.unshift(...steps);
 }
 
 /** Deal damage to a unit (Tough reduces it); returns what it took. */
@@ -971,13 +1226,8 @@ function queueDamaged(s: GameState, u: Unit): void {
   if (steps.length) s.queue.unshift(...steps);
 }
 
-function heal(s: GameState, p: PlayerId, u: Unit | undefined, amount: number): void {
-  if (!u) return;
-  const healed = Math.min(u.damage, amount);
-  u.damage -= healed;
-  if (healed <= 0) return;
-  emit(s, { t: 'heal', uid: u.uid, amount: healed });
-  // "When you heal": the healer's units that care (Sakura).
+/** "When you heal": the healer's units that care (The Roadside Alux). Giving a unit Health counts. */
+function healed(s: GameState, p: PlayerId): void {
   for (const x of s.players[p].yard) {
     for (const { ability } of unitAbilities(s, x, 'youHeal')) {
       if (ability.oncePerRound) {
@@ -987,6 +1237,16 @@ function heal(s: GameState, p: PlayerId, u: Unit | undefined, amount: number): v
       runAbility(s, p, ability, { self: x });
     }
   }
+}
+
+function heal(s: GameState, p: PlayerId, u: Unit | undefined, amount: number): void {
+  if (!u) return;
+  const amountHealed = Math.min(u.damage, amount);
+  u.damage -= amountHealed;
+  if (amountHealed <= 0) return;
+  log(s, `${cardName(u.id)} heals ${amountHealed}.`, p);
+  emit(s, { t: 'heal', uid: u.uid, amount: amountHealed });
+  healed(s, p);
 }
 
 // ── Running abilities ────────────────────────────────────────────────────────────────────────────
@@ -1025,12 +1285,18 @@ function runAbility(s: GameState, p: PlayerId, ability: Ability, ctx: AbilityCon
   const sel = ability.target;
   let units: Unit[] = [];
   if (sel === 'self') units = ctx.self ? [ctx.self] : [];
-  else if (isUnitSel(sel)) {
+  else if (isUnitSel(sel) || sel === 'attack') {
     const found = ctx.target?.kind === 'unit' ? findUnit(s, ctx.target.uid) : null;
     units = found ? [found.unit] : [];
   } else if (isEachSel(sel)) units = eachUnit(s, p, sel, ctx.self?.uid);
 
   for (const act of acts) doAct(s, p, act, units, ctx);
+}
+
+function gain(s: GameState, p: PlayerId, n: number): void {
+  const pl = s.players[p];
+  pl.offerings += n;
+  log(s, `${pl.name} gains ${n} ${n === 1 ? TERMS.offering : TERMS.offerings}: ${pl.offerings} in all.`, p);
 }
 
 function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityContext): void {
@@ -1039,16 +1305,19 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
     case 'damage': for (const u of units) hurt(s, p, u, value as number); return;
     case 'heal': for (const u of units) heal(s, p, u, value as number); return;
     case 'buff': {
-      const b = value as { power?: number; keywords?: string[] };
+      const b = value as { power?: number; health?: number; keywords?: string[] };
       for (const u of units) {
         if (b.power) u.buffPower += b.power;
+        if (b.health) u.buffHealth = (u.buffHealth ?? 0) + b.health;
         if (b.keywords?.length) u.buffKeywords = [...(u.buffKeywords ?? []), ...b.keywords];
         const e: GameEvent = { t: 'buff', uid: u.uid };
         if (b.power) e.power = b.power;
+        if (b.health) e.health = b.health;
         if (b.keywords?.includes('Sneaky')) e.sneaky = true;
         if (b.keywords?.includes('Guardian')) e.guardian = true;
         emit(s, e);
       }
+      if (b.health && units.length) healed(s, p);
       return;
     }
     case 'counter': {
@@ -1065,22 +1334,17 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
       return;
     }
     case 'draw': s.queue.unshift({ t: 'draw', p, n: value as number }); return;
-    case 'exhaust': for (const u of units) { u.exhausted = true; emit(s, { t: 'exhaust', uid: u.uid }); } return;
+    case 'exhaust':
+    case 'cancelAttack':
+      // An exhausted unit deals no damage in this Clash.
+      for (const u of units) { u.exhausted = true; log(s, `${cardName(u.id)} is exhausted: it deals no damage this Clash.`, p); emit(s, { t: 'exhaust', uid: u.uid }); }
+      return;
     case 'ready': for (const u of units) { u.exhausted = false; emit(s, { t: 'ready', uid: u.uid }); } return;
-    case 'readyTreats': {
-      let left = value as number;
-      for (const t of s.players[p].pantry) if (left > 0 && t.exhausted) { t.exhausted = false; left--; }
+    case 'readyTreats':
+    case 'sprout':
+      gain(s, p, value as number);
       return;
-    }
-    case 'sprout': {
-      // The top cards of the deck become exhausted Treats (running out of deck just stops).
-      const pl = s.players[p];
-      for (let i = 0; i < (value as number) && pl.deck.length; i++) pl.pantry.push({ card: pl.deck.shift()!, exhausted: true });
-      log(s, `${pl.name} now has ${pl.pantry.length} ${TERMS.offerings}.`, p);
-      return;
-    }
     case 'summon': summon(s, p, value as string); return;
-    case 'cancelAttack': if (s.window?.kind === 'attack') s.window.cancelled = true; return;
     case 'fight': fight(s, p, ctx); return;
   }
   for (const plugin of PLUGINS) {
@@ -1093,7 +1357,7 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
   throw new Error(`Unknown card action '${name}': is the plugin for its set registered?`);
 }
 
-/** Damage from a card or ability (not combat, which `resolveAttack` reports as one clash). */
+/** Damage from a card or ability (not the Clash's hits, which `strike` reports). */
 function hurt(s: GameState, p: PlayerId, u: Unit, amount: number): void {
   const dealt = dealDamage(s, u, amount);
   log(s, `${cardName(u.id)} takes ${dealt}.`, p);
@@ -1101,13 +1365,15 @@ function hurt(s: GameState, p: PlayerId, u: Unit, amount: number): void {
   if (dealt) queueDamaged(s, u);
 }
 
-/** Put a token into the player's Yard (nothing happens if the Yard is full). */
+/** Put a token into the player's lowest free lane (nothing happens when every lane is taken). */
 function summon(s: GameState, p: PlayerId, id: string): void {
   const pl = s.players[p];
-  if (!CARDS[id] || pl.yard.length >= YARD_LIMIT) return;
+  const slot = freeLanes(s, p)[0];
+  if (!CARDS[id] || slot === undefined) return;
   const uid = s.nextUid++;
-  pl.yard.push({ uid, id, damage: 0, exhausted: !keywords(id).zoomies, buffPower: 0, usedOnce: false });
-  log(s, `${pl.name} summons ${cardName(id)}.`, p);
+  pl.yard.push({ uid, id, slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
+  sortYard(pl);
+  log(s, `${pl.name} summons ${cardName(id)} in ${laneName(slot)}.`, p);
   emit(s, { t: 'summon', p, uid, cardId: id });
 }
 
@@ -1125,25 +1391,21 @@ function fight(s: GameState, p: PlayerId, ctx: AbilityContext): void {
   if (toB) queueDamaged(s, b);
 }
 
-/** Rule 800.1: defeat units, flip Kittens whose Grow Up condition holds. */
+/** Rule 800.1: units with damage at or over their Health go down (they stand up when the Clash ends); Heroes Awaken. */
 function stateCheck(s: GameState): void {
   if (s.winner !== null) return;
   const triggers: Step[] = [];
-  for (const owner of [0, 1] as PlayerId[]) {
+  for (const owner of [s.yarn, other(s.yarn)]) {
     const pl = s.players[owner];
-    const dead = pl.yard.filter((u) => u.damage >= unitHealth(u, s));
-    if (!dead.length) continue;
-    pl.yard = pl.yard.filter((u) => !dead.includes(u));
-    for (const u of dead) {
-      if (u.toy) pl.compost.push(u.toy);
-      // A token stops existing when it leaves the Yard (rule 200.4); a card goes to the Compost.
-      if (!CARDS[u.id]?.token) pl.compost.push({ uid: u.uid, id: u.id });
-      log(s, `${cardName(u.id)} is defeated.`, owner);
-      emit(s, { t: 'defeated', uid: u.uid, cardId: u.id, owner });
-      for (const { ability, ref } of unitAbilities(s, u, 'goodbye')) {
-        if (isUnitSel(ability.target)) triggers.push({ t: 'choosePrompt', p: owner, ref, spec: ability.target, sourceId: u.id });
-        else triggers.push({ t: 'ability', p: owner, ref, sourceId: u.id, trigger: true });
-      }
+    const down = pl.yard.filter((u) => u.damage >= unitHealth(u, s));
+    if (!down.length) continue;
+    pl.yard = pl.yard.filter((u) => !down.includes(u));
+    for (const u of down) {
+      (pl.fallen ??= []).push(u);
+      pl.downed = (pl.downed ?? 0) + 1;
+      log(s, `${cardName(u.id)} goes down.`, owner);
+      emit(s, { t: 'down', uid: u.uid, cardId: u.id, owner });
+      for (const { ref } of unitAbilities(s, u, 'goodbye')) triggers.push({ t: 'ability', p: owner, ref, sourceId: u.id, trigger: true });
     }
   }
   if (triggers.length) s.queue.unshift(...triggers);

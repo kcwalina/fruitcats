@@ -84,19 +84,21 @@
             },
             "do": [
               {
-                "heal": 2
+                "buff": {
+                  "health": 2
+                }
               }
             ]
           }
         ],
         "growUp": {
           "if": {
-            "unitsInComposts": {
-              "atLeast": 4
+            "unitsDown": {
+              "atLeast": 10
             }
           }
         },
-        "text": "Your units have Pearl Tears.\nExhaust: Heal 2 from a unit you control.\nAwaken: 4 or more Fabled and Creatures are in the Mist."
+        "text": "Your units have Pearl Tears.\nExhaust: A unit you control gets +2 Health this round.\nAwaken: 10 or more units have gone down in Clashes this game."
       },
       "bigCat": {
         "name": "Zhu'er, Pearl of the Moonlit Sea",
@@ -124,7 +126,7 @@
             ]
           }
         ],
-        "text": "Your units get +1 Health and Pearl Tears.\nExhaust: Ready two of your Offerings."
+        "text": "Your units get +1 Health and Pearl Tears.\nExhaust: Gain two Offerings."
       },
       "frame": "gold"
     },
@@ -143,12 +145,12 @@
           "when": "goodbye",
           "do": [
             {
-              "readyTreats": 2
+              "readyTreats": 1
             }
           ]
         }
       ],
-      "text": "Goodbye: Ready two of your Offerings."
+      "text": "Goodbye: Gain an Offering."
     },
     {
       "id": "JR1-D02",
@@ -215,7 +217,10 @@
           ]
         }
       ],
-      "text": "Hello: Ready one of your Offerings."
+      "text": "Lure. Hello: Gain an Offering.",
+      "keywords": [
+        "Lure"
+      ]
     },
     {
       "id": "JR1-D05",
@@ -308,12 +313,14 @@
           },
           "do": [
             {
-              "heal": 2
+              "buff": {
+                "health": 2
+              }
             }
           ]
         }
       ],
-      "text": "Hello: Heal 2 from each unit you control."
+      "text": "Hello: Your units get +2 Health this round."
     },
     {
       "id": "JR1-D11",
@@ -335,7 +342,10 @@
           ]
         }
       ],
-      "text": "Hello: Draw a card."
+      "text": "Elusive. Hello: Draw a card.",
+      "keywords": [
+        "Elusive"
+      ]
     },
     {
       "id": "JR1-D12",
@@ -383,7 +393,7 @@
           ]
         }
       ],
-      "text": "Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings."
+      "text": "Ambush. A unit you control gets +2 Power this round. Gain an Offering."
     },
     {
       "id": "JR1-D14",
@@ -484,7 +494,7 @@
           ]
         }
       ],
-      "text": "Guardian. Pearl Tears. Hello: Ready two of your Offerings."
+      "text": "Guardian. Pearl Tears. Hello: Gain two Offerings."
     },
     {
       "id": "JR1-D18",
@@ -501,12 +511,12 @@
           "when": "goodbye",
           "do": [
             {
-              "draw": 2
+              "draw": 1
             }
           ]
         }
       ],
-      "text": "Goodbye: Draw 2 cards."
+      "text": "Goodbye: Draw a card."
     },
     {
       "id": "JR1-D19",
@@ -557,10 +567,11 @@
     "Pearl Tears": {
       "family": "Jiaoren",
       "kind": "keyword",
-      "reminder": "When this unit is damaged and survives, ready one of your Offerings.",
+      "reminder": "Once per round, when this unit is damaged and survives, gain an Offering.",
       "abilities": [
         {
           "when": "damagedAndSurvives",
+          "oncePerRound": true,
           "do": [
             {
               "readyTreats": 1

@@ -33,7 +33,7 @@ cards = [
     back = Awakened {
       name = 'Aluxito', epithet = 'Caller of the Rain', power = 3
       art = 'art/AL1-H01-bigcat.webp'
-      text = 'Exhaust: Heal {heal} from a unit you control. It gains Guardian this round.'
+      text = 'Exhaust: A unit you control gets +{heal} Health this round. It gains Guardian this round.'
       constants = [heal = 3]
     }
   }
@@ -42,7 +42,8 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'AL1-D01', rarity = common
     art = 'art/AL1-D01.webp'
-    text = 'Hello: Heal {heal} from a unit.'
+    keywords = [@Lure]
+    text = 'Lure. Hello: A unit you control gets +{heal} Health this round.'
     constants = [heal = 2]
     flavor = 'A gourd of sweet corn drink, carried to whoever needs it most.'
   }
@@ -86,8 +87,8 @@ cards = [
     cost = 4, power = 4, health = 3
     number = 'AL1-D06', rarity = uncommon
     art = 'art/AL1-D06.webp'
-    keywords = [@Guardian]
-    text = 'Guardian.'
+    keywords = [@Elusive]
+    text = 'Elusive.'
     flavor = 'Dressed like a farmer, with a slingshot in his sash. Coatis know him.'
   }
   alux-of-the-old-stones = Creature {
@@ -114,7 +115,7 @@ cards = [
     number = 'AL1-D09', rarity = uncommon
     art = 'art/AL1-D09.webp'
     keywords = [@Ambush]
-    text = 'Ambush. Cancel an attack. (The attacker stays exhausted.)'
+    text = 'Ambush. The enemy unit across from this Ambush deals no damage this Clash.'
     flavor = 'He walks the field at night and whistles. Thieves and animals turn back.'
   }
   honey-and-tortillas = Charm {
@@ -123,7 +124,7 @@ cards = [
     number = 'AL1-D10', rarity = uncommon
     art = 'art/AL1-D10.webp'
     keywords = [@Lucky]
-    text = 'Lucky. Heal {heal} from a unit you control. Draw a card.'
+    text = 'Lucky. A unit you control gets +{heal} Health this round. Draw a card.'
     constants = [heal = 3]
     flavor = 'Left on the little doorstep at dusk. Gone by morning.'
   }
@@ -132,8 +133,8 @@ cards = [
     cost = 3
     number = 'AL1-D11', rarity = uncommon
     art = 'art/AL1-D11.webp'
-    text = 'Deal {damage} damage to an exhausted unit.'
-    constants = [damage = 4]
+    text = 'Deal {damage} damage to an exhausted enemy unit.'
+    constants = [damage = 5]
     flavor = 'Fall asleep without leaving an offering, and the kitchen lets you know.'
   }
   kahtal-alux = Talisman {
@@ -150,7 +151,7 @@ cards = [
     cost = 3, power = 2, health = 4
     number = 'AL1-D13', rarity = rare
     art = 'art/AL1-D13.webp'
-    text = 'Once per round, when you heal 1 or more damage from a unit, draw a card.'
+    text = 'Once per round, when you heal a unit or give it Health, draw a card.'
     flavor = 'Stops travellers and asks for a little something. Give it, and luck follows you home.'
   }
   the-alux-of-the-sacred-cenote = Fabled {
@@ -159,7 +160,7 @@ cards = [
     number = 'AL1-D14', rarity = rare
     art = 'art/AL1-D14.webp'
     keywords = [@Guardian]
-    text = 'Guardian. At the start of each round, heal {heal} from each unit you control.'
+    text = 'Guardian. At the start of each round, your units get +{heal} Health this round.'
     constants = [heal = 1]
     flavor = 'Guards the deep pool where the rain begins.'
   }
@@ -209,7 +210,7 @@ cards = [
 ]
 
 @@@ aluxito-text
-Exhaust: Heal {heal} from a unit you control.
+Exhaust: A unit you control gets +{heal} Health this round.
 Awaken: You have {candles} or fewer Candles.
 @@@ kahtal-alux-flavor
 A doll-sized house at the edge of the field. Whoever lives in it guards the corn for seven years.

@@ -12,6 +12,6 @@ for (let g = 0; g < 30; g++) {
   const decks: [string, string][] = [['domowiki', 'pari'], ['pari', 'aluxes'], ['aluxes', 'domowiki']];
   const s = engine.createGame({ decks: decks[g % 3], seed: 900 + g });
   const random = rng(17 + g);
-  while (s.winner === null) { engine.apply(s, engine.chooseAction(s, { random })); actions++; }
+  for (let p = engine.nextSeat(s); p !== null; p = engine.nextSeat(s)) { engine.apply(s, engine.chooseAction(s, { random, seat: p }), p); actions++; }
 }
 console.log(`${Math.round(performance.now() - t0)} ms, ${actions} actions`);

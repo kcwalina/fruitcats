@@ -22,7 +22,7 @@
     "Rain-Fed": {
       "family": "Aluxes",
       "kind": "keyword",
-      "reminder": "At the start of each round this unit gets +1 Power and +1 Health, up to +2/+2.",
+      "reminder": "At the start of each round this unit gets +1 Power and +1 Health, up to +3/+3.",
       "counter": {
         "name": "rain",
         "power": 1,
@@ -39,7 +39,7 @@
               "counter": {
                 "name": "rain",
                 "add": 1,
-                "max": 2
+                "max": 3
               }
             }
           ]
@@ -100,7 +100,7 @@
       "flavor": "Knee-high and invisible. Every corn stalk in the field is his.",
       "kitten": {
         "name": "Aluxito, Keeper of the Milpa",
-        "text": "Exhaust: Heal 2 from a unit you control.\nAwaken: You have 6 or fewer Candles.",
+        "text": "Exhaust: A unit you control gets +2 Health this round.\nAwaken: You have 6 or fewer Candles.",
         "abilities": [
           {
             "when": "exhaust",
@@ -109,7 +109,9 @@
             },
             "do": [
               {
-                "heal": 2
+                "buff": {
+                  "health": 2
+                }
               }
             ]
           }
@@ -125,7 +127,7 @@
       "bigCat": {
         "name": "Aluxito, Caller of the Rain",
         "power": 3,
-        "text": "Exhaust: Heal 3 from a unit you control. It gains Guardian this round.",
+        "text": "Exhaust: A unit you control gets +3 Health this round. It gains Guardian this round.",
         "abilities": [
           {
             "when": "exhaust",
@@ -134,7 +136,9 @@
             },
             "do": [
               {
-                "heal": 3
+                "buff": {
+                  "health": 3
+                }
               },
               {
                 "buff": {
@@ -158,20 +162,25 @@
       "cost": 1,
       "power": 1,
       "health": 2,
-      "text": "Hello: Heal 2 from a unit.",
+      "text": "Lure. Hello: A unit you control gets +2 Health this round.",
       "flavor": "A gourd of sweet corn drink, carried to whoever needs it most.",
       "abilities": [
         {
           "when": "hello",
           "target": {
-            "unit": "any"
+            "unit": "own"
           },
           "do": [
             {
-              "heal": 2
+              "buff": {
+                "health": 2
+              }
             }
           ]
         }
+      ],
+      "keywords": [
+        "Lure"
       ]
     },
     {
@@ -268,10 +277,10 @@
       "cost": 4,
       "power": 4,
       "health": 3,
-      "text": "Guardian.",
+      "text": "Elusive.",
       "flavor": "Dressed like a farmer, with a slingshot in his sash. Coatis know him.",
       "keywords": [
-        "Guardian"
+        "Elusive"
       ]
     },
     {
@@ -313,7 +322,7 @@
       "family": "Aluxes",
       "name": "A Whistle in the Dark",
       "cost": 1,
-      "text": "Ambush. Cancel an attack. (The attacker stays exhausted.)",
+      "text": "Ambush. The enemy unit across from this Ambush deals no damage this Clash.",
       "flavor": "He walks the field at night and whistles. Thieves and animals turn back.",
       "keywords": [
         "Pounce"
@@ -327,8 +336,7 @@
             {
               "cancelAttack": true
             }
-          ],
-          "note": "The attacker stays exhausted."
+          ]
         }
       ]
     },
@@ -339,7 +347,7 @@
       "family": "Aluxes",
       "name": "Honey and Tortillas",
       "cost": 2,
-      "text": "Lucky. Heal 3 from a unit you control. Draw a card.",
+      "text": "Lucky. A unit you control gets +3 Health this round. Draw a card.",
       "flavor": "Left on the little doorstep at dusk. Gone by morning.",
       "keywords": [
         "Lucky"
@@ -353,7 +361,9 @@
           "optionalTarget": true,
           "do": [
             {
-              "heal": 3
+              "buff": {
+                "health": 3
+              }
             },
             {
               "draw": 1
@@ -369,20 +379,20 @@
       "family": "Aluxes",
       "name": "Pots and Pans Flung",
       "cost": 3,
-      "text": "Deal 4 damage to an exhausted unit.",
+      "text": "Deal 5 damage to an exhausted enemy unit.",
       "flavor": "Fall asleep without leaving an offering, and the kitchen lets you know.",
       "abilities": [
         {
           "when": "play",
           "target": {
-            "unit": "any",
+            "unit": "enemy",
             "filter": {
               "exhausted": true
             }
           },
           "do": [
             {
-              "damage": 4
+              "damage": 5
             }
           ]
         }
@@ -420,7 +430,7 @@
       "cost": 3,
       "power": 2,
       "health": 4,
-      "text": "Once per round, when you heal 1 or more damage from a unit, draw a card.",
+      "text": "Once per round, when you heal a unit or give it Health, draw a card.",
       "flavor": "Stops travellers and asks for a little something. Give it, and luck follows you home.",
       "abilities": [
         {
@@ -444,7 +454,7 @@
       "cost": 4,
       "power": 3,
       "health": 5,
-      "text": "Guardian. At the start of each round, heal 1 from each unit you control.",
+      "text": "Guardian. At the start of each round, your units get +1 Health this round.",
       "flavor": "Guards the deep pool where the rain begins.",
       "keywords": [
         "Guardian"
@@ -457,7 +467,9 @@
           },
           "do": [
             {
-              "heal": 1
+              "buff": {
+                "health": 1
+              }
             }
           ]
         }

@@ -10,15 +10,17 @@ export {
 } from './decks';
 export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef } from './cards';
 export {
-  createGame, apply, legalActions, playOptions, playChoices, targetsFor, findUnit, unitPower, unitHealth, unitKeywords,
-  isGuardian, isSneaky, heroSide, readyTreats, other, cardName, random, IllegalAction, evaluateCondition,
-  RULES_VERSION, LIVES, DECK_SIZE, YARD_LIMIT, HAND_LIMIT, MULLIGAN_MAX, TRIGGER_CHAIN_LIMIT,
+  createGame, apply, applyTrusted, legalActions, mayAct, nextSeat, clockFor, playOptions, playChoices, ambushChoices, targetsFor, musterTargets,
+  findUnit, laneUnit, freeLanes, unitCount, mergeTwin, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky,
+  heroSide, heroAbility, levelCost, interestOn, baseIncome, other, cardName, describeTarget, random, IllegalAction, evaluateCondition, cantAttack,
+  RULES_VERSION, LIVES, DECK_SIZE, LANES, YARD_LIMIT, HAND_LIMIT, MULLIGAN_MAX, TRIGGER_CHAIN_LIMIT,
 } from './engine';
 export type { GameOptions, PlayChoice } from './engine';
-export { viewFor, HIDDEN } from './view';
+export { RULES, rulesWith } from './rules';
+export { viewFor, visibleEvents, visibleLog, HIDDEN } from './view';
 export type { PlayerView } from './view';
-export { chooseAction, randomAction, evaluate, determinize, scoreActions } from './ai';
+export { chooseAction, randomAction, evaluate, determinize, scoreActions, forecastClash } from './ai';
 export type { AiOptions } from './ai';
 export { default as TERMS } from './terms.json';
-export { rulesPrimer, STRATEGY_PRIMER, describe, listChoices, choicesText, parseChoice } from './text';
+export { rulesPrimer, STRATEGY_PRIMER, describe, listChoices, choicesText, parseChoice, isFree } from './text';
 export type { Choice, ChoiceOptions, Choices } from './text';

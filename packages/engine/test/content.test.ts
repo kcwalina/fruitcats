@@ -16,13 +16,15 @@ describe('rules text comes from the data', () => {
   });
   it('writes the house style', () => {
     expect(suggestText(CARDS['PR1-D12'])).toBe('Ambush. Lucky. Deal 2 damage to a unit.');
-    expect(suggestText(CARDS['PR1-D04'])).toBe('Company: enters ready.');
+    expect(suggestText(CARDS['PR1-D04'])).toBe('Swift.');
     expect(suggestText(CARDS['PR1-D06'])).toBe('Hello: Deal 1 damage to a unit. Company: deal 2 instead.');
-    expect(suggestText(CARDS['AL1-D09'])).toBe('Ambush. Cancel an attack. (The attacker stays exhausted.)');
-    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Draw 2 cards.');
-    expect(suggestText(CARDS['DW1-D02'])).toBe('Hello: Sprout 1.');
+    expect(suggestText(CARDS['AL1-D09'])).toBe('Ambush. The enemy unit across from this Ambush deals no damage this Clash.');
+    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Draw a card.');
+    expect(suggestText(CARDS['DW1-D02'])).toBe('Lure. Hello: Sprout 1.');
+    expect(suggestText(CARDS['DW1-D06'])).toBe('Hello: Your units get +2 Health this round.');
     expect(suggestText(CARDS['AL1-D04'])).toBe('Rain-Fed.');
-    expect(heroTexts(CARDS['DW1-H01']).kitten).toBe('Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.');
+    expect(heroTexts(CARDS['DW1-H01']).kitten).toBe('Exhaust: Gain an Offering.\nAwaken: You have 8 or more Offerings.');
+    expect(heroTexts(CARDS['JR1-H01']).kitten).toContain('Awaken: 10 or more units have gone down in Clashes this game.');
   });
   it('never writes a retired word (Treats, Pounce, Zoomies…) on any card', () => {
     for (const c of Object.values(CARDS)) {

@@ -57,7 +57,7 @@ const article = (word: string) => (/^(8|11|18|[aeio]|u(?!n[aeiou]))/i.test(word)
 function noun(t: TargetSel | undefined, self: string): string {
   if (t === undefined) return '';
   if (t === 'self') return self;
-  if (t === 'attack') return 'an attack';
+  if (t === 'attack') return 'the enemy unit across from this Ambush';
   const { adj, tail } = filterWords(t.filter);
   if ('unit' in t) {
     if (t.unit === 'own') return t.other ? `another ${adj}unit you control${tail}` : `${article(adj || 'unit')} ${adj}unit you control${tail}`;
@@ -88,6 +88,7 @@ function clause(c: Condition): string {
   if ('opponentLives' in c) return `your opponent has ${c.opponentLives.atMost} or fewer ${TERMS.candles}`;
   if ('yardHas' in c) return `you control ${article(kw(c.yardHas.keyword))} ${kw(c.yardHas.keyword)}`;
   if ('unitsInComposts' in c) return `${c.unitsInComposts.atLeast} or more ${TERMS.typesPlural.Cat} and ${TERMS.typesPlural.Critter} are in the ${TERMS.mist}`;
+  if ('unitsDown' in c) return `${c.unitsDown.atLeast} or more units have gone down in Clashes this game`;
   if ('controlUnits' in c) return `you control ${c.controlUnits.atLeast} or more units`;
   if ('compost' in c) return `you have ${c.compost.atLeast} or more cards in your ${TERMS.mist}`;
   if ('unitHasCounter' in c) {
@@ -120,13 +121,14 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     case 'damage': return `deal ${n} damage to ${on}`;
     case 'heal': return `heal ${n} from ${on}`;
     case 'buff': {
-      const b0 = v as { power?: number; keywords?: string[] };
+      const b0 = v as { power?: number; health?: number; keywords?: string[] };
       const b = { ...b0, keywords: b0.keywords?.map(kw) };
       // Every unit of a side, as the subject: "your units get" (not "each unit you control gets").
       const each = typeof a.target === 'object' && 'each' in a.target && on !== 'it' ? auraSubject(a.target).toLowerCase() : '';
       const subject = subjectless ? '' : `${each || on} `;
-      if (!b.power && b.keywords?.length) return `${subject}${each ? 'gain' : 'gains'} ${b.keywords.join(' and ')} this round`;
-      return `${subject}${each ? 'get' : 'gets'} ${[b.power && `+${b.power} Power`, ...(b.keywords ?? [])].filter(Boolean).join(' and ')} this round`;
+      if (!b.power && !b.health && b.keywords?.length) return `${subject}${each ? 'gain' : 'gains'} ${b.keywords.join(' and ')} this round`;
+      const parts = [b.power && `+${b.power} Power`, b.health && `+${b.health} Health`, ...(b.keywords ?? [])].filter(Boolean);
+      return `${subject}${each ? 'get' : 'gets'} ${parts.join(' and ')} this round`;
     }
     case 'counter': {
       const c = v as { name: string; add: number };
@@ -137,7 +139,7 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     case 'draw': return n === 1 ? 'draw a card' : `draw ${n} cards`;
     case 'exhaust': return `exhaust ${on}`;
     case 'ready': return a.when === 'hello' && a.target === 'self' ? 'enters ready' : `ready ${on}`;
-    case 'readyTreats': return `ready ${count(n)} of your ${TERMS.offerings}`;
+    case 'readyTreats': return n === 1 ? `gain an ${TERMS.offering}` : `gain ${count(n)} ${TERMS.offerings}`;
     case 'sprout': return `Sprout ${n}`;
     case 'summon': {
       const t = TOKENS[String(v)];
@@ -146,7 +148,7 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
       const kws = t.keywords?.length ? ` with ${t.keywords.map(kw).join(' and ')}` : '';
       return `summon ${article(String(t.power))} ${t.power}/${t.health} ${t.name}${kws}`;
     }
-    case 'cancelAttack': return 'cancel an attack';
+    case 'cancelAttack': return `${on} deals no damage this Clash`;
     case 'fight': return `${on} and ${noun(a.target2, self)} deal damage equal to their Power to each other`;
     default: return name && PLUGIN_TEXTS[name] ? PLUGIN_TEXTS[name](v, on, self) : name ?? '';
   }
@@ -167,7 +169,7 @@ function actClauses(acts: Act[], a: Ability, self: string, subjectless: boolean,
   }
   return merged.map((act, i) => {
     if (times[i] > 1) { const t = TOKENS[String((act as { summon: string }).summon)]; return `summon ${count(times[i])} ${t.name}s`; }
-    const needsTarget = !['draw', 'readyTreats', 'sprout', 'summon', 'cancelAttack'].includes(Object.keys(act)[0]);
+    const needsTarget = !['draw', 'readyTreats', 'sprout', 'summon'].includes(Object.keys(act)[0]);
     const target = mentioned && singular ? 'it' : on;
     const text = actClause(act, target, a, self, subjectless);
     if (needsTarget) mentioned = true;
@@ -199,9 +201,8 @@ export function abilityText(a: Ability, card: CardDef): string {
   const label = ({ hello: 'Hello: ', goodbye: 'Goodbye: ', exhaust: 'Exhaust: ' } as Record<string, string>)[a.when ?? ''] ?? '';
   const lead =
     a.when === 'roundStart' ? 'At the start of each round, ' :
-    a.when === 'damagedAndSurvives' ? `After ${name} survives damage, ` :
-    a.when === 'defeatsInCombat' ? `${a.oncePerRound ? 'Once per round, after' : 'After'} ${name} defeats a unit in combat, ` :
-    a.when === 'youHeal' ? `${a.oncePerRound ? 'Once per round, when' : 'When'} you heal 1 or more damage from a unit, ` : '';
+    a.when === 'damagedAndSurvives' ? `${a.oncePerRound ? 'Once per round, after' : 'After'} ${name} survives damage, ` :    a.when === 'defeatsInCombat' ? `${a.oncePerRound ? 'Once per round, after' : 'After'} ${name} defeats a unit in combat, ` :
+    a.when === 'youHeal' ? `${a.oncePerRound ? 'Once per round, when' : 'When'} you heal a unit or give it Health, ` : '';
 
   // A unit's own bonus under a label mechanic, on arrival: "Company: gets +1 Power this round." (no "Hello:").
   const ownLabelBonus = a.when === 'hello' && a.target === 'self' && isLabel(a.if);

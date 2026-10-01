@@ -24,7 +24,7 @@ cards = [
     text = @zhu-er-text
     constants = [
       heal = 2
-      fallen = 4
+      fallen = 10
     ]
     flavor = 'Her name means Little Pearl. She has never cried a tear that wasn''t one.'
     back = Awakened {
@@ -39,7 +39,7 @@ cards = [
     cost = 3, power = 2, health = 3
     number = 'JR1-D01', rarity = uncommon
     art = 'art/JR1-D01.webp'
-    text = 'Goodbye: Ready two of your Offerings.'
+    text = 'Goodbye: Gain an Offering.'
     flavor = @the-spring-guest-flavor
   }
   weaver-of-the-sea-hall = Creature {
@@ -64,7 +64,8 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'JR1-D04', rarity = common
     art = 'art/JR1-D04.webp'
-    text = 'Hello: Ready one of your Offerings.'
+    keywords = [@Lure]
+    text = 'Lure. Hello: Gain an Offering.'
     flavor = 'When the moon is full, the oysters are full. When the moon is dark, they are empty.'
   }
   jiaoren-of-the-tide-pools = Creature {
@@ -115,7 +116,7 @@ cards = [
     cost = 4, power = 3, health = 5
     number = 'JR1-D10', rarity = uncommon
     art = 'art/JR1-D10.webp'
-    text = 'Hello: Heal {heal} from each unit you control.'
+    text = 'Hello: Your units get +{heal} Health this round.'
     constants = [heal = 2]
     flavor = 'A little pearl, ground to powder, for every hurt.'
   }
@@ -124,7 +125,8 @@ cards = [
     cost = 5, power = 5, health = 5
     number = 'JR1-D11', rarity = uncommon
     art = 'art/JR1-D11.webp'
-    text = 'Hello: Draw a card.'
+    keywords = [@Elusive]
+    text = 'Elusive. Hello: Draw a card.'
     flavor = 'They leave timber under the tree and take a fair price. Nobody ever sees their faces.'
   }
   elder-of-the-south-sea = Creature {
@@ -142,7 +144,7 @@ cards = [
     number = 'JR1-D13', rarity = uncommon
     art = 'art/JR1-D13.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round. Ready one of your Offerings.'
+    text = 'Ambush. A unit you control gets +{boost} Power this round. Gain an Offering.'
     constants = [boost = 2]
     flavor = 'The thank-you gift of a guest from the sea.'
   }
@@ -180,7 +182,7 @@ cards = [
     number = 'JR1-D17', rarity = rare
     art = 'art/JR1-D17.webp'
     keywords = [@Guardian, @pearl-tears]
-    text = 'Guardian. Pearl Tears. Hello: Ready two of your Offerings.'
+    text = 'Guardian. Pearl Tears. Hello: Gain two Offerings.'
     flavor = 'The jiaoren are also called the spring guests. She came first.'
   }
   the-muke-poet = Fabled {
@@ -188,8 +190,7 @@ cards = [
     cost = 4, power = 3, health = 4
     number = 'JR1-D18', rarity = rare
     art = 'art/JR1-D18.webp'
-    text = 'Goodbye: Draw {draw} cards.'
-    constants = [draw = 2]
+    text = 'Goodbye: Draw a card.'
     flavor = '"The town is all noise and dust. Back to the mountain, to play with the moon."'
   }
   the-oldest-weaver = Fabled {
@@ -215,11 +216,11 @@ cards = [
 
 @@@ zhu-er-text
 Your units have Pearl Tears.
-Exhaust: Heal {heal} from a unit you control.
-Awaken: {fallen} or more Fabled and Creatures are in the Mist.
+Exhaust: A unit you control gets +{heal} Health this round.
+Awaken: {fallen} or more units have gone down in Clashes this game.
 @@@ zhu-er-back-text
 Your units get +{extra-health} Health and Pearl Tears.
-Exhaust: Ready two of your Offerings.
+Exhaust: Gain two Offerings.
 @@@ the-spring-guest-flavor
 She stayed a few days to sell her silk. Leaving, she wept a plate of pearls for her host.
 @@@ ice-silkworm-flavor

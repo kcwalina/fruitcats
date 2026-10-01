@@ -1,8 +1,8 @@
 // Bot-vs-bot playtesting: npm run sim -- [games per pairing=100] [skill=1]
 // Plays every pair of decks against each other (both seats) and prints the matchup matrix,
-// starting-player advantage, game length and Grow Up rates.
+// starting-player advantage, game length and Awaken rates.
 
-import { DECKS, apply, chooseAction, createGame, registerSet, type PlayerId } from '../src/index';
+import { DECKS, apply, chooseAction, createGame, nextSeat, registerSet, type PlayerId } from '../src/index';
 import { loadContent } from '../../../content';
 
 // Every set, prototypes included: the simulator is where a new deck is first measured.
@@ -31,11 +31,11 @@ const started = Date.now();
 for (let i = 0; i < decks.length; i++) {
   for (let j = i + 1; j < decks.length; j++) {
     for (let g = 0; g < games; g++) {
-      // Alternate seats so each deck plays both sides of the Yarn Ball.
+      // Alternate seats so each deck plays both sides of the Lantern.
       const seat: [string, string] = g % 2 ? [decks[j], decks[i]] : [decks[i], decks[j]];
       const s = createGame({ decks: seat, seed: 7919 * (i * 31 + j) + g, names: ['A', 'B'] });
       const rnd = mulberry(1000 + g);
-      while (s.winner === null) apply(s, chooseAction(s, { skill, random: rnd }));
+      for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, chooseAction(s, { skill, random: rnd, seat: p }), p);
       total++;
       rounds += s.round;
       actions += s.actions;
@@ -67,6 +67,6 @@ for (const a of decks) {
   });
   console.log(a.padEnd(width) + cells.join('') + `   ${pct(w, n)}`);
 }
-console.log(`\nstarting Yarn holder wins: ${pct(starterWins, total - draws).trim()}   draws: ${draws}`);
+console.log(`\nstarting Lantern holder wins: ${pct(starterWins, total - draws).trim()}   draws: ${draws}`);
 console.log(`avg rounds: ${(rounds / total).toFixed(1)}   avg actions: ${(actions / total).toFixed(0)}`);
-console.log('Grew Up: ' + decks.map((d) => `${d} ${pct(grown[d] ?? 0, played[d]).trim()}`).join(', '));
+console.log('Awakened: ' + decks.map((d) => `${d} ${pct(grown[d] ?? 0, played[d]).trim()}`).join(', '));

@@ -2,7 +2,7 @@
 // first three folk decks (Domowiki, Pari, Aluxes), both seats, bot against bot, fixed seeds for the deal and for the bots.
 
 import { createHash } from 'node:crypto';
-import { apply, chooseAction, createGame, type Action } from '../src/index';
+import { apply, chooseAction, createGame, nextSeat, type Action } from '../src/index';
 
 export interface GoldenGame { a: string; b: string; seed: number }
 
@@ -25,9 +25,10 @@ export function playGolden(g: GoldenGame): { actions: string; winner: number | s
   const rnd = mulberry(g.seed * 7 + 1);
   const hash = createHash('sha256');
   while (s.winner === null) {
-    const action: Action = chooseAction(s, { random: rnd });
-    hash.update(JSON.stringify(action));
-    apply(s, action);
+    const seat = nextSeat(s)!;
+    const action: Action = chooseAction(s, { random: rnd, seat });
+    hash.update(JSON.stringify([seat, action]));
+    apply(s, action, seat);
   }
   return { actions: hash.digest('hex').slice(0, 16), winner: s.winner, round: s.round };
 }

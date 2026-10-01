@@ -28,7 +28,7 @@ cards = [
       name = 'Dziadziuś', epithet = 'Master of the House', power = 4
       art = 'art/DW1-H01-bigcat.webp'
       keywords = [@Fierce]
-      text = 'Fierce. Exhaust: Ready two of your Offerings.'
+      text = 'Fierce. Exhaust: Gain two Offerings.'
     }
   }
   stove-keeper = Creature {
@@ -36,7 +36,7 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'DW1-D01', rarity = common
     art = 'art/DW1-D01.webp'
-    text = 'Hello: Ready one of your Offerings.'
+    text = 'Hello: Gain an Offering.'
     flavor = 'Keeps the embers warm until morning.'
   }
   moving-day-domowik = Creature {
@@ -44,7 +44,8 @@ cards = [
     cost = 1, power = 1, health = 1
     number = 'DW1-D02', rarity = common
     art = 'art/DW1-D02.webp'
-    text = 'Hello: Sprout {sprout}.'
+    keywords = [@Lure]
+    text = 'Lure. Hello: Sprout {sprout}.'
     constants = [sprout = 1]
     flavor = 'Carry the old fire, and the home comes with you.'
   }
@@ -79,7 +80,7 @@ cards = [
     cost = 4, power = 3, health = 5
     number = 'DW1-D06', rarity = uncommon
     art = 'art/DW1-D06.webp'
-    text = 'Hello: Heal {heal} from each unit you control.'
+    text = 'Hello: Your units get +{heal} Health this round.'
     constants = [heal = 2]
     flavor = 'Every guest is welcome. Every crumb is counted.'
   }
@@ -88,7 +89,8 @@ cards = [
     cost = 5, power = 5, health = 5
     number = 'DW1-D07', rarity = uncommon
     art = 'art/DW1-D07.webp'
-    text = 'Hello: If you''re Well-Fed, draw {draw} cards.'
+    keywords = [@Elusive]
+    text = 'Elusive. Hello: If you''re Well-Fed, draw {draw} cards.'
     constants = [draw = 2]
     flavor = 'Spins by the stove all night. The yarn tells tomorrow.'
   }
@@ -103,11 +105,11 @@ cards = [
   }
   bowl-of-kasha = Charm {
     name = 'Bowl of Kasha'
-    cost = 3
+    cost = 1
     number = 'DW1-D09', rarity = uncommon
     art = 'art/DW1-D09.webp'
     text = 'Sprout {sprout}.'
-    constants = [sprout = 2]
+    constants = [sprout = 3]
     flavor = 'A bowl by the stove, the first spoonful for him.'
   }
   a-domowiks-temper = Charm {
@@ -126,7 +128,7 @@ cards = [
     number = 'DW1-D11', rarity = uncommon
     art = 'art/DW1-D11.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round. Ready one of your Offerings.'
+    text = 'Ambush. A unit you control gets +{boost} Power this round. Gain an Offering.'
     constants = [boost = 2]
     flavor = 'Warm milk in the stable keeps the whole barn happy.'
   }
@@ -157,7 +159,7 @@ cards = [
     number = 'DW1-D14', rarity = rare
     art = 'art/DW1-D14.webp'
     keywords = [@Guardian]
-    text = 'Guardian. Hello: Ready one of your Offerings.'
+    text = 'Guardian. Hello: Gain an Offering.'
     flavor = 'Some say she was the first spirit of the house. He only moved in later.'
   }
   bannik-of-the-bathhouse = Fabled {
@@ -215,6 +217,6 @@ cards = [
 ]
 
 @@@ dziadzius-text
-Exhaust: Ready one of your Offerings.
+Exhaust: Gain an Offering.
 Awaken: You have {offerings} or more Offerings.
 @@@

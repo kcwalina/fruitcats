@@ -43,7 +43,7 @@
     "Stone for Stone": {
       "family": "Hui Hai",
       "kind": "keyword",
-      "reminder": "When this unit is damaged and survives, deal 1 damage to an enemy unit.",
+      "reminder": "When this unit is damaged and survives, deal 1 damage to the enemy unit it would hit.",
       "abilities": [
         {
           "when": "damagedAndSurvives",
@@ -87,12 +87,12 @@
         ],
         "growUp": {
           "if": {
-            "unitsInComposts": {
-              "atLeast": 5
+            "unitsDown": {
+              "atLeast": 12
             }
           }
         },
-        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: 5 or more Fabled and Creatures are in the Mist."
+        "text": "Exhaust: A unit you control gets +1 Power this round.\nAwaken: 12 or more units have gone down in Clashes this game."
       },
       "bigCat": {
         "name": "Pebble, Keeper of the Stream",
@@ -216,10 +216,11 @@
       "power": 1,
       "health": 2,
       "keywords": [
-        "Stone for Stone"
+        "Stone for Stone",
+        "Lure"
       ],
       "flavor": "The fern moved. There was no wind.",
-      "text": "Stone for Stone."
+      "text": "Stone for Stone. Lure."
     },
     {
       "id": "HH1-D05",
@@ -259,7 +260,10 @@
       "power": 4,
       "health": 2,
       "flavor": "The boulder was on the path in the evening. In the morning it wasn't.",
-      "text": ""
+      "text": "Elusive.",
+      "keywords": [
+        "Elusive"
+      ]
     },
     {
       "id": "HH1-D08",
@@ -332,12 +336,14 @@
           },
           "do": [
             {
-              "heal": 2
+              "buff": {
+                "health": 2
+              }
             }
           ]
         }
       ],
-      "text": "Hello: Heal 2 from each unit you control."
+      "text": "Hello: Your units get +2 Health this round."
     },
     {
       "id": "HH1-D12",

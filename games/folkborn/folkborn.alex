@@ -60,9 +60,9 @@ constants = [
   // §850
   well-fed-at = 7
   company-at = 3
-  rain-fed-max = 2
+  rain-fed-max = 3
   // §300.7
-  max-rounds = 40
+  max-rounds = 30
 ]
 
 keywords = [
@@ -73,6 +73,8 @@ keywords = [
   Tough = Keyword {}
   Lucky = Keyword {}
   Ambush = Keyword {}
+  Elusive = Keyword {}
+  Lure = Keyword {}
 ]
 
 enum Rarity { common, uncommon, rare, legendary }

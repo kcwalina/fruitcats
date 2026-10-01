@@ -163,10 +163,11 @@
       "cost": 1,
       "power": 1,
       "health": 1,
-      "text": "Feather Coat.",
+      "text": "Feather Coat. Lure.",
       "flavor": "A pari can put on a coat of feathers and fly off as a dove.",
       "keywords": [
-        "Feather Coat"
+        "Feather Coat",
+        "Lure"
       ]
     },
     {
@@ -223,19 +224,10 @@
       "cost": 2,
       "power": 3,
       "health": 2,
-      "text": "Company: enters ready.",
+      "text": "Swift.",
       "flavor": "People who met a pari usually found her bathing. Her sisters were never far.",
-      "abilities": [
-        {
-          "when": "hello",
-          "if": "Company",
-          "target": "self",
-          "do": [
-            {
-              "ready": true
-            }
-          ]
-        }
+      "keywords": [
+        "Zoomies"
       ]
     },
     {
@@ -296,10 +288,11 @@
       "cost": 4,
       "power": 4,
       "health": 3,
-      "text": "Fierce.",
+      "text": "Fierce. Elusive.",
       "flavor": "The fairies own the wild goats. Hunters ask: 'Mother, adopt me, and give me one of your goats.'",
       "keywords": [
-        "Fierce"
+        "Fierce",
+        "Elusive"
       ]
     },
     {
@@ -433,23 +426,20 @@
       "type": "Trick",
       "name": "Choicest Odours",
       "cost": 2,
-      "text": "Ready an exhausted unit you control. Heal 2 from it.",
+      "text": "A unit you control gets +1 Power and +3 Health this round.",
       "flavor": "When the divs caged a pari in the highest tree, her friends brought her the sweetest scents.",
       "abilities": [
         {
           "when": "play",
           "target": {
-            "unit": "own",
-            "filter": {
-              "exhausted": true
-            }
+            "unit": "own"
           },
           "do": [
             {
-              "ready": true
-            },
-            {
-              "heal": 2
+              "buff": {
+                "power": 1,
+                "health": 3
+              }
             }
           ]
         }
@@ -538,25 +528,11 @@
       "cost": 3,
       "power": 3,
       "health": 3,
-      "text": "Swift. Feather Coat. Hello: Ready another unit you control.",
+      "text": "Swift. Feather Coat.",
       "flavor": "Hassan hid her feather robe by the pool. The day she found it, she flew home.",
       "keywords": [
         "Zoomies",
         "Feather Coat"
-      ],
-      "abilities": [
-        {
-          "when": "hello",
-          "target": {
-            "unit": "own",
-            "other": true
-          },
-          "do": [
-            {
-              "ready": true
-            }
-          ]
-        }
       ],
       "pronoun": "her"
     },
@@ -595,7 +571,7 @@
       "cost": 5,
       "power": 5,
       "health": 5,
-      "text": "Fierce. Once per round, after Schaibar defeats a unit in combat, ready him.",
+      "text": "Fierce. Once per round, after Schaibar defeats a unit in combat, he gets +2 Power this round.",
       "flavor": "A foot and a half tall, with a beard thirty feet long and a bar of iron on his shoulder.",
       "keywords": [
         "Fierce"
@@ -607,13 +583,15 @@
           "target": "self",
           "do": [
             {
-              "ready": true
+              "buff": {
+                "power": 2
+              }
             }
           ],
-          "log": "Schaibar readies after his victory."
+          "log": "Schaibar grows stronger after his victory."
         }
       ],
-      "pronoun": "him"
+      "pronoun": "he"
     }
   ],
   "tokens": [
@@ -624,8 +602,11 @@
       "family": "Pari",
       "power": 1,
       "health": 1,
-      "text": "",
-      "flavor": "Somewhere under those feathers, a pari."
+      "text": "Lure.",
+      "flavor": "Somewhere under those feathers, a pari.",
+      "keywords": [
+        "Lure"
+      ]
     }
   ],
   "decks": {

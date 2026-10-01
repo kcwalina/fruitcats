@@ -22,7 +22,7 @@
     "Well-Fed": {
       "family": "Domowiki",
       "kind": "condition",
-      "reminder": "This bonus is on while you have 7 or more Offerings.",
+      "reminder": "This bonus is on while you have 7 or more Offerings saved.",
       "if": {
         "treats": {
           "atLeast": 7
@@ -30,13 +30,13 @@
       },
       "badge": {
         "icon": "🍞",
-        "title": "Well-Fed: 7 or more Offerings — Well-Fed bonuses are on"
+        "title": "Well-Fed: 7 or more Offerings saved — Well-Fed bonuses are on"
       }
     },
     "Sprout": {
       "family": "Domowiki",
       "kind": "action",
-      "reminder": "Put that many cards from the top of your deck into your Offerings."
+      "reminder": "Gain that many Offerings."
     }
   },
   "lore": {
@@ -87,7 +87,7 @@
       "flavor": "The smallest Domowik in the house. Everyone listens to him anyway.",
       "kitten": {
         "name": "Dziadziuś, Heart of the House",
-        "text": "Exhaust: Ready one of your Offerings.\nAwaken: You have 8 or more Offerings.",
+        "text": "Exhaust: Gain an Offering.\nAwaken: You have 8 or more Offerings.",
         "abilities": [
           {
             "when": "exhaust",
@@ -109,7 +109,7 @@
       "bigCat": {
         "name": "Dziadziuś, Master of the House",
         "power": 4,
-        "text": "Fierce. Exhaust: Ready two of your Offerings.",
+        "text": "Fierce. Exhaust: Gain two Offerings.",
         "keywords": [
           "Fierce"
         ],
@@ -135,7 +135,7 @@
       "cost": 1,
       "power": 1,
       "health": 2,
-      "text": "Hello: Ready one of your Offerings.",
+      "text": "Hello: Gain an Offering.",
       "flavor": "Keeps the embers warm until morning.",
       "abilities": [
         {
@@ -157,7 +157,7 @@
       "cost": 1,
       "power": 1,
       "health": 1,
-      "text": "Hello: Sprout 1.",
+      "text": "Lure. Hello: Sprout 1.",
       "flavor": "Carry the old fire, and the home comes with you.",
       "abilities": [
         {
@@ -168,6 +168,9 @@
             }
           ]
         }
+      ],
+      "keywords": [
+        "Lure"
       ]
     },
     {
@@ -231,7 +234,7 @@
       "cost": 4,
       "power": 3,
       "health": 5,
-      "text": "Hello: Heal 2 from each unit you control.",
+      "text": "Hello: Your units get +2 Health this round.",
       "flavor": "Every guest is welcome. Every crumb is counted.",
       "abilities": [
         {
@@ -241,7 +244,9 @@
           },
           "do": [
             {
-              "heal": 2
+              "buff": {
+                "health": 2
+              }
             }
           ]
         }
@@ -256,7 +261,7 @@
       "cost": 5,
       "power": 5,
       "health": 5,
-      "text": "Hello: If you're Well-Fed, draw 2 cards.",
+      "text": "Elusive. Hello: If you're Well-Fed, draw 2 cards.",
       "flavor": "Spins by the stove all night. The yarn tells tomorrow.",
       "abilities": [
         {
@@ -268,6 +273,9 @@
             }
           ]
         }
+      ],
+      "keywords": [
+        "Elusive"
       ]
     },
     {
@@ -292,15 +300,15 @@
       "family": "Domowiki",
       "type": "Trick",
       "name": "Bowl of Kasha",
-      "cost": 3,
-      "text": "Sprout 2.",
+      "cost": 1,
+      "text": "Sprout 3.",
       "flavor": "A bowl by the stove, the first spoonful for him.",
       "abilities": [
         {
           "when": "play",
           "do": [
             {
-              "sprout": 2
+              "sprout": 3
             }
           ]
         }
@@ -339,7 +347,7 @@
       "type": "Trick",
       "name": "Saucer of Milk",
       "cost": 1,
-      "text": "Ambush. A unit you control gets +2 Power this round. Ready one of your Offerings.",
+      "text": "Ambush. A unit you control gets +2 Power this round. Gain an Offering.",
       "flavor": "Warm milk in the stable keeps the whole barn happy.",
       "keywords": [
         "Pounce"
@@ -415,7 +423,7 @@
       "cost": 5,
       "power": 4,
       "health": 5,
-      "text": "Guardian. Hello: Ready one of your Offerings.",
+      "text": "Guardian. Hello: Gain an Offering.",
       "flavor": "Some say she was the first spirit of the house. He only moved in later.",
       "keywords": [
         "Guardian"

@@ -201,6 +201,10 @@ export interface Keywords {
   fierce: boolean;
   lucky: boolean;
   pounce: boolean;
+  /** The carry: enemies hit it after every other unit but Lures; Sneaky ones go for it early. */
+  elusive: boolean;
+  /** The decoy: enemies hit it last, but Sneaky enemies must hit it first. */
+  lure: boolean;
   tough: number;
   /** Every keyword by name, core and set mechanics alike ("Guardian", "Tough 1", "Heat"). */
   all: string[];
@@ -209,7 +213,9 @@ export interface Keywords {
 const keywordCache = new Map<string, Keywords>();
 
 export function keywordsFrom(list: string[]): Keywords {
-  const k: Keywords = { zoomies: false, guardian: false, sneaky: false, fierce: false, lucky: false, pounce: false, tough: 0, all: list };
+  const k: Keywords = {
+    zoomies: false, guardian: false, sneaky: false, fierce: false, lucky: false, pounce: false, elusive: false, lure: false, tough: 0, all: list,
+  };
   for (const s of list) {
     if (s === 'Zoomies') k.zoomies = true;
     else if (s === 'Guardian') k.guardian = true;
@@ -217,6 +223,8 @@ export function keywordsFrom(list: string[]): Keywords {
     else if (s === 'Fierce') k.fierce = true;
     else if (s === 'Lucky') k.lucky = true;
     else if (s === 'Pounce') k.pounce = true;
+    else if (s === 'Elusive') k.elusive = true;
+    else if (s === 'Lure') k.lure = true;
     else if (/^Tough \d+$/.test(s)) k.tough += Number(s.slice(6));
   }
   return k;
@@ -227,7 +235,7 @@ export function parseKeywords(text = ''): Keywords {
   const list: string[] = [];
   for (const raw of text.split(/[.\n]/)) {
     const s = raw.trim();
-    if (['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce'].includes(s) || /^Tough \d+$/.test(s)) list.push(s);
+    if (['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce', 'Elusive', 'Lure'].includes(s) || /^Tough \d+$/.test(s)) list.push(s);
   }
   return keywordsFrom(list);
 }
@@ -301,7 +309,7 @@ export function deckCardIds(deckOrKey: string | DeckList): string[] {
 
 export const TRIGGERS = ['play', 'hello', 'goodbye', 'roundStart', 'exhaust', 'damagedAndSurvives', 'defeatsInCombat', 'youHeal'];
 export const BUILT_IN_ACTIONS = ['damage', 'heal', 'buff', 'counter', 'draw', 'exhaust', 'ready', 'readyTreats', 'sprout', 'summon', 'cancelAttack', 'fight'];
-export const CONDITION_TESTS = ['not', 'playedThisRound', 'treats', 'lives', 'opponentLives', 'yardHas', 'unitsInComposts', 'compost', 'controlUnits', 'unitHasCounter'];
+export const CONDITION_TESTS = ['not', 'playedThisRound', 'treats', 'lives', 'opponentLives', 'yardHas', 'unitsInComposts', 'unitsDown', 'compost', 'controlUnits', 'unitHasCounter'];
 
 /**
  * The actions and conditions a set's cards use that neither the engine nor a registered plugin provides

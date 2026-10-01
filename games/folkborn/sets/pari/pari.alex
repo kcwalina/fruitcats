@@ -37,8 +37,8 @@ cards = [
     cost = 1, power = 1, health = 1
     number = 'PR1-D01', rarity = common
     art = 'art/PR1-D01.webp'
-    keywords = [@feather-coat]
-    text = 'Feather Coat.'
+    keywords = [@feather-coat, @Lure]
+    text = 'Feather Coat. Lure.'
     flavor = 'A pari can put on a coat of feathers and fly off as a dove.'
   }
   orange-peri = Creature {
@@ -67,7 +67,8 @@ cards = [
     cost = 2, power = 3, health = 2
     number = 'PR1-D04', rarity = common
     art = 'art/PR1-D04.webp'
-    text = 'Company: enters ready.'
+    keywords = [@Swift]
+    text = 'Swift.'
     flavor = 'People who met a pari usually found her bathing. Her sisters were never far.'
   }
   gale-bringer-of-the-high-lakes = Creature {
@@ -96,8 +97,8 @@ cards = [
     cost = 4, power = 4, health = 3
     number = 'PR1-D07', rarity = uncommon
     art = 'art/PR1-D07.webp'
-    keywords = [@Fierce]
-    text = 'Fierce.'
+    keywords = [@Fierce, @Elusive]
+    text = 'Fierce. Elusive.'
     flavor = @markhor-of-the-mothers-flavor
   }
   pari-on-a-wonder-camel = Creature {
@@ -160,8 +161,7 @@ cards = [
     cost = 2
     number = 'PR1-D14', rarity = uncommon
     art = 'art/PR1-D14.webp'
-    text = 'Ready an exhausted unit you control. Heal {heal} from it.'
-    constants = [heal = 2]
+    text = 'A unit you control gets +1 Power and +3 Health this round.'
     flavor = @choicest-odours-flavor
   }
   zangwar = Charm {
@@ -198,7 +198,7 @@ cards = [
     number = 'PR1-D18', rarity = rare
     art = 'art/PR1-D18.webp'
     keywords = [@Swift, @feather-coat]
-    text = 'Swift. Feather Coat. Hello: Ready another unit you control.'
+    text = 'Swift. Feather Coat.'
     flavor = 'Hassan hid her feather robe by the pool. The day she found it, she flew home.'
   }
   asman-pari = Fabled {
@@ -216,7 +216,7 @@ cards = [
     number = 'PR1-D20', rarity = rare
     art = 'art/PR1-D20.webp'
     keywords = [@Fierce]
-    text = 'Fierce. Once per round, after Schaibar defeats a unit in combat, ready him.'
+    text = 'Fierce. Once per round, after Schaibar defeats a unit in combat, he gets +2 Power this round.'
     flavor = @schaibar-flavor
   }
   dove = TokenCreature {
@@ -224,6 +224,8 @@ cards = [
     cost = 0, power = 1, health = 1
     number = 'PR1-K01'
     art = 'art/PR1-K01.webp'
+    keywords = [@Lure]
+    text = 'Lure.'
     flavor = 'Somewhere under those feathers, a pari.'
   }
 ]

@@ -79,11 +79,11 @@ cards = [
   }
   slingshot-alux = Creature {
     name = 'Slingshot Alux'
-    cost = 4, power = 4, health = 3
+    cost = 4, power = 3, health = 3
     number = 'AL1-D06', rarity = uncommon
     art = 'art/AL1-D06.webp'
-    keywords = [@Elusive]
-    text = 'Elusive.'
+    keywords = [@Sneaky]
+    text = 'Sneaky.'
     flavor = 'Dressed like a farmer, with a slingshot in his sash. Coatis know him.'
   }
   alux-of-the-old-stones = Creature {

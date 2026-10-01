@@ -275,12 +275,12 @@
       "family": "Aluxes",
       "name": "Slingshot Alux",
       "cost": 4,
-      "power": 4,
+      "power": 3,
       "health": 3,
-      "text": "Elusive.",
+      "text": "Sneaky.",
       "flavor": "Dressed like a farmer, with a slingshot in his sash. Coatis know him.",
       "keywords": [
-        "Elusive"
+        "Sneaky"
       ]
     },
     {

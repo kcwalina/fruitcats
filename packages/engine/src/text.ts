@@ -13,6 +13,7 @@ import {
   unitHealth, unitKeywords, unitPower,
 } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
+import { RULES } from './rules';
 import { viewFor, type PlayerView } from './view';
 import TERMS from './terms.json';
 
@@ -22,10 +23,10 @@ Two players, 50-card decks, each led by a Hero. Win by blowing out the opponent'
 - A round: Start (units and Hero ready again, income; round 1 has no income), a new shop, then the Muster, then the Clash.
 - The shop: ${'{shop}'} cards dealt face up from your own deck at every Start. Buy what you want at its cost; what you don't buy goes back into your deck, which is shuffled. Roll (${'{roll}'} Offering) to put the shop back and get ${'{shop}'} new cards.
 - Offerings are money. You start with ${'{start}'}. At each Start you get income (it grows with the rounds), plus interest: +1 for every 5 Offerings you have saved (at most +3), plus a losing streak: +1 after 2 or 3 Clashes lost in a row, +2 after 4, +3 after 5 or more. What you don't spend is kept.
-- The Muster: both players build at the same time, in secret, each until they choose Ready. You may: buy a unit into one of your 6 lanes (you may have as many units as your Hero's Level, 2 at first); buy a Talisman for a unit of yours; buy a Charm; buy a card with Ambush and set it face-down in one of your lanes; move your units between lanes (free); sell a unit (you get back what you paid, less 1 for each copy in it; its card goes back into your deck); roll the shop; use your Hero's ability once; level up your Hero (more lanes) by paying Offerings. You see the opponent's board as it was when the Muster began.
+- The Muster: both players build at the same time, in secret, each until they choose Ready. You may: buy a unit into one of your 6 lanes (you may have as many units as your Hero's Level, 2 at first); buy a Talisman for a unit of yours; buy a Charm; buy a card with Ambush and set it face-down in one of your lanes; move your units between lanes (free); sell a unit (you get back what you paid, less 1 for each copy in it; its card goes back into your deck); roll the shop; use your Hero's ability once; level up your Hero by paying Offerings (each Level is room for one more unit; there are always 6 lanes). You see the opponent's board as it was when the Muster began.
 - Buying a copy of a Creature you already have merges it into that unit, even when your lanes are full: 2 stars, then 3, each star adding its printed Power and Health again. Fabled never merge.
 - Effects aimed at the enemy (damage, exhaust) are aimed at one of their lanes and happen when the Clash begins, to whoever stands there then. With nobody there, they fizzle.
-- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). An Awakened Hero that didn't use its ability strikes once. Then come bouts: in each bout every unit hits one enemy unit, Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a Guardian first; otherwise plain units; then Elusive units; Lures last. Sneaky units go the other way: Lures first, Guardians last. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage.
+- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the bouts: in each bout every unit hits one enemy unit, Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a Guardian first; otherwise plain units; then Elusive units; Lures last. Sneaky units go the other way: Lures first, Guardians last. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
 - The Clash ends when one side has no units standing (or after ${'{bouts}'} bouts, or when nobody can deal damage). The loser blows out 1 Candle per enemy unit still standing (2 for Fierce ones, +1 for a Hero that struck), at most ${'{cap}'}. If both sides still stand at the end, each loses Candles for the other's units.
 - After the Clash every unit stands up again with no damage: nothing on the board is lost in a Clash. Damage never carries over to the next round.
 - Hero: its "Exhaust:" ability can be used once a round. When its Awaken condition is true it flips to its Awakened side for good; an Awakened Hero that isn't exhausted strikes in the Clash.`;
@@ -38,10 +39,10 @@ const CORE_KEYWORDS = `Swift: hits first in every bout. Guardian: enemies hit Gu
  * each set gives it. The same text for every request of a run, so providers can cache it.
  */
 export function rulesPrimer(s?: GameState): string {
-  const rules = s?.rules;
-  const core = CORE_RULES.replace('{start}', String(rules?.startOfferings ?? 3)).replace('{bouts}', String(rules?.boutCap ?? 8))
-    .replace('{cap}', String(rules?.clashCandleCap ?? 2)).replaceAll('{shop}', String(rules?.shopSize ?? 6))
-    .replace('{roll}', String(rules?.rollCost ?? 1));
+  const rules = s?.rules ?? RULES;
+  const core = CORE_RULES.replace('{start}', String(rules.startOfferings)).replace('{bouts}', String(rules.boutCap))
+    .replaceAll('{cap}', String(rules.clashCandleCap)).replaceAll('{shop}', String(rules.shopSize))
+    .replace('{roll}', String(rules.rollCost));
   const mechanics = Object.entries(MECHANICS)
     .sort(([, a], [, b]) => (a.family ?? '').localeCompare(b.family ?? ''))
     .map(([name, m]) => `${name}${m.family ? ` (${m.family})` : ''}: ${m.reminder}`)
@@ -57,6 +58,7 @@ export const STRATEGY_PRIMER = `BASIC STRATEGY
 - Put a Guardian where the enemy's strong units are; Guardians soak the first hits. Keep your best damage dealer Elusive or behind Guardians.
 - Sneaky units hit Lures and Elusive units first: against Sneaky enemies, a Lure protects your carry.
 - Merge copies of the same Creature: a 2-star unit is twice as strong. A copy merges even when your lanes are full.
+- Moving is free, but only where your units stand when you are Ready matters. Decide where each unit goes, move it once, and get on with buying cards.
 - Aim damage Charms at the lane where the enemy's key unit stood last round; they hit whoever stands there when the Clash begins.
 - Roll when the shop has nothing for you and you can spare the Offering; with lanes full, sell your weakest unit to make room for a better one.`;
 
@@ -185,7 +187,7 @@ function detailed(s: GameState, seat: PlayerId, a: Action, base: string): string
       const left = me.offerings - (c.cost ?? 0);
       return `${base} — ${[unit ? `${c.power}/${c.health}` : TERMS.types[c.type as keyof typeof TERMS.types] ?? c.type, c.text?.replace(/\.$/, '')].filter(Boolean).join('. ')}. Leaves ${left} Offering(s).`;
     }
-    case 'levelUp': return `${base}: ${me.hero.level + 1} lanes, leaves ${me.offerings - (levelCost(s, seat) ?? 0)} Offering(s)`;
+    case 'levelUp': return `${base}: room for ${me.hero.level + 1} units, leaves ${me.offerings - (levelCost(s, seat) ?? 0)} Offering(s)`;
     case 'ready': return me.offerings ? `${base} (${me.offerings} Offering(s) saved: +${interestOn(s, me.offerings)} interest next Start)` : base;
     default: return base;
   }

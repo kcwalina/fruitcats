@@ -127,7 +127,7 @@ export async function runLlmPlaytest(o: LlmRunOptions): Promise<RunSummary> {
       return `- **${d.name}** (${CARDS[d.hero]?.name.split(',')[0] ?? d.hero})${b ? `: the LLM won ${b.won} of ${b.games}` : ': no games'}. \`${deckCode(d)}\``;
     }), ''] : []),
     `Player: **${o.player.name}**, ${o.player.about}. ${callsPerMove.toFixed(1)} model calls a move${Object.keys(toolCalls).length ? ` (tools: ${Object.entries(toolCalls).map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}.`, '',
-    `Against the bot's judgment: agrees with its choice on ${pct(judgement.agreeWithBot)} of ${judgement.judgedMoves} moves, gives up ${judgement.regretPerMove.toFixed(2)} points a move; per game it takes the Lantern ${judgement.yarnWithMovesLeftPerGame.toFixed(1)} times and passes ${judgement.passWithMovesLeftPerGame.toFixed(1)} times with a useful move left.`, '',
+    `Against the bot's judgment: agrees with its choice on ${pct(judgement.agreeWithBot)} of ${judgement.judgedMoves} moves, gives up ${judgement.regretPerMove.toFixed(2)} points a move; per game it is Ready ${judgement.passWithMovesLeftPerGame.toFixed(1)} times with a useful move left.`, '',
     `${results.length} games, LLM won ${pct(winRate)}. ${moves} LLM moves, ${fallbacks} fell back to the bot. ` +
     `Tokens: ${usage.input.toLocaleString()} in (${usage.cachedInput.toLocaleString()} cached), ${usage.output.toLocaleString()} out${cost !== null ? `, $${cost.toFixed(2)}` : ''}.`, '',
     '## Problems', '', ...(problems.length ? problems.map((p) => `- **${p.level}**: ${p.text}`) : ['None.']), '',

@@ -14,14 +14,14 @@ export const PERSONAS: Record<string, Persona> = {
   exploit: {
     key: 'exploit',
     name: 'Exploit hunter',
-    style: 'You are an expert card-game player hunting for anything unfair. Try unusual lines: odd attack orders, holding Offerings for Ambushes, taking the Lantern at strange times, sacrificing units, racing. Win if you can, but above all probe for combinations or cards that are too strong or never worth playing.',
+    style: 'You are an expert card-game player hunting for anything unfair. Try unusual lines: odd lane orders, saving Offerings for interest, stacking Talismans on one unit, Ambushes in surprising lanes, offering your own units, racing to a high Level. Win if you can, but above all probe for combinations or cards that are too strong or never worth playing.',
     watch: 'cards or combinations that felt too strong, cards that never felt worth playing, and any rule interaction that seemed broken',
   },
   aggro: {
     key: 'aggro',
     name: 'Aggressive player',
-    style: 'You are an aggressive, experienced player. You want to win fast: develop cheap units, attack the Hero Cat whenever it is sensible, and only trade units when it clearly helps the race.',
-    watch: 'whether attacking felt rewarding or pointless, and what stopped you from winning faster',
+    style: 'You are an aggressive, experienced player. You want to win fast: field cheap units early, fill your lanes, and spend rather than save, so the opponent loses Candles from the first Clashes.',
+    watch: 'whether an early army felt rewarding or pointless, and what stopped you from winning faster',
   },
   newcomer: {
     key: 'newcomer',

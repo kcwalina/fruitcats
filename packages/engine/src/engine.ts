@@ -709,7 +709,7 @@ function perform(s: GameState, action: Action, seat: PlayerId | undefined, check
     case 'levelUp': {
       me.offerings -= levelCost(s, p)!;
       me.hero.level++;
-      log(s, `${me.name}'s ${cardName(me.hero.id)} reaches Level ${me.hero.level}: ${me.hero.level} lanes.`, p);
+      log(s, `${me.name}'s ${cardName(me.hero.id)} reaches Level ${me.hero.level}: room for ${me.hero.level} units.`, p);
       emit(s, { t: 'levelUp', p, level: me.hero.level });
       break;
     }
@@ -1003,6 +1003,11 @@ function runStep(s: GameState, step: Extract<Step, { t: 'ability' }>): void {
     emit(s, { t: 'fizzled', cardId: step.sourceId });
     return done();
   }
+  // An effect aimed at a lane in the Muster says what it found there, so "Kikimora is exhausted" has a cause.
+  if (step.target?.kind === 'lane' && target?.kind === 'unit') {
+    const found = findUnit(s, target.uid)!;
+    log(s, `${s.players[step.p].name}'s ${cardName(step.sourceId)} finds ${s.players[found.owner].name}'s ${cardName(found.unit.id)} in ${laneName(step.target.lane)}.`, step.p);
+  }
   let ctx: AbilityContext = { target, target2, self };
   if (isUnitSel(ability.target)) {
     if (!target) {
@@ -1170,7 +1175,7 @@ function heroStrike(s: GameState, p: PlayerId): void {
   if (!enemies.length) return;
   const u = pickFrom(s, enemies, 0, !!side.keywords?.includes('Sneaky'));
   const dealt = dealDamage(s, u, side.power);
-  log(s, `${pl.name}'s Hero ${cardName(pl.hero.id)} strikes ${cardName(u.id)} for ${dealt}.`, p);
+  log(s, `${pl.name}'s Hero ${cardName(pl.hero.id)} strikes ${cardName(u.id)} for ${dealt}${toughNote(s, u, side.power, dealt)}.`, p);
   emit(s, { t: 'hit', from: { kind: 'hero', player: p }, uid: u.uid, dealt });
   if (dealt) queueDamaged(s, u);
 }
@@ -1189,7 +1194,7 @@ function strike(s: GameState, swift: boolean): void {
   for (const h of hits) {
     const dealt = dealDamage(s, h.to, h.power);
     s.clash!.dealt += dealt;
-    log(s, `${cardName(h.from.id)} hits ${cardName(h.to.id)} for ${dealt}.`, h.owner);
+    log(s, `${cardName(h.from.id)} hits ${cardName(h.to.id)} for ${dealt}${toughNote(s, h.to, h.power, dealt)}.`, h.owner);
     emit(s, { t: 'hit', from: { kind: 'unit', uid: h.from.uid }, uid: h.to.uid, dealt });
     if (dealt) hurtUnits.add(h.to);
     if (unitAbilities(s, h.from, 'defeatsInCombat').length) s.queue.unshift({ t: 'combatWin', uid: h.from.uid, foeUid: h.to.uid });
@@ -1231,6 +1236,10 @@ function dealDamage(s: GameState, u: Unit, amount: number): number {
   u.damage += dealt;
   return dealt;
 }
+
+/** Why a hit dealt less than its Power, for the log: "for 0 (Tough 2)". */
+const toughNote = (s: GameState, u: Unit, amount: number, dealt: number): string =>
+  dealt < amount ? ` (Tough ${unitKeywords(u, s).tough})` : '';
 
 /** After a unit is dealt damage: its "damaged and survives" abilities, which run once the state is checked. */
 function queueDamaged(s: GameState, u: Unit): void {
@@ -1375,7 +1384,7 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
 /** Damage from a card or ability (not the Clash's hits, which `strike` reports). */
 function hurt(s: GameState, p: PlayerId, u: Unit, amount: number): void {
   const dealt = dealDamage(s, u, amount);
-  log(s, `${cardName(u.id)} takes ${dealt}.`, p);
+  log(s, `${cardName(u.id)} takes ${dealt}${toughNote(s, u, amount, dealt)}.`, p);
   emit(s, { t: 'damage', uid: u.uid, amount: dealt, p });
   if (dealt) queueDamaged(s, u);
 }

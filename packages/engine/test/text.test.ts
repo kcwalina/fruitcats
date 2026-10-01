@@ -1,6 +1,6 @@
 import { describe as suite, expect, it } from 'vitest';
 import {
-  apply, chooseAction, createGame, describe, listChoices, nextSeat, other, parseChoice, rulesPrimer, type GameState, type PlayerId,
+  RULES, apply, chooseAction, createGame, describe, listChoices, nextSeat, other, parseChoice, rulesPrimer, type GameState, type PlayerId,
 } from '../src/index';
 import TERMS from '../src/terms.json';
 
@@ -21,6 +21,16 @@ function* decisions(games: number, decks = ['domowiki', 'pari', 'aluxes']): Gene
       apply(s, chooseAction(s, { random: r, seat: p }), p);
     }
   }
+}
+
+/** Bot games played to the end. */
+function games(n: number, decks: string[]): GameState[] {
+  return Array.from({ length: n }, (_, g) => {
+    const s = createGame({ decks: [decks[g % decks.length], decks[(g + 1) % decks.length]], seed: 900 + g });
+    const r = rng(g + 7);
+    for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, chooseAction(s, { random: r, seat: p }), p);
+    return s;
+  });
 }
 
 suite('text interface', () => {
@@ -91,6 +101,25 @@ suite('text interface', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 1, rules: { startOfferings: 7 } });
     expect(rulesPrimer(s)).toContain('You start with 7.');
   });
+
+  // The LLM players read rulesPrimer() without a game, and were told "at most 3" Candles a Clash when the rule was 2.
+  it('without a game, teaches the default numbers', () => {
+    expect(rulesPrimer()).toContain(`at most ${RULES.clashCandleCap}.`);
+    expect(rulesPrimer()).toContain(`after ${RULES.boutCap} bouts`);
+  });
+
+  // A Level is room for one more unit; there are always six lanes. "Level 3: 3 lanes" read as if lanes were locked.
+  it('says a Level is room for units, not lanes', () => {
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 3 });
+    const r = rng(3);
+    while (s.prompt?.kind !== 'muster') apply(s, chooseAction(s, { random: r, seat: nextSeat(s)! }), nextSeat(s)!);
+    const seat = nextSeat(s)!;
+    const level = listChoices(s, { detail: true }, seat).options.find((o) => o.action.t === 'levelUp')!;
+    expect(level.label).toMatch(/room for 3 units/);
+    apply(s, level.action, seat);
+    expect(s.log.at(-1)!.text).toMatch(/reaches Level 3: room for 3 units\.$/);
+    expect(rulesPrimer()).not.toMatch(/more lanes/);
+  });
 });
 
 suite("the game's words", () => {
@@ -130,7 +159,7 @@ suite('what the log says', () => {
     for (const [s] of decisions(4, ['hui-hai', 'pari', 'domowiki'])) {
       if (s.winner === null) continue;
       const damaged = s.events.filter((e) => e.t === 'damage').length;
-      const lines = s.log.filter((e) => / takes \d+\.$/.test(e.text)).length;
+      const lines = s.log.filter((e) => / takes \d+( \(Tough \d+\))?\.$/.test(e.text)).length;
       expect(lines).toBeGreaterThanOrEqual(damaged);
       hurt += damaged;
     }
@@ -139,5 +168,31 @@ suite('what the log says', () => {
     for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, chooseAction(s, { random: r, seat: p }), p);
     expect(s.log.some((e) => / hits .* for \d+\.$/.test(e.text))).toBe(true);
     void hurt;
+  }, 60_000);
+
+  // "The House Snake hits Alux of the Old Stones for 0" read as a bug: the log now says why.
+  it('says when Tough took damage off a hit', () => {
+    let reduced = 0;
+    for (const s of games(6, ['aluxes', 'domowiki', 'hui-hai'])) {
+      for (const e of s.log) {
+        if (/ for 0\.$| takes 0\.$/.test(e.text)) throw new Error(`no reason given: ${e.text}`);
+        if (/ \(Tough \d+\)\.$/.test(e.text)) reduced++;
+      }
+    }
+    expect(reduced).toBeGreaterThan(0);
+  }, 60_000);
+
+  // "Kikimora is exhausted" came with no cause: an effect aimed at a lane in the Muster now says what it found there.
+  it('names the card and the owner when an effect aimed at a lane finds its unit', () => {
+    let found = 0;
+    for (const s of games(6, ['domowiki', 'jiaoren', 'pari'])) {
+      s.log.forEach((e, i) => {
+        if (/'s .+ finds .+'s .+ in lane \d\.$/.test(e.text)) found++;
+        if (/ is exhausted: it deals no damage/.test(e.text)) {
+          expect(s.log[i - 1].text).toMatch(/ finds .+ in lane \d\.$|'s Ambush in lane \d: |uses their ability|exhausts|plays /);
+        }
+      });
+    }
+    expect(found).toBeGreaterThan(0);
   }, 60_000);
 });

@@ -25,7 +25,8 @@ spare card for 1 had evened out everyone's money; without it, the decks that mak
 deals a free body (a 1-cost "gain an Offering") every time one comes up. The pass: income 4, 5, 6 (was 3, 4, 5);
 Stove Keeper, Pearl Oyster and Bowl of Kasha cost 2, Frost-White Silk 2, Dragon Silk 3; cheaper Aluxes (Clay Alux 2,
 Slingshot Alux 3, Alux of the Ceiba Roots 5, Pots and Pans Flung 2) and Hui Hai (Yă Hui Hai 3, Moss-Mender 3, Old One
-of the Waterfall 6, The Rock That Moved 7, Stones from Nowhere 3, The Forest Remembers 3). Roll price made no
+of the Waterfall 6, The Rock That Moved 7, Stones from Nowhere 3, The Forest Remembers 3), and Lookout on Mount Qāf
+costs 3 (a 1/4 Guardian for 2 was the best card in the game once its Lucky was gone). Roll price made no
 difference (the bots roll about twice a game).
 
 ## Folkborn 0.4: the Muster and the Clash (2026-09-30)

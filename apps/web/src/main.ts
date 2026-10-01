@@ -3,7 +3,7 @@ import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
 import { count, summary } from './progress';
-import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
+import { BASE, altKey, altOf, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { keepPictures } from './offline';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
@@ -612,7 +612,7 @@ function onClick(key: string) {
         return;
       case 'ability': return select('your Hero’s ability', legal.filter((a) => a.t === 'ability'));
       case 'alt': {
-        const alt = selection?.alts?.[value];
+        const alt = selection?.alts?.[altOf(key)];
         if (alt) select(alt.label, alt.options);
         return;
       }
@@ -1299,7 +1299,7 @@ function renderMidbar(s: GameState, legal: Action[]): string {
     text = p
       ? `Choose ${PARAM_WORDS[p]} for <b>${esc(selection.label)}</b>.${lane && p === 'target' ? ' An effect aimed at their lane happens when the Clash begins, to whoever stands there.' : ''}`
       : `<b>${esc(selection.label)}</b>`;
-    buttons = (selection.alts ?? []).map((alt, i) => `<button data-click="btn:alt:${i}">${esc(alt.label)}</button>`).join('')
+    buttons = (selection.alts ?? []).map((alt, i) => `<button data-click="${altKey(i)}">${esc(alt.label)}</button>`).join('')
       + '<button data-click="btn:cancel">Cancel</button>';
   } else if (prompt.kind === 'mulligan') {
     text = `<b>Mulligan.</b> Swap up to <b>${MULLIGAN_MAX}</b> cards you don't like: you get the same number back. (${picks.size} selected.)`;

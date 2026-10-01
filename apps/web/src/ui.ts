@@ -48,3 +48,8 @@ export function backButton(click = 'ui:back', label = 'Home'): string {
   const face = label === 'Home' ? `<img src="${BASE}ui/icon-home.webp" alt="">` : '<span class="back-arrow" aria-hidden="true">‹</span>';
   return `<button class="icon-button back-button" data-click="${click}" title="${label}" aria-label="${label}">${face}</button>`;
 }
+
+/** The click key of a selection's other choice (Offer it, set it face-down), by its place among them. */
+export const altKey = (i: number) => `btn:alt:${i}`;
+/** Which of a selection's other choices a click key names (`btn:alt:<i>`): the third part, not the second. */
+export const altOf = (key: string) => Number(key.split(':')[2]);

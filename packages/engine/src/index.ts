@@ -11,7 +11,7 @@ export {
 export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef } from './cards';
 export {
   createGame, apply, applyTrusted, legalActions, mayAct, nextSeat, clockFor, playOptions, playChoices, ambushChoices, targetsFor, musterTargets,
-  findUnit, laneUnit, freeLanes, unitCount, mergeTwin, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky,
+  findUnit, laneUnit, freeLanes, isOpenLane, openFreeLanes, unitCount, mergeTwin, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky,
   heroSide, heroAbility, levelCost, interestOn, baseIncome, streakBonus, sellValue, rollCost, other, cardName, describeTarget, random, IllegalAction, evaluateCondition, cantAttack,
   RULES_VERSION, LIVES, DECK_SIZE, LANES, YARD_LIMIT, TRIGGER_CHAIN_LIMIT,
 } from './engine';

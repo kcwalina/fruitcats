@@ -640,6 +640,14 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 .yard.foe .lane .lane-no { bottom: 4px; }
 .yard.me .lane .lane-no { top: 4px; }
 .board.targeting .lane.empty:not(.targetable)::before { opacity: 0.45; }
+/* A lane the Hero's Level hasn't opened: grey, solid, with a lock and the Level that opens it. */
+.lane.empty.locked::before { border: 2px solid rgba(0, 0, 0, 0.35); background: rgba(0, 0, 0, 0.38); }
+.lane.empty.locked:not(.targetable)::before { opacity: 1; }
+.lane .lane-lock {
+  position: absolute; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
+  font-size: clamp(14px, 3.2vh, 22px); opacity: 0.55; filter: grayscale(1);
+}
+.lane .lane-lock small { font: 700 11px Fredoka, Nunito, sans-serif; color: rgba(255, 244, 220, 0.85); }
 .ambush-mark {
   position: absolute; top: 2px; right: 2px; z-index: 4; width: clamp(16px, 2.2vw, 24px); aspect-ratio: 0.72;
   background: var(--img-cardback) center / cover; border: 2px solid #fff4dc; border-radius: 4px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);

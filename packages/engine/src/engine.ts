@@ -35,8 +35,9 @@ import type {
  * 2: cards as data (unit counters and buffKeywords instead of ripe / buffSneaky / buffGuardian).
  * 3: the Muster and the Clash (Folkborn 0.4): Offerings are money, units fight on their own.
  * 4: the shop instead of a hand (Folkborn 0.5): no mulligan, no draws, Candles are a count.
+ * 5: lanes open with the Level, from the left: a unit, a move or an Ambush only in an open lane.
  */
-export const RULES_VERSION = 4;
+export const RULES_VERSION = 5;
 
 export const LIVES = 9;
 export const DECK_SIZE = 50;
@@ -163,6 +164,15 @@ export function freeLanes(s: GameState, p: PlayerId): number[] {
   const taken = new Set([...pl.yard, ...(pl.fallen ?? [])].map((u) => u.slot));
   return Array.from({ length: LANES }, (_, i) => i).filter((i) => !taken.has(i));
 }
+
+/**
+ * The lanes a player may use: as many as their Hero's Level, from the left (Level 3: lanes 1 to 3). The others are
+ * locked: nothing is bought, moved or set face-down there. Only a summoned token may stand in one, for a Clash.
+ */
+export const isOpenLane = (s: GameState, p: PlayerId, lane: number): boolean => lane < s.players[p].hero.level;
+
+/** Lanes the player may put a new unit in: open and empty. */
+export const openFreeLanes = (s: GameState, p: PlayerId): number[] => freeLanes(s, p).filter((lane) => isOpenLane(s, p, lane));
 
 /** Units the player has on the board, standing or down: what the Hero's Level limits. */
 export const unitCount = (s: GameState, p: PlayerId): number => s.players[p].yard.length + (s.players[p].fallen?.length ?? 0);
@@ -465,7 +475,7 @@ export function playChoices(s: GameState, p: PlayerId, card: CardInst): PlayChoi
       const targets = musterTargets(s, p, main!.target!, undefined, !helpful(main!)).map((target) => ({ target }));
       hellos = main!.optional ? [{}, ...targets] : targets.length ? targets : [{}];
     }
-    return freeLanes(s, p).flatMap((slot) => hellos.map((h) => ({ slot, ...h })));
+    return openFreeLanes(s, p).flatMap((slot) => hellos.map((h) => ({ slot, ...h })));
   }
   if (def.type === 'Toy') return targetsFor(s, p, { unit: 'own', filter: { noToy: true } }).map((target) => ({ target }));
   // Charm
@@ -495,7 +505,7 @@ export function ambushChoices(s: GameState, p: PlayerId, card: CardInst): { lane
   const used = new Set((me.ambushes ?? []).map((a) => a.lane));
   const out: { lane: number; target?: Target }[] = [];
   for (let lane = 0; lane < LANES; lane++) {
-    if (used.has(lane)) continue;
+    if (used.has(lane) || !isOpenLane(s, p, lane)) continue;
     if (isUnitSel(sel) && sel.unit === 'any') {
       out.push({ lane, target: { kind: 'lane', player: p, lane } }, { lane, target: { kind: 'lane', player: other(p), lane } });
     } else out.push({ lane });
@@ -557,7 +567,7 @@ export function legalActions(s: GameState, seat?: PlayerId): Action[] {
   }
   for (const u of me.yard) {
     for (let slot = 0; slot < LANES; slot++) {
-      if (slot === u.slot) continue;
+      if (slot === u.slot || !isOpenLane(s, p, slot)) continue;
       const there = laneUnit(s, p, slot);
       if (there && there.uid < u.uid) continue; // a swap, listed once
       actions.push({ t: 'move', uid: u.uid, slot });
@@ -1077,8 +1087,8 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
       emit(s, { t: 'merge', p, uid: twin.uid, stars: twin.stars });
       return;
     }
-    const slot = step.slot ?? freeLanes(s, p)[0];
-    if (slot === undefined || unitCount(s, p) >= pl.hero.level || laneUnit(s, p, slot)) {
+    const slot = step.slot ?? openFreeLanes(s, p)[0];
+    if (slot === undefined || unitCount(s, p) >= pl.hero.level || laneUnit(s, p, slot) || !isOpenLane(s, p, slot)) {
       pl.compost.push(card);
       log(s, `${cardName(card.id)} has no room on the board.`, p);
       return;

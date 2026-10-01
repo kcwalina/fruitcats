@@ -32,7 +32,7 @@ import {
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, LANES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame,
-  deckSize, heroSide, interestOn, laneUnit, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
+  deckSize, heroSide, interestOn, isOpenLane, laneUnit, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
   unitPower, viewFor, visibleLog,
   type Action, type DeckList, type GameState, type LogEntry, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -1138,7 +1138,7 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
         <div class="lives" title="${pl.lives} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives <= 3 ? 'low' : ''}"><b>${pl.lives}</b></span></div>
         <div class="purse" title="${TERMS.offerings}: what you pay with. Saved ones earn interest: +1 for every ${s.rules.interestPer} at the start of each round (at most ${s.rules.interestMax}). Clashes lost in a row earn more.${pl.streak ? ` Lost in a row: ${pl.streak}.` : ''}">
           <b>${pl.offerings}</b> ${TERMS.offerings}${interest ? ` <small>+${interest}</small>` : ''}</div>
-        <div class="level" title="Your Hero's Level: how many units you may field.${next !== null ? ` The next Level costs ${next}.` : ''}">Level <b>${pl.hero.level}</b> <small>${pl.yard.length + (pl.fallen?.length ?? 0)}/${pl.hero.level}</small></div>
+        <div class="level" title="Your Hero's Level: how many of your lanes are open, from the left.${next !== null ? ` The next Level costs ${next}.` : ''}">Level <b>${pl.hero.level}</b> <small>${pl.yard.length + (pl.fallen?.length ?? 0)}/${pl.hero.level}</small></div>
         <div class="counters">
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
         </div>
@@ -1215,9 +1215,14 @@ function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
       ambush ? `<span class="ambush-mark" title="${mine ? `Your Ambush: ${esc(cardName(ambush.card.id))}` : 'A face-down Ambush'}">${mine ? '' : '?'}</span>` : '',
       ...aimed(i).map((n) => `<span class="aim-mark" title="${esc(n)} is aimed here: it happens when the Clash begins">🎯</span>`),
     ].join('');
-    if (u) return `<div class="lane">${renderUnit(s, u, p, hl)}${marks}</div>`;
+    const locked = !isOpenLane(s, p, i);
+    if (u) return `<div class="lane ${locked ? 'locked' : ''}">${renderUnit(s, u, p, hl)}${marks}</div>`;
     const key = `lane:${p}:${i}`;
-    return `<div class="lane empty ${hl.has(key) ? 'targetable' : ''}" data-click="${key}" title="${mine ? 'Your' : 'Their'} lane ${i + 1}"><span class="lane-no">${i + 1}</span>${marks}</div>`;
+    // A locked lane opens at Level i + 1. Their locked lanes can still be aimed at (their Level may have grown since).
+    if (locked && !hl.has(key)) {
+      return `<div class="lane empty locked" title="${mine ? 'Your' : 'Their'} lane ${i + 1}: locked until Level ${i + 1}"><span class="lane-lock">🔒<small>Lv ${i + 1}</small></span>${marks}</div>`;
+    }
+    return `<div class="lane empty ${locked ? 'locked' : ''} ${hl.has(key) ? 'targetable' : ''}" data-click="${key}" title="${mine ? 'Your' : 'Their'} lane ${i + 1}"><span class="lane-no">${i + 1}</span>${marks}</div>`;
   }).join('');
   return `<section class="yard lanes ${mine ? 'me' : 'foe'}" style="--n:${LANES}">${foeHand}${lanes}</section>`;
 }
@@ -1415,7 +1420,7 @@ function renderRules(): string {
       <p><b>Each round:</b> the <b>Muster</b>, then the <b>Clash</b>. At the start of each round you get a new <b>shop</b>: ${r?.shopSize ?? 6} cards dealt from your own deck. From round 2 you also get your income in ${TERMS.offerings}.</p>
       <p><b>The shop:</b> buy what you want at its price. What you don’t buy goes back into your deck. <b>Roll</b> (${r?.rollCost ?? 1} ${TERMS.offering}) for a new shop.</p>
       <p><b>${TERMS.offerings} are money.</b> What you don’t spend is kept, and every ${r?.interestPer ?? 5} saved earn 1 more at the start of the next round (at most ${r?.interestMax ?? 3}). Losing Clashes in a row earns more too: +1 after two, up to +3 after five.</p>
-      <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Buy units into your six lanes (as many as your Hero’s <b>Level</b>; level up for more), move them, buy Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
+      <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Buy units into your open lanes (your Hero’s <b>Level</b> opens that many, from the left; level up to open more), move them, buy Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
       <p><b>Selling:</b> tap a unit of yours to sell it. You get back what you paid, less 1 for each copy merged into it. Sell to make room for something better.</p>
       <p><b>Stars:</b> buy a second copy of a Creature you have on the board and it merges, even when your lanes are full: 2 stars, twice its printed Power and Health; a third copy makes 3. Fabled never merge.</p>
       <p><b>Aimed at the enemy:</b> damage and other effects aimed at their units are aimed at a <b>lane</b>, and happen when the Clash begins, to whoever stands there. With nobody there, they fizzle. A face-down Ambush happens only if its lane holds what it needs; otherwise it waits for a later Clash.</p>

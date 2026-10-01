@@ -62,7 +62,7 @@ const STEPS: Balloon[] = [
   {
     id: 'play', title: 'Buy a creature', anchor: '.hand', also: ['.yard.me'], when: (s) => mustering(s) && canFieldUnit(s),
     skipIf: (s) => s.round >= 4,
-    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces) to buy it and put it there.',
+    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces; the grey ones are locked until you level up) to buy it and put it there.',
     doneWhen: (a) => a.t === 'play',
   },
   {
@@ -95,7 +95,7 @@ const TIPS: Balloon[] = [
   {
     id: 'level', title: 'Level up', anchor: '[data-click="btn:level"]',
     when: (s) => mustering(s) && legalActions(s, ME).some((a) => a.t === 'levelUp') && s.players[ME].yard.length >= s.players[ME].hero.level,
-    text: 'Your lanes are full for your Hero’s <b>Level</b>. <b>Level up</b> for one more lane, at a price in Offerings.',
+    text: 'Your open lanes are full. Your Hero’s <b>Level</b> opens lanes from the left: <b>Level up</b> to open one more, at a price in Offerings.',
   },
   {
     id: 'merge', title: 'Two of a kind', anchor: '.hand',

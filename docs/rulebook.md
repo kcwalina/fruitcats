@@ -38,7 +38,7 @@ dealt face up from your own deck, and you buy what you want, roll for new ones, 
 - The loser of the Clash blows out a **Candle** for each enemy still standing. Losing Clashes **in a row** earns extra
   Offerings, so the player who is behind can catch up.
 - After the Clash every unit stands up again. **Nothing on the board is lost in a Clash**: your army only grows.
-- Your Hero's **Level** says how many units you may field. Two copies of a creature **merge** into a stronger one.
+- Your Hero's **Level** says how many of your lanes are open, from the left: Level 2 opens lanes 1 and 2. Two copies of a creature **merge** into a stronger one.
 - Blow out the rival's **ninth Candle** and you win.
 
 ---
@@ -167,7 +167,7 @@ screen, or one after the other with the board covered.
 
 | You may | How |
 |---|---|
-| **Buy a unit** | Pay its cost and put it in one of your empty lanes. You may have as many units as your Hero's **Level**. Its **Hello** happens now. A copy of a creature you have merges into it instead (section 6.5), even when your lanes are full. |
+| **Buy a unit** | Pay its cost and put it in one of your empty **open** lanes: your Hero's **Level** opens that many lanes, from the left (Level 3: lanes 1–3); the rest are locked. Its **Hello** happens now. A copy of a creature you have merges into it instead (section 6.5), even when your lanes are full. |
 | **Buy a Talisman** | Pay its cost and attach it to a unit of yours without one. |
 | **Buy a Charm** | Pay its cost and do what it says. |
 | **Set an Ambush** | Pay its cost and put a card with **Ambush** face-down in one of your lanes (section 7). |
@@ -375,8 +375,10 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **200.2** A **unit** is a Fabled card or Creature card, or a token, in a lane. A Hero is never a unit.
 - **200.3** A player has six lanes, numbered 1 to 6 from their left. Lane N faces the opponent's lane N.
 - **200.4** A **token** is a unit created by an effect. Tokens are removed when a Clash ends.
-- **200.5** A player may control at most as many units as their Hero's Level (2 to 6), counting units that went down in
-  the current Clash. Tokens don't count, and a Summon with no empty lane does nothing.
+- **200.5** A player's lanes 1 to L are **open**, where L is their Hero's Level (2 to 6); the others are **locked**. A
+  unit is bought into, moved into, and an Ambush set in, open lanes only, so a player controls at most L units (units that
+  went down in the current Clash count). Tokens don't count: a Summon takes the lowest empty lane, open or locked, and
+  with no empty lane does nothing.
 - **200.6** A unit may have at most one Talisman attached. When a unit leaves the lanes (it is sold), its Talisman is put into its owner's Mist.
 - **200.7** A unit that goes down keeps its lane, its Talisman and its counters; at the end of the Clash it stands up
   with no damage.
@@ -399,8 +401,8 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **400.2** *Merge:* buying a non-Fabled unit card while controlling a unit with the same name and fewer than 3 stars adds a star to that unit instead, whether or not the player has room (200.5); the card goes to the Mist; no Hello triggers. A unit's printed Power and Health count once per star.
 - **400.3** *Aimed effects:* an effect that would choose an enemy unit, or affect each enemy unit, is aimed at a lane of the opponent's (or at all their units) and waits for the Clash (500.1). A triggered ability in a Muster that would affect an enemy unit waits the same way.
   A harmful effect that may choose "a unit" may only be aimed at the opponent's lanes: a player's own units never go down in a Muster.
-- **400.4** *Set an Ambush:* buy a card with Ambush from your shop and put it face-down in one of your lanes that holds no Ambush.
-- **400.5** *Move:* move one of your units to another lane of yours; a unit there takes the moved unit's lane.
+- **400.4** *Set an Ambush:* buy a card with Ambush from your shop and put it face-down in one of your open lanes that holds no Ambush.
+- **400.5** *Move:* move one of your units to another open lane of yours; a unit there takes the moved unit's lane.
 - **400.6** *Hero ability:* once a round, exhaust your Hero and resolve its "Exhaust:" ability.
 - **400.7** *Level up:* pay 3, 4, 5 or 6 Offerings to go from Level 2, 3, 4 or 5 to the next.
 - **400.8** *Sell:* a unit you control leaves its lane; its card goes into your deck, which is shuffled, and its Talisman into your Mist (a token is removed). You gain what was paid for it and for every copy merged into it, less 1 per star (at least 0).

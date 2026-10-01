@@ -32,7 +32,8 @@ Each round starts with the **Muster**. You and your opponent build **at the same
 side as it was when the Muster began.
 
 1. **Tap a creature** you can afford (it glows), then **tap one of your lanes**: the dashed spaces in your row.
-2. Your Hero's **Level** is how many units you may have. **Level up** (the button by Ready) for one more lane.
+2. Your Hero's **Level** is how many of your lanes are open (the grey ones with a lock aren't yet). **Level up** (the
+   button by Ready) to open one more.
 3. Lanes full? Tap one of your units to **sell it** and make room: you get back what you paid, less 1. Tapping a unit
    also lets you **move** it to another lane.
 4. Charms aimed at the enemy are aimed at **one of their lanes**: they happen when the fight begins, to whoever stands

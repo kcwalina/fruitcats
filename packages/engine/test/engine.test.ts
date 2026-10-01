@@ -280,7 +280,7 @@ describe('the economy', () => {
     expect(me.offerings).toBe(10 - RULES.levelCost[2]);
   });
 
-  it('a unit costs its price, and only as many units as the Level may stand', () => {
+  it('a unit costs its price, and goes only into a lane the Level has opened', () => {
     const s = toMuster();
     const me = s.players[0];
     me.offerings = 20;
@@ -289,8 +289,9 @@ describe('the economy', () => {
     const uid = give(s, 0, 'DW1-D07');
     expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === uid)).toBe(false);
     apply(s, { t: 'levelUp' }, 0);
+    // Level 3 opens lanes 1 to 3: the only empty one is the third.
     const plays = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === uid);
-    expect(plays.map((a) => (a as { slot: number }).slot)).toEqual([2, 3, 4, 5]);
+    expect(plays.map((a) => (a as { slot: number }).slot)).toEqual([2]);
     apply(s, plays[0], 0);
     expect(me.offerings).toBe(20 - RULES.levelCost[2] - CARDS['DW1-D07'].cost!);
     expect(me.yard.find((u) => u.uid === uid)).toMatchObject({ slot: 2, exhausted: false });
@@ -334,8 +335,21 @@ describe('the Muster', () => {
     expect(s.clock[1]).toBeGreaterThan(b + 1);
   });
 
+  it('moves only into an open lane: Level 2 opens lanes 1 and 2, each Level one more to the right', () => {
+    const s = toMuster();
+    const a = put(s, 0, 'DW1-D18', 0);
+    expect(legalActions(s, 0).filter((x) => x.t === 'move').map((x) => (x as { slot: number }).slot)).toEqual([1]);
+    s.players[0].hero.level = 4;
+    expect(legalActions(s, 0).filter((x) => x.t === 'move').map((x) => (x as { slot: number }).slot)).toEqual([1, 2, 3]);
+    const warm = give(s, 0, 'DW1-D19');
+    s.players[0].offerings = 10;
+    expect(legalActions(s, 0).filter((x) => x.t === 'ambush' && x.uid === warm).map((x) => (x as { lane: number }).lane)).toEqual([0, 1, 2, 3]);
+    expect(a.slot).toBe(0);
+  });
+
   it('moving a unit to a lane another unit stands in swaps them', () => {
     const s = toMuster();
+    s.players[0].hero.level = 6;
     const a = put(s, 0, 'DW1-D18', 0);
     const b = put(s, 0, 'DW1-D16', 3);
     apply(s, { t: 'move', uid: a.uid, slot: 3 }, 0);
@@ -419,6 +433,7 @@ describe('the Muster', () => {
   it('an Ambush waits face-down until its lane holds what it needs', () => {
     const s = toMuster();
     s.players[0].offerings = 10;
+    s.players[0].hero.level = 6;
     const warm = give(s, 0, 'DW1-D19'); // Warm Hand in the Night: a unit you control gets +2 Power this round
     apply(s, { t: 'ambush', uid: warm, lane: 4 }, 0);
     expect(s.players[0].ambushes).toHaveLength(1);
@@ -579,7 +594,8 @@ describe('the Clash', () => {
     for (const [company, dealt] of [[false, 1], [true, 2]] as const) {
       const s = toMuster(['pari', 'domowiki'], 3);
       s.players[0].offerings = 10;
-      if (company) { put(s, 0, 'PR1-D09', 0); put(s, 0, 'PR1-D09', 1); s.players[0].hero.level = 3; }
+      s.players[0].hero.level = 5;
+      if (company) { put(s, 0, 'PR1-D09', 0); put(s, 0, 'PR1-D09', 1); }
       const foe = put(s, 1, 'DW1-D04', 5);
       const uid = give(s, 0, 'PR1-D06');
       apply(s, { t: 'play', uid, slot: 4, target: { kind: 'lane', player: 1, lane: 5 } }, 0);

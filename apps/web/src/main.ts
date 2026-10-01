@@ -1223,6 +1223,20 @@ function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
 }
 
 /**
+ * What a shop card is, readable at a glance on a phone without enlarging it: a unit shows its Power and Health on a
+ * dark strip, a Charm or a Talisman says so on a light one. Brightness and shape tell them apart, not hue, which the
+ * families' frame colours already use.
+ */
+function shopTag(id: string): string {
+  const def = CARDS[id];
+  if (def.type === 'Critter' || def.type === 'Cat')
+    return `<span class="shop-tag unit-tag" aria-hidden="true"><b class="tag-pw">${def.power ?? 0}</b>⚔<b class="tag-hp">${def.health ?? 0}</b>♥</span>`;
+  const word = TERMS.types[def.type as keyof typeof TERMS.types] ?? def.type;
+  const kind = def.type === 'Toy' ? 'talisman-tag' : 'charm-tag';
+  return `<span class="shop-tag ${kind}" aria-hidden="true">${def.type === 'Toy' ? '◆' : '✦'} ${esc(word)}</span>`;
+}
+
+/**
  * Your shop: the cards dealt from your deck this round, side by side (never overlapping: there are at most six).
  * Tap one to buy it; what you don't buy goes back into your deck at the next Start or roll.
  */
@@ -1235,7 +1249,7 @@ function renderShop(s: GameState, playable: Set<number>): string {
       selection?.options.some((a) => 'uid' in a && a.uid === c.uid && a.t !== 'move') && 'selected',
       selection?.uid === c.uid && 'selected',
     ].filter(Boolean).join(' ');
-    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async"></button>`;
+    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${shopTag(c.id)}</button>`;
   }).join('');
   return `<section class="hand shop" style="--n:${Math.max(n, 1)};--gaps:${Math.max(1, n - 1)}" aria-label="Your shop">
     ${cards || '<p class="shop-empty">Nothing left in your shop. Roll for a new one, or press Ready.</p>'}

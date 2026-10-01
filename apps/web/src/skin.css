@@ -653,6 +653,19 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 /* The shop: at most six cards, side by side, shrinking to fit rather than overlapping. */
 .hand.shop .hand-card { flex: 0 1 var(--card-w); margin: 0 3px; }
 .shop-empty { align-self: center; margin: 0; color: var(--muted); font-style: italic; text-align: center; }
+/* What a shop card is, at a glance: units on a dark strip with their Power and Health, Charms and Talismans on a
+   light one with their name. Told apart by brightness and shape, since hue is the families'. */
+.shop-tag {
+  position: absolute; left: 4%; right: 4%; bottom: 4%; z-index: 2; display: flex; align-items: center; justify-content: center;
+  gap: 0.25em; padding: 0.2em 0.3em; border-radius: 0.5em; pointer-events: none; white-space: nowrap; overflow: hidden;
+  font: 700 clamp(9px, 14cqw, 17px) Fredoka, Nunito, sans-serif; line-height: 1.15; box-shadow: 0 1px 4px rgba(20, 10, 0, 0.5);
+}
+.unit-tag { background: rgba(28, 14, 4, 0.92); color: #fff; }
+.unit-tag b { font-size: 1.2em; }
+.unit-tag .tag-pw { color: #ffd84a; }
+.unit-tag .tag-hp { color: #ff9db0; margin-left: 0.2em; }
+.charm-tag, .talisman-tag { background: #fffaf0; color: #3b2410; border: 1.5px solid #3b2410; font-size: clamp(8px, 12cqw, 15px); }
+.talisman-tag { border-style: dashed; }
 .purse, .level { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .purse b, .level b { font-size: 15px; color: #2f8a46; }
 .level b { color: #7a4b16; }

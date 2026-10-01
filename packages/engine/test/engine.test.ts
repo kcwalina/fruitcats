@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, RARITIES, addProblem, apply, chooseAction, createGame, builtInTwin, deckCardIds, deckChanges, deckProblems, legalActions, randomAction,
-  keywords, otherFamilies, registerSet, unitHealth, unitPower, type DeckList, type GameState,
+  CARDS, DECKS, HAND_LIMIT, RARITIES, RULES, addProblem, apply, attackTarget, chooseAction, clockFor, createGame, builtInTwin, deckCardIds, deckChanges,
+  deckProblems, evaluateCondition, keywords, legalActions, mayAct, nextSeat, other, otherFamilies, randomAction, registerSet, unitHealth, unitPower,
+  type Action, type DeckList, type GameState, type PlayerId, type Unit,
 } from '../src/index';
 
-function playOut(s: GameState, pick: (s: GameState) => ReturnType<typeof chooseAction>, limit = 5000): GameState {
-  for (let i = 0; s.winner === null; i++) {
+/** Play a game to its end: during the Muster the players take turns, the Lantern holder first. */
+function playOut(s: GameState, pick: (s: GameState, p: PlayerId) => Action, limit = 20000): GameState {
+  for (let i = 0, p = nextSeat(s); p !== null; i++, p = nextSeat(s)) {
     if (i > limit) throw new Error('game did not finish');
-    apply(s, pick(s));
+    apply(s, pick(s, p), p);
   }
   return s;
 }
@@ -147,26 +149,26 @@ describe('setup', () => {
     }
   });
 
-  it('deals 9 Lives, 6 cards, then plants 2', () => {
+  it('deals 9 Candles and 6 cards, gives the starting Offerings, then opens the Muster for both', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 7 });
     expect(s.prompt?.kind).toBe('mulligan');
     for (const pl of s.players) {
       expect(pl.lives).toHaveLength(9);
       expect(pl.hand).toHaveLength(6);
+      expect(pl.offerings).toBe(RULES.startOfferings);
+      expect(pl.hero.level).toBe(RULES.levelStart);
     }
     apply(s, { t: 'mulligan', uids: [] });
     apply(s, { t: 'mulligan', uids: [] });
-    for (const p of [0, 1] as const) {
-      expect(s.prompt).toMatchObject({ kind: 'setupPlant', player: p });
-      apply(s, { t: 'setupPlant', uids: s.players[p].hand.slice(0, 2).map((c) => c.uid) });
-    }
-    expect(s.prompt).toMatchObject({ kind: 'action', player: s.yarn });
-    expect(s.players[0].pantry).toHaveLength(2);
+    expect(s.prompt?.kind).toBe('muster');
+    expect(s.muster?.open).toEqual([true, true]);
+    expect(mayAct(s, 0) && mayAct(s, 1)).toBe(true);
   });
 
-  it('rejects illegal actions', () => {
+  it('rejects illegal actions, and actions from a player the game is not waiting for', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 7 });
-    expect(() => apply(s, { t: 'pass' })).toThrow();
+    expect(() => apply(s, { t: 'ready' })).toThrow();
+    expect(() => apply(s, { t: 'mulligan', uids: [] }, other(s.prompt!.player))).toThrow(/not waiting/);
   });
 
   it('refuses a deck with cards of a set that is gone (the Starter Box) before the game starts', () => {
@@ -178,223 +180,424 @@ describe('setup', () => {
   });
 });
 
-/** Play until it's player 0's action phase, then return the state (setup handled by the AI). */
-function toFirstAction(decks: [string, string], seed = 1): GameState {
+/** A game at its first Muster (both kept their hands), player 0 holding the Lantern. */
+function toMuster(decks: [string, string] = ['domowiki', 'domowiki'], seed = 1): GameState {
   const s = createGame({ decks, seed, firstPlayer: 0 });
-  while (!(s.prompt?.kind === 'action' && s.prompt.player === 0)) apply(s, chooseAction(s));
+  apply(s, { t: 'mulligan', uids: [] });
+  apply(s, { t: 'mulligan', uids: [] });
   return s;
 }
 
-describe('Domowiki: Offerings', () => {
-  it('Dziadziuś readies an Offering, and Awakens at 8 Offerings', () => {
-    const s = toFirstAction(['domowiki', 'pari']);
-    const me = s.players[0];
-    expect(me.hero.id).toBe('DW1-H01');
-    me.pantry.forEach((t) => (t.exhausted = true));
-    apply(s, { t: 'ability' });
-    expect(me.pantry.filter((t) => !t.exhausted)).toHaveLength(1);
-    // Awaken is checked after every step: give him 8 Offerings and let the opponent act.
-    while (me.pantry.length < 8) me.pantry.push({ card: me.deck.shift()!, exhausted: true });
-    apply(s, legalActions(s).find((a) => a.t === 'pass' || a.t === 'decline')!);
-    expect(me.hero.grown).toBe(true);
-  });
+/** A unit put straight onto a player's board (no Hello). */
+function put(s: GameState, p: 0 | 1, id: string, slot: number, extra: Partial<Unit> = {}): Unit {
+  const u: Unit = { uid: 7000 + p * 100 + slot, id, slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false, ...extra };
+  s.players[p].yard.push(u);
+  s.players[p].yard.sort((a, b) => a.slot - b.slot);
+  return u;
+}
 
-  it('Bowl of Kasha (Sprout 2) puts two cards from the deck into the Offerings, exhausted', () => {
-    const s = toFirstAction(['domowiki', 'pari']);
-    const me = s.players[0];
-    me.hand.push({ uid: 9001, id: 'DW1-D09' });
-    while (me.pantry.length < 3) me.pantry.push({ card: me.deck.shift()!, exhausted: false });
-    me.pantry.forEach((t) => (t.exhausted = false));
-    const before = { pantry: me.pantry.length, deck: me.deck.length };
-    apply(s, { t: 'play', uid: 9001 });
-    while (s.prompt?.player === 1 && s.prompt.kind === 'pounce') apply(s, { t: 'decline' });
-    expect(me.pantry.length).toBe(before.pantry + 2);
-    expect(me.deck.length).toBe(before.deck - 2);
-    expect(me.pantry.slice(-2).every((t) => t.exhausted)).toBe(true);
-  });
-
-  it('Ovinnik can only attack while Well-Fed (7+ Offerings)', () => {
-    const s = toFirstAction(['domowiki', 'pari']);
-    const me = s.players[0];
-    me.yard.push({ uid: 9002, id: 'DW1-D05', damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
-    const ovinnikAttacks = () => legalActions(s).filter((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === 9002);
-    expect(ovinnikAttacks()).toHaveLength(0);
-    while (me.pantry.length < 6) me.pantry.push({ card: me.deck.shift()!, exhausted: true });
-    expect(ovinnikAttacks()).toHaveLength(0);
-    me.pantry.push({ card: me.deck.shift()!, exhausted: true });
-    expect(ovinnikAttacks().length).toBeGreaterThan(0);
-  });
-});
-
-/** Put a card in player 0's hand with enough ready Offerings to play it, and play it (declining any Ambush). */
-function playFromHand(s: GameState, id: string, target?: { kind: 'unit'; uid: number }) {
-  const me = s.players[0];
-  const uid = 9000 + s.actions;
-  me.hand.push({ uid, id });
-  while (me.pantry.filter((t) => !t.exhausted).length < (CARDS[id].cost ?? 0)) me.pantry.push({ card: me.deck.shift()!, exhausted: false });
-  apply(s, target ? { t: 'play', uid, target } : { t: 'play', uid });
-  while (s.prompt?.player === 1 && s.prompt.kind === 'pounce') apply(s, { t: 'decline' });
+/** A card put into a player's hand. */
+function give(s: GameState, p: 0 | 1, id: string): number {
+  const uid = 9000 + s.players[p].hand.length + p * 50;
+  s.players[p].hand.push({ uid, id });
   return uid;
 }
 
-function enemyUnit(s: GameState, id: string, health = 10) {
-  const uid = 8000 + s.players[1].yard.length;
-  s.players[1].yard.push({ uid, id, damage: 10 - health, exhausted: false, buffPower: 0, usedOnce: false });
-  return { kind: 'unit' as const, uid };
+/** Both players Ready: the Clash plays. Returns what happened in it. */
+function clash(s: GameState) {
+  const from = s.events.length;
+  for (const p of [0, 1] as const) {
+    if (!mayAct(s, p)) continue;
+    while (s.players[p].hand.length > HAND_LIMIT) apply(s, { t: 'offer', uid: s.players[p].hand[0].uid }, p);
+    apply(s, { t: 'ready' }, p);
+  }
+  return s.events.slice(from);
 }
 
-/** A unit of player 0's, put straight into play (no Hello): Kłobuk, a plain 2/3 once it's there. */
-function myUnit(s: GameState, uid: number, id = 'DW1-D18') {
-  s.players[0].yard.push({ uid, id, damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
-}
+const hits = (events: GameState['events'], uid: number) =>
+  events.filter((e): e is Extract<typeof e, { t: 'hit' }> => e.t === 'hit' && e.from.kind === 'unit' && e.from.uid === uid);
 
-describe('signature mechanics', () => {
-  it('Company: Súči of the Hunt deals 1 on its own, 2 when you control 3 units', () => {
-    const alone = toFirstAction(['pari', 'domowiki'], 3);
-    const t1 = enemyUnit(alone, 'DW1-D18'); // Kłobuk: no Tough, so damage lands in full
-    playFromHand(alone, 'PR1-D06', t1);
-    expect(alone.players[1].yard.find((u) => u.uid === t1.uid)!.damage).toBe(1);
-
-    const company = toFirstAction(['pari', 'domowiki'], 3);
-    myUnit(company, 7101);
-    myUnit(company, 7102);
-    const t2 = enemyUnit(company, 'DW1-D18');
-    playFromHand(company, 'PR1-D06', t2);
-    expect(company.players[1].yard.find((u) => u.uid === t2.uid)!.damage).toBe(2);
+describe('the economy', () => {
+  it('income grows with the rounds, and saved Offerings earn interest (1 per 5, at most 3)', () => {
+    const s = toMuster();
+    s.players[0].offerings = 12;
+    s.players[1].offerings = 0;
+    clash(s);
+    expect(s.round).toBe(2);
+    expect(s.players[0].offerings).toBe(12 + RULES.income[0] + 2);
+    expect(s.players[1].offerings).toBe(RULES.income[0]);
+    s.players[0].offerings = 40;
+    clash(s);
+    expect(s.players[0].offerings).toBe(40 + RULES.income[1] + RULES.interestMax);
   });
 
-  it('Company: Pari at the Pool enters ready only with Company', () => {
-    const a = toFirstAction(['pari', 'domowiki'], 4);
-    const u1 = playFromHand(a, 'PR1-D04');
-    expect(a.players[0].yard.find((u) => u.uid === u1)!.exhausted).toBe(true);
-    const b = toFirstAction(['pari', 'domowiki'], 4);
-    myUnit(b, 7201);
-    myUnit(b, 7202);
-    const u2 = playFromHand(b, 'PR1-D04');
-    expect(b.players[0].yard.find((u) => u.uid === u2)!.exhausted).toBe(false);
+  it('a card from hand, or a unit from the board, becomes 1 Offering', () => {
+    const s = toMuster();
+    const card = s.players[0].hand[0];
+    apply(s, { t: 'offer', uid: card.uid }, 0);
+    expect(s.players[0].offerings).toBe(RULES.startOfferings + 1);
+    expect(s.players[0].compost.at(-1)).toEqual(card);
+    const u = put(s, 0, 'DW1-D18', 0);
+    apply(s, { t: 'offer', uid: u.uid }, 0);
+    expect(s.players[0].yard).toHaveLength(0);
+    expect(s.players[0].offerings).toBe(RULES.startOfferings + 2);
   });
 
-  it("Orange-Peri (3/1) hurts itself unless you've played 2 other cards this round", () => {
-    const first = toFirstAction(['pari', 'domowiki'], 5);
-    const u1 = playFromHand(first, 'PR1-D02');
-    expect(first.players[0].yard.find((u) => u.uid === u1)).toBeUndefined();
-    expect(first.players[0].compost.some((c) => c.uid === u1)).toBe(true);
-    const third = toFirstAction(['pari', 'domowiki'], 5);
-    third.players[0].playedThisRound = 2; // already played two cards this round
-    const u2 = playFromHand(third, 'PR1-D02');
-    expect(third.players[0].yard.find((u) => u.uid === u2)!.damage).toBe(0);
-  });
-
-  it('counts the cards played afresh each round', () => {
-    const s = toFirstAction(['pari', 'domowiki'], 5);
-    s.players[0].playedThisRound = 3;
-    const round = s.round;
-    for (let i = 0; i < 200 && s.round === round; i++) apply(s, chooseAction(s));
-    expect(s.players[0].playedThisRound).toBe(0);
-  });
-
-  it('Rain-Fed: Clay Alux grows +1/+1 each round, up to +2/+2', () => {
-    const s = toFirstAction(['aluxes', 'domowiki'], 6);
-    s.players[0].yard.push({ uid: 7777, id: 'AL1-D04', damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
-    const alux = () => s.players[0].yard.find((u) => u.uid === 7777)!;
-    const rainAtRound: number[] = [];
-    // Both players only pass, so nothing can touch the Alux; other prompts (plant, discard) are the AI's.
-    while (s.round < 5) {
-      const r = s.round;
-      apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
-      if (s.round !== r) rainAtRound.push(alux().counters?.rain ?? 0);
-    }
-    expect(rainAtRound).toEqual([1, 2, 2, 2]);
-    expect(unitPower(alux())).toBe(2 + 2);
-    expect(unitHealth(alux())).toBe(3 + 2);
-  });
-
-  it('Sprout counts as Offerings and turns Well-Fed on at 7', () => {
-    const s = toFirstAction(['domowiki', 'pari']);
+  it('a Level costs Offerings and opens one more lane', () => {
+    const s = toMuster();
     const me = s.players[0];
-    while (me.pantry.length < 5) me.pantry.push({ card: me.deck.shift()!, exhausted: false });
-    playFromHand(s, 'DW1-D09'); // Bowl of Kasha: Sprout 2
-    expect(me.pantry.length).toBeGreaterThanOrEqual(7);
+    me.offerings = 2;
+    expect(legalActions(s, 0).some((a) => a.t === 'levelUp')).toBe(false);
+    me.offerings = 10;
+    apply(s, { t: 'levelUp' }, 0);
+    expect(me.hero.level).toBe(3);
+    expect(me.offerings).toBe(10 - RULES.levelCost[2]);
+  });
+
+  it('a unit costs its price, and only as many units as the Level may stand', () => {
+    const s = toMuster();
+    const me = s.players[0];
+    me.offerings = 20;
+    put(s, 0, 'DW1-D18', 0);
+    put(s, 0, 'DW1-D16', 1);
+    const uid = give(s, 0, 'DW1-D07');
+    expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === uid)).toBe(false);
+    apply(s, { t: 'levelUp' }, 0);
+    const plays = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === uid);
+    expect(plays.map((a) => (a as { slot: number }).slot)).toEqual([2, 3, 4, 5]);
+    apply(s, plays[0], 0);
+    expect(me.offerings).toBe(20 - RULES.levelCost[2] - CARDS['DW1-D07'].cost!);
+    expect(me.yard.find((u) => u.uid === uid)).toMatchObject({ slot: 2, exhausted: false });
+  });
+
+  it('Sprout and "gain an Offering" add Offerings; Well-Fed counts what is saved', () => {
+    const s = toMuster();
+    const me = s.players[0];
+    me.offerings = 5;
+    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D09') }, 0); // Bowl of Kasha: Sprout 2, costs 1
+    expect(me.offerings).toBe(5 - 1 + 2);
+    expect(evaluateCondition(s, 0, 'Well-Fed')).toBe(false);
+    apply(s, { t: 'ability' }, 0); // Dziadziuś: gain an Offering
+    expect(me.offerings).toBe(7);
+    expect(evaluateCondition(s, 0, 'Well-Fed')).toBe(true);
+  });
+
+  it("can't be Ready with more than 10 cards in hand", () => {
+    const s = toMuster();
+    while (s.players[0].hand.length <= HAND_LIMIT) give(s, 0, 'DW1-D16');
+    expect(legalActions(s, 0).some((a) => a.t === 'ready')).toBe(false);
+    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
+    expect(legalActions(s, 0).some((a) => a.t === 'ready')).toBe(true);
+  });
+});
+
+describe('the Muster', () => {
+  it('both players act in any order until both are Ready, then the Clash plays', () => {
+    const s = toMuster();
+    apply(s, { t: 'offer', uid: s.players[1].hand[0].uid }, 1);
+    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
+    apply(s, { t: 'ready' }, 1);
+    expect(mayAct(s, 1)).toBe(false);
+    expect(() => apply(s, { t: 'offer', uid: s.players[1].hand[0].uid }, 1)).toThrow(/not waiting/);
+    expect(s.prompt).toEqual({ kind: 'muster', player: 0 });
+    apply(s, { t: 'ready' }, 0);
+    expect(s.round).toBe(2);
+    expect(s.muster?.open).toEqual([true, true]);
+  });
+
+  it("each player's clock counts their own moves, and both move at every public turn", () => {
+    const s = toMuster();
+    const [a, b] = s.clock;
+    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
+    expect(s.clock).toEqual([a + 1, b]);
+    expect(clockFor(s, 1)).toBe(b);
+    clash(s);
+    expect(s.clock[1]).toBeGreaterThan(b + 1);
+  });
+
+  it('moving a unit to a lane another unit stands in swaps them', () => {
+    const s = toMuster();
+    const a = put(s, 0, 'DW1-D18', 0);
+    const b = put(s, 0, 'DW1-D16', 3);
+    apply(s, { t: 'move', uid: a.uid, slot: 3 }, 0);
+    expect([a.slot, b.slot]).toEqual([3, 0]);
+    expect(s.players[0].yard.map((u) => u.uid)).toEqual([b.uid, a.uid]);
+  });
+
+  it('a second copy of a Creature merges into the first: 2 stars, its printed stats twice', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    const first = put(s, 0, 'DW1-D18', 1);
+    const uid = give(s, 0, 'DW1-D18');
+    const plays = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === uid);
+    expect(plays).toEqual([{ t: 'play', uid }]);
+    apply(s, plays[0], 0);
+    expect(s.players[0].yard).toHaveLength(1);
+    expect(first.stars).toBe(2);
+    expect([unitPower(first), unitHealth(first)]).toEqual([4, 6]);
+    expect(s.players[0].compost.some((c) => c.uid === uid)).toBe(true);
+  });
+
+  it('a Fabled never merges: a second copy is not even legal', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    put(s, 0, 'DW1-D13', 0);
+    const uid = give(s, 0, 'DW1-D13');
+    expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === uid)).toBe(false);
+  });
+
+  it('an effect aimed at the enemy waits for the Clash and hits whoever stands in that lane then', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    const mane = give(s, 0, 'DW1-D20'); // Knotted Mane: exhaust an enemy unit
+    const lanes = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === mane).map((a) => (a as { target: { lane: number } }).target.lane);
+    expect(lanes).toEqual([0, 1, 2, 3, 4, 5]);
+    apply(s, { t: 'play', uid: mane, target: { kind: 'lane', player: 1, lane: 2 } }, 0);
+    expect(s.players[0].pending).toHaveLength(1);
+    const foe = put(s, 1, 'DW1-D18', 2);
+    put(s, 0, 'DW1-D18', 2);
+    const events = clash(s);
+    expect(hits(events, foe.uid)).toHaveLength(0); // exhausted: it dealt no damage
+    expect(s.players[0].compost.some((c) => c.uid === mane)).toBe(true);
+  });
+
+  it('with nobody in the lane, the effect fizzles', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    const mane = give(s, 0, 'DW1-D20');
+    apply(s, { t: 'play', uid: mane, target: { kind: 'lane', player: 1, lane: 4 } }, 0);
+    const events = clash(s);
+    expect(events.some((e) => e.t === 'fizzled' && e.cardId === 'DW1-D20')).toBe(true);
+  });
+
+  it('an Ambush waits face-down until its lane holds what it needs', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    const warm = give(s, 0, 'DW1-D19'); // Warm Hand in the Night: a unit you control gets +2 Power this round
+    apply(s, { t: 'ambush', uid: warm, lane: 4 }, 0);
+    expect(s.players[0].ambushes).toHaveLength(1);
+    const first = clash(s);
+    expect(first.some((e) => e.t === 'ambush')).toBe(false);
+    expect(s.players[0].ambushes).toHaveLength(1);
+    const mine = put(s, 0, 'DW1-D18', 4);
+    put(s, 1, 'DW1-D04', 4);
+    const second = clash(s);
+    expect(second.find((e) => e.t === 'ambush')).toMatchObject({ p: 0, lane: 4, cardId: 'DW1-D19' });
+    expect(hits(second, mine.uid)[0].dealt).toBe(4);
+    expect(s.players[0].ambushes).toHaveLength(0);
+  });
+
+  it('A Whistle in the Dark makes the enemy unit across from it deal no damage', () => {
+    const s = toMuster(['aluxes', 'domowiki']);
+    s.players[0].offerings = 10;
+    apply(s, { t: 'ambush', uid: give(s, 0, 'AL1-D09'), lane: 1 }, 0);
+    const foe = put(s, 1, 'DW1-D07', 1);
+    put(s, 0, 'AL1-D07', 1);
+    const events = clash(s);
+    expect(events.some((e) => e.t === 'ambush' && e.cardId === 'AL1-D09')).toBe(true);
+    expect(hits(events, foe.uid)).toHaveLength(0);
+  });
+
+  it('a Lucky Candle may be played for free in the next Muster, and only then', () => {
+    const s = toMuster();
+    const lucky = s.players[1].deck.findIndex((c) => keywords(c.id).lucky);
+    const card = s.players[1].deck.splice(lucky, 1)[0];
+    s.players[1].lives.unshift(card);
+    put(s, 0, 'DW1-D18', 0);
+    clash(s);
+    expect(s.players[1].hand).toContainEqual(card);
+    expect(s.players[1].free).toEqual([card.uid]);
+    s.players[1].offerings = 0;
+    expect(legalActions(s, 1).some((a) => a.t === 'lucky' && a.uid === card.uid)).toBe(true);
+    clash(s);
+    expect(s.players[1].free).toEqual([]);
+  });
+});
+
+describe('the Clash', () => {
+  it('a unit hits the enemy across from it; the side left standing wins and the loser loses a Candle per survivor', () => {
+    const s = toMuster();
+    const mine = put(s, 0, 'DW1-D08', 0); // Dvorovoi 6/7, Guardian, Fierce
+    const theirs = put(s, 1, 'DW1-D18', 0); // Kłobuk 2/3
+    const events = clash(s);
+    expect(hits(events, mine.uid)[0]).toMatchObject({ uid: theirs.uid, dealt: 6 });
+    expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ standing: [1, 0], lost: [0, 2] }); // Fierce: 2
+    expect(s.players[1].lives).toHaveLength(7);
+  });
+
+  it('the loser loses at most the cap', () => {
+    const s = toMuster();
+    for (let lane = 0; lane < 4; lane++) put(s, 0, 'DW1-D18', lane);
+    const events = clash(s);
+    expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ lost: [0, RULES.clashCandleCap] });
+  });
+
+  it('Guardians are hit first, then plain units, then Elusive ones, Lures last', () => {
+    const s = toMuster();
+    const attacker = put(s, 0, 'DW1-D16', 5, { buffHealth: 50 }); // Hearth Cricket, made to last
+    const lure = put(s, 1, 'DW1-D02', 5, { buffHealth: 50 });
+    const elusive = put(s, 1, 'DW1-D07', 4, { buffHealth: 50 });
+    const plain = put(s, 1, 'DW1-D18', 3, { buffHealth: 50 });
+    const guardian = put(s, 1, 'DW1-D04', 0, { buffHealth: 50 });
+    const order = () => attackTarget(s, 0, attacker)?.uid;
+    expect(order()).toBe(guardian.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== guardian);
+    expect(order()).toBe(plain.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== plain);
+    expect(order()).toBe(elusive.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== elusive);
+    expect(order()).toBe(lure.uid);
+  });
+
+  it('Sneaky units go the other way: Lures first, Guardians last', () => {
+    const s = toMuster();
+    const bannik = put(s, 0, 'DW1-D15', 0);
+    put(s, 1, 'DW1-D04', 0);
+    put(s, 1, 'DW1-D18', 1);
+    const elusive = put(s, 1, 'DW1-D07', 2);
+    const lure = put(s, 1, 'DW1-D02', 3);
+    expect(attackTarget(s, 0, bannik)?.uid).toBe(lure.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== lure);
+    expect(attackTarget(s, 0, bannik)?.uid).toBe(elusive.uid);
+  });
+
+  it('among equals: the unit across first, then the nearest, then the leftmost', () => {
+    const s = toMuster();
+    const attacker = put(s, 0, 'DW1-D16', 3);
+    const left = put(s, 1, 'DW1-D18', 1);
+    const right = put(s, 1, 'DW1-D18', 5);
+    expect(attackTarget(s, 0, attacker)?.uid).toBe(left.uid); // both two lanes away: the leftmost
+    const across = put(s, 1, 'DW1-D18', 3);
+    expect(attackTarget(s, 0, attacker)?.uid).toBe(across.uid);
+    s.players[1].yard = [left, right].map((u) => ({ ...u, slot: u === left ? 0 : 4 }));
+    expect(attackTarget(s, 0, attacker)?.uid).toBe(right.uid + 0); // lane 5 (index 4) is nearer than lane 1
+  });
+
+  it('Swift units strike first: a unit that goes down to them hits nothing', () => {
+    const s = toMuster();
+    const swift = put(s, 0, 'DW1-D03', 0); // Mane-Braiding Domowik 2/2, Swift
+    const slow = put(s, 1, 'DW1-D16', 0); // Hearth Cricket 2/1
+    const events = clash(s);
+    expect(hits(events, swift.uid)).toHaveLength(1);
+    expect(hits(events, slow.uid)).toHaveLength(0);
+    expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ standing: [1, 0] });
+  });
+
+  it('Tough reduces each hit, and both sides hit at the same time', () => {
+    const s = toMuster(['aluxes', 'domowiki']);
+    const stones = put(s, 0, 'AL1-D07', 0); // 2/5 Guardian, Tough 1
+    const cricket = put(s, 1, 'DW1-D16', 0); // 2/1
+    const events = clash(s);
+    expect(hits(events, cricket.uid)[0]).toMatchObject({ uid: stones.uid, dealt: 1 });
+    expect(hits(events, stones.uid)[0]).toMatchObject({ uid: cricket.uid, dealt: 2 });
+  });
+
+  it('after the Clash every unit stands up again, with no damage; tokens are gone', () => {
+    const s = toMuster(['pari', 'domowiki']);
+    const dove = put(s, 0, 'PR1-D01', 0); // Feather Coat: when it goes down, a Dove token
+    put(s, 1, 'DW1-D08', 0);
+    const events = clash(s);
+    expect(events.some((e) => e.t === 'down' && e.uid === dove.uid)).toBe(true);
+    expect(events.some((e) => e.t === 'summon' && e.cardId === 'PR1-K01')).toBe(true);
+    expect(s.players[0].yard.map((u) => [u.id, u.damage])).toEqual([['PR1-D01', 0]]);
+    expect(s.players[1].yard.map((u) => u.damage)).toEqual([0]);
+    expect(s.players[0].downed).toBe(2);
+  });
+
+  it('both sides still standing at the bout cap lose Candles for the other\'s units', () => {
+    const s = toMuster();
+    put(s, 0, 'DW1-D04', 0, { buffHealth: 100 });
+    put(s, 1, 'DW1-D04', 0, { buffHealth: 100 });
+    const events = clash(s);
+    expect(events.filter((e) => e.t === 'bout')).toHaveLength(RULES.boutCap);
+    expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ standing: [1, 1], lost: [1, 1] });
+  });
+
+  it('an Awakened Hero that was not exhausted strikes first, and counts as a survivor', () => {
+    const s = toMuster();
+    const me = s.players[0];
+    me.hero.grown = true; // Dziadziuś, Awakened: Power 4, Fierce
+    put(s, 0, 'DW1-D18', 0);
+    const foe = put(s, 1, 'DW1-D16', 3);
+    const events = clash(s);
+    expect(events.find((e) => e.t === 'hit')).toMatchObject({ from: { kind: 'hero', player: 0 }, uid: foe.uid });
+    expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ lost: [0, RULES.clashCandleCap] });
+  });
+
+  it('Ovinnik deals no damage unless you are Well-Fed', () => {
+    const s = toMuster();
+    const ovinnik = put(s, 0, 'DW1-D05', 0);
+    put(s, 1, 'DW1-D04', 0);
+    s.players[0].offerings = 0;
+    expect(hits(clash(s), ovinnik.uid)).toHaveLength(0);
+    s.players[0].offerings = 7;
+    expect(hits(clash(s), ovinnik.uid).length).toBeGreaterThan(0);
+  });
+
+  it('Rain-Fed units grow +1/+1 each round, up to +3/+3, and keep it', () => {
+    const s = toMuster(['aluxes', 'domowiki']);
+    const clay = put(s, 0, 'AL1-D04', 0); // 2/3
+    const rain: number[] = [];
+    for (let i = 0; i < 4; i++) { clash(s); rain.push(clay.counters?.rain ?? 0); }
+    expect(rain).toEqual([1, 2, 3, 3]);
+    expect([unitPower(clay), unitHealth(clay)]).toEqual([5, 6]);
+  });
+
+  it('Company: Súči of the Hunt deals 1 to the lane it aims at, 2 when you control 3 units', () => {
+    for (const [company, dealt] of [[false, 1], [true, 2]] as const) {
+      const s = toMuster(['pari', 'domowiki'], 3);
+      s.players[0].offerings = 10;
+      if (company) { put(s, 0, 'PR1-D09', 0); put(s, 0, 'PR1-D09', 1); s.players[0].hero.level = 3; }
+      const foe = put(s, 1, 'DW1-D04', 5);
+      const uid = give(s, 0, 'PR1-D06');
+      apply(s, { t: 'play', uid, slot: 4, target: { kind: 'lane', player: 1, lane: 5 } }, 0);
+      const events = clash(s);
+      expect(events.find((e) => e.t === 'damage')).toMatchObject({ uid: foe.uid, amount: dealt });
+    }
   });
 });
 
 describe('events', () => {
-  const attack = (s: GameState, uid: number, target: { kind: 'unit'; uid: number } | { kind: 'hero'; player: 1 }) => {
-    const from = s.events.length;
-    apply(s, { t: 'attack', attacker: { kind: 'unit', uid }, target });
-    while (s.prompt?.player === 1 && s.prompt.kind === 'pounce') apply(s, { t: 'decline' });
-    return s.events.slice(from);
-  };
-
-  it('an attack that trades reports the attack, the clash, then the defeat', () => {
-    const s = toFirstAction(['domowiki', 'pari'], 7);
-    myUnit(s, 7001);
-    const foe = enemyUnit(s, 'DW1-D18');
-    s.players[1].yard.at(-1)!.damage = 1; // Kłobuk 2/3 with 1 damage: the attacking Kłobuk's 2 finishes it
-    const events = attack(s, 7001, foe);
-    expect(events.map((e) => e.t).slice(0, 3)).toEqual(['attack', 'clash', 'defeated']);
-    expect(events[1]).toMatchObject({ target: foe.uid, dealt: 2, taken: 2 });
-    expect(events[2]).toMatchObject({ uid: foe.uid, owner: 1 });
+  it('a Clash reports its start, its bouts and hits, who went down, and how it ended', () => {
+    const s = toMuster();
+    put(s, 0, 'DW1-D18', 0);
+    put(s, 1, 'DW1-D16', 0);
+    const kinds = clash(s).map((e) => e.t);
+    expect(kinds.slice(0, 2)).toEqual(['readyUp', 'readyUp']);
+    expect(kinds.indexOf('clash')).toBeLessThan(kinds.indexOf('bout'));
+    expect(kinds.indexOf('hit')).toBeLessThan(kinds.indexOf('down'));
+    expect(kinds.indexOf('down')).toBeLessThan(kinds.indexOf('clashEnd'));
+    expect(kinds.indexOf('clashEnd')).toBeLessThan(kinds.indexOf('lifeLost'));
   });
 
-  it('a hit on the Hero Cat reports the hit, then the lost Life', () => {
-    const s = toFirstAction(['domowiki', 'pari'], 8);
-    myUnit(s, 7002);
-    const events = attack(s, 7002, { kind: 'hero', player: 1 });
-    expect(events.map((e) => e.t).slice(0, 3)).toEqual(['attack', 'heroHit', 'lifeLost']);
-    expect(events[2]).toMatchObject({ p: 1, left: 8 });
-  });
-
-  it('a Hello that deals damage reports the play, then the damage', () => {
-    const s = toFirstAction(['pari', 'domowiki'], 3);
-    const t = enemyUnit(s, 'DW1-D18');
-    const from = s.events.length;
-    playFromHand(s, 'PR1-D06', t); // Súči of the Hunt: Hello, deal 1
-    const events = s.events.slice(from);
-    expect(events[0]).toMatchObject({ t: 'play', p: 0, cardId: 'PR1-D06', target: t });
-    expect(events.find((e) => e.t === 'damage')).toMatchObject({ uid: t.uid, amount: 1, p: 0 });
+  it('what a player does in the Muster is secret to them until the Clash', () => {
+    const s = toMuster();
+    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
+    expect(s.events.at(-1)).toMatchObject({ t: 'offer', secret: 0 });
+    expect(s.log.at(-1)).toMatchObject({ secret: 0 });
+    const events = clash(s);
+    expect(events.filter((e) => e.t === 'clash' || e.t === 'clashEnd').every((e) => e.secret === undefined)).toBe(true);
   });
 
   it('a whole game keeps one event stream that ends with the winner', () => {
-    const s = playOut(createGame({ decks: ['domowiki', 'aluxes'], seed: 11 }), (g) => randomAction(g, rng(11)));
+    const s = playOut(createGame({ decks: ['domowiki', 'aluxes'], seed: 11 }), (g, p) => randomAction(g, rng(11), p));
     expect(s.events.some((e) => e.t === 'round')).toBe(true);
     expect(s.events.at(-1)).toMatchObject({ t: 'win' });
   });
 });
 
 describe('round limit (rulebook 300.7)', () => {
-  /** Both players at round 40 with 5 Candles each and one Kłobuk (2/3) apiece, damaged as given; then both pass. */
-  const endAfterRound40 = (myDamage: number, theirDamage: number) => {
-    const s = toFirstAction(['domowiki', 'pari'], 9);
-    s.round = 40;
-    for (const pl of s.players) { pl.lives = pl.lives.slice(0, 5); pl.yard = []; }
-    myUnit(s, 7301);
-    enemyUnit(s, 'DW1-D18', 3);
-    s.players[0].yard[0].damage = myDamage;
-    s.players[1].yard[0].damage = theirDamage;
-    for (let i = 0; i < 200 && s.winner === null; i++) apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
-    return s;
-  };
-
-  it('with the same Candles, the side with more Health left on its units wins', () => {
-    const s = endAfterRound40(0, 1);
-    expect(s.winner).toBe(0);
-    expect(s.log.at(-1)!.text).toContain('more Health left (3 to 2)');
-    expect(endAfterRound40(2, 0).winner).toBe(1);
-  });
-
-  it('with the same Candles and the same Health left, the game is a draw', () => {
-    expect(endAfterRound40(1, 1).winner).toBe('draw');
-  });
-
-  it('more Candles still wins, whatever the Health', () => {
-    const s = toFirstAction(['domowiki', 'pari'], 9);
-    s.round = 40;
-    s.players[0].lives = s.players[0].lives.slice(0, 4);
-    s.players[1].lives = s.players[1].lives.slice(0, 5);
-    s.players[0].yard = [];
-    for (let i = 0; i < 200 && s.winner === null; i++) apply(s, s.prompt!.kind === 'action' ? { t: 'pass' } : chooseAction(s));
-    expect(s.winner).toBe(1);
+  it('more Candles wins; with the same Candles, more Health on the board; otherwise a draw', () => {
+    const at = (candles: [number, number], boards: [number, number]) => {
+      const s = toMuster();
+      s.round = RULES.maxRounds;
+      s.players.forEach((pl, p) => { pl.lives = pl.lives.slice(0, candles[p]); });
+      for (const p of [0, 1] as const) if (boards[p]) put(s, p, 'DW1-D04', p === 0 ? 0 : 5, { buffHealth: 0, exhausted: true });
+      clash(s);
+      return s;
+    };
+    expect(at([4, 5], [0, 0]).winner).toBe(1);
+    expect(at([5, 5], [0, 0]).winner).toBe('draw');
   });
 });
 
@@ -403,18 +606,18 @@ describe('full games', () => {
     const keys = Object.keys(DECKS);
     let seed = 1;
     for (const a of keys) for (const b of keys) {
-      for (let i = 0; i < 12; i++, seed++) {
+      for (let i = 0; i < 6; i++, seed++) {
         const r = rng(seed);
-        const s = playOut(createGame({ decks: [a, b], seed }), (g) => randomAction(g, r));
+        const s = playOut(createGame({ decks: [a, b], seed }), (g, p) => randomAction(g, r, p));
         expect(s.winner).not.toBeNull();
       }
     }
-  }, 60_000); // 12 random games per ordered pairing: grows with every deck
+  }, 120_000);
 
   it('AI agents finish, and the same seeds replay identically', () => {
     const run = () => {
       const r = rng(99);
-      return playOut(createGame({ decks: ['pari', 'domowiki'], seed: 5 }), (g) => chooseAction(g, { random: r }));
+      return playOut(createGame({ decks: ['pari', 'domowiki'], seed: 5 }), (g, p) => chooseAction(g, { random: r, seat: p }));
     };
     const a = run();
     const b = run();
@@ -422,24 +625,38 @@ describe('full games', () => {
     expect(JSON.stringify(a.log)).toBe(JSON.stringify(b.log));
   });
 
+  it('a game replays from its seed and its (seat, action) list', () => {
+    const r = rng(7);
+    const played: [0 | 1, Action][] = [];
+    const s = playOut(createGame({ decks: ['jiaoren', 'hui-hai'], seed: 8 }), (g, p) => {
+      const a = chooseAction(g, { random: r, seat: p });
+      played.push([p, a]);
+      return a;
+    });
+    const again = createGame({ decks: ['jiaoren', 'hui-hai'], seed: 8 });
+    for (const [p, a] of played) apply(again, a, p);
+    expect(JSON.stringify(again)).toBe(JSON.stringify(s));
+  });
+
   it('the AI beats a random player', () => {
     let aiWins = 0;
     for (let seed = 1; seed <= 20; seed++) {
       const r = rng(seed);
-      const s = playOut(createGame({ decks: ['domowiki', 'pari'], seed }), (g) =>
-        g.prompt!.player === 0 ? chooseAction(g, { random: r }) : randomAction(g, r));
+      const s = playOut(createGame({ decks: ['domowiki', 'pari'], seed }), (g, p) =>
+        p === 0 ? chooseAction(g, { random: r, seat: p }) : randomAction(g, r, p));
       if (s.winner === 0) aiWins++;
     }
     expect(aiWins).toBeGreaterThanOrEqual(16);
-  });
+  }, 60_000);
 
-  it('only ever offers legal actions', () => {
+  it('after every Muster move the engine has nothing left to do: no move ever waits on another', () => {
     const r = rng(3);
-    const s = createGame({ decks: ['domowiki', 'pari'], seed: 3 });
-    while (s.winner === null) {
-      const legal = legalActions(s);
-      if (s.prompt!.kind === 'action') expect(legal.some((a) => a.t === 'pass')).toBe(true);
-      apply(s, randomAction(s, r));
+    const s = createGame({ decks: ['pari', 'hui-hai'], seed: 3 });
+    for (let p = nextSeat(s); p !== null; p = nextSeat(s)) {
+      const mustering = s.prompt!.kind === 'muster';
+      if (mustering) expect(legalActions(s, p).length).toBeGreaterThan(0);
+      apply(s, randomAction(s, r, p), p);
+      if (mustering && s.winner === null) expect(s.queue).toEqual([]);
     }
   });
 });

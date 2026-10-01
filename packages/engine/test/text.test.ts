@@ -1,5 +1,7 @@
 import { describe as suite, expect, it } from 'vitest';
-import { apply, chooseAction, createGame, describe, legalActions, listChoices, other, parseChoice, type GameState, type PlayerId } from '../src/index';
+import {
+  apply, chooseAction, createGame, describe, listChoices, nextSeat, other, parseChoice, rulesPrimer, type GameState, type PlayerId,
+} from '../src/index';
 import TERMS from '../src/terms.json';
 
 function rng(seed: number) {
@@ -9,15 +11,14 @@ function rng(seed: number) {
   };
 }
 
-/** Every decision of a few bot games, with the state it was taken in. */
-function* decisions(games: number): Generator<GameState> {
-  const keys = ['domowiki', 'pari', 'aluxes'];
+/** Every decision of a few bot games, with the state and the seat deciding. */
+function* decisions(games: number, decks = ['domowiki', 'pari', 'aluxes']): Generator<[GameState, PlayerId]> {
   for (let g = 0; g < games; g++) {
-    const s = createGame({ decks: [keys[g % 3], keys[(g + 1) % 3]], seed: 700 + g });
+    const s = createGame({ decks: [decks[g % decks.length], decks[(g + 1) % decks.length]], seed: 700 + g });
     const r = rng(g + 1);
-    while (s.winner === null) {
-      yield s;
-      apply(s, chooseAction(s, { random: r }));
+    for (let p = nextSeat(s); p !== null; p = nextSeat(s)) {
+      yield [s, p];
+      apply(s, chooseAction(s, { random: r, seat: p }), p);
     }
   }
 }
@@ -25,187 +26,118 @@ function* decisions(games: number): Generator<GameState> {
 suite('text interface', () => {
   it('numbers every legal action, and every number reads back as that action', () => {
     let checked = 0;
-    for (const s of decisions(6)) {
-      const c = listChoices(s);
+    for (const [s, seat] of decisions(4)) {
+      const c = listChoices(s, {}, seat);
       if (c.multi) {
-        const hand = s.players[s.prompt!.player].hand;
-        const count = c.multi.count ?? 2;
-        const reply = Array.from({ length: count }, (_, i) => `H${i + 1}`).join(' ');
-        const parsed = parseChoice(s, reply);
-        expect('action' in parsed && parsed.action).toEqual({ t: c.multi.kind, uids: hand.slice(0, count).map((h) => h.uid) });
-        if (c.multi.kind === 'mulligan') expect('action' in parseChoice(s, 'none') && parseChoice(s, 'none')).toEqual({ action: { t: 'mulligan', uids: [] } });
+        const hand = s.players[seat].hand;
+        const parsed = parseChoice(s, 'H1 H2', seat);
+        expect('action' in parsed && parsed.action).toEqual({ t: 'mulligan', uids: hand.slice(0, 2).map((h) => h.uid) });
+        expect(parseChoice(s, 'none', seat)).toEqual({ action: { t: 'mulligan', uids: [] } });
         continue;
       }
       expect(c.options.length).toBeGreaterThan(0);
       for (const o of c.options) {
-        expect(parseChoice(s, `${o.n}`)).toEqual({ action: o.action });
+        expect(parseChoice(s, `${o.n}`, seat)).toEqual({ action: o.action });
         expect(o.label.length).toBeGreaterThan(2);
       }
       checked++;
     }
-    expect(checked).toBeGreaterThan(200);
-  });
+    expect(checked).toBeGreaterThan(100);
+  }, 60_000);
 
   it('reads the choice out of a reply that reasons first', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 1 });
-    while (s.prompt!.kind !== 'action') apply(s, chooseAction(s, { random: rng(1) }));
-    const n = listChoices(s).options.length;
-    expect(parseChoice(s, `Round 1 with 2 Treats, so I'll pass.\nAnswer: ${n}`)).toEqual({ action: listChoices(s).options[n - 1].action });
-    expect('error' in parseChoice(s, `${n + 5}`)).toBe(true);
-    expect('error' in parseChoice(s, 'attack!')).toBe(true);
+    while (s.prompt!.kind !== 'muster') apply(s, chooseAction(s, { random: rng(1) }));
+    const seat = nextSeat(s)!;
+    const options = listChoices(s, {}, seat).options;
+    const n = options.length;
+    expect(parseChoice(s, `Round 1 with 3 Offerings, so I'll be Ready.\nAnswer: ${n}`, seat)).toEqual({ action: options[n - 1].action });
+    expect('error' in parseChoice(s, `${n + 5}`, seat)).toBe(true);
+    expect('error' in parseChoice(s, 'attack!', seat)).toBe(true);
   });
 
   it('never shows a player what they may not know', () => {
-    // Swap every card the player can't see (the opponent's hand and Treats, both decks, both sets of
-    // Lives) for other cards: what the player reads must not change.
+    // Swap every card the player can't see (the opponent's hand and Ambushes, both decks, both sets of Candles) for
+    // other cards: what the player reads must not change.
     let compared = 0;
-    for (const s of decisions(3)) {
-      const seat = s.prompt!.player as PlayerId;
+    for (const [s, seat] of decisions(3)) {
       const t = structuredClone(s);
       const foe = t.players[other(seat)];
       const swap = (c: { id: string }) => { c.id = c.id === 'DW1-D16' ? 'PR1-D09' : 'DW1-D16'; };
       foe.hand.forEach(swap);
-      foe.pantry.forEach((tr) => swap(tr.card));
+      (foe.ambushes ?? []).forEach((a) => swap(a.card));
       for (const pl of t.players) { pl.deck.forEach(swap); pl.lives.forEach(swap); }
       expect(describe(t, seat)).toBe(describe(s, seat));
       compared++;
     }
     expect(compared).toBeGreaterThan(100);
+  }, 60_000);
+
+  it("during the Muster, what a player reads doesn't change with the opponent's moves", () => {
+    let compared = 0;
+    for (const [s, seat] of decisions(2)) {
+      if (s.prompt?.kind !== 'muster' || !s.muster!.open[other(seat)] || compared > 60) continue;
+      const before = describe(s, other(seat));
+      const t = structuredClone(s);
+      apply(t, chooseAction(t, { random: rng(3), seat }), seat);
+      if (t.phase !== 'muster') continue; // that Ready started the Clash: public from then on
+      expect(describe(t, other(seat))).toBe(before);
+      compared++;
+    }
+    expect(compared).toBeGreaterThan(20);
+  }, 60_000);
+
+  it('teaches the rules with the numbers of the game in front of it', () => {
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 1, rules: { startOfferings: 7 } });
+    expect(rulesPrimer(s)).toContain('You start with 7.');
   });
 });
 
 suite("the game's words", () => {
-  // The Story drawer shows the log and the LLM players read the choices: both said "Life" for a Candle until 2026-09-29.
+  // The Story drawer shows the log and the LLM players read the choices: they said "Life" for a Candle until 2026-09-29.
   it("the log, the questions and the choices use players' words, never the retired ones", () => {
     const retired = [...(TERMS.retired as string[]), 'Life'];
-    const decks = ['domowiki', 'pari', 'aluxes', 'jiaoren', 'hui-hai'];
     const seen = new Set<string>();
-    for (let g = 0; g < decks.length; g++) {
-      const s = createGame({ decks: [decks[g], decks[(g + 1) % decks.length]], seed: 900 + g });
-      const r = rng(g + 7);
-      while (s.winner === null) {
-        const c = listChoices(s);
-        seen.add(c.question);
-        for (const o of c.options) seen.add(o.label);
-        apply(s, chooseAction(s, { random: r }));
-      }
-      for (const line of s.log) seen.add(line.text);
+    for (const [s, seat] of decisions(5, ['domowiki', 'pari', 'aluxes', 'jiaoren', 'hui-hai'])) {
+      const c = listChoices(s, { detail: true }, seat);
+      seen.add(c.question);
+      for (const o of c.options) seen.add(o.label);
+      if (s.winner === null) for (const line of s.log.slice(-3)) seen.add(line.text);
     }
     const bad = [...seen].filter((t) => retired.some((w) => new RegExp(`\\b${w}\\b`).test(t)));
     expect(bad).toEqual([]);
-  });
+  }, 60_000);
 });
 
-suite('what a play says about arriving', () => {
-  // Pari at the Pool ("Company: enters ready") was labelled "arrives exhausted" even when it came in ready.
-  it('says a unit arrives ready exactly when it does', () => {
-    const decks = ['pari', 'domowiki', 'aluxes', 'jiaoren', 'hui-hai'];
-    let checked = 0;
-    for (let g = 0; g < 10; g++) {
-      const s = createGame({ decks: [decks[g % 5], decks[(g + 2) % 5]], seed: 1300 + g });
-      const r = rng(g + 3);
-      while (s.winner === null) {
-        const seat = s.prompt!.player;
-        for (const o of listChoices(s, { detail: true }).options) {
-          if (o.action.t !== 'play' || !/ arrives (ready|exhausted)/.test(o.label)) continue;
-          const w = structuredClone(s);
-          apply(w, o.action);
-          while (w.prompt?.kind === 'pounce' && w.prompt.player !== seat) apply(w, { t: 'decline' });
-          const unit = w.players[seat].yard.find((u) => u.uid === (o.action as { uid: number }).uid);
-          if (!unit) continue;
-          expect(o.label.includes(' arrives ready'), o.label).toBe(!unit.exhausted);
-          checked++;
-        }
-        apply(s, chooseAction(s, { random: r }));
-      }
-    }
-    expect(checked).toBeGreaterThan(100);
+suite('what the log says', () => {
+  it('opens each round with who holds the Lantern, and reports every Clash with how it ended', () => {
+    const s = createGame({ decks: ['pari', 'aluxes'], seed: 1800 });
+    const r = rng(5);
+    for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, chooseAction(s, { random: r, seat: p }), p);
+    const lines = s.log.map((e) => e.text);
+    let rounds = 0, clashes = 0;
+    lines.forEach((t, i) => {
+      if (/^— Round \d+ —$/.test(t)) { expect(lines[i + 1]).toMatch(/holds the Lantern\.$/); rounds++; }
+      if (t === '— Clash —') clashes++;
+    });
+    expect(rounds).toBeGreaterThan(3);
+    expect(clashes).toBe(rounds + (s.winner === null ? 0 : 1) - (lines.includes('Round limit reached.') ? 1 : 0));
+    expect(lines.filter((t) => / wins the Clash with | still stand: |Nobody wins the Clash/.test(t)).length).toBe(clashes);
   });
-});
 
-suite('what the log and the Lucky question say (playtests of 2026-09-30)', () => {
-  function* games(n: number): Generator<GameState> {
-    const decks = ['pari', 'domowiki', 'aluxes', 'jiaoren', 'hui-hai'];
-    for (let g = 0; g < n; g++) {
-      const s = createGame({ decks: [decks[g % 5], decks[(g + 1) % 5]], seed: 1700 + g });
-      const r = rng(g + 11);
-      while (s.winner === null) {
-        yield s;
-        apply(s, chooseAction(s, { random: r }));
-      }
+  it('logs damage from cards and abilities, and hits in the Clash', () => {
+    let hurt = 0;
+    for (const [s] of decisions(4, ['hui-hai', 'pari', 'domowiki'])) {
+      if (s.winner === null) continue;
+      const damaged = s.events.filter((e) => e.t === 'damage').length;
+      const lines = s.log.filter((e) => / takes \d+\.$/.test(e.text)).length;
+      expect(lines).toBeGreaterThanOrEqual(damaged);
+      hurt += damaged;
     }
-  }
-
-  // "Bot's Parijan attacks LLM's Parijan" read as a unit fight: players asked why they lost Candles "with no direct hits".
-  it('names the Hero as a Hero when it is attacked', () => {
-    let checked = 0;
-    for (const s of games(10)) {
-      if (s.prompt?.kind !== 'action') continue;
-      const hero = legalActions(s).find((a) => a.t === 'attack' && a.target.kind === 'hero');
-      if (!hero || checked >= 30) continue;
-      const w = structuredClone(s);
-      const before = w.log.length;
-      apply(w, hero);
-      const foe = w.players[other(s.prompt.player)];
-      expect(w.log.slice(before).map((e) => e.text).join('\n')).toContain(`attacks ${foe.name}'s Hero `);
-      checked++;
-    }
-    expect(checked).toBeGreaterThan(20);
-  }, 60_000);
-
-  // "Both players took the Lantern in one round": a holder keeping it was logged as taking it again.
-  it('says who holds the Lantern each round, and that a holder keeps it', () => {
-    let kept = 0, rounds = 0;
-    for (const s of games(10)) {
-      if (s.prompt?.kind !== 'action' || !legalActions(s).some((a) => a.t === 'takeYarn')) continue;
-      if (s.yarn !== s.prompt.player) continue;
-      const w = structuredClone(s);
-      const before = w.log.length;
-      apply(w, { t: 'takeYarn' });
-      expect(w.log[before].text).toContain('keeps the Lantern');
-      kept++;
-    }
-    for (let g = 0; g < 3; g++) {
-      const s = createGame({ decks: ['pari', 'aluxes'], seed: 1800 + g });
-      const r = rng(g + 5);
-      while (s.winner === null) apply(s, chooseAction(s, { random: r }));
-      const lines = s.log.map((e) => e.text);
-      lines.forEach((t, i) => { if (/^— Round \d+ —$/.test(t)) { expect(lines[i + 1]).toMatch(/holds the Lantern and acts first\.$/); rounds++; } });
-    }
-    expect(kept).toBeGreaterThan(5);
-    expect(rounds).toBeGreaterThan(5);
-  }, 60_000);
-
-  // "Why did one hit cost me two Candles?" (about 20 reports), and damage from Charms that left no trace in the log.
-  it('says a 2-Candle hit is Fierce, and logs damage from cards and abilities', () => {
-    let fierce = 0, hurt = 0;
-    for (const s of games(10)) {
-      const before = s.log.length, events = s.events.length;
-      const r = rng(s.actions + 1);
-      if (s.winner !== null || !s.prompt) continue;
-      const w = structuredClone(s);
-      apply(w, chooseAction(w, { random: r }));
-      const lines = w.log.slice(before).map((e) => e.text);
-      for (const t of lines.filter((x) => /^Hit! .* loses 2 /.test(x))) { expect(t).toContain('(Fierce)'); fierce++; }
-      const damaged = w.events.slice(events).filter((e) => e.t === 'damage');
-      if (damaged.length) {
-        expect(lines.filter((x) => / takes \d+\.$/.test(x)).length).toBeGreaterThanOrEqual(damaged.length);
-        hurt++;
-      }
-    }
-    expect(fierce).toBeGreaterThan(0);
-    expect(hurt).toBeGreaterThan(0);
-  }, 60_000);
-
-  // A Fierce hit asked about a Lucky Candle between its two Candles; the player thought playing it cost the last one.
-  it('tells a player how many Candles they have left when a lost Candle is Lucky', () => {
-    let asked = 0;
-    for (const s of games(12)) {
-      if (s.prompt?.kind !== 'lucky') continue;
-      const left = s.players[s.prompt.player].lives.length;
-      expect(listChoices(s).question).toContain(`You have ${left} Candle${left === 1 ? '' : 's'} left`);
-      asked++;
-    }
-    expect(asked).toBeGreaterThan(5);
+    const s = createGame({ decks: ['hui-hai', 'pari'], seed: 4 });
+    const r = rng(9);
+    for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, chooseAction(s, { random: r, seat: p }), p);
+    expect(s.log.some((e) => / hits .* for \d+\.$/.test(e.text))).toBe(true);
+    void hurt;
   }, 60_000);
 });

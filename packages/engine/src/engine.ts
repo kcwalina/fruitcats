@@ -988,6 +988,14 @@ function runStep(s: GameState, step: Extract<Step, { t: 'ability' }>): void {
     if (self.usedOnce) return;
     self.usedOnce = true;
   }
+  // A trigger in the Muster that would touch the enemy's units waits for the Clash, like every effect aimed at them:
+  // the enemy's board is theirs to build in secret until then.
+  if (s.phase === 'muster' && step.trigger && touchesEnemy(ability)) {
+    const { t: _t, p: _p, trigger: _trigger, ...rest } = step;
+    void _t; void _p; void _trigger;
+    (s.players[step.p].pending ??= []).push(rest);
+    return;
+  }
   const target = laneToUnit(s, step.target);
   const target2 = laneToUnit(s, step.target2);
   if ((step.target && !target) || (step.target2 && !target2)) {
@@ -1016,6 +1024,13 @@ function laneToUnit(s: GameState, t: Target | undefined): Target | undefined {
   if (t?.kind !== 'lane') return t;
   const u = laneUnit(s, t.player, t.lane);
   return u ? { kind: 'unit', uid: u.uid } : undefined;
+}
+
+/** Whether an ability can reach the enemy's units: "each enemy unit", or a harmful "a unit" that picks an enemy. */
+function touchesEnemy(ability: Ability): boolean {
+  const sel = ability.target;
+  if (isEachSel(sel)) return sel.each !== 'own';
+  return isUnitSel(sel) && sel.unit !== 'own' && !helpful(ability);
 }
 
 /** Whether an ability helps whatever it touches (a heal, a buff), or harms it (damage, exhaust). */

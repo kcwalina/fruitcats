@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIVES, apply, createGame, legalActions, randomAction, viewFor, type GameState, type PlayerId } from '../src/index';
+import { LIVES, apply, createGame, nextSeat, randomAction, viewFor, type GameState, type PlayerId } from '../src/index';
 
 function rng(seed: number) {
   return () => {
@@ -8,15 +8,15 @@ function rng(seed: number) {
   };
 }
 
-/** Plays a random game to the end, calling `each` before every action. */
-function playOut(s: GameState, seed: number, each: (s: GameState) => void = () => {}): GameState {
+/** Plays a random game to the end. */
+function playOut(s: GameState, seed: number): GameState {
   const r = rng(seed);
-  while (s.winner === null) { each(s); apply(s, randomAction(s, r)); }
+  for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, randomAction(s, r, p), p);
   return s;
 }
 
-describe('handicap: starting with fewer Lives', () => {
-  it('starts each player with the Lives they chose, and keeps the rest in the deck', () => {
+describe('handicap: starting with fewer Candles', () => {
+  it('starts each player with the Candles they chose, and keeps the rest in the deck', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [6, 9] });
     expect(s.players[0].lives.length).toBe(6);
     expect(s.players[1].lives.length).toBe(LIVES);
@@ -26,7 +26,7 @@ describe('handicap: starting with fewer Lives', () => {
     expect(cards(0)).toBe(cards(1));
   });
 
-  it('keeps Lives between 1 and 9', () => {
+  it('keeps Candles between 1 and 9', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [0, 20] });
     expect(s.players[0].lives.length).toBe(1);
     expect(s.players[1].lives.length).toBe(LIVES);
@@ -46,39 +46,12 @@ describe('handicap: starting with fewer Lives', () => {
   });
 });
 
-describe('alwaysAsk: Pounce and Lucky prompts that give nothing away', () => {
-  it('asks the defender after every play and attack, with only "let it happen" when they hold no Pounce', () => {
-    let windows = 0, empty = 0;
-    for (let seed = 1; seed <= 20; seed++) {
-      playOut(createGame({ decks: ['domowiki', 'pari'], seed, alwaysAsk: true }), seed, (s) => {
-        if (s.window && s.prompt?.kind !== 'pounce' && s.prompt?.kind !== 'choose' && s.prompt?.kind !== 'lucky')
-          throw new Error(`an open window without a Pounce prompt (${s.prompt?.kind})`);
-        if (s.prompt?.kind === 'pounce') {
-          windows++;
-          if (legalActions(s).length === 1) { empty++; expect(legalActions(s)).toEqual([{ t: 'decline' }]); }
-        }
-      });
-    }
-    expect(windows).toBeGreaterThan(100);
-    expect(empty).toBeGreaterThan(50);
-  });
-
-  it('asks about every lost Life, and a Life that isn\'t Lucky can only be kept', () => {
-    let asked = 0;
-    for (let seed = 1; seed <= 20; seed++) {
-      playOut(createGame({ decks: ['domowiki', 'pari'], seed, alwaysAsk: true }), seed, (s) => {
-        if (s.prompt?.kind !== 'lucky') return;
-        asked++;
-        const card = s.players[s.prompt.player].hand.find((c) => c.uid === (s.prompt as { uid: number }).uid)!;
-        expect(card).toBeDefined();
-        if (!legalActions(s).some((a) => a.t === 'lucky')) expect(legalActions(s)).toEqual([{ t: 'keepLucky' }]);
-      });
-    }
-    expect(asked).toBeGreaterThan(100);
-  });
-
-  it('is off unless asked for, so Solo plays as before', () => {
-    const s = createGame({ decks: ['domowiki', 'pari'], seed: 3 });
-    expect(s.alwaysAsk).toBeUndefined();
+describe('rules a game was made with', () => {
+  it('are kept in the game, so a saved game or a match plays on with them', () => {
+    const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, rules: { clashCandleCap: 1, startOfferings: 9 } });
+    expect(s.rules.clashCandleCap).toBe(1);
+    expect(s.players[0].offerings).toBe(9);
+    const again = structuredClone(s);
+    expect(again.rules).toEqual(s.rules);
   });
 });

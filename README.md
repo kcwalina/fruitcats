@@ -1,6 +1,6 @@
 # Fruitcats
 
-Folkborn, a trading card game about folk creatures from around the world. Easy to learn, built for competitive play, and designed from day one to be playtested by bots and LLM agents.
+Folkborn, a collectible card game about folk creatures from around the world, whose battles play themselves: build your army in secret, in six lanes, then read how the Clash went. Easy to learn, built for competitive play, and designed from day one to be playtested by bots and LLM agents.
 
 ## Docs
 

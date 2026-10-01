@@ -2,6 +2,40 @@
 
 Why the rules are the way they are, what we borrowed, and what the playtest engine should try to break first. Companion to [rulebook.md](rulebook.md) and [designing-good-deck.md](designing-good-deck.md).
 
+## Folkborn 0.4: the Muster and the Clash (2026-09-30)
+
+The owner turned Folkborn into a hybrid of a collectible card game and an auto-battler in the style of Teamfight
+Tactics, without animations. What it keeps from each:
+
+- **From the card game:** a collection, decks built from your own cards (your opponent plays only theirs), a hidden
+  hand, Charms and Ambushes, card text as the design space, the Hero and Awaken, Candles that go to your hand.
+- **From the auto-battler:** plan, then fight; the fight plays itself; the board persists and grows (Level, stars,
+  Rain-Fed, Talismans as items); positioning; the economy (spend or save for interest, level or play, offer or keep);
+  scouting the opponent's last board.
+
+The decisions, with the owner:
+
+| Decision | Chosen | Why |
+|---|---|---|
+| The build phase | Simultaneous and hidden; you see the other side as it was when the Muster began | TFT's scouting without an information race; nobody waits for anybody. |
+| The economy | Offerings are money you keep, with interest (+1 per 5 saved, at most 3) | "Accelerate or not" is exactly spend-now versus save, and it needs a pool. Refreshing mana offered only a weak version. |
+| Units that lose a fight | Stay on the board: everything stands up after the Clash | As in TFT, losing costs Candles and tempo, never the army; the board only grows. |
+| Who hits whom | Printed roles (Guardian, plain, Elusive, Lure; Sneaky the other way), lanes as the tiebreak | One row of six fits a phone; roles are bought (tanks, carries, decoys, assassins), positions break ties. |
+| Merging | A second Creature copy merges: 2 stars, twice the printed stats; Fabled never | The TFT feeling of upgrading a full board, through deck building (how many copies you run). |
+| Players | 1v1 | With personal decks there's no shared pool to contest; the Match code is 1v1 already. |
+| Transition | A clean cut: no classic mode kept | No dead code left behind once the classic game would have gone. |
+| No animations | The Clash is a report, read bout by bout | "Combat is a proof, not a show": deterministic, and legible as state plus rules. |
+
+The first gauntlet (about 100 games a pairing) put every starter between 48% and 53%. The changes it took are in the
+commit "Folkborn 0.4: first balance pass": Aluxito grows Rain-Fed units for good, Parijan lends Power, Zhu'er gives
+Pearl Tears only once Awakened, Pearl Tears and Stone for Stone happen once a round, Bowl of Kasha costs 1, The
+Forest Remembers deals 3, Pari at the Pool is 3/3, and at most 2 Candles go out in one Clash. Heals became "+N Health
+this round" (damage never outlasts a Clash), "ready an Offering" became "gain an Offering", and the Awaken conditions
+that counted units in the Mist count units gone down in Clashes.
+
+Most of what follows describes the turn-based game Folkborn was before 0.4: the history of why the cards are what
+they are.
+
 ## Goals
 
 1. **Easy to start** — teachable in 5 minutes, ≤ 2 lines of text per card, ~10 keywords.

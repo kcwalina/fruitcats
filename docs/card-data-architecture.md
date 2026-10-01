@@ -86,7 +86,7 @@ The vocabulary (types in `packages/engine/src/types.ts`):
 | **keywords** (a card's `keywords` list) | core: `Zoomies`, `Guardian`, `Sneaky`, `Fierce`, `Tough N`, `Lucky`, `Pounce`; plus any set mechanic of kind `keyword` (`Rain-Fed`, `Heat`) |
 | **when** | `play` (Tricks) · `hello` · `goodbye` · `roundStart` · `exhaust` (a Hero Cat's ability) · `damagedAndSurvives` · `defeatsInCombat` · `youHeal` |
 | **if** | a set mechanic's name (`Company`, `Well-Fed`) · a plugin's condition · `targetIsYours` · `{ not }` · `playedThisRound` · `treats` · `lives` · `opponentLives` · `yardHas {keyword}` · `unitsInComposts` · `compost` · `controlUnits` · `unitHasCounter` |
-| **target** | `self` · `attack` (the attack in this Pounce window) · `{ unit: own / enemy / any, other?, filter? }` (a choice) · `{ each: own / enemy / all / allOther, filter? }` (no choice) · `target2` for a second choice (Showdown) |
+| **target** | `self` · `attack` (an Ambush's: the enemy unit across from its lane) · `{ unit: own / enemy / any, other?, filter? }` (a choice) · `{ each: own / enemy / all / allOther, filter? }` (no choice) · `target2` for a second choice (Showdown) |
 | **filter** | `exhausted` · `damaged` · `noToy` · `keyword` · `counter {name, atLeast}` |
 | **do** | `damage N` · `heal N` · `buff {power, keywords}` (this round) · `counter {name, add, max}` · `draw N` · `exhaust` · `ready` · `readyTreats N` · `sprout N` · `summon tokenId` · `cancelAttack` · `fight` · plus any plugin's actions |
 | **static** | `grant {power, health, keywords}` to `self` / `attached` (Toys) / `{ each … }` (auras), `while` a condition · `cantAttack while` a condition |

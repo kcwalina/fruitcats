@@ -1,10 +1,12 @@
 # Folkborn — Official Rulebook
 
-**Version 0.3 (playtest draft)** · 2 players · ages 8+ · about 10 minutes per game
+**Version 0.4 (playtest draft)** · 2 players · ages 8+ · about 15 minutes per game
 
 > A card game of folk creatures from around the world.
 
-Folkborn is a trading card game about creatures from the folk tales of the world. You lead one **Hero**, gather creatures to fight for you, and try to blow out all nine of your rival's Candles before they blow out yours.
+Folkborn is a collectible card game about creatures from the folk tales of the world. You build a deck from the cards
+you own and lead one **Hero**. Each round you and your opponent build your armies at the same time, in secret; then
+the armies fight on their own. Blow out all nine of your rival's Candles before they blow out yours.
 
 This rulebook is the complete law of the game. New to Folkborn? Start with [How to play](how-to-play.md): the
 basics, in pictures.
@@ -15,15 +17,24 @@ This rulebook has three parts:
 2. **Building Decks & Competitive Play** (section 11).
 3. **Comprehensive Rules** (section 13) — precise wording for judges, rules lawyers, and the game engine. If Part 1 and Part 3 ever disagree, Part 3 wins.
 
+Version 0.4 (2026-09-30) turned Folkborn from a turn-by-turn card game into a card game whose battles play themselves:
+the **Muster** and the **Clash** replaced alternating actions, attacks, Ambush windows and taking the Lantern;
+Offerings became money you save.
+
 ---
 
 ## 1. The Game in 60 Seconds
 
-- You each have a **Hero** that is always in play, a **50-card deck**, and **9 Candles**.
-- Each round, you may **offer** any one card from your hand face-down as an **Offering**. Offerings pay for your other cards. *Any card can be an Offering, so you never get stuck without resources.* Every Offering is worth exactly 1, whatever the offered card costs.
-- Players **take turns doing one thing at a time** — play a card, attack, use an ability — back and forth until both pass. You are never waiting long.
-- Attack the rival Hero to blow out a Candle. **A lost Candle goes into its owner's hand**, so the player who is behind gets more options. Some cards are **Lucky** and play for free when they turn up as a lost Candle.
-- Your Hero **Awakens** during the game, flipping to its mighty **Awakened** side.
+- You each have a **Hero**, a **50-card deck**, and **9 Candles**.
+- **Offerings are your money.** You start with 3, and get more at the start of every round. What you don't spend is
+  kept, and earns **interest**. You can also offer any card, from your hand or your board, for 1 Offering.
+- Each round has two parts. In the **Muster** you and your opponent build your sides **at the same time, in secret**:
+  play creatures into your **six lanes**, play Charms and Talismans, set Ambushes face-down, level up your Hero. When
+  you are both **Ready**, the **Clash** plays itself: the two armies fight until one side has nobody standing.
+- The loser of the Clash blows out a **Candle** for each enemy still standing. **A lost Candle goes into its owner's
+  hand**, so the player who is behind gets more options.
+- After the Clash every unit stands up again. **Nothing on the board is lost in a Clash**: your army only grows.
+- Your Hero's **Level** says how many units you may field. Two copies of a creature **merge** into a stronger one.
 - Blow out the rival's **ninth Candle** and you win.
 
 ---
@@ -31,8 +42,8 @@ This rulebook has three parts:
 ## 2. What You Need
 
 - A **Hero** card and a **50-card deck** each (see section 11 for deckbuilding; every family has a ready-made deck).
-- The **Lantern** token (any small object works). Whoever holds it acts first each round.
-- **Damage counters** (dice or beads work well).
+- The **Lantern** token (any small object works). Its holder's effects go first; it changes hands every round.
+- **Counters** for Offerings, damage and Levels (dice or beads work well).
 
 Or play the digital version against the AI at **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)** — no
 download, no account, and it keeps score for you.
@@ -43,16 +54,14 @@ If you are learning at the table, this is the same path the digital walkthrough 
 Everything else in this rulebook can wait until you have played once.
 
 1. **You win** by blowing out all **9 Candles** of the other Hero.
-2. **Every card has a price** — the number in its top-left corner — and you pay in **Offerings**.
-3. **Offering** a card face-down turns it into **1 Offering**: something to pay with instead of a card to play,
-   whatever it cost. At setup you offer 2. Pick the two with the *biggest* numbers, so the cards you keep are
-   ones you can afford to play.
-4. **Playing** a card spends Offerings and puts it on your side. Spent Offerings stand back up next round.
-5. **A creature that just arrived rests.** It can attack from the next round, unless it has **Swift**.
-6. **You each do one thing at a time**, back and forth, until you both pass.
-7. **Attacking**: pick one of your ready creatures, then pick what it hits: one of their creatures (both
-   take damage) or their Hero (they lose a Candle).
-8. **A lost Candle goes into its owner's hand**, so falling behind gives you cards back.
+2. **Every card has a price** — the number in its top-left corner — and you pay in **Offerings**, your money.
+3. **The Muster:** you both build at the same time. **Play a creature into one of your lanes** (as many as your
+   Hero's Level, 2 at first), then press **Ready**.
+4. **The Clash plays itself.** Each unit hits an enemy, bout after bout, until one side has nobody standing.
+5. **Who a unit hits:** the enemy across from it first, then the nearest — but **Guardians** are always hit first.
+6. **The loser** blows out a Candle for each enemy still standing, and the lost Candle cards go to their hand.
+7. **Everything stands up again** after the Clash: your board stays, and grows round after round.
+8. **Save or spend:** Offerings you keep earn interest. **Level up** your Hero for more lanes.
 
 ---
 
@@ -65,19 +74,21 @@ A labelled picture of a card, with its rarity mark and finish code, is in [Card 
 | Part | Meaning |
 |---|---|
 | **Name** | The card's name. |
-| **Cost** | How many Offerings you must exhaust to play it. |
+| **Cost** | How many Offerings you pay to play it. |
 | **Family** | Domowiki, Pari, Aluxes, Jiaoren or Hui Hai. A set may also add a neutral family. |
 | **Type** | Hero, Fabled, Creature, Charm, or Talisman. |
-| **Power / Health** | Units only. Power is the damage it deals; Health is how much damage defeats it. |
+| **Power / Health** | Units only. Power is the damage it deals; Health is how much damage knocks it down. |
 | **Text** | Keywords and abilities. Never more than two short lines. |
 
 ### 3.2 Card types
 
-- **Hero** — Your leader. Starts the game in your **Hearth** and never leaves. Double-sided: a first side and an **Awakened** side. A Hero is *not* a unit and cannot be damaged or targeted by cards that say "unit".
-- **Fabled** — The most powerful units in the game. You may include only **one copy** of each Fabled card, and at most **six Fabled** per deck.
-- **Creature** — The everyday units: house spirits, fairies, clay guardians, forest folk and their friends.
-- **Charm** — A one-shot effect. Do what it says, then put it in the Mist. Charms with **Ambush** can be played in response to your opponent (section 7).
-- **Talisman** — Attaches to a unit you control and improves it. One Talisman per unit. If the unit leaves play, the Talisman goes to the Mist.
+- **Hero** — Your leader. Never leaves play. Double-sided: a first side and an **Awakened** side. A Hero is *not* a
+  unit.
+- **Fabled** — The most powerful units in the game. One copy each in a deck, at most six. Fabled never merge.
+- **Creature** — The everyday units. A second copy merges into the first (section 6.4).
+- **Charm** — A one-shot effect. Do what it says, then put it in the Mist. Charms with **Ambush** may instead be set
+  face-down in a lane (section 7).
+- **Talisman** — Attaches to a unit you control and improves it, for good. One Talisman per unit.
 
 Fabled cards and Creatures are both **units**.
 
@@ -88,10 +99,10 @@ and gives it a **signature mechanic** that only that family has.
 
 | Family | Personality | Plays like | Signature mechanic |
 |---|---|---|---|
-| **Domowiki** | Grumpy, loyal, fond of porridge | Feed the house with extra Offerings, then wake the big spirits | **Sprout** & **Well-Fed** — extra Offerings now, payoffs at 7+ |
+| **Domowiki** | Grumpy, loyal, fond of porridge | Feed the house with extra Offerings, then wake the big spirits | **Sprout** & **Well-Fed** — extra Offerings now, payoffs at 7 saved |
 | **Pari** | Light, graceful, never alone | Fly past the guards in a company of three, and slip away as doves | **Company** & **Feather Coat** — bonuses while you control 3 or more units |
 | **Aluxes** | Tiny, invisible, mischievous, loyal for seven years | Guard the milpa, call the rain, and let the corn grow tall | **Rain-Fed** — units grow stronger every round |
-| **Jiaoren** | Quiet weavers of the South Sea, grateful to the kind | Every tear is a pearl: when a jiaoren is hurt, you get an Offering back | **Pearl Tears** — hurt units ready Offerings |
+| **Jiaoren** | Quiet weavers of the South Sea, grateful to the kind | Every tear is a pearl: when a jiaoren is hurt, you gain an Offering | **Pearl Tears** — hurt units gain Offerings |
 | **Hui Hai** | Tiny, invisible, very strong keepers of the forest and its streams | Stone for stone: hurt a Hui Hai and a pebble comes back from nowhere | **Stone for Stone** — hurt units throw stones |
 
 A set may also mark a family **neutral** (**Wildfolk**): neutral cards go in any deck.
@@ -102,9 +113,9 @@ A set may also mark a family **neutral** (**Wildfolk**): neutral cards go in any
 
 | Zone | What lives there |
 |---|---|
-| **Hearth** | Your Hero. |
-| **Yard** | Your units and their Talismans. Maximum **6 units**. |
-| **Offerings** | Your Offerings (face-down cards in a row). Each is either *ready* (upright) or *exhausted* (turned sideways). You may look at your own Offerings at any time. |
+| **Hearth** | Your Hero, and its Level. |
+| **Lanes** | Six lanes, side by side, facing your opponent's six. Each holds at most one unit (and its Talisman), and may hold one face-down Ambush. |
+| **Offerings** | Your money: a number, which everyone may see. |
 | **Candles** | Your 9 face-down Candle cards. Nobody may look at them. |
 | **Deck** | Face-down draw pile. |
 | **Hand** | Hidden from your opponent. |
@@ -114,84 +125,100 @@ A set may also mark a family **neutral** (**Wildfolk**): neutral cards go in any
 
 ## 5. Setup
 
-1. Put your Hero in your Hearth, **first side up** (not Awakened), ready.
+1. Put your Hero in your Hearth, **first side up**, at **Level 2**.
 2. Shuffle your deck. Deal the top **9 cards face-down** as your **Candles**, without looking.
 3. Draw **6 cards**.
 4. **Mulligan (once):** set aside up to **3** cards from your hand, draw that many, then shuffle the set-aside
-   cards into your deck. You always end up with 6 again — the mulligan costs you nothing, it just changes *which*
-   6 you are choosing from.
-5. **Offer 2** cards from your hand face-down as ready Offerings.
+   cards into your deck. You always end up with 6 again.
+5. Take **3 Offerings**.
 6. Randomly decide who starts with the **Lantern**.
-
-You begin round 1 with 4 cards in hand and 2 Offerings.
-
-> **Why mulligan if you offer 2 anyway?** Offering is a choice, not a loss: you offer the two cards you want
-> *least*, and keep the four you want most. A hand of six 5-cost cards is bad however you split it, and the
-> mulligan is your one chance to fix that before the split. Offered cards are not gone either. Each one is an
-> Offering that pays for everything you play for the rest of the game.
 
 ---
 
 ## 6. Playing a Round
 
-The game is played in **rounds**. Each round has three phases.
+The game is played in **rounds**. Each round has three parts.
 
-### 6.1 Start Phase *(skip this phase in round 1)*
+### 6.1 Start *(skip this in round 1)*
 
-1. **Ready** all your exhausted cards (Offerings, units, Hero).
-2. **Draw 2** cards.
-3. **Offer:** you may put **one** card from your hand face-down as a ready Offering.
+1. **Ready** your Hero and your units.
+2. **Income:** take Offerings: **3** in round 2, **4** in round 3, **5** from round 4 on — plus **interest**: one more
+   for every **5** Offerings you have saved, at most **3**.
+3. **Draw 2** cards.
 
-Both players do this at the same time. (If order ever matters, the Lantern holder goes first.)
+### 6.2 The Muster
 
-### 6.2 Action Phase
+You and your opponent do this **at the same time, in secret**, as many times as you like, until you say **Ready**.
+In the digital game, you see your opponent's side as it stood when the Muster began. At a table, play behind a
+screen, or one after the other with the board covered.
 
-Starting with the player holding the Lantern, players **alternate taking one action at a time**. On your action, choose one:
-
-| Action | What happens |
+| You may | How |
 |---|---|
-| **Play a card** | Exhaust Offerings equal to its cost. A unit enters your Yard **exhausted**. A Talisman attaches to one of your units. A Charm does its effect and goes to the Mist. |
-| **Attack** | Exhaust one of your ready units (or your Awakened Hero) to attack. See section 8. |
-| **Use an ability** | Pay the cost shown on a card you control (often "Exhaust:") and do what it says. |
-| **Take the Lantern** | Take the Lantern (or keep it). You will act first next round. *For the rest of this round you may only pass* — you can still Ambush and play a Lucky Candle, and your opponent keeps acting until they pass. Only one player may Take the Lantern each round. Holding the Lantern only means you act first; it doesn't limit you. |
-| **Pass** | Do nothing. You may still act later this round if your opponent does something. |
+| **Play a unit** | Pay its cost and put it in one of your empty lanes. You may have as many units as your Hero's **Level**. Its **Hello** happens now. |
+| **Play a Talisman** | Pay its cost and attach it to a unit of yours without one. |
+| **Play a Charm** | Pay its cost and do what it says. |
+| **Set an Ambush** | Pay its cost and put a card with **Ambush** face-down in one of your lanes (section 7). |
+| **Move a unit** | Free: move it to another lane of yours; a unit already there swaps with it. |
+| **Use your Hero's ability** | Once a round ("Exhaust:" — the Hero turns sideways). |
+| **Level up** | Pay Offerings: **3** from Level 2 to 3, **4** to Level 4, **5** to Level 5, **6** to Level 6. |
+| **Offer a card** | A card from your hand, or a unit from your board (its Talisman goes too), goes to the Mist, and you gain **1 Offering**. |
+| **Play a Lucky card for free** | A Lucky card you took as a lost Candle in the last Clash (section 9.2). |
+| **Ready** | You're done. You can't be Ready with more than **10 cards** in hand: offer the extra ones. |
 
-The Action Phase ends when **both players pass in a row**.
+**Effects aimed at the enemy.** An effect that would deal damage to, exhaust, or otherwise touch an enemy unit
+(including "each enemy unit") is aimed at **one of their lanes**, and happens **when the Clash begins**, to whoever
+stands there then. With nobody there, it fizzles. Effects on your own units happen at once.
 
-### 6.3 End Phase
+### 6.3 The Clash
 
-1. Effects that last "this round" wear off.
-2. If you have more than **10 cards** in hand, discard down to 10.
-3. **The Lantern passes:** if nobody Took the Lantern this round, pass the Lantern to the other player.
+When both players are Ready, the Clash plays itself. Nobody decides anything in it.
 
-Then start the next round.
+1. **Effects aimed at the enemy** happen, the Lantern holder's first, in the order they were made.
+2. **Ambushes** whose lane holds what they need are revealed and happen (section 7).
+3. An **Awakened Hero** that isn't exhausted **strikes**: it deals its Power to the enemy unit it would hit (section 8).
+4. **Bouts**, until one side has no unit standing, or nobody can deal damage, or after **8** bouts. In a bout every
+   ready unit hits one enemy unit, **Swift** units first, then the rest, each group all at once (section 8). A unit
+   whose damage reaches its Health **goes down**: it is out of this Clash.
+5. **The result:** if one side has units standing and the other has none, the side with none **loses a Candle for each
+   enemy unit still standing** (two for a **Fierce** one, one more for a Hero that struck), at most **2**. If both
+   sides still stand at the end, each loses Candles for the other's units the same way.
+6. **Everything stands up again:** every unit is back in its lane with no damage. Tokens are gone. Nothing on the board
+   is lost in a Clash.
+
+### 6.4 Stars
+
+Playing a Creature you already have on the board **merges** it into that unit: it has **2 stars** and **twice** its
+printed Power and Health; a third copy makes **3 stars**, three times. A merge takes no lane and no Level, and the new
+copy goes to the Mist. Fabled cards never merge.
+
+### 6.5 End
+
+"This round" effects end, and the Lantern goes to the other player.
 
 ---
 
-## 7. Ambush — Reacting to Your Opponent
+## 7. Ambush — Face-Down Surprises
 
-Some Charms and abilities have the keyword **Ambush**. They let you interrupt.
+Some Charms have the keyword **Ambush**. You may play them like any Charm, or **set one face-down** in one of your
+lanes during the Muster (paying its cost). Your opponent only sees that the lane holds a face-down card.
 
-- When your opponent **plays a card** or **declares an attack**, you get one **Ambush window**: you may play **one** Ambush card (paying its cost as usual).
-- Your Ambush resolves **first**. Then your opponent's card or attack resolves, if it still can.
-- **You cannot Ambush an Ambush.** One reaction, and that's it. There is no stack to learn.
-- An Ambush does not use up your action. You still take your next action as usual.
-- An Ambush card may also be played as a normal action on your own turn.
-
-> **Tip:** Offerings you leave ready are a threat. Your opponent can't know if you're holding an Ambush.
+When the Clash begins, each Ambush whose lane **holds what it needs** is revealed and happens: a card that helps "a
+unit you control" helps your unit in that lane; a card aimed at the enemy hits the enemy unit **across** from it. An
+Ambush whose lane doesn't hold what it needs stays face-down, for a later Clash.
 
 ---
 
-## 8. Attacking
+## 8. Who Hits Whom
 
-1. **Declare:** exhaust one of your ready units and choose a target — an **enemy unit** or the **enemy Hero**.
-   - If your opponent controls any units with **Guardian**, you must target a Guardian (unless your attacker is **Sneaky**).
-2. **Ambush window** for the defender.
-3. **Resolve**, if the attacker and its target are both still in play:
-   - **Unit vs. unit:** each deals damage equal to its Power to the other, at the same time. Damage stays on a unit from round to round. A unit with damage equal to or greater than its Health is **defeated** and goes to its owner's Mist.
-   - **Unit vs. Hero:** that's a **hit**. The defending player **loses 1 Candle** (2 if the attacker has **Fierce**). The attacker takes no damage.
+Each unit hits one enemy unit a bout, chosen like this:
 
-**Awakened Heroes can attack too.** Once your Hero has Awakened, you may exhaust it to attack with its Power. An Awakened Hero takes no damage when it attacks a unit. A Hero that has not Awakened cannot attack. *Note that exhausting your Hero to attack means you can't also use its "Exhaust:" ability this round — choose wisely.*
+1. **By role.** Enemies with **Guardian** are hit first, then plain units, then **Elusive** ones, and **Lures** last.
+   A **Sneaky** attacker goes the other way round: Lures first, then Elusive units, then plain units, Guardians last.
+2. **By place**, among units of the same role: the one **across** from the attacker, otherwise the **nearest**; the
+   leftmost on a tie.
+
+An **exhausted** unit deals no damage in the Clash (it still gets hit). Units deal damage equal to their Power;
+**Tough X** takes X less from each hit. Damage stays on a unit until the Clash ends.
 
 ---
 
@@ -199,25 +226,28 @@ Some Charms and abilities have the keyword **Ambush**. They let you interrupt.
 
 ### 9.1 Losing a Candle
 
-When you lose a Candle, take the **top card of your Candles** and put it **into your hand**. Getting hit hurts — but it also gives you more cards to fight back with.
+When you lose a Candle, take the **top card of your Candles** and put it **into your hand**. Getting hit hurts — but it
+also gives you more cards to fight back with.
 
 ### 9.2 Lucky
 
-If the Candle card you just took has the **Lucky** keyword, you may immediately reveal it and **play it for free**. (If you'd rather keep it in hand, you may.) A Lucky play cannot be ambushed.
+If the Candle card you just took has the **Lucky** keyword, you may play it **for free** during the next Muster. (If
+you don't, it stays in your hand as a normal card.)
 
 ### 9.3 Winning
 
 When a player loses their **ninth and final Candle**, they lose the game immediately.
 
-If you must draw a card and your deck is empty, you **lose 1 Candle instead** (that Candle card goes to your hand as usual).
+If you must draw a card and your deck is empty, you **lose 1 Candle instead**.
 
-**The game ends after round 40.** If nobody has won by then, the player with more Candles left wins. With the same
-number of Candles, the player whose units in their Yard have more Health left in total (each unit's Health minus its
-damage) wins. If that is equal too, the game is a draw.
+**The game ends after round 30.** If nobody has won by then, the player with more Candles left wins. With the same
+number of Candles, the player whose units have more Health in total wins. If that is equal too, the game is a draw.
 
 ### 9.4 Awaken
 
-Every Hero has an **Awaken** condition printed on it (for example, *"Awaken: your opponent has 5 or fewer Candles"*). As soon as the condition is true, flip your Hero to its **Awakened** side. It stays ready or exhausted as it was. An Awakened Hero never turns back.
+Every Hero has an **Awaken** condition printed on it (for example, *"Awaken: You have 7 or fewer Candles"*). As soon as
+the condition is true, flip your Hero to its **Awakened** side, for good: a stronger ability, and it **strikes** when
+the Clash begins (unless it is exhausted for its ability).
 
 ---
 
@@ -225,31 +255,35 @@ Every Hero has an **Awaken** condition printed on it (for example, *"Awaken: you
 
 | Keyword | Meaning |
 |---|---|
-| **Swift** | This unit enters the Yard **ready** instead of exhausted. |
-| **Guardian** | Enemies must attack your Guardians before anything else. |
-| **Sneaky** | This unit ignores Guardians when choosing what to attack. |
-| **Fierce** | When this hits a Hero, the defender loses **2** Candles instead of 1. |
+| **Guardian** | The tank: enemies hit Guardians first (Sneaky enemies hit them last). |
+| **Elusive** | The carry: enemies hit it after every plain unit and Guardian. |
+| **Lure** | The decoy: enemies hit it last, but Sneaky enemies must hit it first. |
+| **Sneaky** | The assassin: hits the enemy's Lures first, then Elusive units, Guardians last. |
+| **Swift** | Hits first in every bout: a unit it knocks down never hits back. |
+| **Fierce** | Worth 2 Candles instead of 1 if it is standing when its side wins the Clash. |
 | **Tough X** | Whenever this unit is dealt damage, reduce that damage by X. |
-| **Lucky** | When you take this card as a lost Candle, you may play it for free. |
-| **Ambush** | You may play this during your opponent's Ambush window. |
-| **Hello:** | This effect happens when the unit enters your Yard. |
-| **Goodbye:** | This effect happens when the unit is defeated. |
+| **Lucky** | When you take this card as a lost Candle, you may play it for free in the next Muster. |
+| **Ambush** | You may set this face-down in one of your lanes (section 7). |
+| **Hello:** | This happens when you play the card. |
+| **Goodbye:** | This happens each time the unit goes down in a Clash. |
 | **Awaken:** | When this condition is true, flip your Hero to its Awakened side. |
-| **Sprout N** *(Domowiki)* | Put the top N cards of your deck face-down as exhausted Offerings. |
-| **Well-Fed** *(Domowiki)* | This bonus is on while you have 7 or more Offerings. |
+| **Sprout N** *(Domowiki)* | Gain N Offerings. |
+| **Well-Fed** *(Domowiki)* | This bonus is on while you have 7 or more Offerings saved. |
 | **Company:** *(Pari)* | This bonus is on while you control 3 or more units. |
-| **Feather Coat** *(Pari)* | Goodbye: Summon a 1/1 Dove. |
-| **Rain-Fed** *(Aluxes)* | At the start of each round, this unit gets +1 Power and +1 Health, up to +2/+2. |
-| **Pearl Tears** *(Jiaoren)* | When this unit is damaged and survives, ready one of your Offerings. |
-| **Stone for Stone** *(Hui Hai)* | When this unit is damaged and survives, deal 1 damage to an enemy unit. |
+| **Feather Coat** *(Pari)* | Goodbye: Summon a 1/1 Dove (a Lure). |
+| **Rain-Fed** *(Aluxes)* | At the start of each round, this unit gets +1 Power and +1 Health, up to +3/+3. |
+| **Pearl Tears** *(Jiaoren)* | Once per round, when this unit is damaged and survives, gain an Offering. |
+| **Stone for Stone** *(Hui Hai)* | Once per round, when this unit is damaged and survives, deal 1 damage to an enemy unit. |
 
 Other common words:
 
-- **Exhaust** — turn a card sideways. Exhausted cards can't attack or pay "Exhaust:" costs. **Ready** — turn it upright again.
-- **Heal N** — remove up to N damage from a unit.
-- **Defeat** — put a unit into its owner's Mist.
-- **Summon** — put a token unit into your Yard (exhausted, unless it has Swift).
-- **This round** — until the End Phase.
+- **Exhaust** — an exhausted unit deals no damage in this Clash. On a Hero, "Exhaust:" is the price of its ability.
+  **Ready** — turn it upright again (everything readies at the Start).
+- **Heal N** — remove up to N damage from a unit. **+N Health this round** — the unit can take N more damage until the
+  round ends.
+- **Gain N Offerings** — add N to your Offerings.
+- **Summon** — put a token unit into your lowest empty lane. Tokens are gone when the Clash ends.
+- **This round** — until the End.
 
 ---
 
@@ -261,36 +295,53 @@ Other common words:
 - Your deck may contain cards from your **Hero's family**, **one other family of your choice**, and neutral (**Wildfolk**) cards.
 - Up to **3 copies** of any card — except **Fabled: 1 copy each, maximum 6 Fabled**.
 - *New players:* start with a single family. Every family's ready-made deck is built this way.
-- *In the app:* a deck can use only the copies you own. Everyone starts with every card of the Domowiki deck, the starter deck; other decks come from the Store.
+- *In the app:* a deck can use only the copies you own. Everyone starts with every card of the starter decks; other
+  decks come from the Store. Your opponent plays only the cards they own.
 
 ### 11.2 Tournament play
 
 - **Matches are best-of-three.** The loser of a game chooses who starts the next game with the Lantern.
 - **Sideboard:** up to 10 extra cards. Between games you may swap cards one-for-one with your deck. You may not change your Hero.
 - **Open decklists:** both players may read the opponent's decklist before the match. Skill should come from play, not from surprise.
-- **Clock:** each player has a personal **time bank of 12 minutes per game**, plus 5 seconds added after each action (like a chess clock). If your time bank runs out, you lose the game. Ambush windows run on the reacting player's clock.
-- **No randomness after the shuffle.** No Folkborn card flips a coin, rolls a die, or picks a random target. The only luck is the order of your deck and your Candles.
+- **Clock:** each Muster has a time limit for both players together (75 seconds in Ranked, plus a reserve); a player
+  out of time is made Ready.
+- **No randomness after the shuffle.** No Folkborn card flips a coin, rolls a die, or picks a random target, and the
+  Clash is the same every time for the same boards. The only luck is the order of your deck and your Candles.
 - **The Hall of Fame:** instead of rotating old sets out, Heroes that dominate competitive play for long enough are *retired to the Hall of Fame* and become illegal as Heroes in the main format. Your collection of Creatures, Charms, and Talismans stays playable.
 
 ---
 
 ## 12. A Sample Round
 
-*Round 3. Ana plays Dziadziuś, Heart of the House (Domowiki). Ben plays Aluxito, Keeper of the Milpa (Aluxes). Ana has 9 Candles, Ben has 8. Ana holds the Lantern.*
+*Round 3. Ana plays Dziadziuś (Domowiki); Ben plays Aluxito (Aluxes). Ana has 8 Candles, Ben 9. Ben holds the Lantern.*
 
-*Ana's Yard: Hearth Cricket (2/1), Moving-Day Domowik (1/1). Ben's Yard: Night Patrol Alux (2/2, Guardian), Saká-Bearing Alux (1/2).*
+*Ana's lanes: Hearth Cricket (2/1) in lane 1, Keeper of the Door (2/6, Guardian) in lane 3. Ben's lanes: Clay Alux
+(3/4 with a rain counter, Rain-Fed) in lane 2, Night Patrol Alux (2/2, Guardian) in lane 3.*
 
-**Start Phase.** Both ready everything, draw 2, and offer a card. Each now has 4 Offerings.
+**Start.** Everything readies; Clay Alux gets a second rain counter (4/5). Ana gets 4 Offerings and 1 of interest (she
+had saved 5): 10 in all. Ben gets 4: 6 in all. Both draw 2.
 
-1. **Ana** plays **Mane-Braiding Domowik** (cost 2, 2/2, Swift). Ben has an Ambush window and declines. The Domowik enters *ready* thanks to Swift. Ana has 2 ready Offerings.
-2. **Ben** plays **Tool-Hiding Alux** (cost 3, 2/3, *Hello: Exhaust an enemy unit*). Ana declines to Ambush. The Alux enters exhausted and its Hello exhausts the Mane-Braiding Domowik before it can attack. Ben has 1 ready Offering.
-3. **Ana** attacks with **Hearth Cricket**. Ben has a Guardian, so she must target the Night Patrol Alux. In his Ambush window, Ben plays **A Sweet on the Doorstep** (cost 1, *Ambush. A unit you control gets +2 Power this round*) on the Night Patrol Alux. Combat resolves: the Cricket deals 2 to the Alux (defeated), and the Alux — now Power 4 — deals 4 to the Cricket (defeated). Both go to the Mist.
-4. **Ben** attacks Ana's Hero with **Saká-Bearing Alux**. Ana has no Guardians and no Ambush. It's a hit: Ana loses a Candle (9 → 8) and takes the card into her hand. It's **The House Snake** — and it's **Lucky**! Ana reveals it and plays it for free: a 1/4 Guardian enters her Yard.
-5. **Ana** attacks Aluxito with **Moving-Day Domowik**. Ben's Guardian is gone. A hit: Ben loses a Candle (8 → 7). The card isn't Lucky; it just goes to his hand.
-6. **Ben** has nothing more he wants to do, so he **Takes the Lantern**. He will act first next round, and can only pass for the rest of this one.
-7. **Ana** has 2 Offerings, an exhausted Mane-Braiding Domowik and Moving-Day Domowik. She **passes**. Ben is passing too, so the Action Phase ends.
+**The Muster.** At the same time, in secret:
 
-**End Phase.** A Sweet on the Doorstep's bonus would wear off (the Night Patrol Alux is already gone). Ben took the Lantern, so it doesn't pass. On to round 4.
+- Ana levels Dziadziuś up to Level 3 (3 Offerings) and plays **Kikimora** (5/5, Elusive) into lane 2 (5 Offerings).
+  She keeps 2.
+- Ben plays **Knotted Mane** aimed at Ana's lane 2 (1 Offering): when the Clash begins, whoever stands there is
+  exhausted. He sets **A Sweet on the Doorstep** face-down in lane 2 (1 Offering) and uses Aluxito's ability on Clay
+  Alux: a third rain counter, 5/6. Both say Ready.
+
+**The Clash.**
+
+1. Knotted Mane finds Kikimora in lane 2: she is exhausted, and deals no damage this Clash.
+2. Ben's Ambush in lane 2: A Sweet on the Doorstep gives Clay Alux +2 Power this round (7/6).
+3. **Bout 1.** Every ready unit hits. Ana's Hearth Cricket must hit a Guardian first: Night Patrol Alux (2 damage: down).
+   Keeper of the Door hits Night Patrol Alux too (it was across). Clay Alux has to hit Ana's Guardian, Keeper of the
+   Door, for 7: down. Night Patrol Alux hits Keeper of the Door for 2 as it falls (all hits land at once).
+4. **Bout 2.** Ben has Clay Alux standing; Ana has Hearth Cricket and Kikimora. Hearth Cricket hits Clay Alux for 2.
+   Clay Alux hits Hearth Cricket (plain units come before Elusive ones): down.
+5. **Bout 3.** Kikimora is exhausted and deals nothing; Clay Alux hits her for 7: down. Ana has nobody standing: she
+   loses **1 Candle** (Clay Alux is the one survivor), and takes the Candle card into her hand.
+
+Then every unit stands up again, whole. Next round Ana knows: Ben's Clay Alux is big, and Ben likes Ambushes in lane 2.
 
 ---
 
@@ -304,103 +355,112 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **100.2** A player who is told to do something impossible does as much as possible.
 - **100.3** All numbers are integers. A unit's Power cannot be less than 0. Costs cannot be reduced below 0.
 - **100.4** The only sources of randomness are shuffling a deck and choosing the starting Lantern holder. No effect may use any other random process.
-- **100.5** Hidden information: a player's hand, all face-down Candle cards, deck order, and the opponent's face-down Offerings. All else is public, including the number of cards in every zone.
+- **100.5** Hidden information: a player's hand, all face-down Candle cards, deck order, the cards of face-down
+  Ambushes, and everything a player does in a Muster until the Clash begins. All else is public, including Offerings,
+  Levels, and the number of cards in every zone.
 
 ### 200. Objects and zones
 
-- **200.1** Zones: Deck, Hand, Candles, Offerings, Yard, Hearth, Mist (one of each per player). Cards always go to their **owner's** zones.
-- **200.2** A **unit** is a Fabled card or Creature card, or a token, in a Yard. A Hero is never a unit.
-- **200.3** A card in the Offerings zone is an **Offering**. It has no name, type, cost, or text while there. Offerings never leave the Offerings zone unless an effect says so.
-- **200.4** A **token** is a unit created by an effect. A token that leaves a Yard ceases to exist. Tokens have cost 0 unless stated.
-- **200.5** A Yard may hold at most 6 units. A player with 6 units cannot play a unit card, and any Summon effect beyond the limit does nothing.
-- **200.6** A unit may have at most one Talisman attached. A Talisman cannot be played without a legal unit to attach to. When a unit leaves the Yard, its Talisman is put into its owner's Mist.
-- **200.7** A unit that changes zones becomes a new object: damage, Talismans, and "this round" effects are removed.
+- **200.1** Zones: Deck, Hand, Candles, Lanes, Hearth, Mist (one of each per player), and each player's Offerings (a number).
+- **200.2** A **unit** is a Fabled card or Creature card, or a token, in a lane. A Hero is never a unit.
+- **200.3** A player has six lanes, numbered 1 to 6 from their left. Lane N faces the opponent's lane N.
+- **200.4** A **token** is a unit created by an effect. Tokens are removed when a Clash ends.
+- **200.5** A player may control at most as many units as their Hero's Level (2 to 6), counting units that went down in
+  the current Clash. Tokens don't count, and a Summon with no empty lane does nothing.
+- **200.6** A unit may have at most one Talisman attached. When a unit leaves the lanes (it is offered), its Talisman is put into its owner's Mist.
+- **200.7** A unit that goes down keeps its lane, its Talisman and its counters; at the end of the Clash it stands up
+  with no damage.
 - **200.8** Fabled cards are unique: a player cannot control two units with the same name.
 
 ### 300. Rounds
 
-- **300.1** A game is a sequence of rounds: Start Phase, Action Phase, End Phase.
-- **300.2** *Start Phase* (skipped in round 1). In order: (a) each player readies all cards they control; "once per round" abilities reset; (b) "at the start of the round" triggers resolve, Lantern holder's first; (c) the Lantern holder draws 2, then the other player draws 2; (d) the Lantern holder may offer one card, then the other player may offer one card. In digital play (d) is simultaneous and hidden; this is equivalent because offered cards are face-down.
-- **300.3** *Action Phase.* The Lantern holder has the first action. Players alternate actions. The phase ends when both players pass consecutively.
-- **300.4** A player who has Taken the Lantern this round automatically passes whenever they would take an action. They may still use Ambush windows.
-- **300.5** Take the Lantern may be performed by at most one player per round. The player may perform it even if they already hold the Lantern (to stop it from passing).
-- **300.6** *End Phase.* In order: (a) "at end of round" triggers resolve, Lantern holder's first; (b) "this round" effects end; (c) each player with more than 10 cards in hand discards down to 10; (d) if no player Took the Lantern this round, the Lantern passes to the other player.
-- **300.7** *Round limit.* If the game has not ended by the end of round 40, it ends then. The player with more Candles wins. If both have the same number, the player whose units have the greater total remaining Health wins: each unit's current Health minus the damage marked on it, added up over their Yard. If that is equal too, the game is a draw.
+- **300.1** A game is a sequence of rounds: Start, Muster, Clash, End.
+- **300.2** *Start* (skipped in round 1). In order: (a) each player readies their Hero and units; "once per round" abilities reset; (b) "at the start of the round" triggers resolve, Lantern holder's first; (c) income, Lantern holder first: the round's base income (3 in round 2, 4 in round 3, 5 after) plus interest, ⌊Offerings ÷ 5⌋ up to 3; (d) each player draws 2, Lantern holder first.
+- **300.3** *Muster.* Both players act at the same time, any number of actions each (400), until each has taken the Ready action. A player who is Ready takes no more actions this Muster.
+- **300.4** *Clash* (500).
+- **300.5** *End.* "This round" effects end; the Lantern passes to the other player.
+- **300.6** *Round limit.* If the game has not ended by the end of round 30, it ends then. The player with more Candles wins. If both have the same number, the player whose units have the greater total remaining Health wins. If that is equal too, the game is a draw.
 
-### 400. Actions
+### 400. Muster actions
 
-- **400.1** *Play a card:* (a) reveal the card and choose all targets and modes; (b) exhaust ready Offerings equal to its cost; (c) the opponent receives an Ambush window (500); (d) the card resolves: a unit enters the Yard exhausted (ready if it has Swift), then its Hello triggers; a Talisman attaches to its chosen unit; a Charm performs its effect then goes to the Mist.
-- **400.2** If, on resolution, a Charm or Talisman has no legal target remaining, it does nothing and is put into the Mist. If only some targets are illegal, it affects the legal ones. Offerings spent are not refunded.
-- **400.3** *Use an ability:* pay the full cost, choose targets, resolve. Abilities do not open an Ambush window unless they declare an attack. An "Exhaust:" cost can be paid only by a ready card. A unit that entered the Yard exhausted cannot pay "Exhaust:" costs until readied.
-- **400.4** *Pass:* passing does not prevent a player from acting later in the same round, except under 300.4.
-- **400.5** A player may not take an action that cannot be completed (for example, playing a card they cannot pay for).
+- **400.1** *Play a card:* pay its cost; a unit goes into an empty lane of its owner's choosing (if they have room: 200.5), then its Hello triggers; a Talisman attaches to a unit of its owner's without one; a Charm performs its effect then goes to the Mist.
+- **400.2** *Merge:* playing a non-Fabled unit card while controlling a unit with the same name and fewer than 3 stars adds a star to that unit instead; the card goes to the Mist; no Hello triggers. A unit's printed Power and Health count once per star.
+- **400.3** *Aimed effects:* an effect that would choose an enemy unit, or affect each enemy unit, is aimed at a lane of the opponent's (or at all their units) and waits for the Clash (500.1). A triggered ability in a Muster that would affect an enemy unit waits the same way.
+- **400.4** *Set an Ambush:* pay a card's cost and put it face-down in one of your lanes that holds no Ambush.
+- **400.5** *Move:* move one of your units to another lane of yours; a unit there takes the moved unit's lane.
+- **400.6** *Hero ability:* once a round, exhaust your Hero and resolve its "Exhaust:" ability.
+- **400.7** *Level up:* pay 3, 4, 5 or 6 Offerings to go from Level 2, 3, 4 or 5 to the next.
+- **400.8** *Offer:* put a card from your hand, or a unit you control (and its Talisman), into your Mist, and gain 1 Offering.
+- **400.9** *Lucky:* play a card listed as a free Lucky card (700.2) without paying its cost.
+- **400.10** *Ready:* only with 10 or fewer cards in hand.
 
-### 500. Ambush
+### 500. The Clash
 
-- **500.1** An Ambush window opens for the non-acting player after costs are paid for a played card (400.1c) and after an attack is declared (600.2).
-- **500.2** In an Ambush window the player may play one card with Ambush, or use one ability with Ambush, or decline. Costs are paid normally.
-- **500.3** A card or ability played in an Ambush window resolves immediately and fully, including any triggers, before the original action continues. It does not itself open an Ambush window.
-- **500.4** The ambushing player knows the played card and its declared targets, or the attacker and its target.
-- **500.5** An Ambush does not count as an action and does not count as passing or not passing for 300.3.
-- **500.6** Cards played for free via Lucky (700.3) do not open an Ambush window.
+- **500.1** Aimed effects resolve, the Lantern holder's first, in the order they were made. A lane target becomes the unit standing in that lane; with none, or if the unit is no longer a legal target, the effect fizzles (a Charm still goes to the Mist).
+- **500.2** Each player's Ambushes, Lantern holder's first: an Ambush aimed at a lane (the enemy lane across from it, or its own lane, or the lane its owner chose for a card that may aim at either) is revealed and resolves if a unit stands in that lane, and otherwise stays face-down. An Ambush that needs no unit always resolves.
+- **500.3** Each Awakened Hero that isn't exhausted and has Power deals that much damage to the enemy unit a unit in lane 1 would hit (600), and takes none. It counts as having struck (500.6).
+- **500.4** Bouts. A bout is: (a) every ready unit with Swift that may attack hits its target (600), all damage dealt at the same time; state check (800); (b) the same for every other ready unit. The bouts end when a side has no unit standing, after 8 bouts, or after a bout that dealt no damage.
+- **500.5** An exhausted unit, or one that "can't attack", deals no damage in the Clash.
+- **500.6** *Result.* A unit's worth is 1, or 2 if Fierce; a Hero that struck is worth 1, or 2 if Fierce. If one side has units standing and the other none, the side with none loses Candles equal to the standing side's worth, at most 2. If both sides have units standing, each loses Candles equal to the other side's worth, at most 2. Candles are lost Lantern holder first.
+- **500.7** Then every unit that went down stands up again in its lane; every unit's damage is removed; tokens are removed.
 
-### 600. Attacks
+### 600. Targets in the Clash
 
-- **600.1** *Declare:* the acting player exhausts a ready unit they control, or their ready Awakened Hero, and chooses one target: an enemy unit or the enemy Hero. If the defending player controls one or more units with Guardian, the target must be one of them, unless the attacker has Sneaky.
-- **600.2** The defending player receives an Ambush window.
-- **600.3** If the attacker has left play, or the target has left play, or an effect has cancelled the attack, the attack ends with no further effect. The attacker remains exhausted. Targets are never re-chosen. Guardian is checked only at declaration.
-- **600.4** *Unit target:* attacker and target simultaneously deal damage equal to their current Power to each other. An Awakened Hero attacker deals damage but is dealt none.
-- **600.5** *Hero target:* the defending player loses 1 Candle, or 2 if the attacker has Fierce. This is a **hit**. No damage is dealt to the attacker.
-- **600.6** Damage is marked on a unit and remains until healed or until the unit leaves the Yard. Tough X reduces each instance of damage dealt to that unit by X (minimum 0).
+- **600.1** A unit's role rank: Guardian 3, Lure 0, Elusive 1, any other unit 2 (Guardian wins over Lure and Elusive).
+- **600.2** An attacker hits the standing enemy units of the highest rank — the lowest, if the attacker is Sneaky — and among those, the one in the lane across from it, otherwise the nearest by lanes, the leftmost on a tie.
+- **600.3** Damage is marked on a unit and remains until healed or the Clash ends. Tough X reduces each instance of damage dealt to that unit by X (minimum 0).
 
 ### 700. Candles
 
-- **700.1** When a player loses a Candle, they put the top card of their Candles zone into their hand. If a player loses several Candles at once, they do so one at a time, completing 700.3 for each before the next.
-- **700.2** A player with no cards in their Candles zone after losing a Candle **loses the game** immediately (the final card still moves to hand first; Lucky is not applied).
-- **700.3** *Lucky:* if the card taken has Lucky, its owner may immediately reveal it and play it without paying its cost, choosing targets normally. All other play requirements (Yard limit, legal targets) apply. If they decline or cannot, the card stays in hand and may be played later at normal cost.
+- **700.1** When a player loses a Candle, they put the top card of their Candles zone into their hand. If a player loses several Candles at once, they do so one at a time.
+- **700.2** *Lucky:* a Lucky card taken as a lost Candle may be played for free during the next Muster (400.9). After that Muster it is a normal card.
+- **700.3** A player with no cards in their Candles zone after losing a Candle **loses the game** immediately.
 - **700.4** If a player would draw from an empty deck, they lose 1 Candle instead, once per card they could not draw.
-- **700.5** If both players would lose the game simultaneously, the game is a draw. In tournament play, a drawn game is replayed if time allows and otherwise does not count.
+- **700.5** If both players would lose the game simultaneously, the game is a draw.
 
 ### 800. Triggers and state checks
 
-- **800.1** After any action, Ambush, or triggered effect finishes resolving, perform a **state check**: (a) any unit with damage ≥ Health is defeated (simultaneously); (b) any Hero that has not Awakened and whose Awaken condition is true flips to its Awakened side; (c) any player meeting a loss condition loses.
-- **800.2** Hello, Goodbye, and "whenever" abilities are **triggers**. They resolve after the state check that follows the event, before the next action. Triggers do not open Ambush windows.
-- **800.3** If several triggers wait at once, the acting player resolves all of theirs first in an order of their choice, then the other player does the same. Perform a state check after each.
-- **800.4** Goodbye triggers when a unit is defeated (goes from Yard to Mist due to damage or a "defeat" effect). It does not trigger when a unit is returned to hand or otherwise leaves the Yard.
-- **800.5** A Hero keeps its ready/exhausted state when it flips. Effects that applied to it "this round" before it Awakened continue to apply to the Awakened Hero.
-- **800.6** "Once per round" abilities may be used or may trigger once between consecutive Start Phases.
+- **800.1** After any action or effect, and after each half of a bout, perform a **state check**: (a) any unit with damage ≥ Health goes down (simultaneously), and its Goodbye triggers; (b) any Hero whose Awaken condition is true flips to its Awakened side; (c) any player meeting a loss condition loses.
+- **800.2** Hello, Goodbye, and "whenever" abilities are **triggers**. They resolve after the state check that follows the event. When several wait at once, the Lantern holder's resolve first.
+- **800.3** A triggered ability that needs a target and has no chooser (in the Clash, or a Goodbye) picks it: a harmful one the enemy unit its source would hit (600), a helpful one the owner's unit in the lowest lane.
+- **800.4** "Once per round" abilities may be used or may trigger once between consecutive Starts.
 
 ### 850. Signature mechanics
 
-- **850.0 Cards played this round.** A player's *cards played this round* counts every card they played since the last Start Phase: as an action, as an Ambush, or for free via Lucky. The count resets at the Start Phase. Cards that ask for it (Orange-Peri: "Unless you've played 2 other cards this round") check it when the effect resolves.
-- **850.1 Sprout N** *(Domowiki)*. The top N cards of the owner's deck go to the Offerings zone as exhausted Offerings, one at a time. If the deck runs out, the rest of the Sprout does nothing; it never costs a Candle.
-- **850.2 Well-Fed** *(Domowiki)*. A player is Well-Fed while they have 7 or more Offerings, ready or exhausted. It is checked whenever an effect asks.
-- **850.3 Company** *(Pari)*. A "Company:" bonus applies if its controller has 3 or more units in their Yard when the effect is checked.
-- **850.4 Feather Coat** *(Pari)*. When a unit with Feather Coat is defeated, its owner summons a 1/1 Dove. This is a Goodbye (rule 800.4).
-- **850.5 Rain-Fed** *(Aluxes)*. In the Start Phase, each unit with Rain-Fed gains a *rain* counter, up to 2. A unit gets +1 Power and +1 Health per counter. Counters are lost when the unit leaves the Yard (rule 200.7).
-- **850.6 Pearl Tears** *(Jiaoren)*. When a unit with Pearl Tears is dealt damage and is not defeated, its owner readies one of their Offerings.
-- **850.7 Stone for Stone** *(Hui Hai)*. When a unit with Stone for Stone is dealt damage and is not defeated, its owner deals 1 damage to an enemy unit.
+- **850.0 Cards played this round.** A player's *cards played this round* counts every card they played since the last Start, Ambushes revealed included.
+- **850.1 Sprout N** *(Domowiki)*. Gain N Offerings.
+- **850.2 Well-Fed** *(Domowiki)*. A player is Well-Fed while they have 7 or more Offerings.
+- **850.3 Company** *(Pari)*. A "Company:" bonus applies if its controller has 3 or more units standing when the effect is checked.
+- **850.4 Feather Coat** *(Pari)*. When a unit with Feather Coat goes down, its owner summons a 1/1 Dove (a Lure). This is a Goodbye.
+- **850.5 Rain-Fed** *(Aluxes)*. In the Start, each unit with Rain-Fed gains a *rain* counter, up to 3. A unit gets +1 Power and +1 Health per rain counter, whether or not it has Rain-Fed.
+- **850.6 Pearl Tears** *(Jiaoren)*. Once per round, when a unit with Pearl Tears is dealt damage and doesn't go down, its owner gains an Offering.
+- **850.7 Stone for Stone** *(Hui Hai)*. Once per round, when a unit with Stone for Stone is dealt damage and doesn't go down, its owner deals 1 damage to an enemy unit (800.3).
 
 ### 900. Tunable parameters
 
-The following values are deliberately isolated so playtesting can adjust them without rewriting rules:
+The following values are deliberately isolated so playtesting can adjust them without rewriting rules
+(packages/engine/src/rules.ts):
 
-| Parameter | v0.1 value |
+| Parameter | v0.4 value |
 |---|---|
 | Candles per player | 9 |
 | Deck size | 50 |
-| Starting hand / Offerings made at setup | 6 / 2 |
-| Cards drawn per Start Phase | 2 |
-| Offerings made per Start Phase | up to 1 |
-| Yard limit | 6 units |
-| Maximum hand size at End Phase | 10 |
-| Candles lost per hit / per Fierce hit | 1 / 2 |
-| Ambush allowed after Taking the Lantern | yes |
-| Lantern passes if nobody takes it | yes |
-| Second-player compensation in round 1 | none |
-| Round limit | 40 rounds |
+| Starting hand | 6 |
+| Starting Offerings | 3 |
+| Income (rounds 2, 3, 4+) | 3, 4, 5 |
+| Interest | 1 per 5 saved, at most 3 |
+| Cards drawn per Start | 2 |
+| Lanes | 6 |
+| Starting Level / highest Level | 2 / 6 |
+| Level costs (2→3, 3→4, 4→5, 5→6) | 3, 4, 5, 6 |
+| Most stars | 3 |
+| Bouts in a Clash | at most 8 |
+| Candles lost per Clash | at most 2 |
+| Both lose at the bout limit | yes |
+| Hand limit to be Ready | 10 |
+| Round limit | 30 rounds |
 | Copy limit / Fabled limit | 3 / 6 (1 copy each) |
-| Rain-Fed maximum | +2/+2 |
+| Rain-Fed maximum | +3/+3 |
 | Well-Fed threshold | 7 Offerings |
 | Company | 3 or more units |
 
@@ -408,16 +468,14 @@ The following values are deliberately isolated so playtesting can adjust them wi
 
 ## Quick Reference
 
-**Setup:** Hero in Hearth → deal 9 Candles → draw 6 → mulligan once (up to 3) → offer 2 → random Lantern holder.
+**Setup:** Hero (Level 2) → deal 9 Candles → draw 6 → mulligan once (up to 3) → 3 Offerings → random Lantern holder.
 
-**Round:** *Start* (ready, draw 2, offer ≤ 1 — skip in round 1) → *Actions* (alternate one at a time until both pass) → *End* (effects end, hand max 10, Lantern passes if untaken).
+**Round:** *Start* (ready, income + interest, draw 2 — skip in round 1) → *Muster* (both build in secret until Ready) → *Clash* (plays itself) → *End* (Lantern passes).
 
-**Actions:** Play a card · Attack · Use an ability · Take the Lantern · Pass
+**Muster:** Play · Set an Ambush · Move · Hero ability · Level up · Offer · Ready
 
-**Attack:** exhaust attacker → pick target (Guardians first) → defender may Ambush → units trade damage, or Hero loses a Candle.
+**Clash:** aimed effects → Ambushes → Awakened Heroes strike → bouts (Swift first) → loser loses a Candle per survivor (max 2) → everything stands up.
 
-**Ambush:** one reaction when the opponent plays a card or attacks. No Ambush on an Ambush.
+**Who hits whom:** Guardians → plain → Elusive → Lures (Sneaky: the other way) · then across · then nearest.
 
-**Lost Candle:** goes to your hand. **Lucky?** Play it free.
-
-**Win:** blow out the ninth Candle. After round 40: more Candles wins, then more Health left on your units.
+**Win:** blow out the ninth Candle. After round 30: more Candles wins, then more Health on the board.

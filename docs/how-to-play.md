@@ -1,61 +1,59 @@
 # How to play
 
-Folkborn is a card game for two, about folk creatures from around the world. You lead a **Hero**, play
-creatures, and attack the other Hero.
-A game takes about 10 minutes. This page shows the basics in pictures: enough for your first game. The full rules
-are in the [Rulebook](rulebook.md).
+Folkborn is a card game for two, about folk creatures from around the world. You lead a **Hero**, build an army of
+creatures in six lanes, and let the armies fight. A game takes about 15 minutes. This page shows the basics: enough
+for your first game. The full rules are in the [Rulebook](rulebook.md).
 
 ## Start a game
 
 Open **[fruitcats.viamochi.com](https://fruitcats.viamochi.com)**. You don't need an account or a download to play
 against the computer.
 
-<div class="steps">
-<figure><img src="guide/play/1-home.webp" alt="The Home screen: Solo, Friend, Collection, and Tutorial at the bottom" loading="lazy"><figcaption><b>1</b> New to the game? Tap <b>Tutorial</b>. It plays a real game with you and explains each step as it happens.</figcaption></figure>
-<figure><img src="guide/play/2-goal.webp" alt="How you win: the opponent's 9 Candles" loading="lazy"><figcaption><b>2</b> <b>How you win:</b> each Hero has <b>9 Candles</b>. Blow out all 9 of your opponent's Candles.</figcaption></figure>
-</div>
+1. New to the game? Tap **Tutorial**. It plays a real game with you and explains each step as it happens.
+2. **How you win:** each Hero has **9 Candles**. Blow out all 9 of your opponent's Candles.
 
 After the tutorial, tap **Solo** to play the computer.
 
-## Your cards
+## Your cards and your money
 
-<div class="steps">
-<figure><img src="guide/play/3-read-card.webp" alt="A card opened full size: Keeper of the Door, cost 3" loading="lazy"><figcaption><b>1</b> Your cards are at the bottom. <b>Press and hold</b> one to read it. The number in the top-left corner is its <b>price</b>.</figcaption></figure>
-<figure><img src="guide/play/4-plant.webp" alt="Two cards picked to offer, and the Offer 2/2 button" loading="lazy"><figcaption><b>2</b> You pay with <b>Offerings</b>. At the start, pick the <b>2 cards you need least</b> (usually the most expensive: you can’t afford them yet) and tap <b>Offer</b>. Each becomes 1 Offering.</figcaption></figure>
-</div>
+- Your cards are at the bottom. **Press and hold** one to read it. The number in the top-left corner is its **price**.
+- You pay with **Offerings**: your money, shown on your plaque. You start with 3 and get more at the start of every
+  round. What you don't spend is **kept**, and every 5 you save earn 1 more next round.
+- Need money? Tap a card you don't need and **Offer it**: it's worth 1 Offering.
 
-Any card can be offered as an Offering, so you never get stuck without anything to pay with. What each part of a card
-means is in [Card anatomy](card-anatomy.md).
+What each part of a card means is in [Card anatomy](card-anatomy.md).
 
-## Your turn
+## The Muster: build your side
 
-<div class="steps">
-<figure><img src="guide/play/5-play.webp" alt="Spend an Offering: the cards you can afford glow" loading="lazy"><figcaption><b>1</b> Cards you can afford <b>glow</b>. Tap one to play it.</figcaption></figure>
-<figure><img src="guide/play/6-nap.webp" alt="The new creature on your side, tilted and marked new" loading="lazy"><figcaption><b>2</b> A new creature <b>rests</b> this round. It can attack from the next round.</figcaption></figure>
-<figure><img src="guide/play/7-turn.webp" alt="One thing each: the Pass button" loading="lazy"><figcaption><b>3</b> You each do <b>one thing</b>, then the other player does one. Tap <b>Pass</b> when you're done.</figcaption></figure>
-<figure><img src="guide/play/8-new-round.webp" alt="A new round: make one more Offering, or Skip" loading="lazy"><figcaption><b>4</b> Each new round you draw 2 cards and may make <b>one more Offering</b>, or tap <b>Skip</b>.</figcaption></figure>
-</div>
+Each round starts with the **Muster**. You and your opponent build **at the same time, in secret**. You see their
+side as it was when the Muster began.
 
-## Attack
+1. **Tap a creature** you can afford (it glows), then **tap one of your lanes**: the dashed spaces in your row.
+2. Your Hero's **Level** is how many units you may have. **Level up** (the button by Ready) for one more lane.
+3. Tap one of your units to **move** it to another lane, or to offer it.
+4. Charms aimed at the enemy are aimed at **one of their lanes**: they happen when the fight begins, to whoever stands
+   there.
+5. Holding a card with **Ambush**? You may **set it face-down** in one of your lanes instead of playing it.
+6. Done? Press **Ready**.
 
-<div class="steps">
-<figure><img src="guide/play/9-attack.webp" alt="Your creature with a Ready! tag" loading="lazy"><figcaption><b>1</b> A creature with a <b>Ready!</b> tag can attack. Tap it.</figcaption></figure>
-<figure><img src="guide/play/10-target.webp" alt="Pink targets on the opponent's side" loading="lazy"><figcaption><b>2</b> Tap a <b>pink target</b>: one of their creatures, or their <b>Hero</b>.</figcaption></figure>
-<figure><img src="guide/play/11-hit.webp" alt="The opponent is down to 8 Candles" loading="lazy"><figcaption><b>3</b> Hit their Hero and they lose a Candle. Hit a creature and both creatures take damage.</figcaption></figure>
-<figure><img src="guide/play/12-lost-life.webp" alt="You lost a Candle: 8 Candles left" loading="lazy"><figcaption><b>4</b> Each Candle is a face-down card. When you lose one, that card goes into your <b>hand</b>. Being behind gives you more cards to play.</figcaption></figure>
-</div>
+## The Clash: the fight plays itself
+
+When you are both Ready, the armies fight, bout after bout. Nobody decides anything: you read what happened in the
+**Clash report**.
+
+- Each unit hits the enemy **across** from it first, then the nearest. But roles come first: **Guardians** are hit
+  first, **Elusive** units late, **Lures** last, and **Sneaky** units go the other way round.
+- When one side has nobody standing, it **loses a Candle** for each enemy unit still standing (at most 2).
+- A lost Candle's card goes into your **hand**: being behind gives you more cards to play.
+- After the Clash every unit **stands up again**. Nothing on your board is lost: your army grows round after round.
 
 ## A few more things
 
-<div class="steps">
-<figure><img src="guide/play/13-pounce.webp" alt="Ambush: your opponent attacks, and you may react or Let it happen" loading="lazy"><figcaption><b>1</b> Holding an <b>Ambush</b> card? You may react when your opponent plays a card or attacks. Tap the glowing card, or <b>Let it happen</b>.</figcaption></figure>
-<figure><img src="guide/play/14-yarn.webp" alt="The Lantern and the Take the Lantern button" loading="lazy"><figcaption><b>2</b> Whoever holds the <b>Lantern</b> goes first each round. <b>Take the Lantern</b> keeps it for next round, but then you can only pass.</figcaption></figure>
-</div>
-
-- **Your Hero** never leaves the table. Tap **Use ability** once a round to use its power. Later in the game
-  it **Awakens** and grows stronger.
+- Play a **second copy** of a creature you have on the board and it **merges**: 2 stars, twice as strong.
+- **Your Hero** never leaves the table. Tap **Use ability** once a round. Later it **Awakens**: stronger, and it
+  strikes when the Clash begins.
 - **Stuck?** Tap **Rules** during a game for a short reminder.
-- The words in **bold** on cards (Swift, Guardian, Sneaky, Lucky and others) are explained in
+- The words in **bold** on cards (Swift, Guardian, Sneaky, Elusive, Lure, Lucky and others) are explained in
   [Keywords](rulebook.md#10-keywords).
 
 ## Put the game on your home screen
@@ -85,7 +83,6 @@ Also:
 
 - It is the website, so you always get the newest version: there are no updates to install. Reopen the game to
   pick up changes.
-- It needs an internet connection; there is no offline mode yet.
 - Tap the **speaker** in the top-right corner of the menu to turn the sound on or off.
 
 ## Next steps

@@ -168,14 +168,19 @@ The same code in every mode (`Match` in `apps/api/src/live/match.ts`); only the 
 
 | | Relaxed | Quick | No timer (and teaching) | Ranked |
 |---|---|---|---|---|
-| Each move | 2 min | 45 s | none | 30 s |
-| Reserve for the game | none | none | none | 2 min |
-| Hold on | 2 × 2 min | 2 × 1 min | none | none |
-| Out of time | the other player decides | the other player decides | never | the plainest move is made for you |
-| Pounce / Lucky question | 2.5 s (8 s in teaching games) | 2.5 s | 8 s | 2.5 s |
+| Each Muster (both players at once), or the mulligan | 3 min | 90 s | none | 75 s |
+| Reserve for the game (the mulligan only) | none | none | none | 2 min |
+| Hold on (either player still deciding adds it to the Muster) | 2 × 2 min | 2 × 1 min | none | none |
+| Out of time | waits: with one player still deciding, the other may give time, nudge, or after a while claim | the same | never | the plainest moves are made for whoever is still deciding |
 
-The plainest move: pass, keep the hand, let the Pounce go, keep the Lucky card, the first choice offered. In Ranked,
-three timeouts in a row lose the game. The clock stops while either player's connection is down.
+Since Folkborn 0.4 (2026-09-30) both players build the Muster at the same time, so one clock times the whole Muster
+for both, and nothing is ever asked mid-round (Ambush and Lucky questions are gone). The plainest move: keep the hand;
+in the Muster, offer the newest cards down to the hand limit, then Ready. In Ranked, three timeouts in a row lose the
+game. The clock stops while either player's connection is down.
+
+During a Muster only the player who moved is sent the new view: the other player doesn't learn even that something
+happened. A move quotes its own player's count (`seq`, the view's `clockFor`), so the other player's moves never make
+it stale. Protocol 4.
 
 ## Connection drops
 

@@ -44,8 +44,11 @@ if (!File.Exists(wasm))
     return 2;
 }
 
+// A mismatching run writes the broken .alex sources into --out; read back, they would become corpus for the next run.
+HashSet<string> skipped = new(StringComparer.OrdinalIgnoreCase) { Path.GetFullPath(outFolder) };
+if (repository is not null) { skipped.Add(Path.Combine(repository, "cardengine", "conformance", "out")); }
 List<string> files = new();
-for (int i = 0; i < roots.Count; i++) { Collect(roots[i], files); }
+for (int i = 0; i < roots.Count; i++) { Collect(roots[i], files, skipped); }
 files.Sort(StringComparer.Ordinal);
 List<byte[]> sources = new(files.Count);
 long totalBytes = 0;
@@ -164,7 +167,7 @@ for (int i = 0; i < files.Count; i++)
 if (repository is not null)
 {
     List<string> framework = new();
-    Collect(Path.Combine(repository, "cardengine", "framework"), framework);
+    Collect(Path.Combine(repository, "cardengine", "framework"), framework, skipped);
     framework.Sort(StringComparer.Ordinal);
     string core = Path.Combine(repository, "cardengine", "framework", "core.alex");
     BoundDump.Source Read(string path, BoundDump.SourceRole role) => new(Path.GetFileName(path), File.ReadAllBytes(path), role);
@@ -259,14 +262,15 @@ if (csharpDiagnostics != engineDiagnostics)
 
 return mismatches == 0 ? 0 : 1;
 
-static void Collect(string directory, List<string> files)
+static void Collect(string directory, List<string> files, HashSet<string> skipped)
 {
+    if (skipped.Contains(Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar))) { return; }
     foreach (string path in Directory.EnumerateFiles(directory, "*.alex")) { files.Add(Path.GetFullPath(path)); }
     foreach (string child in Directory.EnumerateDirectories(directory))
     {
         string name = Path.GetFileName(child);
         if (name is "node_modules" or "target" or "bin" or "obj" || name.StartsWith('.')) { continue; }
-        Collect(child, files);
+        Collect(child, files, skipped);
     }
 }
 

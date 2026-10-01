@@ -141,6 +141,12 @@ internal sealed class CSharpDump
                 Token(type.Name);
                 Optional(type.Colon);
                 Optional(type.BaseName);
+                for (int i = 0; i < type.OtherBases.Count; i++)
+                {
+                    Token(type.OtherBases[i].Comma);
+                    Token(type.OtherBases[i].Name);
+                }
+
                 if (type.Fields is not null) { FieldList(type.Fields); }
                 Optional(type.EqualsToken);
                 if (type.Alias is not null) { Type(type.Alias); }
@@ -302,6 +308,26 @@ internal sealed class CSharpDump
             case OpenInstanceSyntax open:
                 Node("OpenInstance");
                 Token(open.TypeName);
+                break;
+
+            case ConstructionSyntax construction:
+                Node("Construction");
+                Token(construction.TypeName);
+                Token(construction.OpenParen);
+                Separated(construction.Arguments, argument =>
+                {
+                    Node("ValueArgument");
+                    Optional(argument.Name);
+                    Optional(argument.Colon);
+                    Value(argument.Value);
+                    End();
+                });
+                Token(construction.CloseParen);
+                break;
+
+            case FormulaSyntax formula:
+                Node("Formula");
+                Expression(formula.Expression);
                 break;
 
             case ListSyntax list:
@@ -568,8 +594,18 @@ internal sealed class CSharpDump
                 Token(missing.Missing);
                 break;
 
+            case ConditionalExpressionSyntax conditional:
+                Node("ConditionalExpression");
+                Token(conditional.IfKeyword);
+                Expression(conditional.Condition);
+                Token(conditional.ThenKeyword);
+                Expression(conditional.Then);
+                Token(conditional.ElseKeyword);
+                Expression(conditional.Else);
+                break;
+
             default:
-                throw new InvalidOperationException("The dump does not know the expression " + expression.GetType().Name + ".");
+                throw new InvalidOperationException("The dump does not know the expression" + expression.GetType().Name + ".");
         }
 
         End();

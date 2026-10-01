@@ -1,8 +1,9 @@
-// Kardix Studio, read-only (Stage 3 of docs/tcg/tcg-developer-platform.md): the project's files on the left, its cards
-// or the selected file in the middle, the rulebook on the right, and what is wrong with it underneath. `kardix studio`
-// serves this page and the project's files; the page loads the core itself and reads the project in the browser, and
-// reads it again each time the server says a file changed. The core draws the cards (Stage 4), fetching the fonts and
-// pictures each one uses as it draws it; a project whose cards can't be drawn shows their data instead.
+// Kardix Studio, read-only (Stage 3 of docs/tcg/tcg-developer-platform.md). It opens on the cards, one set at a time;
+// a card opens its own page: the card as it prints, beside its code behind (where the card is written, and every rule
+// that gives it behaviour). The project's files and the rulebook have tabs of their own. `kardix studio` serves this
+// page and the project's files; the page loads the core itself and reads the project in the browser, and reads it again
+// each time the server says a file changed. The core draws the cards (Stage 4), fetching the fonts and pictures each
+// one uses as it draws it; a project whose cards can't be drawn shows their data instead.
 
 import { Core, drawnFiles, type Diagnostic, type Json, type Project, type ProjectFile } from '../engine/host/core';
 
@@ -11,6 +12,16 @@ type Record_ = { [key: string]: Json };
 interface Card { document: string; key: string; card: Record_ }
 interface Document { file: string; name: string | null; type: string | null }
 interface Face { set: string; card: string; face: 'front' | 'back'; finish: string; file: string }
+/** Lines of a file, first and last counted from 1. */
+interface Lines { file: string; first: number; last: number }
+
+/** What the page shows, as the address after `#` says it, so the browser's Back works. */
+type View =
+  | { kind: 'cards'; set: string | null }
+  | { kind: 'card'; set: string; key: string }
+  | { kind: 'files'; path: string | null; line: number | null }
+  | { kind: 'rulebook' }
+  | { kind: 'problems' };
 
 const state = {
   root: '',
@@ -18,13 +29,15 @@ const state = {
   sources: new Map<string, string>(),
   documents: [] as Document[],
   cards: [] as Card[],
+  /** Each set's name as printed, by its document. */
+  setNames: new Map<string, string>(),
   game: null as Record_ | null,
   rulebook: null as Record_ | null,
   diagnostics: [] as Diagnostic[],
   faces: [] as Face[],
   /** Why the cards can't be drawn, when they can't. */
   cannotDraw: '',
-  selected: null as string | null,
+  search: '',
   loadedAt: '',
   failure: '',
 };
@@ -32,6 +45,7 @@ const state = {
 const isRecord = (v: Json | undefined): v is Record_ => v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
 const text = (o: Record_ | null | undefined, field: string) => (o && typeof o[field] === 'string' ? (o[field] as string) : undefined);
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 let core: Core | undefined;
 let project: Project | undefined;
@@ -44,6 +58,8 @@ const given = new Set<string>();
 /** Fonts and pictures fetched for drawing, by path, with the file's size and time when fetched. A fetch that failed
  * isn't kept, so the next reading tries again. */
 const fetched = new Map<string, { bytes: Uint8Array; stamp: string }>();
+/** Every face's draw list, from the core, by the face's words. */
+let lists = new Map<string, string>();
 let generation = 0;
 
 /** A file's size and time as listed; a font the host reads from the system isn't listed, and doesn't change. */
@@ -100,6 +116,10 @@ async function load() {
     const rulebook = state.documents.find((d) => d.type === 'Rulebook');
     state.game = game?.name ? asRecord(project.value(game.name)) : null;
     state.rulebook = rulebook?.name ? asRecord(project.value(rulebook.name)) : null;
+    state.setNames = new Map();
+    for (const set of new Set(state.cards.map((c) => c.document))) {
+      state.setNames.set(set, text(asRecord(project.value(set)), 'name') ?? set);
+    }
     await prepareDrawing(project);
     state.failure = '';
     state.loadedAt = new Date().toLocaleTimeString();
@@ -116,6 +136,7 @@ const asRecord = (v: Json) => (isRecord(v) ? v : null);
 async function prepareDrawing(loaded: Project) {
   drawn.clear();
   given.clear();
+  lists = new Map();
   state.faces = [];
   state.cannotDraw = '';
   const fonts = JSON.parse(loaded.query('fonts')) as string[] | { error: string };
@@ -143,27 +164,27 @@ async function prepareDrawing(loaded: Project) {
     state.cannotDraw = faces.error;
     return;
   }
-  state.faces = faces.filter((f) => f.finish === 'standard');
-}
-
-/** Draws each face in turn, fetching what it uses, and puts it on the page as it is done. */
-async function drawAll() {
-  const mine = ++generation;
-  if (!project || !state.faces.length) return;
   // Every face laid out at once: one layout, not one per face.
-  const lists = new Map<string, string>();
-  const all = project.query('draw-lists finish=standard');
+  const all = loaded.query('draw-lists finish=standard');
   if (all.startsWith('{')) {
     state.cannotDraw = (JSON.parse(all) as { error: string }).error;
-    state.faces = [];
-    render();
     return;
   }
   for (const part of all.split(/^=== /m).slice(1)) {
     const end = part.indexOf('\n');
     lists.set(part.slice(0, end).split(' ').slice(0, 4).join(' '), part.slice(end + 1));
   }
-  for (const face of state.faces) {
+  state.faces = faces.filter((f) => f.finish === 'standard');
+}
+
+/** Draws each face in turn, those on screen first, fetching what each uses, and puts it on the page as it is done.
+ * Called again when the view changes, it starts over with the new view's faces; faces already drawn are kept. */
+async function drawAll() {
+  const mine = ++generation;
+  if (!project || !state.faces.length) return;
+  const onScreen = new Set([...app.querySelectorAll<HTMLElement>('[data-face]')].map((e) => e.dataset.face!));
+  const order = [...state.faces].sort((a, b) => Number(onScreen.has(faceWords(b))) - Number(onScreen.has(faceWords(a))));
+  for (const face of order) {
     if (mine !== generation || !project) return;
     const words = faceWords(face);
     if (drawn.has(words)) continue;
@@ -197,8 +218,7 @@ async function drawAll() {
 }
 
 function showDrawn(face: Face) {
-  const slot = app.querySelector<HTMLElement>(`[data-face="${CSS.escape(faceWords(face))}"]`);
-  if (slot) slot.innerHTML = drawnView(face);
+  for (const slot of app.querySelectorAll<HTMLElement>(`[data-face="${CSS.escape(faceWords(face))}"]`)) slot.innerHTML = drawnView(face);
 }
 
 function drawnView(face: Face): string {
@@ -208,56 +228,278 @@ function drawnView(face: Face): string {
   return `<img src="${entry.url}" alt="${esc(face.card)}${face.face === 'back' ? ' (back)' : ''}">`;
 }
 
-// ── drawing ────────────────────────────────────────────────────────────────────────────────────
+// ── where a card is written ────────────────────────────────────────────────────────────────────
+
+/** Where a statement or entry that starts on `start` (an index) ends: the line where its brackets close, outside text
+ * in quotes. */
+function endOf(lines: string[], start: number): number {
+  let depth = 0;
+  let quoted = false;
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i];
+    for (let j = 0; j < line.length; j++) {
+      const c = line[j];
+      if (quoted) {
+        if (c === "'" && line[j + 1] === "'") j++;
+        else if (c === "'") quoted = false;
+      } else if (c === "'") quoted = true;
+      else if (c === '/' && line[j + 1] === '/') break;
+      else if ('([{'.includes(c)) depth++;
+      else if (')]}'.includes(c)) depth--;
+    }
+    if (depth <= 0 && !quoted) return i;
+  }
+  return lines.length - 1;
+}
+
+const fileOf = (document: string) => state.documents.find((d) => d.name === document)?.file ?? '';
+const linesOf = (file: string) => (state.sources.get(file) ?? '').split(/\r?\n/);
+
+/** The card's entry in its set's file. */
+function cardSource(card: Card): Lines | null {
+  const file = fileOf(card.document);
+  const lines = linesOf(file);
+  const pattern = new RegExp(`^\\s*${card.key.replace(/[-]/g, '\\-')}\\s*=`);
+  const first = lines.findIndex((l) => pattern.test(l));
+  if (first < 0) return null;
+  return { file, first: first + 1, last: endOf(lines, first) + 1 };
+}
+
+/** Every rule a rules file gives the card (`@klobuk.on-enter = Draw()`, `@pebble.back.static = ...`), with the
+ * comment lines just above it. */
+function cardRules(card: Card): Lines[] {
+  const found: Lines[] = [];
+  const pattern = new RegExp(`^@${card.key.replace(/[-]/g, '\\-')}[.\\s=]`);
+  for (const document of state.documents) {
+    if (document.type !== 'Rules') continue;
+    const lines = linesOf(document.file);
+    for (let i = 0; i < lines.length; i++) {
+      if (!pattern.test(lines[i])) continue;
+      let first = i;
+      while (first > 0 && lines[first - 1].trimStart().startsWith('//')) first--;
+      const last = endOf(lines, i);
+      found.push({ file: document.file, first: first + 1, last: last + 1 });
+      i = last;
+    }
+  }
+  return found;
+}
+
+/** What the card and its rules refer to by name (`@is-well-fed`, `@pebble-text`), where it is defined. */
+function usedValues(rules: Lines[]): Lines[] {
+  const names = new Set<string>();
+  const collect = (at: Lines) => {
+    for (const line of linesOf(at.file).slice(at.first - 1, at.last)) {
+      for (const m of line.matchAll(/(?<!@)@([A-Za-z][\w-]*)(?![\w.-])/g)) names.add(m[1]);
+    }
+  };
+  rules.forEach(collect);
+  const found: Lines[] = [];
+  // A definition may refer to others in turn (`@is-well-fed` to `@well-fed-at`): the set grows as it is walked.
+  for (const name of names) {
+    const pattern = new RegExp(`^\\s+${name.replace(/[-]/g, '\\-')}\\s*=`);
+    for (const document of state.documents) {
+      const lines = linesOf(document.file);
+      const at = lines.findIndex((l) => pattern.test(l));
+      if (at >= 0) {
+        found.push({ file: document.file, first: at + 1, last: endOf(lines, at) + 1 });
+        collect(found[found.length - 1]);
+        break;
+      }
+      // Long text is written at the end of its file, after `@@@ name`, up to the next `@@@` or the end.
+      const block = lines.findIndex((l) => l.trimEnd() === `@@@ ${name}`);
+      if (block >= 0) {
+        let last = block + 1;
+        while (last + 1 < lines.length && !lines[last + 1].startsWith('@@@')) last++;
+        while (last > block && !lines[last].trim()) last--;
+        found.push({ file: document.file, first: block + 1, last: last + 1 });
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+const problemsIn = (at: Lines) => state.diagnostics.filter((d) => d.file === at.file && d.line >= at.first && d.line <= at.last);
+
+// ── drawing the page ───────────────────────────────────────────────────────────────────────────
 
 const app = document.getElementById('app')!;
 
+function currentView(): View {
+  const [kind, ...rest] = decodeURIComponent(location.hash.slice(1)).split('/');
+  if (kind === 'card' && rest.length >= 2) return { kind: 'card', set: rest[0], key: rest[1] };
+  if (kind === 'files') {
+    const path = rest.join('/');
+    const at = path.match(/^(.*):(\d+)$/);
+    return { kind: 'files', path: (at ? at[1] : path) || null, line: at ? Number(at[2]) : null };
+  }
+  if (kind === 'rulebook') return { kind: 'rulebook' };
+  if (kind === 'problems') return { kind: 'problems' };
+  return { kind: 'cards', set: kind === 'set' && rest[0] ? rest[0] : null };
+}
+
+/** The sets, those the core draws first; a prototype the game doesn't list yet is shown as data, after them. */
+const sets = () => {
+  const all = [...new Set(state.cards.map((c) => c.document))];
+  const isDrawn = (s: string) => state.faces.some((f) => f.set === s);
+  return [...all.filter(isDrawn), ...all.filter((s) => !isDrawn(s))];
+};
+const cardLink = (c: Card) => `#card/${encodeURIComponent(c.document)}/${encodeURIComponent(c.key)}`;
+const fileLink = (file: string, line?: number) => `#files/${file.split('/').map(encodeURIComponent).join('/')}${line ? `:${line}` : ''}`;
+const nameOf = (c: Card) => text(c.card, 'name') ?? c.key;
+
 function render() {
+  const view = currentView();
   const errors = state.diagnostics.filter((d) => d.severity === 'error').length;
   const title = text(state.game, 'name') ?? state.root;
+  const tab = (href: string, label: string, on: boolean) => `<a class="tab ${on ? 'on' : ''}" href="${href}">${label}</a>`;
   app.innerHTML = `
     <header>
       <b>${esc(title)}</b>
-      <span class="${errors ? 'bad' : 'good'}">${errors ? `${errors} error${errors === 1 ? '' : 's'}` : 'No errors'}</span>
-      <small>${state.cards.length} card${state.cards.length === 1 ? '' : 's'} · read at ${esc(state.loadedAt)}</small>
+      <nav class="tabs">
+        ${tab('#', 'Cards', view.kind === 'cards' || view.kind === 'card')}
+        ${state.rulebook ? tab('#rulebook', 'Rulebook', view.kind === 'rulebook') : ''}
+        ${tab('#files', 'Files', view.kind === 'files')}
+        ${tab('#problems', errors ? `<span class="bad">${plural(errors, 'error')}</span>` : '<span class="good">No errors</span>', view.kind === 'problems')}
+      </nav>
+      <small>read at ${esc(state.loadedAt)}</small>
     </header>
     ${state.failure ? `<p class="failure">${esc(state.failure)}</p>` : ''}
-    <main>
-      <nav>${fileTree()}</nav>
-      <section class="middle">${state.selected ? fileView(state.selected) : cardsView()}${diagnosticsView()}</section>
-      <aside>${rulebookView()}</aside>
-    </main>`;
-}
-
-function fileTree(): string {
-  const counts = new Map<string, number>();
-  for (const d of state.diagnostics) counts.set(d.file, (counts.get(d.file) ?? 0) + 1);
-  const item = (f: WorkspaceFile) => {
-    const n = counts.get(f.path);
-    return `<button class="file ${state.selected === f.path ? 'on' : ''}" data-file="${esc(f.path)}">${esc(f.path)}${n ? `<i>${n}</i>` : ''}</button>`;
-  };
-  return `<button class="file ${state.selected === null ? 'on' : ''}" data-file="">Cards</button>
-    <h3>Files</h3>${state.files.filter((f) => f.path.endsWith('.alex')).map(item).join('')}
-    <h3>Other files</h3>${state.files.filter((f) => !f.path.endsWith('.alex')).map(item).join('')}`;
-}
-
-function fileView(path: string): string {
-  const source = state.sources.get(path);
-  if (source === undefined) {
-    return /\.(webp|png|jpe?g|svg)$/i.test(path)
-      ? `<h2>${esc(path)}</h2><img class="picture" src="api/file?path=${encodeURIComponent(path)}" alt="">`
-      : `<h2>${esc(path)}</h2><p class="quiet">Not a text file.</p>`;
+    ${body(view)}`;
+  if (view.kind === 'files' && view.line) app.querySelector(`#line-${view.line}`)?.scrollIntoView({ block: 'center' });
+  if (view.kind === 'cards') {
+    const search = app.querySelector<HTMLInputElement>('#search');
+    if (search && state.search) {
+      search.focus();
+      search.setSelectionRange(search.value.length, search.value.length);
+    }
   }
-  const marked = new Set(state.diagnostics.filter((d) => d.file === path).map((d) => d.line));
-  const lines = source.split(/\r?\n/).map((line, i) => `<li class="${marked.has(i + 1) ? 'marked' : ''}"><span>${esc(line) || ' '}</span></li>`);
-  return `<h2>${esc(path)}</h2><ol class="source">${lines.join('')}</ol>`;
+}
+
+function body(view: View): string {
+  switch (view.kind) {
+    case 'cards': return cardsPage(view.set);
+    case 'card': return cardPage(view.set, view.key);
+    case 'files': return filesPage(view.path, view.line);
+    case 'rulebook': return `<main class="reading">${rulebookView()}</main>`;
+    case 'problems': return `<main class="reading">${problemsView()}</main>`;
+  }
+}
+
+// ── the cards ──────────────────────────────────────────────────────────────────────────────────
+
+function cardsPage(chosen: string | null): string {
+  const all = sets();
+  const set = chosen && all.includes(chosen) ? chosen : all[0] ?? null;
+  const search = state.search.trim().toLowerCase();
+  const shown = search
+    ? state.cards.filter((c) => `${nameOf(c)} ${c.key} ${text(c.card, 'epithet') ?? ''}`.toLowerCase().includes(search))
+    : state.cards.filter((c) => c.document === set);
+  const setButton = (s: string) => {
+    const count = state.cards.filter((c) => c.document === s).length;
+    const errors = state.diagnostics.filter((d) => d.file === fileOf(s) && d.severity === 'error').length;
+    return `<a class="set ${!search && s === set ? 'on' : ''}" href="#set/${encodeURIComponent(s)}">
+      <span>${esc(state.setNames.get(s) ?? s)}</span><small>${errors ? `<i>${errors}</i>` : ''}${count}</small></a>`;
+  };
+  const heading = search
+    ? `${plural(shown.length, 'card')} matching “${esc(state.search.trim())}”`
+    : esc(state.setNames.get(set ?? '') ?? set ?? 'Cards');
+  const note = state.cannotDraw ? `<p class="quiet">The cards are shown as data: ${esc(state.cannotDraw)}</p>` : '';
+  return `<main class="browse">
+    <nav class="sets">
+      <input id="search" type="search" placeholder="Find a card" value="${esc(state.search)}" autocomplete="off">
+      <h3>Sets</h3>
+      ${all.map(setButton).join('') || '<p class="quiet">No sets yet.</p>'}
+    </nav>
+    <section class="grid-page">
+      <h2>${heading}</h2>${note}
+      ${shown.length ? `<div class="grid">${shown.map(tile).join('')}</div>` : '<p class="quiet">No cards here yet.</p>'}
+    </section>
+  </main>`;
+}
+
+function frontOf(card: Card): Face | undefined {
+  return state.faces.find((f) => f.set === card.document && f.card === card.key && f.face === 'front');
+}
+
+function tile(card: Card): string {
+  const face = frontOf(card);
+  const rules = cardRules(card).length;
+  const source = cardSource(card);
+  const problems = source ? problemsIn(source).length + cardRules(card).reduce((n, r) => n + problemsIn(r).length, 0) : 0;
+  return `<a class="tile" href="${cardLink(card)}" title="Open ${esc(nameOf(card))}">
+    ${face ? `<figure data-face="${esc(faceWords(face))}">${drawnView(face)}</figure>` : cardView(card)}
+    <span class="caption"><b>${esc(nameOf(card))}</b><small>${problems ? `<i>${plural(problems, 'problem')}</i>` : rules ? plural(rules, 'rule') : 'no rules'}</small></span>
+  </a>`;
+}
+
+function cardPage(set: string, key: string): string {
+  const card = state.cards.find((c) => c.document === set && c.key === key);
+  if (!card) return `<main class="reading"><p><a href="#">← All cards</a></p><p class="quiet">There is no card ${esc(key)} in ${esc(set)}.</p></main>`;
+  const siblings = state.cards.filter((c) => c.document === set);
+  const at = siblings.indexOf(card);
+  const previous = siblings[at - 1];
+  const next = siblings[at + 1];
+  const faces = state.faces.filter((f) => f.set === set && f.card === key);
+  const switcher = faces.length > 1
+    ? `<div class="faces">${faces.map((f, i) => `<button data-show="${i}" class="${i ? '' : 'on'}">${f.face === 'front' ? 'Front' : 'Back'}</button>`).join('')}</div>`
+    : '';
+  const pictures = faces.length
+    ? switcher + faces.map((f, i) => `<figure class="big" data-face="${esc(faceWords(f))}" ${i ? 'hidden' : ''}>${drawnView(f)}</figure>`).join('')
+    : cardView(card);
+  const source = cardSource(card);
+  const rules = cardRules(card);
+  const used = usedValues(source ? [source, ...rules] : rules);
+  return `<main class="card-page">
+    <div class="card-bar">
+      <a href="#set/${encodeURIComponent(set)}">← ${esc(state.setNames.get(set) ?? set)}</a>
+      <h2>${esc(nameOf(card))}</h2>
+      <span class="steps">
+        ${previous ? `<a href="${cardLink(previous)}" title="Previous card (←)">‹ ${esc(nameOf(previous))}</a>` : ''}
+        ${next ? `<a href="${cardLink(next)}" title="Next card (→)">${esc(nameOf(next))} ›</a>` : ''}
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="pictures">${pictures}</div>
+      <div class="behind">
+        <h3>The card</h3>
+        ${source ? snippet(source) : `<p class="quiet">Not found in ${esc(fileOf(set))}.</p>`}
+        <h3>Its rules</h3>
+        ${rules.length ? rules.map(snippet).join('') : `<p class="quiet">${noRulesNote(card)}</p>`}
+        ${used.length ? `<h3>What it refers to</h3>${used.map(snippet).join('')}` : ''}
+      </div>
+    </div>
+  </main>`;
+}
+
+function noRulesNote(card: Card): string {
+  return text(card.card, 'text')
+    ? 'No rules file gives this card behaviour. If its text is only abilities (Guardian, Swift…), it needs none.'
+    : 'None: the card has no text.';
+}
+
+/** Lines of a file, numbered, with the file's name as a link that opens the whole file there, and their problems. */
+function snippet(at: Lines): string {
+  const lines = linesOf(at.file).slice(at.first - 1, at.last);
+  const problems = problemsIn(at);
+  const marked = new Set(problems.map((d) => d.line));
+  const rows = lines.map((line, i) => {
+    const n = at.first + i;
+    return `<li value="${n}" class="${marked.has(n) ? 'marked' : ''}"><span>${esc(line) || ' '}</span></li>`;
+  });
+  return `<div class="snippet">
+    <a class="where" href="${fileLink(at.file, at.first)}">${esc(at.file)}, line ${at.first}${at.last > at.first ? `–${at.last}` : ''}</a>
+    <ol class="source">${rows.join('')}</ol>
+    ${problems.map((d) => `<p class="problem ${d.severity}">Line ${d.line}: ${esc(d.message)}</p>`).join('')}
+  </div>`;
 }
 
 /** Where a card's picture is: its art path, from the folder of the file the card is written in. */
 function artUrl(card: Card): string | null {
   const art = text(card.card, 'art');
   if (!art) return null;
-  const file = state.documents.find((d) => d.name === card.document)?.file ?? '';
+  const file = fileOf(card.document);
   const folder = file.includes('/') ? file.slice(0, file.lastIndexOf('/') + 1) : '';
   return `api/file?path=${encodeURIComponent(folder + art)}`;
 }
@@ -272,24 +514,7 @@ function filled(textValue: string, card: Record_): string {
   });
 }
 
-function cardsView(): string {
-  if (state.faces.length) {
-    const sets = new Map<string, Face[]>();
-    for (const f of state.faces) sets.set(f.set, [...(sets.get(f.set) ?? []), f]);
-    return [...sets].map(([set, faces]) => `<h2>${esc(set)}</h2><div class="drawn">${faces
-      .map((f) => `<figure data-face="${esc(faceWords(f))}">${drawnView(f)}</figure>`).join('')}</div>`).join('');
-  }
-  const note = state.cannotDraw ? `<p class="quiet">The cards are shown as data: ${esc(state.cannotDraw)}</p>` : '';
-  return note + dataCardsView();
-}
-
-function dataCardsView(): string {
-  if (!state.cards.length) return '<h2>Cards</h2><p class="quiet">No cards yet. Add some to a cards file and save it.</p>';
-  const groups = new Map<string, Card[]>();
-  for (const c of state.cards) groups.set(c.document, [...(groups.get(c.document) ?? []), c]);
-  return [...groups].map(([document, cards]) => `<h2>${esc(document)}</h2><div class="cards">${cards.map(cardView).join('')}</div>`).join('');
-}
-
+/** A card shown as its data, when the cards can't be drawn. */
 function cardView(entry: Card): string {
   const c = entry.card;
   const art = artUrl(entry);
@@ -308,6 +533,39 @@ function cardView(entry: Card): string {
   </article>`;
 }
 
+// ── files, rulebook, problems ──────────────────────────────────────────────────────────────────
+
+function filesPage(path: string | null, line: number | null): string {
+  const counts = new Map<string, number>();
+  for (const d of state.diagnostics) counts.set(d.file, (counts.get(d.file) ?? 0) + 1);
+  const item = (f: WorkspaceFile) => {
+    const n = counts.get(f.path);
+    return `<a class="file ${path === f.path ? 'on' : ''}" href="${fileLink(f.path)}">${esc(f.path)}${n ? `<i>${n}</i>` : ''}</a>`;
+  };
+  const alex = state.files.filter((f) => f.path.endsWith('.alex'));
+  const other = state.files.filter((f) => !f.path.endsWith('.alex'));
+  return `<main class="browse">
+    <nav class="sets files">
+      <h3>Alex files</h3>${alex.map(item).join('')}
+      <h3>Other files</h3>${other.map(item).join('')}
+    </nav>
+    <section class="grid-page">${path ? fileView(path, line) : '<p class="quiet">Choose a file.</p>'}</section>
+  </main>`;
+}
+
+function fileView(path: string, line: number | null): string {
+  const source = state.sources.get(path);
+  if (source === undefined) {
+    return /\.(webp|png|jpe?g|svg)$/i.test(path)
+      ? `<h2>${esc(path)}</h2><img class="picture" src="api/file?path=${encodeURIComponent(path)}" alt="">`
+      : `<h2>${esc(path)}</h2><p class="quiet">Not a text file.</p>`;
+  }
+  const marked = new Set(state.diagnostics.filter((d) => d.file === path).map((d) => d.line));
+  const lines = source.split(/\r?\n/).map((l, i) =>
+    `<li id="line-${i + 1}" class="${marked.has(i + 1) ? 'marked' : ''} ${line === i + 1 ? 'here' : ''}"><span>${esc(l) || ' '}</span></li>`);
+  return `<h2>${esc(path)}</h2><ol class="source">${lines.join('')}</ol>`;
+}
+
 function rulebookView(): string {
   const book = state.rulebook;
   if (!book) return '<h2>Rulebook</h2><p class="quiet">No rulebook yet.</p>';
@@ -322,19 +580,46 @@ function rulebookView(): string {
     }).join('')}`;
 }
 
-function diagnosticsView(): string {
-  if (!state.diagnostics.length) return '';
-  const rows = state.diagnostics.map((d) => `<li class="${d.severity}"><button data-file="${esc(d.file)}">${esc(d.file || state.root)}${d.line ? `:${d.line}` : ''}</button> ${esc(d.message)}</li>`);
-  return `<h2 class="problems">Problems</h2><ul class="diagnostics">${rows.join('')}</ul>`;
+function problemsView(): string {
+  if (!state.diagnostics.length) return '<h2>Problems</h2><p class="quiet">None. Every file reads, and every card has what it needs.</p>';
+  const rows = state.diagnostics.map((d) => `<li class="${d.severity}"><a href="${fileLink(d.file, d.line)}">${esc(d.file || state.root)}${d.line ? `, line ${d.line}` : ''}</a> ${esc(d.message)}</li>`);
+  return `<h2>Problems</h2><ul class="diagnostics">${rows.join('')}</ul>`;
 }
 
 // ── events ─────────────────────────────────────────────────────────────────────────────────────
 
-app.addEventListener('click', (e) => {
-  const target = (e.target as HTMLElement).closest<HTMLElement>('[data-file]');
-  if (!target) return;
-  state.selected = target.dataset.file || null;
+window.addEventListener('hashchange', () => {
+  window.scrollTo(0, 0);
   render();
+  void drawAll();
+});
+
+app.addEventListener('input', (e) => {
+  const input = e.target as HTMLInputElement;
+  if (input.id !== 'search') return;
+  state.search = input.value;
+  render();
+  void drawAll();
+});
+
+// A card with a back: the switch above the picture shows one face at a time.
+app.addEventListener('click', (e) => {
+  const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-show]');
+  if (!button) return;
+  const index = Number(button.dataset.show);
+  app.querySelectorAll<HTMLElement>('.pictures .big').forEach((f, i) => { f.hidden = i !== index; });
+  app.querySelectorAll<HTMLElement>('.faces button').forEach((b, i) => b.classList.toggle('on', i === index));
+});
+
+// On a card's page, ← and → step through the set, and Escape goes back to it.
+document.addEventListener('keydown', (e) => {
+  const view = currentView();
+  if (view.kind !== 'card' || (e.target as HTMLElement).tagName === 'INPUT') return;
+  const siblings = state.cards.filter((c) => c.document === view.set);
+  const at = siblings.findIndex((c) => c.key === view.key);
+  const go = e.key === 'ArrowLeft' ? siblings[at - 1] : e.key === 'ArrowRight' ? siblings[at + 1] : undefined;
+  if (go) location.hash = cardLink(go);
+  else if (e.key === 'Escape') location.hash = `#set/${encodeURIComponent(view.set)}`;
 });
 
 // The server says when a file changed; the page reads the project again.

@@ -622,7 +622,11 @@ button.danger {
 button.tile-delete, button.delete-deck { color: #9c3a26; }
 
 /* ── Lanes: six on each side, fixed, so a unit stands across from the enemy it fights first ─────────── */
-.yard.lanes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(4px, 1.2vw, 14px); padding-left: 8px; padding-right: 8px; align-items: center; }
+.yard.lanes, .board.wide .yard.lanes {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(4px, 1.2vw, 14px); padding-left: 8px; padding-right: 8px;
+  align-items: center; container-type: normal;
+}
+.board.wide .yard.lanes .unit, .yard.lanes .unit { height: min(var(--unit-h), 100%); width: auto; max-width: 100%; }
 .yard.lanes .foe-hand-slot { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); z-index: 1; pointer-events: none; }
 .lane { position: relative; height: 100%; min-width: 0; display: flex; align-items: center; justify-content: center; }
 .lane .unit { height: min(var(--unit-h), 100%); max-width: 100%; margin: 0; }
@@ -654,6 +658,15 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 .purse b, .level b { font-size: 15px; color: #2f8a46; }
 .level b { color: #7a4b16; }
 .purse small, .level small { font-weight: 700; opacity: 0.8; }
+/* Phones: the plaques keep to one line of numbers, so the lanes get the height. */
+@media (max-width: 640px) {
+  .player .stat-row { flex-wrap: nowrap; gap: 8px; }
+  .purse, .level { font-size: 11px; }
+  .purse b, .level b { font-size: 13px; }
+  .purse small, .level small, .player .stat-row .counters { display: none; }
+  .player .ability { -webkit-line-clamp: 2; }
+  .player .hero-actions button { padding: 2px 12px; min-height: 0; }
+}
 
 /* The Clash, as a report: read it, then go on. */
 .clash-report {

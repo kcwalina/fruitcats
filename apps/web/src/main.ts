@@ -1308,9 +1308,9 @@ function renderMidbar(s: GameState, legal: Action[]): string {
     const level = legal.find((a) => a.t === 'levelUp');
     const over = me.hand.length - HAND_LIMIT;
     const interest = interestOn(s, me.offerings);
-    text = `<b>Muster, round ${s.round}.</b> Build your side in secret: play units into your lanes, move them, level up, then press <b>Ready</b>. `
-      + `You have <b>${me.offerings}</b> ${TERMS.offerings}${interest ? ` (saved, they earn <b>+${interest}</b> next round)` : ''}.`;
-    if (over > 0) text += ` <b>Too many cards:</b> offer ${over} before you can be Ready (tap a card, then Offer it).`;
+    text = `<b>Muster.</b> Build your side, then press <b>Ready</b>. <b>${me.offerings}</b> ${TERMS.offerings}`
+      + `${interest ? ` <span class="turn-hint">(+${interest} if saved)</span>` : ''}.`;
+    if (over > 0) text += ` <b>Too many cards:</b> offer ${over} first (tap a card, then Offer it).`;
     buttons = `${level ? `<button data-click="btn:level" title="One more lane">Level up <small>(${levelCost(s, mySeat)})</small></button>` : ''}
       <button class="primary" data-click="btn:ready" ${over > 0 ? 'disabled' : ''}>Ready</button>`;
   }

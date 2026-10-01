@@ -22,7 +22,7 @@ export const HERE_MS = 50_000;
 /** While waiting in line, ask again this often. A place is kept only while it's asked for. */
 export const ENTER_EVERY_MS = 10_000;
 /** Bumped when a message changes shape: an older game is asked to reload before it can play online. */
-export const PROTOCOL = 3;
+export const PROTOCOL = 4;
 
 /**
  * How long a request to play waits for an answer. It's kept on the server from the moment it's sent: it ends when the
@@ -61,7 +61,7 @@ export type EnterAnswer =
 // ── The clock ────────────────────────────────────────────────────────────────────────────────────
 
 export interface ClockRules {
-  /** Time for each decision, in ms; null for no timer. */
+  /** Time for each decision (a mulligan, a round's Muster), in ms; null for no timer. */
   moveMs: number | null;
   /** Each player's reserve for the whole game, used once a decision's own time runs out. */
   reserveMs: number;
@@ -91,12 +91,12 @@ export type Pace = 'relaxed' | 'quick' | 'untimed';
 
 export const PACES: Record<Pace, { label: string; blurb: string; clock: ClockRules }> = {
   relaxed: {
-    label: 'Relaxed', blurb: '2 minutes a move',
-    clock: { moveMs: 120_000, reserveMs: 0, onTimeout: 'ask', holdOns: 2, holdOnMs: 120_000, strikes: 0 },
+    label: 'Relaxed', blurb: '3 minutes a round',
+    clock: { moveMs: 180_000, reserveMs: 0, onTimeout: 'ask', holdOns: 2, holdOnMs: 120_000, strikes: 0 },
   },
   quick: {
-    label: 'Quick', blurb: '45 seconds a move',
-    clock: { moveMs: 45_000, reserveMs: 0, onTimeout: 'ask', holdOns: 2, holdOnMs: 60_000, strikes: 0 },
+    label: 'Quick', blurb: '90 seconds a round',
+    clock: { moveMs: 90_000, reserveMs: 0, onTimeout: 'ask', holdOns: 2, holdOnMs: 60_000, strikes: 0 },
   },
   untimed: {
     label: 'No timer', blurb: 'Take all the time you like',
@@ -104,7 +104,7 @@ export const PACES: Record<Pace, { label: string; blurb: string; clock: ClockRul
   },
 };
 
-export const RANKED_CLOCK: ClockRules = { moveMs: 30_000, reserveMs: 120_000, onTimeout: 'auto', holdOns: 0, holdOnMs: 0, strikes: 3 };
+export const RANKED_CLOCK: ClockRules = { moveMs: 75_000, reserveMs: 120_000, onTimeout: 'auto', holdOns: 0, holdOnMs: 0, strikes: 3 };
 
 // ── Match rules ──────────────────────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ export interface MatchRules {
   clock: ClockRules;
   /** Hints, take-backs, open hands, slower replays of the other player's moves, a gentler end. */
   teaching: boolean;
-  /** How long a Pounce or Lucky question stays open (see ASK_MS). */
+  /** How long a question stays open (see ASK_MS). The game no longer asks any: kept for records made before. */
   askMs: number;
   /** How long a player whose connection dropped has to come back, before the other player may end the game. */
   dropGraceMs: number;
@@ -215,14 +215,16 @@ export interface MatchInfo {
 
 /** Where the clock stands, as of when the message was sent. */
 export interface ClockView {
-  /** Whose decision the clock is running for; null when nothing is timed. */
+  /** Whose decision the clock is running for; null when nothing is timed, or during the Muster (`muster`). */
   seat: PlayerId | null;
   /**
-   * 'ask': a Pounce or Lucky question, let go when it runs out. 'move': the decision's own time. 'reserve': the
-   * reserve is running. 'overtime': out of time in a Friend game; the other player decides. 'paused': a player's
-   * connection dropped. 'none': no timer.
+   * 'ask': a question let go when it runs out (no longer asked: kept for older records). 'move': the decision's own
+   * time. 'reserve': the reserve is running. 'overtime': out of time in a Friend game; the other player decides.
+   * 'paused': a player's connection dropped. 'none': no timer.
    */
   phase: 'ask' | 'move' | 'reserve' | 'overtime' | 'paused' | 'none';
+  /** The Muster's clock: one time for both players to build and be Ready. */
+  muster?: true;
   /** Ms left in this phase when the message was sent; null when it doesn't run out. */
   left: number | null;
   reserve: [number, number];
@@ -257,8 +259,9 @@ export type ClientMessage =
   | { t: 'accept'; id: string; deck: DeckList; lives: number }
   | { t: 'decline'; id: string }
   | { t: 'cancel'; id: string }
+  /** A move. `seq` is the `seq` of the view it was made on (clockFor): a move made on an older view is refused. */
   | { t: 'act'; match: string; seq: number; action: Action }
-  /** Keep a Pounce or Lucky question open, or use a "Hold on" for more time. */
+  /** Use a "Hold on" for more time. */
   | { t: 'hold'; match: string }
   /** The other player is out of time: give them more, or nudge them. */
   | { t: 'time'; match: string; what: 'give' | 'nudge' }

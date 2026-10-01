@@ -10,7 +10,7 @@
 // the API restarts, or to take back a move in a teaching game. The same record is the replay.
 
 import {
-  apply, chooseAction, createGame, IllegalAction, legalActions, other, viewFor,
+  HAND_LIMIT, apply, chooseAction, clockFor, createGame, IllegalAction, mayAct, other, viewFor, visibleEvents, visibleLog,
   type Action, type DeckList, type GameState, type PlayerId, type PlayerView,
 } from '@fruitcats/engine';
 import {
@@ -21,7 +21,7 @@ import {
 
 export interface SeatRecord { person: Person; deck: DeckList; lives: number }
 
-/** One action, who took it, and whether the game took it for them (a Pounce question let go, time run out). */
+/** One action, who took it, and whether the game took it for them (time run out). */
 export interface Played { seat: PlayerId; action: Action; auto?: true }
 
 /** Everything needed to rebuild a match exactly. */
@@ -99,10 +99,15 @@ export class Match {
   private showing: [boolean, boolean] = [false, false];
   private wantsRematch: [boolean, boolean] = [false, false];
   private leftResult: [boolean, boolean] = [false, false];
-  /** How many of the game's events each player has been sent, so each view carries only what's new. */
+  /**
+   * How many of the events each player may see they have been sent, so each view carries only what's new. (What the
+   * other player does in the Muster is never theirs to see: counted among what they may see, it isn't.)
+   */
   private sentEvents: [number, number] = [0, 0];
   /** Likewise the story (the log): each view carries only the lines a player hasn't had yet. */
   private sentLog: [number, number] = [0, 0];
+  /** The round whose Muster the clock is timing: moves inside one Muster share its time. */
+  private clockRound = 0;
   private lastNudge = 0;
   private lastEmote: [number, number] = [0, 0];
 
@@ -113,7 +118,7 @@ export class Match {
     const c = record.rules.clock;
     this.reserve = [c.reserveMs, c.reserveMs];
     this.holdOns = [c.holdOns, c.holdOns];
-    this.sentEvents = [this.state.events.length, this.state.events.length];
+    this.sentEvents = [0, 1].map((seat) => visibleEvents(this.state.events, seat as PlayerId).length) as [number, number];
   }
 
   get id() { return this.record.id; }
@@ -147,7 +152,7 @@ export class Match {
 
   /** The whole match, for a player joining or coming back: no events to replay. */
   matchMessage(seat: PlayerId): ServerMessage {
-    this.sentEvents[seat] = this.state.events.length;
+    this.sentEvents[seat] = visibleEvents(this.state.events, seat).length;
     this.sentLog[seat] = 0;
     const view = this.viewOf(seat);
     return { t: 'match', info: this.info(seat), view, clock: this.clockView(), showing: this.showing, rematch: this.wantsRematch, end: this.end };
@@ -156,17 +161,28 @@ export class Match {
   /** What this player may see, with only the events and story lines since their last view. */
   private viewOf(seat: PlayerId): PlayerView {
     const v = viewFor(this.state, seat);
-    v.events = this.state.events.slice(this.sentEvents[seat]);
-    this.sentEvents[seat] = this.state.events.length;
-    v.log = this.state.log.slice(this.sentLog[seat]);
-    this.sentLog[seat] = this.state.log.length;
+    const events = visibleEvents(this.state.events, seat);
+    v.events = events.slice(this.sentEvents[seat]);
+    this.sentEvents[seat] = events.length;
+    const log = visibleLog(this.state.log, seat);
+    v.log = log.slice(this.sentLog[seat]);
+    this.sentLog[seat] = log.length;
     const foe = other(seat);
-    if (this.showing[foe]) v.players[foe].hand = structuredClone(this.state.players[foe].hand);
+    // A teaching game's open hand: during the Muster, the hand as it was when the Muster began, not the moves since.
+    if (this.showing[foe]) {
+      const muster = this.state.prompt?.kind === 'muster';
+      v.players[foe].hand = structuredClone(muster ? this.musterHands[foe] ?? v.players[foe].hand : this.state.players[foe].hand);
+    }
     return v;
   }
 
-  private broadcast(undone?: PlayerId) {
+  /** In a teaching game, each hand as it was when this Muster began (what an open hand shows during it). */
+  private musterHands: [GameState['players'][0]['hand'] | null, GameState['players'][0]['hand'] | null] = [null, null];
+
+  /** Send the new view to both players, or, `only` one: a move in the Muster is nobody else's business. */
+  private broadcast(undone?: PlayerId, only?: PlayerId) {
     for (const seat of [0, 1] as PlayerId[]) {
+      if (only !== undefined && seat !== only) continue;
       const logFrom = this.sentLog[seat];
       this.host.send(this.account(seat), { t: 'view', match: this.id, view: this.viewOf(seat), logFrom, clock: this.clockView(), showing: this.showing, undone });
     }
@@ -191,6 +207,7 @@ export class Match {
       reserve,
       holdOns: [...this.holdOns],
       claimIn: this.phase === 'overtime' && this.overtimeSince !== null ? Math.max(0, this.overtimeSince + OVERTIME_CLAIM_MS - now) : null,
+      ...(this.state.prompt?.kind === 'muster' ? { muster: true as const } : {}),
     };
   }
 
@@ -238,32 +255,34 @@ export class Match {
 
   private act(seat: PlayerId, seq: number, action: Action) {
     const me = this.account(seat);
-    // An action for an older state (a double tap, a message that crossed another) is dropped, never applied twice.
-    if (seq !== this.state.actions) return this.host.send(me, this.matchMessage(seat));
+    // A move made on an older view (a double tap, a message that crossed a new round) is dropped, never applied twice.
+    // Each player's count moves with their own moves only, so the other player's moves in the Muster don't stale it.
+    if (seq !== clockFor(this.state, seat)) return this.host.send(me, this.matchMessage(seat));
     // While the other player's connection is down only the clock stops: you may still make your own move.
-    if (this.state.prompt?.player !== seat) return this.host.send(me, { t: 'error', message: 'It isn’t your turn to decide.' });
-    this.stopClock();
+    if (!mayAct(this.state, seat)) return this.host.send(me, { t: 'error', message: 'It isn’t your turn to decide.' });
+    const shared = this.state.prompt?.kind === 'muster';
+    if (!shared) this.stopClock();
     const before = this.state;
     try {
-      this.state = apply(structuredClone(before), action);
+      this.state = apply(structuredClone(before), action, seat);
     } catch (e) {
       this.state = before;
-      this.resumeAfterRefusal();
+      if (!shared) this.resumeAfterRefusal();
       return this.host.send(me, { t: 'error', message: e instanceof IllegalAction ? 'That move isn’t allowed right now.' : 'Something went wrong with that move.' });
     }
     this.record.played.push({ seat, action });
     this.strikes[seat] = 0;
-    this.afterChange();
+    this.afterChange(seat);
   }
 
-  /** The game makes the plainest move for this player: their time ran out, or a Pounce or Lucky question was let go. */
+  /** The game makes the plainest move for this player: their time ran out. */
   private autoMove(seat: PlayerId) {
-    if (this.state.prompt?.player !== seat) return;
-    this.stopClock();
-    const action = plainestMove(this.state);
-    this.state = apply(structuredClone(this.state), action);
+    if (!mayAct(this.state, seat)) return;
+    if (this.state.prompt?.kind !== 'muster') this.stopClock();
+    const action = plainestMove(this.state, seat);
+    this.state = apply(structuredClone(this.state), action, seat);
     this.record.played.push({ seat, action, auto: true });
-    this.afterChange();
+    this.afterChange(seat);
   }
 
   /** A move was made: the game isn't idle. */
@@ -272,11 +291,26 @@ export class Match {
     this.idleTimer = setTimeout(() => void this.finish({ winner: null, how: 'called-off' }), IDLE_MS);
   }
 
-  private afterChange() {
+  /**
+   * The game moved on after a move of `actor`'s. Inside one Muster only they are sent the new view (the other player
+   * mustn't learn even that something happened), and the Muster's clock runs on; a new decision for both (the Clash
+   * was played, a new round began) goes to both, with a new clock.
+   */
+  private afterChange(actor?: PlayerId) {
     this.touch();
     if (this.state.winner !== null) { void this.finish({ winner: this.state.winner, how: 'played' }); return; }
-    this.startDecision();
-    this.broadcast();
+    const sameMuster = this.state.prompt?.kind === 'muster' && this.clockRound === this.state.round && this.phase !== 'none';
+    if (sameMuster && actor !== undefined) {
+      // One player is Ready in a Friend game's overtime: the overtime is now the other's alone.
+      if (this.phase === 'overtime' && this.clockSeat === null) {
+        const open = ([0, 1] as PlayerId[]).filter((p) => mayAct(this.state, p));
+        if (open.length === 1) { this.clockSeat = open[0]; this.sendClock(); }
+      }
+      this.broadcast(undefined, actor);
+    } else {
+      this.startDecision();
+      this.broadcast();
+    }
     this.host.save(this);
   }
 
@@ -295,13 +329,44 @@ export class Match {
   private startDecision() {
     const prompt = this.state.prompt;
     if (!prompt || this.state.winner !== null) { this.setPhase('none', null, null); return; }
-    if (this.away[0] !== null || this.away[1] !== null) { this.setPhase('none', prompt.player, null); this.pause(); return; }
-    const seat = prompt.player;
+    const muster = prompt.kind === 'muster';
+    if (muster && this.clockRound !== this.state.round) {
+      this.clockRound = this.state.round;
+      this.musterHands = [structuredClone(this.state.players[0].hand), structuredClone(this.state.players[1].hand)];
+    }
+    if (this.away[0] !== null || this.away[1] !== null) { this.setPhase('none', muster ? null : prompt.player, null); this.pause(); return; }
     this.overtimeSince = null;
-    // Pounce and Lucky questions are asked every time (alwaysAsk) and let go after the same short wait whether or not
-    // there's anything to play, so the wait tells the other player nothing.
-    if (prompt.kind === 'pounce' || prompt.kind === 'lucky') { this.setPhase('ask', seat, this.record.rules.askMs, () => this.autoMove(seat)); return; }
-    this.startMove(seat, this.record.rules.clock.moveMs);
+    // The Muster: one clock for both players, who decide at the same time.
+    if (muster) {
+      const ms = this.record.rules.clock.moveMs;
+      if (ms === null) this.setPhase('none', null, null);
+      else this.setPhase('move', null, ms, () => this.outOfMuster());
+      return;
+    }
+    this.startMove(prompt.player, this.record.rules.clock.moveMs);
+  }
+
+  /** The Muster's time is up for everyone still deciding. */
+  private outOfMuster() {
+    const open = ([0, 1] as PlayerId[]).filter((p) => mayAct(this.state, p));
+    if (this.record.rules.clock.onTimeout === 'auto') {
+      for (const seat of open) {
+        this.strikes[seat]++;
+        if (this.strikes[seat] >= this.record.rules.clock.strikes) { void this.finish({ winner: other(seat), how: 'timeout' }); return; }
+      }
+      // The plainest moves for everyone still deciding: offer down to the hand limit, then Ready.
+      const round = this.state.round;
+      for (const seat of open) {
+        while (this.end === null && this.state.winner === null && this.state.round === round && mayAct(this.state, seat)) this.autoMove(seat);
+      }
+      return;
+    }
+    // A Friend game: nothing happens by itself. With one player still deciding, the other may give them more time or
+    // nudge them, and after a while take the win or call the game off.
+    this.setPhase('overtime', open.length === 1 ? open[0] : null, null);
+    this.overtimeSince = Date.now();
+    this.timer = setTimeout(() => this.sendClock(), OVERTIME_CLAIM_MS);
+    this.sendClock();
   }
 
   private startMove(seat: PlayerId, ms: number | null) {
@@ -346,10 +411,19 @@ export class Match {
     else if (this.phase === 'reserve') this.setPhase('reserve', seat, left, () => this.outOfTime(seat));
   }
 
-  /** "Hold on": keep a Pounce or Lucky question open, or add time to a decision. */
+  /** "Hold on": add time to a decision. In the Muster, either player still deciding may add time to its shared clock. */
   private hold(seat: PlayerId) {
-    if (this.clockSeat !== seat || this.state.prompt?.player !== seat) return;
-    if (this.phase === 'ask') { this.startMove(seat, this.record.rules.clock.moveMs); this.sendClock(seat); return; }
+    if (!mayAct(this.state, seat)) return;
+    if (this.state.prompt?.kind === 'muster') {
+      if (this.holdOns[seat] <= 0 || (this.phase !== 'move' && this.phase !== 'overtime')) return;
+      this.holdOns[seat]--;
+      const extra = this.record.rules.clock.holdOnMs;
+      const left = this.phase === 'move' ? Math.max(0, (this.deadline ?? Date.now()) - Date.now()) : 0;
+      this.setPhase('move', null, left + extra, () => this.outOfMuster());
+      this.sendClock(seat);
+      return;
+    }
+    if (this.clockSeat !== seat) return;
     if (!['move', 'reserve', 'overtime'].includes(this.phase) || this.holdOns[seat] <= 0) return;
     this.holdOns[seat]--;
     const extra = this.record.rules.clock.holdOnMs;
@@ -362,7 +436,13 @@ export class Match {
   private time(seat: PlayerId, what: 'give' | 'nudge') {
     const foe = other(seat);
     if (this.phase !== 'overtime' || this.clockSeat !== foe) return;
-    if (what === 'give') { this.startMove(foe, this.record.rules.clock.moveMs ?? 120_000); this.sendClock(); return; }
+    if (what === 'give') {
+      const ms = this.record.rules.clock.moveMs ?? 120_000;
+      if (this.state.prompt?.kind === 'muster') this.setPhase('move', null, ms, () => this.outOfMuster());
+      else this.startMove(foe, ms);
+      this.sendClock();
+      return;
+    }
     if (Date.now() - this.lastNudge < NUDGE_EVERY_MS) return;
     this.lastNudge = Date.now();
     this.host.send(this.account(foe), { t: 'nudge', match: this.id });
@@ -382,6 +462,12 @@ export class Match {
     const was = this.paused;
     this.paused = null;
     const seat = this.clockSeat;
+    if (this.state.prompt?.kind === 'muster' && was && was.phase !== 'none') {
+      // The Muster's shared clock carries on with the time it had (an overtime stays one).
+      if (was.phase === 'overtime') { this.outOfMuster(); return; }
+      this.setPhase('move', null, was.left ?? 0, () => this.outOfMuster());
+      return;
+    }
     if (!was || seat === null || was.phase === 'none' || was.phase === 'ask') { this.startDecision(); return; }
     if (was.phase === 'overtime') { this.outOfTime(seat); return; }
     const left = was.left ?? 0;
@@ -470,9 +556,9 @@ export class Match {
 
   /** A suggested move, from the same AI as Solo. It never looks at hidden cards: it blanks the other hand first. */
   private hint(seat: PlayerId) {
-    if (!this.record.rules.teaching || this.state.prompt?.player !== seat) return;
+    if (!this.record.rules.teaching || !mayAct(this.state, seat)) return;
     let action: Action | null = null;
-    try { action = chooseAction(structuredClone(this.state), { skill: 1 }); } catch { action = null; }
+    try { action = chooseAction(structuredClone(this.state), { skill: 1, seat }); } catch { action = null; }
     this.host.send(this.account(seat), { t: 'hint', match: this.id, action });
   }
 
@@ -487,10 +573,10 @@ export class Match {
     clearTimeout(this.timer);
     this.record.played = this.record.played.slice(0, at);
     this.state = rebuild(this.record, at);
-    this.sentEvents = [this.state.events.length, this.state.events.length];
+    this.sentEvents = [0, 1].map((p) => visibleEvents(this.state.events, p as PlayerId).length) as [number, number];
     this.sentLog = [0, 0];   // the story is rewritten: send it whole
     this.startDecision();
-    this.broadcast(seat);
+    this.broadcast(seat, this.state.prompt?.kind === 'muster' ? seat : undefined);
     this.host.save(this);
   }
 }
@@ -503,9 +589,9 @@ export function rebuild(r: MatchRecord, count: number): GameState {
   if (names[0] === names[1]) names[1] = `${names[1]} 2`;
   const s = createGame({
     decks: [r.seats[0].deck, r.seats[1].deck], names, seed: r.seed, firstPlayer: r.firstPlayer,
-    lives: [r.seats[0].lives, r.seats[1].lives], alwaysAsk: true,
+    lives: [r.seats[0].lives, r.seats[1].lives],
   });
-  for (let i = 0; i < count; i++) apply(s, r.played[i].action);
+  for (let i = 0; i < count; i++) apply(s, r.played[i].action, r.played[i].seat);
   return s;
 }
 
@@ -526,20 +612,12 @@ export function takeBackPoint(r: MatchRecord, seat: PlayerId): number {
   return i;
 }
 
-/** The move that changes least: pass, keep the hand, let the Pounce go, keep the Lucky card, the first choice. */
-export function plainestMove(s: GameState): Action {
-  const prompt = s.prompt!;
-  const hand = s.players[prompt.player].hand;
-  switch (prompt.kind) {
-    case 'mulligan': return { t: 'mulligan', uids: [] };
-    case 'setupPlant': return { t: 'setupPlant', uids: hand.slice(0, prompt.count).map((c) => c.uid) };
-    case 'discard': return { t: 'discard', uids: hand.slice(-prompt.count).map((c) => c.uid) };
-    case 'plant': return { t: 'skipPlant' };
-    case 'action': return { t: 'pass' };
-    case 'pounce': return { t: 'decline' };
-    case 'lucky': return { t: 'keepLucky' };
-    case 'choose': return legalActions(s)[0];
-  }
+/** The move that changes least: keep the hand; in the Muster, Ready (offering the newest cards first when over the limit). */
+export function plainestMove(s: GameState, seat: PlayerId = s.prompt!.player): Action {
+  if (s.prompt!.kind === 'mulligan') return { t: 'mulligan', uids: [] };
+  const hand = s.players[seat].hand;
+  if (hand.length > HAND_LIMIT) return { t: 'offer', uid: hand[hand.length - 1].uid };
+  return { t: 'ready' };
 }
 
 export const newMatchId = () => crypto.randomUUID().replace(/-/g, '');

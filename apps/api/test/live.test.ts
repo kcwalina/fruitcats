@@ -3,9 +3,9 @@
 // the handicap and friend codes too. Sockets and viamochi-id are replaced by plain functions; time is faked.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DECKS, HIDDEN, RULES_VERSION, legalActions, type Action, type PlayerView } from '@fruitcats/engine';
+import { DECKS, HIDDEN, RULES_VERSION, legalActions, randomAction, type Action, type PlayerView } from '@fruitcats/engine';
 import {
-  ASK_MS, OVERTIME_CLAIM_MS, PACES, PEER_LINK_MS, PROTOCOL, PeerHost, rankedRules,
+  OVERTIME_CLAIM_MS, PACES, PEER_LINK_MS, PROTOCOL, PeerHost, rankedRules,
   type ChallengeOptions, type ClientMessage, type PeerPollAnswer, type PeerSaveAnswer, type ServerMessage,
 } from '@fruitcats/match';
 import { CHALLENGE_MS, PEER_GONE_MS, createHub } from '../src/live/hub';
@@ -120,15 +120,9 @@ async function startGame(options = RELAXED, livesA = 9, livesB = 9): Promise<[Pl
   return [sam, pippin];
 }
 
-/** A simple player: keeps its hand, plants its first cards, then picks a random legal move. */
+/** A simple player: keeps its hand, then picks random legal moves from its own view (Ready one time in four). */
 function choose(v: PlayerView, rnd: () => number): Action {
-  const prompt = v.prompt!;
-  const hand = v.players[v.seat].hand;
-  if (prompt.kind === 'mulligan') return { t: 'mulligan', uids: [] };
-  if (prompt.kind === 'setupPlant') return { t: 'setupPlant', uids: hand.slice(0, prompt.count).map((c) => c.uid) };
-  if (prompt.kind === 'discard') return { t: 'discard', uids: hand.slice(0, prompt.count).map((c) => c.uid) };
-  const legal = legalActions(v);
-  return legal[Math.floor(rnd() * legal.length)];
+  return randomAction(v, rnd, v.seat);
 }
 
 function rng(seed: number) {
@@ -141,7 +135,7 @@ async function playOut(players: Player[], seed = 1) {
   for (let i = 0; i < 5000; i++) {
     const mover = players.find((p) => p.view?.prompt && p.view.winner === null);
     if (!mover || players.some((p) => p.last('end'))) return;
-    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.actions, action: choose(mover.view!, rnd) });
+    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq, action: choose(mover.view!, rnd) });
     await flush();
   }
   throw new Error('the game never ended');
@@ -347,12 +341,12 @@ describe('a match', () => {
   it('refuses a move out of turn, and a move for an old state', async () => {
     const [sam, pippin] = await startGame();
     const waiting = sam.view!.prompt ? pippin : sam;
-    waiting.send({ t: 'act', match: waiting.match!, seq: waiting.view!.actions, action: { t: 'pass' } });
+    waiting.send({ t: 'act', match: waiting.match!, seq: waiting.view!.seq, action: { t: 'ready' } });
     await flush();
     expect(waiting.last('error')!.message).toMatch(/isn’t your turn/);
     const mover = waiting === sam ? pippin : sam;
     const before = mover.inbox.length;
-    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.actions + 5, action: { t: 'mulligan', uids: [] } });
+    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq + 5, action: { t: 'mulligan', uids: [] } });
     await flush();
     expect(mover.inbox.slice(before).map((m) => m.t)).toEqual(['match']);   // sent the game again, nothing applied
   });
@@ -364,7 +358,7 @@ describe('a match', () => {
     expect(end.how).toBe('played');
     expect(end.winner).not.toBeNull();
     expect(sam.view!.winner).toBe(end.winner);
-    expect(sam.inbox.filter((m) => m.t === 'view').length).toBeGreaterThan(50);
+    expect(sam.inbox.filter((m) => m.t === 'view').length).toBeGreaterThan(15);
     const other = pippin.last('end')!.end;
     if (end.winner === 0) { expect(end.record).toEqual({ wins: 1, losses: 0, draws: 0 }); expect(other.record).toEqual({ wins: 0, losses: 1, draws: 0 }); }
     if (end.winner === 1) { expect(end.record).toEqual({ wins: 0, losses: 1, draws: 0 }); expect(other.record).toEqual({ wins: 1, losses: 0, draws: 0 }); }
@@ -378,27 +372,57 @@ describe('a match', () => {
     expect(await store.liveMatches()).toEqual([]);
   });
 
-  it('lets a Pounce question go after the same short wait, whether or not there is anything to play', async () => {
+  it('lets both players build the Muster at once, and tells neither what the other does', async () => {
     const [sam, pippin] = await startGame();
-    const rnd = rng(3);
-    let asked = 0;
-    for (let i = 0; i < 400 && asked < 3; i++) {
-      const mover = [sam, pippin].find((p) => p.view?.prompt);
-      if (!mover) break;
-      if (mover.view!.prompt!.kind === 'pounce') {
-        asked++;
-        const other = mover === sam ? pippin : sam;
-        expect(other.last('view')!.clock).toMatchObject({ phase: 'ask', seat: mover.view!.seat });
-        const seq = mover.view!.actions;
-        vi.advanceTimersByTime(ASK_MS + 1);
-        await flush();
-        expect(mover.view!.actions).toBe(seq + 1);   // let go for them
-        continue;
-      }
-      mover.send({ t: 'act', match: mover.match!, seq: mover.view!.actions, action: choose(mover.view!, rnd) });
+    for (const p of [sam, pippin]) {
+      p.send({ t: 'act', match: p.match!, seq: p.view!.seq, action: { t: 'mulligan', uids: [] } });
       await flush();
     }
-    expect(asked).toBeGreaterThan(0);
+    expect(sam.view!.prompt).toEqual({ kind: 'muster', player: 0 });
+    expect(pippin.view!.prompt).toEqual({ kind: 'muster', player: 1 });
+    expect(sam.last('view')!.clock).toMatchObject({ muster: true, seat: null });
+    // Sam makes moves: only Sam hears about them, and Pippin's next move isn't stale for it.
+    const pippinSeen = pippin.inbox.length;
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'offer', uid: sam.view!.players[0].hand[0].uid } });
+    await flush();
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'ready' } });
+    await flush();
+    expect(sam.view!.players[0].offerings).toBe(4);
+    expect(sam.view!.prompt).toBeNull();
+    expect(pippin.inbox.length).toBe(pippinSeen);
+    const offering = pippin.view!.players[1].hand[0].uid;
+    pippin.send({ t: 'act', match: pippin.match!, seq: pippin.view!.seq, action: { t: 'offer', uid: offering } });
+    await flush();
+    expect(pippin.last('error')).toBeUndefined();
+    expect(pippin.view!.players[1].offerings).toBe(4);
+    expect(pippin.view!.players[0].offerings).toBe(3);   // Sam's Offering stays theirs until the Clash
+    // Pippin's Ready plays the Clash: both are told, and both see the new round.
+    pippin.send({ t: 'act', match: pippin.match!, seq: pippin.view!.seq, action: { t: 'ready' } });
+    await flush();
+    for (const p of [sam, pippin]) {
+      expect(p.view!.round).toBe(2);
+      expect(p.view!.prompt).toMatchObject({ kind: 'muster' });
+    }
+    expect(sam.view!.players[1].offerings).toBeGreaterThan(4);
+  });
+
+  it("leaves a Friend game's Muster waiting when its time runs out: nothing is played for anyone", async () => {
+    const [sam, pippin] = await startGame();
+    for (const p of [sam, pippin]) {
+      p.send({ t: 'act', match: p.match!, seq: p.view!.seq, action: { t: 'mulligan', uids: [] } });
+      await flush();
+    }
+    vi.advanceTimersByTime(PACES.relaxed.clock.moveMs! + 1);
+    await flush();
+    expect(sam.last('clock')!.clock).toMatchObject({ phase: 'overtime', muster: true, seat: null });
+    expect(sam.view!.round).toBe(1);
+    // One of them Ready: the overtime is the other's, who may now be nudged.
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'ready' } });
+    await flush();
+    expect(sam.last('clock')!.clock).toMatchObject({ phase: 'overtime', seat: 1 });
+    sam.send({ t: 'time', match: sam.match!, what: 'nudge' });
+    await flush();
+    expect(pippin.last('nudge')).toBeDefined();
   });
 
   it('shows each player’s handicap to both', async () => {
@@ -437,11 +461,11 @@ describe('the clock in a Friend game', () => {
     const [sam, pippin] = await startGame({ ...RELAXED, pace: 'quick' });
     const mover = sam.view!.prompt ? sam : pippin;
     const other = mover === sam ? pippin : sam;
-    const seq = mover.view!.actions;
+    const seq = mover.view!.seq;
     vi.advanceTimersByTime(PACES.quick.clock.moveMs! + 1);
     await flush();
     expect(other.last('clock')!.clock).toMatchObject({ phase: 'overtime', seat: mover.view!.seat });
-    expect(mover.view!.actions).toBe(seq);                         // nothing was played for them
+    expect(mover.view!.seq).toBe(seq);                         // nothing was played for them
     other.send({ t: 'end', match: other.match!, how: 'claim' });
     await flush();
     expect(other.last('error')!.message).toMatch(/Not yet/);
@@ -481,10 +505,10 @@ describe('the clock in a Friend game', () => {
     expect(sam.last('end')).toBeUndefined();
     // The one still there can still make their own move (the mulligan comes first for seat 0).
     if (sam.view!.prompt) {
-      const seq = sam.view!.actions;
+      const seq = sam.view!.seq;
       sam.send({ t: 'act', match: sam.match!, seq, action: { t: 'mulligan', uids: [] } });
       await flush();
-      expect(sam.view!.actions).toBe(seq + 1);
+      expect(sam.view!.seq).toBe(seq + 1);
     }
     const back = await connect(B);
     expect(back.last('welcome')!.match).toBe(sam.match);
@@ -609,7 +633,7 @@ describe('what a move sends', () => {
     const [sam, pippin] = await startGame();
     const mover = sam.view!.prompt ? sam : pippin;
     const before = mover.last('match')!.view.log.length;
-    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.actions, action: { t: 'mulligan', uids: [] } });
+    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq, action: { t: 'mulligan', uids: [] } });
     await flush();
     const v = mover.last('view')!;
     expect(v.logFrom).toBe(before);
@@ -695,7 +719,7 @@ describe('the clock in Ranked', () => {
     expect(m.clockView().phase).toBe('reserve');
     vi.advanceTimersByTime(c.reserveMs + 1);
     expect(m.record.played.at(-1)).toMatchObject({ seat, auto: true, action: { t: 'mulligan', uids: [] } });
-    for (let i = 0; i < 20 && !m.end; i++) vi.advanceTimersByTime(c.moveMs! + ASK_MS + 1);
+    for (let i = 0; i < 20 && !m.end; i++) vi.advanceTimersByTime(c.moveMs! + c.reserveMs + 1);
     await flush();
     expect(m.end).toMatchObject({ how: 'timeout' });
   });
@@ -731,23 +755,25 @@ describe('teaching games', () => {
     for (let i = 0; i < 300; i++) {
       const mover = [sam, pippin].find((p) => p.view?.prompt)!;
       const v = mover.view!;
-      if (v.prompt!.kind === 'action') {
-        const play = legalActions(v).find((a) => a.t === 'play' || a.t === 'attack');
-        if (play) {
-          const seq = v.actions;
-          mover.send({ t: 'act', match: mover.match!, seq, action: play });
+      if (v.prompt!.kind === 'muster') {
+        const move = legalActions(v, v.seat).find((a) => a.t === 'offer' || a.t === 'levelUp');
+        if (move) {
+          const seq = v.seq;
+          const offerings = v.players[v.seat].offerings;
+          mover.send({ t: 'act', match: mover.match!, seq, action: move });
           await flush();
           mover.send({ t: 'undo', match: mover.match! });
           await flush();
           if (mover.last('view')!.undone === v.seat) {
-            expect(mover.view!.actions).toBe(seq);
-            expect(mover.view!.prompt?.player).toBe(v.seat);
+            expect(mover.view!.seq).toBe(seq);
+            expect(mover.view!.players[v.seat].offerings).toBe(offerings);
+            expect(mover.view!.prompt).toEqual({ kind: 'muster', player: v.seat });
             return;
           }
           continue;
         }
       }
-      mover.send({ t: 'act', match: mover.match!, seq: v.actions, action: choose(v, rnd) });
+      mover.send({ t: 'act', match: mover.match!, seq: v.seq, action: choose(v, rnd) });
       await flush();
     }
     throw new Error('never got to take a move back');
@@ -802,7 +828,7 @@ describe('after a restart', () => {
   it('picks up a game that was going, and the players find it waiting', async () => {
     const [sam] = await startGame();
     const id = sam.match!;
-    sam.send({ t: 'act', match: id, seq: sam.view!.actions, action: { t: 'mulligan', uids: [] } });
+    sam.send({ t: 'act', match: id, seq: sam.view!.seq, action: { t: 'mulligan', uids: [] } });
     await flush();
     vi.advanceTimersByTime(1500);
     await flush();
@@ -940,9 +966,9 @@ describe('Friend games played directly between the devices', () => {
     let pippinView = (theirs as Extract<ServerMessage, { t: 'match' }>).view;
     let samView = (g.samSees.find((m) => m.t === 'match') as Extract<ServerMessage, { t: 'match' }>).view;
     for (let i = 0; i < 5000 && samView.winner === null; i++) {
-      if (samView.prompt?.player === 0) g.hostRunner.fromHere({ t: 'act', match: id, seq: samView.actions, action: choose(samView, rnd) });
-      else if (pippinView.prompt?.player === 1) g.hostRunner.fromGuest(JSON.stringify({ t: 'act', match: id, seq: pippinView.actions, action: choose(pippinView, rnd) }));
-      else vi.advanceTimersByTime(ASK_MS + 1);
+      if (samView.prompt?.player === 0) g.hostRunner.fromHere({ t: 'act', match: id, seq: samView.seq, action: choose(samView, rnd) });
+      else if (pippinView.prompt?.player === 1) g.hostRunner.fromGuest(JSON.stringify({ t: 'act', match: id, seq: pippinView.seq, action: choose(pippinView, rnd) }));
+      else vi.advanceTimersByTime(1000);
       await flush();
       for (const m of g.samSees.splice(0)) if (m.t === 'view') samView = m.view;
       for (const m of g.pippinSees.splice(0)) if (m.t === 'view') pippinView = m.view;

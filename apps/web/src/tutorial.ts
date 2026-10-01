@@ -3,14 +3,11 @@
 //
 // Two kinds of balloon:
 //   • Steps — a fixed walkthrough in order. A step either has a Next button ("read this") or waits
-//     for you to do something ("make two Offerings") and moves on when you have.
-//   • Tips — shown once, the first time something new happens (a lost Candle, an Ambush chance, ...).
-// While a "read this" balloon is open the AI waits, so nothing happens behind your back.
+//     for you to do something ("play a unit into a lane") and moves on when you have.
+//   • Tips — shown once, the first time something new happens (a lost Candle, a copy to merge, ...).
 
-import { cardName, isGuardian, legalActions, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
+import { CARDS, isUnitCard, keywords, legalActions, mayAct, targetRank, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 import { count, note } from './progress';
-
-const YARN_ICON = `<img class="yarn-ico" src="${import.meta.env.BASE_URL}ui/lantern.webp" alt="Lantern">`;
 
 type Text = string | ((s: GameState) => string);
 
@@ -26,38 +23,29 @@ interface Balloon {
   doneWhen?: (a: Action, s: GameState) => boolean;
   /** Steps only: no Next button — you must do something that isn't a game action (e.g. open a card). */
   mustDo?: boolean;
-  /** Steps only: the moment for this step has passed (e.g. you never played a unit), so skip it. */
+  /** Steps only: the moment for this step has passed, so skip it. */
   skipIf?: (s: GameState) => boolean;
   /** Steps only: waits for its moment without holding up the steps after it. */
   optional?: boolean;
-  /** Prefer the balloon below its target (keeps what's above — e.g. enemy units — visible). */
+  /** Prefer the balloon below its target (keeps what's above visible). */
   below?: boolean;
   /** Extra things to spotlight and keep uncovered, e.g. the button the step asks you to press. */
   also?: string[] | ((s: GameState) => string[]);
-  /** Things the balloon must not cover, without spotlighting them (e.g. the enemy you're about to attack). */
+  /** Things the balloon must not cover, without spotlighting them. */
   avoid?: string[];
 }
 
 const ME: PlayerId = 0;
 const FOE: PlayerId = 1;
 
-const myPrompt = (s: GameState, kind?: string) =>
-  s.prompt?.player === ME && (kind === undefined || s.prompt.kind === kind);
-const canPlay = (s: GameState) => myPrompt(s, 'action') && legalActions(s).some((a) => a.t === 'play');
-const canAttack = (s: GameState) =>
-  myPrompt(s, 'action') && legalActions(s).some((a) => a.t === 'attack' && a.attacker.kind === 'unit');
-/** What you've picked and are now choosing a target for, if anything. */
-const picked = () => host?.selection() ?? null;
-/** Names of your units that can attack right now. */
-const attackerNames = (s: GameState) => [...new Set(legalActions(s)
-  .flatMap((a) => (a.t === 'attack' && a.attacker.kind === 'unit' ? [a.attacker.uid] : []))
-  .map((uid) => cardName(s.players[ME].yard.find((u) => u.uid === uid)?.id ?? '')))].filter(Boolean);
-const list = (names: string[]) => names.map((n) => `<b>${n}</b>`).join(names.length > 2 ? ', ' : ' and ');
+/** The Muster is waiting on you (not the mulligan, not the report). */
+const mustering = (s: GameState) => mayAct(s, ME) && s.prompt?.kind === 'muster' && !document.querySelector('.clash-report');
+const canFieldUnit = (s: GameState) => legalActions(s, ME).some((a) => a.t === 'play' && isUnitCard(s.players[ME].hand.find((c) => c.uid === a.uid)?.id ?? ''));
 
 const STEPS: Balloon[] = [
   {
     id: 'goal', title: 'How you win', anchor: '.player.foe .lives', below: true,
-    text: 'Each Hero has <b>9 Candles</b>. Put out all of the opponent’s Candles, up there, before they put out yours.',
+    text: 'Each Hero has <b>9 Candles</b>. Blow out all of the opponent’s Candles, up there, before they blow out yours.',
   },
   {
     // Reading a card teaches the price, the paw and the heart in one go — and you cannot play without it.
@@ -67,141 +55,76 @@ const STEPS: Balloon[] = [
       + '<br><b>Try it now: hold a card until it opens.</b>',
   },
   {
-    id: 'treats', title: 'Offerings are your money', anchor: '.hand', also: ['[data-click="btn:confirm"]'],
-    when: (s) => myPrompt(s, 'setupPlant'),
-    text: 'Cards cost <b>Offerings</b> — the number in a card’s top-left corner. Offering a card face down turns it into '
-      + '<b>1 Offering</b>, money rather than a creature, whatever it cost. '
-      + '<b>Click the 2 cards with the biggest corner number, then press Offer.</b>',
-    doneWhen: (a) => a.t === 'setupPlant',
+    id: 'muster', title: 'The Muster', anchor: '.midbar', when: mustering,
+    text: 'Each round starts with the <b>Muster</b>: you and your opponent build your sides <b>at the same time, in secret</b>. '
+      + 'You see their board as it was when the Muster began. Your <b>Offerings</b> are your money: a card costs the number in its corner.',
   },
   {
-    id: 'spend', title: 'Spend an Offering', anchor: '.hand', also: ['[data-click="btn:ability"]', '[data-click="btn:pass"]'],
-    when: (s) => myPrompt(s, 'action'),
-    // Never teach "press Pass" as the first thing you do. If nothing is affordable there is always a
-    // real move: the Hero's ability when it has a target, otherwise taking the Lantern.
-    text: (s) => {
-      if (canPlay(s)) return 'A card with a bright ring is one you can afford. <b>Click one</b> to play it — it comes down on your side of the table.';
-      const can = (t: Action['t']) => legalActions(s).some((a) => a.t === t);
-      if (can('ability')) return 'Nothing you can afford yet — but your Hero’s <b>ability</b> is free. <b>Press Use ability</b>; that’s your go.';
-      if (can('takeYarn')) return 'Nothing you can afford yet, and that’s fine. <b>Press Take the Lantern</b> — you’ll get the first move next round.';
-      return 'Nothing you can afford yet. <b>Press Pass</b> — next round you draw 2 cards and make another Offering.';
-    },
-    doneWhen: (a) => a.t === 'play' || a.t === 'ability' || a.t === 'pass' || a.t === 'takeYarn',
+    id: 'play', title: 'Field a creature', anchor: '.hand', also: ['.yard.me'], when: (s) => mustering(s) && canFieldUnit(s),
+    skipIf: (s) => s.round >= 4,
+    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces) to put it there.',
+    doneWhen: (a) => a.t === 'play' || a.t === 'lucky',
   },
   {
-    id: 'rest', title: 'It’s getting its bearings', anchor: '.yard.me', below: true, optional: true, skipIf: (s) => s.round >= 4,
-    when: (s) => s.players[ME].yard.length > 0 && myPrompt(s),
-    text: (s) => {
-      const settling = s.players[ME].yard.some((u) => u.exhausted);
-      return settling
-        ? 'A creature that just arrived is tilted and marked <b>new</b>: it gets its bearings this round and can attack from the next one. '
-          + 'The lightning is its power, the heart its health.'
-        : 'Most creatures get their bearings the round they arrive — this one is <b>Swift</b>, so it can attack straight away. '
-          + 'The lightning is its power, the heart its health.';
-    },
+    id: 'lanes', title: 'Lanes and roles', anchor: '.yard.me', below: true, when: (s) => mustering(s) && s.players[ME].yard.length > 0,
+    text: 'In the Clash each unit hits the enemy <b>across from it</b> first, then the nearest. But roles come first: '
+      + '<b>Guardians</b> are hit before anyone else, <b>Elusive</b> units late, <b>Lures</b> last, and <b>Sneaky</b> units go the other way round.',
   },
   {
-    id: 'turn', title: 'One thing each', anchor: '[data-click="btn:pass"]', when: (s) => myPrompt(s, 'action'),
-    skipIf: (s) => myPrompt(s, 'plant'),
-    text: 'You do <b>one thing</b>, then your opponent does one, back and forth. <b>Press Pass</b> when you have nothing left to do.',
-    doneWhen: (a) => a.t === 'pass' || a.t === 'takeYarn',
+    id: 'ready', title: 'Ready!', anchor: '[data-click="btn:ready"]', when: mustering,
+    text: 'Done building? <b>Press Ready.</b> When you’re both ready, the <b>Clash</b> plays itself: nobody decides anything in it.',
+    doneWhen: (a) => a.t === 'ready',
   },
   {
-    id: 'attack', title: 'Attack!', optional: true, below: true, skipIf: (s) => s.round >= 6,
-    avoid: ['.player.foe', '.yard.foe'],
-    // The text and highlights follow what you've picked (an attacker, or a card from your hand).
-    when: canAttack,
-    anchor: () => {
-      const sel = picked();
-      return !sel ? '.yard.me .unit.can-act' : sel.attack ? '.targetable' : '[data-click="btn:cancel"]';
-    },
-    also: () => {
-      const sel = picked();
-      return !sel ? ['.yard.me .unit.can-act'] : ['.targetable', '[data-click="btn:cancel"]'];
-    },
-    text: (s) => {
-      const sel = picked();
-      if (sel?.attack)
-        return document.querySelector('.player.foe .hero.targetable')
-          ? 'Now click a <b>pink target</b>: their creature, or their <b>Hero</b> to put out a Candle.'
-          : 'Now click the <b>pink target</b>. Their <b>Guardian</b> has to be dealt with before their Hero.';
-      if (sel)
-        return `<b>${sel.label}</b> is a card in your hand — cards are <b>played</b>, not used to attack. `
-          + 'Press <b>Cancel</b>, then click a creature with a <b>Ready!</b> tag.';
-      const names = attackerNames(s);
-      return `A creature with a <b>Ready!</b> tag can attack${names.length ? ` — ${list(names)}` : ''}. `
-        + 'Click it, then click what it should hit.';
-    },
-    doneWhen: (a) => a.t === 'attack',
+    id: 'report', title: 'The Clash', anchor: '.clash-report', when: () => !!document.querySelector('.clash-report'),
+    text: 'Here is what happened, bout by bout. When one side has nobody standing, it loses a <b>Candle</b> for each enemy still standing. '
+      + 'Then every unit stands up again: <b>nothing on your board is ever lost in a Clash</b>. Your army only grows.',
   },
   {
-    id: 'hit', title: 'You’ve got it! 🎉', anchor: '.player.foe .lives', below: true,
-    when: (s) => myPrompt(s) && (doneIds.has('attack') || s.round >= 6),
-    text: 'A hit puts out a Candle — and that card goes into their <b>hand</b>, so whoever is behind gets more to play with. '
-      + 'That’s everything: I’ll pop up when something new happens.',
+    id: 'money', title: 'Spend or save', anchor: '.player.me .purse', when: (s) => mustering(s) && s.round >= 2,
+    text: 'Each round you get more Offerings. What you don’t spend is <b>kept</b>, and every 5 saved earn <b>1 more</b> next round. '
+      + '<b>Level up</b> your Hero to field more units, or save for a big one: it’s your call.',
+  },
+  {
+    id: 'done', title: 'You’ve got it! 🎉', anchor: '.player.foe .lives', below: true, when: (s) => mustering(s) && s.round >= 3,
+    text: 'That’s the game: build in secret, read the Clash, grow your army. I’ll pop up when something new happens.',
   },
 ];
 
 const TIPS: Balloon[] = [
   {
-    // Demoted from a step: a beginner does not need the Lantern to take their first turn.
-    id: 'newRound', title: 'A new round', anchor: '.hand', also: ['[data-click="btn:skip"]'],
-    when: (s) => myPrompt(s, 'plant'),
-    text: 'Everything woke up and you drew 2 cards. You may make <b>one more Offering</b> — or press <b>Skip</b> and keep '
-      + 'the card to play instead.',
+    id: 'level', title: 'Level up', anchor: '[data-click="btn:level"]',
+    when: (s) => mustering(s) && legalActions(s, ME).some((a) => a.t === 'levelUp') && s.players[ME].yard.length >= s.players[ME].hero.level,
+    text: 'Your lanes are full for your Hero’s <b>Level</b>. <b>Level up</b> for one more lane, at a price in Offerings.',
   },
   {
-    id: 'yarnBall', title: 'The Lantern', anchor: '[data-click="btn:yarn"]', also: ['.yarn'],
-    when: (s) => myPrompt(s, 'action') && s.round >= 2 && !!document.querySelector('[data-click="btn:yarn"]'),
-    text: `Whoever holds the <b>Lantern</b> ${YARN_ICON} goes first each round, and it changes hands every round. `
-      + '<b>Take the Lantern</b> grabs it for next round, but then you can only pass for the rest of this one.',
+    id: 'merge', title: 'Two of a kind', anchor: '.hand',
+    when: (s) => mustering(s) && s.players[ME].hand.some((c) => CARDS[c.id]?.type === 'Critter' && s.players[ME].yard.some((u) => u.id === c.id)),
+    text: 'You hold another copy of a creature on your board. Play it and they <b>merge</b>: 2 stars, twice as strong. A third copy makes 3 stars.',
   },
   {
-    id: 'ability', title: 'Your Hero', anchor: '.player.me .hero', also: ['[data-click="btn:ability"]'],
-    when: (s) => myPrompt(s, 'action') && legalActions(s).some((a) => a.t === 'ability'),
-    text: 'Your Hero never leaves the table. Once a round you can <b>use its ability</b> for free — and later it '
-      + '<b>Awakens</b> into something stronger.',
+    id: 'offer', title: 'Too many cards', anchor: '.hand', when: (s) => mustering(s) && s.players[ME].hand.length > 10,
+    text: 'You can hold 10 cards when you’re Ready. Tap a card you don’t need and <b>Offer it</b>: each is worth 1 Offering.',
   },
   {
-    id: 'wellFed', title: 'Well-Fed', anchor: '.player.me .pantry-label, .yard.me .pantry-label',
-    when: (s) => myPrompt(s, 'action') && s.players[ME].pantry.length >= 7,
-    text: 'The house is <b>Well-Fed</b>: with 7 or more Offerings, Domowiki cards that say <b>Well-Fed</b> get their bonus.',
+    id: 'ambush', title: 'Ambush cards', anchor: '.hand',
+    when: (s) => mustering(s) && s.players[ME].hand.some((c) => keywords(c.id).pounce),
+    text: 'An <b>Ambush</b> card can be set <b>face-down in one of your lanes</b>: it happens when the Clash begins, if its lane holds what it needs. Your opponent only sees a face-down card.',
   },
   {
     id: 'lostLife', title: 'You lost a Candle', anchor: '.player.me .lives', when: (s) => s.players[ME].lives.length < 9,
-    text: 'Ouch! But the lost Candle card went into your <b>hand</b> — getting hit gives you more cards to fight back with. '
-      + 'If it’s <b>Lucky</b> 🍀, you may even play it for free.',
+    text: 'Ouch! But the lost Candle card went into your <b>hand</b>: getting hit gives you more cards to fight back with. '
+      + 'If it’s <b>Lucky</b> 🍀, you may even play it for free in the next Muster.',
   },
   {
-    id: 'pounce', title: 'Ambush!', anchor: '.midbar', when: (s) => myPrompt(s, 'pounce'),
-    text: 'Your opponent is doing something and you hold an <b>Ambush</b> card, so you may react first: '
-      + 'click the glowing card, or press <b>Let it happen</b>.',
-  },
-  {
-    id: 'foePounce', title: 'They Ambushed you!', anchor: '.midbar',
-    when: (s) => myPrompt(s) && s.log.some((e) => e.player === FOE && (e.text.includes('AMBUSHES') || e.text.includes('POUNCES'))),
-    text: 'Your opponent reacted with an <b>Ambush</b> card before your move finished. Players get one quick reaction '
-      + 'whenever the other plays a card or attacks — keep an eye on their unspent Offerings!',
-  },
-  {
-    id: 'lucky', title: 'Lucky! 🍀', anchor: '.midbar', when: (s) => myPrompt(s, 'lucky'),
-    text: 'The Candle you just lost is a <b>Lucky</b> card, so you can play it for free right now.',
-  },
-  {
-    id: 'guardian', title: 'Guardians',
-    anchor: (s) => { const g = s.players[FOE].yard.find((u) => isGuardian(u, s)); return g ? `[data-click="unit:${g.uid}"]` : undefined; },
-    when: (s) => canAttack(s) && s.players[FOE].yard.some((u) => isGuardian(u, s)),
-    text: 'A unit marked <b>Guardian</b> protects its team: your attackers must hit Guardians first, '
-      + 'unless they are <b>Sneaky</b>.',
-  },
-  {
-    id: 'foeYarn', title: 'The Lantern', anchor: '.player.foe .yarn', when: (s) => s.yarnTaken === FOE,
-    text: `Your opponent <b>took the Lantern</b> ${YARN_ICON}: they will act first next round, but must pass for the rest of this one.`,
+    id: 'roles', title: 'Their roles', anchor: '.yard.foe',
+    when: (s) => mustering(s) && s.players[FOE].yard.some((u) => targetRank(u, s) !== 2),
+    text: 'Look at their units’ roles: your units must get through their <b>Guardians</b> first, and their <b>Elusive</b> units come late. '
+      + 'A <b>Sneaky</b> unit of yours goes straight for their <b>Lures</b> and carries.',
   },
   {
     id: 'grown', title: 'Awakened!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,
-    text: (s) => `${cardName(s.players[ME].hero.id).split(',')[0]} <b>Awakened</b>! Your Hero now has Power, can attack with the `
-      + '<b>Hero attack</b> button, and its ability is stronger.',
+    text: 'Your Hero <b>Awakened</b>! Its ability is stronger, and it strikes when the Clash begins, unless you used its ability that round.',
   },
 ];
 

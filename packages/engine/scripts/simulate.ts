@@ -45,7 +45,7 @@ for (let i = 0; i < decks.length; i++) {
         played[seat[p]] = (played[seat[p]] ?? 0) + 1;
         if (s.players[p].hero.grown) grown[seat[p]] = (grown[seat[p]] ?? 0) + 1;
       }
-      if (s.winner === 'draw') { draws++; continue; }
+      if (s.winner === 'draw' || s.winner === null) { draws++; continue; }
       const winner = seat[s.winner], loser = seat[1 - s.winner];
       ((wins[winner] ??= {})[loser] ??= 0);
       wins[winner][loser]++;

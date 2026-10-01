@@ -5,7 +5,7 @@
 //
 // The board is drawn from the view the server sends (viewFor): never the other player's hand or deck.
 
-import { CARDS, TERMS, cardName, other, type Action, type GameState, type PlayerId, type PlayerView } from '@fruitcats/engine';
+import { CARDS, TERMS, cardName, other, type Action, type GameState, type PlayerId, type PlayerView, type Target } from '@fruitcats/engine';
 import {
   EMOTES,
   type ClockView, type Emote, type MatchEnd, type MatchInfo, type ServerMessage,
@@ -126,7 +126,9 @@ function clockText(): string {
 
 /** The clock beside the Pawtrait of whoever is deciding. */
 export function clockChip(seat: PlayerId): string {
-  if (!ol || ol.end || ol.clock.seat !== seat || ol.clock.phase === 'none' || ol.clock.phase === 'ask') return '';
+  // The Muster's clock is both players': it shows beside your own Pawtrait.
+  const whose = ol?.clock.muster ? mySeat() : ol?.clock.seat;
+  if (!ol || ol.end || whose !== seat || ol.clock.phase === 'none' || ol.clock.phase === 'ask') return '';
   const ms = left();
   const low = ms !== null && ms < 10_000 && ol.clock.phase !== 'paused';
   return `<span class="clock-chip ${ol.clock.phase} ${low ? 'low' : ''}" data-clock="${seat}">${clockText()}</span>`;
@@ -214,7 +216,9 @@ export function onlineBar(s: GameState, mine: boolean): { text: string | null; b
     } else if (c.phase === 'ask') {
       text = `<span class="dots">${name} is deciding whether to answer</span>`;
     } else {
-      text = `<span class="dots">${name}’s turn: they take one action, then it’s yours again</span>${held}`;
+      text = s.prompt?.kind === 'muster'
+        ? `<span class="dots">You’re Ready. Waiting for ${name} to finish their Muster</span>${held}`
+        : `<span class="dots">${name} is deciding</span>${held}`;
     }
     if (teaching() && lastMoveWasMine(s)) buttons.unshift('<button data-click="ol:undo">↶ Take back</button>');
     return { text: undone + text, buttons: buttons.join('') };
@@ -224,7 +228,7 @@ export function onlineBar(s: GameState, mine: boolean): { text: string | null; b
   if (c.phase === 'ask') {
     buttons.push(`<button data-click="ol:hold" title="Keep this question open">Wait <small>(<span data-ask>${Math.ceil((left() ?? 0) / 1000)}</span>)</small></button>`);
   } else if (c.phase !== 'none' && c.phase !== 'paused' && c.holdOns[mySeat()] > 0 && ol.info.rules.clock.holdOns) {
-    buttons.push(`<button data-click="ol:hold" title="Adds ${Math.round(ol.info.rules.clock.holdOnMs / 60_000)} minute(s) to this move">Hold on <small>(${c.holdOns[mySeat()]})</small></button>`);
+    buttons.push(`<button data-click="ol:hold" title="Adds ${Math.round(ol.info.rules.clock.holdOnMs / 60_000)} minute(s) to this round">Hold on <small>(${c.holdOns[mySeat()]})</small></button>`);
   }
   if (c.phase === 'overtime') text = '<b>You’re out of time.</b> Make your move, or tap Hold on.';
   if (now - ol.nudgedAt < 6000) text = `<b>${name} nudged you:</b> your move!`;
@@ -237,7 +241,7 @@ export function onlineBar(s: GameState, mine: boolean): { text: string | null; b
 
 /** Was the last thing in the story yours? (A take-back is offered then; the server decides if it's allowed.) */
 function lastMoveWasMine(s: GameState): boolean {
-  const last = [...s.log].reverse().find((e) => e.player !== undefined && !/lets it happen|keeps/.test(e.text));
+  const last = [...s.log].reverse().find((e) => e.player !== undefined && !/keeps/.test(e.text));
   return last?.player === mySeat();
 }
 
@@ -246,24 +250,20 @@ export function hintText(s: GameState, a: Action): string {
   const me = s.players[mySeat()];
   const card = (uid: number) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? me.yard.find((u) => u.uid === uid)?.id ?? '');
   const unit = (uid: number) => cardName(s.players.flatMap((p) => p.yard).find((u) => u.uid === uid)?.id ?? '');
-  const target = (t?: { kind: 'unit'; uid: number } | { kind: 'hero'; player: PlayerId }) =>
-    !t ? '' : t.kind === 'hero' ? (t.player === mySeat() ? ' on your Hero' : ' on their Hero') : ` on ${unit(t.uid)}`;
+  const target = (t?: Target) =>
+    !t ? '' : t.kind === 'hero' ? (t.player === mySeat() ? ' on your Hero' : ' on their Hero')
+      : t.kind === 'lane' ? ` at ${t.player === mySeat() ? 'your' : 'their'} lane ${t.lane + 1}` : ` on ${unit(t.uid)}`;
+  const lane = (n?: number) => (n === undefined ? '' : ` into lane ${n + 1}`);
   switch (a.t) {
     case 'mulligan': return a.uids.length ? `Swap ${a.uids.map(card).join(', ')}.` : 'Keep this hand.';
-    case 'setupPlant': return `Offer ${a.uids.map(card).join(' and ')} as Offerings.`;
-    case 'discard': return `Discard ${a.uids.map(card).join(', ')}.`;
-    case 'plant': return `Bury ${card(a.uid)} as an Offering.`;
-    case 'skipPlant': return 'Skip making an Offering this round.';
-    case 'play': return `Play ${card(a.uid)}${target(a.target)}.`;
-    case 'attack': return `Attack${target(a.target).replace(' on', '')} with ${a.attacker.kind === 'hero' ? 'your Hero' : unit(a.attacker.uid)}.`;
+    case 'play': return `Play ${card(a.uid)}${lane(a.slot)}${target(a.target)}.`;
+    case 'lucky': return `Play ${card(a.uid)} for free${lane(a.slot)}${target(a.target)}.`;
+    case 'ambush': return `Set ${card(a.uid)} face-down in lane ${a.lane + 1}.`;
+    case 'move': return `Move ${unit(a.uid)} to lane ${a.slot + 1}.`;
+    case 'offer': return `Offer ${card(a.uid)} for an Offering.`;
     case 'ability': return `Use your Hero’s ability${target(a.target)}.`;
-    case 'takeYarn': return 'Take the Lantern.';
-    case 'pass': return 'Pass: nothing here is worth doing right now.';
-    case 'pounce': return `Ambush with ${card(a.uid)}${target(a.target)}!`;
-    case 'decline': return 'Let it happen.';
-    case 'lucky': return `Play it for free${target(a.target)}.`;
-    case 'keepLucky': return 'Keep it in your hand.';
-    case 'choose': return `Choose${target(a.target)}.`;
+    case 'levelUp': return 'Level up your Hero: one more lane.';
+    case 'ready': return 'Be Ready: your board is good to go.';
   }
   return '';
 }

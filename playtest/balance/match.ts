@@ -53,7 +53,7 @@ export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord
   }
   return {
     seats: [seats[0].key, seats[1].key],
-    winner: s.winner,
+    winner: s.winner ?? 'draw',
     starting: s.startingYarn,
     rounds: s.round,
     actions: s.actions,

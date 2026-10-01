@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { arg } from '../lib/args';
 import { loadDeck } from '../decks/library';
 import {
-  DECKS, apply, rulesPrimer, choicesText, chooseAction, createGame, describe, parseChoice,
+  DECKS, apply, rulesPrimer, choicesText, chooseAction, createGame, describe, mayAct, nextSeat, parseChoice, visibleLog,
   type GameState, type PlayerId,
 } from '../lib/engine';
 import { mulberry } from '../lib/rng';
@@ -25,8 +25,8 @@ const gameFile = () => resolve(arg('file') ?? defaultFile());
 /** Lets the bot take every decision that is its own, until it is the reader's turn or the game ends. */
 export function botUntilTurn(g: SavedGame): void {
   const s = g.state;
-  while (s.winner === null && s.prompt!.player !== g.seat) {
-    apply(s, chooseAction(s, { random: mulberry(g.botSeed ^ s.actions) }));
+  for (let p = nextSeat(s); s.winner === null && p !== null && !mayAct(s, g.seat); p = nextSeat(s)) {
+    apply(s, chooseAction(s, { random: mulberry(g.botSeed ^ s.actions), seat: p }), p);
   }
 }
 
@@ -37,7 +37,7 @@ function show(g: SavedGame): string {
     const result = s.winner === 'draw' ? 'The game is a draw.' : s.winner === g.seat ? 'YOU WIN.' : 'YOU LOSE.';
     return `${table}\n\nGAME OVER after ${s.round} rounds: ${result}`;
   }
-  return `${table}\n\n${choicesText(s)}`;
+  return `${table}\n\n${choicesText(s, {}, g.seat)}`;
 }
 
 export async function playCommand(): Promise<number> {
@@ -60,13 +60,13 @@ export async function playCommand(): Promise<number> {
   if (!existsSync(file)) { console.error(`No game at ${file}. Start one with: play new`); return 1; }
   const g = JSON.parse(readFileSync(file, 'utf8')) as SavedGame;
   if (sub === 'show' || !sub) { console.log(show(g)); return 0; }
-  if (sub === 'log') { console.log(g.state.log.map((e) => `R${e.round} ${e.text}`).join('\n')); return 0; }
+  if (sub === 'log') { console.log(visibleLog(g.state.log, g.seat).map((e) => `R${e.round} ${e.text}`).join('\n')); return 0; }
   if (sub === 'do') {
     if (g.state.winner !== null) { console.log(show(g)); return 0; }
     const reply = process.argv.slice(4).filter((a, i, all) => a !== '--file' && all[i - 1] !== '--file').join(' ');
-    const parsed = parseChoice(g.state, reply);
-    if ('error' in parsed) { console.log(`${parsed.error}\n\n${choicesText(g.state)}`); return 1; }
-    apply(g.state, parsed.action);
+    const parsed = parseChoice(g.state, reply, g.seat);
+    if ('error' in parsed) { console.log(`${parsed.error}\n\n${choicesText(g.state, {}, g.seat)}`); return 1; }
+    apply(g.state, parsed.action, g.seat);
     botUntilTurn(g);
     writeFileSync(file, JSON.stringify(g));
     console.log(show(g));
@@ -76,4 +76,4 @@ export async function playCommand(): Promise<number> {
   return 1;
 }
 
-const RULES_HINT = 'Rules in brief: `npm run play -- rules`. Units are Y1… (yours) and T1… (theirs); hand cards are H1….\n';
+const RULES_HINT = 'Rules in brief: `npm run play -- rules`. Lanes are Y1…Y6 (yours) and T1…T6 (theirs); hand cards are H1….\n';

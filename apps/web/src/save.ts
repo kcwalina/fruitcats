@@ -11,10 +11,6 @@ export interface SavedGame {
   game: GameState;
   /** The AI difficulty the game was started with. */
   difficulty: string;
-  /** Screen-only memory that isn't part of the rules state: see main.ts. */
-  unitArrivals: [number, number][];
-  foeFrom: number;
-  foeUnitsBefore: number[];
 }
 
 export function saveGame(save: Omit<SavedGame, 'rules'>): void {
@@ -47,11 +43,11 @@ function usable(save: SavedGame): boolean {
     // Every card must still exist (card data may have changed since), and the engine must accept the state.
     const cards = save.game.players.flatMap((p) => [
       p.hero.id, ...p.deck.map((c) => c.id), ...p.hand.map((c) => c.id), ...p.lives.map((c) => c.id),
-      ...p.pantry.map((t) => t.card.id), ...p.compost.map((c) => c.id),
+      ...p.compost.map((c) => c.id), ...(p.ambushes ?? []).map((a) => a.card.id),
       ...p.yard.flatMap((u) => [u.id, ...(u.toy ? [u.toy.id] : [])]),
     ]);
     if (cards.some((id) => !CARDS[id])) return false;
-    legalActions(save.game);
+    legalActions(save.game, 0);
     return true;
   } catch {
     return false;

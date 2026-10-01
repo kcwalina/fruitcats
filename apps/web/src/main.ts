@@ -2,13 +2,11 @@ import './style.css';
 import './skin.css';
 import { clearSave, loadGame, saveGame } from './save';
 import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './sound';
-import { animationsEnabled, hasBeats, isAnimating, playEvents, setAnimations } from './fx';
 import { count, summary } from './progress';
 import { BASE, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { keepPictures } from './offline';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
-import { orList, otherMoves, yarnConfirmText, yarnNeedsConfirm } from './yourmoves';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
 import { ACCOUNTS, ONLINE, STORE } from './flags';
 import { openStore, openStoreForDeck, renderStore, storeClick, storeCodeEnter, storeCodeInput, storeEscape, type StoreHost } from './storefront';
@@ -27,17 +25,17 @@ import { live, onGameFound, onLive, send, startLive, stopLive, wantConnection } 
 import { isPeerMatch } from './peer';
 import {
   enterMatch, forgetOnline, hintText, leaveMatch, ol, onlineBar, onlineClick, onlineMessage, onlineSideButtons, onlineTicks,
-  playerFace, renderOnlineResult, renderVersus, shownHand, teaching, them,
+  playerFace, renderOnlineResult, renderVersus, shownHand,
 } from './online';
 import {
-  renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialBlocksAi, tutorialCardZoomed, tutorialZoomClosed,
+  renderTutorial, startTutorial, stopTutorial, tutorialActive, tutorialAfterAction, tutorialCardZoomed, tutorialZoomClosed,
 } from './tutorial';
 import {
-  CARDS, DECKS, DECK_RULES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame, deckSize, heroSide, isGuardian, isSneaky, keywords,
-  legalActions, other, readyTreats, unitHealth, unitPower, HAND_LIMIT, MULLIGAN_MAX,
-  type Action, type DeckList, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
+  CARDS, DECKS, DECK_RULES, LANES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame,
+  deckSize, heroSide, interestOn, laneUnit, legalActions, levelCost, mayAct, other, targetRank, unitHealth, unitPower, viewFor,
+  visibleLog, HAND_LIMIT, MULLIGAN_MAX,
+  type Action, type DeckList, type GameState, type LogEntry, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
-
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
 
 /** The painted Lantern (an emoji looks like a small dot on some devices). */
@@ -78,8 +76,7 @@ function youify(text: string): string {
   const me = game.players[mySeat].name;
   return text.split(`${me}'s`).join("You's").split(`${me} `).join('You ');
 }
-/** The other player, as the prompt bar names them. */
-const foeName = () => (ol ? them().name : 'Opponent');
+
 
 // ── App state ────────────────────────────────────────────────────────────────────────────────────
 
@@ -92,7 +89,12 @@ let theirSeat: PlayerId = 1;
 type Screen = 'home' | 'solo' | 'friends' | 'decks' | 'collection' | 'store' | 'game';
 interface Selection {
   label: string;
+  /** The moves still in the running: each click on the board narrows them down. */
   options: Action[];
+  /** Other things to do with what you picked (offer it, set it face-down), as buttons. */
+  alts?: { label: string; options: Action[] }[];
+  /** The card or unit picked, when it has no move to narrow (it can only be offered). */
+  uid?: number;
 }
 
 /**
@@ -130,13 +132,6 @@ let inspected: { url: string; key?: string; state?: string } | null = null;
 let tutorialGame = false;
 let selection: Selection | null = null;
 let picks = new Set<number>();
-let aiTimer: number | undefined;
-/**
- * An action that is about to happen and needs a second click. Planting buries a card for good and
- * Take the Yarn costs the rest of your round, and both used to fire on the first click — a playtester
- * kept planting cards they had only meant to look at.
- */
-let confirming: 'yarn' | null = null;
 let showRules = false;
 let showSettings = false;
 /** The Story so far drawer (the game's transcript) is out: it slides in beside the board and stays until closed. */
@@ -155,13 +150,6 @@ window.addEventListener('resize', relayout);   // some browsers resize without a
 type SettingsSection = 'gameplay' | 'sound' | 'account' | 'contact';
 let settingsSection: SettingsSection | null = null;
 let flash = '';
-/** Settings > Speed: Fast shortens the AI's thinking pause and the animations. Remembered in this browser. */
-const SPEED_KEY = 'fruitcats-speed';
-type Speed = 'normal' | 'fast';
-const SPEED_SCALE: Record<Speed, number> = { normal: 1, fast: 0.4 };
-let speed: Speed = (() => { try { return localStorage.getItem(SPEED_KEY) === 'fast' ? 'fast' : 'normal'; } catch { return 'normal'; } })();
-/** Multiplier on the AI's "thinking" pause; the dev hook sets it to 0 for automated UI tests. */
-let aiDelayScale = SPEED_SCALE[speed];
 /**
  * Dev only: `?seed=N&foe=<deck>` deals the same game and makes the AI play the same moves every time,
  * so the tutorial video (tools/demo) can script a whole game in advance.
@@ -186,165 +174,104 @@ const app = document.getElementById('app')!;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────────────────────────
 
-const targetKey = (t?: Target) => (!t ? '' : t.kind === 'unit' ? `unit:${t.uid}` : `hero:${t.player}`);
-const actionTarget = (a: Action): Target | undefined => ('target' in a ? a.target : undefined);
+/** A click target's key: a unit, a Hero, or one of a player's lanes (an empty one, or one an effect is aimed at). */
+const targetKey = (t?: Target) =>
+  (!t ? '' : t.kind === 'unit' ? `unit:${t.uid}` : t.kind === 'hero' ? `hero:${t.player}` : `lane:${t.player}:${t.lane}`);
 
-function humanPrompt() {
-  return game && game.winner === null && game.prompt?.player === mySeat ? game.prompt : null;
+/**
+ * What you may see of the game: online, the view the server sent; in Solo, the same view, made here. During the Muster
+ * it shows the opponent as they stood when it began, so the computer building its side never shows early.
+ */
+function seen(): GameState | null {
+  if (!game) return null;
+  return ol ? game : viewFor(game, mySeat);
 }
 
-function describeWindow(s: GameState): string {
-  const w = s.window;
-  if (!w) return '';
-  const tgt = (t?: Target) => {
-    if (!t) return '';
-    if (t.kind === 'hero') return t.player === mySeat ? 'your Hero' : 'their Hero';
-    const u = s.players.flatMap((pl) => pl.yard).find((x) => x.uid === t.uid);
-    return u ? cardName(u.id) : 'a unit';
-  };
-  if (w.kind === 'play') return `${esc(foeName())} plays <b>${esc(cardName(w.card.id))}</b>${w.target ? ` targeting <b>${tgt(w.target)}</b>` : ''}.`;
-  const attacker = w.attacker.kind === 'hero' ? 'their Awakened Hero' : tgt(w.attacker);
-  return `${esc(foeName())} attacks <b>${tgt(w.target)}</b> with <b>${attacker}</b>.`;
+/** The decision in front of you, if any: the mulligan, or the Muster until you are Ready. */
+function humanPrompt() {
+  return game && game.winner === null && mayAct(game, mySeat) ? game.prompt : null;
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────────────────────────
 
-/** Where the opponent's latest moves start in the log, and which of its units are new since then. */
-let foeFrom = 0;
-let foeUnitsBefore = new Set<number>();
-/** The round each unit arrived in: a unit that arrived this round is resting, not spent. */
-const unitArrivals = new Map<number, number>();
-
-/** Opponent units already on screen, so the arrival animation plays once per unit, not per re-render. */
-let renderedFoeUnits = new Set<number>();
-/** Each Treat's state on screen last time (card uid → spent?), so planting, spending and readying animate once. */
-let renderedTreats = new Map<number, boolean>();
-/** A friendly confirmation of the player's own last move (e.g. what they just planted). */
+/** A friendly confirmation of the player's own last move (what they just offered). */
 let notice = '';
+/** The last Clash, as its story: shown as a report until you move on. No animation: the Clash is read, not watched. */
+let clashReport: { round: number; lines: LogEntry[] } | null = null;
 
-function markHumanTurnDone() {
+/** If a Clash was played since the story had `from` lines (those you may read), it becomes the report. */
+function noteClash(from: number) {
   if (!game) return;
-  foeFrom = game.log.length;
-  foeUnitsBefore = new Set(game.players[theirSeat].yard.map((u) => u.uid));
+  const log = visibleLog(game.log, mySeat);
+  const start = log.findIndex((e, i) => i >= from && e.text === '— Clash —');
+  if (start < 0) return;
+  let end = log.findIndex((e, i) => i > start && /^— Round \d+ —$/.test(e.text));
+  if (end < 0) end = log.length;
+  clashReport = { round: log[start].round, lines: log.slice(start, end) };
 }
 
-/** What the opponent has done since your last action, for the recap line in the prompt bar. */
-function foeRecap(s: GameState): string[] {
-  return s.log.slice(foeFrom)
-    .filter((e) => e.player === theirSeat && !/plants? |makes? (an |\d+ )Offering|keeps their hand|mulligans/.test(e.text))
-    .map((e) => humanize(e.text));
-}
-
-/**
- * Play back what the last `apply` did, starting at event `from` (see fx.ts), before the new state is
- * drawn. False if the game was left in the meantime, so the caller shouldn't draw it.
- */
-async function showEvents(from: number): Promise<boolean> {
-  const g = game;
-  if (!g || screen !== 'game' || !animationsEnabled()) return true;
-  const events = g.events.slice(from);
-  if (!hasBeats(events)) return true;
-  await playEvents(events, {
-    human: mySeat,
-    cardImage: (p, id) => (p === mySeat ? yourCardUrl : cardUrl)(id),
-    // A teaching game plays the other player's moves slower, so someone new can follow them.
-    speed: (speed === 'fast' ? 0.6 : 1) * (teaching() && events.some((e) => 'p' in e && e.p === theirSeat) ? 1.5 : 1),
-  });
-  resetLogSounds(g); // their sounds played with the animation
-  return game === g;
-}
-
-async function act(action: Action) {
-  if (!game || isAnimating()) return;
+function act(action: Action) {
+  if (!game) return;
   if (ol) { actOnline(action); return; }
   const me = game.players[mySeat];
-  const from = (game.events ??= []).length;
-  const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
-  const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
+  const from = visibleLog(game.log, mySeat).length;
+  const offered = action.t === 'offer' ? (me.hand.find((c) => c.uid === action.uid) ?? me.yard.find((u) => u.uid === action.uid))?.id : undefined;
   try {
-    apply(game, action);
+    apply(game, action, mySeat);
     tutorialAfterAction(action);
-    markHumanTurnDone();
     flash = '';
-    notice = plantedNames.length
-      ? `Offered ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Offerings' : 'an Offering'} — you have ${me.pantry.length}.`
-      : '';
+    notice = offered ? `Offered ${cardName(offered)}: you have ${me.offerings} ${TERMS.offerings}.` : '';
   } catch (error) {
     flash = (error as Error).message;
   }
   selection = null;
-  confirming = null;
   picks = new Set();
-  if (!(await showEvents(from))) return;
+  runAi();
+  noteClash(from);
   render();
-  scheduleAi();
 }
 
-/** Online: the move goes to the server, which checks it and sends both players the result (onLive, below). */
+/** Online: the move goes to the server, which checks it and sends the result back (onLive, below). */
 function actOnline(action: Action) {
   if (!game || !ol || ol.sent || ol.end) return;
-  const me = game.players[mySeat];
-  const planted = action.t === 'plant' ? [action.uid] : action.t === 'setupPlant' ? action.uids : [];
-  const plantedNames = planted.map((uid) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? ''));
-  if (!send({ t: 'act', match: ol.info.id, seq: game.actions, action })) { flash = 'Not connected. Reconnecting…'; render(); return; }
+  if (!send({ t: 'act', match: ol.info.id, seq: (game as PlayerView).seq, action })) { flash = 'Not connected. Reconnecting…'; render(); return; }
   ol.sent = true;
   hintLine = '';
-  markHumanTurnDone();
   flash = '';
-  notice = plantedNames.length ? `Offered ${plantedNames.join(' and ')} as ${plantedNames.length > 1 ? 'Offerings' : 'an Offering'}.` : '';
+  notice = '';
   selection = null;
-  confirming = null;
   picks = new Set();
   render();
 }
 
 // ── Online games ─────────────────────────────────────────────────────────────────────────────────
 //
-// The server sends the whole match when it starts (or when you come back to it), then a view after every move:
-// each view carries only the events since the last one, which play as animations before the new view is drawn,
-// exactly as a Solo move does. Views that arrive during an animation wait their turn.
+// The server sends the whole match when it starts (or when you come back to it), then a view after every move that
+// is yours to know about: during the Muster only your own, then the Clash for both. Each view carries only the
+// story lines since the last one.
 
-let viewQueue: PlayerView[] = [];
 /** The whole story of the online game so far, as received (views bring only its new lines). */
 let storyLines: PlayerView['log'] = [];
 /** A teaching game's suggested move, in words, until the next move. */
 let hintLine = '';
-let showingViews = false;
 
 function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { t: 'match' }>) {
   const same = ol?.info.id === msg.info.id;
   enterMatch(msg);
   mySeat = msg.info.seat;
   theirSeat = other(mySeat);
-  window.clearTimeout(aiTimer);
   stopTutorial();
   tutorialGame = false;
-  viewQueue = [];
   storyLines = msg.view.log;
   game = msg.view;
-  if (!same) { unitArrivals.clear(); resetLogSounds(game); inspected = null; }
-  selection = null; confirming = null; picks = new Set(); notice = ''; flash = '';
-  markHumanTurnDone();
-  renderedFoeUnits = new Set(game.players[theirSeat].yard.map((u) => u.uid));
-  renderedTreats = new Map(game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])));
+  if (!same) { resetLogSounds(game); inspected = null; clashReport = null; }
+  selection = null; picks = new Set(); notice = ''; flash = '';
   if (screen === 'friends') closeFriends();
   screen = 'game';
   showSettings = false;
   render();
   // The Versus splash goes by itself.
-  if (ol && ol.versusUntil > Date.now()) window.setTimeout(renderUnlessAnimating, ol.versusUntil - Date.now() + 50);
-}
-
-async function showViews() {
-  if (showingViews) return;
-  showingViews = true;
-  while (viewQueue.length) {
-    const v = viewQueue.shift()!;
-    game = v;
-    if (!(await showEvents(0))) break;
-    render();
-  }
-  showingViews = false;
+  if (ol && ol.versusUntil > Date.now()) window.setTimeout(render, ol.versusUntil - Date.now() + 50);
 }
 
 /** Leave an online game for Home. A game still going carries on: the Friend tile offers to rejoin it. */
@@ -370,46 +297,49 @@ onLive((msg) => {
   }
   if (msg.t === 'view') {
     // The view carries only the story lines since the last one: put the story back together.
+    const from = Math.min(msg.logFrom, storyLines.length);
     storyLines = [...storyLines.slice(0, msg.logFrom), ...msg.view.log];
-    viewQueue.push({ ...msg.view, log: storyLines });
-    void showViews();
-    return;
+    game = { ...msg.view, log: storyLines };
+    noteClash(from);
   }
   if (msg.t === 'hint' && game) {
     hintLine = msg.action ? hintText(game, msg.action) : 'No suggestion right now.';
-  }
-  if (msg.t === 'hint' && game && msg.action) {
     const a = msg.action;
-    if (a.t === 'play' || a.t === 'attack' || a.t === 'pounce' || (a.t === 'ability' && a.target)) selection = { label: 'the suggested move', options: [a] };
+    if (a && (a.t === 'play' || a.t === 'ability' || a.t === 'ambush' || a.t === 'move')) selection = { label: 'the suggested move', options: [a] };
   }
-  if (!isAnimating()) render();
+  render();
 });
 
+/**
+ * Solo: the computer builds its side of the Muster at once, out of sight (you see its board as it stood when the
+ * Muster began), and answers its mulligan. It never needs to wait for you: nothing it does shows until the Clash.
+ */
+function runAi() {
+  if (!game || ol) return;
+  const skill = tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill;
+  for (let guard = 0; guard < 400 && game.winner === null && mayAct(game, theirSeat); guard++) {
+    apply(game, chooseAction(game, { skill, random: aiRandom, seat: theirSeat }), theirSeat);
+  }
+}
+
+/** For the tutorial: carry on after a balloon closes. */
 function scheduleAi() {
-  window.clearTimeout(aiTimer);
-  if (!game || ol || game.winner !== null || game.prompt?.player !== theirSeat) return;
-  if (tutorialBlocksAi()) return; // resumed when the balloon is closed
-  const delay = aiDelayScale * (game.prompt.kind === 'pounce' || game.prompt.kind === 'plant' ? 450 : 850);
-  aiTimer = window.setTimeout(async () => {
-    if (!game || ol || game.prompt?.player !== theirSeat || isAnimating()) return;
-    const from = (game.events ??= []).length;
-    apply(game, chooseAction(game, { skill: tutorialActive() ? 0.45 : DIFFICULTY[difficulty].skill, random: aiRandom }));
-    if (!(await showEvents(from))) return;
-    render();
-    scheduleAi();
-  }, delay);
+  const from = game ? visibleLog(game.log, mySeat).length : 0;
+  runAi();
+  noteClash(from);
+  render();
 }
 
 function startGame(tutorial = false) {
   setOnlineAside();
   // The opponent leads one of the other decks, at random. The tutorial is always the Domowiki against the Pari (the
-  // two folk starter decks), with you going first.
-  // Against your own deck, it leads a ready-made deck with a different Hero Cat (owned or not).
+  // two folk starter decks), with you holding the Lantern.
   const mine = deckForKey(myDeck) ?? DECKS[firstDeck()];
   const others = soloFoeDecks(mine.hero);
   const theirDeck = tutorial ? 'pari'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   inspected = null;
+  clashReport = null;
   game = tutorial
     ? createGame({ decks: ['domowiki', 'pari'], names: ['You', 'Opponent'], firstPlayer: mySeat })
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
@@ -418,39 +348,35 @@ function startGame(tutorial = false) {
   // Both decks' pictures, kept by the offline worker, so a later game with them shows every card with no connection.
   keepPictures(game.players.flatMap((pl, p) => {
     const face = p === mySeat ? yourCardUrl : cardUrl;
-    const ids = [...new Set([...pl.deck, ...pl.hand].map((c) => c.id))];
+    const ids = [...new Set([...pl.deck, ...pl.hand, ...pl.lives].map((c) => c.id))];
     const hero = [`${pl.hero.id}-kitten`, `${pl.hero.id}-bigcat`];
     return [...ids.flatMap((id) => [face(id), artUrl(id)]), ...hero.flatMap((k) => [face(k), artUrl(k)])];
   }));
   resetLogSounds(game);
-  unitArrivals.clear();
   if (tutorial) startTutorial({
     game: () => game, rerender: render, resumeAi: scheduleAi,
-    selection: () => selection && { label: selection.label, attack: selection.options.every((a) => a.t === 'attack') },
+    selection: () => selection && { label: selection.label, attack: false },
     skipped: markPlayed,
   });
   else stopTutorial();
-  // Swapping cards before you know what a card costs is a decision made in the dark, so on a first
-  // game the hand is kept for you and the bar says so. (The engine always asks; the app may answer.)
+  // Swapping cards before you know what a card costs is a decision made in the dark, so on a first game the hand is
+  // kept for you and the bar says so. (The engine always asks; the app may answer.)
   if (tutorial && game.prompt?.kind === 'mulligan' && game.prompt.player === mySeat) {
     const hand = game.players[mySeat].hand;
     const cheap = hand.filter((c) => (CARDS[c.id].cost ?? 0) <= 2 && CARDS[c.id].type !== 'Trick');
-    // A hand with nothing cheap cannot make a first move, so swap its priciest cards: an ordinary
-    // legal mulligan, which cuts dead openings from about 6% to about 2%.
+    // A hand with nothing cheap can't field a unit in round 1, so swap its priciest cards: an ordinary legal mulligan.
     const priciest = [...hand].sort((a, b) => (CARDS[b.id].cost ?? 0) - (CARDS[a.id].cost ?? 0)).slice(0, 3);
     const swap = cheap.length ? [] : priciest.map((c) => c.uid);
-    apply(game, { t: 'mulligan', uids: swap });
+    apply(game, { t: 'mulligan', uids: swap }, mySeat);
     notice = swap.length
-      ? 'Swapped your 3 priciest cards for fresh ones — that free redraw is called a mulligan.'
-      : 'Kept your opening hand. Every game starts with one free redraw — a mulligan — and I took it for you.';
+      ? 'Swapped your 3 priciest cards for fresh ones: that free redraw is called a mulligan.'
+      : 'Kept your opening hand. Every game starts with one free redraw, a mulligan, and I took it for you.';
   }
-  markHumanTurnDone();
+  runAi();
   screen = 'game';
   selection = null;
-  confirming = null;
   picks = new Set();
   render();
-  scheduleAi();
 }
 
 /**
@@ -461,21 +387,23 @@ function startGame(tutorial = false) {
 /** Set mechanics (Well-Fed, Rain-Fed, …) explain themselves from their set's data; the core keywords are here. */
 const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
-  { name: 'Guardian', test: /\bGuardian\b/, text: 'Your opponent must attack this unit before your other units or your Hero.' },
-  { name: 'Sneaky', test: /\bSneaky\b/, text: 'Can attack straight past enemy Guardians.' },
-  { name: 'Fierce', test: /\bFierce\b/, text: 'When this hits a Hero, that player loses 2 Candles instead of 1.' },
-  { name: TERMS.keywords.Zoomies, test: /\b(Swift|Zoomies)\b/, text: 'Can attack the round it arrives, instead of starting tired.' },
+  { name: 'Guardian', test: /\bGuardian\b/, text: 'The tank: enemies hit Guardians first. (Sneaky enemies hit them last.)' },
+  { name: 'Elusive', test: /\bElusive\b/, text: 'The carry: enemies hit it late, after every plain unit and Guardian.' },
+  { name: 'Lure', test: /\bLure\b/, text: 'The decoy: enemies hit it last, but Sneaky enemies must hit it first.' },
+  { name: 'Sneaky', test: /\bSneaky\b/, text: 'The assassin: hits the enemy’s Lures first, then their Elusive units; Guardians last.' },
+  { name: 'Fierce', test: /\bFierce\b/, text: 'Worth 2 Candles instead of 1 if it is still standing when its side wins the Clash.' },
+  { name: TERMS.keywords.Zoomies, test: /\b(Swift|Zoomies)\b/, text: 'Hits first in every bout: a unit it knocks down never hits back.' },
   { name: 'Tough', test: /\bTough\b/, text: 'Takes that much less damage from every hit.' },
-  { name: 'Lucky', test: /\bLucky\b/, text: 'If this card turns up as a Candle you lost, you may play it for free.' },
-  { name: TERMS.keywords.Pounce, test: /\b(Ambush|Pounce)\b/, text: 'Play this out of turn, right after your opponent plays a card or attacks.' },
-  { name: 'Hello', test: /\bHello\b/, text: 'Happens as soon as this card arrives.' },
-  { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens when this unit is defeated.' },
-  { name: 'Awaken', test: /\b(Awaken|Grow Up)\b/, text: 'Once this is true, your Hero Awakens: stronger, and able to attack.' },
-  // "Exhaust:" is the cost of a Hero Cat's ability; "Exhaust an enemy unit" is an effect. One line covers both.
-  { name: 'Exhaust', test: /\bExhaust\b/, text: 'Spend a card for the rest of the round: it tips sideways and cannot attack or be spent again until everything readies next round.' },
+  { name: 'Lucky', test: /\bLucky\b/, text: 'If this card turns up as a Candle you lost, you may play it for free in the next Muster.' },
+  { name: TERMS.keywords.Pounce, test: /\b(Ambush|Pounce)\b/, text: 'Set it face-down in one of your lanes: it happens when the Clash begins, if its lane holds what it needs (otherwise it waits). It can also be played like any card.' },
+  { name: 'Hello', test: /\bHello\b/, text: 'Happens when you play the card.' },
+  { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens each time this unit goes down in a Clash.' },
+  { name: 'Awaken', test: /\b(Awaken|Grow Up)\b/, text: 'Once this is true, your Hero Awakens for good: a stronger ability, and it strikes when the Clash begins (unless you used its ability).' },
+  // "Exhaust:" is the price of a Hero's ability; "Exhaust an enemy unit" is an effect. One line covers both.
+  { name: 'Exhaust', test: /\bExhaust\b/, text: 'An exhausted unit deals no damage in this Clash. On a Hero, “Exhaust:” is the price of its ability: that round it doesn’t strike.' },
 ];
 
-/** The rules text of whatever a long press enlarged: a card id, or a Hero Cat side like "DW1-H01-bigcat". */
+/** The rules text of whatever a long press enlarged: a card id, or a Hero side like "DW1-H01-bigcat". */
 function zoomText(key: string): string {
   const side = /^(.*)-(kitten|bigcat)$/.exec(key);
   const card = CARDS[side ? side[1] : key];
@@ -485,28 +413,75 @@ function zoomText(key: string): string {
 }
 
 /** A plain-language reason a card in hand can't be played right now. */
-function whyUnplayable(s: GameState, id: string, promptKind: string): string {
+function whyUnplayable(s: GameState, id: string): string {
   const def = CARDS[id];
   const name = cardName(id);
-  const ready = readyTreats(s, mySeat);
-  const k = keywords(id);
-  if (promptKind === 'pounce') return k.pounce ? `${name} has no useful target right now.` : `Only Ambush cards can be played while your opponent is acting — ${name} isn't one.`;
-  if (promptKind !== 'action') return `You can't play cards right now.`;
-  if (abilitiesOf(id).some((a) => a.pounceOnly === 'attack')) return `${name} can only be played when your opponent attacks (it's an Ambush reaction).`;
-  if ((def.cost ?? 0) > ready) return `${name} costs ${def.cost} Offerings — you have ${ready} ready. Spent Offerings come back at the start of next round.`;
-  const yard = s.players[mySeat].yard;
-  if ((def.type === 'Cat' || def.type === 'Critter') && yard.length >= 6) return `Your Yard is full (6 units).`;
-  if (def.type === 'Cat' && yard.some((u) => u.id === id)) return `${name} is already in your Yard, and Fabled cards are one of a kind.`;
+  const me = s.players[mySeat];
+  if (abilitiesOf(id).some((a) => a.pounceOnly)) return `${name} can only be set face-down, as an Ambush in one of your lanes.`;
+  if ((def.cost ?? 0) > me.offerings) return `${name} costs ${def.cost} ${TERMS.offerings}, and you have ${me.offerings}. You get more at the start of each round, and you can offer cards you don't need.`;
+  if (def.type === 'Cat' && me.yard.some((u) => u.id === id)) return `${name} is already on your board, and Fabled cards are one of a kind.`;
+  if (def.type === 'Cat' || def.type === 'Critter') return `All your lanes are taken: your Hero is Level ${me.hero.level}. Level up for one more lane.`;
   if (def.type === 'Toy') return `${name} needs one of your units without a Talisman to attach to.`;
-  return `${name} has no legal target right now.`;
+  return `${name} has no target right now.`;
 }
 
-function select(label: string, options: Action[]) {
-  if (!options.length) return;
-  const untargeted = options.filter((a) => !actionTarget(a));
-  if (options.length === 1 && untargeted.length === 1) return act(options[0]);
-  selection = { label, options };
+/** Pick a card or a unit: its moves, and other things to do with it (Offer it, set it face-down) as buttons. */
+function select(label: string, options: Action[], alts: { label: string; options: Action[] }[] = []) {
+  if (options.length === 1 && !paramOf(options) && !alts.length) return act(options[0]);
+  selection = { label, options, alts };
   render();
+}
+
+// A move is picked by narrowing it down: a lane for a new unit (or a unit's move), the lane an Ambush goes to, then
+// what it aims at. Each click keeps the moves that agree with it, until only one is left.
+type Param = 'slot' | 'lane' | 'target' | 'target2';
+const PARAMS: Param[] = ['slot', 'lane', 'target', 'target2'];
+
+function valueKey(a: Action, p: Param): string {
+  if (p === 'slot') return 'slot' in a && a.slot !== undefined ? `slot:${a.slot}` : '';
+  if (p === 'lane') return a.t === 'ambush' ? `slot:${a.lane}` : '';
+  if (p === 'target') return 'target' in a ? targetKey(a.target) : '';
+  return 'target2' in a ? targetKey(a.target2) : '';
+}
+
+/** What the next click among these moves decides, or null when they're all the same move. */
+function paramOf(options: Action[]): Param | null {
+  for (const p of PARAMS) if (new Set(options.map((a) => valueKey(a, p))).size > 1) return p;
+  return null;
+}
+
+/** The keys a click on the board stands for: a unit is also the lane it stands in. */
+function clickKeys(key: string, v: GameState): string[] {
+  const [kind, a, b] = key.split(':');
+  if (kind === 'unit') {
+    const uid = Number(a);
+    const mine = v.players[mySeat].yard.find((u) => u.uid === uid);
+    const theirs = v.players[theirSeat].yard.find((u) => u.uid === uid);
+    return [key, ...(mine ? [`slot:${mine.slot}`, `lane:${mySeat}:${mine.slot}`] : []), ...(theirs ? [`lane:${theirSeat}:${theirs.slot}`] : [])];
+  }
+  if (kind === 'lane') return [key, ...(Number(a) === mySeat ? [`slot:${b}`] : [])];
+  return [key];
+}
+
+/** What a selection lights up on the board, as the keys of what to light. */
+function lit(v: GameState): Set<string> {
+  const out = new Set<string>();
+  if (!selection) return out;
+  const p = paramOf(selection.options);
+  if (!p) return out;
+  for (const a of selection.options) {
+    const k = valueKey(a, p);
+    if (!k) continue;
+    const [kind, x, y] = k.split(':');
+    if (kind === 'slot') {
+      const u = laneUnit(v, mySeat, Number(x));
+      out.add(u ? `unit:${u.uid}` : `lane:${mySeat}:${x}`);
+    } else if (kind === 'lane') {
+      const u = laneUnit(v, Number(x) as PlayerId, Number(y));
+      out.add(u ? `unit:${u.uid}` : k);
+    } else out.add(k);
+  }
+  return out;
 }
 
 function onClick(key: string) {
@@ -587,12 +562,6 @@ function onClick(key: string) {
   if (kind === 'set') {
     const choice = key.split(':')[2];
     if (raw === 'sound' && (choice === 'on') !== soundEnabled()) toggleSound();
-    if (raw === 'anim') setAnimations(choice === 'on');
-    if (raw === 'speed' && (choice === 'normal' || choice === 'fast')) {
-      speed = choice;
-      aiDelayScale = SPEED_SCALE[speed];
-      try { localStorage.setItem(SPEED_KEY, speed); } catch { /* private mode: not remembered */ }
-    }
     render();
     return;
   }
@@ -605,84 +574,85 @@ function onClick(key: string) {
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
     if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
-    if (raw === 'quit') { window.clearTimeout(aiTimer); stopTutorial(); game = null; screen = 'home'; homeNote = ''; showStory = false; }
+    if (raw === 'quit') { stopTutorial(); game = null; clashReport = null; screen = 'home'; homeNote = ''; showStory = false; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
   }
 
-  const prompt = humanPrompt();
-  if (!game || !prompt) return;
-  const legal = legalActions(game);
+  if (kind === 'report') { clashReport = null; render(); return; }
 
-  // A pending selection (or a prompt that is itself a target choice) consumes clicks on its targets.
-  const pending = selection?.options ?? (prompt.kind === 'choose' || prompt.kind === 'lucky' ? legal : null);
-  if (pending && (kind === 'unit' || kind === 'hero')) {
-    const match = pending.find((a) => targetKey(actionTarget(a)) === key);
-    if (match) return act(match);
+  const prompt = humanPrompt();
+  const v = seen();
+  if (!game || !v || !prompt) return;
+  const legal = legalActions(game, mySeat);
+
+  // A selection takes clicks on the board: each narrows it down.
+  if (selection && (kind === 'unit' || kind === 'lane' || kind === 'hero')) {
+    const p = paramOf(selection.options);
+    if (p) {
+      const keys = clickKeys(key, v);
+      const left = selection.options.filter((a) => keys.includes(valueKey(a, p)));
+      if (left.length) {
+        if (!paramOf(left)) return act(left[0]);
+        selection = { ...selection, options: left, alts: [] };
+        render();
+        return;
+      }
+    }
   }
 
   if (kind === 'btn') {
     switch (raw) {
-      case 'pass': return act({ t: 'pass' });
-      case 'yarn':
-        // "You can only pass for the rest of this round" is only a cost when there is something
-        // else you could do. With nothing but Pass left, the warning just gets in the way.
-        if (confirming !== 'yarn' && yarnNeedsConfirm(legal)) {
-          confirming = 'yarn';
-          render();
-          return;
-        }
-        confirming = null;
-        return act({ t: 'takeYarn' });
-      case 'decline': return act({ t: 'decline' });
-      case 'skip': return act({ t: 'skipPlant' });
-      case 'keep': return act({ t: 'keepLucky' });
-      case 'free': return act(legal.find((a) => a.t === 'lucky' && !a.target)!);
-      case 'cancel': selection = null; confirming = null; picks = new Set(); render(); return;
+      case 'ready': return act({ t: 'ready' });
+      case 'level': return act({ t: 'levelUp' });
+      case 'cancel': selection = null; picks = new Set(); render(); return;
       case 'confirm':
         if (prompt.kind === 'mulligan') return act({ t: 'mulligan', uids: [...picks] });
-        if (prompt.kind === 'setupPlant') return act({ t: 'setupPlant', uids: [...picks] });
-        if (prompt.kind === 'discard') return act({ t: 'discard', uids: [...picks] });
-        if (prompt.kind === 'plant' && picks.size === 1) return act({ t: 'plant', uid: [...picks][0] });
         return;
       case 'ability': return select('your Hero’s ability', legal.filter((a) => a.t === 'ability'));
-      case 'heroattack':
-        return select('your Hero’s attack', legal.filter((a) => a.t === 'attack' && a.attacker.kind === 'hero'));
+      case 'alt': {
+        const alt = selection?.alts?.[value];
+        if (alt) select(alt.label, alt.options);
+        return;
+      }
     }
     return;
   }
 
   if (kind === 'hand') {
-    if (prompt.kind === 'mulligan' || prompt.kind === 'setupPlant' || prompt.kind === 'discard') {
+    if (prompt.kind === 'mulligan') {
       if (picks.has(value)) picks.delete(value);
-      else if (picks.size < (prompt.kind === 'mulligan' ? MULLIGAN_MAX : prompt.count)) picks.add(value);
-      render();
-      return;
-    }
-    if (prompt.kind === 'plant') {           // pick it, then confirm: this buries the card for good
-      if (picks.has(value)) picks.delete(value);
-      else { picks.clear(); picks.add(value); }
+      else if (picks.size < MULLIGAN_MAX) picks.add(value);
       render();
       return;
     }
     const card = game.players[mySeat].hand.find((c) => c.uid === value)!;
-    const options = legal.filter((a) => (a.t === 'play' || a.t === 'pounce') && a.uid === value);
-    if (!options.length) {
-      flash = whyUnplayable(game, card.id, prompt.kind);
-      render();
-      return;
-    }
-    return select(cardName(card.id), options);
+    const plays = legal.filter((a) => (a.t === 'play' || a.t === 'lucky') && a.uid === value);
+    const ambush = legal.filter((a) => a.t === 'ambush' && a.uid === value);
+    const offer = legal.filter((a) => a.t === 'offer' && a.uid === value);
+    const name = cardName(card.id);
+    const offerAlt = offer.length ? [{ label: `Offer it (+1 ${TERMS.offering})`, options: offer }] : [];
+    const ambushAlt = ambush.length ? [{ label: 'Set it face-down', options: ambush }] : [];
+    flash = '';
+    if (plays.length) return select(name, plays, [...ambushAlt, ...offerAlt]);
+    if (ambush.length) return select(`${name}, face-down`, ambush, offerAlt);
+    flash = whyUnplayable(game, card.id);
+    selection = { label: name, options: [], alts: offerAlt, uid: value };
+    render();
+    return;
   }
 
-  if (kind === 'unit' && prompt.kind === 'action') {
-    const options = legal.filter((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === value);
-    const unit = game.players[mySeat].yard.find((u) => u.uid === value);
-    if (unit && options.length) {
-      selection = { label: `${cardName(unit.id)}’s attack`, options };
-      render();
-    }
+  if (kind === 'unit') {
+    const mine = game.players[mySeat].yard.find((u) => u.uid === value);
+    if (!mine) return;
+    const moves = legal.filter((a) => a.t === 'move' && a.uid === value);
+    const offer = legal.filter((a) => a.t === 'offer' && a.uid === value);
+    selection = {
+      label: `${cardName(mine.id)}: a lane to move to`, options: moves, uid: value,
+      alts: offer.length ? [{ label: `Offer it (+1; it leaves the board)`, options: offer }] : [],
+    };
+    render();
   }
 }
 
@@ -695,9 +665,7 @@ function onClick(key: string) {
 function persist() {
   if (!game || tutorialGame || ol) return;
   if (game.winner !== null) { clearSave(); return; }
-  saveGame({
-    game, difficulty, unitArrivals: [...unitArrivals], foeFrom, foeUnitsBefore: [...foeUnitsBefore],
-  });
+  saveGame({ game, difficulty });
 }
 
 function resumeSavedGame(): boolean {
@@ -706,16 +674,9 @@ function resumeSavedGame(): boolean {
   setOnlineAside();
   game = save.game;
   inspected = null;
-  game.events ??= []; // saved before events existed
+  clashReport = null;
   tutorialGame = false;
   if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
-  unitArrivals.clear();
-  for (const [uid, round] of save.unitArrivals ?? []) unitArrivals.set(uid, round);
-  foeFrom = save.foeFrom ?? game.log.length;
-  foeUnitsBefore = new Set(save.foeUnitsBefore ?? []);
-  // What's already on the board was on screen before: don't animate it arriving again.
-  renderedFoeUnits = new Set(game.players[theirSeat].yard.map((u) => u.uid));
-  renderedTreats = new Map(game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])));
   resetLogSounds(game);
   screen = 'game';
   return true;
@@ -724,7 +685,7 @@ function resumeSavedGame(): boolean {
 // ── Rendering ────────────────────────────────────────────────────────────────────────────────────
 
 /** The connection's news redraws the screen, but never in the middle of an animation (it redraws after). */
-function renderUnlessAnimating() { if (!isAnimating()) render(); }
+function renderUnlessAnimating() { render(); }
 
 let drawnBackdrop = '';   // the screen (without its dialogs) as last drawn, and how many nodes it made in #app
 let drawnBackdropNodes = 0;
@@ -765,8 +726,6 @@ function render() {
     if (screen === 'friends') friendsMounted();
   }
   handOverlap();
-  renderedFoeUnits = new Set(game?.players[theirSeat].yard.map((u) => u.uid) ?? []);
-  renderedTreats = new Map(game ? game.players.flatMap((pl) => pl.pantry.map((t) => [t.card.uid, t.exhausted] as [number, boolean])) : []);
   if (screen === 'game') { renderTutorial(showRules || showSettings); playLogSounds(game, mySeat); } else stopTutorial();
   persist();
   // Never let the page end up scrolled sideways (a focused or enlarged card could otherwise do it).
@@ -1108,25 +1067,24 @@ function renderSolo(): string {
 
 function renderGame(): string {
   const s = game!;
+  const v = seen()!;
   const prompt = humanPrompt();
-  const targets = new Set((selection?.options ?? (prompt?.kind === 'choose' || prompt?.kind === 'lucky' ? legalActions(s) : []))
-    .map((a) => targetKey(actionTarget(a))).filter(Boolean));
-  const legal = prompt ? legalActions(s) : [];
-  const attackers = new Set(legal.flatMap((a) => (a.t === 'attack' && a.attacker.kind === 'unit' ? [a.attacker.uid] : [])));
-  const playable = new Set(legal.flatMap((a) => (a.t === 'play' || a.t === 'pounce' ? [a.uid] : [])));
+  const legal = prompt ? legalActions(s, mySeat) : [];
+  const hl = lit(v);
+  const playable = new Set(legal.flatMap((a) => (a.t === 'play' || a.t === 'lucky' || a.t === 'ambush' ? [a.uid] : [])));
 
   const wide = drawnWide = WIDE.matches;
-  const foeBar = renderPlayer(s, theirSeat, targets);
-  const myBar = renderPlayer(s, mySeat, targets, legal);
+  const foeBar = renderPlayer(v, theirSeat);
+  const myBar = renderPlayer(v, mySeat, legal);
   return `
   <div class="game">
-    <main class="board ${targets.size ? 'targeting' : ''} ${wide ? 'wide' : ''}">
+    <main class="board ${hl.size ? 'targeting' : ''} ${wide ? 'wide' : ''}">
       ${wide ? '' : foeBar}
-      ${renderYard(s, theirSeat, targets, attackers)}
-      ${renderMidbar(s, legal)}
-      ${renderYard(s, mySeat, targets, attackers)}
+      ${renderLanes(v, theirSeat, hl)}
+      ${renderMidbar(v, legal)}
+      ${renderLanes(v, mySeat, hl)}
       ${wide ? '' : myBar}
-      ${renderHand(s, playable)}
+      ${renderHand(v, playable)}
     </main>
     <aside class="side ${wide ? 'wide' : ''}">
       ${wide ? foeBar : ''}
@@ -1142,18 +1100,14 @@ function renderGame(): string {
         ${onlineSideButtons()}
       </div>
     </aside>
-    ${renderStory(s)}
-    ${ol ? renderOnlineResult(s) : s.winner !== null ? renderGameOver(s) : ''}
+    ${renderStory(v)}
+    ${clashReport && !(ol && ol.versusUntil > Date.now()) ? renderClashReport(v) : ''}
+    ${ol ? renderOnlineResult(s) : s.winner !== null && !clashReport ? renderGameOver(s) : ''}
     ${ol ? renderVersus(s as PlayerView) : ''}
     ${showRules ? renderRules() : ''}
   </div>`;
 }
 
-/**
- * Whether the hand's cards overlap (or shrink) because there are more than fit side by side: then each card's
- * printed Health, on the corner the next card covers, is repeated on its visible edge. Checked after every redraw and
- * when the window changes size, since the answer depends on the width.
- */
 function handOverlap() {
   const hand = app.querySelector<HTMLElement>('.hand');
   if (!hand) return;
@@ -1192,103 +1146,52 @@ function rulesHtml(text: string): string {
   for (const k of glossary()) html = html.replace(new RegExp(`${k.test.source}:?`, 'g'), '<b>$&</b>');
   return html.replace(/\n/g, '<br>');
 }
-
-/**
- * The Treats tray at the end of each Yard: one face-down card per Treat. Ready Treats stand upright,
- * spent ones lie sideways. Planting, spending and readying each animate once, with a floating label,
- * so you can see resources move. You may look at your own Treats (rule 4) — hold one to read it.
- */
-function renderPantry(s: GameState, p: PlayerId): string {
-  const pl = s.players[p];
-  const mine = p === mySeat;
-  let planted = 0, spent = 0, readied = 0;
-  const tokens = pl.pantry.map((t) => {
-    const before = renderedTreats.get(t.card.uid);
-    const change = before === undefined ? 'new' : !before && t.exhausted ? 'spending' : before && !t.exhausted ? 'readying' : '';
-    if (change === 'new') planted++;
-    if (change === 'spending') spent++;
-    if (change === 'readying') readied++;
-    const cls = ['treat', t.exhausted && 'spent', change, mine && 'mine'].filter(Boolean).join(' ');
-    const zoom = mine ? ` data-zoom="${yourCardUrl(t.card.id)}" data-zoom-card="${t.card.id}"` : '';
-    return `<div class="${cls}"${zoom} title="${mine ? esc(CARDS[t.card.id].name) + ' — ' : ''}${t.exhausted ? 'spent this round' : 'ready to spend'}"></div>`;
-  }).join('');
-  const float = planted ? `+${planted} Offering${planted > 1 ? 's' : ''}` : spent ? `−${spent}` : readied ? 'Ready!' : '';
-  const ready = readyTreats(s, p);
-  return `<div class="pantry ${mine ? 'me' : 'foe'}" title="Offerings are face-down cards that pay for other cards. They all get ready again at the start of each round.">
-    <div class="pantry-label" title="Offerings pay for your cards: a card costs the number in its top-left corner. Spent Offerings ready again next round.">Offerings <b>${ready}</b><span>/${pl.pantry.length} ready</span></div>
-    ${badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
-      .map(([name, m]) => `<div class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</div>`).join('')}
-    <div class="treats" style="--n:${Math.max(1, pl.pantry.length)}">${tokens}</div>
-    ${float ? `<span class="tray-float ${planted ? 'plus' : spent ? 'minus' : 'ready'}">${float}</span>` : ''}
-  </div>`;
-}
-
-function renderPlayer(s: GameState, p: PlayerId, targets: Set<string>, legal: Action[] = []): string {
+function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
   const pl = s.players[p];
   const side = heroSide(s, p);
-  const key = `hero:${p}`;
-  // The Yarn Ball sits on the corner of the Hero Cat portrait (next to the name it crowded the Lives).
-  const yarn = s.yarn === p ? `<span class="yarn" title="Holds the Lantern: acts first">${YARN_ICON}${s.yarnTaken === p ? '<small>kept</small>' : ''}</span>` : '';
-  const took = s.yarnTaken === p && s.yarn !== p ? `<span class="yarn" title="Took the Lantern for next round">${YARN_ICON}<small>next</small></span>` : '';
-  const canAbility = legal.some((a) => a.t === 'ability');
-  const canAttack = legal.some((a) => a.t === 'attack' && a.attacker.kind === 'hero');
+  const mine = p === mySeat;
+  // The Lantern sits on the corner of the Hero portrait: its holder's effects go first in the Clash.
+  const lantern = s.yarn === p ? `<span class="yarn" title="Holds the Lantern: their effects go first">${YARN_ICON}</span>` : '';
+  const canAbility = mine && legal.some((a) => a.t === 'ability');
+  const next = levelCost(s, p);
+  const interest = interestOn(s, pl.offerings);
+  const deciding = s.winner === null && s.prompt !== null && mayAct(s, p);
+  const badges = badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
+    .map(([name, m]) => `<span class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</span>`).join('');
 
   return `
-  <section class="player ${p === mySeat ? 'me' : 'foe'} ${s.prompt?.player === p && s.winner === null ? 'thinking' : ''}">
+  <section class="player ${mine ? 'me' : 'foe'} ${deciding ? 'thinking' : ''}">
     <div class="hero-slot">
-    <div class="hero ${famClass(pl.hero.id)} ${attackMark(key)} ${pl.hero.exhausted ? 'exhausted' : ''} ${targets.has(key) ? 'targetable' : ''} ${pl.hero.grown ? 'grown' : ''}"
-         data-click="${key}" data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
+    <div class="hero ${famClass(pl.hero.id)} ${pl.hero.exhausted ? 'exhausted' : ''} ${pl.hero.grown ? 'grown' : ''}"
+         data-click="heroinfo:${p}" data-zoom="${(mine ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">
       <div class="art" style="background-image:url(${artUrl(heroKey(s, p))})"></div>
       ${side.power ? `<div class="pow">${side.power}</div>` : ''}
     </div>
-    ${yarn}${took}
+    ${lantern}
     </div>
     <div class="stats">
-      <div class="who">${esc(ol && p === mySeat ? 'You' : pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
+      <div class="who">${esc(ol && mine ? 'You' : pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
         <div class="lives" title="${pl.lives.length} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives.length <= 3 ? 'low' : ''}"><b>${pl.lives.length}</b></span></div>
+        <div class="purse" title="${TERMS.offerings}: what you pay with. Saved ones earn interest: +1 for every ${s.rules.interestPer} at the start of each round (at most ${s.rules.interestMax}).">
+          <b>${pl.offerings}</b> ${TERMS.offerings}${interest ? ` <small>+${interest}</small>` : ''}</div>
+        <div class="level" title="Your Hero's Level: how many units you may field.${next !== null ? ` The next Level costs ${next}.` : ''}">Level <b>${pl.hero.level}</b> <small>${pl.yard.length + (pl.fallen?.length ?? 0)}/${pl.hero.level}</small></div>
         <div class="counters">
           <span title="Cards in hand">✋ ${pl.hand.length}</span>
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
-          <span title="The Mist (discard pile)">🍂 ${pl.compost.length}</span>
         </div>
+        ${badges}
       </div>
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
-           data-zoom="${(p === mySeat ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
-      ${p === mySeat && (canAbility || canAttack) ? `<div class="hero-actions">
-        ${canAbility ? '<button class="primary" data-click="btn:ability">Use ability</button>' : ''}
-        ${canAttack ? '<button class="primary" data-click="btn:heroattack">Hero attack</button>' : ''}
-      </div>` : ''}
+           data-zoom="${(mine ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
+      ${canAbility ? '<div class="hero-actions"><button class="primary" data-click="btn:ability">Use ability</button></div>' : ''}
     </div>
     ${ol ? `<div class="player-face online">${playerFace(p)}</div>`
-      : ACCOUNTS ? `<div class="player-face">${boardFace(p === mySeat ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
+      : ACCOUNTS ? `<div class="player-face">${boardFace(mine ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
 }
 
-/**
- * Why a unit is tilted with "zzz". A unit arrives tired and cannot attack until the next round
- * (unless it has Zoomies); after it attacks or is exhausted by a card it is spent for the round.
- * Everything wakes up at the start of the next round.
- */
-function restingLabel(u: Unit): { tag: string; why: string } {
-  const arrived = unitArrivals.get(u.uid) === game?.round;
-  if (!u.exhausted)
-    return arrived && keywords(u.id).zoomies
-      ? { tag: '', why: 'Swift: it can attack the very round it arrives, instead of resting first.' }
-      : { tag: '', why: 'Ready: it can attack this round.' };
-  return arrived
-    ? { tag: 'new', why: 'Just arrived, so it is still settling in. It wakes up at the start of the next round and can attack then.' }
-    : { tag: 'zzz', why: 'Already acted this round. It wakes up at the start of the next round.' };
-}
-
-/** While an attack waits on a Pounce, the attacker stays raised and its target marked (see fx.ts). */
-function attackMark(key: string): string {
-  const w = game?.window;
-  if (w?.kind !== 'attack' || w.cancelled) return '';
-  return targetKey(w.attacker) === key ? 'fx-attacker' : targetKey(w.target) === key ? 'fx-targeted' : '';
-}
-
-/** A unit's mechanic chips: each keyword that keeps a counter, with its icon and how far it has grown (🍎+1). */
+/** A unit's mechanic chips: each keyword that keeps a counter, with its icon and how far it has grown (🌽+1). */
 function counterChips(u: Unit, keywordList: string[]): string[] {
   return keywordList.flatMap((name) => {
     const counter = MECHANICS[name]?.counter;
@@ -1299,30 +1202,27 @@ function counterChips(u: Unit, keywordList: string[]): string[] {
   });
 }
 
-function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: Set<number>): string {
-  const state = game ?? undefined;
-  const k = unitKeywords(u, state);
-  const power = unitPower(u, state);
-  const health = unitHealth(u, state) - u.damage;
+const ROLE = ['Lure', 'Elusive', '', 'Guardian'];
+
+function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): string {
+  const k = unitKeywords(u, s);
+  const power = unitPower(u, s);
+  const health = unitHealth(u, s) - u.damage;
   const chips = [
-    isGuardian(u, state) && 'Guardian', isSneaky(u, state) && 'Sneaky', k.fierce && 'Fierce', k.tough && `Tough ${k.tough}`,
+    ROLE[targetRank(u, s)], k.sneaky && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
     ...counterChips(u, k.all),
     u.toy && `🧿 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;
-  if (game && !unitArrivals.has(u.uid)) unitArrivals.set(u.uid, game.round);
-  const resting = restingLabel(u);
-  const selected = selection?.options.some((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === u.uid);
+  const why = u.exhausted ? 'Exhausted: it deals no damage in this Clash.' : 'Ready to fight in the Clash.';
   const cls = [
-    'unit', famClass(u.id), u.exhausted && 'exhausted', targets.has(key) && 'targetable', selected && 'selected', attackMark(key),
-    owner === theirSeat && !foeUnitsBefore.has(u.uid) && 'fresh',
-    owner === theirSeat && !renderedFoeUnits.has(u.uid) && 'arriving',
-    owner === mySeat && attackers.has(u.uid) && !selection && 'can-act',
+    'unit', famClass(u.id), u.exhausted && 'exhausted', hl.has(key) && 'targetable', selection?.uid === u.uid && 'selected',
   ].filter(Boolean).join(' ');
   return `
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
-       data-zoom-state="${esc(resting.why)}" title="${esc(cardName(u.id))} — ${esc(resting.why)}">
+       data-zoom-state="${esc(why)}" title="${esc(cardName(u.id))}: ${esc(why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
+    ${u.stars ? `<div class="stars" title="${u.stars} copies merged">${'★'.repeat(u.stars)}</div>` : ''}
     <div class="ubox">
       <div class="uname">${esc(cardName(u.id))}</div>
       ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
@@ -1330,158 +1230,126 @@ function renderUnit(u: Unit, owner: PlayerId, targets: Set<string>, attackers: S
       <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     </div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    ${u.exhausted ? `<div class="zzz ${resting.tag}">${resting.tag === 'new' ? 'new' : 'zzz'}</div>` : ''}
+    ${u.exhausted ? '<div class="zzz">zzz</div>' : ''}
   </div>`;
 }
 
-function renderYard(s: GameState, p: PlayerId, targets: Set<string>, attackers: Set<number>): string {
-  const yard = s.players[p].yard;
-  // The opponent's hand (face-down backs, or face up in a teaching game) sits at the start of their Yard, across
-  // from their Offerings, so their bar holds only who they are. On the wide board the backs are left out (their
-  // plaque's count says as much, and the room is the Yard's), unless the hand is being shown.
-  const hand = s.players[p].hand.length;
-  const foeHand = p === theirSeat
-    ? `<div class="foe-hand-slot">${shownHand(s) ?? `<div class="foe-hand">${s.players[p].hand.map(() => '<div class="card-back"></div>').join('')}</div>`}
-      <div class="pantry-label foe-hand-label">${hand} in hand</div></div>` : '';
-  return `<section class="yard ${p === mySeat ? 'me' : 'foe'}" style="--n:${Math.max(1, yard.length)}">
-    ${foeHand}
-    ${yard.length ? yard.map((u) => renderUnit(u, p, targets, attackers)).join('') : `<div class="empty-yard">${p === mySeat ? 'Your' : 'Their'} Yard is empty</div>`}
-    ${renderPantry(s, p)}
-  </section>`;
+/**
+ * A player's six lanes, left to right: a unit fights the enemy across from it first. Empty lanes are outlines you
+ * can play into; a face-down card marks an Ambush, and a little target an effect of yours aimed at their lane.
+ */
+function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
+  const pl = s.players[p];
+  const mine = p === mySeat;
+  const foeHand = !mine
+    ? `<div class="foe-hand-slot">${shownHand(s) ?? `<div class="foe-hand">${pl.hand.map(() => '<div class="card-back"></div>').join('')}</div>`}
+      <div class="pantry-label foe-hand-label">${pl.hand.length} in hand</div></div>` : '';
+  const aimed = (lane: number) => (s.players[mySeat].pending ?? [])
+    .filter((x) => x.target?.kind === 'lane' && x.target.player === p && x.target.lane === lane).map((x) => cardName(x.sourceId));
+  const lanes = Array.from({ length: LANES }, (_, i) => {
+    const u = laneUnit(s, p, i);
+    const ambush = (pl.ambushes ?? []).find((a) => a.lane === i);
+    const marks = [
+      ambush ? `<span class="ambush-mark" title="${mine ? `Your Ambush: ${esc(cardName(ambush.card.id))}` : 'A face-down Ambush'}">${mine ? '' : '?'}</span>` : '',
+      ...aimed(i).map((n) => `<span class="aim-mark" title="${esc(n)} is aimed here: it happens when the Clash begins">🎯</span>`),
+    ].join('');
+    if (u) return `<div class="lane">${renderUnit(s, u, p, hl)}${marks}</div>`;
+    const key = `lane:${p}:${i}`;
+    return `<div class="lane empty ${hl.has(key) ? 'targetable' : ''}" data-click="${key}" title="${mine ? 'Your' : 'Their'} lane ${i + 1}"><span class="lane-no">${i + 1}</span>${marks}</div>`;
+  }).join('');
+  return `<section class="yard lanes ${mine ? 'me' : 'foe'}" style="--n:${LANES}">${foeHand}${lanes}</section>`;
 }
 
 function renderHand(s: GameState, playable: Set<number>): string {
   const prompt = humanPrompt();
-  const multi = prompt && (prompt.kind === 'mulligan' || prompt.kind === 'setupPlant' || prompt.kind === 'discard');
-  const planting = prompt?.kind === 'plant';
-  const luckyUid = prompt?.kind === 'lucky' ? prompt.uid : -1;
-  const selectedUid = selection?.options.find((a) => a.t === 'play' || a.t === 'pounce') as { uid?: number } | undefined;
-  const n = s.players[mySeat].hand.length;
+  const mulligan = prompt?.kind === 'mulligan';
+  const me = s.players[mySeat];
+  const free = new Set(me.free ?? []);
+  const n = me.hand.length;
   return `<section class="hand" style="--n:${n};--gaps:${Math.max(1, n - 1)}">
-    ${s.players[mySeat].hand.map((c) => {
+    ${me.hand.map((c) => {
       const cls = [
-        'hand-card', (playable.has(c.uid) || multi || planting) && 'playable', picks.has(c.uid) && 'picked',
-        selectedUid?.uid === c.uid && 'selected', c.uid === luckyUid && 'lucky',
+        'hand-card', (playable.has(c.uid) || mulligan) && 'playable', picks.has(c.uid) && 'picked',
+        selection?.options.some((a) => 'uid' in a && a.uid === c.uid && a.t !== 'move') && 'selected', free.has(c.uid) && 'lucky',
       ].filter(Boolean).join(' ');
       // A unit's Health is printed on the card's bottom-right corner, which a bigger hand's overlap hides: it is
       // repeated as a chip on the left edge, over the art, while the hand overlaps (see handOverlap).
       const health = CARDS[c.id].health;
       const hp = health !== undefined ? `<span class="hand-hp" aria-hidden="true">${health}</span>` : '';
-      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${hp}</button>`;
+      const tag = free.has(c.uid) ? '<span class="free-tag">Free</span>' : '';
+      return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${hp}${tag}</button>`;
     }).join('')}
   </section>`;
 }
 
+const PARAM_WORDS: Record<Param, string> = { slot: 'a lane', lane: 'a lane to set it in', target: 'a target', target2: 'a second target' };
+
 function renderMidbar(s: GameState, legal: Action[]): string {
   const prompt = humanPrompt();
+  const me = s.players[mySeat];
   let text = '';
   let buttons = '';
 
   const onl = ol ? onlineBar(s, !!prompt) : null;
   if (s.winner !== null) text = 'Game over.';
-  else if (!prompt) text = onl?.text ?? `<span class="dots">Opponent's turn — they take one action, then it is yours again</span>`;
+  else if (!prompt) text = onl?.text ?? '<span class="dots">Your opponent is deciding</span>';
   else if (selection) {
-    text = `Choose a target for <b>${esc(selection.label)}</b>.`;
-    buttons = '<button data-click="btn:cancel">Cancel</button>';
+    const p = paramOf(selection.options);
+    const lane = selection.options.some((a) => 'target' in a && a.target?.kind === 'lane');
+    text = p
+      ? `Choose ${PARAM_WORDS[p]} for <b>${esc(selection.label)}</b>.${lane && p === 'target' ? ' An effect aimed at their lane happens when the Clash begins, to whoever stands there.' : ''}`
+      : `<b>${esc(selection.label)}</b>`;
+    buttons = (selection.alts ?? []).map((alt, i) => `<button data-click="btn:alt:${i}">${esc(alt.label)}</button>`).join('')
+      + '<button data-click="btn:cancel">Cancel</button>';
+  } else if (prompt.kind === 'mulligan') {
+    text = `<b>Mulligan.</b> Swap up to <b>${MULLIGAN_MAX}</b> cards you don't like: you get the same number back. (${picks.size} selected.)`;
+    buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;
   } else {
-    switch (prompt.kind) {
-      case 'mulligan':
-        text = `<b>Mulligan.</b> Swap up to <b>${MULLIGAN_MAX}</b> cards you don't like — you get the same number back, so your hand stays `
-          + `at 6. You'll offer <b>2</b> of them as Offerings next, and keep the other <b>4</b>. `
-          + `(${picks.size} selected.)`;
-        buttons = `<button class="primary" data-click="btn:confirm">${picks.size ? `Replace ${picks.size}` : 'Keep hand'}</button>`;
-        break;
-      case 'setupPlant':
-        text = `Pick <b>${prompt.count}</b> cards to offer face-down as <b>Offerings</b>. Each card you offer becomes <b>1 Offering</b>, whatever it costs, and is <b>not played</b> — so offer cards you need least right now.`;
-        buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Offer ${picks.size}/${prompt.count}</button>`;
-        break;
-      case 'discard':
-        text = `Too many cards: discard <b>${prompt.count}</b>.`;
-        buttons = `<button class="primary" data-click="btn:confirm" ${picks.size === prompt.count ? '' : 'disabled'}>Discard ${picks.size}/${prompt.count}</button>`;
-        break;
-      case 'plant': {
-        const chosen = picks.size === 1 ? s.players[mySeat].hand.find((c) => c.uid === [...picks][0]) : undefined;
-        text = chosen
-          ? `Bury <b>${esc(cardName(chosen.id))}</b> as an Offering? It pays for other cards and can’t be played.`
-          : '<b>New round!</b> You may bury one card face-down as <b>1 more Offering</b> (it won’t be played). Click a card, or Skip.';
-        buttons = `${chosen ? '<button class="primary" data-click="btn:confirm">Bury it</button>'
-          + '<button data-click="btn:cancel">Cancel</button>' : ''}
-          <button data-click="btn:skip">Skip</button>`;
-        break;
-      }
-      case 'action': {
-        if (confirming === 'yarn') {
-          text = yarnConfirmText(legal);
-          buttons = `<button class="primary" data-click="btn:yarn">Take it ${YARN_ICON}</button>`
-            + '<button data-click="btn:cancel">Cancel</button>';
-          break;
-        }
-        const hints = otherMoves(legal);
-        // "One thing, then they go" is the rule players miss most: they line up three attacks and are
-        // surprised the opponent acts in between.
-        // "Nothing left to do" reads like a bug when the real reason is that you can't afford anything:
-        // about 1 opening in 10 starts with every card costing more than your 2 Treats.
-        let why = 'Nothing left to do — pass.';
-        if (!hints.length) {
-          const costs = s.players[mySeat].hand.map((c) => CARDS[c.id].cost ?? 0);
-          const cheapest = costs.length ? Math.min(...costs) : 0;
-          const treats = readyTreats(s, mySeat);
-          if (costs.length && cheapest > treats)
-            why = `<b>You can't afford anything yet:</b> your cheapest card costs <b>${cheapest}</b> and you have `
-              + `<b>${treats}</b> ready ${treats === 1 ? 'Offering' : 'Offerings'}. Pass — next round you make another `
-              + `Offering and draw 2 cards.`;
-          else if (costs.length) {
-            // Affordable but unplayable: say which card and why, e.g. a Toy with no unit to attach to.
-            const blocked = s.players[mySeat].hand.find((c) => (CARDS[c.id].cost ?? 0) <= treats);
-            why = `<b>Nothing you can play right now.</b> ${blocked ? esc(whyUnplayable(s, blocked.id, 'action')) : ''} Pass.`;
-          }
-        }
-        text = `<b>Your action.</b> ${hints.length ? `${orList(hints).replace(/^./, (c) => c.toUpperCase())}${legal.some((a) => a.t === 'play' || a.t === 'attack') ? ' (click or drag)' : ''}.` : why}`
-          + ` <span class="turn-hint">One thing, then your opponent acts.</span>`;
-        buttons = `${legal.some((a) => a.t === 'takeYarn') ? `<button data-click="btn:yarn" title="Act first next round; you may only pass for the rest of this one">Take the Lantern ${YARN_ICON}</button>` : ''}
-          <button class="primary" data-click="btn:pass">Pass</button>`;
-        break;
-      }
-      case 'pounce':
-        // Online, you're asked every time (so a pause gives nothing away), even with no Pounce to play.
-        text = legal.some((a) => a.t === 'pounce')
-          ? `${describeWindow(s)} <b>Ambush?</b> Click a glowing Ambush card, or let it happen.`
-          : `${describeWindow(s)} Nothing to Ambush with: it happens in a moment.`;
-        buttons = '<button class="primary" data-click="btn:decline">Let it happen</button>';
-        break;
-      case 'lucky': {
-        const card = s.players[mySeat].hand.find((c) => c.uid === prompt.uid)!;
-        const free = legal.some((a) => a.t === 'lucky' && !a.target);
-        const targeted = legal.some((a) => a.t === 'lucky' && a.target);
-        text = free || targeted
-          ? `🍀 <b>Lucky!</b> The Candle you lost is <b>${esc(cardName(card.id))}</b> — play it for free${targeted ? ' by choosing a target' : ''}?`
-          : `The Candle you lost is <b>${esc(cardName(card.id))}</b>. It goes to your hand.`;
-        buttons = `${free ? '<button class="primary" data-click="btn:free">Play for free</button>' : ''}<button data-click="btn:keep">Keep in hand</button>`;
-        break;
-      }
-      case 'choose':
-        text = `Choose a unit for <b>${esc(cardName(prompt.sourceId))}</b>’s effect.`;
-        break;
-    }
+    const level = legal.find((a) => a.t === 'levelUp');
+    const over = me.hand.length - HAND_LIMIT;
+    const interest = interestOn(s, me.offerings);
+    text = `<b>Muster, round ${s.round}.</b> Build your side in secret: play units into your lanes, move them, level up, then press <b>Ready</b>. `
+      + `You have <b>${me.offerings}</b> ${TERMS.offerings}${interest ? ` (saved, they earn <b>+${interest}</b> next round)` : ''}.`;
+    if (over > 0) text += ` <b>Too many cards:</b> offer ${over} before you can be Ready (tap a card, then Offer it).`;
+    buttons = `${level ? `<button data-click="btn:level" title="One more lane">Level up <small>(${levelCost(s, mySeat)})</small></button>` : ''}
+      <button class="primary" data-click="btn:ready" ${over > 0 ? 'disabled' : ''}>Ready</button>`;
   }
-  // What the opponent just did, so its moves don't go unnoticed between your own.
-  // (Hidden during a Pounce window, whose own prompt already describes the opponent's move.)
-  const recap = humanPrompt()?.kind === 'pounce' ? [] : foeRecap(s).slice(-3);
-  const foe = foeName();
-  const withoutName = (t: string) => (t.startsWith(`${foe}'s `) ? `their ${t.slice(foe.length + 3)}` : t.startsWith(`${foe} `) ? t.slice(foe.length + 1) : t);
-  const recapLine = recap.length
-    ? `<div class="recap"><b>${esc(foe)}:</b> ${recap.map((t) => esc(withoutName(t))).join(' → ')}</div>`
-    : '';
   if (prompt && onl?.text) text = `${onl.text} ${text}`;
   if (onl?.buttons) buttons = `${onl.buttons}${buttons}`;
   return `<section class="midbar">
     <div class="round"><small>Round</small><b>${s.round}</b></div>
-    <div class="prompt">${notice ? `<div class="notice">✓ ${esc(notice)}</div>` : ''}${recapLine}${text}${hintLine && prompt ? `<div class="hint-line">💡 ${esc(hintLine)}</div>` : ''}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
+    <div class="prompt">${notice ? `<div class="notice">✓ ${esc(notice)}</div>` : ''}${text}${hintLine && prompt ? `<div class="hint-line">💡 ${esc(hintLine)}</div>` : ''}${flash ? `<div class="flash">${esc(flash)}</div>` : ''}</div>
     <div class="buttons">${buttons}</div>
   </section>`;
 }
 
-/** A finished game means the next visit starts normally, and it goes on the tally. */
+/**
+ * The Clash, as a report to read: what happened before the fight, then each bout, then who won and what it cost.
+ * Nothing moves on the board; the board shows how things stand.
+ */
+function renderClashReport(s: GameState): string {
+  const report = clashReport!;
+  const sections: { title: string; lines: LogEntry[] }[] = [{ title: 'Before the fight', lines: [] }];
+  let result: LogEntry[] = [];
+  for (const e of report.lines.slice(1)) {
+    if (/^Bout \d+\.$/.test(e.text)) { sections.push({ title: e.text.replace('.', ''), lines: [] }); continue; }
+    if (/ wins the Clash | still stand: |Nobody wins the Clash|loses a Candle|wins!$/.test(e.text) || result.length) { result = [...result, e]; continue; }
+    sections.at(-1)!.lines.push(e);
+  }
+  const line = (e: LogEntry) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : ''}">${esc(humanize(e.text))}</li>`;
+  const body = sections.filter((x) => x.lines.length)
+    .map((x) => `<section><h3>${esc(x.title)}</h3><ul>${x.lines.map(line).join('')}</ul></section>`).join('');
+  const over = s.winner !== null;
+  return `<div class="overlay">
+    <div class="clash-report" role="dialog" aria-label="The Clash">
+      <h2>The Clash · round ${report.round}</h2>
+      <div class="cr-body" data-keep-scroll="clash">${body}</div>
+      <ul class="cr-result">${result.map(line).join('')}</ul>
+      <button class="primary" data-click="report:close">${over ? 'See the result' : 'On to the next round'}</button>
+    </div>
+  </div>`;
+}
+
 let countedGame: GameState | null = null;
 
 function renderGameOver(s: GameState): string {
@@ -1523,8 +1391,7 @@ function renderSettings(alreadyOpen: boolean): string {
       aria-current="${id === current ? 'page' : 'false'}">${labels[id]}</button>`;
   const body: Record<SettingsSection, () => string> = {
     gameplay: () => `
-      ${row('Animations', 'Show attacks, damage and played cards as they happen', choice('anim', 'on', 'On', animationsEnabled()) + choice('anim', 'off', 'Off', !animationsEnabled()))}
-      ${row('Speed', 'How long the computer pauses, and how fast animations play', choice('speed', 'normal', 'Normal', speed === 'normal') + choice('speed', 'fast', 'Fast', speed === 'fast'))}
+      <p class="setting-note">The Clash is a report to read, not an animation: nothing to switch on or off here.</p>
       ${ONLINE && signedIn() ? `<p class="setting-note">${esc(onlineStatus())}</p>` : ''}`,
     sound: () => row('Sound', '', choice('sound', 'on', 'On', soundEnabled()) + choice('sound', 'off', 'Off', !soundEnabled())),
     account: () => (ACCOUNTS ? `<div class="account-panel">${renderAccountPanel()}</div>` : ''),
@@ -1567,29 +1434,34 @@ function onlineStatus(): string {
 }
 
 function renderRules(): string {
+  const r = game?.rules;
   return `<div class="overlay">
     <div class="rules" role="dialog" aria-label="Quick rules">
       <button class="icon-button rules-close" data-click="ui:rules" aria-label="Close" title="Close">×</button>
       <h2>Quick rules</h2>
-      <p><b>Goal:</b> knock out all 9 of the rival Hero’s Candles.</p>
-      <p><b>Each round:</b> ready everything, draw 2, and you may offer 1 card face-down as an <b>Offering</b>. Offerings pay for cards — any card can be an Offering.</p>
-      <p><b>Actions:</b> players alternate <i>one</i> action at a time: play a card, attack, use your Hero’s ability, <b>Take the Lantern</b> (act first next round, but only pass for the rest of this one; you can still Ambush or play a Lucky Candle, and your opponent keeps acting until they pass), or pass. The round ends when both pass in a row. Holding the Lantern just means you act first. If nobody takes it, it goes to the other player; you may take it while you hold it, to keep it.</p>
-      <p><b>Attacking:</b> exhaust a ready unit and pick a target. Units trade damage (damage stays). Hitting a Hero takes a Candle — <b>2</b> if the attacker is Fierce. Units enter exhausted unless they have <b>Swift</b>.</p>
-      <p><b>Guardian</b> must be attacked first, unless the attacker is <b>Sneaky</b>. <b>Tough X</b> reduces damage taken by X.</p>
-      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). Or tap a card, then the magnifier button: it opens that card full size, and closes it again. The book button opens the story so far: everything that has happened in this game.</p>
-      <p><b>How to play a card:</b> click it (or drag it onto the board). If it needs a target, the valid targets pulse pink — click one, or drop the card straight onto it. To attack, click or drag one of your ready units (yellow glow) onto an enemy.</p>
-      <p><b>Families (classes):</b> each family has a signature mechanic.
+      <p><b>Goal:</b> blow out all 9 of the rival Hero’s Candles.</p>
+      <p><b>Each round:</b> the <b>Muster</b>, then the <b>Clash</b>. At the start of each round (but the first) you draw 2 cards and get your income in ${TERMS.offerings}.</p>
+      <p><b>${TERMS.offerings} are money.</b> What you don’t spend is kept, and every ${r?.interestPer ?? 5} saved earn 1 more at the start of the next round (at most ${r?.interestMax ?? 3}). You can also offer a card from your hand, or a unit from your board, for 1.</p>
+      <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Play units into your six lanes (as many as your Hero’s <b>Level</b>; level up for more), move them, play Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
+      <p><b>Stars:</b> play a second copy of a Creature you have on the board and it merges: 2 stars, twice its printed Power and Health; a third copy makes 3. Fabled never merge.</p>
+      <p><b>Aimed at the enemy:</b> damage and other effects aimed at their units are aimed at a <b>lane</b>, and happen when the Clash begins, to whoever stands there. With nobody there, they fizzle.</p>
+      <p><b>The Clash</b> plays itself. In each bout every unit hits one enemy, all at once (Swift units first). Who it hits: <b>Guardians</b> first, then plain units, then <b>Elusive</b> ones, <b>Lures</b> last; <b>Sneaky</b> units go the other way round. Among equals, the one across from it, then the nearest. A unit whose damage reaches its Health goes down.</p>
+      <p><b>Winning the Clash:</b> when one side has nobody standing, it loses a Candle for each enemy unit still standing (2 for a <b>Fierce</b> one), at most ${r?.clashCandleCap ?? 2}. If both sides still stand after ${r?.boutCap ?? 8} bouts, both lose Candles. Then every unit stands up again: <b>nothing on the board is lost in a Clash</b>.</p>
+      <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free in the next Muster.</p>
+      <p><b>Your Hero:</b> its ability can be used once a round. When its Awaken condition is met it Awakens for good, and strikes when the Clash begins (unless you used its ability that round).</p>
+      <p><b>Hand limit:</b> you can’t be Ready with more than ${HAND_LIMIT} cards: offer the extra ones.</p>
+      <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). The book button opens the story so far.</p>
+      <p><b>Families:</b> each family has a signature mechanic.
         ${Object.entries(MECHANICS).filter(([, m]) => m.family).map(([name, m]) => `<b>${esc(familyName(m.family))} — ${esc(name)}:</b> ${esc(m.reminder)}`).join('\n        ')}</p>
-      <p><b>Ambush:</b> when your opponent plays a card or attacks, you may play one Ambush card first, paid from your ready Offerings. It doesn’t use up your turn. One Ambush per card or attack, and none on an Ambush.</p>
-      <p><b>Candles:</b> a lost Candle goes into your hand. If it’s <b>Lucky</b>, you may play it for free right away, even in your opponent’s turn; kept, it costs its full price later.</p>
-      <p><b>Awaken:</b> when its condition is met, your Hero Awakens — stronger ability, and it can attack. If it is still ready, it can act the same round.</p>
-      <p><b>Hand limit:</b> at the end of a round, discard down to ${HAND_LIMIT} cards.</p>
       <p><a href="${BASE}rules.html" target="_blank" rel="noopener">Full rulebook</a></p>
       ${summary() ? `<p class="progress-note">On this device: ${summary()}.</p>` : ''}
       <button class="primary" data-click="ui:rules">Got it</button>
     </div>
   </div>`;
 }
+
+// No drag and drop: a card is played by tapping it, then the lane or the target, which light up.
+let suppressClick = false;
 
 // ── Events ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -1627,81 +1499,6 @@ app.addEventListener('click', (event) => {
   if (arrow) turnDeck(Number(arrow.dataset.deckScroll));
 });
 
-// ── Drag and drop ────────────────────────────────────────────────────────────────────────────────
-//
-// Drag a hand card onto the board to play it (or straight onto its target), or drag one of your
-// ready units onto what it should attack. It is a gesture over the same actions as clicking: a drop
-// that doesn't pick a target leaves the targets highlighted to click.
-
-interface Drag { key: string; x0: number; y0: number; el: HTMLElement; ghost?: HTMLElement; options: Action[] }
-let drag: Drag | null = null;
-let suppressClick = false;
-
-function dragOptions(key: string): Action[] {
-  const prompt = humanPrompt();
-  if (!game || !prompt) return [];
-  const [kind, raw] = key.split(':');
-  const uid = Number(raw);
-  const legal = legalActions(game);
-  if (kind === 'hand') {
-    if (prompt.kind === 'plant') return [{ t: 'plant', uid }];
-    return legal.filter((a) => (a.t === 'play' || a.t === 'pounce') && a.uid === uid);
-  }
-  if (kind === 'unit' && prompt.kind === 'action')
-    return legal.filter((a) => a.t === 'attack' && a.attacker.kind === 'unit' && a.attacker.uid === uid);
-  return [];
-}
-
-app.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0) return;
-  const el = (event.target as HTMLElement).closest<HTMLElement>('[data-click^="hand:"], [data-click^="unit:"]');
-  if (!el) return;
-  const options = dragOptions(el.dataset.click!);
-  if (!options.length) return;
-  drag = { key: el.dataset.click!, x0: event.clientX, y0: event.clientY, el, options };
-});
-
-window.addEventListener('pointermove', (event) => {
-  if (!drag) return;
-  if (!drag.ghost) {
-    if (Math.hypot(event.clientX - drag.x0, event.clientY - drag.y0) < 8) return;
-    const rect = drag.el.getBoundingClientRect();
-    const ghost = drag.el.cloneNode(true) as HTMLElement;
-    ghost.classList.add('drag-ghost');
-    Object.assign(ghost.style, { width: `${rect.width}px`, height: `${rect.height}px`, left: `${rect.left}px`, top: `${rect.top}px` });
-    document.body.appendChild(ghost);
-    drag.ghost = ghost;
-    // Highlight where it can go.
-    const label = drag.key.startsWith('hand:') ? 'the card you are dragging' : 'the attack';
-    if (drag.options.some((a) => actionTarget(a))) { selection = { label, options: drag.options }; render(); }
-    document.body.classList.add('dragging');
-  }
-  drag.ghost.style.transform = `translate(${event.clientX - drag.x0}px, ${event.clientY - drag.y0}px) rotate(3deg) scale(1.05)`;
-});
-
-window.addEventListener('pointerup', (event) => {
-  const d = drag;
-  drag = null;
-  if (!d?.ghost) return;
-  d.ghost.remove();
-  document.body.classList.remove('dragging');
-  suppressClick = true;
-  window.setTimeout(() => { suppressClick = false; }, 0);
-
-  const under = document.elementFromPoint(event.clientX, event.clientY);
-  const dropKey = under?.closest<HTMLElement>('[data-click^="unit:"], [data-click^="hero:"]')?.dataset.click;
-  const onTarget = d.options.find((a) => targetKey(actionTarget(a)) === dropKey);
-  if (onTarget) return act(onTarget);
-
-  const backInHand = !!under?.closest('.hand') && d.key.startsWith('hand:');
-  const onBoard = !!under?.closest('.board') && !backInHand;
-  const untargeted = d.options.filter((a) => !actionTarget(a));
-  if (onBoard && d.options.length === 1 && untargeted.length === 1) return act(untargeted[0]);
-  if (!onBoard || !d.options.some((a) => actionTarget(a))) { selection = null; render(); return; }
-  // Dropped on the board but it needs a target: keep the targets lit for a click.
-  selection = { label: d.key.startsWith('hand:') ? cardName(game!.players[mySeat].hand.find((c) => `hand:${c.uid}` === d.key)?.id ?? '') : 'the attack', options: d.options };
-  render();
-});
 
 // The side panel's inspector shows the card you point at: hovered with a mouse, or tapped on a touch
 // screen (a tap fires no reliable mouseover on iPad). The choice is remembered, so redrawing the screen
@@ -1731,12 +1528,12 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   const text = cardKey ? zoomText(cardKey) : '';
   const used = glossary().filter((k) => k.test.test(text));
   const cost = cardKey && !/-(kitten|bigcat)$/.test(cardKey) ? CARDS[cardKey]?.cost : undefined;
-  // Treats are the game's only currency, and a playtester got through a whole game without noticing.
+  // Offerings are the game's only currency, and a playtester got through a whole game without noticing.
   const price = cost === undefined ? '' : (() => {
-    const ready = game ? readyTreats(game, mySeat) : 0;
-    const enough = ready >= cost;
+    const have = game ? game.players[mySeat].offerings : 0;
+    const enough = have >= cost;
     return `<p class="zoom-cost ${enough ? '' : 'short'}">Costs <b>${cost}</b> ${cost === 1 ? 'Offering' : 'Offerings'}`
-      + `${game ? ` · you have <b>${ready}</b> ready${enough ? '' : ' — not enough yet'}` : ''}</p>`;
+      + `${game ? ` · you have <b>${have}</b>${enough ? '' : ': not enough yet'}` : ''}</p>`;
   })();
   const status = state ? `<p class="zoom-state">${esc(state)}</p>` : '';
   const panel = used.length || price || status
@@ -1781,7 +1578,7 @@ app.addEventListener('pointerdown', (event) => {
   window.clearTimeout(pressTimer);
   pressTimer = window.setTimeout(() => {
     pressAt = null;
-    drag = null;           // a long press is never also a drag
+
     suppressClick = true;  // ...nor a click when the finger lifts
     openZoom(el.dataset.zoom!, el.dataset.zoomCard, el.dataset.zoomState);
     zoomHeld = true;
@@ -1860,11 +1657,8 @@ document.addEventListener('keydown', (event) => {
 if (import.meta.env.DEV) {
   Object.assign(window, {
     fruitcats: {
-      get game() { return game; }, chooseAction, legalActions, apply, render, CARDS, act,
+      get game() { return game; }, chooseAction, legalActions, apply, render, CARDS, act, viewFor,
       get online() { return ol; },
-      set fast(on: boolean) { aiDelayScale = on ? 0 : 1; },
-      set aiDelay(scale: number) { aiDelayScale = scale; },
-      get animating() { return isAnimating(); },
     },
   });
 }

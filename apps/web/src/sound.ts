@@ -1,11 +1,11 @@
 // Sound effects: a few short recorded sounds (CC0, see art/sounds/CREDITS.md), kept deliberately
 // sparse — only the moments that matter make a sound:
 //
-//   card played · Hero ability · attack hits a Hero (you hit / you're hit) · attack fails
+//   card played · Hero ability · a Clash won or lost · an effect that fizzles
 //
 // Sounds follow the game log, so every event makes a sound whoever caused it (you or the AI):
-// `playLogSounds(game)` is called after each render and plays the entries it hasn't heard yet.
-// With animations on, fx.ts plays each sound at the moment its animation lands instead.
+// `playLogSounds(game)` is called after each render and plays the entries it hasn't heard yet,
+// leaving out what the other player did in a Muster still going (it's theirs until the Clash).
 // Browsers (iOS in particular) only allow audio after a user gesture, so the audio context is
 // created/resumed on the first tap or click.
 
@@ -108,22 +108,29 @@ export function resetLogSounds(game: GameState | null) {
 
 /** Which sound a log line makes, if any. `human` is the player you control. */
 function soundFor(text: string, player: PlayerId | undefined, human: PlayerId): SoundName | null {
-  if (/attack is cancelled|attack fizzles/.test(text)) return 'fail';
-  if (/^Hit!/.test(text)) return player === human ? 'hitGood' : 'hitBad';
+  if (/fizzles\.$/.test(text)) return 'fail';
+  // The Clash's result: a win for whoever's side is still standing.
+  if (/ wins the Clash /.test(text)) return text.startsWith(`${heardNames[human]} `) ? 'hitGood' : 'hitBad';
   if (/uses their ability/.test(text)) return 'ability';
-  if (/ plays? | (POUNCES|AMBUSHES) with /.test(text)) return 'card';
+  if (/ plays? |'s Ambush in lane /.test(text)) return 'card';
+  void player;
   return null;
 }
+/** The players' names, to tell whose Clash it was. */
+let heardNames: [string, string] = ['', ''];
 
 export function playLogSounds(game: GameState | null, human: PlayerId) {
   if (!game) return;
   if (game !== heardGame) { resetLogSounds(game); return; }
   const fresh = game.log.slice(heard);
   heard = game.log.length;
+  heardNames = [game.players[0].name, game.players[1].name];
   if (!enabled || !fresh.length) return;
   // Each kind of sound plays at most once per update, a beat apart, so a burst stays calm.
   const names = new Set<SoundName>();
   for (const entry of fresh) {
+    // What the other player does in the Muster is theirs until the Clash: no sound gives it away.
+    if (entry.secret !== undefined && entry.secret !== human) continue;
     const name = soundFor(entry.text, entry.player, human);
     if (name) names.add(name);
   }

@@ -11,7 +11,7 @@
 // (judge()), which is how players are compared.
 
 import {
-  CARDS, STRATEGY_PRIMER, rulesPrimer, apply, cardName, chooseAction, choicesText, createGame, describe, determinize,
+  CARDS, STRATEGY_PRIMER, rulesPrimer, apply, cardName, chooseAction, choicesText, createGame, describe, determinize, nextSeat, visibleLog,
   listChoices, parseChoice, scoreActions,
   type Action, type Choices, type DeckList, type GameState, type PlayerId,
 } from '../lib/engine';
@@ -37,8 +37,8 @@ export interface GameReport {
 export interface Judgement { moves: number; agreed: number; regret: number; yarnWithMovesLeft: number; passWithMovesLeft: number }
 const noJudgement = (): Judgement => ({ moves: 0, agreed: 0, regret: 0, yarnWithMovesLeft: 0, passWithMovesLeft: 0 });
 
-function judge(s: GameState, chosen: Action, j: Judgement, seed: number): void {
-  const scored = scoreActions(s, mulberry(seed ^ s.actions ^ 0x5bd1));
+function judge(s: GameState, seat: PlayerId, chosen: Action, j: Judgement, seed: number): void {
+  const scored = scoreActions(s, mulberry(seed ^ s.actions ^ 0x5bd1), seat);
   if (scored.length < 2) return;
   const key = JSON.stringify(chosen);
   const mine = scored.find((x) => JSON.stringify(x.action) === key)?.score ?? -Infinity;
@@ -46,11 +46,11 @@ function judge(s: GameState, chosen: Action, j: Judgement, seed: number): void {
   j.moves++;
   if (mine >= best - 0.01) j.agreed++;
   if (Number.isFinite(mine)) j.regret += Math.min(20, best - mine);
-  // A real move was on the table (worth clearly more than doing nothing) and the LLM stopped instead.
-  const stop = scored.find((x) => x.action.t === 'pass')?.score ?? -Infinity;
-  const moveLeft = scored.some((x) => (x.action.t === 'play' || x.action.t === 'attack' || x.action.t === 'ability') && x.score > stop + 0.5);
-  if (moveLeft && chosen.t === 'takeYarn') j.yarnWithMovesLeft++;
-  if (moveLeft && chosen.t === 'pass') j.passWithMovesLeft++;
+  // A real move was on the table (worth clearly more than being Ready) and the LLM stopped instead.
+  // (passWithMovesLeft counts those Readies; yarnWithMovesLeft stays 0: there's no Lantern to take any more.)
+  const stop = scored.find((x) => x.action.t === 'ready')?.score ?? -Infinity;
+  const moveLeft = scored.some((x) => (x.action.t === 'play' || x.action.t === 'levelUp' || x.action.t === 'ability') && x.score > stop + 0.5);
+  if (moveLeft && chosen.t === 'ready') j.passWithMovesLeft++;
 }
 
 export interface LlmGame {
@@ -75,7 +75,7 @@ const PLAN_FORMAT = 'Reply with one or two short sentences of reasoning, then a 
 
 function systemPrompt(persona: Persona, spec: PlayerSpec): string {
   const tools = spec.tools.length
-    ? `\n\nTOOLS\nBefore choosing you may look things up, up to ${spec.maxToolCalls} times a move:${spec.tools.includes('preview') ? '\n- preview(choice): exactly what happens after a choice, from the real rules (assuming your opponent doesn\'t Ambush; cards you would draw are random). Preview the moves you are unsure about, especially attacks and taking the Lantern.' : ''}${spec.tools.includes('card') ? '\n- card(name): a card\'s full text.' : ''}${spec.tools.includes('log') ? '\n- log(count): the last events of the game.' : ''}${spec.tools.includes('note') ? '\n- note(text): keep a short note (a plan, what the opponent holds back); your notes are shown to you on every later move.' : ''}\nThen call choose(choice, reason) with the number of your choice. For a pick-several choice (mulligan, offering), reply in text instead.`
+    ? `\n\nTOOLS\nBefore choosing you may look things up, up to ${spec.maxToolCalls} times a move:${spec.tools.includes('preview') ? '\n- preview(choice): exactly what happens after a choice, from the real rules (your opponent\'s board as you last saw it; cards you would draw are random). Preview the moves you are unsure about, especially Ready, which may start the Clash.' : ''}${spec.tools.includes('card') ? '\n- card(name): a card\'s full text.' : ''}${spec.tools.includes('log') ? '\n- log(count): the last events of the game.' : ''}${spec.tools.includes('note') ? '\n- note(text): keep a short note (a plan, what the opponent holds back); your notes are shown to you on every later move.' : ''}\nThen call choose(choice, reason) with the number of your choice. For a pick-several choice (mulligan, offering), reply in text instead.`
     : '';
   return `${rulesPrimer()}${spec.tips ? `\n\n${STRATEGY_PRIMER}` : ''}\n\nYOU\n${persona.style}${tools}\n\n${spec.plan ? PLAN_FORMAT : ANSWER_FORMAT}`;
 }
@@ -92,10 +92,9 @@ const TOOL_SPECS: Record<ToolName | 'choose', ToolSpec> = {
 function previewChoice(s: GameState, seat: PlayerId, action: Action, seed: number): string {
   const w = determinize(s, seat, mulberry(seed ^ s.actions ^ 0x77));
   const before = w.log.length;
-  try { apply(w, action); } catch (e) { return `That choice can't be previewed: ${(e as Error).message}`; }
-  for (let i = 0; i < 30 && w.winner === null && w.prompt && w.prompt.player !== seat && w.prompt.kind === 'pounce'; i++) apply(w, { t: 'decline' });
+  try { apply(w, action, seat); } catch (e) { return `That choice can't be previewed: ${(e as Error).message}`; }
   const end = w.winner === null ? '' : w.winner === seat ? 'YOU WOULD WIN.\n' : 'YOU WOULD LOSE.\n';
-  return `IF YOU CHOOSE THIS (assuming your opponent doesn't Ambush; cards you would draw are random):\n${end}${describe(w, seat, Math.max(1, w.log.length - before))}`;
+  return `IF YOU CHOOSE THIS (your opponent's board as you last saw it; cards you would draw are random):\n${end}${describe(w, seat, Math.max(1, w.log.length - before))}`;
 }
 
 function cardText(name: string): string {
@@ -116,14 +115,14 @@ function jsonIn(text: string): Record<string, unknown> | null {
 interface Decision { action: Action | null; reason: string; calls: number; replies: Reply[] }
 
 /** A single-call player: one request, asked once more for just the number if the reply names none. */
-async function decideByText(provider: Provider, messages: ChatMessage[], s: GameState, choices: Choices): Promise<Decision> {
+async function decideByText(provider: Provider, messages: ChatMessage[], s: GameState, seat: PlayerId, choices: Choices): Promise<Decision> {
   const replies: Reply[] = [];
   let first = '';
   for (let attempt = 0; attempt < 2; attempt++) {
     const reply = await provider.chat(messages);
     replies.push(reply);
     if (!attempt) first = reply.text;
-    const parsed = parseChoice(s, reply.text);
+    const parsed = parseChoice(s, reply.text, seat);
     if ('action' in parsed) return { action: parsed.action, reason: first, calls: replies.length, replies };
     // Small models often explain a move without naming its number; asked for only the number, they give it.
     const ask = choices.multi ? 'Which hand cards is that? Reply with only the H numbers, or "none".' : 'Which of the numbered choices is that? Reply with only the number.';
@@ -144,7 +143,7 @@ async function decideByTools(
     const reply = await provider.chat(messages, 1200, tools);
     replies.push(reply);
     if (!reply.toolCalls.length) {
-      const parsed = parseChoice(s, reply.text);
+      const parsed = parseChoice(s, reply.text, seat);
       if ('action' in parsed) return { action: parsed.action, reason: reply.text, calls: replies.length, replies };
       messages.push({ role: 'assistant', content: reply.text }, { role: 'user', content: 'Call choose(choice, reason) with the number of your choice.' });
       continue;
@@ -165,7 +164,7 @@ async function decideByTools(
         looked++;
         if (call.name === 'preview') result = option ? previewChoice(s, seat, option.action, seed) : `There is no choice ${call.args.choice}.`;
         else if (call.name === 'card') result = cardText(String(call.args.name ?? ''));
-        else if (call.name === 'log') result = s.log.slice(-Math.min(40, Math.max(1, Number(call.args.count) || 8))).map((e) => `R${e.round} ${e.text}`).join('\n') + '\n(You are "LLM" in the log.)';
+        else if (call.name === 'log') result = visibleLog(s.log, seat).slice(-Math.min(40, Math.max(1, Number(call.args.count) || 8))).map((e) => `R${e.round} ${e.text}`).join('\n') + '\n(You are "LLM" in the log.)';
         else if (call.name === 'note') { notes.push(String(call.args.text ?? '').slice(0, 200)); if (notes.length > 6) notes.shift(); result = 'Noted.'; }
         else result = `There is no tool called ${call.name}.`;
       }
@@ -193,12 +192,13 @@ export async function playLlmGame(
   let llmMoves = 0, fallbacks = 0, ms = 0, calls = 0;
   const lines: string[] = [`# ${persona.name} (${spec.name} player): ${deck.name} vs ${vs.name} (bot), seed ${seed}`, ''];
 
-  while (s.winner === null) {
-    const p = s.prompt!.player;
-    if (p !== seat) { apply(s, chooseAction(s, { random: mulberry(seed ^ s.actions) })); continue; }
-    const choices = listChoices(s, { detail: spec.detail });
-    if (!choices.multi && choices.options.length === 1) { apply(s, choices.options[0].action); continue; }
-    if (budget.remaining() <= 0) { apply(s, chooseAction(s, { random: mulberry(seed ^ s.actions) })); fallbacks++; continue; }
+  for (let p = nextSeat(s); p !== null; p = nextSeat(s)) {
+    // During the Muster the bot builds first (nextSeat gives the Lantern holder first, and its moves are out of
+    // the LLM's sight either way).
+    if (p !== seat) { apply(s, chooseAction(s, { random: mulberry(seed ^ s.actions), seat: p }), p); continue; }
+    const choices = listChoices(s, { detail: spec.detail }, seat);
+    if (!choices.multi && choices.options.length === 1) { apply(s, choices.options[0].action, seat); continue; }
+    if (budget.remaining() <= 0) { apply(s, chooseAction(s, { random: mulberry(seed ^ s.actions), seat }), seat); fallbacks++; continue; }
 
     const memory = [
       spec.plan && plan ? `YOUR PLAN FROM YOUR LAST MOVE: ${plan}` : '',
@@ -210,7 +210,7 @@ export async function playLlmGame(
     ];
     const d = spec.tools.length && !choices.multi
       ? await decideByTools(provider, spec, messages, s, seat, choices, seed, notes, toolCalls)
-      : await decideByText(provider, messages, s, choices);
+      : await decideByText(provider, messages, s, seat, choices);
     for (const r of d.replies) { usage = addUsage(usage, r.usage); ms += r.ms; }
     calls += d.calls;
     llmMoves++;
@@ -219,10 +219,10 @@ export async function playLlmGame(
     let action = d.action;
     if (!action) {
       fallbacks++;
-      action = chooseAction(s, { random: mulberry(seed ^ s.actions) });
+      action = chooseAction(s, { random: mulberry(seed ^ s.actions), seat });
       lines.push(`**R${s.round}** (no legal answer; the bot chose)`, '');
     } else {
-      if (!choices.multi) judge(s, action, judgement, seed);
+      if (!choices.multi) judge(s, seat, action, judgement, seed);
       const hand = s.players[seat].hand;
       const picked = 'uids' in action
         ? action.uids.map((u) => cardName(hand.find((c) => c.uid === u)!.id)).join(', ') || 'none'
@@ -231,7 +231,7 @@ export async function playLlmGame(
       const looked = d.calls > 1 && spec.tools.length ? ` _(${d.calls - 1} look-up${d.calls > 2 ? 's' : ''})_` : '';
       lines.push(`**R${s.round}** ${choices.question} → ${picked}${looked}`, `> ${reason}`, '');
     }
-    apply(s, action);
+    apply(s, action, seat);
   }
 
   const won = s.winner === 'draw' ? null : s.winner === seat;

@@ -15,7 +15,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arg, flag, numArg } from '../lib/args';
-import { CARDS, DECKS, apply, deckCode, rulesPrimer, choicesText, chooseAction, createGame, describe, type DeckList } from '../lib/engine';
+import { CARDS, DECKS, apply, deckCode, rulesPrimer, choicesText, chooseAction, createGame, describe, nextSeat, type DeckList } from '../lib/engine';
 import { mulberry, seedFrom } from '../lib/rng';
 import { finishRun, newRun, pct, reportProgress, type Problem, type RunSummary } from '../lib/runs';
 import { loadDecks } from '../decks/library';
@@ -159,7 +159,7 @@ async function bench(providerName: string, models: string[] | undefined): Promis
   // A mid-game decision with real choices in it.
   const [first, second] = Object.keys(DECKS);
   const s = createGame({ decks: [first, second], seed: 11 });
-  while (!(s.prompt?.kind === 'action' && s.round >= 3 && s.prompt.player === 0)) apply(s, chooseAction(s, { random: mulberry(s.actions) }));
+  while (!(s.prompt?.kind === 'muster' && s.round >= 3 && s.muster?.open[0]) && s.winner === null) apply(s, chooseAction(s, { random: mulberry(s.actions) }), nextSeat(s)!);
   const persona = PERSONAS.exploit;
   const messages = [
     { role: 'system' as const, content: `${rulesPrimer()}\n\nYOU\n${persona.style}\n\n${ANSWER_FORMAT}` },
@@ -199,7 +199,7 @@ async function throughput(providerName: string, model: string | undefined, level
   const positions: string[] = [];
   for (let seed = 1; positions.length < 16; seed++) {
     const s = createGame({ decks: Object.keys(DECKS).slice(seed % 2, seed % 2 + 2) as [string, string], seed });
-    while (!(s.prompt?.kind === 'action' && s.round >= 2 + (seed % 4)) && s.winner === null) apply(s, chooseAction(s, { random: mulberry(s.actions) }));
+    while (!(s.prompt?.kind === 'muster' && s.round >= 2 + (seed % 4)) && s.winner === null) apply(s, chooseAction(s, { random: mulberry(s.actions) }), nextSeat(s)!);
     if (s.winner === null) positions.push(`${describe(s, s.prompt!.player)}\n\n${choicesText(s)}\n\n${ANSWER_REMINDER}`);
   }
   console.log(`${p.name} ${p.model}: ${seconds} s at each level\n`);

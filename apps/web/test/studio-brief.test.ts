@@ -46,7 +46,7 @@ describe('a Studio project, read through the core', () => {
   it('reads the cards the pictures are for', () => {
     expect(cardsFrom(read.mochi).get('MC1-X01')).toMatchObject({
       name: 'Mochi, the Sweet Spirit', type: 'Fabled', cost: 4, power: 3, health: 4, family: 'Paragon', rarity: 'legendary',
-      text: 'Guardian. Lucky. Hello: Draw a card.\nGoodbye: Gain two Offerings.',
+      text: 'Guardian. Hello: Get a free roll.\nGoodbye: Gain two Offerings.',
     });
   });
 

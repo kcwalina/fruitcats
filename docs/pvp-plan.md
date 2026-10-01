@@ -147,9 +147,10 @@ The game screen as in Solo, drawn from the view the server sent, with:
 - **No timer**, and the Pounce and Lucky questions stay open 8 seconds instead of 2.5.
 - **What should I do?** suggests a move, in words ("Play Cherry Robin on Pear Hedgehog.") and by lighting it up. It's
   the Solo AI at full strength, which never looks at hidden cards: it blanks out the other hand before it thinks.
-- **Take back**: undoes your last move if the other player hasn't moved since and it showed you nothing new (no card
-  drawn, no Life turned over, not a mulligan). The game is rebuilt from its seed and the moves before it.
-- **Show my hand**: either player can show their hand to the other, face up above their Pawtrait.
+- **Take back**: undoes your last move if the other player hasn't moved since and it showed you nothing new (not a
+  roll or a sale, which reshuffle your deck, and no Candle lost). The game is rebuilt from its seed and the moves
+  before it.
+- **Show my shop**: either player can show their shop to the other, face up at the start of their lanes.
 - **The other player's moves play 1.5 times slower**, so someone new can follow them.
 - **A kinder end**: "Good game!" instead of "You lose!", and what you managed ("You took 5 of Sam's Lives").
 - **It doesn't count** in your record against each other.
@@ -168,15 +169,15 @@ The same code in every mode (`Match` in `apps/api/src/live/match.ts`); only the 
 
 | | Relaxed | Quick | No timer (and teaching) | Ranked |
 |---|---|---|---|---|
-| Each Muster (both players at once), or the mulligan | 3 min | 90 s | none | 75 s |
-| Reserve for the game (the mulligan only) | none | none | none | 2 min |
+| Each Muster (both players at once) | 3 min | 90 s | none | 75 s |
+| Reserve for the game (a decision for one player alone) | none | none | none | 2 min |
 | Hold on (either player still deciding adds it to the Muster) | 2 × 2 min | 2 × 1 min | none | none |
 | Out of time | waits: with one player still deciding, the other may give time, nudge, or after a while claim | the same | never | the plainest moves are made for whoever is still deciding |
 
 Since Folkborn 0.4 (2026-09-30) both players build the Muster at the same time, so one clock times the whole Muster
-for both, and nothing is ever asked mid-round (Ambush and Lucky questions are gone). The plainest move: keep the hand;
-in the Muster, offer the newest cards down to the hand limit, then Ready. In Ranked, three timeouts in a row lose the
-game. The clock stops while either player's connection is down.
+for both, and nothing is ever asked mid-round (Ambush and Lucky questions are gone). Since Folkborn 0.5 (2026-10-01)
+there is no mulligan either, so every decision is a Muster's. The plainest move is Ready. In Ranked, three timeouts in
+a row lose the game. The clock stops while either player's connection is down.
 
 During a Muster only the player who moved is sent the new view: the other player doesn't learn even that something
 happened. A move quotes its own player's count (`seq`, the view's `clockFor`), so the other player's moves never make

@@ -47,12 +47,12 @@ cards = [
     cost = 3, power = 2, health = 3
     number = 'JR1-D02', rarity = common
     art = 'art/JR1-D02.webp'
-    text = 'Hello: Draw a card.'
+    text = 'Hello: Get a free roll.'
     flavor = 'Deep under the South Sea, her loom never stops.'
   }
   dragon-silk = Talisman {
     name = 'Dragon Silk'
-    cost = 2
+    cost = 3
     number = 'JR1-D03', rarity = uncommon
     art = 'art/JR1-D03.webp'
     text = 'Attached unit gets +{extra-health} Health and Guardian.'
@@ -61,10 +61,10 @@ cards = [
   }
   pearl-oyster = Creature {
     name = 'Pearl Oyster'
-    cost = 1, power = 1, health = 2
+    cost = 2, power = 1, health = 2
     number = 'JR1-D04', rarity = common
     art = 'art/JR1-D04.webp'
-    keywords = [@Lure, @Lure]
+    keywords = [@Lure]
     text = 'Lure. Hello: Gain an Offering.'
     flavor = 'When the moon is full, the oysters are full. When the moon is dark, they are empty.'
   }
@@ -125,8 +125,8 @@ cards = [
     cost = 5, power = 5, health = 5
     number = 'JR1-D11', rarity = uncommon
     art = 'art/JR1-D11.webp'
-    keywords = [@Elusive, @Elusive]
-    text = 'Elusive. Hello: Draw a card.'
+    keywords = [@Elusive]
+    text = 'Elusive. Hello: Get a free roll.'
     flavor = 'They leave timber under the tree and take a fair price. Nobody ever sees their faces.'
   }
   elder-of-the-south-sea = Creature {
@@ -153,8 +153,7 @@ cards = [
     cost = 4
     number = 'JR1-D14', rarity = uncommon
     art = 'art/JR1-D14.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. Deal {damage} damage to a unit.'
+    text = 'Deal {damage} damage to a unit.'
     constants = [damage = 5]
     flavor = 'The South Sea is calm, until it isn''t.'
   }
@@ -163,13 +162,12 @@ cards = [
     cost = 1
     number = 'JR1-D15', rarity = uncommon
     art = 'art/JR1-D15.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. Exhaust an enemy unit.'
+    text = 'Exhaust an enemy unit.'
     flavor = 'A line from the poet Li Shangyin. Even enemies stop to look.'
   }
   frost-white-silk = Talisman {
     name = 'Frost-White Silk'
-    cost = 1
+    cost = 2
     number = 'JR1-D16', rarity = uncommon
     art = 'art/JR1-D16.webp'
     text = 'Attached unit gets +{extra-health} Health and Pearl Tears.'
@@ -190,7 +188,7 @@ cards = [
     cost = 4, power = 3, health = 4
     number = 'JR1-D18', rarity = rare
     art = 'art/JR1-D18.webp'
-    text = 'Goodbye: Draw a card.'
+    text = 'Goodbye: Get a free roll.'
     flavor = '"The town is all noise and dust. Back to the mountain, to play with the moon."'
   }
   the-oldest-weaver = Fabled {

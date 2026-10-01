@@ -1,16 +1,17 @@
 // A heuristic AI opponent for the Muster: one-step lookahead over a pruned set of moves, scored by a board
 // evaluation that includes a quick forecast of the coming Clash.
 //
-// It never sees hidden information. Before searching it "determinizes" the game: the opponent's hand is replaced by
-// blank cards, their board by what they showed when the Muster began, and every player's deck and Candles are
-// reshuffled together, so the lookahead can't peek at draws, Lucky cards, Ambushes or the opponent's new units.
+// It never sees hidden information. Before searching it "determinizes" the game: the opponent's shop is replaced by
+// blank cards, their board by what they showed when the Muster began, and every deck is reshuffled, so the lookahead
+// can't peek at the next shop, Ambushes or the opponent's new units. What a roll would deal is a guess from its own
+// shuffled deck, as a player's would be.
 
-import { BLANK_CARD, CARDS, PLUGINS, abilitiesOf, isUnitCard, keywords, usesCondition } from './cards';
+import { BLANK_CARD, CARDS, PLUGINS, abilitiesOf, isUnitCard, usesCondition } from './cards';
 import {
-  HAND_LIMIT, MULLIGAN_MAX, applyTrusted, heroSide, interestOn, isGuardian, legalActions, nextSeat, other, playOptions,
+  applyTrusted, heroSide, interestOn, isGuardian, legalActions, nextSeat, other, playOptions,
   targetRank, unitCount, unitHealth, unitKeywords, unitPower, cantAttack,
 } from './engine';
-import type { Action, CardInst, GameState, PlayerId, Target, Unit } from './types';
+import type { Action, GameState, PlayerId, Target, Unit } from './types';
 
 export interface AiOptions {
   /** 0 = plays randomly, 1 = full strength. Values in between mix in random moves. */
@@ -20,11 +21,13 @@ export interface AiOptions {
   seat?: PlayerId;
 }
 
-const BLANK = BLANK_CARD; // a vanilla card: no Ambush, no Lucky
+const BLANK = BLANK_CARD; // a vanilla card: no Ambush
 const W = {
-  life: 12, hand: 0.9, offering: 0.75, interest: 1.2, level: 1.6, power: 1.5, health: 1.0,
+  life: 12, freeRoll: 0.6, offering: 0.75, interest: 1.2, level: 1.6, power: 1.5, health: 1.0,
   guardian: 0.8, fierce: 1.2, sneaky: 0.8, grown: 6, star: 1.5, clash: 8,
 };
+/** Rolls the bot makes in one Muster at most: a roll is a guess, and guessing on and on only spends. */
+const MAX_ROLLS = 3;
 
 // ── The Clash, foretold ──────────────────────────────────────────────────────────────────────────
 // A quick run of the coming Clash on the units as they stand: the same order of attack, Swift first, Tough,
@@ -137,7 +140,7 @@ export function evaluate(s: GameState, p: PlayerId): number {
   for (const q of [p, other(p)] as PlayerId[]) {
     const pl = s.players[q];
     const sign = q === p ? 1 : -1;
-    let v = pl.lives.length * W.life + Math.min(pl.hand.length, HAND_LIMIT) * W.hand;
+    let v = pl.lives * W.life + (pl.freeRolls ?? 0) * W.freeRoll;
     v += pl.offerings * W.offering + interestOn(s, pl.offerings) * W.interest;
     v += pl.hero.level * W.level;
     for (const u of [...pl.yard, ...(pl.fallen ?? [])]) v += unitValue(s, u);
@@ -150,18 +153,6 @@ export function evaluate(s: GameState, p: PlayerId): number {
 
 // ── The search ───────────────────────────────────────────────────────────────────────────────────
 
-/** How much a card is worth keeping in hand; the lowest-value cards are offered first. */
-function keepValue(card: CardInst, offerings: number): number {
-  const def = CARDS[card.id];
-  if (!def) return 0;
-  const cost = def.cost ?? 0;
-  let v = isUnitCard(card.id) ? (def.power ?? 0) + (def.health ?? 0) : def.type === 'Toy' ? 3 : 4;
-  if (keywords(card.id).pounce) v += 1;
-  if (def.type === 'Cat') v += 3;
-  if (cost > offerings + 8) v -= 3; // too expensive to save up for soon
-  return v;
-}
-
 function shuffled<T>(items: T[], rnd: () => number): T[] {
   const a = [...items];
   for (let i = a.length - 1; i > 0; i--) {
@@ -171,7 +162,7 @@ function shuffled<T>(items: T[], rnd: () => number): T[] {
   return a;
 }
 
-/** The game as player p may know it: the opponent's hand blank, their board as they showed it, decks reshuffled. */
+/** The game as player p may know it: the opponent's shop blank, their board as they showed it, decks reshuffled. */
 export function determinize(s: GameState, p: PlayerId, rnd: () => number): GameState {
   // The story so far doesn't change the evaluation; leaving it out keeps every clone in the search cheap.
   const c = structuredClone({ ...s, log: [], events: [] });
@@ -183,18 +174,11 @@ export function determinize(s: GameState, p: PlayerId, rnd: () => number): GameS
     c.muster = { open: [c.muster!.open[0], c.muster!.open[1]] };
   }
   const opp = c.players[q];
-  opp.hand = opp.hand.map((h) => ({ uid: h.uid, id: BLANK }));
+  opp.shop = opp.shop.map((h) => ({ uid: h.uid, id: BLANK }));
   opp.ambushes = [];
   opp.pending = [];
   delete opp.shown;
-  for (const pl of c.players) {
-    const deck = pl.deck.every((x) => x.id !== '?') ? pl.deck : [];
-    const pool = shuffled([...deck, ...pl.lives.filter((x) => x.id !== '?')], rnd);
-    if (pool.length >= pl.lives.length) {
-      pl.lives = pool.slice(0, pl.lives.length);
-      pl.deck = pool.slice(pl.lives.length);
-    }
-  }
+  for (const pl of c.players) if (pl.deck.every((x) => x.id !== '?')) pl.deck = shuffled(pl.deck, rnd);
   return c;
 }
 
@@ -224,17 +208,17 @@ function usefulTarget(world: GameState, t: Target | undefined): boolean {
 }
 
 /**
- * The moves worth a look: plays and Ambushes on lanes that hold something, a few placements for a new unit, Levels,
- * the Hero's ability. Moving units and offering cards are tried separately (arrange, below), so the search stays small.
+ * The moves worth a look: buys and Ambushes on lanes that hold something, a few placements for a new unit, Levels,
+ * the Hero's ability. Moving, selling and rolling are tried separately (below), so the search stays small.
  */
 function candidates(world: GameState, actions: Action[]): Action[] {
   const out: Action[] = [];
   const seenSlotFor = new Map<string, number>();
   for (const a of actions) {
-    if (a.t === 'ready' || a.t === 'move' || a.t === 'offer') continue;
-    if ((a.t === 'play' || a.t === 'lucky' || a.t === 'ability') && (!usefulTarget(world, a.target) || !usefulTarget(world, (a as { target2?: Target }).target2))) continue;
+    if (a.t === 'ready' || a.t === 'move' || a.t === 'sell' || a.t === 'roll') continue;
+    if ((a.t === 'play' || a.t === 'ability') && (!usefulTarget(world, a.target) || !usefulTarget(world, (a as { target2?: Target }).target2))) continue;
     if (a.t === 'ambush' && a.target && !usefulTarget(world, a.target)) continue;
-    if ((a.t === 'play' || a.t === 'lucky') && a.slot !== undefined) {
+    if (a.t === 'play' && a.slot !== undefined) {
       // Try at most two lanes per card and target: arrange() moves units afterwards if another lane is better.
       const key = `${a.t}:${a.uid}:${JSON.stringify(a.target ?? null)}`;
       const n = seenSlotFor.get(key) ?? 0;
@@ -289,6 +273,34 @@ export function scoreActions(s: GameState, rnd: () => number = Math.random, seat
 /** Moves already made by this player in this Muster. */
 const musterMoves = (s: GameState, p: PlayerId): number => s.clock[p] - (s.musterStart?.clock[p] ?? s.clock[p]);
 
+/** Rolls this player made in this Muster (their own events: a Muster's are secret to them). */
+const rollsThisMuster = (s: GameState, p: PlayerId): number => {
+  let n = 0;
+  for (let i = s.events.length - 1; i >= 0; i--) {
+    const e = s.events[i];
+    if (e.t === 'round' || e.t === 'clash') break;
+    if (e.t === 'roll' && e.p === p) n++;
+  }
+  return n;
+};
+
+/** The best new unit to buy in this world, after a move that opened a lane or dealt a new shop. */
+function bestBuy(world: GameState, p: PlayerId, rnd: () => number, unitsOnly: boolean): { action: Action; score: number } | null {
+  const buys = candidates(world, legalActions(world, p)).filter((a) => a.t === 'play' && (!unitsOnly || isUnitCard(cardOf(world, p, a.uid))));
+  return buys.length ? best(world, p, buys, rnd) : null;
+}
+
+/** A move judged by what it makes possible: the best buy right after it. */
+function thenBuy(world: GameState, p: PlayerId, action: Action, rnd: () => number, unitsOnly: boolean): number {
+  const after = structuredClone(world);
+  try {
+    applyTrusted(after, action, p);
+  } catch {
+    return -Infinity;
+  }
+  return bestBuy(after, p, rnd, unitsOnly)?.score ?? -Infinity;
+}
+
 export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const prompt = s.prompt;
   if (!prompt) throw new Error('no decision pending');
@@ -297,20 +309,8 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const rnd = options.random ?? Math.random;
   const skill = options.skill ?? 1;
 
-  if (prompt.kind === 'mulligan') {
-    const cheap = me.hand.some((c) => (CARDS[c.id].cost ?? 0) <= 2);
-    const aside = me.hand.filter((c) => (CARDS[c.id].cost ?? 0) >= (cheap ? 5 : 4))
-      .sort((a, b) => (CARDS[b.id].cost ?? 0) - (CARDS[a.id].cost ?? 0)).slice(0, MULLIGAN_MAX);
-    return { t: 'mulligan', uids: aside.map((c) => c.uid) };
-  }
-
   const actions = legalActions(s, p);
   const ready: Action = { t: 'ready' };
-  // Too many cards: offer the one worth least.
-  if (me.hand.length > HAND_LIMIT) {
-    const worst = [...me.hand].sort((a, b) => keepValue(a, me.offerings) - keepValue(b, me.offerings))[0];
-    return { t: 'offer', uid: worst.uid };
-  }
   if (musterMoves(s, p) > 30) return ready;
   if (rnd() > skill) {
     // A random move now and then; Ready as often as anything else, so the Muster ends.
@@ -325,34 +325,41 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   const list = candidates(world, actions);
   if (list.length) {
     let top = best(world, p, list, rnd);
-    // A Level pays off with the unit it makes room for: judge it by the best play after it.
+    // A Level pays off with the unit it makes room for: judge it by the best buy after it.
     const level = list.find((a) => a.t === 'levelUp');
     if (level && unitCount(s, p) >= me.hero.level) {
-      const after = structuredClone(world);
-      applyTrusted(after, level, p);
-      const plays = candidates(after, legalActions(after, p)).filter((a) => a.t === 'play' && isUnitCard(cardOf(after, p, a.uid)));
-      if (plays.length) {
-        const follow = best(after, p, plays, rnd);
-        if (follow.score > top.score) top = { action: level, score: follow.score };
-      }
+      const follow = thenBuy(world, p, level, rnd, true);
+      if (follow > top.score) top = { action: level, score: follow };
     }
     if (top.score > readyScore + 0.2) return refine(s, world, p, top.action, list, readyScore, rnd) ?? top.action;
   }
+  // Every lane taken: selling the weakest unit pays off if what it makes room for is better.
+  if (unitCount(s, p) >= me.hero.level) {
+    let top: { action: Action; score: number } | null = null;
+    for (const a of actions) {
+      if (a.t !== 'sell') continue;
+      const score = thenBuy(world, p, a, rnd, true);
+      if (score > readyScore + 0.5 && (!top || score > top.score)) top = { action: a, score };
+    }
+    if (top) return top.action;
+  }
   const move = arrange(world, p, actions, readyScore);
   if (move) return move;
+  // Nothing worth buying: a new shop, if a guess at it promises better than keeping the Offerings.
+  if (actions.some((a) => a.t === 'roll') && rollsThisMuster(s, p) < MAX_ROLLS) {
+    const score = thenBuy(world, p, { t: 'roll' }, rnd, false);
+    if (score > readyScore + 0.5) return { t: 'roll' };
+  }
   return ready;
 }
 
-const cardOf = (s: GameState, p: PlayerId, uid: number): string => s.players[p].hand.find((c) => c.uid === uid)?.id ?? '';
+const cardOf = (s: GameState, p: PlayerId, uid: number): string => s.players[p].shop.find((c) => c.uid === uid)?.id ?? '';
 
 /** A tiny random agent, handy as a baseline in simulations. */
 export function randomAction(s: GameState, rnd: () => number = Math.random, seat?: PlayerId): Action {
   const prompt = s.prompt!;
   const p = seat ?? nextSeat(s) ?? prompt.player;
-  if (prompt.kind === 'mulligan') return { t: 'mulligan', uids: [] };
-  const me = s.players[p];
-  if (me.hand.length > HAND_LIMIT) return { t: 'offer', uid: me.hand[0].uid };
-  const actions = legalActions(s, p).filter((a) => a.t !== 'move' && a.t !== 'offer');
+  const actions = legalActions(s, p).filter((a) => a.t !== 'move' && a.t !== 'sell');
   // Ready one time in four, so a random Muster ends.
   if (rnd() < 0.25 || !actions.length || musterMoves(s, p) > 30) return { t: 'ready' };
   return actions[Math.floor(rnd() * actions.length)];

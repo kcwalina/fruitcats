@@ -22,7 +22,7 @@ export const HERE_MS = 50_000;
 /** While waiting in line, ask again this often. A place is kept only while it's asked for. */
 export const ENTER_EVERY_MS = 10_000;
 /** Bumped when a message changes shape: an older game is asked to reload before it can play online. */
-export const PROTOCOL = 4;
+export const PROTOCOL = 5;
 
 /**
  * How long a request to play waits for an answer. It's kept on the server from the moment it's sent: it ends when the
@@ -61,7 +61,7 @@ export type EnterAnswer =
 // ── The clock ────────────────────────────────────────────────────────────────────────────────────
 
 export interface ClockRules {
-  /** Time for each decision (a mulligan, a round's Muster), in ms; null for no timer. */
+  /** Time for each round's Muster, in ms; null for no timer. */
   moveMs: number | null;
   /** Each player's reserve for the whole game, used once a decision's own time runs out. */
   reserveMs: number;
@@ -112,7 +112,7 @@ export const RANKED_CLOCK: ClockRules = { moveMs: 75_000, reserveMs: 120_000, on
 export interface ChallengeOptions {
   pace: Pace;
   /**
-   * A teaching game, for a friend who is new: no timer, hints, take-backs, either player may show their hand, a
+   * A teaching game, for a friend who is new: no timer, hints, take-backs, either player may show their shop, a
    * gentler end, and it doesn't count in your record against each other.
    */
   teaching: boolean;

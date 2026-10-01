@@ -218,8 +218,8 @@ function markdown(
   lines.push('## Starter decks', '', `| Win rate of row vs column | ${keys.map((k) => DECKS[k].name).join(' | ')} | Overall |`, `|---|${keys.map(() => '---|').join('')}---|`);
   for (const a of keys) lines.push(`| ${DECKS[a].name} | ${keys.map((b) => (a === b ? '—' : pct(st.rate(a, b)))).join(' | ')} | **${pct(st.rate(a))}** |`);
   lines.push('', `Whoever holds the Lantern first wins ${pct(shape.firstPlayer)}. Average game: ${shape.avgRounds.toFixed(1)} rounds, ${shape.avgActions.toFixed(0)} actions.`, '');
-  lines.push('| Deck | Awakened | Awakened in round | Cards in hand at the end |', '|---|---|---|---|');
-  for (const k of keys) lines.push(`| ${DECKS[k].name} | ${pct(shape.grewUp[k] ?? 0)} | ${(shape.grewUpRound[k] ?? 0).toFixed(1)} | ${(shape.handEnd[k] ?? 0).toFixed(1)} |`);
+  lines.push('| Deck | Awakened | Awakened in round | Hero Level at the end |', '|---|---|---|---|');
+  for (const k of keys) lines.push(`| ${DECKS[k].name} | ${pct(shape.grewUp[k] ?? 0)} | ${(shape.grewUpRound[k] ?? 0).toFixed(1)} | ${(shape.levelEnd[k] ?? 0).toFixed(1)} |`);
   if (removals.length) {
     lines.push('', '## Card strength', '', `Each card taken out of its starter deck (every copy a plain 1-cost 2/1), against the other starters in the same games. Warns above ${(100 * worthWarn).toFixed(0)} points.`, '');
     lines.push('| Card | Deck | Games | With it | Without it | Worth to its deck |', '|---|---|---|---|---|---|');

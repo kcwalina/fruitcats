@@ -26,9 +26,6 @@ card has the same parts).
 Items 5, 6 and 7 sit together at the right end of the type line: the **collector line**. That's where
 you look to see how special a card is.
 
-Some cards have a green four-leaf clover in the corner of their art: they're **Lucky** (see the
-[rulebook](rulebook.md#9-nine-candles-lucky-and-awakening)).
-
 ## Rarity
 
 Every card has a rarity, printed as a mark in its collector line. All copies of a card share it.

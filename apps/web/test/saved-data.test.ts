@@ -43,7 +43,7 @@ describe('saved decks with cards of a set that is gone', () => {
 describe('a saved game with cards of a set that is gone', () => {
   it('is quietly let go', async () => {
     const game = createGame({ decks: ['domowiki', 'pari'], seed: 1 });
-    game.players[1].hand[0].id = 'SB1-C01';
+    game.players[1].shop[0].id = 'SB1-C01';
     saved.set('fruitcats-game', JSON.stringify({ rules: RULES_VERSION, game, difficulty: 'normal', unitArrivals: [], foeFrom: 0, foeUnitsBefore: [] }));
     const { loadGame } = await import('../src/save');
     expect(loadGame()).toBeNull();

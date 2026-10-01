@@ -16,20 +16,20 @@ function playOut(s: GameState, seed: number): GameState {
 }
 
 describe('handicap: starting with fewer Candles', () => {
-  it('starts each player with the Candles they chose, and keeps the rest in the deck', () => {
+  it('starts each player with the Candles they chose, and the same deck', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [6, 9] });
-    expect(s.players[0].lives.length).toBe(6);
-    expect(s.players[1].lives.length).toBe(LIVES);
+    expect(s.players[0].lives).toBe(6);
+    expect(s.players[1].lives).toBe(LIVES);
     expect(s.players[0].handicap).toBe(3);
     expect(s.players[1].handicap).toBeUndefined();
-    const cards = (p: PlayerId) => s.players[p].deck.length + s.players[p].hand.length + s.players[p].lives.length;
+    const cards = (p: PlayerId) => s.players[p].deck.length + s.players[p].shop.length;
     expect(cards(0)).toBe(cards(1));
   });
 
   it('keeps Candles between 1 and 9', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [0, 20] });
-    expect(s.players[0].lives.length).toBe(1);
-    expect(s.players[1].lives.length).toBe(LIVES);
+    expect(s.players[0].lives).toBe(1);
+    expect(s.players[1].lives).toBe(LIVES);
   });
 
   it('plays to the end', () => {
@@ -42,7 +42,7 @@ describe('handicap: starting with fewer Candles', () => {
   it('shows the handicap to both players', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 5, lives: [7, 9] });
     expect(viewFor(s, 1).players[0].handicap).toBe(2);
-    expect(viewFor(s, 1).players[0].lives.length).toBe(7);
+    expect(viewFor(s, 1).players[0].lives).toBe(7);
   });
 });
 

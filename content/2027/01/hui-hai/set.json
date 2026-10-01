@@ -159,7 +159,7 @@
       "type": "Cat",
       "family": "Hui Hai",
       "name": "Yă Hui Hai, Lady of the Ferns",
-      "cost": 4,
+      "cost": 3,
       "power": 3,
       "health": 4,
       "keywords": [
@@ -312,12 +312,12 @@
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
       ],
-      "text": "Hello: Draw a card."
+      "text": "Hello: Get a free roll."
     },
     {
       "id": "HH1-D11",
@@ -325,7 +325,7 @@
       "type": "Critter",
       "family": "Hui Hai",
       "name": "Moss-Mender Yă Hui Hai",
-      "cost": 4,
+      "cost": 3,
       "power": 3,
       "health": 5,
       "flavor": "She tucks moss into every scrape, grumbling the whole time.",
@@ -352,7 +352,7 @@
       "type": "Critter",
       "family": "Hui Hai",
       "name": "Old One of the Waterfall",
-      "cost": 7,
+      "cost": 6,
       "power": 6,
       "health": 6,
       "keywords": [
@@ -369,7 +369,7 @@
       "type": "Trick",
       "family": "Hui Hai",
       "name": "Stones from Nowhere",
-      "cost": 4,
+      "cost": 3,
       "flavor": "A whole hillside of pebbles, and not one hand to be seen.",
       "abilities": [
         {
@@ -392,10 +392,7 @@
       "type": "Trick",
       "family": "Hui Hai",
       "name": "The Forest Remembers",
-      "cost": 4,
-      "keywords": [
-        "Lucky"
-      ],
+      "cost": 3,
       "flavor": "Cut a tree for nothing, and the forest will not forget your face.",
       "abilities": [
         {
@@ -410,7 +407,7 @@
           ]
         }
       ],
-      "text": "Lucky. Deal 3 damage to a unit."
+      "text": "Deal 3 damage to a unit."
     },
     {
       "id": "HH1-D15",
@@ -419,9 +416,6 @@
       "family": "Hui Hai",
       "name": "Nobody Threw It",
       "cost": 1,
-      "keywords": [
-        "Lucky"
-      ],
       "flavor": "The hunter turned around. The path behind him was empty.",
       "abilities": [
         {
@@ -436,7 +430,7 @@
           ]
         }
       ],
-      "text": "Lucky. Exhaust an enemy unit."
+      "text": "Exhaust an enemy unit."
     },
     {
       "id": "HH1-D16",
@@ -521,7 +515,7 @@
       "type": "Cat",
       "family": "Hui Hai",
       "name": "The Rock That Moved in the Night",
-      "cost": 8,
+      "cost": 7,
       "power": 8,
       "health": 8,
       "keywords": [

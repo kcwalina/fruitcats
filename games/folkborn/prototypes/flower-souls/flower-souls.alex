@@ -39,7 +39,7 @@ cards = [
     cost = 2, power = 2, health = 2
     number = 'MB1-D02', rarity = common
     art = 'art/MB1-D02.webp'
-    text = 'Hello: Draw a card.'
+    text = 'Hello: Get a free roll.'
     flavor = 'A gold flower for a boy. This one can''t wait to be handed down.'
   }
   tending-the-roots = Charm {

@@ -36,7 +36,7 @@ cards = [
     cost = 1, power = 1, health = 1
     number = 'PR1-D01', rarity = common
     art = 'art/PR1-D01.webp'
-    keywords = [@feather-coat, @Lure, @Lure]
+    keywords = [@feather-coat, @Lure]
     text = 'Feather Coat. Lure.'
     flavor = 'A pari can put on a coat of feathers and fly off as a dove.'
   }
@@ -96,7 +96,7 @@ cards = [
     cost = 4, power = 4, health = 3
     number = 'PR1-D07', rarity = uncommon
     art = 'art/PR1-D07.webp'
-    keywords = [@Fierce, @Elusive, @Elusive]
+    keywords = [@Fierce, @Elusive]
     text = 'Fierce. Elusive.'
     flavor = @markhor-of-the-mothers-flavor
   }
@@ -121,8 +121,8 @@ cards = [
     cost = 2, power = 1, health = 4
     number = 'PR1-D10', rarity = common
     art = 'art/PR1-D10.webp'
-    keywords = [@Guardian, @Lucky]
-    text = 'Guardian. Lucky.'
+    keywords = [@Guardian]
+    text = 'Guardian.'
     flavor = 'Mount Qāf, all emerald, rings the world. Its green glow tints the sky.'
   }
   khangi = Creature {
@@ -130,7 +130,7 @@ cards = [
     cost = 3, power = 2, health = 3
     number = 'PR1-D11', rarity = common
     art = 'art/PR1-D11.webp'
-    text = 'Hello: Draw a card.'
+    text = 'Hello: Get a free roll.'
     flavor = 'House fairies help pick the fruit. Families set food aside for them.'
   }
   falling-star = Charm {
@@ -138,8 +138,8 @@ cards = [
     cost = 1
     number = 'PR1-D12', rarity = uncommon
     art = 'art/PR1-D12.webp'
-    keywords = [@Ambush, @Lucky]
-    text = 'Ambush. Lucky. Deal {damage} damage to a unit.'
+    keywords = [@Ambush]
+    text = 'Ambush. Deal {damage} damage to a unit.'
     constants = [damage = 2]
     flavor = 'The oldest Persian books call the pari shooting stars.'
   }
@@ -178,8 +178,7 @@ cards = [
     cost = 1
     number = 'PR1-D16', rarity = uncommon
     art = 'art/PR1-D16.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. Exhaust an enemy unit.'
+    text = 'Exhaust an enemy unit.'
     flavor = 'The pari carried sleeping Zin away, and had her home before morning.'
   }
   pari-banus-pocket-tent = Talisman {

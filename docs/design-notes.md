@@ -2,6 +2,32 @@
 
 Why the rules are the way they are, what we borrowed, and what the playtest engine should try to break first. Companion to [rulebook.md](rulebook.md) and [designing-good-deck.md](designing-good-deck.md).
 
+## Folkborn 0.5: the shop (2026-10-01)
+
+Playing 0.4, the owner found the hand was the wrong half of TFT: it only grew (two draws a round, lost Candles into
+it), the cards overlapped on the screen, and the choices got unwieldy. The deck is now TFT's pool, dealt as a shop:
+
+| Decision | Chosen | Why |
+|---|---|---|
+| The hand | Gone: each round 6 cards are dealt face up from your own deck; what you don't buy goes back in, shuffled | TFT's shop: a small, fresh choice every round, and the deck still decides what can come (the collectible part). |
+| Rolling | 1 Offering for a new shop; "draw a card" effects became free rolls | The reroll is TFT's way to dig, and it competes with saving for interest. |
+| The bench | None: a new unit needs a lane; sell first. A copy merges even with every lane taken | A bench doesn't fit a phone screen beside six lanes and a shop. Merging into the board keeps "collect copies" alive, and a 1-star copy holding a lane while you wait for the next is the bench's tension, paid in fighting strength. |
+| Selling | Back what you paid, less 1 per copy in the unit | Less than the price, so a Hello can't be bought and sold for free; less again for a merged unit, so a merge is a commitment. |
+| The comeback | A losing streak, as in TFT: +1 Offering for 2 or 3 Clashes lost in a row, +2 for 4, +3 for 5 or more | Lost Candles going to the hand was the old comeback; with no hand, money is the comeback. |
+| Candles | A count; Lucky retired | Nothing goes to a hand any more, so a Candle needs no card. |
+| The mulligan | Gone | A bad shop is one roll away. |
+
+A single "keep" slot (one card held across rounds, as a chip by the buttons, not a full card) is the idea to try if
+holding cards for a merge turns out to be missed.
+
+The first gauntlet of the shop put Domowiki at 72% and Jiaoren at 67%, Aluxes at 29% and Hui Hai at 27%. Offering any
+spare card for 1 had evened out everyone's money; without it, the decks that make Offerings ran away, and a shop
+deals a free body (a 1-cost "gain an Offering") every time one comes up. The pass: income 4, 5, 6 (was 3, 4, 5);
+Stove Keeper, Pearl Oyster and Bowl of Kasha cost 2, Frost-White Silk 2, Dragon Silk 3; cheaper Aluxes (Clay Alux 2,
+Slingshot Alux 3, Alux of the Ceiba Roots 5, Pots and Pans Flung 2) and Hui Hai (Yă Hui Hai 3, Moss-Mender 3, Old One
+of the Waterfall 6, The Rock That Moved 7, Stones from Nowhere 3, The Forest Remembers 3). Roll price made no
+difference (the bots roll about twice a game).
+
 ## Folkborn 0.4: the Muster and the Clash (2026-09-30)
 
 The owner turned Folkborn into a hybrid of a collectible card game and an auto-battler in the style of Teamfight

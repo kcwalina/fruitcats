@@ -3,7 +3,7 @@
 // take-backs, the Versus splash and the result. main.ts draws the board the same way for Solo and online; it asks
 // this file for these pieces, and sends a move here instead of applying it.
 //
-// The board is drawn from the view the server sends (viewFor): never the other player's hand or deck.
+// The board is drawn from the view the server sends (viewFor): never the other player's shop or deck.
 
 import { CARDS, TERMS, cardName, other, type Action, type GameState, type PlayerId, type PlayerView, type Target } from '@fruitcats/engine';
 import {
@@ -30,7 +30,7 @@ export interface Online {
   emotes: { seat: PlayerId; text: string; at: number }[];
   muted: boolean;
   emoting: boolean;
-  /** The ⋯ menu beside Rules and Home (Concede, Show my hand, Mute). */
+  /** The ⋯ menu beside Rules and Home (Concede, Show my shop, Mute). */
   menu: boolean;
   /** A teaching game's suggested move. */
   hint: Action | null;
@@ -248,19 +248,18 @@ function lastMoveWasMine(s: GameState): boolean {
 /** A teaching game's suggested move, in words. */
 export function hintText(s: GameState, a: Action): string {
   const me = s.players[mySeat()];
-  const card = (uid: number) => cardName(me.hand.find((c) => c.uid === uid)?.id ?? me.yard.find((u) => u.uid === uid)?.id ?? '');
+  const card = (uid: number) => cardName(me.shop.find((c) => c.uid === uid)?.id ?? me.yard.find((u) => u.uid === uid)?.id ?? '');
   const unit = (uid: number) => cardName(s.players.flatMap((p) => p.yard).find((u) => u.uid === uid)?.id ?? '');
   const target = (t?: Target) =>
     !t ? '' : t.kind === 'hero' ? (t.player === mySeat() ? ' on your Hero' : ' on their Hero')
       : t.kind === 'lane' ? ` at ${t.player === mySeat() ? 'your' : 'their'} lane ${t.lane + 1}` : ` on ${unit(t.uid)}`;
   const lane = (n?: number) => (n === undefined ? '' : ` into lane ${n + 1}`);
   switch (a.t) {
-    case 'mulligan': return a.uids.length ? `Swap ${a.uids.map(card).join(', ')}.` : 'Keep this hand.';
-    case 'play': return `Play ${card(a.uid)}${lane(a.slot)}${target(a.target)}.`;
-    case 'lucky': return `Play ${card(a.uid)} for free${lane(a.slot)}${target(a.target)}.`;
-    case 'ambush': return `Set ${card(a.uid)} face-down in lane ${a.lane + 1}.`;
+    case 'play': return `Buy ${card(a.uid)}${lane(a.slot)}${target(a.target)}.`;
+    case 'ambush': return `Buy ${card(a.uid)} and set it face-down in lane ${a.lane + 1}.`;
     case 'move': return `Move ${unit(a.uid)} to lane ${a.slot + 1}.`;
-    case 'offer': return `Offer ${card(a.uid)} for an Offering.`;
+    case 'sell': return `Sell ${card(a.uid)} to make room.`;
+    case 'roll': return 'Roll: nothing in this shop is worth it.';
     case 'ability': return `Use your Hero’s ability${target(a.target)}.`;
     case 'levelUp': return 'Level up your Hero: one more lane.';
     case 'ready': return 'Be Ready: your board is good to go.';
@@ -272,12 +271,12 @@ export function hintText(s: GameState, a: Action): string {
 
 /**
  * One ⋯ button beside Rules, Settings and Home, the same in every online game, so the row never grows or wraps. It
- * opens the rest: Concede, Show my hand (teaching games), Mute their emotes.
+ * opens the rest: Concede, Show my shop (teaching games), Mute their emotes.
  */
 export function onlineSideButtons(): string {
   if (!ol || ol.end) return '';
   const show = teaching()
-    ? `<button data-click="ol:show" aria-pressed="${ol.showing[mySeat()]}">${ol.showing[mySeat()] ? 'Hide my hand' : 'Show my hand'}</button>` : '';
+    ? `<button data-click="ol:show" aria-pressed="${ol.showing[mySeat()]}">${ol.showing[mySeat()] ? 'Hide my shop' : 'Show my shop'}</button>` : '';
   const concede = ol.conceding
     ? '<button class="danger" data-click="ol:concede">Yes, concede</button>'
     : '<button data-click="ol:concedeask">Concede…</button>';
@@ -295,7 +294,7 @@ export function renderVersus(s: PlayerView): string {
   if (!ol || Date.now() > ol.versusUntil) return '';
   const side = (seat: PlayerId) => {
     const p = ol!.info.players[seat];
-    const lives = s.players[seat].lives.length;
+    const lives = s.players[seat].lives;
     return `<div class="vs-side ${seat === mySeat() ? 'me' : 'them'}">
       ${pawtrait(p.avatar, 'vs-face')}
       <b>${esc(seat === mySeat() ? 'You' : p.name)}</b>
@@ -328,7 +327,7 @@ export function renderOnlineResult(s: GameState): string {
     : e.how === 'called-off' ? 'Nobody wins; it doesn’t count.' : '';
   // A teaching game ends kindly for whoever is learning: what they managed, not only that they lost.
   const foe = s.players[theirSeat()];
-  const took = 9 - (foe.handicap ?? 0) - foe.lives.length;
+  const took = 9 - (foe.handicap ?? 0) - foe.lives;
   const kind = teaching() && lost
     ? `<p class="result-kind">You took <b>${took}</b> of ${esc(them().name)}’s Candles. Every game teaches you something: play again!</p>` : '';
   const record = e.record ? `<p class="result-record">You ${e.record.wins} – ${e.record.losses} ${name}${e.record.draws ? ` · ${e.record.draws} drawn` : ''}</p>` : '';
@@ -347,11 +346,11 @@ export function renderOnlineResult(s: GameState): string {
   </div>`;
 }
 
-/** The other player's hand, face up, when they're showing it (a teaching game). */
-export function shownHand(s: GameState): string | null {
+/** The other player's shop, face up, when they're showing it (a teaching game). */
+export function shownShop(s: GameState): string | null {
   if (!ol || !ol.showing[theirSeat()]) return null;
-  const hand = s.players[theirSeat()].hand;
-  return `<div class="foe-hand shown" title="${esc(them().name)} is showing you their hand">${hand
+  const shop = s.players[theirSeat()].shop;
+  return `<div class="foe-hand shown" title="${esc(them().name)} is showing you their shop">${shop
     .map((c) => (CARDS[c.id] ? `<img src="${cardUrl(c.id)}" data-zoom="${cardUrl(c.id)}" data-zoom-card="${c.id}" alt="${esc(CARDS[c.id].name)}">` : '<div class="card-back"></div>')).join('')}</div>`;
 }
 

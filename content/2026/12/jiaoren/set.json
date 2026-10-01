@@ -155,12 +155,12 @@
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
       ],
-      "text": "Hello: Draw a card."
+      "text": "Hello: Get a free roll."
     },
     {
       "id": "JR1-D03",
@@ -168,7 +168,7 @@
       "type": "Toy",
       "family": "Jiaoren",
       "name": "Dragon Silk",
-      "cost": 2,
+      "cost": 3,
       "flavor": "Woven by the jiaoren. A robe of it goes into the sea and comes out dry.",
       "abilities": [
         {
@@ -191,7 +191,7 @@
       "type": "Critter",
       "family": "Jiaoren",
       "name": "Pearl Oyster",
-      "cost": 1,
+      "cost": 2,
       "power": 1,
       "health": 2,
       "flavor": "When the moon is full, the oysters are full. When the moon is dark, they are empty.",
@@ -325,12 +325,12 @@
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
       ],
-      "text": "Elusive. Hello: Draw a card.",
+      "text": "Elusive. Hello: Get a free roll.",
       "keywords": [
         "Elusive"
       ]
@@ -390,9 +390,6 @@
       "family": "Jiaoren",
       "name": "The Sea Turns Rough",
       "cost": 4,
-      "keywords": [
-        "Lucky"
-      ],
       "flavor": "The South Sea is calm, until it isn't.",
       "abilities": [
         {
@@ -407,7 +404,7 @@
           ]
         }
       ],
-      "text": "Lucky. Deal 5 damage to a unit."
+      "text": "Deal 5 damage to a unit."
     },
     {
       "id": "JR1-D15",
@@ -416,9 +413,6 @@
       "family": "Jiaoren",
       "name": "Moonlit Sea, Pearls with Tears",
       "cost": 1,
-      "keywords": [
-        "Lucky"
-      ],
       "flavor": "A line from the poet Li Shangyin. Even enemies stop to look.",
       "abilities": [
         {
@@ -433,7 +427,7 @@
           ]
         }
       ],
-      "text": "Lucky. Exhaust an enemy unit."
+      "text": "Exhaust an enemy unit."
     },
     {
       "id": "JR1-D16",
@@ -441,7 +435,7 @@
       "type": "Toy",
       "family": "Jiaoren",
       "name": "Frost-White Silk",
-      "cost": 1,
+      "cost": 2,
       "flavor": "The finest jiaoren silk, white as frost.",
       "abilities": [
         {
@@ -499,12 +493,12 @@
           "when": "goodbye",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
       ],
-      "text": "Goodbye: Draw a card."
+      "text": "Goodbye: Get a free roll."
     },
     {
       "id": "JR1-D19",

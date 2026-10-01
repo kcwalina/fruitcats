@@ -120,7 +120,7 @@ async function startGame(options = RELAXED, livesA = 9, livesB = 9): Promise<[Pl
   return [sam, pippin];
 }
 
-/** A simple player: keeps its hand, then picks random legal moves from its own view (Ready one time in four). */
+/** A simple player: picks random legal moves from its own view (Ready one time in four). */
 function choose(v: PlayerView, rnd: () => number): Action {
   return randomAction(v, rnd, v.seat);
 }
@@ -325,28 +325,30 @@ describe('a service restarting', () => {
 });
 
 describe('a match', () => {
-  it('starts with each player on their own seat, seeing only their own hand', async () => {
+  it('starts with each player on their own seat, seeing only their own shop', async () => {
     const [sam, pippin] = await startGame();
     const ms = sam.last('match')!, mp = pippin.last('match')!;
     expect(ms.info.id).toBe(mp.info.id);
     expect(ms.info.seat).toBe(0);
     expect(mp.info.seat).toBe(1);
     expect(ms.info.players.map((p) => p.name)).toEqual(['Sam', 'Pippin']);
-    expect(ms.view.players[0].hand.every((c) => c.id !== HIDDEN)).toBe(true);
-    expect(ms.view.players[1].hand.every((c) => c.id === HIDDEN)).toBe(true);
+    expect(ms.view.players[0].shop.every((c) => c.id !== HIDDEN)).toBe(true);
+    expect(ms.view.players[1].shop.every((c) => c.id === HIDDEN)).toBe(true);
     expect(ms.view.seed).toBe(0);
     expect(sam.last('presence')).toMatchObject({ friend: { id: B, status: 'playing' } });
   });
 
   it('refuses a move out of turn, and a move for an old state', async () => {
     const [sam, pippin] = await startGame();
-    const waiting = sam.view!.prompt ? pippin : sam;
-    waiting.send({ t: 'act', match: waiting.match!, seq: waiting.view!.seq, action: { t: 'ready' } });
+    // Sam is Ready: until the Clash, Sam has no move to make.
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'ready' } });
     await flush();
-    expect(waiting.last('error')!.message).toMatch(/isn’t your turn/);
-    const mover = waiting === sam ? pippin : sam;
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'roll' } });
+    await flush();
+    expect(sam.last('error')!.message).toMatch(/isn’t your turn/);
+    const mover = pippin;
     const before = mover.inbox.length;
-    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq + 5, action: { t: 'mulligan', uids: [] } });
+    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq + 5, action: { t: 'roll' } });
     await flush();
     expect(mover.inbox.slice(before).map((m) => m.t)).toEqual(['match']);   // sent the game again, nothing applied
   });
@@ -363,9 +365,9 @@ describe('a match', () => {
     if (end.winner === 0) { expect(end.record).toEqual({ wins: 1, losses: 0, draws: 0 }); expect(other.record).toEqual({ wins: 0, losses: 1, draws: 0 }); }
     if (end.winner === 1) { expect(end.record).toEqual({ wins: 0, losses: 1, draws: 0 }); expect(other.record).toEqual({ wins: 1, losses: 0, draws: 0 }); }
     expect(await store.tally(A, B)).toEqual(end.record ?? { wins: 0, losses: 0, draws: 0 });
-    // Every view either player got kept the other's hand hidden.
+    // Every view either player got kept the other's shop hidden.
     for (const [p, foe] of [[sam, 1], [pippin, 0]] as const)
-      for (const m of p.inbox) if (m.t === 'view' || m.t === 'match') expect(m.view.players[foe].hand.every((c) => c.id === HIDDEN)).toBe(true);
+      for (const m of p.inbox) if (m.t === 'view' || m.t === 'match') expect(m.view.players[foe].shop.every((c) => c.id === HIDDEN)).toBe(true);
     // The finished game is kept as a replay, and no longer as a live one.
     vi.advanceTimersByTime(2000);
     await flush();
@@ -374,28 +376,23 @@ describe('a match', () => {
 
   it('lets both players build the Muster at once, and tells neither what the other does', async () => {
     const [sam, pippin] = await startGame();
-    for (const p of [sam, pippin]) {
-      p.send({ t: 'act', match: p.match!, seq: p.view!.seq, action: { t: 'mulligan', uids: [] } });
-      await flush();
-    }
     expect(sam.view!.prompt).toEqual({ kind: 'muster', player: 0 });
     expect(pippin.view!.prompt).toEqual({ kind: 'muster', player: 1 });
-    expect(sam.last('view')!.clock).toMatchObject({ muster: true, seat: null });
     // Sam makes moves: only Sam hears about them, and Pippin's next move isn't stale for it.
     const pippinSeen = pippin.inbox.length;
-    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'offer', uid: sam.view!.players[0].hand[0].uid } });
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'roll' } });
     await flush();
+    expect(sam.last('view')!.clock).toMatchObject({ muster: true, seat: null });
     sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'ready' } });
     await flush();
-    expect(sam.view!.players[0].offerings).toBe(4);
+    expect(sam.view!.players[0].offerings).toBe(2);
     expect(sam.view!.prompt).toBeNull();
     expect(pippin.inbox.length).toBe(pippinSeen);
-    const offering = pippin.view!.players[1].hand[0].uid;
-    pippin.send({ t: 'act', match: pippin.match!, seq: pippin.view!.seq, action: { t: 'offer', uid: offering } });
+    pippin.send({ t: 'act', match: pippin.match!, seq: pippin.view!.seq, action: { t: 'roll' } });
     await flush();
     expect(pippin.last('error')).toBeUndefined();
-    expect(pippin.view!.players[1].offerings).toBe(4);
-    expect(pippin.view!.players[0].offerings).toBe(3);   // Sam's Offering stays theirs until the Clash
+    expect(pippin.view!.players[1].offerings).toBe(2);
+    expect(pippin.view!.players[0].offerings).toBe(3);   // Sam's roll stays theirs until the Clash
     // Pippin's Ready plays the Clash: both are told, and both see the new round.
     pippin.send({ t: 'act', match: pippin.match!, seq: pippin.view!.seq, action: { t: 'ready' } });
     await flush();
@@ -403,15 +400,11 @@ describe('a match', () => {
       expect(p.view!.round).toBe(2);
       expect(p.view!.prompt).toMatchObject({ kind: 'muster' });
     }
-    expect(sam.view!.players[1].offerings).toBeGreaterThan(4);
+    expect(sam.view!.players[1].offerings).toBeGreaterThan(2);
   });
 
   it("leaves a Friend game's Muster waiting when its time runs out: nothing is played for anyone", async () => {
     const [sam, pippin] = await startGame();
-    for (const p of [sam, pippin]) {
-      p.send({ t: 'act', match: p.match!, seq: p.view!.seq, action: { t: 'mulligan', uids: [] } });
-      await flush();
-    }
     vi.advanceTimersByTime(PACES.relaxed.clock.moveMs! + 1);
     await flush();
     expect(sam.last('clock')!.clock).toMatchObject({ phase: 'overtime', muster: true, seat: null });
@@ -427,10 +420,10 @@ describe('a match', () => {
 
   it('shows each player’s handicap to both', async () => {
     const [sam, pippin] = await startGame(RELAXED, 6, 9);
-    expect(sam.view!.players[0].lives.length).toBe(6);
-    expect(pippin.view!.players[0].lives.length).toBe(6);
+    expect(sam.view!.players[0].lives).toBe(6);
+    expect(pippin.view!.players[0].lives).toBe(6);
     expect(pippin.view!.players[0].handicap).toBe(3);
-    expect(pippin.view!.players[1].lives.length).toBe(9);
+    expect(pippin.view!.players[1].lives).toBe(9);
   });
 
   it('can be conceded', async () => {
@@ -459,8 +452,11 @@ describe('a match', () => {
 describe('the clock in a Friend game', () => {
   it('never moves for a player who runs out of time; the other player decides', async () => {
     const [sam, pippin] = await startGame({ ...RELAXED, pace: 'quick' });
-    const mover = sam.view!.prompt ? sam : pippin;
-    const other = mover === sam ? pippin : sam;
+    // Sam is Ready, so the Muster waits on Pippin alone.
+    sam.send({ t: 'act', match: sam.match!, seq: sam.view!.seq, action: { t: 'ready' } });
+    await flush();
+    const mover = pippin;
+    const other = sam;
     const seq = mover.view!.seq;
     vi.advanceTimersByTime(PACES.quick.clock.moveMs! + 1);
     await flush();
@@ -503,10 +499,10 @@ describe('the clock in a Friend game', () => {
     vi.advanceTimersByTime(PACES.quick.clock.moveMs! * 3);
     await flush();
     expect(sam.last('end')).toBeUndefined();
-    // The one still there can still make their own move (the mulligan comes first for seat 0).
+    // The one still there can still make their own move: in the Muster both decide at once.
     if (sam.view!.prompt) {
       const seq = sam.view!.seq;
-      sam.send({ t: 'act', match: sam.match!, seq, action: { t: 'mulligan', uids: [] } });
+      sam.send({ t: 'act', match: sam.match!, seq, action: { t: 'roll' } });
       await flush();
       expect(sam.view!.seq).toBe(seq + 1);
     }
@@ -633,7 +629,7 @@ describe('what a move sends', () => {
     const [sam, pippin] = await startGame();
     const mover = sam.view!.prompt ? sam : pippin;
     const before = mover.last('match')!.view.log.length;
-    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq, action: { t: 'mulligan', uids: [] } });
+    mover.send({ t: 'act', match: mover.match!, seq: mover.view!.seq, action: { t: 'roll' } });
     await flush();
     const v = mover.last('view')!;
     expect(v.logFrom).toBe(before);
@@ -711,15 +707,12 @@ describe('the clock in Ranked', () => {
     return { m, sent };
   }
 
-  it('uses the reserve, then makes the plainest move, and three timeouts in a row lose', async () => {
+  it('makes the plainest move (Ready) for whoever is still deciding when the Muster is up; three timeouts in a row lose', async () => {
     const { m } = rankedMatch();
     const c = rankedRules().clock;
-    const seat = m.state.prompt!.player;
     vi.advanceTimersByTime(c.moveMs! + 1);
-    expect(m.clockView().phase).toBe('reserve');
-    vi.advanceTimersByTime(c.reserveMs + 1);
-    expect(m.record.played.at(-1)).toMatchObject({ seat, auto: true, action: { t: 'mulligan', uids: [] } });
-    for (let i = 0; i < 20 && !m.end; i++) vi.advanceTimersByTime(c.moveMs! + c.reserveMs + 1);
+    expect(m.record.played.slice(-2)).toMatchObject([{ auto: true, action: { t: 'ready' } }, { auto: true, action: { t: 'ready' } }]);
+    for (let i = 0; i < 20 && !m.end; i++) vi.advanceTimersByTime(c.moveMs! + 1);
     await flush();
     expect(m.end).toMatchObject({ how: 'timeout' });
   });
@@ -736,7 +729,7 @@ describe('teaching games', () => {
     expect(pippin.last('end')!.end.record).toBeUndefined();
   });
 
-  it('suggests a move, and lets a player show their hand', async () => {
+  it('suggests a move, and lets a player show their shop', async () => {
     const [sam, pippin] = await startGame(TEACHING);
     const mover = sam.view!.prompt ? sam : pippin;
     const other = mover === sam ? pippin : sam;
@@ -745,18 +738,18 @@ describe('teaching games', () => {
     expect(mover.last('hint')!.action).toBeTruthy();
     other.send({ t: 'show', match: other.match!, on: true });
     await flush();
-    expect(mover.view!.players[other.view!.seat].hand.every((c) => c.id !== HIDDEN)).toBe(true);
+    expect(mover.view!.players[other.view!.seat].shop.every((c) => c.id !== HIDDEN)).toBe(true);
   });
 
   it('takes back a move that showed nothing new', async () => {
     const [sam, pippin] = await startGame(TEACHING);
     const rnd = rng(9);
-    // Play until someone has an action that isn't a pass, a draw or a Life lost, then take it back.
+    // Play until someone has an action that shows nothing new (not a roll, no Candle lost), then take it back.
     for (let i = 0; i < 300; i++) {
       const mover = [sam, pippin].find((p) => p.view?.prompt)!;
       const v = mover.view!;
       if (v.prompt!.kind === 'muster') {
-        const move = legalActions(v, v.seat).find((a) => a.t === 'offer' || a.t === 'levelUp');
+        const move = legalActions(v, v.seat).find((a) => a.t === 'move' || a.t === 'levelUp');
         if (move) {
           const seq = v.seq;
           const offerings = v.players[v.seat].offerings;
@@ -828,7 +821,7 @@ describe('after a restart', () => {
   it('picks up a game that was going, and the players find it waiting', async () => {
     const [sam] = await startGame();
     const id = sam.match!;
-    sam.send({ t: 'act', match: id, seq: sam.view!.seq, action: { t: 'mulligan', uids: [] } });
+    sam.send({ t: 'act', match: id, seq: sam.view!.seq, action: { t: 'roll' } });
     await flush();
     vi.advanceTimersByTime(1500);
     await flush();
@@ -848,7 +841,8 @@ describe('after a restart', () => {
     expect(back.last('welcome')!.match).toBe(id);
     back.send({ t: 'rejoin', match: id });
     await flush();
-    expect(back.last('match')!.view.actions).toBe(saved[0].played.length);
+    expect(saved[0].played).toHaveLength(1);
+    expect(back.last('match')!.view.players[0].offerings).toBe(2);   // the roll was kept
   });
 
   it('calls off a game with cards the game no longer has (the Starter Box), rather than failing on it', async () => {
@@ -959,8 +953,8 @@ describe('Friend games played directly between the devices', () => {
     expect(g.samSees.find((m) => m.t === 'match')).toBeDefined();
     const theirs = g.pippinSees.find((m) => m.t === 'match');
     expect(theirs && theirs.t === 'match' && theirs.info.seat).toBe(1);
-    // Pippin's device never sees Sam's hand.
-    if (theirs?.t === 'match') expect(theirs.view.players[0].hand.every((c) => c.id === HIDDEN)).toBe(true);
+    // Pippin's device never sees Sam's shop.
+    if (theirs?.t === 'match') expect(theirs.view.players[0].shop.every((c) => c.id === HIDDEN)).toBe(true);
 
     const rnd = rng(7);
     let pippinView = (theirs as Extract<ServerMessage, { t: 'match' }>).view;
@@ -992,9 +986,9 @@ describe('Friend games played directly between the devices', () => {
     const { id } = await startPeerGame();
     const bad = await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'pass' } }] });
     expect(bad.status).toBe(400);
-    const keep = { seat: 0, action: { t: 'mulligan', uids: [] } };
+    const keep = { seat: 0, action: { t: 'roll' } };
     expect((await call(A, id, 'save', { played: [keep] })).status).toBe(200);
-    const rewritten = await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'mulligan', uids: [1] } }] });
+    const rewritten = await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'levelUp' } }] });
     expect(rewritten.status).toBe(409);
     expect((await call(B, id, 'save', { played: [keep] })).status).toBe(403);
     expect((await call(C, id, 'poll', {})).status).toBe(404);
@@ -1018,7 +1012,7 @@ describe('Friend games played directly between the devices', () => {
 
   it('takes the game over when the two devices can’t reach each other, from its copy of the record', async () => {
     const { id } = await startPeerGame();
-    const keep = { seat: 0, action: { t: 'mulligan', uids: [] } };
+    const keep = { seat: 0, action: { t: 'roll' } };
     await call(A, id, 'save', { device: 'd', played: [keep] });
     const poll = async (account: string, played?: number) => (await call<PeerPollAnswer>(account, id, 'poll', { device: 'd', linked: false, played })).answer;
     // Sam's device has a move the hub hasn't been sent yet: not until it has.
@@ -1037,7 +1031,7 @@ describe('Friend games played directly between the devices', () => {
     expect(sam.last('welcome')!.peer).toBeFalsy();
     sam.send({ t: 'rejoin', match: id });
     await flush();
-    expect(sam.last('match')!.view.actions).toBe(1);
+    expect(sam.last('match')!.view.players[0].offerings).toBe(2);   // the roll was kept
   });
 
   it('never takes a game over while one device is simply away', async () => {
@@ -1093,7 +1087,7 @@ describe('Friend games played directly between the devices', () => {
 
   it('keeps a game played directly across a restart of the API', async () => {
     const { id } = await startPeerGame();
-    await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'mulligan', uids: [] } }] });
+    await call(A, id, 'save', { played: [{ seat: 0, action: { t: 'roll' } }] });
     vi.advanceTimersByTime(1500);
     await flush();
     const kept = store;

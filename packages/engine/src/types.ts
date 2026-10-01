@@ -170,6 +170,8 @@ export interface Unit {
   usedOnce: boolean;
   /** Mechanics' counters on the unit: { rain: 2 } (Rain-Fed). They stay while the unit stays on the board. */
   counters?: Record<string, number>;
+  /** Offerings paid for it, its merged copies included: what selling it gives back (less sellLoss for each copy). */
+  paid?: number;
 }
 
 export interface Hero {
@@ -210,10 +212,16 @@ export interface PlayerState {
   deckName: string;
   hero: Hero;
   deck: CardInst[];
-  hand: CardInst[];
-  lives: CardInst[];
-  /** Offerings saved: what units, Charms and Levels are paid with. What isn't spent is kept, and earns interest. */
+  /** The shop: cards dealt face up from the deck at the Start, to buy or let go. What isn't bought goes back into the deck. */
+  shop: CardInst[];
+  /** Candles left: the last one blown out loses the game. */
+  lives: number;
+  /** Offerings saved: what units, Charms, Levels and rolls are paid with. What isn't spent is kept, and earns interest. */
   offerings: number;
+  /** Clashes lost in a row: a losing streak earns Offerings at the Start. */
+  streak?: number;
+  /** Rolls this player may make without paying (a card's "Get a free roll"). */
+  freeRolls?: number;
   yard: Unit[];
   compost: CardInst[];
   /** Units that went down in this Clash: they stand up again when it ends. */
@@ -222,8 +230,6 @@ export interface PlayerState {
   pending?: Pending[];
   /** Face-down Ambushes, each in one of this player's lanes. */
   ambushes?: AmbushCard[];
-  /** Lucky cards taken as lost Candles in the last Clash: playable for free during this Muster. */
-  free?: number[];
   /** Units of this player that have gone down in Clashes this game. */
   downed?: number;
   /** Cards this player has played this round: Orange-Peri's count. */
@@ -235,38 +241,36 @@ export interface PlayerState {
 }
 
 export type Action =
-  | { t: 'mulligan'; uids: number[] }
+  /** Buy a card from the shop: a unit goes to a lane (or merges into its twin), a Charm happens, a Talisman is attached. */
   | { t: 'play'; uid: number; slot?: number; target?: Target; target2?: Target }
-  /** A Lucky card taken as a lost Candle, played for free. */
-  | { t: 'lucky'; uid: number; slot?: number; target?: Target; target2?: Target }
-  /** Set a card with Ambush face-down in one of your lanes. */
+  /** Buy a card with Ambush from the shop and set it face-down in one of your lanes. */
   | { t: 'ambush'; uid: number; lane: number; target?: Target }
   | { t: 'move'; uid: number; slot: number }
-  /** A card from hand, or a unit you control, becomes 1 Offering. */
-  | { t: 'offer'; uid: number }
+  /** Sell a unit you control: it goes back into the deck, and you get back what you paid less sellLoss for each copy merged in. */
+  | { t: 'sell'; uid: number }
+  /** The shop goes back into the deck and a new one is dealt. */
+  | { t: 'roll' }
   | { t: 'ability'; target?: Target }
   | { t: 'levelUp' }
   | { t: 'ready' };
 
 /** The decision the game is waiting on. `null` only when the game is over. */
-export type Prompt =
-  | { kind: 'mulligan'; player: PlayerId }
-  /**
-   * The Muster: both players decide at once, each until they are Ready (`GameState.muster.open`). `player` is one of
-   * the players still deciding, for callers that drive one seat at a time.
-   */
-  | { kind: 'muster'; player: PlayerId };
+/**
+ * The Muster: both players decide at once, each until they are Ready (`GameState.muster.open`). `player` is one of
+ * the players still deciding, for callers that drive one seat at a time.
+ */
+export type Prompt = { kind: 'muster'; player: PlayerId };
 
 /** Pending engine work. Steps are data so the whole game is a pure fold over actions. */
 export type Step =
-  | { t: 'mulliganPrompt'; p: PlayerId }
   | { t: 'beginMuster' }
   | { t: 'startRound' }
   | { t: 'endRound' }
   | { t: 'income'; p: PlayerId }
-  | { t: 'draw'; p: PlayerId; n: number }
+  /** The shop goes back into the deck, which is shuffled, and a new one is dealt. */
+  | { t: 'restock'; p: PlayerId }
   | { t: 'loseLife'; p: PlayerId; n: number }
-  | { t: 'resolvePlay'; p: PlayerId; card: CardInst; slot?: number; target?: Target; target2?: Target }
+  | { t: 'resolvePlay'; p: PlayerId; card: CardInst; paid: number; slot?: number; target?: Target; target2?: Target }
   /** Run an ability: a Hero's exhaust, a trigger, or an effect that waited for the Clash. */
   | {
     t: 'ability'; p: PlayerId; ref: AbilityRef; target?: Target; target2?: Target; sourceId: string; selfUid?: number;
@@ -297,11 +301,12 @@ export interface LogEntry {
  * is `secret` to the player who made it.
  */
 export type GameEvent = (
-  | { t: 'play'; p: PlayerId; uid: number; cardId: string; target?: Target; how?: 'lucky' }
+  | { t: 'play'; p: PlayerId; uid: number; cardId: string; target?: Target }
   | { t: 'ability'; p: PlayerId; heroId: string; target?: Target }
   | { t: 'ambushSet'; p: PlayerId; lane: number }
   | { t: 'ambush'; p: PlayerId; lane: number; cardId: string }
-  | { t: 'offer'; p: PlayerId; cardId?: string; offerings: number }
+  | { t: 'sell'; p: PlayerId; cardId: string; offerings: number }
+  | { t: 'roll'; p: PlayerId; free: boolean }
   | { t: 'move'; p: PlayerId; uid: number; slot: number }
   | { t: 'levelUp'; p: PlayerId; level: number }
   | { t: 'readyUp'; p: PlayerId }
@@ -323,7 +328,7 @@ export type GameEvent = (
   | { t: 'growUp'; p: PlayerId }
   | { t: 'counter'; uid: number; name: string; value: number }
   | { t: 'summon'; p: PlayerId; uid: number; cardId: string }
-  | { t: 'draw'; p: PlayerId; n: number }
+  | { t: 'freeRoll'; p: PlayerId; n: number }
   | { t: 'round'; n: number }
   | { t: 'win'; p: PlayerId | 'draw' }
 ) & { secret?: PlayerId };
@@ -334,6 +339,14 @@ export interface Rules {
   startOfferings: number;
   /** Income at the Start of round 2, 3, …; the last number repeats. */
   income: number[];
+  /** Offerings for a losing streak at the Start, by Clashes lost in a row (streak[2]: two in a row); the last repeats. */
+  streak: number[];
+  /** Cards dealt to the shop. */
+  shopSize: number;
+  /** What a roll costs. */
+  rollCost: number;
+  /** Selling a unit gives back what was paid for it, less this for each copy merged into it. */
+  sellLoss: number;
   /** Interest: +1 Offering for every `interestPer` saved, at most `interestMax`. */
   interestPer: number;
   interestMax: number;

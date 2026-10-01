@@ -27,14 +27,14 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 const ACTIONS = BUILT_IN_ACTIONS;
 const TESTS = CONDITION_TESTS;
-const CORE_KEYWORDS = ['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Lucky', 'Pounce', 'Elusive', 'Lure'];
+const CORE_KEYWORDS = ['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Pounce', 'Elusive', 'Lure'];
 const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log', 'note'];
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'];
 
 // Stat budget (docs/designing-good-deck.md): a plain Critter of cost N has Power + Health = 2N + 1, and
 // keywords and effects are paid for out of it. A report, not a rule: Cats get +2 to +3 on purpose.
-const KEYWORD_PRICE: Record<string, number> = { Guardian: 1, Zoomies: 1, Sneaky: 2, Fierce: 2, Lucky: 0, Pounce: 0, Elusive: 1, Lure: 1 };
+const KEYWORD_PRICE: Record<string, number> = { Guardian: 1, Zoomies: 1, Sneaky: 2, Fierce: 2, Pounce: 0, Elusive: 1, Lure: 1 };
 
 interface Report { errors: string[]; warnings: string[]; notes: string[] }
 
@@ -164,7 +164,7 @@ function checkSet(set: ContentSet, games: number): Report {
 
 // The retired words (terms.json, "retired"): all of them for rules wording; for names, flavor and lore only the game's
 // own terms (not ordinary words a cat deck's flavor may use).
-const FLAVOR_OK = new Set(['Kitten', 'Big Cat', 'Meow', 'Purr', 'Hiss', 'Trick', 'Tricks', 'Toy', 'Toys', 'Plant', 'Planted', 'Lives', 'Den', 'Critter', 'Critters']);
+const FLAVOR_OK = new Set(['Kitten', 'Big Cat', 'Meow', 'Purr', 'Hiss', 'Trick', 'Tricks', 'Toy', 'Toys', 'Plant', 'Planted', 'Lives', 'Den', 'Critter', 'Critters', 'Lucky']);
 const RETIRED_HINT = 'Offering(s), Offer, Candle(s), Hearth, the Mist, the Lantern, Creature, Charm, Talisman, Swift, Ambush, Hero, Awaken';
 export function retiredIn(text: string, all: boolean): string[] {
   return (TERMS.retired as string[]).filter((w) => (all || !FLAVOR_OK.has(w)) && new RegExp(`\\b${w}\\b`).test(text));

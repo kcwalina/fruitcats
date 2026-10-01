@@ -14,12 +14,15 @@ against the computer.
 
 After the tutorial, tap **Solo** to play the computer.
 
-## Your cards and your money
+## Your shop and your money
 
-- Your cards are at the bottom. **Press and hold** one to read it. The number in the top-left corner is its **price**.
+- At the bottom is your **shop**: 6 cards dealt from your own deck. **Press and hold** one to read it. The number in
+  the top-left corner is its **price**.
 - You pay with **Offerings**: your money, shown on your plaque. You start with 3 and get more at the start of every
-  round. What you don't spend is **kept**, and every 5 you save earn 1 more next round.
-- Need money? Tap a card you don't need and **Offer it**: it's worth 1 Offering.
+  round. What you don't spend is **kept**, and every 5 you save earn 1 more next round. Lose Clashes in a row and you
+  get a little more, to catch up.
+- Nothing you want? Tap **Roll** (1 Offering) for 6 new cards. What you don't buy goes back into your deck: you get a
+  fresh shop every round.
 
 What each part of a card means is in [Card anatomy](card-anatomy.md).
 
@@ -30,10 +33,11 @@ side as it was when the Muster began.
 
 1. **Tap a creature** you can afford (it glows), then **tap one of your lanes**: the dashed spaces in your row.
 2. Your Hero's **Level** is how many units you may have. **Level up** (the button by Ready) for one more lane.
-3. Tap one of your units to **move** it to another lane, or to offer it.
+3. Lanes full? Tap one of your units to **sell it** and make room: you get back what you paid, less 1. Tapping a unit
+   also lets you **move** it to another lane.
 4. Charms aimed at the enemy are aimed at **one of their lanes**: they happen when the fight begins, to whoever stands
    there.
-5. Holding a card with **Ambush**? You may **set it face-down** in one of your lanes instead of playing it.
+5. A card with **Ambush**? You may **set it face-down** in one of your lanes when you buy it.
 6. Done? Press **Ready**.
 
 ## The Clash: the fight plays itself
@@ -44,16 +48,16 @@ When you are both Ready, the armies fight, bout after bout. Nobody decides anyth
 - Each unit hits the enemy **across** from it first, then the nearest. But roles come first: **Guardians** are hit
   first, **Elusive** units late, **Lures** last, and **Sneaky** units go the other way round.
 - When one side has nobody standing, it **loses a Candle** for each enemy unit still standing (at most 2).
-- A lost Candle's card goes into your **hand**: being behind gives you more cards to play.
 - After the Clash every unit **stands up again**. Nothing on your board is lost: your army grows round after round.
 
 ## A few more things
 
-- Play a **second copy** of a creature you have on the board and it **merges**: 2 stars, twice as strong.
+- Buy a **second copy** of a creature you have on the board and it **merges**: 2 stars, twice as strong. It merges
+  even when your lanes are full.
 - **Your Hero** never leaves the table. Tap **Use ability** once a round. Later it **Awakens**: stronger, and it
   strikes when the Clash begins.
 - **Stuck?** Tap **Rules** during a game for a short reminder.
-- The words in **bold** on cards (Swift, Guardian, Sneaky, Elusive, Lure, Lucky and others) are explained in
+- The words in **bold** on cards (Swift, Guardian, Sneaky, Elusive, Lure and others) are explained in
   [Keywords](rulebook.md#10-keywords).
 
 ## Put the game on your home screen

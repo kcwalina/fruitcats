@@ -136,7 +136,7 @@ function heroLine(s: GameState, p: PlayerId): string {
 // The engine logs in the third person ("Ana plays…"); a reader is told "You play…".
 const YOU_VERBS: Record<string, string> = {
   keeps: 'keep', makes: 'make', plays: 'play', takes: 'take', mulligans: 'mulligan', offers: 'offer', moves: 'move', sets: 'set',
-  loses: 'lose', starts: 'start', wins: 'win', has: 'have', uses: 'use', draws: 'draw', gets: 'get', gains: 'gain', is: 'are', summons: 'summon',
+  loses: 'lose', starts: 'start', wins: 'win', has: 'have', holds: 'hold', reaches: 'reach', uses: 'use', draws: 'draw', gets: 'get', gains: 'gain', is: 'are', summons: 'summon',
 };
 function secondPerson(text: string, me: string, foe: string): string {
   const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

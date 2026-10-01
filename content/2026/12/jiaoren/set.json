@@ -66,18 +66,6 @@
         "name": "Zhu'er, the Littlest Jiaoren",
         "abilities": [
           {
-            "static": {
-              "grant": {
-                "keywords": [
-                  "Pearl Tears"
-                ]
-              },
-              "to": {
-                "each": "own"
-              }
-            }
-          },
-          {
             "when": "exhaust",
             "target": {
               "unit": "own"
@@ -98,7 +86,7 @@
             }
           }
         },
-        "text": "Your units have Pearl Tears.\nExhaust: A unit you control gets +2 Health this round.\nAwaken: 10 or more units have gone down in Clashes this game."
+        "text": "Exhaust: A unit you control gets +2 Health this round.\nAwaken: 10 or more units have gone down in Clashes this game."
       },
       "bigCat": {
         "name": "Zhu'er, Pearl of the Moonlit Sea",

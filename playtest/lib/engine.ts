@@ -27,7 +27,11 @@ export function prototypeDecks(): Record<string, NonNullable<ContentSet['data'][
 // What-if balance experiments: PLAYTEST_CARD_MODS='{"DW1-D08":{"cost":9}}' changes cards for this process and
 // every worker it starts (they share the environment), so `npm run balance` can measure a proposed card change
 // before anyone edits a set. Never set on PC2024 or in a deploy.
-import { CARDS as ALL_CARDS } from '../../packages/engine/src/index';
+import { CARDS as ALL_CARDS, type Rules } from '../../packages/engine/src/index';
+
+// What-if rule experiments, the same way: PLAYTEST_RULES_MODS='{"clashCandleCap":2}' plays every game of this process and
+// its workers with other numbers for the rules (packages/engine/src/rules.ts). Never set on PC2024 or in a deploy.
+export const RULE_MODS: Partial<Rules> = process.env.PLAYTEST_RULES_MODS ? JSON.parse(process.env.PLAYTEST_RULES_MODS) : {};
 if (process.env.PLAYTEST_CARD_MODS) {
   for (const [id, change] of Object.entries(JSON.parse(process.env.PLAYTEST_CARD_MODS) as Record<string, object>)) {
     if (!ALL_CARDS[id]) throw new Error(`PLAYTEST_CARD_MODS: no card ${id}`);

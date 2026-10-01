@@ -103,7 +103,7 @@
       "flavor": "Persians called the pari 'those who are better than we'.",
       "kitten": {
         "name": "Parijan, the Littlest Pari",
-        "text": "Exhaust: A unit you control gains Sneaky this round.\nAwaken: You control 3 or more units.",
+        "text": "Exhaust: A unit you control gets +1 Power and Sneaky this round.\nAwaken: You control 3 or more units.",
         "abilities": [
           {
             "when": "exhaust",
@@ -113,6 +113,7 @@
             "do": [
               {
                 "buff": {
+                  "power": 1,
                   "keywords": [
                     "Sneaky"
                   ]
@@ -132,20 +133,17 @@
       "bigCat": {
         "name": "Parijan, Wings over Qāf",
         "power": 2,
-        "text": "Exhaust: A unit you control gets +2 Power and Sneaky this round.",
+        "text": "Exhaust: Your units get +1 Power this round.",
         "abilities": [
           {
             "when": "exhaust",
             "target": {
-              "unit": "own"
+              "each": "own"
             },
             "do": [
               {
                 "buff": {
-                  "power": 2,
-                  "keywords": [
-                    "Sneaky"
-                  ]
+                  "power": 1
                 }
               }
             ]
@@ -223,7 +221,7 @@
       "name": "Pari at the Pool",
       "cost": 2,
       "power": 3,
-      "health": 2,
+      "health": 3,
       "text": "Swift.",
       "flavor": "People who met a pari usually found her bathing. Her sisters were never far.",
       "keywords": [

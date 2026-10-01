@@ -25,16 +25,11 @@ cards = [
     frame = gold
     art = 'art/AL1-H01-kitten.webp'
     text = @aluxito-text
-    constants = [
-      heal = 2
-      candles = 6
-    ]
     flavor = 'Knee-high and invisible. Every corn stalk in the field is his.'
     back = Awakened {
       name = 'Aluxito', epithet = 'Caller of the Rain', power = 3
       art = 'art/AL1-H01-bigcat.webp'
-      text = 'Exhaust: A unit you control gets +{heal} Health this round. It gains Guardian this round.'
-      constants = [heal = 3]
+      text = 'Exhaust: A unit you control gets +2 Rain-Fed.'
     }
   }
   saka-bearing-alux = Creature {
@@ -42,7 +37,7 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'AL1-D01', rarity = common
     art = 'art/AL1-D01.webp'
-    keywords = [@Lure]
+    keywords = [@Lure, @Lure]
     text = 'Lure. Hello: A unit you control gets +{heal} Health this round.'
     constants = [heal = 2]
     flavor = 'A gourd of sweet corn drink, carried to whoever needs it most.'
@@ -133,8 +128,7 @@ cards = [
     cost = 3
     number = 'AL1-D11', rarity = uncommon
     art = 'art/AL1-D11.webp'
-    text = 'Deal {damage} damage to an exhausted enemy unit.'
-    constants = [damage = 5]
+    text = 'Deal 4 damage to an exhausted enemy unit.'
     flavor = 'Fall asleep without leaving an offering, and the kitchen lets you know.'
   }
   kahtal-alux = Talisman {
@@ -210,8 +204,8 @@ cards = [
 ]
 
 @@@ aluxito-text
-Exhaust: A unit you control gets +{heal} Health this round.
-Awaken: You have {candles} or fewer Candles.
+Exhaust: A unit you control with Rain-Fed gets +1 Rain-Fed.
+Awaken: You have 7 or fewer Candles.
 @@@ kahtal-alux-flavor
 A doll-sized house at the edge of the field. Whoever lives in it guards the corn for seven years.
 @@@

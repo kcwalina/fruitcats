@@ -64,8 +64,10 @@ export function forecastClash(s: GameState): [number, number] {
     for (const x of s.players[owner].pending ?? []) {
       const ability = 'mechanic' in x.ref ? undefined : abilitiesOf(x.ref.card, x.ref.side)[x.ref.index];
       if (!ability) continue;
-      const targets = x.target?.kind === 'lane' ? [byLane(x.target.player, x.target.lane)].filter(Boolean) as Fighter[]
+      let targets = x.target?.kind === 'lane' ? [byLane(x.target.player, x.target.lane)].filter(Boolean) as Fighter[]
         : typeof ability.target === 'object' && 'each' in ability.target ? fs.filter((f) => f.owner !== owner) : [];
+      // An effect for exhausted units only fizzles on a ready one.
+      if (typeof ability.target === 'object' && ability.target.filter?.exhausted) targets = targets.filter((f) => !f.active);
       for (const act of ability.do ?? []) {
         for (const f of targets) {
           if ('damage' in act) f.hp -= Math.max(0, (act.damage as number) - f.tough);

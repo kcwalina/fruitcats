@@ -100,17 +100,22 @@
       "flavor": "Knee-high and invisible. Every corn stalk in the field is his.",
       "kitten": {
         "name": "Aluxito, Keeper of the Milpa",
-        "text": "Exhaust: A unit you control gets +2 Health this round.\nAwaken: You have 6 or fewer Candles.",
+        "text": "Exhaust: A unit you control with Rain-Fed gets +1 Rain-Fed.\nAwaken: You have 7 or fewer Candles.",
         "abilities": [
           {
             "when": "exhaust",
             "target": {
-              "unit": "own"
+              "unit": "own",
+              "filter": {
+                "keyword": "Rain-Fed"
+              }
             },
             "do": [
               {
-                "buff": {
-                  "health": 2
+                "counter": {
+                  "name": "rain",
+                  "add": 1,
+                  "max": 3
                 }
               }
             ]
@@ -119,7 +124,7 @@
         "growUp": {
           "if": {
             "lives": {
-              "atMost": 6
+              "atMost": 7
             }
           }
         }
@@ -127,7 +132,7 @@
       "bigCat": {
         "name": "Aluxito, Caller of the Rain",
         "power": 3,
-        "text": "Exhaust: A unit you control gets +3 Health this round. It gains Guardian this round.",
+        "text": "Exhaust: A unit you control gets +2 Rain-Fed.",
         "abilities": [
           {
             "when": "exhaust",
@@ -136,15 +141,10 @@
             },
             "do": [
               {
-                "buff": {
-                  "health": 3
-                }
-              },
-              {
-                "buff": {
-                  "keywords": [
-                    "Guardian"
-                  ]
+                "counter": {
+                  "name": "rain",
+                  "add": 2,
+                  "max": 3
                 }
               }
             ]
@@ -379,7 +379,7 @@
       "family": "Aluxes",
       "name": "Pots and Pans Flung",
       "cost": 3,
-      "text": "Deal 5 damage to an exhausted enemy unit.",
+      "text": "Deal 4 damage to an exhausted enemy unit.",
       "flavor": "Fall asleep without leaving an offering, and the kitchen lets you know.",
       "abilities": [
         {
@@ -392,7 +392,7 @@
           },
           "do": [
             {
-              "damage": 5
+              "damage": 4
             }
           ]
         }

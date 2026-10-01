@@ -64,7 +64,7 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'JR1-D04', rarity = common
     art = 'art/JR1-D04.webp'
-    keywords = [@Lure]
+    keywords = [@Lure, @Lure]
     text = 'Lure. Hello: Gain an Offering.'
     flavor = 'When the moon is full, the oysters are full. When the moon is dark, they are empty.'
   }
@@ -125,7 +125,7 @@ cards = [
     cost = 5, power = 5, health = 5
     number = 'JR1-D11', rarity = uncommon
     art = 'art/JR1-D11.webp'
-    keywords = [@Elusive]
+    keywords = [@Elusive, @Elusive]
     text = 'Elusive. Hello: Draw a card.'
     flavor = 'They leave timber under the tree and take a fair price. Nobody ever sees their faces.'
   }
@@ -215,7 +215,6 @@ cards = [
 ]
 
 @@@ zhu-er-text
-Your units have Pearl Tears.
 Exhaust: A unit you control gets +{heal} Health this round.
 Awaken: {fallen} or more units have gone down in Clashes this game.
 @@@ zhu-er-back-text

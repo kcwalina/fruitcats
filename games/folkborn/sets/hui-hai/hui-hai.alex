@@ -71,7 +71,7 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'HH1-D04', rarity = common
     art = 'art/HH1-D04.webp'
-    keywords = [@stone-for-stone, @Lure]
+    keywords = [@stone-for-stone, @Lure, @Lure]
     text = 'Stone for Stone. Lure.'
     flavor = 'The fern moved. There was no wind.'
   }
@@ -96,7 +96,7 @@ cards = [
     cost = 3, power = 4, health = 2
     number = 'HH1-D07', rarity = common
     art = 'art/HH1-D07.webp'
-    keywords = [@Elusive]
+    keywords = [@Elusive, @Elusive]
     text = 'Elusive.'
     flavor = 'The boulder was on the path in the evening. In the morning it wasn''t.'
   }
@@ -159,8 +159,7 @@ cards = [
     number = 'HH1-D14', rarity = uncommon
     art = 'art/HH1-D14.webp'
     keywords = [@Lucky]
-    text = 'Lucky. Deal {damage} damage to a unit.'
-    constants = [damage = 4]
+    text = 'Lucky. Deal 3 damage to a unit.'
     flavor = 'Cut a tree for nothing, and the forest will not forget your face.'
   }
   nobody-threw-it = Charm {

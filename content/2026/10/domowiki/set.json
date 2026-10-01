@@ -301,14 +301,14 @@
       "type": "Trick",
       "name": "Bowl of Kasha",
       "cost": 1,
-      "text": "Sprout 3.",
+      "text": "Sprout 2.",
       "flavor": "A bowl by the stove, the first spoonful for him.",
       "abilities": [
         {
           "when": "play",
           "do": [
             {
-              "sprout": 3
+              "sprout": 2
             }
           ]
         }

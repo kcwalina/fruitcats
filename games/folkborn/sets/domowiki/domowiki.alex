@@ -44,7 +44,7 @@ cards = [
     cost = 1, power = 1, health = 1
     number = 'DW1-D02', rarity = common
     art = 'art/DW1-D02.webp'
-    keywords = [@Lure]
+    keywords = [@Lure, @Lure]
     text = 'Lure. Hello: Sprout {sprout}.'
     constants = [sprout = 1]
     flavor = 'Carry the old fire, and the home comes with you.'
@@ -89,7 +89,7 @@ cards = [
     cost = 5, power = 5, health = 5
     number = 'DW1-D07', rarity = uncommon
     art = 'art/DW1-D07.webp'
-    keywords = [@Elusive]
+    keywords = [@Elusive, @Elusive]
     text = 'Elusive. Hello: If you''re Well-Fed, draw {draw} cards.'
     constants = [draw = 2]
     flavor = 'Spins by the stove all night. The yarn tells tomorrow.'
@@ -108,8 +108,7 @@ cards = [
     cost = 1
     number = 'DW1-D09', rarity = uncommon
     art = 'art/DW1-D09.webp'
-    text = 'Sprout {sprout}.'
-    constants = [sprout = 3]
+    text = 'Sprout 2.'
     flavor = 'A bowl by the stove, the first spoonful for him.'
   }
   a-domowiks-temper = Charm {

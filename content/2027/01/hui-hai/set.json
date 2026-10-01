@@ -43,10 +43,11 @@
     "Stone for Stone": {
       "family": "Hui Hai",
       "kind": "keyword",
-      "reminder": "When this unit is damaged and survives, deal 1 damage to the enemy unit it would hit.",
+      "reminder": "Once per round, when this unit is damaged and survives, deal 1 damage to an enemy unit.",
       "abilities": [
         {
           "when": "damagedAndSurvives",
+          "oncePerRound": true,
           "target": {
             "unit": "enemy"
           },
@@ -404,12 +405,12 @@
           },
           "do": [
             {
-              "damage": 4
+              "damage": 3
             }
           ]
         }
       ],
-      "text": "Lucky. Deal 4 damage to a unit."
+      "text": "Lucky. Deal 3 damage to a unit."
     },
     {
       "id": "HH1-D15",

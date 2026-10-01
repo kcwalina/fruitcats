@@ -12,7 +12,7 @@ export const RULES: Readonly<Rules> = {
   levelMax: 6,
   levelCost: [0, 0, 3, 4, 5, 6],
   boutCap: 8,
-  clashCandleCap: 3,
+  clashCandleCap: 2,
   overtimeBothLose: true,
   maxRounds: 30,
   maxStars: 3,

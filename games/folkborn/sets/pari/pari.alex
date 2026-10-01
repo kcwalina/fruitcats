@@ -28,8 +28,7 @@ cards = [
     back = Awakened {
       name = 'Parijan', epithet = 'Wings over Qāf', power = 2
       art = 'art/PR1-H01-bigcat.webp'
-      text = 'Exhaust: A unit you control gets +{boost} Power and Sneaky this round.'
-      constants = [boost = 2]
+      text = 'Exhaust: Your units get +1 Power this round.'
     }
   }
   dove-shaped-pari = Creature {
@@ -37,7 +36,7 @@ cards = [
     cost = 1, power = 1, health = 1
     number = 'PR1-D01', rarity = common
     art = 'art/PR1-D01.webp'
-    keywords = [@feather-coat, @Lure]
+    keywords = [@feather-coat, @Lure, @Lure]
     text = 'Feather Coat. Lure.'
     flavor = 'A pari can put on a coat of feathers and fly off as a dove.'
   }
@@ -64,7 +63,7 @@ cards = [
   }
   pari-at-the-pool = Creature {
     name = 'Pari at the Pool'
-    cost = 2, power = 3, health = 2
+    cost = 2, power = 3, health = 3
     number = 'PR1-D04', rarity = common
     art = 'art/PR1-D04.webp'
     keywords = [@Swift]
@@ -97,7 +96,7 @@ cards = [
     cost = 4, power = 4, health = 3
     number = 'PR1-D07', rarity = uncommon
     art = 'art/PR1-D07.webp'
-    keywords = [@Fierce, @Elusive]
+    keywords = [@Fierce, @Elusive, @Elusive]
     text = 'Fierce. Elusive.'
     flavor = @markhor-of-the-mothers-flavor
   }
@@ -224,14 +223,14 @@ cards = [
     cost = 0, power = 1, health = 1
     number = 'PR1-K01'
     art = 'art/PR1-K01.webp'
-    keywords = [@Lure]
+    keywords = [@Lure, @Lure]
     text = 'Lure.'
     flavor = 'Somewhere under those feathers, a pari.'
   }
 ]
 
 @@@ parijan-text
-Exhaust: A unit you control gains Sneaky this round.
+Exhaust: A unit you control gets +1 Power and Sneaky this round.
 Awaken: You control {units} or more units.
 @@@ markhor-of-the-mothers-flavor
 The fairies own the wild goats. Hunters ask: 'Mother, adopt me, and give me one of your goats.'

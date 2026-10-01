@@ -2931,7 +2931,7 @@ text fonts/Nunito-Regular.ttf 31 #FF2B211B 813@9536,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@9984,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 39@10496,48320 288@11968,48320 242@12992,48320 352@14016,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@14592,48320
-text fonts/Nunito-Regular.ttf 31 #FF2B211B 752@15104,48320
+text fonts/Nunito-Regular.ttf 31 #FF2B211B 751@15104,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@16320,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 280@16832,48320 242@17984,48320 361@19008,48320 242@20736,48320 315@21760,48320 288@22912,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@23936,48320
@@ -2977,7 +2977,7 @@ text fonts/Nunito-Regular.ttf 31 #FF2B211B 813@9536,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@9984,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 39@10496,48320 288@11968,48320 242@12992,48320 352@14016,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@14592,48320
-text fonts/Nunito-Regular.ttf 31 #FF2B211B 752@15104,48320
+text fonts/Nunito-Regular.ttf 31 #FF2B211B 751@15104,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@16320,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 280@16832,48320 242@17984,48320 361@19008,48320 242@20736,48320 315@21760,48320 288@22912,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@23936,48320
@@ -3023,7 +3023,7 @@ text fonts/Nunito-Regular.ttf 31 #FF2B211B 813@9536,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@9984,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 39@10496,48320 288@11968,48320 242@12992,48320 352@14016,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@14592,48320
-text fonts/Nunito-Regular.ttf 31 #FF2B211B 752@15104,48320
+text fonts/Nunito-Regular.ttf 31 #FF2B211B 751@15104,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@16320,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 280@16832,48320 242@17984,48320 361@19008,48320 242@20736,48320 315@21760,48320 288@22912,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@23936,48320
@@ -3069,7 +3069,7 @@ text fonts/Nunito-Regular.ttf 31 #FF2B211B 813@9536,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@9984,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 39@10496,48320 288@11968,48320 242@12992,48320 352@14016,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@14592,48320
-text fonts/Nunito-Regular.ttf 31 #FF2B211B 752@15104,48320
+text fonts/Nunito-Regular.ttf 31 #FF2B211B 751@15104,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@16320,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 280@16832,48320 242@17984,48320 361@19008,48320 242@20736,48320 315@21760,48320 288@22912,48320
 text fonts/Nunito-Regular.ttf 31 #FF2B211B 807@23936,48320

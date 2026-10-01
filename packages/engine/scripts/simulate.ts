@@ -11,6 +11,8 @@ loadContent(registerSet, { prototypes: true });
 const games = Number(process.argv[2] ?? 100);
 const skill = Number(process.argv[3] ?? 1);
 const decks = Object.keys(DECKS);
+// Other numbers for the rules, to try them: RULES='{"clashCandleCap":2}' npm run sim
+const rules = JSON.parse(process.env.RULES ?? '{}');
 
 function mulberry(seed: number) {
   return () => {
@@ -33,7 +35,7 @@ for (let i = 0; i < decks.length; i++) {
     for (let g = 0; g < games; g++) {
       // Alternate seats so each deck plays both sides of the Lantern.
       const seat: [string, string] = g % 2 ? [decks[j], decks[i]] : [decks[i], decks[j]];
-      const s = createGame({ decks: seat, seed: 7919 * (i * 31 + j) + g, names: ['A', 'B'] });
+      const s = createGame({ decks: seat, seed: 7919 * (i * 31 + j) + g, names: ['A', 'B'], rules });
       const rnd = mulberry(1000 + g);
       for (let p = nextSeat(s); p !== null; p = nextSeat(s)) apply(s, chooseAction(s, { skill, random: rnd, seat: p }), p);
       total++;

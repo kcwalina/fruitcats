@@ -1,6 +1,6 @@
 // One bot-vs-bot game, and what a balance report needs to know about it.
 
-import { apply, chooseAction, createGame, type DeckList, type PlayerId } from '../lib/engine';
+import { RULE_MODS, apply, chooseAction, createGame, nextSeat, type DeckList, type PlayerId } from '../lib/engine';
 import { mulberry } from '../lib/rng';
 
 /** A deck in a matchup: `key` names it in reports (a starter's key, or a generated deck's name). */
@@ -39,18 +39,16 @@ export interface MatchJob {
 
 export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord {
   const seats: [Contestant, Contestant] = seed % 2 ? [b, a] : [a, b];
-  const s = createGame({ decks: [seats[0].deck, seats[1].deck], seed, names: [seats[0].key, seats[1].key] });
+  const s = createGame({ decks: [seats[0].deck, seats[1].deck], seed, names: [seats[0].key, seats[1].key], rules: RULE_MODS });
   const rnd = mulberry(seed ^ 0x9e3779b9);
   const played: [Record<string, number>, Record<string, number>] = [{}, {}];
   const grewUp: [number, number] = [0, 0];
-  while (s.winner === null) {
-    const prompt = s.prompt!;
-    const p = prompt.player;
-    const action = chooseAction(s, { skill: seats[p].skill ?? 1, random: rnd });
-    const uid = action.t === 'play' || action.t === 'pounce' ? action.uid : action.t === 'lucky' && prompt.kind === 'lucky' ? prompt.uid : null;
+  for (let p = nextSeat(s); p !== null; p = nextSeat(s)) {
+    const action = chooseAction(s, { skill: seats[p].skill ?? 1, random: rnd, seat: p });
+    const uid = action.t === 'play' || action.t === 'lucky' || action.t === 'ambush' ? action.uid : null;
     const card = uid === null ? undefined : s.players[p].hand.find((c) => c.uid === uid);
     if (card) played[p][card.id] ??= s.round;
-    apply(s, action);
+    apply(s, action, p);
     for (const q of [0, 1] as PlayerId[]) if (!grewUp[q] && s.players[q].hero.grown) grewUp[q] = s.round;
   }
   return {

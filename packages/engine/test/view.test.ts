@@ -26,13 +26,9 @@ function scramble(s: GameState, seat: PlayerId, r: () => number): GameState {
   const ids = Object.keys(CARDS);
   const any = () => ids[Math.floor(r() * ids.length)];
   const foe = c.players[other(seat)];
-  foe.hand = foe.hand.map((h) => ({ uid: h.uid, id: any() }));
+  foe.shop = foe.shop.map((h) => ({ uid: h.uid, id: any() }));
   foe.ambushes = (foe.ambushes ?? []).map((a) => ({ ...a, card: { uid: a.card.uid, id: any() } }));
-  for (const pl of c.players) {
-    const pool = shuffled([...pl.deck, ...pl.lives], r);
-    pl.lives = pool.slice(0, pl.lives.length);
-    pl.deck = pool.slice(pl.lives.length);
-  }
+  for (const pl of c.players) pl.deck = shuffled(pl.deck, r);
   c.seed = Math.floor(r() * 2 ** 31);
   return c;
 }
@@ -62,7 +58,7 @@ describe('player views (online play)', () => {
     const firstCard = new Set<string>();
     for (let seed = 1; seed <= 40; seed++) {
       const s = createGame({ decks: ['domowiki', 'pari'], seed });
-      const all = s.players[0].deck.concat(s.players[0].hand, s.players[0].lives);
+      const all = s.players[0].deck.concat(s.players[0].shop);
       firstCard.add(all.find((c) => c.uid === 1)!.id);
     }
     expect(firstCard.size).toBeGreaterThan(8);
@@ -99,7 +95,7 @@ describe('player views (online play)', () => {
     expect(checked).toBeGreaterThan(100);
   }, 120_000);
 
-  it("hides the seed, decks, Candles, the opponent's hand and Ambushes, and the opponent's decision", () => {
+  it("hides the seed, decks, the opponent's shop and Ambushes, and the opponent's decision", () => {
     for (const s of states(1)) {
       for (const seat of [0, 1] as PlayerId[]) {
         const v = viewFor(s, seat);
@@ -108,17 +104,15 @@ describe('player views (online play)', () => {
         expect(v.queue).toEqual([]);
         for (const pl of v.players) {
           expect(pl.deck.every((c) => c.id === HIDDEN && c.uid === 0)).toBe(true);
-          expect(pl.lives.every((c) => c.id === HIDDEN && c.uid === 0)).toBe(true);
           expect(pl.shown).toBeUndefined();
         }
-        expect(foe.hand.every((c) => c.id === HIDDEN)).toBe(true);
+        expect(foe.shop.every((c) => c.id === HIDDEN)).toBe(true);
         expect((foe.ambushes ?? []).every((a) => a.card.id === HIDDEN)).toBe(true);
         expect(foe.pending ?? []).toEqual([]);
         expect(v.events.every((e) => e.secret === undefined || e.secret === seat)).toBe(true);
         expect(v.log.every((e) => e.secret === undefined || e.secret === seat)).toBe(true);
-        // Your own hand is yours to see.
-        expect(v.players[seat].hand).toEqual(s.players[seat].hand);
-        if (s.prompt?.kind === 'mulligan') expect(v.prompt).toEqual(s.prompt.player === seat ? s.prompt : null);
+        // Your own shop is yours to see.
+        expect(v.players[seat].shop).toEqual(s.players[seat].shop);
         if (s.prompt?.kind === 'muster') expect(v.prompt).toEqual(mayAct(s, seat) ? { kind: 'muster', player: seat } : null);
       }
     }

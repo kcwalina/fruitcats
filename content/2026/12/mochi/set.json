@@ -28,15 +28,14 @@
       "power": 3,
       "health": 4,
       "keywords": [
-        "Guardian",
-        "Lucky"
+        "Guardian"
       ],
       "abilities": [
         {
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         },
@@ -49,7 +48,7 @@
           ]
         }
       ],
-      "text": "Guardian. Lucky. Hello: Draw a card.\nGoodbye: Gain two Offerings.",
+      "text": "Guardian. Hello: Get a free roll.\nGoodbye: Gain two Offerings.",
       "flavor": "Soft on the outside. Softer on the inside."
     }
   ]

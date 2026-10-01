@@ -37,7 +37,7 @@ cards = [
     cost = 1, power = 1, health = 2
     number = 'AL1-D01', rarity = common
     art = 'art/AL1-D01.webp'
-    keywords = [@Lure, @Lure]
+    keywords = [@Lure]
     text = 'Lure. Hello: A unit you control gets +{heal} Health this round.'
     constants = [heal = 2]
     flavor = 'A gourd of sweet corn drink, carried to whoever needs it most.'
@@ -57,12 +57,12 @@ cards = [
     number = 'AL1-D03', rarity = common
     art = 'art/AL1-D03.webp'
     keywords = [@rain-fed]
-    text = 'Rain-Fed. Hello: If you control a Guardian, draw a card.'
+    text = 'Rain-Fed. Hello: If you control a Guardian, get a free roll.'
     flavor = 'Tends the field while the farmer sleeps. The corn is taller by morning.'
   }
   clay-alux = Creature {
     name = 'Clay Alux', epithet = 'Fresh from the J-meen'
-    cost = 3, power = 2, health = 3
+    cost = 2, power = 2, health = 3
     number = 'AL1-D04', rarity = common
     art = 'art/AL1-D04.webp'
     keywords = [@rain-fed]
@@ -79,7 +79,7 @@ cards = [
   }
   slingshot-alux = Creature {
     name = 'Slingshot Alux'
-    cost = 4, power = 4, health = 3
+    cost = 3, power = 4, health = 3
     number = 'AL1-D06', rarity = uncommon
     art = 'art/AL1-D06.webp'
     keywords = [@Elusive]
@@ -97,7 +97,7 @@ cards = [
   }
   alux-of-the-ceiba-roots = Creature {
     name = 'Alux of the Ceiba Roots'
-    cost = 6, power = 5, health = 6
+    cost = 5, power = 5, health = 6
     number = 'AL1-D08', rarity = uncommon
     art = 'art/AL1-D08.webp'
     keywords = [@Guardian, @Fierce]
@@ -118,14 +118,13 @@ cards = [
     cost = 2
     number = 'AL1-D10', rarity = uncommon
     art = 'art/AL1-D10.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. A unit you control gets +{heal} Health this round. Draw a card.'
+    text = 'A unit you control gets +{heal} Health this round. Get a free roll.'
     constants = [heal = 3]
     flavor = 'Left on the little doorstep at dusk. Gone by morning.'
   }
   pots-and-pans-flung = Charm {
     name = 'Pots and Pans Flung'
-    cost = 3
+    cost = 2
     number = 'AL1-D11', rarity = uncommon
     art = 'art/AL1-D11.webp'
     text = 'Deal 4 damage to an exhausted enemy unit.'
@@ -145,7 +144,7 @@ cards = [
     cost = 3, power = 2, health = 4
     number = 'AL1-D13', rarity = rare
     art = 'art/AL1-D13.webp'
-    text = 'Once per round, when you heal a unit or give it Health, draw a card.'
+    text = 'Once per round, when you heal a unit or give it Health, get a free roll.'
     flavor = 'Stops travellers and asks for a little something. Give it, and luck follows you home.'
   }
   the-alux-of-the-sacred-cenote = Fabled {
@@ -179,7 +178,7 @@ cards = [
     cost = 3, power = 2, health = 3
     number = 'AL1-D17', rarity = common
     art = 'art/AL1-D17.webp'
-    text = 'Hello: Draw a card.'
+    text = 'Hello: Get a free roll.'
     flavor = 'Nests in the walls of the cenote and knows everything that goes on there.'
   }
   a-sweet-on-the-doorstep = Charm {
@@ -197,8 +196,7 @@ cards = [
     cost = 1
     number = 'AL1-D19', rarity = uncommon
     art = 'art/AL1-D19.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. Exhaust an enemy unit.'
+    text = 'Exhaust an enemy unit.'
     flavor = 'He walks you in circles until you say please.'
   }
 ]

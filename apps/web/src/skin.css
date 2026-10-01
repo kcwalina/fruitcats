@@ -650,10 +650,9 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
   position: absolute; top: 3px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 0 5px; border-radius: 999px;
   font-size: clamp(9px, 1.4vh, 13px); line-height: 1.3; color: #ffd84a; background: rgba(30, 14, 3, 0.75); letter-spacing: -1px;
 }
-.hand-card .free-tag {
-  position: absolute; top: -6px; left: 50%; transform: translateX(-50%); padding: 1px 8px; border-radius: 999px;
-  font: 700 11px Fredoka, Nunito, sans-serif; color: #fff; background: var(--good); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}
+/* The shop: at most six cards, side by side, shrinking to fit rather than overlapping. */
+.hand.shop .hand-card { flex: 0 1 var(--card-w); margin: 0 3px; }
+.shop-empty { align-self: center; margin: 0; color: var(--muted); font-style: italic; text-align: center; }
 .purse, .level { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .purse b, .level b { font-size: 15px; color: #2f8a46; }
 .level b { color: #7a4b16; }
@@ -1221,19 +1220,6 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
   .side-buttons { flex: none; flex-direction: row; justify-content: center; gap: 8px; width: 100%; }
 }
 
-/* A hand too big to lay side by side overlaps its cards, each covering the next one's right side and with it the
-   printed Health in that corner. While it does, the Health is repeated as a chip on the card's left edge, above the
-   printed Power, where it stays in view; the last card, wholly visible, has no need of it. */
-.hand-hp { display: none; }
-.hand.overlapping .hand-card:not(:last-child) .hand-hp {
-  position: absolute; left: 4%; bottom: 14%; z-index: 2; display: inline-flex; align-items: center; gap: 0.2em;
-  height: 1.45em; padding: 0 0.5em 0 0.4em; border-radius: 999px; font: 700 clamp(11px, 9cqw, 16px) Fredoka, Nunito, sans-serif;
-  color: #b3203f; background: #fde3ea; border: 1.5px solid #d9486c; box-shadow: 0 1px 3px rgba(40, 20, 5, 0.35); pointer-events: none;
-}
-.hand.overlapping .hand-card:not(:last-child) .hand-hp::before {
-  content: ''; width: 0.7em; height: 0.7em; background: #d9486c;
-  -webkit-mask: var(--img-heart) center / contain no-repeat; mask: var(--img-heart) center / contain no-repeat;
-}
 .hand-card { container-type: inline-size; }
 /* A unit's rules text shows only on the wide board, where the tile has room for it. */
 .utext { display: none; }
@@ -1289,12 +1275,10 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
   .board.wide .zzz { top: 34%; }
   .board.wide .recap { color: #ffb4a3; font-size: 14px; }
 
-  /* The hand: full-size cards that overlap just enough to fit, rather than shrinking and cropping. */
+  /* The shop: full-size cards side by side, shrinking only when six don't fit. */
   .board.wide .hand { padding: 0 8px; }
-  .board.wide .hand-card { flex: 0 0 var(--card-w); margin: 0; }
-  .board.wide .hand-card + .hand-card {
-    margin-left: clamp(calc(var(--card-w) * -0.62), calc((100% - 16px - var(--card-w) * var(--n, 1)) / var(--gaps, 1)), 8px);
-  }
+  .board.wide .hand-card { flex: 0 1 var(--card-w); min-width: 0; margin: 0; }
+  .board.wide .hand-card + .hand-card { margin-left: 8px; }
   /* The opponent's face-up hand (teaching games) and their backs, at the Yard's start. */
   .board.wide .foe-hand-slot { left: 12px; }
   .board.wide .foe-hand:not(.shown) .card-back { width: 40px; height: 58px; margin-left: -24px; }

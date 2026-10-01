@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, HAND_LIMIT, RARITIES, RULES, addProblem, apply, attackTarget, chooseAction, clockFor, createGame, builtInTwin, deckCardIds, deckChanges,
+  CARDS, DECKS, RARITIES, RULES, addProblem, apply, attackTarget, chooseAction, clockFor, createGame, builtInTwin, deckCardIds, deckChanges,
   deckProblems, evaluateCondition, keywords, legalActions, mayAct, nextSeat, other, otherFamilies, randomAction, registerSet, unitHealth, unitPower,
   type Action, type DeckList, type GameState, type PlayerId, type Unit,
 } from '../src/index';
@@ -31,7 +31,7 @@ describe('card data', () => {
 
   it('parses keywords from card text', () => {
     expect(keywords('AL1-D07')).toMatchObject({ guardian: true, tough: 1 });
-    expect(keywords('PR1-D12')).toMatchObject({ pounce: true, lucky: true });
+    expect(keywords('PR1-D12')).toMatchObject({ pounce: true });
     expect(keywords('AL1-D03').guardian).toBe(false); // "If you control a Guardian" is not the keyword
   });
 
@@ -135,40 +135,26 @@ describe('deckbuilding (rulebook 11.1)', () => {
 });
 
 describe('setup', () => {
-  it('lets a mulligan swap at most 3 cards, for players and the computer alike', () => {
+  it('gives 9 Candles, the starting Offerings and a shop dealt from the deck, then opens the Muster for both: no mulligan', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 7 });
-    const hand = s.players[s.prompt!.player].hand.map((c) => c.uid);
-    expect(() => apply(structuredClone(s), { t: 'mulligan', uids: hand })).toThrow(/at most 3/);
-    expect(() => apply(structuredClone(s), { t: 'mulligan', uids: hand.slice(0, 4) })).toThrow(/at most 3/);
-    apply(s, { t: 'mulligan', uids: hand.slice(0, 3) });
-    expect(s.prompt?.kind).toBe('mulligan');
-    for (let seed = 1; seed <= 200; seed++) {
-      const g = createGame({ decks: ['domowiki', 'pari'], seed });
-      const a = chooseAction(g);
-      expect(a.t === 'mulligan' && a.uids.length).toBeLessThanOrEqual(3);
-    }
-  });
-
-  it('deals 9 Candles and 6 cards, gives the starting Offerings, then opens the Muster for both', () => {
-    const s = createGame({ decks: ['domowiki', 'pari'], seed: 7 });
-    expect(s.prompt?.kind).toBe('mulligan');
     for (const pl of s.players) {
-      expect(pl.lives).toHaveLength(9);
-      expect(pl.hand).toHaveLength(6);
+      expect(pl.lives).toBe(9);
+      expect(pl.shop).toHaveLength(RULES.shopSize);
+      expect(pl.deck).toHaveLength(50 - RULES.shopSize);
       expect(pl.offerings).toBe(RULES.startOfferings);
       expect(pl.hero.level).toBe(RULES.levelStart);
     }
-    apply(s, { t: 'mulligan', uids: [] });
-    apply(s, { t: 'mulligan', uids: [] });
     expect(s.prompt?.kind).toBe('muster');
     expect(s.muster?.open).toEqual([true, true]);
     expect(mayAct(s, 0) && mayAct(s, 1)).toBe(true);
   });
 
-  it('rejects illegal actions, and actions from a player the game is not waiting for', () => {
+  it('rejects illegal actions, and actions from a player who is already Ready', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 7 });
-    expect(() => apply(s, { t: 'ready' })).toThrow();
-    expect(() => apply(s, { t: 'mulligan', uids: [] }, other(s.prompt!.player))).toThrow(/not waiting/);
+    expect(() => apply(s, { t: 'sell', uid: 1 }, 0)).toThrow(/illegal/);
+    apply(s, { t: 'ready' }, 0);
+    expect(() => apply(s, { t: 'ready' }, 0)).toThrow(/not waiting/);
+    expect(other(0)).toBe(1);
   });
 
   it('refuses a deck with cards of a set that is gone (the Starter Box) before the game starts', () => {
@@ -180,12 +166,9 @@ describe('setup', () => {
   });
 });
 
-/** A game at its first Muster (both kept their hands), player 0 holding the Lantern. */
+/** A game at its first Muster, player 0 holding the Lantern. */
 function toMuster(decks: [string, string] = ['domowiki', 'domowiki'], seed = 1): GameState {
-  const s = createGame({ decks, seed, firstPlayer: 0 });
-  apply(s, { t: 'mulligan', uids: [] });
-  apply(s, { t: 'mulligan', uids: [] });
-  return s;
+  return createGame({ decks, seed, firstPlayer: 0 });
 }
 
 /** A unit put straight onto a player's board (no Hello). */
@@ -196,10 +179,10 @@ function put(s: GameState, p: 0 | 1, id: string, slot: number, extra: Partial<Un
   return u;
 }
 
-/** A card put into a player's hand. */
+/** A card put into a player's shop. */
 function give(s: GameState, p: 0 | 1, id: string): number {
-  const uid = 9000 + s.players[p].hand.length + p * 50;
-  s.players[p].hand.push({ uid, id });
+  const uid = 9000 + s.players[p].shop.length + p * 50;
+  s.players[p].shop.push({ uid, id });
   return uid;
 }
 
@@ -208,7 +191,6 @@ function clash(s: GameState) {
   const from = s.events.length;
   for (const p of [0, 1] as const) {
     if (!mayAct(s, p)) continue;
-    while (s.players[p].hand.length > HAND_LIMIT) apply(s, { t: 'offer', uid: s.players[p].hand[0].uid }, p);
     apply(s, { t: 'ready' }, p);
   }
   return s.events.slice(from);
@@ -231,16 +213,60 @@ describe('the economy', () => {
     expect(s.players[0].offerings).toBe(40 + RULES.income[1] + RULES.interestMax);
   });
 
-  it('a card from hand, or a unit from the board, becomes 1 Offering', () => {
+  it('losing Clashes in a row earns Offerings: nothing for one, +1 for two', () => {
     const s = toMuster();
-    const card = s.players[0].hand[0];
-    apply(s, { t: 'offer', uid: card.uid }, 0);
-    expect(s.players[0].offerings).toBe(RULES.startOfferings + 1);
-    expect(s.players[0].compost.at(-1)).toEqual(card);
-    const u = put(s, 0, 'DW1-D18', 0);
-    apply(s, { t: 'offer', uid: u.uid }, 0);
-    expect(s.players[0].yard).toHaveLength(0);
-    expect(s.players[0].offerings).toBe(RULES.startOfferings + 2);
+    put(s, 0, 'DW1-D18', 0);
+    s.players[1].offerings = 0;
+    clash(s);
+    expect(s.players[1].streak).toBe(1);
+    expect(s.players[0].streak).toBe(0);
+    expect(s.players[1].offerings).toBe(RULES.income[0]);
+    s.players[1].offerings = 0;
+    clash(s);
+    expect(s.players[1].streak).toBe(2);
+    expect(s.players[1].offerings).toBe(RULES.income[1] + RULES.streak[2]);
+  });
+
+  it('selling a unit gives back what was paid, less 1 for each copy in it; its card goes back into the deck', () => {
+    const s = toMuster();
+    const me = s.players[0];
+    me.offerings = 10;
+    const uid = give(s, 0, 'DW1-D18'); // Kłobuk, cost 3: Hello, get a free roll
+    apply(s, { t: 'play', uid, slot: 0 }, 0);
+    expect(me.freeRolls).toBe(1);
+    const deck = me.deck.length;
+    apply(s, { t: 'sell', uid }, 0);
+    expect(me.offerings).toBe(10 - 3 + 3 - RULES.sellLoss);
+    expect(me.yard).toHaveLength(0);
+    expect(me.deck).toHaveLength(deck + 1);
+    const merged = put(s, 0, 'DW1-D18', 1, { stars: 3, paid: 9 });
+    apply(s, { t: 'sell', uid: merged.uid }, 0);
+    expect(me.offerings).toBe(10 - RULES.sellLoss + 9 - 3 * RULES.sellLoss);
+  });
+
+  it('a roll puts the shop back into the deck and deals a new one; a free roll costs nothing', () => {
+    const s = toMuster();
+    const me = s.players[0];
+    const cards = me.deck.length + me.shop.length;
+    apply(s, { t: 'roll' }, 0);
+    expect(me.offerings).toBe(RULES.startOfferings - RULES.rollCost);
+    expect(me.shop).toHaveLength(RULES.shopSize);
+    expect(me.deck.length + me.shop.length).toBe(cards);
+    me.freeRolls = 1;
+    apply(s, { t: 'roll' }, 0);
+    expect(me.offerings).toBe(RULES.startOfferings - RULES.rollCost);
+    expect(me.freeRolls).toBe(0);
+    me.offerings = 0;
+    expect(legalActions(s, 0).some((a) => a.t === 'roll')).toBe(false);
+  });
+
+  it('what is not bought goes back into the deck at the Start, so the deck never runs out', () => {
+    const s = toMuster();
+    for (let i = 0; i < 12; i++) clash(s);
+    for (const pl of s.players) {
+      expect(pl.shop).toHaveLength(RULES.shopSize);
+      expect(pl.deck.length + pl.shop.length).toBe(50);
+    }
   });
 
   it('a Level costs Offerings and opens one more lane', () => {
@@ -273,32 +299,25 @@ describe('the economy', () => {
   it('Sprout and "gain an Offering" add Offerings; Well-Fed counts what is saved', () => {
     const s = toMuster();
     const me = s.players[0];
-    me.offerings = 5;
-    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D09') }, 0); // Bowl of Kasha: Sprout 2, costs 1
-    expect(me.offerings).toBe(5 - 1 + 2);
+    me.offerings = 6;
+    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D09') }, 0); // Bowl of Kasha: Sprout 2
+    expect(me.offerings).toBe(6 - CARDS['DW1-D09'].cost! + 2);
     expect(evaluateCondition(s, 0, 'Well-Fed')).toBe(false);
     apply(s, { t: 'ability' }, 0); // Dziadziuś: gain an Offering
     expect(me.offerings).toBe(7);
     expect(evaluateCondition(s, 0, 'Well-Fed')).toBe(true);
   });
 
-  it("can't be Ready with more than 10 cards in hand", () => {
-    const s = toMuster();
-    while (s.players[0].hand.length <= HAND_LIMIT) give(s, 0, 'DW1-D16');
-    expect(legalActions(s, 0).some((a) => a.t === 'ready')).toBe(false);
-    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
-    expect(legalActions(s, 0).some((a) => a.t === 'ready')).toBe(true);
-  });
 });
 
 describe('the Muster', () => {
   it('both players act in any order until both are Ready, then the Clash plays', () => {
     const s = toMuster();
-    apply(s, { t: 'offer', uid: s.players[1].hand[0].uid }, 1);
-    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
+    apply(s, { t: 'roll' }, 1);
+    apply(s, { t: 'roll' }, 0);
     apply(s, { t: 'ready' }, 1);
     expect(mayAct(s, 1)).toBe(false);
-    expect(() => apply(s, { t: 'offer', uid: s.players[1].hand[0].uid }, 1)).toThrow(/not waiting/);
+    expect(() => apply(s, { t: 'roll' }, 1)).toThrow(/not waiting/);
     expect(s.prompt).toEqual({ kind: 'muster', player: 0 });
     apply(s, { t: 'ready' }, 0);
     expect(s.round).toBe(2);
@@ -308,7 +327,7 @@ describe('the Muster', () => {
   it("each player's clock counts their own moves, and both move at every public turn", () => {
     const s = toMuster();
     const [a, b] = s.clock;
-    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
+    apply(s, { t: 'roll' }, 0);
     expect(s.clock).toEqual([a + 1, b]);
     expect(clockFor(s, 1)).toBe(b);
     clash(s);
@@ -338,6 +357,20 @@ describe('the Muster', () => {
     expect(s.players[0].compost.some((c) => c.uid === uid)).toBe(true);
   });
 
+  it('a copy merges even when every lane the Level allows is taken; a new unit needs a lane sold first', () => {
+    const s = toMuster();
+    s.players[0].offerings = 20;
+    const first = put(s, 0, 'DW1-D18', 0);
+    const other = put(s, 0, 'DW1-D16', 1);
+    const copy = give(s, 0, 'DW1-D18');
+    const fresh = give(s, 0, 'DW1-D07');
+    expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === fresh)).toBe(false);
+    apply(s, { t: 'play', uid: copy }, 0);
+    expect(first.stars).toBe(2);
+    apply(s, { t: 'sell', uid: other.uid }, 0);
+    expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === fresh)).toBe(true);
+  });
+
   it('a Fabled never merges: a second copy is not even legal', () => {
     const s = toMuster();
     s.players[0].offerings = 10;
@@ -359,6 +392,19 @@ describe('the Muster', () => {
     const events = clash(s);
     expect(hits(events, foe.uid)).toHaveLength(0); // exhausted: it dealt no damage
     expect(s.players[0].compost.some((c) => c.uid === mane)).toBe(true);
+  });
+
+  it('a harmful effect on "a unit" is aimed only at the enemy: your own units never go down in the Muster', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    put(s, 0, 'DW1-D18', 0);
+    const temper = give(s, 0, 'DW1-D10'); // A Domowik's Temper: deal 5 damage to a unit
+    const targets = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === temper).map((a) => (a as { target: { kind: string; player?: number } }).target);
+    expect(targets).toHaveLength(6);
+    expect(targets.every((t) => t.kind === 'lane' && t.player === 1)).toBe(true);
+    // A helpful one still picks your own units (Warm Hand in the Night: a unit you control gets +2 Power).
+    const warm = give(s, 0, 'DW1-D19');
+    expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === warm && a.target?.kind === 'unit')).toBe(true);
   });
 
   it('with nobody in the lane, the effect fizzles', () => {
@@ -398,20 +444,6 @@ describe('the Muster', () => {
     expect(hits(events, foe.uid)).toHaveLength(0);
   });
 
-  it('a Lucky Candle may be played for free in the next Muster, and only then', () => {
-    const s = toMuster();
-    const lucky = s.players[1].deck.findIndex((c) => keywords(c.id).lucky);
-    const card = s.players[1].deck.splice(lucky, 1)[0];
-    s.players[1].lives.unshift(card);
-    put(s, 0, 'DW1-D18', 0);
-    clash(s);
-    expect(s.players[1].hand).toContainEqual(card);
-    expect(s.players[1].free).toEqual([card.uid]);
-    s.players[1].offerings = 0;
-    expect(legalActions(s, 1).some((a) => a.t === 'lucky' && a.uid === card.uid)).toBe(true);
-    clash(s);
-    expect(s.players[1].free).toEqual([]);
-  });
 });
 
 describe('the Clash', () => {
@@ -422,7 +454,7 @@ describe('the Clash', () => {
     const events = clash(s);
     expect(hits(events, mine.uid)[0]).toMatchObject({ uid: theirs.uid, dealt: 6 });
     expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ standing: [1, 0], lost: [0, 2] }); // Fierce: 2
-    expect(s.players[1].lives).toHaveLength(7);
+    expect(s.players[1].lives).toBe(7);
   });
 
   it('the loser loses at most the cap', () => {
@@ -572,8 +604,8 @@ describe('events', () => {
 
   it('what a player does in the Muster is secret to them until the Clash', () => {
     const s = toMuster();
-    apply(s, { t: 'offer', uid: s.players[0].hand[0].uid }, 0);
-    expect(s.events.at(-1)).toMatchObject({ t: 'offer', secret: 0 });
+    apply(s, { t: 'roll' }, 0);
+    expect(s.events.at(-1)).toMatchObject({ t: 'roll', secret: 0 });
     expect(s.log.at(-1)).toMatchObject({ secret: 0 });
     const events = clash(s);
     expect(events.filter((e) => e.t === 'clash' || e.t === 'clashEnd').every((e) => e.secret === undefined)).toBe(true);
@@ -591,7 +623,7 @@ describe('round limit (rulebook 300.7)', () => {
     const at = (candles: [number, number], boards: [number, number]) => {
       const s = toMuster();
       s.round = RULES.maxRounds;
-      s.players.forEach((pl, p) => { pl.lives = pl.lives.slice(0, candles[p]); });
+      s.players.forEach((pl, p) => { pl.lives = candles[p]; });
       for (const p of [0, 1] as const) if (boards[p]) put(s, p, 'DW1-D04', p === 0 ? 0 : 5, { buffHealth: 0, exhausted: true });
       clash(s);
       return s;

@@ -38,9 +38,9 @@ interface Balloon {
 const ME: PlayerId = 0;
 const FOE: PlayerId = 1;
 
-/** The Muster is waiting on you (not the mulligan, not the report). */
+/** The Muster is waiting on you (not the Clash report). */
 const mustering = (s: GameState) => mayAct(s, ME) && s.prompt?.kind === 'muster' && !document.querySelector('.clash-report');
-const canFieldUnit = (s: GameState) => legalActions(s, ME).some((a) => a.t === 'play' && isUnitCard(s.players[ME].hand.find((c) => c.uid === a.uid)?.id ?? ''));
+const canFieldUnit = (s: GameState) => legalActions(s, ME).some((a) => a.t === 'play' && isUnitCard(s.players[ME].shop.find((c) => c.uid === a.uid)?.id ?? ''));
 
 const STEPS: Balloon[] = [
   {
@@ -49,9 +49,9 @@ const STEPS: Balloon[] = [
   },
   {
     // Reading a card teaches the price, the paw and the heart in one go — and you cannot play without it.
-    id: 'card', title: 'Read a card 🔍', anchor: '.hand', mustDo: true,
+    id: 'card', title: 'Your shop 🔍', anchor: '.hand', mustDo: true,
     when: () => !!document.querySelector('.hand .hand-card'),
-    text: 'Your cards are at the bottom, and they’re small. <b>Press and hold</b> one to open it full size — let go to close. '
+    text: 'At the bottom is your <b>shop</b>: cards dealt from your own deck. <b>Press and hold</b> one to open it full size — let go to close. '
       + '<br><b>Try it now: hold a card until it opens.</b>',
   },
   {
@@ -60,10 +60,10 @@ const STEPS: Balloon[] = [
       + 'You see their board as it was when the Muster began. Your <b>Offerings</b> are your money: a card costs the number in its corner.',
   },
   {
-    id: 'play', title: 'Field a creature', anchor: '.hand', also: ['.yard.me'], when: (s) => mustering(s) && canFieldUnit(s),
+    id: 'play', title: 'Buy a creature', anchor: '.hand', also: ['.yard.me'], when: (s) => mustering(s) && canFieldUnit(s),
     skipIf: (s) => s.round >= 4,
-    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces) to put it there.',
-    doneWhen: (a) => a.t === 'play' || a.t === 'lucky',
+    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces) to buy it and put it there.',
+    doneWhen: (a) => a.t === 'play',
   },
   {
     id: 'lanes', title: 'Lanes and roles', anchor: '.yard.me', below: true, when: (s) => mustering(s) && s.players[ME].yard.length > 0,
@@ -82,8 +82,8 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'money', title: 'Spend or save', anchor: '.player.me .purse', when: (s) => mustering(s) && s.round >= 2,
-    text: 'Each round you get more Offerings. What you don’t spend is <b>kept</b>, and every 5 saved earn <b>1 more</b> next round. '
-      + '<b>Level up</b> your Hero to field more units, or save for a big one: it’s your call.',
+    text: 'Each round you get more Offerings and a new shop. What you don’t spend is <b>kept</b>, and every 5 saved earn <b>1 more</b> next round. '
+      + '<b>Roll</b> for a new shop, <b>level up</b> your Hero to field more units, or save for a big one: it’s your call.',
   },
   {
     id: 'done', title: 'You’ve got it! 🎉', anchor: '.player.foe .lives', below: true, when: (s) => mustering(s) && s.round >= 3,
@@ -99,22 +99,22 @@ const TIPS: Balloon[] = [
   },
   {
     id: 'merge', title: 'Two of a kind', anchor: '.hand',
-    when: (s) => mustering(s) && s.players[ME].hand.some((c) => CARDS[c.id]?.type === 'Critter' && s.players[ME].yard.some((u) => u.id === c.id)),
-    text: 'You hold another copy of a creature on your board. Play it and they <b>merge</b>: 2 stars, twice as strong. A third copy makes 3 stars.',
+    when: (s) => mustering(s) && s.players[ME].shop.some((c) => CARDS[c.id]?.type === 'Critter' && s.players[ME].yard.some((u) => u.id === c.id)),
+    text: 'Your shop has another copy of a creature on your board. Buy it and they <b>merge</b>, even when your lanes are full: 2 stars, twice as strong. A third copy makes 3 stars.',
   },
   {
-    id: 'offer', title: 'Too many cards', anchor: '.hand', when: (s) => mustering(s) && s.players[ME].hand.length > 10,
-    text: 'You can hold 10 cards when you’re Ready. Tap a card you don’t need and <b>Offer it</b>: each is worth 1 Offering.',
+    id: 'sell', title: 'Make room', anchor: '.yard.me',
+    when: (s) => mustering(s) && s.round >= 3 && s.players[ME].yard.length >= s.players[ME].hero.level,
+    text: 'Your lanes are full. To make room for something better, <b>tap one of your units and sell it</b>: you get back what you paid, less 1.',
   },
   {
     id: 'ambush', title: 'Ambush cards', anchor: '.hand',
-    when: (s) => mustering(s) && s.players[ME].hand.some((c) => keywords(c.id).pounce),
+    when: (s) => mustering(s) && s.players[ME].shop.some((c) => keywords(c.id).pounce),
     text: 'An <b>Ambush</b> card can be set <b>face-down in one of your lanes</b>: it happens when the Clash begins, if its lane holds what it needs. Your opponent only sees a face-down card.',
   },
   {
-    id: 'lostLife', title: 'You lost a Candle', anchor: '.player.me .lives', when: (s) => s.players[ME].lives.length < 9,
-    text: 'Ouch! But the lost Candle card went into your <b>hand</b>: getting hit gives you more cards to fight back with. '
-      + 'If it’s <b>Lucky</b> 🍀, you may even play it for free in the next Muster.',
+    id: 'lostLife', title: 'You lost a Candle', anchor: '.player.me .lives', when: (s) => s.players[ME].lives < 9,
+    text: 'Ouch! But losing Clashes in a row earns you extra <b>Offerings</b> at the start of the next rounds: +1 after two, up to +3 after five. Use them to catch up.',
   },
   {
     id: 'roles', title: 'Their roles', anchor: '.yard.foe',
@@ -136,7 +136,7 @@ export interface TutorialHost {
   rerender(): void;
   /** Let the AI continue once a balloon is closed. */
   resumeAi(): void;
-  /** What you've picked and are choosing a target for: an attacker (attack) or a card from your hand. */
+  /** What you've picked and are choosing a target for: an attacker (attack) or a card from your shop. */
   selection(): { label: string; attack: boolean } | null;
   /** The player chose to skip the walkthrough. */
   skipped?(): void;
@@ -309,7 +309,7 @@ export function renderTutorial(hidden = false) {
   if (!target) return;
   const r = target.getBoundingClientRect();
 
-  // Spotlight the target and any button the step asks you to press (e.g. "Offer"), with one shade
+  // Spotlight the target and any button the step asks you to press (e.g. "Ready"), with one shade
   // that has a hole per highlight. Clicks go straight through the shade to the game.
   const also = typeof b.also === 'function' ? b.also(s) : b.also ?? [];
   const extras = also.flatMap((sel) => [...document.querySelectorAll<HTMLElement>(sel)]);

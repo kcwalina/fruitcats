@@ -4,9 +4,10 @@
 //   const s = createGame({ decks: ['domowiki', 'pari'], seed: 42 });
 //   for (let seat = nextSeat(s); seat !== null; seat = nextSeat(s)) apply(s, pickOneOf(legalActions(s, seat)), seat);
 //
-// A round has three parts. In the Start, players ready their units, get their income and draw. In the Muster both
-// players build at once and in secret: they play units into their six lanes, move them, set Ambushes, aim Charms at
-// the enemy's lanes and level up their Hero, each until they are Ready. Then the Clash plays itself: the units fight
+// A round has three parts. In the Start, players ready their units, get their income and a new shop: cards dealt face
+// up from their own deck. In the Muster both players build at once and in secret: they buy units into their six lanes
+// (a copy of a unit they have merges into it), move and sell them, roll the shop, set Ambushes, aim Charms at the
+// enemy's lanes and level up their Hero, each until they are Ready. Then the Clash plays itself: the units fight
 // in bouts until one side has none standing, the loser blows out Candles for the winner's survivors, and the board
 // stands up again for the next round. Nothing fielded is lost in a Clash.
 //
@@ -33,19 +34,15 @@ import type {
  * older build can no longer be continued (the web client throws such saves away).
  * 2: cards as data (unit counters and buffKeywords instead of ripe / buffSneaky / buffGuardian).
  * 3: the Muster and the Clash (Folkborn 0.4): Offerings are money, units fight on their own.
+ * 4: the shop instead of a hand (Folkborn 0.5): no mulligan, no draws, Candles are a count.
  */
-export const RULES_VERSION = 3;
+export const RULES_VERSION = 4;
 
 export const LIVES = 9;
 export const DECK_SIZE = 50;
-export const STARTING_HAND = 6;
-export const DRAW_PER_ROUND = 2;
 /** Lanes on each side of the board: the most units a player can field. */
 export const LANES = 6;
 export const YARD_LIMIT = LANES;
-export const HAND_LIMIT = 10;
-/** The most cards a mulligan may swap (the owner's call, 2026-09-27: swapping the whole hand is not a mulligan). */
-export const MULLIGAN_MAX = 3;
 /** Triggered abilities allowed in a row before the engine stops the chain (two cards triggering each other). */
 export const TRIGGER_CHAIN_LIMIT = 200;
 /** What a card nobody may see is called in a view (view.ts) and in the opponent's snapshot. */
@@ -82,7 +79,7 @@ export interface GameOptions {
   firstPlayer?: PlayerId;
   /**
    * Candles each player starts with (1 to 9; 9 when left out). A player may give some up as a handicap, so a friend
-   * who is new to the game has a fairer match. The Candles given up stay in the deck.
+   * who is new to the game has a fairer match.
    */
   lives?: [number, number];
   /** Other numbers for the rules (a playtest trying them). */
@@ -119,21 +116,19 @@ export function createGame(options: GameOptions): GameState {
     const ids = deckCardIds(list);
     shuffle(s, ids);
     const deck = ids.map((id) => ({ uid: s.nextUid++, id }));
-    const startingLives = Math.max(1, Math.min(LIVES, Math.floor(options.lives?.[p] ?? LIVES)));
-    const lives = deck.splice(0, startingLives);
-    const hand = deck.splice(0, STARTING_HAND);
+    const lives = Math.max(1, Math.min(LIVES, Math.floor(options.lives?.[p] ?? LIVES)));
     s.players[p] = {
       name: options.names?.[p] ?? `Player ${p + 1}`,
       deckName: list.name,
       hero: { id: list.hero, grown: false, exhausted: false, level: rules.levelStart },
-      deck, hand, lives, offerings: rules.startOfferings, yard: [], compost: [], playedThisRound: 0,
+      deck, shop: [], lives, offerings: rules.startOfferings, yard: [], compost: [], playedThisRound: 0,
     };
-    if (startingLives < LIVES) s.players[p].handicap = LIVES - startingLives;
+    if (lives < LIVES) s.players[p].handicap = LIVES - lives;
   }
   s.yarn = options.firstPlayer ?? (random(s) < 0.5 ? 0 : 1);
   s.startingYarn = s.yarn;
   log(s, `${s.players[s.yarn].name} starts with the ${TERMS.lantern}.`);
-  s.queue.push({ t: 'mulliganPrompt', p: 0 }, { t: 'mulliganPrompt', p: 1 }, { t: 'beginMuster' });
+  s.queue.push({ t: 'restock', p: s.yarn }, { t: 'restock', p: other(s.yarn) }, { t: 'beginMuster' });
   run(s);
   return s;
 }
@@ -306,6 +301,18 @@ export function levelCost(s: GameState, p: PlayerId): number | null {
 export const interestOn = (s: GameState, offerings: number): number =>
   Math.min(s.rules.interestMax, Math.floor(offerings / s.rules.interestPer));
 
+/** Offerings for a losing streak of this many Clashes in a row. */
+export function streakBonus(s: GameState, streak: number): number {
+  const table = s.rules.streak;
+  return table.length ? table[Math.min(streak, table.length - 1)] ?? 0 : 0;
+}
+
+/** What selling a unit gives back: what was paid for it, less sellLoss for each copy merged into it (a merge is a commitment). */
+export const sellValue = (s: GameState, u: Unit): number => Math.max(0, (u.paid ?? 0) - s.rules.sellLoss * (u.stars ?? 1));
+
+/** What the player's next roll costs: nothing with a free roll to use. */
+export const rollCost = (s: GameState, p: PlayerId): number => ((s.players[p].freeRolls ?? 0) > 0 ? 0 : s.rules.rollCost);
+
 /** This round's base income (round 1 has none: the starting Offerings stand for it). */
 export function baseIncome(s: GameState, round = s.round): number {
   const table = s.rules.income;
@@ -336,8 +343,8 @@ export function evaluateCondition(s: GameState, p: PlayerId, c: Condition, ctx: 
   if ('not' in c) return !evaluateCondition(s, p, c.not, ctx);
   if ('playedThisRound' in c) return (me.playedThisRound ?? 0) >= c.playedThisRound.atLeast;
   if ('treats' in c) return me.offerings >= c.treats.atLeast;
-  if ('lives' in c) return me.lives.length <= c.lives.atMost;
-  if ('opponentLives' in c) return s.players[other(p)].lives.length <= c.opponentLives.atMost;
+  if ('lives' in c) return me.lives <= c.lives.atMost;
+  if ('opponentLives' in c) return s.players[other(p)].lives <= c.opponentLives.atMost;
   if ('yardHas' in c) return me.yard.some((u) => unitKeywords(u, s).all.includes(c.yardHas.keyword));
   if ('unitsInComposts' in c) return s.players.reduce((n, pl) => n + pl.compost.filter((x) => isUnitCard(x.id)).length, 0) >= c.unitsInComposts.atLeast;
   if ('unitsDown' in c) return s.players.reduce((n, pl) => n + (pl.downed ?? 0), 0) >= c.unitsDown.atLeast;
@@ -393,11 +400,12 @@ export function targetsFor(s: GameState, p: PlayerId, sel: TargetSel, excludeUid
 
 /**
  * The targets a player may choose during the Muster: units of their own as they stand, and the enemy's lanes, all
- * six (the enemy's board is still being built, so what stands there is only known at the Clash).
+ * six (the enemy's board is still being built, so what stands there is only known at the Clash). A harmful effect
+ * that may hit "a unit" is aimed at the enemy only: a unit of your own never goes down outside a Clash.
  */
-export function musterTargets(s: GameState, p: PlayerId, sel: TargetSel, excludeUid?: number): Target[] {
+export function musterTargets(s: GameState, p: PlayerId, sel: TargetSel, excludeUid?: number, harmful = false): Target[] {
   if (!isUnitSel(sel)) return [];
-  const result: Target[] = sel.unit === 'enemy' ? [] : targetsFor(s, p, { ...sel, unit: 'own' }, excludeUid);
+  const result: Target[] = sel.unit === 'enemy' || (harmful && sel.unit === 'any') ? [] : targetsFor(s, p, { ...sel, unit: 'own' }, excludeUid);
   if (sel.unit !== 'own') for (let lane = 0; lane < LANES; lane++) result.push({ kind: 'lane', player: other(p), lane });
   return result;
 }
@@ -440,13 +448,13 @@ export function mergeTwin(s: GameState, p: PlayerId, id: string): Unit | undefin
 /** One way to play a card: the lane a new unit goes to, and its chosen target(s), if any. */
 export interface PlayChoice { slot?: number; target?: Target; target2?: Target }
 
-/** The ways a card in hand can be played right now (`free`: a Lucky Candle's). Empty means it can't be. */
-export function playChoices(s: GameState, p: PlayerId, card: CardInst, free = false): PlayChoice[] {
+/** The ways a card in the shop can be bought right now. Empty means it can't be. */
+export function playChoices(s: GameState, p: PlayerId, card: CardInst): PlayChoice[] {
   const def = CARDS[card.id];
   const me = s.players[p];
   const main = mainAbility(card.id)?.ability;
   if (main?.pounceOnly) return [];
-  if (!free && (def.cost ?? 0) > me.offerings) return [];
+  if ((def.cost ?? 0) > me.offerings) return [];
 
   if (isUnitCard(card.id)) {
     if (mergeTwin(s, p, card.id)) return [{}];
@@ -454,7 +462,7 @@ export function playChoices(s: GameState, p: PlayerId, card: CardInst, free = fa
     if (def.type === 'Cat' && me.yard.some((u) => u.id === card.id)) return [];
     let hellos: PlayChoice[] = [{}];
     if (isUnitSel(main?.target)) {
-      const targets = musterTargets(s, p, main!.target!).map((target) => ({ target }));
+      const targets = musterTargets(s, p, main!.target!, undefined, !helpful(main!)).map((target) => ({ target }));
       hellos = main!.optional ? [{}, ...targets] : targets.length ? targets : [{}];
     }
     return freeLanes(s, p).flatMap((slot) => hellos.map((h) => ({ slot, ...h })));
@@ -462,10 +470,11 @@ export function playChoices(s: GameState, p: PlayerId, card: CardInst, free = fa
   if (def.type === 'Toy') return targetsFor(s, p, { unit: 'own', filter: { noToy: true } }).map((target) => ({ target }));
   // Charm
   if (!isUnitSel(main?.target)) return [{}];
-  const firsts = musterTargets(s, p, main!.target!);
+  const harmful = !helpful(main!);
+  const firsts = musterTargets(s, p, main!.target!, undefined, harmful);
   let choices: PlayChoice[] = firsts.map((target) => ({ target }));
   if (isUnitSel(main!.target2)) {
-    const seconds = musterTargets(s, p, main!.target2);
+    const seconds = musterTargets(s, p, main!.target2, undefined, harmful);
     choices = firsts.flatMap((target) => seconds.filter((t2) => !sameTarget(t2, target)).map((target2) => ({ target, target2 })));
   }
   if (choices.length) return choices;
@@ -473,8 +482,8 @@ export function playChoices(s: GameState, p: PlayerId, card: CardInst, free = fa
 }
 
 /** The targets a card can be played on (the first target of each way to play it). */
-export function playOptions(s: GameState, p: PlayerId, card: CardInst, free = false): (Target | undefined)[] {
-  return playChoices(s, p, card, free).map((c) => c.target);
+export function playOptions(s: GameState, p: PlayerId, card: CardInst): (Target | undefined)[] {
+  return playChoices(s, p, card).map((c) => c.target);
 }
 
 /** The ways to set a card with Ambush face-down: one of your lanes without an Ambush (and, for a card aimed at "a unit", whose lane it watches). */
@@ -495,7 +504,7 @@ export function ambushChoices(s: GameState, p: PlayerId, card: CardInst): { lane
 }
 
 /** An action with its parts in a fixed order: legality is checked by comparing actions as JSON. */
-function withChoice(action: { t: 'play' | 'lucky'; uid: number }, c: PlayChoice): Action {
+function withChoice(action: { t: 'play'; uid: number }, c: PlayChoice): Action {
   return {
     ...action,
     ...(c.slot !== undefined ? { slot: c.slot } : {}),
@@ -534,21 +543,16 @@ export function nextSeat(s: GameState): PlayerId | null {
 /** The count a move online must quote for this seat: it moves with every one of their decisions and every public turn. */
 export const clockFor = (s: GameState, seat: PlayerId): number => s.clock[seat];
 
-/**
- * Every legal action for a player (the one the prompt names when no seat is given). A mulligan returns []: any set
- * of up to MULLIGAN_MAX cards in hand is legal; see `apply`.
- */
+/** Every legal action for a player (the one the prompt names when no seat is given). */
 export function legalActions(s: GameState, seat?: PlayerId): Action[] {
   const prompt = s.prompt;
   if (!prompt || s.winner !== null) return [];
   const p = seat ?? prompt.player;
-  if (!mayAct(s, p) || prompt.kind === 'mulligan') return [];
+  if (!mayAct(s, p)) return [];
   const me = s.players[p];
   const actions: Action[] = [];
-  const free = new Set(me.free ?? []);
-  for (const card of me.hand) {
+  for (const card of me.shop) {
     for (const c of playChoices(s, p, card)) actions.push(withChoice({ t: 'play', uid: card.uid }, c));
-    if (free.has(card.uid)) for (const c of playChoices(s, p, card, true)) actions.push(withChoice({ t: 'lucky', uid: card.uid }, c));
     for (const a of ambushChoices(s, p, card)) actions.push({ t: 'ambush', uid: card.uid, lane: a.lane, ...(a.target ? { target: a.target } : {}) });
   }
   for (const u of me.yard) {
@@ -561,14 +565,14 @@ export function legalActions(s: GameState, seat?: PlayerId): Action[] {
   }
   if (!me.hero.exhausted) {
     const ability = heroAbility(s, p)?.ability;
-    if (ability && isUnitSel(ability.target)) for (const target of musterTargets(s, p, ability.target)) actions.push({ t: 'ability', target });
+    if (ability && isUnitSel(ability.target)) for (const target of musterTargets(s, p, ability.target, undefined, !helpful(ability))) actions.push({ t: 'ability', target });
     else if (ability) actions.push({ t: 'ability' });
   }
   const cost = levelCost(s, p);
   if (cost !== null && me.offerings >= cost) actions.push({ t: 'levelUp' });
-  for (const card of me.hand) actions.push({ t: 'offer', uid: card.uid });
-  for (const u of me.yard) actions.push({ t: 'offer', uid: u.uid });
-  if (me.hand.length <= HAND_LIMIT) actions.push({ t: 'ready' });
+  if (me.offerings >= rollCost(s, p) && me.deck.length + me.shop.length > 0) actions.push({ t: 'roll' });
+  for (const u of me.yard) actions.push({ t: 'sell', uid: u.uid });
+  actions.push({ t: 'ready' });
   return actions;
 }
 
@@ -576,16 +580,25 @@ export function legalActions(s: GameState, seat?: PlayerId): Action[] {
 
 export class IllegalAction extends Error {}
 
-function takeFromHand(s: GameState, p: PlayerId, uid: number): CardInst {
-  const hand = s.players[p].hand;
-  const i = hand.findIndex((c) => c.uid === uid);
-  if (i < 0) throw new IllegalAction(`card ${uid} is not in hand`);
-  return hand.splice(i, 1)[0];
+function takeFromShop(s: GameState, p: PlayerId, uid: number): CardInst {
+  const shop = s.players[p].shop;
+  const i = shop.findIndex((c) => c.uid === uid);
+  if (i < 0) throw new IllegalAction(`card ${uid} is not in the shop`);
+  return shop.splice(i, 1)[0];
 }
 
-function validateSubset(s: GameState, p: PlayerId, uids: number[]): void {
-  const hand = new Set(s.players[p].hand.map((c) => c.uid));
-  if (new Set(uids).size !== uids.length || uids.some((u) => !hand.has(u))) throw new IllegalAction('cards must be distinct cards in hand');
+/** Cards go back into a player's deck, which is shuffled: the shop is random every time, like TFT's pool. */
+function returnToDeck(s: GameState, p: PlayerId, cards: CardInst[]): void {
+  const pl = s.players[p];
+  pl.deck.push(...cards);
+  shuffle(s, pl.deck);
+}
+
+/** The shop goes back into the deck and a new one is dealt. */
+function restock(s: GameState, p: PlayerId): void {
+  const pl = s.players[p];
+  returnToDeck(s, p, pl.shop.splice(0));
+  pl.shop = pl.deck.splice(0, s.rules.shopSize);
 }
 
 const laneName = (lane: number): string => `lane ${lane + 1}`;
@@ -621,9 +634,7 @@ function perform(s: GameState, action: Action, seat: PlayerId | undefined, check
   if (!mayAct(s, p)) throw new IllegalAction(`the game is not waiting for ${s.players[p].name}`);
   const me = s.players[p];
 
-  if (prompt.kind === 'mulligan') {
-    if (action.t !== 'mulligan') throw new IllegalAction('expected mulligan');
-  } else if (check) {
+  if (check) {
     const key = JSON.stringify(action);
     if (!legalActions(s, p).some((a) => JSON.stringify(a) === key)) throw new IllegalAction(`illegal action ${key}`);
   }
@@ -632,35 +643,23 @@ function perform(s: GameState, action: Action, seat: PlayerId | undefined, check
   s.actions++;
   s.clock[p]++;
   s.chain = 0;
-  const mustering = prompt.kind === 'muster';
-  if (mustering) s.acting = p;
+  s.acting = p;
 
   switch (action.t) {
-    case 'mulligan': {
-      validateSubset(s, p, action.uids);
-      if (action.uids.length > MULLIGAN_MAX) throw new IllegalAction(`swap at most ${MULLIGAN_MAX} card(s)`);
-      const aside = action.uids.map((uid) => takeFromHand(s, p, uid));
-      me.hand.push(...me.deck.splice(0, aside.length));
-      me.deck.push(...aside);
-      shuffle(s, me.deck);
-      log(s, aside.length ? `${me.name} mulligans ${aside.length} card(s).` : `${me.name} keeps their hand.`, p);
-      break;
-    }
-    case 'play':
-    case 'lucky': {
-      const card = takeFromHand(s, p, action.uid);
-      if (action.t === 'play') me.offerings -= CARDS[card.id].cost ?? 0;
-      else me.free = (me.free ?? []).filter((uid) => uid !== card.uid);
+    case 'play': {
+      const card = takeFromShop(s, p, action.uid);
+      const paid = CARDS[card.id].cost ?? 0;
+      me.offerings -= paid;
       me.playedThisRound = (me.playedThisRound ?? 0) + 1;
       const where = action.slot !== undefined ? ` in ${laneName(action.slot)}` : '';
       const on = action.target ? ` targeting ${describeTargets(s, action)}` : '';
-      log(s, action.t === 'lucky' ? `Lucky! ${me.name} plays ${cardName(card.id)} for free${where}${on}.` : `${me.name} plays ${cardName(card.id)}${where}${on}.`, p);
-      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, ...(action.target ? { target: action.target } : {}), ...(action.t === 'lucky' ? { how: 'lucky' as const } : {}) });
-      s.queue.unshift({ t: 'resolvePlay', p, card, slot: action.slot, target: action.target, target2: action.target2 });
+      log(s, `${me.name} buys ${cardName(card.id)}${where}${on}.`, p);
+      emit(s, { t: 'play', p, uid: card.uid, cardId: card.id, ...(action.target ? { target: action.target } : {}) });
+      s.queue.unshift({ t: 'resolvePlay', p, card, paid, slot: action.slot, target: action.target, target2: action.target2 });
       break;
     }
     case 'ambush': {
-      const card = takeFromHand(s, p, action.uid);
+      const card = takeFromShop(s, p, action.uid);
       me.offerings -= CARDS[card.id].cost ?? 0;
       (me.ambushes ??= []).push({ card, lane: action.lane, ...(action.target ? { target: action.target } : {}) });
       log(s, `${me.name} sets ${cardName(card.id)} face-down in ${laneName(action.lane)}.`, p);
@@ -677,24 +676,25 @@ function perform(s: GameState, action: Action, seat: PlayerId | undefined, check
       emit(s, { t: 'move', p, uid: u.uid, slot: action.slot });
       break;
     }
-    case 'offer': {
-      let cardId: string | undefined;
-      const inHand = me.hand.some((c) => c.uid === action.uid);
-      if (inHand) {
-        const card = takeFromHand(s, p, action.uid);
-        me.compost.push(card);
-        cardId = card.id;
-        me.free = me.free?.filter((uid) => uid !== card.uid);
-      } else {
-        const u = me.yard.find((x) => x.uid === action.uid)!;
-        me.yard = me.yard.filter((x) => x !== u);
-        if (u.toy) me.compost.push(u.toy);
-        if (!CARDS[u.id]?.token) me.compost.push({ uid: u.uid, id: u.id });
-        cardId = u.id;
-      }
-      me.offerings++;
-      log(s, `${me.name} offers ${inHand ? 'a card' : cardName(cardId)}: ${me.offerings} ${TERMS.offerings}.`, p);
-      emit(s, { t: 'offer', p, cardId, offerings: me.offerings });
+    case 'sell': {
+      const u = me.yard.find((x) => x.uid === action.uid)!;
+      const back = sellValue(s, u);
+      me.yard = me.yard.filter((x) => x !== u);
+      // Its Talisman goes to the Mist; the unit's own card goes back into the deck, to be dealt again.
+      if (u.toy) me.compost.push(u.toy);
+      if (!CARDS[u.id]?.token) returnToDeck(s, p, [{ uid: u.uid, id: u.id }]);
+      me.offerings += back;
+      log(s, `${me.name} sells ${cardName(u.id)} for ${back}: ${me.offerings} ${TERMS.offerings}.`, p);
+      emit(s, { t: 'sell', p, cardId: u.id, offerings: me.offerings });
+      break;
+    }
+    case 'roll': {
+      const free = (me.freeRolls ?? 0) > 0;
+      if (free) me.freeRolls = me.freeRolls! - 1;
+      else me.offerings -= s.rules.rollCost;
+      restock(s, p);
+      log(s, `${me.name} rolls${free ? ' for free' : ''}: a new shop.`, p);
+      emit(s, { t: 'roll', p, free });
       break;
     }
     case 'ability': {
@@ -722,7 +722,7 @@ function perform(s: GameState, action: Action, seat: PlayerId | undefined, check
   stateCheck(s);
   run(s);
   delete s.acting;
-  if (mustering && s.winner === null) {
+  if (s.winner === null) {
     if (s.muster!.open[0] || s.muster!.open[1]) s.prompt = { kind: 'muster', player: s.muster!.open[s.yarn] ? s.yarn : other(s.yarn) };
     else {
       s.queue.unshift({ t: 'clashStart' });
@@ -765,20 +765,15 @@ function unitAbilities(s: GameState, u: Unit, when: string, inline?: boolean): {
 function snapshot(pl: PlayerState): PlayerState {
   const c = structuredClone({ ...pl, shown: undefined });
   delete c.shown;
-  c.hand = c.hand.map((x) => ({ uid: x.uid, id: HIDDEN }));
+  c.shop = c.shop.map((x) => ({ uid: x.uid, id: HIDDEN }));
   c.deck = c.deck.map(() => ({ uid: 0, id: HIDDEN }));
-  c.lives = c.lives.map(() => ({ uid: 0, id: HIDDEN }));
   c.ambushes = (c.ambushes ?? []).map((a) => ({ card: { uid: a.card.uid, id: HIDDEN }, lane: a.lane }));
   c.pending = [];
-  c.free = [];
   return c;
 }
 
 function exec(s: GameState, step: Step): void {
   switch (step.t) {
-    case 'mulliganPrompt':
-      s.prompt = { kind: 'mulligan', player: step.p };
-      break;
     case 'beginMuster': {
       s.phase = 'muster';
       s.muster = { open: [true, true] };
@@ -791,7 +786,7 @@ function exec(s: GameState, step: Step): void {
     case 'clashStart': {
       s.phase = 'clash';
       delete s.muster;
-      for (const pl of s.players) { delete pl.shown; pl.free = []; }
+      for (const pl of s.players) delete pl.shown;
       s.clash = { bout: 0, dealt: 0, struck: [false, false] };
       log(s, `— Clash —`);
       emit(s, { t: 'clash', n: s.round });
@@ -865,7 +860,7 @@ function exec(s: GameState, step: Step): void {
     case 'startRound': {
       s.round++;
       if (s.round > s.rules.maxRounds) {
-        const candles = s.players.map((pl) => pl.lives.length);
+        const candles = s.players.map((pl) => pl.lives);
         const health = s.players.map((pl) => pl.yard.reduce((sum, u) => sum + unitHealth(u, s) - u.damage, 0));
         const [a, b] = candles[0] !== candles[1] ? candles : health;
         s.winner = a === b ? 'draw' : a > b ? 0 : 1;
@@ -897,7 +892,7 @@ function exec(s: GameState, step: Step): void {
           for (const { ref } of unitAbilities(s, u, 'roundStart')) steps.push({ t: 'ability', p: q, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
       steps.push(
         { t: 'income', p: first }, { t: 'income', p: second },
-        { t: 'draw', p: first, n: DRAW_PER_ROUND }, { t: 'draw', p: second, n: DRAW_PER_ROUND },
+        { t: 'restock', p: first }, { t: 'restock', p: second },
         { t: 'beginMuster' },
       );
       s.queue.unshift(...steps);
@@ -906,42 +901,28 @@ function exec(s: GameState, step: Step): void {
     case 'income': {
       const pl = s.players[step.p];
       const interest = interestOn(s, pl.offerings);
-      const gained = baseIncome(s) + interest;
+      const streak = streakBonus(s, pl.streak ?? 0);
+      const gained = baseIncome(s) + interest + streak;
       pl.offerings += gained;
-      log(s, `${pl.name} gets ${gained} ${TERMS.offerings}${interest ? ` (${interest} of it interest)` : ''}: ${pl.offerings} in all.`, step.p);
+      const parts = [interest ? `${interest} interest` : '', streak ? `${streak} for ${pl.streak} Clashes lost in a row` : ''].filter(Boolean);
+      log(s, `${pl.name} gets ${gained} ${TERMS.offerings}${parts.length ? ` (${parts.join(', ')})` : ''}: ${pl.offerings} in all.`, step.p);
       emit(s, { t: 'income', p: step.p, gained, offerings: pl.offerings });
       break;
     }
-    case 'draw': {
-      const pl = s.players[step.p];
-      let missing = 0;
-      for (let i = 0; i < step.n; i++) {
-        const card = pl.deck.shift();
-        if (card) pl.hand.push(card);
-        else missing++;
-      }
-      if (step.n > missing) emit(s, { t: 'draw', p: step.p, n: step.n - missing });
-      if (missing) {
-        log(s, `${pl.name}'s deck is empty!`, step.p);
-        s.queue.unshift({ t: 'loseLife', p: step.p, n: missing });
-      }
+    case 'restock':
+      restock(s, step.p);
       break;
-    }
     case 'loseLife': {
       const pl = s.players[step.p];
-      const card = pl.lives.shift();
-      if (!card) { s.winner = other(step.p); break; }
-      pl.hand.push(card);
-      log(s, `${pl.name} loses a ${TERMS.candle}: ${pl.lives.length} left.`, step.p);
-      emit(s, { t: 'lifeLost', p: step.p, left: pl.lives.length });
-      if (!pl.lives.length) {
+      pl.lives = Math.max(0, pl.lives - 1);
+      log(s, `${pl.name} loses a ${TERMS.candle}: ${pl.lives} left.`, step.p);
+      emit(s, { t: 'lifeLost', p: step.p, left: pl.lives });
+      if (!pl.lives) {
         s.winner = other(step.p);
         log(s, `${s.players[s.winner].name} wins!`);
         emit(s, { t: 'win', p: s.winner });
         break;
       }
-      // A Lucky Candle may be played for free in the next Muster.
-      if (keywords(card.id).lucky) (pl.free ??= []).push(card.uid);
       if (step.n > 1) s.queue.unshift({ t: 'loseLife', p: step.p, n: step.n - 1 });
       break;
     }
@@ -1090,6 +1071,7 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
     const twin = mergeTwin(s, p, card.id);
     if (twin) {
       twin.stars = (twin.stars ?? 1) + 1;
+      twin.paid = (twin.paid ?? 0) + step.paid;
       pl.compost.push(card);
       log(s, `${cardName(card.id)} joins its twin: ${'★'.repeat(twin.stars)} (${unitPower(twin, s)}/${unitHealth(twin, s)}).`, p);
       emit(s, { t: 'merge', p, uid: twin.uid, stars: twin.stars });
@@ -1101,7 +1083,7 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
       log(s, `${cardName(card.id)} has no room on the board.`, p);
       return;
     }
-    const unit: Unit = { uid: card.uid, id: card.id, slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false };
+    const unit: Unit = { uid: card.uid, id: card.id, slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false, paid: step.paid };
     pl.yard.push(unit);
     sortYard(pl);
     if (main) {
@@ -1224,6 +1206,7 @@ function clashEnd(s: GameState): void {
     log(s, `${s.players[w].name} wins the Clash with ${standing[w]} unit(s) standing.`);
   } else log(s, `Nobody wins the Clash.`);
   emit(s, { t: 'clashEnd', standing, lost });
+  for (const q of [0, 1] as PlayerId[]) s.players[q].streak = lost[q] ? (s.players[q].streak ?? 0) + 1 : 0;
   const steps: Step[] = [];
   for (const q of [s.yarn, other(s.yarn)]) if (lost[q]) steps.push({ t: 'loseLife', p: q, n: lost[q] });
   steps.push({ t: 'reset' }, { t: 'endRound' });
@@ -1281,7 +1264,7 @@ function pluginContext(s: GameState, p: PlayerId, unit: Unit | undefined, self: 
     log: (text) => log(s, text, p),
     damage: (u, amount) => hurt(s, p, u, amount),
     heal: (u, amount) => heal(s, p, u, amount),
-    draw: (n) => s.queue.unshift({ t: 'draw', p, n }),
+    freeRoll: (n) => freeRoll(s, p, n),
   };
 }
 
@@ -1315,6 +1298,14 @@ function runAbility(s: GameState, p: PlayerId, ability: Ability, ctx: AbilityCon
   } else if (isEachSel(sel)) units = eachUnit(s, p, sel, ctx.self?.uid);
 
   for (const act of acts) doAct(s, p, act, units, ctx);
+}
+
+/** "Get a free roll": the player's next rolls cost nothing. */
+function freeRoll(s: GameState, p: PlayerId, n: number): void {
+  const pl = s.players[p];
+  pl.freeRolls = (pl.freeRolls ?? 0) + n;
+  log(s, `${pl.name} gets ${n === 1 ? 'a free roll' : `${n} free rolls`}.`, p);
+  emit(s, { t: 'freeRoll', p, n });
 }
 
 function gain(s: GameState, p: PlayerId, n: number): void {
@@ -1357,7 +1348,7 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
       }
       return;
     }
-    case 'draw': s.queue.unshift({ t: 'draw', p, n: value as number }); return;
+    case 'freeRoll': freeRoll(s, p, value as number); return;
     case 'exhaust':
     case 'cancelAttack':
       // An exhausted unit deals no damage in this Clash.
@@ -1426,14 +1417,17 @@ function stateCheck(s: GameState): void {
     pl.yard = pl.yard.filter((u) => !down.includes(u));
     for (const u of down) {
       (pl.fallen ??= []).push(u);
-      pl.downed = (pl.downed ?? 0) + 1;
+      // "Units that have gone down in Clashes": only the Clash counts.
+      if (s.phase === 'clash') pl.downed = (pl.downed ?? 0) + 1;
       log(s, `${cardName(u.id)} goes down.`, owner);
       emit(s, { t: 'down', uid: u.uid, cardId: u.id, owner });
       for (const { ref } of unitAbilities(s, u, 'goodbye')) triggers.push({ t: 'ability', p: owner, ref, sourceId: u.id, trigger: true });
     }
   }
   if (triggers.length) s.queue.unshift(...triggers);
-  for (const owner of [0, 1] as PlayerId[]) {
+  // During the Muster only the acting player's Hero may Awaken: the other's waits for the Clash (or their own move),
+  // so nobody's Hero flips because of a move they can't see yet.
+  for (const owner of s.acting !== undefined ? [s.acting] : [0, 1] as PlayerId[]) {
     const hero = s.players[owner].hero;
     const grow = CARDS[hero.id]?.kitten?.growUp;
     if (!hero.grown && grow && evaluateCondition(s, owner, grow.if)) {

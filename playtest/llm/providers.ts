@@ -93,11 +93,6 @@ function fakeProvider(): Provider {
         text = JSON.stringify(decks);
       } else if (/Reply with only a JSON object/.test(prompt)) {
         text = JSON.stringify({ summary: 'A fake playtester played at random.', unfair: [], suspectCards: [], confusing: [], fun: 3 });
-      } else if (/list exactly (\d+) H numbers|discard exactly (\d+)/.test(prompt)) {
-        const count = Number(/exactly (\d+)/.exec(prompt)![1]);
-        text = `Answer: ${Array.from({ length: count }, (_, i) => `H${i + 1}`).join(' ')}`;
-      } else if (/Mulligan:/.test(prompt)) {
-        text = 'Answer: none';
       } else {
         const options = [...prompt.matchAll(/^ {2}(\d+)\. /gm)].map((m) => Number(m[1]));
         text = `Random pick.\nAnswer: ${options[Math.floor(rnd() * options.length)] ?? 1}`;

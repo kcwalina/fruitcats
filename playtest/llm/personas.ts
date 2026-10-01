@@ -31,7 +31,7 @@ export const PERSONAS: Record<string, Persona> = {
   },
 };
 
-export const ANSWER_FORMAT = 'Reply with one or two short sentences of reasoning, then a last line "Answer: <number>" (for a pick-several choice: "Answer: H2 H5", or "Answer: none").';
+export const ANSWER_FORMAT = 'Reply with one or two short sentences of reasoning, then a last line "Answer: <number>".';
 
 /** Repeated at the end of every question: small local models follow the last instruction they read. */
 export const ANSWER_REMINDER = 'Remember: end your reply with a line "Answer: <number>".';

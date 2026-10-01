@@ -17,13 +17,13 @@ cards = [
     cost = 4, power = 3, health = 4
     number = 'MC1-X01', rarity = legendary
     finishes = [standard, foil, gold, prismatic, signature]
-    keywords = [@Guardian, @Lucky]
+    keywords = [@Guardian]
     text = @mochi-text
     flavor = 'Soft on the outside. Softer on the inside.'
   }
 ]
 
 @@@ mochi-text
-Guardian. Lucky. Hello: Draw a card.
+Guardian. Hello: Get a free roll.
 Goodbye: Gain two Offerings.
 @@@

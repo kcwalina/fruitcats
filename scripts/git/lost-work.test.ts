@@ -6,8 +6,11 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lostInRange } from './lost-work.mjs';
+
+// Real git in a scratch repo: seconds, not milliseconds, on a machine busy with other sessions' playtests.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 
 const HOOK = fileURLToPath(new URL('./pre-push.mjs', import.meta.url));
 let dir: string;

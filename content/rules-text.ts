@@ -136,7 +136,7 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
       if (def?.noun) return `put ${counters(def.noun, c.add)} on ${on}`;
       return `${on} gets +${c.add} ${mechanicOfCounter(c.name)}`;
     }
-    case 'draw': return n === 1 ? 'draw a card' : `draw ${n} cards`;
+    case 'freeRoll': return n === 1 ? 'get a free roll' : `get ${count(n)} free rolls`;
     case 'exhaust': return `exhaust ${on}`;
     case 'ready': return a.when === 'hello' && a.target === 'self' ? 'enters ready' : `ready ${on}`;
     case 'readyTreats': return n === 1 ? `gain an ${TERMS.offering}` : `gain ${count(n)} ${TERMS.offerings}`;
@@ -169,7 +169,7 @@ function actClauses(acts: Act[], a: Ability, self: string, subjectless: boolean,
   }
   return merged.map((act, i) => {
     if (times[i] > 1) { const t = TOKENS[String((act as { summon: string }).summon)]; return `summon ${count(times[i])} ${t.name}s`; }
-    const needsTarget = !['draw', 'readyTreats', 'sprout', 'summon'].includes(Object.keys(act)[0]);
+    const needsTarget = !['freeRoll', 'readyTreats', 'sprout', 'summon'].includes(Object.keys(act)[0]);
     const target = mentioned && singular ? 'it' : on;
     const text = actClause(act, target, a, self, subjectless);
     if (needsTarget) mentioned = true;

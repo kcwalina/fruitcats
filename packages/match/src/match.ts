@@ -4,13 +4,13 @@
 //
 // Whoever runs it holds the whole game: the Fruitcats API, or, in a Friend game played directly between two devices,
 // the device of the friend who asked (peer.ts). Each player is sent only their view of it (viewFor): never the other
-// player's hand, the deck order or the seed. A player's action is checked against the rules before it's applied.
+// player's shop, the deck order or the seed. A player's action is checked against the rules before it's applied.
 //
 // A match is kept as its seed plus the actions played (MatchRecord), so it can always be rebuilt the same way: after
 // the API restarts, or to take back a move in a teaching game. The same record is the replay.
 
 import {
-  HAND_LIMIT, apply, chooseAction, clockFor, createGame, IllegalAction, mayAct, other, viewFor, visibleEvents, visibleLog,
+  apply, chooseAction, clockFor, createGame, IllegalAction, mayAct, other, viewFor, visibleEvents, visibleLog,
   type Action, type DeckList, type GameState, type PlayerId, type PlayerView,
 } from '@fruitcats/engine';
 import {
@@ -95,7 +95,7 @@ export class Match {
   private goneTimer: ReturnType<typeof setTimeout> | undefined;
   private idleTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** Teaching games: whether each player is showing their hand to the other. */
+  /** Teaching games: whether each player is showing their shop to the other. */
   private showing: [boolean, boolean] = [false, false];
   private wantsRematch: [boolean, boolean] = [false, false];
   private leftResult: [boolean, boolean] = [false, false];
@@ -168,16 +168,16 @@ export class Match {
     v.log = log.slice(this.sentLog[seat]);
     this.sentLog[seat] = log.length;
     const foe = other(seat);
-    // A teaching game's open hand: during the Muster, the hand as it was when the Muster began, not the moves since.
+    // A teaching game's open shop: during the Muster, the shop as it was when the Muster began, not the moves since.
     if (this.showing[foe]) {
       const muster = this.state.prompt?.kind === 'muster';
-      v.players[foe].hand = structuredClone(muster ? this.musterHands[foe] ?? v.players[foe].hand : this.state.players[foe].hand);
+      v.players[foe].shop = structuredClone(muster ? this.musterShops[foe] ?? v.players[foe].shop : this.state.players[foe].shop);
     }
     return v;
   }
 
-  /** In a teaching game, each hand as it was when this Muster began (what an open hand shows during it). */
-  private musterHands: [GameState['players'][0]['hand'] | null, GameState['players'][0]['hand'] | null] = [null, null];
+  /** In a teaching game, each shop as it was when this Muster began (what an open shop shows during it). */
+  private musterShops: [GameState['players'][0]['shop'] | null, GameState['players'][0]['shop'] | null] = [null, null];
 
   /** Send the new view to both players, or, `only` one: a move in the Muster is nobody else's business. */
   private broadcast(undone?: PlayerId, only?: PlayerId) {
@@ -332,7 +332,7 @@ export class Match {
     const muster = prompt.kind === 'muster';
     if (muster && this.clockRound !== this.state.round) {
       this.clockRound = this.state.round;
-      this.musterHands = [structuredClone(this.state.players[0].hand), structuredClone(this.state.players[1].hand)];
+      this.musterShops = [structuredClone(this.state.players[0].shop), structuredClone(this.state.players[1].shop)];
     }
     if (this.away[0] !== null || this.away[1] !== null) { this.setPhase('none', muster ? null : prompt.player, null); this.pause(); return; }
     this.overtimeSince = null;
@@ -354,7 +354,7 @@ export class Match {
         this.strikes[seat]++;
         if (this.strikes[seat] >= this.record.rules.clock.strikes) { void this.finish({ winner: other(seat), how: 'timeout' }); return; }
       }
-      // The plainest moves for everyone still deciding: offer down to the hand limit, then Ready.
+      // The plainest move for everyone still deciding: Ready.
       const round = this.state.round;
       for (const seat of open) {
         while (this.end === null && this.state.winner === null && this.state.round === round && mayAct(this.state, seat)) this.autoMove(seat);
@@ -554,7 +554,7 @@ export class Match {
 
   // ── Teaching games ────────────────────────────────────────────────────────────────────────────
 
-  /** A suggested move, from the same AI as Solo. It never looks at hidden cards: it blanks the other hand first. */
+  /** A suggested move, from the same AI as Solo. It never looks at hidden cards: it blanks the other shop first. */
   private hint(seat: PlayerId) {
     if (!this.record.rules.teaching || !mayAct(this.state, seat)) return;
     let action: Action | null = null;
@@ -563,7 +563,7 @@ export class Match {
   }
 
   /**
-   * Take back your last move, if it showed you nothing new (no card drawn, no Life turned over, no mulligan) and the
+   * Take back your last move, if it showed you nothing new (not a roll, no Candle lost) and the
    * other player hasn't moved since. Rebuilt from the seed and the moves before it.
    */
   private undo(seat: PlayerId) {
@@ -605,18 +605,16 @@ export function takeBackPoint(r: MatchRecord, seat: PlayerId): number {
   while (i >= 0 && r.played[i].seat !== seat && r.played[i].auto) i--;
   if (i < 0 || r.played[i].seat !== seat || r.played[i].auto) return -1;
   const action = r.played[i].action;
-  if (action.t === 'mulligan') return -1;
+  if (action.t === 'roll') return -1;
   const before = rebuild(r, i).events.length;
   const after = rebuild(r, r.played.length).events.slice(before);
-  if (after.some((e) => (e.t === 'draw' || e.t === 'lifeLost') && e.p === seat)) return -1;
+  // A sold unit's card goes back into the deck, which is shuffled: a later roll would deal from another order.
+  if (action.t === 'sell' || after.some((e) => e.t === 'lifeLost' && e.p === seat)) return -1;
   return i;
 }
 
-/** The move that changes least: keep the hand; in the Muster, Ready (offering the newest cards first when over the limit). */
-export function plainestMove(s: GameState, seat: PlayerId = s.prompt!.player): Action {
-  if (s.prompt!.kind === 'mulligan') return { t: 'mulligan', uids: [] };
-  const hand = s.players[seat].hand;
-  if (hand.length > HAND_LIMIT) return { t: 'offer', uid: hand[hand.length - 1].uid };
+/** The move that changes least: Ready. */
+export function plainestMove(_s: GameState, _seat?: PlayerId): Action {
   return { t: 'ready' };
 }
 

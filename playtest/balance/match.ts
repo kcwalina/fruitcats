@@ -21,10 +21,10 @@ export interface GameRecord {
   actions: number;
   /** Round each seat's Hero Cat Grew Up in, or 0 if it never did. */
   grewUp: [number, number];
-  /** Card ids each seat played (from hand, as a Pounce, or as a Lucky Life), with the round it first played each. */
+  /** Card ids each seat bought (into a lane, as a Charm, or set as an Ambush), with the round it first bought each. */
   played: [Record<string, number>, Record<string, number>];
-  /** Cards left in each hand at the end: a hand that piles up means a deck starved for Treats. */
-  handEnd: [number, number];
+  /** Each Hero's Level at the end: how far the deck got to grow its board. */
+  levelEnd: [number, number];
 }
 
 /** A matchup's games are numbered from `seed`; seats alternate so both decks play both sides of the Yarn. */
@@ -45,8 +45,8 @@ export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord
   const grewUp: [number, number] = [0, 0];
   for (let p = nextSeat(s); p !== null; p = nextSeat(s)) {
     const action = chooseAction(s, { skill: seats[p].skill ?? 1, random: rnd, seat: p });
-    const uid = action.t === 'play' || action.t === 'lucky' || action.t === 'ambush' ? action.uid : null;
-    const card = uid === null ? undefined : s.players[p].hand.find((c) => c.uid === uid);
+    const uid = action.t === 'play' || action.t === 'ambush' ? action.uid : null;
+    const card = uid === null ? undefined : s.players[p].shop.find((c) => c.uid === uid);
     if (card) played[p][card.id] ??= s.round;
     apply(s, action, p);
     for (const q of [0, 1] as PlayerId[]) if (!grewUp[q] && s.players[q].hero.grown) grewUp[q] = s.round;
@@ -59,7 +59,7 @@ export function playGame(a: Contestant, b: Contestant, seed: number): GameRecord
     actions: s.actions,
     grewUp,
     played,
-    handEnd: [s.players[0].hand.length, s.players[1].hand.length],
+    levelEnd: [s.players[0].hero.level, s.players[1].hero.level],
   };
 }
 

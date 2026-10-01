@@ -76,4 +76,4 @@ export async function playCommand(): Promise<number> {
   return 1;
 }
 
-const RULES_HINT = 'Rules in brief: `npm run play -- rules`. Lanes are Y1…Y6 (yours) and T1…T6 (theirs); hand cards are H1….\n';
+const RULES_HINT = 'Rules in brief: `npm run play -- rules`. Lanes are Y1…Y6 (yours) and T1…T6 (theirs); shop cards are S1….\n';

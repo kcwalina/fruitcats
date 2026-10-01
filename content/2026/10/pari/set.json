@@ -327,14 +327,13 @@
       "family": "Pari",
       "type": "Critter",
       "name": "Lookout on Mount Qāf",
-      "cost": 2,
+      "cost": 3,
       "power": 1,
       "health": 4,
-      "text": "Guardian. Lucky.",
+      "text": "Guardian.",
       "flavor": "Mount Qāf, all emerald, rings the world. Its green glow tints the sky.",
       "keywords": [
-        "Guardian",
-        "Lucky"
+        "Guardian"
       ]
     },
     {
@@ -346,14 +345,14 @@
       "cost": 3,
       "power": 2,
       "health": 3,
-      "text": "Hello: Draw a card.",
+      "text": "Hello: Get a free roll.",
       "flavor": "House fairies help pick the fruit. Families set food aside for them.",
       "abilities": [
         {
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
@@ -366,11 +365,10 @@
       "type": "Trick",
       "name": "Falling Star",
       "cost": 1,
-      "text": "Ambush. Lucky. Deal 2 damage to a unit.",
+      "text": "Ambush. Deal 2 damage to a unit.",
       "flavor": "The oldest Persian books call the pari shooting stars.",
       "keywords": [
-        "Pounce",
-        "Lucky"
+        "Pounce"
       ],
       "abilities": [
         {
@@ -478,11 +476,8 @@
       "type": "Trick",
       "name": "Carried Off Asleep",
       "cost": 1,
-      "text": "Lucky. Exhaust an enemy unit.",
+      "text": "Exhaust an enemy unit.",
       "flavor": "The pari carried sleeping Zin away, and had her home before morning.",
-      "keywords": [
-        "Lucky"
-      ],
       "abilities": [
         {
           "when": "play",

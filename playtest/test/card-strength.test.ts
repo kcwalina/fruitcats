@@ -7,7 +7,7 @@ import { removalResult, removalTest, vanillaFor, withoutCard } from '../balance/
 import { cardImpact } from '../balance/stats';
 
 const game = (rounds: number, winner: 0 | 1, played: Record<string, number>): GameRecord => ({
-  seats: ['a', 'b'], winner, starting: 0, rounds, actions: 0, grewUp: [0, 0], played: [played, {}], handEnd: [0, 0],
+  seats: ['a', 'b'], winner, starting: 0, rounds, actions: 0, grewUp: [0, 0], played: [played, {}], levelEnd: [0, 0],
 });
 
 describe('card screen', () => {

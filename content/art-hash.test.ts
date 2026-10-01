@@ -1,11 +1,14 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { artFiles, artHash } from './art-hash';
 
 // The build refuses to ship when a set's art here differs from what the pack storage has (vite.config.ts), and
 // this hash is how it knows. It must see every file, every byte, and nothing else.
+
+// Real files and processes: seconds, not milliseconds, on a machine busy with other sessions' playtests.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 
 const made: string[] = [];
 function setFolder(files: Record<string, string>): string {

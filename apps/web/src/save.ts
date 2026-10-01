@@ -42,7 +42,7 @@ function usable(save: SavedGame): boolean {
   try {
     // Every card must still exist (card data may have changed since), and the engine must accept the state.
     const cards = save.game.players.flatMap((p) => [
-      p.hero.id, ...p.deck.map((c) => c.id), ...p.hand.map((c) => c.id), ...p.lives.map((c) => c.id),
+      p.hero.id, ...p.deck.map((c) => c.id), ...p.shop.map((c) => c.id),
       ...p.compost.map((c) => c.id), ...(p.ambushes ?? []).map((a) => a.card.id),
       ...p.yard.flatMap((u) => [u.id, ...(u.toy ? [u.toy.id] : [])]),
     ]);

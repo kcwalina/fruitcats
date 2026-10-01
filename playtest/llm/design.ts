@@ -71,7 +71,7 @@ export function gameText(): string {
   const curve = [0, 1, 2].map((i) => `${range(shapes.map((s) => s.curve[i]))} costing ${i + 1}`).join(', ');
   const top = range(shapes.map((s) => s.curve.slice(3).reduce((a, b) => a + b, 0)));
   return `${rulesPrimer()}\n\n${STRATEGY_PRIMER}\n\nDECK SHAPE: the starter decks each run ${types}, with ${curve} and ${top} costing 4 and up. ` +
-    `${TYPES.Critter} win games: a deck with too few cheap ones falls behind on the board, and a deck full of expensive cards is stuck with a hand it cannot play. ` +
+    `${TYPES.Critter} win games: a deck with too few cheap ones falls behind on the board, and a deck full of expensive cards deals shops it cannot buy from. ` +
     'Depart from this shape only on purpose, and say why in the idea.';
 }
 

@@ -38,13 +38,6 @@ suite('text interface', () => {
     let checked = 0;
     for (const [s, seat] of decisions(4)) {
       const c = listChoices(s, {}, seat);
-      if (c.multi) {
-        const hand = s.players[seat].hand;
-        const parsed = parseChoice(s, 'H1 H2', seat);
-        expect('action' in parsed && parsed.action).toEqual({ t: 'mulligan', uids: hand.slice(0, 2).map((h) => h.uid) });
-        expect(parseChoice(s, 'none', seat)).toEqual({ action: { t: 'mulligan', uids: [] } });
-        continue;
-      }
       expect(c.options.length).toBeGreaterThan(0);
       for (const o of c.options) {
         expect(parseChoice(s, `${o.n}`, seat)).toEqual({ action: o.action });
@@ -57,7 +50,6 @@ suite('text interface', () => {
 
   it('reads the choice out of a reply that reasons first', () => {
     const s = createGame({ decks: ['domowiki', 'pari'], seed: 1 });
-    while (s.prompt!.kind !== 'muster') apply(s, chooseAction(s, { random: rng(1) }));
     const seat = nextSeat(s)!;
     const options = listChoices(s, {}, seat).options;
     const n = options.length;
@@ -67,16 +59,16 @@ suite('text interface', () => {
   });
 
   it('never shows a player what they may not know', () => {
-    // Swap every card the player can't see (the opponent's hand and Ambushes, both decks, both sets of Candles) for
-    // other cards: what the player reads must not change.
+    // Swap every card the player can't see (the opponent's shop and Ambushes, both decks) for other cards: what the
+    // player reads must not change.
     let compared = 0;
     for (const [s, seat] of decisions(3)) {
       const t = structuredClone(s);
       const foe = t.players[other(seat)];
       const swap = (c: { id: string }) => { c.id = c.id === 'DW1-D16' ? 'PR1-D09' : 'DW1-D16'; };
-      foe.hand.forEach(swap);
+      foe.shop.forEach(swap);
       (foe.ambushes ?? []).forEach((a) => swap(a.card));
-      for (const pl of t.players) { pl.deck.forEach(swap); pl.lives.forEach(swap); }
+      for (const pl of t.players) pl.deck.forEach(swap);
       expect(describe(t, seat)).toBe(describe(s, seat));
       compared++;
     }

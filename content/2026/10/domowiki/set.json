@@ -132,7 +132,7 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Stove Keeper",
-      "cost": 1,
+      "cost": 2,
       "power": 1,
       "health": 2,
       "text": "Hello: Gain an Offering.",
@@ -261,7 +261,7 @@
       "cost": 5,
       "power": 5,
       "health": 5,
-      "text": "Elusive. Hello: If you're Well-Fed, draw 2 cards.",
+      "text": "Elusive. Hello: If you're Well-Fed, get two free rolls.",
       "flavor": "Spins by the stove all night. The yarn tells tomorrow.",
       "abilities": [
         {
@@ -269,7 +269,7 @@
           "if": "Well-Fed",
           "do": [
             {
-              "draw": 2
+              "freeRoll": 2
             }
           ]
         }
@@ -300,7 +300,7 @@
       "family": "Domowiki",
       "type": "Trick",
       "name": "Bowl of Kasha",
-      "cost": 1,
+      "cost": 2,
       "text": "Sprout 2.",
       "flavor": "A bowl by the stove, the first spoonful for him.",
       "abilities": [
@@ -321,11 +321,8 @@
       "type": "Trick",
       "name": "A Domowik's Temper",
       "cost": 4,
-      "text": "Lucky. Deal 5 damage to a unit.",
+      "text": "Deal 5 damage to a unit.",
       "flavor": "Slam a door in his house and he slams back.",
-      "keywords": [
-        "Lucky"
-      ],
       "abilities": [
         {
           "when": "play",
@@ -476,11 +473,10 @@
       "cost": 2,
       "power": 1,
       "health": 4,
-      "text": "Guardian. Lucky.",
+      "text": "Guardian.",
       "flavor": "Lives under the doorstep. Harm it, and the family's luck goes with it.",
       "keywords": [
-        "Guardian",
-        "Lucky"
+        "Guardian"
       ]
     },
     {
@@ -492,14 +488,14 @@
       "cost": 3,
       "power": 2,
       "health": 3,
-      "text": "Hello: Draw a card.",
+      "text": "Hello: Get a free roll.",
       "flavor": "Found shivering on the fence in the rain. Take it in, and it brings things home.",
       "abilities": [
         {
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
@@ -540,11 +536,8 @@
       "family": "Domowiki",
       "name": "Knotted Mane",
       "cost": 1,
-      "text": "Lucky. Exhaust an enemy unit.",
+      "text": "Exhaust an enemy unit.",
       "flavor": "Anger the Domowik and wake up with tangled hair.",
-      "keywords": [
-        "Lucky"
-      ],
       "abilities": [
         {
           "when": "play",

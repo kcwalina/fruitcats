@@ -33,7 +33,7 @@ cards = [
   }
   stove-keeper = Creature {
     name = 'Stove Keeper'
-    cost = 1, power = 1, health = 2
+    cost = 2, power = 1, health = 2
     number = 'DW1-D01', rarity = common
     art = 'art/DW1-D01.webp'
     text = 'Hello: Gain an Offering.'
@@ -44,7 +44,7 @@ cards = [
     cost = 1, power = 1, health = 1
     number = 'DW1-D02', rarity = common
     art = 'art/DW1-D02.webp'
-    keywords = [@Lure, @Lure]
+    keywords = [@Lure]
     text = 'Lure. Hello: Sprout {sprout}.'
     constants = [sprout = 1]
     flavor = 'Carry the old fire, and the home comes with you.'
@@ -89,9 +89,8 @@ cards = [
     cost = 5, power = 5, health = 5
     number = 'DW1-D07', rarity = uncommon
     art = 'art/DW1-D07.webp'
-    keywords = [@Elusive, @Elusive]
-    text = 'Elusive. Hello: If you''re Well-Fed, draw {draw} cards.'
-    constants = [draw = 2]
+    keywords = [@Elusive]
+    text = 'Elusive. Hello: If you''re Well-Fed, get two free rolls.'
     flavor = 'Spins by the stove all night. The yarn tells tomorrow.'
   }
   dvorovoi = Creature {
@@ -105,7 +104,7 @@ cards = [
   }
   bowl-of-kasha = Charm {
     name = 'Bowl of Kasha'
-    cost = 1
+    cost = 2
     number = 'DW1-D09', rarity = uncommon
     art = 'art/DW1-D09.webp'
     text = 'Sprout 2.'
@@ -116,8 +115,7 @@ cards = [
     cost = 4
     number = 'DW1-D10', rarity = uncommon
     art = 'art/DW1-D10.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. Deal {damage} damage to a unit.'
+    text = 'Deal {damage} damage to a unit.'
     constants = [damage = 5]
     flavor = 'Slam a door in his house and he slams back.'
   }
@@ -182,8 +180,8 @@ cards = [
     cost = 2, power = 1, health = 4
     number = 'DW1-D17', rarity = common
     art = 'art/DW1-D17.webp'
-    keywords = [@Guardian, @Lucky]
-    text = 'Guardian. Lucky.'
+    keywords = [@Guardian]
+    text = 'Guardian.'
     flavor = 'Lives under the doorstep. Harm it, and the family''s luck goes with it.'
   }
   klobuk = Creature {
@@ -191,7 +189,7 @@ cards = [
     cost = 3, power = 2, health = 3
     number = 'DW1-D18', rarity = common
     art = 'art/DW1-D18.webp'
-    text = 'Hello: Draw a card.'
+    text = 'Hello: Get a free roll.'
     flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
   warm-hand-in-the-night = Charm {
@@ -209,8 +207,7 @@ cards = [
     cost = 1
     number = 'DW1-D20', rarity = uncommon
     art = 'art/DW1-D20.webp'
-    keywords = [@Lucky]
-    text = 'Lucky. Exhaust an enemy unit.'
+    text = 'Exhaust an enemy unit.'
     flavor = 'Anger the Domowik and wake up with tangled hair.'
   }
 ]

@@ -136,12 +136,12 @@
           "when": "hello",
           "do": [
             {
-              "draw": 1
+              "freeRoll": 1
             }
           ]
         }
       ],
-      "text": "Hello: Draw a card."
+      "text": "Hello: Get a free roll."
     },
     {
       "id": "MB1-D03",

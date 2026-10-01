@@ -923,7 +923,7 @@ button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
 .dots::after { content: '…'; animation: dots 1.2s steps(3) infinite; }
 @keyframes dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
 
-/* Hand: overlapping cards that shrink when the hand is big. */
+/* The shop: cards that shrink to fit. */
 .hand { display: flex; justify-content: center; align-items: flex-end; height: var(--card-h); padding: 0 24px; min-width: 0; }
 .hand-card {
   position: relative; flex: 0 1 var(--card-w); min-width: 0; padding: 0; margin: 0 -6px; border: none; background: none;
@@ -948,7 +948,6 @@ button.line-btn:disabled { opacity: 0.35; box-shadow: none; }
   display: grid; place-items: center; background: var(--accent); color: white; font: 800 15px Nunito, sans-serif;
   border: 2px solid white; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); pointer-events: none;
 }
-.hand-card.lucky img { box-shadow: 0 0 0 4px var(--good), 0 0 20px rgba(46, 157, 87, 0.7); }
 
 /* Drag and drop */
 .hand-card, .unit { touch-action: none; user-select: none; -webkit-user-drag: none; }

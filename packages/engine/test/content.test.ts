@@ -15,11 +15,11 @@ describe('rules text comes from the data', () => {
     for (const { report } of runChecks()) expect(report.errors.filter((e) => e.includes("doesn't match its data"))).toEqual([]);
   });
   it('writes the house style', () => {
-    expect(suggestText(CARDS['PR1-D12'])).toBe('Ambush. Lucky. Deal 2 damage to a unit.');
+    expect(suggestText(CARDS['PR1-D12'])).toBe('Ambush. Deal 2 damage to a unit.');
     expect(suggestText(CARDS['PR1-D04'])).toBe('Swift.');
     expect(suggestText(CARDS['PR1-D06'])).toBe('Hello: Deal 1 damage to a unit. Company: deal 2 instead.');
     expect(suggestText(CARDS['AL1-D09'])).toBe('Ambush. The enemy unit across from this Ambush deals no damage this Clash.');
-    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Draw a card.');
+    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Get a free roll.');
     expect(suggestText(CARDS['DW1-D02'])).toBe('Lure. Hello: Sprout 1.');
     expect(suggestText(CARDS['DW1-D06'])).toBe('Hello: Your units get +2 Health this round.');
     expect(suggestText(CARDS['AL1-D04'])).toBe('Rain-Fed.');

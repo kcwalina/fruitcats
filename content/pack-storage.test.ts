@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { artHash } from './art-hash';
 import { artPaths, artPublished, dataPath, differsFrom, updateIndex, withEntry, type IndexStore, type PackEntry, type PackIndex } from './pack-storage';
 
@@ -10,6 +10,9 @@ import { artPaths, artPublished, dataPath, differsFrom, updateIndex, withEntry, 
 // between them, and every deploy's build refused until it republished, 3–4 rounds running. Each version of a set's art
 // now has its own folder, so they coexist, and the index running games read is written only from main, and never over
 // another session's write.
+
+// Real files and processes: seconds, not milliseconds, on a machine busy with other sessions' playtests.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 
 const made: string[] = [];
 const temp = (prefix: string) => { const d = mkdtempSync(join(tmpdir(), prefix)); made.push(d); return d; };

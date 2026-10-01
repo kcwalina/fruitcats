@@ -30,7 +30,7 @@ export function matchups(records: GameRecord[]) {
 /** Everything about how games go, beyond who wins. */
 export function gameShape(records: GameRecord[]) {
   let starterWins = 0, decided = 0, rounds = 0, actions = 0;
-  const grew: Record<string, Tally> = {}, grewRound: Record<string, Tally> = {}, handEnd: Record<string, Tally> = {};
+  const grew: Record<string, Tally> = {}, grewRound: Record<string, Tally> = {}, levelEnd: Record<string, Tally> = {};
   for (const r of records) {
     rounds += r.rounds;
     actions += r.actions;
@@ -40,8 +40,8 @@ export function gameShape(records: GameRecord[]) {
       const g = (grew[k] ??= { wins: 0, games: 0 });
       g.games++;
       if (r.grewUp[p]) { g.wins++; const gr = (grewRound[k] ??= { wins: 0, games: 0 }); gr.wins += r.grewUp[p]; gr.games++; }
-      const h = (handEnd[k] ??= { wins: 0, games: 0 });
-      h.wins += r.handEnd[p]; h.games++;
+      const h = (levelEnd[k] ??= { wins: 0, games: 0 });
+      h.wins += r.levelEnd[p]; h.games++;
     }
   }
   const map = (m: Record<string, Tally>) => Object.fromEntries(Object.entries(m).map(([k, t]) => [k, rate(t)]));
@@ -52,7 +52,7 @@ export function gameShape(records: GameRecord[]) {
     avgActions: records.length ? actions / records.length : 0,
     grewUp: map(grew),
     grewUpRound: map(grewRound),
-    handEnd: map(handEnd),
+    levelEnd: map(levelEnd),
   };
 }
 

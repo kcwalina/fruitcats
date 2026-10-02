@@ -34,11 +34,10 @@ cards = [
   }
   saka-bearing-alux = Creature {
     name = 'Saká-Bearing Alux'
-    cost = 1, power = 1, health = 3
+    cost = 2, power = 1, health = 6
     number = 'AL1-D01', rarity = common
     art = 'art/AL1-D01.webp'
-    keywords = [@Lure]
-    text = 'Lure. Clash start: The units next to Saká-Bearing Alux get +2 Health this round.'
+    text = 'Support. At the start of each round, the units next to Saká-Bearing Alux get +1 Rain-Fed.'
     flavor = 'A gourd of sweet corn drink, carried to whoever needs it most.'
   }
   night-patrol-alux = Creature {
@@ -46,60 +45,58 @@ cards = [
     cost = 1, power = 2, health = 4
     number = 'AL1-D02', rarity = common
     art = 'art/AL1-D02.webp'
-    keywords = [@Guardian]
-    text = 'Guardian.'
+    keywords = [@Taunt]
+    text = 'Tank. Taunt.'
     flavor = 'Walks the rows all night. Nothing gets to the corn.'
   }
   corn-tending-alux = Creature {
     name = 'Corn-Tending Alux'
-    cost = 1, power = 2, health = 3
+    cost = 3, power = 3, health = 5
     number = 'AL1-D03', rarity = common
     art = 'art/AL1-D03.webp'
-    text = ''
+    text = 'Mage. Every second bout: Deal 3 damage to the enemy across.'
     flavor = 'Tends the field while the farmer sleeps. The corn is taller by morning.'
   }
   clay-alux = Creature {
     name = 'Clay Alux', epithet = 'Fresh from the J-meen'
-    cost = 2, power = 2, health = 4
+    cost = 1, power = 3, health = 4
     number = 'AL1-D04', rarity = common
     art = 'art/AL1-D04.webp'
-    text = 'At the start of each round, Clay Alux gets +1 Rain-Fed.'
+    text = 'Bruiser. At the start of each round, Clay Alux gets +1 Rain-Fed.'
     flavor = 'Shaped from clay by the healer. Seven weeks of prayers, and it stands up.'
   }
   tool-hiding-alux = Creature {
     name = 'Tool-Hiding Alux'
-    cost = 2, power = 3, health = 3
+    cost = 2, power = 5, health = 3
     number = 'AL1-D05', rarity = common
     art = 'art/AL1-D05.webp'
-    keywords = [@Sneaky]
-    text = 'Sneaky. Clash start: The enemy across gets -2 Power this round.'
+    text = 'Assassin. Clash start: The enemy across gets -2 Power this round.'
     flavor = 'Your machete was right here. Now it isn''t.'
   }
   slingshot-alux = Creature {
     name = 'Slingshot Alux'
-    cost = 3, power = 5, health = 3
+    cost = 2, power = 5, health = 3
     number = 'AL1-D06', rarity = uncommon
     art = 'art/AL1-D06.webp'
-    keywords = [@Elusive]
-    text = 'Elusive. Every second bout: Deal 2 damage to the enemy across.'
+    text = 'Marksman.'
     flavor = 'Dressed like a farmer, with a slingshot in his sash. Coatis know him.'
   }
   alux-of-the-old-stones = Creature {
     name = 'Alux of the Old Stones'
-    cost = 3, power = 2, health = 6
+    cost = 3, power = 3, health = 9
     number = 'AL1-D07', rarity = uncommon
     art = 'art/AL1-D07.webp'
-    keywords = [@Guardian, Applied { keyword = @Tough, n = 1 }]
-    text = 'Guardian. Tough 1.'
+    keywords = [Applied { keyword = @Tough, n = 1 }]
+    text = 'Tank. Tough 1.'
     flavor = 'Lives in the fallen stones of a ruin. Stone doesn''t feel a hit.'
   }
   alux-of-the-ceiba-roots = Creature {
     name = 'Alux of the Ceiba Roots'
-    cost = 4, power = 4, health = 8
+    cost = 4, power = 5, health = 11
     number = 'AL1-D08', rarity = uncommon
     art = 'art/AL1-D08.webp'
-    keywords = [@Guardian, @Fierce]
-    text = 'Guardian. Fierce. At the start of each round, Alux of the Ceiba Roots gets +1 Rain-Fed.'
+    keywords = [@Taunt]
+    text = 'Tank. Taunt. At the start of each round, Alux of the Ceiba Roots gets +1 Rain-Fed.'
     flavor = 'The healer set his clay figure under the oldest tree. He grew into it.'
   }
   a-whistle-in-the-dark = Charm {
@@ -124,7 +121,7 @@ cards = [
     cost = 2
     number = 'AL1-D11', rarity = uncommon
     art = 'art/AL1-D11.webp'
-    text = 'Deal 4 damage to an exhausted enemy unit.'
+    text = 'Deal 3 damage to an enemy unit.'
     flavor = 'Fall asleep without leaving an offering, and the kitchen lets you know.'
   }
   kahtal-alux = Talisman {
@@ -132,49 +129,48 @@ cards = [
     cost = 2
     number = 'AL1-D12', rarity = uncommon
     art = 'art/AL1-D12.webp'
-    text = 'Attached unit gets +3 Health and Guardian.'
+    text = 'Attached unit gets +3 Health and Taunt.'
     flavor = @kahtal-alux-flavor
   }
-  the-roadside-alux = Fabled {
+  the-roadside-alux = Creature {
     name = 'The Roadside Alux'
-    cost = 3, power = 3, health = 5
+    cost = 4, power = 5, health = 8
     number = 'AL1-D13', rarity = rare
     art = 'art/AL1-D13.webp'
-    text = 'At the start of each round, the units next to The Roadside Alux get +1 Rain-Fed.'
+    text = 'Mage. Every second bout: Deal 2 damage to the enemy across and the ones next to it.'
     flavor = 'Stops travellers and asks for a little something. Give it, and luck follows you home.'
   }
   the-alux-of-the-sacred-cenote = Fabled {
     name = 'The Alux of the Sacred Cenote'
-    cost = 4, power = 4, health = 7
+    cost = 5, power = 3, health = 14
     number = 'AL1-D14', rarity = rare
     art = 'art/AL1-D14.webp'
-    keywords = [@Guardian]
-    text = 'Guardian. Clash start: Your units get +2 Health this round.'
+    text = 'Support. At the start of each round, each unit you control get +1 Rain-Fed.'
     flavor = 'Guards the deep pool where the rain begins.'
   }
   the-bridge-alux-of-cancun = Fabled {
     name = 'The Bridge Alux of Cancún'
-    cost = 5, power = 7, health = 9
+    cost = 4, power = 4, health = 12
     number = 'AL1-D15', rarity = rare
     art = 'art/AL1-D15.webp'
-    keywords = [@Guardian, Applied { keyword = @Tough, n = 1 }]
-    text = 'Guardian. Tough 1. Each bout: The Bridge Alux of Cancún heals 2.'
+    keywords = [@Taunt, Applied { keyword = @Tough, n = 1 }]
+    text = 'Tank. Taunt. Tough 1.'
     flavor = 'The bridge fell three times. Then they built him a house, and it stood.'
   }
   the-aluxs-dog = Creature {
     name = 'The Alux''s Dog'
-    cost = 1, power = 3, health = 3
+    cost = 1, power = 3, health = 4
     number = 'AL1-D16', rarity = common
     art = 'art/AL1-D16.webp'
-    text = ''
+    text = 'Bruiser.'
     flavor = 'Where an alux walks, a little dog trots behind.'
   }
   toh = Creature {
     name = 'Toh', epithet = 'the Cenote Bird'
-    cost = 2, power = 3, health = 3
+    cost = 3, power = 5, health = 5
     number = 'AL1-D17', rarity = common
     art = 'art/AL1-D17.webp'
-    text = 'Clash start: Deal 1 damage to the enemy across.'
+    text = 'Marksman. Clash start: Deal 2 damage to the enemy across.'
     flavor = 'Nests in the walls of the cenote and knows everything that goes on there.'
   }
   a-sweet-on-the-doorstep = Charm {
@@ -191,7 +187,7 @@ cards = [
     cost = 2
     number = 'AL1-D19', rarity = uncommon
     art = 'art/AL1-D19.webp'
-    text = 'Exhaust an enemy unit.'
+    text = 'An enemy unit deals no damage in the first two bouts.'
     flavor = 'He walks you in circles until you say please.'
   }
 ]

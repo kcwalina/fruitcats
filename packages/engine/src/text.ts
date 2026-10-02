@@ -9,7 +9,7 @@
 
 import { CARDS, MECHANICS } from './cards';
 import {
-  LANES, cardName, heroSide, interestOn, laneUnit, legalActions, levelCost, nextSeat, other, rollCost, sellValue, streakBonus, targetRank,
+  LANES, cardName, heroSide, interestOn, laneUnit, legalActions, levelCost, nextSeat, other, rollCost, sellValue, streakBonus, isTaunt, unitClass,
   unitHealth, unitKeywords, unitPower,
 } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
@@ -24,17 +24,18 @@ Two players, 50-card decks, each led by a Hero. Win by blowing out the opponent'
 - The shop: ${'{shop}'} cards dealt face up from your own deck at every Start. Buy what you want at its cost; what you don't buy goes back into your deck, which is shuffled. Roll (${'{roll}'} Offering) to put the shop back and get ${'{shop}'} new cards. Every card has a tier, 1 to 5, which is its cost; your Hero's Level decides which tiers the shop deals (Level 2: mostly tier 1, some tier 2; Level 6: all tiers, tier 4 and 5 included).
 - Offerings are money. You start with ${'{start}'}. At each Start you get income (it grows with the rounds), plus interest: +1 for every 5 Offerings you have saved (at most +3), plus a losing streak: +1 after 2 or 3 Clashes lost in a row, +2 after 4, +3 after 5 or more. What you don't spend is kept.
 - The Muster: both players build at the same time, in secret, each until they choose Ready. You may: buy a unit into one of your open lanes (your Hero's Level opens that many of your 6 lanes, from the left: lanes 1-2 at first); buy a Talisman for a unit of yours; buy a Charm; buy a card with Ambush and set it face-down in one of your lanes; move your units between lanes (free); sell a unit (you get back what you paid, less 1 for each star it has; its card goes back into your deck); roll the shop; use your Hero's ability once; level up your Hero by paying Offerings (each Level is room for one more unit; there are always 6 lanes). You see the opponent's board as it was when the Muster began.
-- Buying a copy of a Creature you already have merges it into that unit, even when your lanes are full. 3 copies in one unit make it 2 stars (twice its printed Power and Health), 6 copies make 3 stars (three times). Fabled never merge. A deck may hold 6 copies of a tier 1 or 2 card, 4 of tier 3, 3 of tier 4, 1 of tier 5.
-- Traits: each family is a trait, and so is each role (Guardian, Elusive, Sneaky, Lure). With 2, 4 or 6 different units of a family on your board (2 or 4 of a role), its team bonus turns on; the highest tier reached is the one that counts. Copies merged into one unit count once.
+- Buying a copy of a Creature you already have merges it into that unit, even when your lanes are full. 3 copies in one unit make it 2 stars (twice its printed Power and Health), 5 copies make 3 stars (three times). Fabled never merge. A deck may hold 5 copies of a tier 1 card, 4 of tier 2, 3 of tier 3, 2 of tier 4, 1 of tier 5, of any families.
+- Classes: every unit has one, the first word of its text. Tank and Bruiser fight at the front; Marksman, Mage and Support at the back; a Support never attacks (its ability helps); an Assassin strikes first in every bout and goes for the enemy's back.
+- Traits: each family is a trait. With 2, 4 or 6 different units of a family on your board, its team bonus turns on; the highest tier reached is the one that counts. Copies merged into one unit count once.
 - Units act in the fight: "Clash start:" happens once before the first bout, "Each bout:" at the start of every bout, "Every second bout:" at bouts 2, 4, 6 and 8.
 - Effects aimed at the enemy (damage, exhaust) are aimed at one of their lanes and happen when the Clash begins, to whoever stands there then. With nobody there, they fizzle.
-- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the bouts: in each bout every unit hits one enemy unit, Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a Guardian first; otherwise plain units; then Elusive units; Lures last. Sneaky units go the other way: Lures first, Guardians last. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
+- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the bouts: in each bout every unit hits one enemy unit, Assassins and Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a unit with Taunt first; then Tanks; then Bruisers and Assassins; then the back (Marksmen, Mages, Supports). An Assassin goes for the back first, unless a unit taunts. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
 - The Clash ends when one side has no units standing (or after ${'{bouts}'} bouts, or when nobody can deal damage). The loser blows out 1 Candle per enemy unit still standing (2 for Fierce ones, +1 for a Hero that struck), at most ${'{cap}'}. If both sides still stand at the end, each loses Candles for the other's units.
 - After the Clash every unit stands up again with no damage: nothing on the board is lost in a Clash. Damage never carries over to the next round.
 - Hero: its "Exhaust:" ability can be used once a round. When its Awaken condition is true it flips to its Awakened side for good; an Awakened Hero that isn't exhausted strikes in the Clash.`;
 
 /** Keywords of the core rules; the mechanics each set brings are listed after them. */
-const CORE_KEYWORDS = `Swift: hits first in every bout. Guardian: enemies hit Guardians first (Sneaky ones last). Elusive: enemies hit it late (after plain units). Lure: enemies hit it last, but Sneaky enemies must hit it first. Sneaky: hits the enemy's Lures, then Elusive units, first. Fierce: worth 2 Candles if it is standing when its side wins a Clash. Tough X: takes X less each time it is dealt damage. Ambush: may be set face-down in a lane, to happen in the Clash; it can also be played normally. Hello: happens when the unit is played. Goodbye: happens each time it goes down.`;
+const CORE_KEYWORDS = `Swift: hits first in every bout. Taunt: every enemy hits it first while it stands, Assassins included. Fierce: worth 2 Candles if it is standing when its side wins a Clash. Tough X: takes X less each time it is dealt damage. Ambush: may be set face-down in a lane, to happen in the Clash; it can also be played normally. Hello: happens when the unit is played. Goodbye: happens each time it goes down.`;
 
 /**
  * The rules a text player needs: the core rules, then every mechanic the loaded sets define, with the reminder text
@@ -57,8 +58,8 @@ export const STRATEGY_PRIMER = `BASIC STRATEGY
 - Your board is your army for the whole game: units are never lost in a Clash. Build it up every round.
 - Spend, but save when it pays: every 5 Offerings saved earn 1 more at the next Start (up to 3). A Level costs Offerings but lets you field one more unit.
 - Fill your lanes: an empty board loses the Clash. Then level up when your lanes are full and you have units to add.
-- Put a Guardian where the enemy's strong units are; Guardians soak the first hits. Keep your best damage dealer Elusive or behind Guardians.
-- Sneaky units hit Lures and Elusive units first: against Sneaky enemies, a Lure protects your carry.
+- Tanks soak the first hits: field one or two. Your damage dealers at the back (Marksmen, Mages) are hit last.
+- Assassins go for the back: against them, a unit with Taunt protects your back. Supports help the units next to them: put them beside your best units.
 - Merge copies of the same Creature: 3 copies make a 2-star unit, twice as strong. A copy merges even when your lanes are full.
 - Build toward traits: different units of one family (2, 4, 6) or role (2, 4) turn on team bonuses. A higher Level deals more high-tier cards.
 - Moving is free, but only where your units stand when you are Ready matters. Decide where each unit goes, move it once, and get on with buying cards.
@@ -108,12 +109,10 @@ function counterTags(u: Unit): string[] {
     `${Object.entries(MECHANICS).find(([, m]) => m.counter?.name === name)?.[0] ?? name} +${n}`);
 }
 
-const ROLE = ['Lure', 'Elusive', '', 'Guardian'];
-
 function unitLine(u: Unit, label: string, s?: GameState): string {
   const k = unitKeywords(u, s);
   const tags = [
-    ROLE[targetRank(u, s)], k.sneaky && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
+    unitClass(u), isTaunt(u, s) && 'Taunt', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
     u.stars && `${u.stars} stars`, ...counterTags(u), u.buffPower ? `+${u.buffPower} Power this round` : '',
     u.toy && `with ${cardName(u.toy.id)}`, u.exhausted && 'exhausted: deals no damage this Clash',
   ].filter(Boolean);

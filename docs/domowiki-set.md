@@ -8,7 +8,7 @@ Starter Box from the game completely on 2026-09-29.
 Status: released (2026-10), data in `content/2026/10/domowiki/set.json`. Last updated 2026-09-26. How to make the
 next deck like this one: [designing-good-deck.md](designing-good-deck.md).
 
-**Folkborn 0.6 (2026-10-01) redid this family's cards for the auto-battler**: tiers, copies, its trait and abilities that happen in the fight ([folkborn-0.6-design.md](folkborn-0.6-design.md)). The names, art and lore below are current; the costs, stats and texts in the tables are the earlier game's. The cards as they are: `content/2026/10/domowiki/set.json`.
+**Folkborn 0.6 (2026-10-01) and 0.7 (2026-10-02) redid this family's cards for the auto-battler**: tiers, copies, its trait, abilities in the fight, and in 0.7 a class for every unit and a new core deck ([folkborn-0.7-design.md](folkborn-0.7-design.md)). The names, art and lore below are current; the costs, stats and texts in the tables are the earlier game's. The cards as they are: `content/2026/10/domowiki/set.json`.
 
 ## The creature
 

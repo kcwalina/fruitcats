@@ -131,27 +131,12 @@
       "type": "Critter",
       "family": "Hui Hai",
       "name": "Hui Hai of the Stream",
-      "cost": 1,
-      "power": 2,
-      "health": 3,
+      "cost": 2,
+      "power": 3,
+      "health": 5,
       "flavor": "A ripple where there is no fish. A splash where there is no stone.",
-      "abilities": [
-        {
-          "when": "clashStart",
-          "target": {
-            "each": "enemy",
-            "range": 0
-          },
-          "do": [
-            {
-              "buff": {
-                "power": -1
-              }
-            }
-          ]
-        }
-      ],
-      "text": "Clash start: The enemy across gets -1 Power this round."
+      "text": "Bruiser.",
+      "class": "Bruiser"
     },
     {
       "id": "HH1-D02",
@@ -159,28 +144,27 @@
       "type": "Cat",
       "family": "Hui Hai",
       "name": "Yă Hui Hai, Lady of the Ferns",
-      "cost": 3,
-      "power": 3,
-      "health": 6,
-      "keywords": [
-        "Guardian"
-      ],
+      "cost": 4,
+      "power": 1,
+      "health": 11,
       "flavor": "Small enough to sleep in a fern. Strong enough to move the rock beside it.",
       "abilities": [
         {
-          "when": "clashStart",
+          "when": "boutStart",
           "target": {
-            "each": "enemy",
-            "range": 0
+            "each": "own",
+            "other": true,
+            "range": 1
           },
           "do": [
             {
-              "damage": 2
+              "heal": 2
             }
           ]
         }
       ],
-      "text": "Guardian. Clash start: Deal 2 damage to the enemy across."
+      "text": "Support. Each bout: The units next to Yă Hui Hai heal 2.",
+      "class": "Support"
     },
     {
       "id": "HH1-D03",
@@ -214,14 +198,15 @@
       "type": "Critter",
       "family": "Hui Hai",
       "name": "Hui Hai in the Ferns",
-      "cost": 1,
-      "power": 1,
-      "health": 4,
+      "cost": 2,
+      "power": 2,
+      "health": 6,
       "keywords": [
-        "Lure"
+        "Taunt"
       ],
       "flavor": "The fern moved. There was no wind.",
-      "text": "Lure."
+      "text": "Tank. Taunt.",
+      "class": "Tank"
     },
     {
       "id": "HH1-D05",
@@ -233,10 +218,8 @@
       "power": 3,
       "health": 2,
       "flavor": "No taller than your thumb. Throws harder than you do.",
-      "text": "Sneaky.",
-      "keywords": [
-        "Sneaky"
-      ]
+      "text": "Assassin.",
+      "class": "Assassin"
     },
     {
       "id": "HH1-D06",
@@ -244,59 +227,12 @@
       "type": "Critter",
       "family": "Hui Hai",
       "name": "Hui Hai at the Spring",
-      "cost": 2,
-      "power": 1,
-      "health": 6,
-      "keywords": [
-        "Guardian"
-      ],
-      "flavor": "Muddy the spring, and see what comes back out of it.",
-      "text": "Guardian."
-    },
-    {
-      "id": "HH1-D07",
-      "rarity": "Common",
-      "type": "Critter",
-      "family": "Hui Hai",
-      "name": "Boulder-Pusher",
-      "cost": 2,
-      "power": 5,
-      "health": 2,
-      "flavor": "The boulder was on the path in the evening. In the morning it wasn't.",
-      "text": "Elusive.",
-      "keywords": [
-        "Elusive"
-      ]
-    },
-    {
-      "id": "HH1-D08",
-      "rarity": "Common",
-      "type": "Critter",
-      "family": "Hui Hai",
-      "name": "Hui Hai in the Bamboo",
       "cost": 1,
-      "power": 2,
-      "health": 3,
-      "keywords": [
-        "Zoomies"
-      ],
-      "flavor": "You hear the bamboo knock. You never see who knocked.",
-      "text": "Swift."
-    },
-    {
-      "id": "HH1-D09",
-      "rarity": "Common",
-      "type": "Critter",
-      "family": "Hui Hai",
-      "name": "Keeper of the Old Forest",
-      "cost": 3,
-      "power": 2,
-      "health": 7,
-      "keywords": [
-        "Guardian"
-      ],
-      "flavor": "The forest is theirs to keep, and they keep it well.",
-      "text": "Guardian. Once per round, after Keeper of the Old Forest survives damage, deal 1 damage to an enemy unit.",
+      "power": 1,
+      "health": 5,
+      "flavor": "Muddy the spring, and see what comes back out of it.",
+      "text": "Tank. Once per round, after Hui Hai at the Spring survives damage, deal 1 damage to an enemy unit.",
+      "class": "Tank",
       "abilities": [
         {
           "when": "damagedAndSurvives",
@@ -313,76 +249,74 @@
       ]
     },
     {
+      "id": "HH1-D07",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Boulder-Pusher",
+      "cost": 3,
+      "power": 6,
+      "health": 6,
+      "flavor": "The boulder was on the path in the evening. In the morning it wasn't.",
+      "text": "Bruiser.",
+      "class": "Bruiser"
+    },
+    {
+      "id": "HH1-D08",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Hui Hai in the Bamboo",
+      "cost": 1,
+      "power": 2,
+      "health": 3,
+      "keywords": [
+        "Zoomies"
+      ],
+      "flavor": "You hear the bamboo knock. You never see who knocked.",
+      "text": "Bruiser. Swift.",
+      "class": "Bruiser"
+    },
+    {
+      "id": "HH1-D09",
+      "rarity": "Common",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Keeper of the Old Forest",
+      "cost": 3,
+      "power": 3,
+      "health": 8,
+      "keywords": [
+        "Taunt"
+      ],
+      "flavor": "The forest is theirs to keep, and they keep it well.",
+      "text": "Tank. Taunt. Once per round, after Keeper of the Old Forest survives damage, deal 1 damage to an enemy unit.",
+      "abilities": [
+        {
+          "when": "damagedAndSurvives",
+          "oncePerRound": true,
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 1
+            }
+          ]
+        }
+      ],
+      "class": "Tank"
+    },
+    {
       "id": "HH1-D10",
       "rarity": "Uncommon",
       "type": "Critter",
       "family": "Hui Hai",
       "name": "Gơhlŏu, the Sweet-Smelling",
-      "cost": 2,
-      "power": 3,
-      "health": 4,
-      "flavor": "Something lives in the trees. Nobody has seen it, but it smells wonderful.",
-      "abilities": [
-        {
-          "when": "clashStart",
-          "target": {
-            "each": "own",
-            "other": true,
-            "range": 1
-          },
-          "do": [
-            {
-              "buff": {
-                "power": 1
-              }
-            }
-          ]
-        }
-      ],
-      "text": "Clash start: The units next to Gơhlŏu get +1 Power this round."
-    },
-    {
-      "id": "HH1-D11",
-      "rarity": "Uncommon",
-      "type": "Critter",
-      "family": "Hui Hai",
-      "name": "Moss-Mender Yă Hui Hai",
       "cost": 3,
-      "power": 3,
-      "health": 5,
-      "flavor": "She tucks moss into every scrape, grumbling the whole time.",
-      "abilities": [
-        {
-          "when": "clashStart",
-          "target": {
-            "each": "own"
-          },
-          "do": [
-            {
-              "buff": {
-                "health": 1
-              }
-            }
-          ]
-        }
-      ],
-      "text": "Clash start: Your units get +1 Health this round."
-    },
-    {
-      "id": "HH1-D12",
-      "rarity": "Uncommon",
-      "type": "Critter",
-      "family": "Hui Hai",
-      "name": "Old One of the Waterfall",
-      "cost": 5,
-      "power": 6,
-      "health": 9,
-      "keywords": [
-        "Guardian",
-        "Fierce"
-      ],
-      "flavor": "The waterfall has been loud for a thousand years. Some of that is him.",
-      "text": "Guardian. Fierce. Every second bout: Deal 2 damage to the enemy across.",
+      "power": 2,
+      "health": 6,
+      "flavor": "Something lives in the trees. Nobody has seen it, but it smells wonderful.",
       "abilities": [
         {
           "when": "everyOtherBout",
@@ -396,7 +330,69 @@
             }
           ]
         }
-      ]
+      ],
+      "text": "Mage. Every second bout: Deal 2 damage to the enemy across.",
+      "class": "Mage"
+    },
+    {
+      "id": "HH1-D11",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Moss-Mender Yă Hui Hai",
+      "cost": 2,
+      "power": 0,
+      "health": 6,
+      "flavor": "She tucks moss into every scrape, grumbling the whole time.",
+      "abilities": [
+        {
+          "when": "clashStart",
+          "target": {
+            "each": "own",
+            "other": true,
+            "range": 1
+          },
+          "do": [
+            {
+              "buff": {
+                "health": 2
+              }
+            }
+          ]
+        }
+      ],
+      "text": "Support. Clash start: The units next to Moss-Mender Yă Hui Hai get +2 Health this round.",
+      "class": "Support"
+    },
+    {
+      "id": "HH1-D12",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "Old One of the Waterfall",
+      "cost": 4,
+      "power": 4,
+      "health": 12,
+      "keywords": [
+        "Fierce"
+      ],
+      "flavor": "The waterfall has been loud for a thousand years. Some of that is him.",
+      "text": "Tank. Fierce. Once per round, after Old One of the Waterfall survives damage, deal 2 damage to an enemy unit.",
+      "abilities": [
+        {
+          "when": "damagedAndSurvives",
+          "oncePerRound": true,
+          "target": {
+            "unit": "enemy"
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "class": "Tank"
     },
     {
       "id": "HH1-D13",
@@ -404,7 +400,7 @@
       "type": "Trick",
       "family": "Hui Hai",
       "name": "Stones from Nowhere",
-      "cost": 3,
+      "cost": 2,
       "flavor": "A whole hillside of pebbles, and not one hand to be seen.",
       "abilities": [
         {
@@ -460,12 +456,12 @@
           },
           "do": [
             {
-              "exhaust": true
+              "stun": 2
             }
           ]
         }
       ],
-      "text": "Exhaust an enemy unit."
+      "text": "An enemy unit deals no damage in the first two bouts."
     },
     {
       "id": "HH1-D16",
@@ -496,69 +492,13 @@
       "type": "Cat",
       "family": "Hui Hai",
       "name": "Grandfather Hui Hai, Mover of Rocks",
-      "cost": 4,
-      "power": 4,
-      "health": 9,
-      "keywords": [
-        "Guardian"
-      ],
-      "flavor": "The strongest of them, and the smallest beard in the forest.",
-      "abilities": [
-        {
-          "when": "damagedAndSurvives",
-          "oncePerRound": true,
-          "target": {
-            "unit": "enemy"
-          },
-          "do": [
-            {
-              "damage": 1
-            }
-          ]
-        }
-      ],
-      "text": "Guardian. Once per round, after Grandfather Hui Hai survives damage, deal 1 damage to an enemy unit."
-    },
-    {
-      "id": "HH1-D18",
-      "rarity": "Rare",
-      "type": "Cat",
-      "family": "Hui Hai",
-      "name": "The Hidden Village",
-      "cost": 4,
-      "power": 4,
-      "health": 6,
-      "flavor": "A whole village lives in this clearing. You are standing in it.",
-      "abilities": [
-        {
-          "when": "everyOtherBout",
-          "target": {
-            "each": "enemy",
-            "range": 0
-          },
-          "do": [
-            {
-              "damage": 2
-            }
-          ]
-        }
-      ],
-      "text": "Every second bout: Deal 2 damage to the enemy across."
-    },
-    {
-      "id": "HH1-D19",
-      "rarity": "Rare",
-      "type": "Cat",
-      "family": "Hui Hai",
-      "name": "The Rock That Moved in the Night",
       "cost": 5,
-      "power": 9,
-      "health": 8,
+      "power": 8,
+      "health": 12,
       "keywords": [
         "Fierce"
       ],
-      "flavor": "Everyone saw it on the hill. Nobody saw how it got there.",
-      "text": "Fierce. Clash start: Deal 3 damage to the enemy across.",
+      "flavor": "The strongest of them, and the smallest beard in the forest.",
       "abilities": [
         {
           "when": "clashStart",
@@ -568,11 +508,56 @@
           },
           "do": [
             {
-              "damage": 3
+              "damage": 4
             }
           ]
         }
-      ]
+      ],
+      "text": "Bruiser. Fierce. Clash start: Deal 4 damage to the enemy across.",
+      "class": "Bruiser"
+    },
+    {
+      "id": "HH1-D18",
+      "rarity": "Rare",
+      "type": "Critter",
+      "family": "Hui Hai",
+      "name": "The Hidden Village",
+      "cost": 4,
+      "power": 3,
+      "health": 9,
+      "flavor": "A whole village lives in this clearing. You are standing in it.",
+      "abilities": [
+        {
+          "when": "everyOtherBout",
+          "target": {
+            "each": "enemy",
+            "range": 1
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
+      ],
+      "text": "Mage. Every second bout: Deal 2 damage to the enemy across and the ones next to it.",
+      "class": "Mage"
+    },
+    {
+      "id": "HH1-D19",
+      "rarity": "Rare",
+      "type": "Cat",
+      "family": "Hui Hai",
+      "name": "The Rock That Moved in the Night",
+      "cost": 5,
+      "power": 9,
+      "health": 10,
+      "keywords": [
+        "Fierce"
+      ],
+      "flavor": "Everyone saw it on the hill. Nobody saw how it got there.",
+      "text": "Bruiser. Fierce.",
+      "class": "Bruiser"
     },
     {
       "id": "HH1-D20",
@@ -609,25 +594,22 @@
       "hero": "HH1-H01",
       "cards": {
         "HH1-D05": 5,
-        "HH1-D04": 4,
+        "HH1-D06": 5,
         "HH1-D08": 5,
-        "HH1-D01": 5,
-        "HH1-D03": 2,
-        "HH1-D20": 1,
-        "HH1-D06": 4,
-        "HH1-D10": 4,
-        "HH1-D07": 5,
-        "HH1-D15": 2,
-        "HH1-D16": 1,
+        "HH1-D01": 4,
+        "HH1-D04": 4,
+        "HH1-D11": 4,
+        "HH1-D07": 3,
+        "HH1-D10": 3,
         "HH1-D09": 3,
-        "HH1-D11": 2,
-        "HH1-D02": 1,
-        "HH1-D13": 1,
-        "HH1-D14": 1,
-        "HH1-D18": 1,
+        "HH1-D12": 2,
+        "HH1-D18": 2,
         "HH1-D17": 1,
-        "HH1-D12": 1,
-        "HH1-D19": 1
+        "HH1-D13": 2,
+        "HH1-D15": 2,
+        "HH1-D14": 1,
+        "HH1-D20": 1,
+        "HH1-D16": 3
       },
       "blurb": "Stone for stone. Hurt a Hui Hai and a pebble comes back from nowhere; led by Pebble, the Littlest Hui Hai.",
       "price": 999
@@ -641,12 +623,12 @@
       "tiers": [
         {
           "at": 2,
-          "text": "Your Hui Hai get +2 Health.",
+          "text": "Your Hui Hai get +1 Health.",
           "abilities": [
             {
               "static": {
                 "grant": {
-                  "health": 2
+                  "health": 1
                 },
                 "to": {
                   "each": "own",

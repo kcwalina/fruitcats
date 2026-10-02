@@ -3,7 +3,7 @@
 // `registerSet`, together with an optional plugin: code a set brings for what data can't express. The
 // engine itself names no card, deck or family.
 
-import type { Ability, AbilityRef, CardDef, Condition, GameState, PlayerId, Unit, UnitFilter } from './types';
+import type { Ability, AbilityRef, CardDef, Condition, GameState, PlayerId, Unit } from './types';
 
 export interface DeckList {
   name: string;
@@ -175,44 +175,11 @@ const CORE_CARDS: CardDef[] = [
   { id: BLANK_CARD, type: 'Critter', family: 'Core', name: 'Unknown card', cost: 2, power: 3, health: 2, text: '' },
 ];
 
-/** The role traits: the roles every family shares (docs/folkborn-0.6-design.md §3). */
-const each = (filter: UnitFilter) => ({ each: 'own' as const, filter });
-const CORE_TRAITS: Record<string, TraitDef> = {
-  Guardian: {
-    role: 'Guardian', icon: '🛡',
-    tiers: [
-      { at: 2, text: 'Your Guardians get +2 Health.', abilities: [{ static: { grant: { health: 2 }, to: each({ keyword: 'Guardian' }) } }] },
-      { at: 4, text: 'Your Guardians get +4 Health.', abilities: [{ static: { grant: { health: 4 }, to: each({ keyword: 'Guardian' }) } }] },
-    ],
-  },
-  Elusive: {
-    role: 'Elusive', icon: '🏹',
-    tiers: [
-      { at: 2, text: 'Your Elusive units get +2 Power.', abilities: [{ static: { grant: { power: 2 }, to: each({ keyword: 'Elusive' }) } }] },
-      { at: 4, text: 'Your Elusive units get +4 Power.', abilities: [{ static: { grant: { power: 4 }, to: each({ keyword: 'Elusive' }) } }] },
-    ],
-  },
-  Sneaky: {
-    role: 'Sneaky', icon: '🗡',
-    tiers: [
-      { at: 2, text: 'Your Sneaky units are Swift.', abilities: [{ static: { grant: { keywords: ['Zoomies'] }, to: each({ keyword: 'Sneaky' }) } }] },
-      { at: 4, text: 'Your Sneaky units are Swift and get +3 Power.', abilities: [{ static: { grant: { power: 3, keywords: ['Zoomies'] }, to: each({ keyword: 'Sneaky' }) } }] },
-    ],
-  },
-  Lure: {
-    role: 'Lure', icon: '🪶',
-    tiers: [
-      { at: 2, text: 'Your Lures get +3 Health.', abilities: [{ static: { grant: { health: 3 }, to: each({ keyword: 'Lure' }) } }] },
-      {
-        at: 4, text: 'Your Lures get +3 Health. When one goes down, your units get +1 Power this round.',
-        abilities: [
-          { static: { grant: { health: 3 }, to: each({ keyword: 'Lure' }) } },
-          { when: 'goodbye', on: { filter: { keyword: 'Lure' } }, target: { each: 'own' }, do: [{ buff: { power: 1 } }] },
-        ],
-      },
-    ],
-  },
-};
+/**
+ * Traits every family shares. None since 0.7: the owner decided that classes give no synergy (a class only says how a
+ * unit fights); the synergies are the families' (docs/folkborn-0.7-design.md).
+ */
+const CORE_TRAITS: Record<string, TraitDef> = {};
 
 function registerCore(): void {
   for (const c of CORE_CARDS) CARDS[c.id] = c;
@@ -258,6 +225,9 @@ export function clearCatalog(): void {
 
 export interface Keywords {
   zoomies: boolean;
+  /** Every enemy hits it first while it stands, Assassins included (0.7). */
+  taunt: boolean;
+  /** Before 0.7: hit first (a Tank, and it taunts). */
   guardian: boolean;
   sneaky: boolean;
   fierce: boolean;
@@ -275,10 +245,11 @@ const keywordCache = new Map<string, Keywords>();
 
 export function keywordsFrom(list: string[]): Keywords {
   const k: Keywords = {
-    zoomies: false, guardian: false, sneaky: false, fierce: false, pounce: false, elusive: false, lure: false, tough: 0, all: list,
+    zoomies: false, taunt: false, guardian: false, sneaky: false, fierce: false, pounce: false, elusive: false, lure: false, tough: 0, all: list,
   };
   for (const s of list) {
     if (s === 'Zoomies') k.zoomies = true;
+    else if (s === 'Taunt') k.taunt = true;
     else if (s === 'Guardian') k.guardian = true;
     else if (s === 'Sneaky') k.sneaky = true;
     else if (s === 'Fierce') k.fierce = true;
@@ -295,7 +266,7 @@ export function parseKeywords(text = ''): Keywords {
   const list: string[] = [];
   for (const raw of text.split(/[.\n]/)) {
     const s = raw.trim();
-    if (['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Pounce', 'Elusive', 'Lure'].includes(s) || /^Tough \d+$/.test(s)) list.push(s);
+    if (['Zoomies', 'Taunt', 'Guardian', 'Sneaky', 'Fierce', 'Pounce', 'Elusive', 'Lure'].includes(s) || /^Tough \d+$/.test(s)) list.push(s);
   }
   return keywordsFrom(list);
 }
@@ -371,7 +342,7 @@ export function deckCardIds(deckOrKey: string | DeckList): string[] {
 export const TRIGGERS = [
   'play', 'hello', 'goodbye', 'roundStart', 'exhaust', 'damagedAndSurvives', 'defeatsInCombat', 'youHeal', 'clashStart', 'boutStart', 'everyOtherBout',
 ];
-export const BUILT_IN_ACTIONS = ['damage', 'heal', 'buff', 'counter', 'freeRoll', 'exhaust', 'ready', 'readyTreats', 'sprout', 'summon', 'cancelAttack', 'fight'];
+export const BUILT_IN_ACTIONS = ['damage', 'heal', 'buff', 'counter', 'freeRoll', 'exhaust', 'stun', 'ready', 'readyTreats', 'sprout', 'summon', 'cancelAttack', 'fight'];
 export const CONDITION_TESTS = ['not', 'playedThisRound', 'treats', 'lives', 'opponentLives', 'yardHas', 'unitsInComposts', 'unitsDown', 'compost', 'controlUnits', 'unitHasCounter'];
 
 /**

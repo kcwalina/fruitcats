@@ -124,24 +124,25 @@
       "type": "Critter",
       "family": "Jiaoren",
       "name": "The Spring Guest",
-      "cost": 2,
-      "power": 2,
-      "health": 4,
+      "cost": 3,
+      "power": 1,
+      "health": 6,
       "flavor": "She stayed a few days to sell her silk. Leaving, she wept a plate of pearls for her host.",
       "abilities": [
         {
-          "when": "goodbye",
+          "when": "everyOtherBout",
           "target": {
             "each": "own"
           },
           "do": [
             {
-              "heal": 2
+              "heal": 1
             }
           ]
         }
       ],
-      "text": "Goodbye: Your units heal 2."
+      "text": "Support. Every second bout: Your units heal 1.",
+      "class": "Support"
     },
     {
       "id": "JR1-D02",
@@ -149,28 +150,28 @@
       "type": "Critter",
       "family": "Jiaoren",
       "name": "Weaver of the Sea Hall",
-      "cost": 2,
+      "cost": 3,
       "power": 2,
-      "health": 4,
+      "health": 6,
       "flavor": "Deep under the South Sea, her loom never stops.",
       "abilities": [
         {
-          "when": "clashStart",
+          "when": "everyOtherBout",
           "target": {
-            "each": "own",
-            "other": true,
+            "each": "enemy",
             "range": 1
           },
           "do": [
             {
               "buff": {
-                "health": 2
+                "power": -1
               }
             }
           ]
         }
       ],
-      "text": "Clash start: The units next to Weaver of the Sea Hall get +2 Health this round."
+      "text": "Mage. Every second bout: The enemy across and the ones next to it get -1 Power this round.",
+      "class": "Mage"
     },
     {
       "id": "JR1-D03",
@@ -186,14 +187,14 @@
             "grant": {
               "health": 3,
               "keywords": [
-                "Guardian"
+                "Taunt"
               ]
             },
             "to": "attached"
           }
         }
       ],
-      "text": "Attached unit gets +3 Health and Guardian."
+      "text": "Attached unit gets +3 Health and Taunt."
     },
     {
       "id": "JR1-D04",
@@ -203,11 +204,12 @@
       "name": "Pearl Oyster",
       "cost": 1,
       "power": 1,
-      "health": 3,
+      "health": 5,
       "flavor": "When the moon is full, the oysters are full. When the moon is dark, they are empty.",
       "abilities": [
         {
-          "when": "goodbye",
+          "when": "damagedAndSurvives",
+          "oncePerRound": true,
           "do": [
             {
               "readyTreats": 1
@@ -215,9 +217,10 @@
           ]
         }
       ],
-      "text": "Lure. Goodbye: Gain an Offering.",
+      "text": "Tank. Taunt. Once per round, after Pearl Oyster survives damage, gain an Offering.",
+      "class": "Tank",
       "keywords": [
-        "Lure"
+        "Taunt"
       ]
     },
     {
@@ -227,21 +230,11 @@
       "family": "Jiaoren",
       "name": "Jiaoren of the Tide Pools",
       "cost": 1,
-      "power": 1,
+      "power": 3,
       "health": 4,
       "flavor": "Lives in the water like a fish, and cries like one of us.",
-      "text": "Each bout: Jiaoren of the Tide Pools heals 1.",
-      "abilities": [
-        {
-          "when": "boutStart",
-          "target": "self",
-          "do": [
-            {
-              "heal": 1
-            }
-          ]
-        }
-      ]
+      "text": "Marksman.",
+      "class": "Marksman"
     },
     {
       "id": "JR1-D06",
@@ -252,7 +245,9 @@
       "cost": 1,
       "power": 3,
       "health": 3,
-      "flavor": "Covered in frost and snow, it spins a cocoon a foot long. Its silk won't wet or burn."
+      "flavor": "Covered in frost and snow, it spins a cocoon a foot long. Its silk won't wet or burn.",
+      "class": "Bruiser",
+      "text": "Bruiser."
     },
     {
       "id": "JR1-D07",
@@ -260,14 +255,12 @@
       "type": "Critter",
       "family": "Jiaoren",
       "name": "Jiaoren Children at Play",
-      "cost": 1,
-      "power": 3,
-      "health": 2,
-      "keywords": [
-        "Sneaky"
-      ],
+      "cost": 2,
+      "power": 4,
+      "health": 4,
       "flavor": "Racing the fish through the Dragon-Silk Palace.",
-      "text": "Sneaky."
+      "text": "Assassin.",
+      "class": "Assassin"
     },
     {
       "id": "JR1-D08",
@@ -277,12 +270,13 @@
       "name": "Guest from the Deep",
       "cost": 2,
       "power": 2,
-      "health": 5,
+      "health": 6,
       "keywords": [
-        "Guardian"
+        "Taunt"
       ],
       "flavor": "The guests from the deep are moved to tears, and weep pearls.",
-      "text": "Guardian."
+      "text": "Tank. Taunt.",
+      "class": "Tank"
     },
     {
       "id": "JR1-D09",
@@ -291,13 +285,25 @@
       "family": "Jiaoren",
       "name": "Keeper of the Dragon-Silk Palace",
       "cost": 3,
-      "power": 2,
-      "health": 7,
+      "power": 3,
+      "health": 8,
       "keywords": [
-        "Guardian"
+        "Tough 1"
       ],
       "flavor": "Some of the silk inside is as white as frost. She lets no one near it.",
-      "text": "Guardian. Each bout: The units next to Keeper of the Dragon-Silk Palace heal 1.",
+      "text": "Tank. Tough 1.",
+      "class": "Tank"
+    },
+    {
+      "id": "JR1-D10",
+      "rarity": "Uncommon",
+      "type": "Critter",
+      "family": "Jiaoren",
+      "name": "Jiaoren Pearl-Healer",
+      "cost": 2,
+      "power": 0,
+      "health": 6,
+      "flavor": "A little pearl, ground to powder, for every hurt.",
       "abilities": [
         {
           "when": "boutStart",
@@ -312,32 +318,9 @@
             }
           ]
         }
-      ]
-    },
-    {
-      "id": "JR1-D10",
-      "rarity": "Uncommon",
-      "type": "Critter",
-      "family": "Jiaoren",
-      "name": "Jiaoren Pearl-Healer",
-      "cost": 3,
-      "power": 3,
-      "health": 5,
-      "flavor": "A little pearl, ground to powder, for every hurt.",
-      "abilities": [
-        {
-          "when": "everyOtherBout",
-          "target": {
-            "each": "own"
-          },
-          "do": [
-            {
-              "heal": 2
-            }
-          ]
-        }
       ],
-      "text": "Every second bout: Your units heal 2."
+      "text": "Support. Each bout: The units next to Jiaoren Pearl-Healer heal 1.",
+      "class": "Support"
     },
     {
       "id": "JR1-D11",
@@ -347,23 +330,24 @@
       "name": "Muke, the Wood Guests",
       "cost": 4,
       "power": 6,
-      "health": 5,
+      "health": 7,
       "flavor": "They leave timber under the tree and take a fair price. Nobody ever sees their faces.",
       "abilities": [
         {
-          "when": "defeatsInCombat",
-          "target": "self",
+          "when": "everyOtherBout",
+          "target": {
+            "each": "enemy",
+            "range": 0
+          },
           "do": [
             {
-              "heal": 3
+              "damage": 2
             }
           ]
         }
       ],
-      "text": "Elusive. After Muke defeats a unit in combat, it heals 3.",
-      "keywords": [
-        "Elusive"
-      ]
+      "text": "Marksman. Every second bout: Deal 2 damage to the enemy across.",
+      "class": "Marksman"
     },
     {
       "id": "JR1-D12",
@@ -371,26 +355,16 @@
       "type": "Critter",
       "family": "Jiaoren",
       "name": "Elder of the South Sea",
-      "cost": 5,
-      "power": 6,
-      "health": 9,
+      "cost": 4,
+      "power": 4,
+      "health": 12,
       "keywords": [
-        "Guardian",
+        "Taunt",
         "Fierce"
       ],
       "flavor": "The jiaoren live beyond the South Sea. He has seen every wave of it.",
-      "text": "Guardian. Fierce. Each bout: Elder of the South Sea heals 2.",
-      "abilities": [
-        {
-          "when": "boutStart",
-          "target": "self",
-          "do": [
-            {
-              "heal": 2
-            }
-          ]
-        }
-      ]
+      "text": "Tank. Taunt. Fierce.",
+      "class": "Tank"
     },
     {
       "id": "JR1-D13",
@@ -398,30 +372,19 @@
       "type": "Trick",
       "family": "Jiaoren",
       "name": "A Plate of Pearls",
-      "cost": 1,
-      "keywords": [
-        "Pounce"
-      ],
+      "cost": 2,
       "flavor": "The thank-you gift of a guest from the sea.",
       "abilities": [
         {
           "when": "play",
-          "target": {
-            "unit": "own"
-          },
           "do": [
             {
-              "buff": {
-                "power": 2
-              }
-            },
-            {
-              "readyTreats": 1
+              "readyTreats": 3
             }
           ]
         }
       ],
-      "text": "Ambush. A unit you control gets +2 Power this round. Gain an Offering."
+      "text": "Gain three Offerings."
     },
     {
       "id": "JR1-D14",
@@ -429,22 +392,22 @@
       "type": "Trick",
       "family": "Jiaoren",
       "name": "The Sea Turns Rough",
-      "cost": 3,
+      "cost": 2,
       "flavor": "The South Sea is calm, until it isn't.",
       "abilities": [
         {
           "when": "play",
           "target": {
-            "unit": "enemy"
+            "each": "enemy"
           },
           "do": [
             {
-              "damage": 4
+              "damage": 1
             }
           ]
         }
       ],
-      "text": "Deal 4 damage to an enemy unit."
+      "text": "Deal 1 damage to each enemy unit."
     },
     {
       "id": "JR1-D15",
@@ -462,12 +425,12 @@
           },
           "do": [
             {
-              "exhaust": true
+              "stun": 2
             }
           ]
         }
       ],
-      "text": "Exhaust an enemy unit."
+      "text": "An enemy unit deals no damage in the first two bouts."
     },
     {
       "id": "JR1-D16",
@@ -481,16 +444,14 @@
         {
           "static": {
             "grant": {
-              "health": 2,
-              "keywords": [
-                "Pearl Tears"
-              ]
+              "power": 2,
+              "health": 1
             },
             "to": "attached"
           }
         }
       ],
-      "text": "Attached unit gets +2 Health and Pearl Tears."
+      "text": "Attached unit gets +2 Power and +1 Health."
     },
     {
       "id": "JR1-D17",
@@ -499,26 +460,14 @@
       "family": "Jiaoren",
       "name": "Quanxian, First of the Springs",
       "cost": 4,
-      "power": 4,
-      "health": 8,
+      "power": 3,
+      "health": 13,
       "keywords": [
-        "Guardian"
+        "Taunt"
       ],
       "flavor": "The jiaoren are also called the spring guests. She came first.",
-      "abilities": [
-        {
-          "when": "boutStart",
-          "target": {
-            "each": "own"
-          },
-          "do": [
-            {
-              "heal": 1
-            }
-          ]
-        }
-      ],
-      "text": "Guardian. Each bout: Your units heal 1."
+      "text": "Tank. Taunt.",
+      "class": "Tank"
     },
     {
       "id": "JR1-D18",
@@ -526,9 +475,9 @@
       "type": "Cat",
       "family": "Jiaoren",
       "name": "The Muke Poet",
-      "cost": 3,
-      "power": 4,
-      "health": 4,
+      "cost": 4,
+      "power": 7,
+      "health": 6,
       "flavor": "\"The town is all noise and dust. Back to the mountain, to play with the moon.\"",
       "abilities": [
         {
@@ -545,7 +494,8 @@
           ]
         }
       ],
-      "text": "Goodbye: Your units get +2 Power this round."
+      "text": "Marksman. Goodbye: Your units get +2 Power this round.",
+      "class": "Marksman"
     },
     {
       "id": "JR1-D19",
@@ -554,29 +504,26 @@
       "family": "Jiaoren",
       "name": "The Oldest Weaver",
       "cost": 5,
-      "power": 8,
-      "health": 7,
-      "keywords": [
-        "Elusive",
-        "Fierce"
-      ],
+      "power": 4,
+      "health": 12,
       "flavor": "The jiaoren never stop weaving. She hasn't stopped for a thousand years.",
-      "text": "Elusive. Fierce. Clash start: Your units get +1 Power this round.",
+      "text": "Mage. Every second bout: Enemy units get -2 Power this round.",
       "abilities": [
         {
-          "when": "clashStart",
+          "when": "everyOtherBout",
           "target": {
-            "each": "own"
+            "each": "enemy"
           },
           "do": [
             {
               "buff": {
-                "power": 1
+                "power": -2
               }
             }
           ]
         }
-      ]
+      ],
+      "class": "Mage"
     },
     {
       "id": "JR1-D20",
@@ -632,25 +579,23 @@
       "hero": "JR1-H01",
       "cards": {
         "JR1-D06": 5,
-        "JR1-D05": 4,
         "JR1-D04": 5,
-        "JR1-D07": 5,
-        "JR1-D13": 2,
-        "JR1-D20": 1,
+        "JR1-D05": 5,
+        "JR1-D10": 4,
         "JR1-D08": 4,
-        "JR1-D01": 3,
-        "JR1-D02": 4,
-        "JR1-D15": 2,
-        "JR1-D16": 2,
+        "JR1-D07": 4,
+        "JR1-D02": 3,
         "JR1-D09": 3,
-        "JR1-D10": 2,
-        "JR1-D18": 1,
-        "JR1-D14": 1,
-        "JR1-D03": 1,
+        "JR1-D01": 3,
         "JR1-D11": 2,
-        "JR1-D17": 1,
-        "JR1-D12": 1,
-        "JR1-D19": 1
+        "JR1-D12": 2,
+        "JR1-D19": 1,
+        "JR1-D14": 2,
+        "JR1-D15": 2,
+        "JR1-D20": 1,
+        "JR1-D13": 1,
+        "JR1-D03": 1,
+        "JR1-D16": 2
       },
       "blurb": "Every tear is a pearl. Hurt a jiaoren and she weeps you an Offering; led by Zhu'er, the Littlest Jiaoren.",
       "price": 999
@@ -684,7 +629,7 @@
         },
         {
           "at": 4,
-          "text": "Once per round, when one of your Jiaoren survives damage, gain an Offering. Each bout, your Jiaoren heal 2.",
+          "text": "Once per round, when one of your Jiaoren survives damage, gain an Offering. Each bout, your Jiaoren heal 1.",
           "abilities": [
             {
               "when": "damagedAndSurvives",
@@ -710,7 +655,7 @@
               "target": "self",
               "do": [
                 {
-                  "heal": 2
+                  "heal": 1
                 }
               ]
             }
@@ -718,7 +663,7 @@
         },
         {
           "at": 6,
-          "text": "Once per round, when one of your Jiaoren survives damage, gain two Offerings. Each bout, your units heal 3.",
+          "text": "Once per round, when one of your Jiaoren survives damage, gain two Offerings. Each bout, your units heal 2.",
           "abilities": [
             {
               "when": "damagedAndSurvives",
@@ -741,7 +686,7 @@
               },
               "do": [
                 {
-                  "heal": 3
+                  "heal": 2
                 }
               ]
             }

@@ -19,8 +19,17 @@ export interface HeroSide {
   growUp?: { if: Condition };
 }
 
+/**
+ * How a unit fights (Folkborn 0.7): who hits it, whom it hits, and when. Front: Tank (hit first), then Bruiser and
+ * Assassin; back: Marksman, Mage, Support. Assassins strike first and go for the back; Supports don't attack.
+ */
+export type UnitClass = 'Tank' | 'Bruiser' | 'Assassin' | 'Marksman' | 'Mage' | 'Support';
+export const UNIT_CLASSES: readonly UnitClass[] = ['Tank', 'Bruiser', 'Assassin', 'Marksman', 'Mage', 'Support'];
+
 export interface CardDef {
   id: string;
+  /** A unit's class (0.7). Cards made before it have none: their keywords stand in (Guardian a Tank, …). */
+  class?: UnitClass;
   /** Tokens have no rarity: they're summoned, never collected. */
   rarity?: Rarity;
   type: CardType;
@@ -169,6 +178,8 @@ export interface Unit {
   damage: number;
   /** An exhausted unit deals no damage in the Clash (an enemy's "exhaust" effect). Readied at the Start. */
   exhausted: boolean;
+  /** Stunned: it deals no damage up to this bout of the Clash (Knotted Mane: bouts 1 and 2). Gone when the Clash ends. */
+  stunned?: number;
   toy?: CardInst;
   /** Stars (2 or 3), from the copies merged into it: each star adds the card's printed Power and Health again. */
   stars?: number;
@@ -339,6 +350,8 @@ export type GameEvent = (
   | { t: 'heal'; uid: number; amount: number }
   | { t: 'buff'; uid: number; power?: number; health?: number; sneaky?: boolean; guardian?: boolean }
   | { t: 'exhaust'; uid: number }
+  /** Stunned: it deals no damage up to bout `until`. */
+  | { t: 'stun'; uid: number; until: number }
   | { t: 'ready'; uid: number }
   | { t: 'toy'; uid: number; cardId: string }
   | { t: 'down'; uid: number; cardId: string; owner: PlayerId }

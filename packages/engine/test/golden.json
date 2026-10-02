@@ -3,23 +3,23 @@
   "a": "domowiki",
   "b": "pari",
   "seed": 5000,
-  "actions": "da0d9dfeb5790c0a",
-  "winner": 0,
-  "round": 9
+  "actions": "08ff2896e7515785",
+  "winner": 1,
+  "round": 6
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5001,
-  "actions": "d7787ec9a34a3178",
+  "actions": "1082ddc8bc05509a",
   "winner": 0,
-  "round": 5
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5002,
-  "actions": "9b1617304ce29dbd",
+  "actions": "d7514e26e73e9de8",
   "winner": 1,
   "round": 9
  },
@@ -27,151 +27,151 @@
   "a": "pari",
   "b": "domowiki",
   "seed": 5003,
-  "actions": "b5ac1d663fbaaf31",
+  "actions": "e01a046fe829b16e",
   "winner": 0,
-  "round": 9
+  "round": 12
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5004,
-  "actions": "ce15b82ebca06056",
+  "actions": "2a58ff345d9f2acc",
   "winner": 1,
-  "round": 6
+  "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5005,
-  "actions": "a9a8b431913361cf",
+  "actions": "713502d91a92e73b",
   "winner": 0,
-  "round": 8
+  "round": 7
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5006,
-  "actions": "52d868f19a1497e6",
-  "winner": 0,
-  "round": 10
+  "actions": "2f74716fd3b68264",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5007,
-  "actions": "5337dab655adf727",
-  "winner": 1,
+  "actions": "27985c8fb4460fa6",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5008,
-  "actions": "8ba1e4f065b17a0f",
+  "actions": "454781f127c89015",
   "winner": 1,
-  "round": 10
+  "round": 5
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5009,
-  "actions": "a5fb82591be816cb",
-  "winner": 1,
+  "actions": "db2360e56938af2b",
+  "winner": 0,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5010,
-  "actions": "8f46fc03d78feb26",
-  "winner": 0,
+  "actions": "0287ff152469a3ce",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5011,
-  "actions": "963c3f36ca705bd2",
-  "winner": 1,
-  "round": 8
+  "actions": "64caaf36ffac71d1",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5012,
-  "actions": "9222403d93180f29",
-  "winner": 1,
+  "actions": "984ca64cf253e2fd",
+  "winner": 0,
   "round": 7
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5013,
-  "actions": "0123ca15162ed4fe",
+  "actions": "a57a8ca8923d515e",
   "winner": 0,
-  "round": 8
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5014,
-  "actions": "815af0b13543d71a",
-  "winner": 0,
-  "round": 9
+  "actions": "c69edbf0215cc2ac",
+  "winner": 1,
+  "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5015,
-  "actions": "6480510c8d3760ae",
-  "winner": 0,
+  "actions": "7f17550bf83e8478",
+  "winner": 1,
   "round": 7
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5016,
-  "actions": "af59d8e5b5c72460",
+  "actions": "6f733ed147e7bfdf",
   "winner": 1,
-  "round": 7
+  "round": 10
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5017,
-  "actions": "42e8a592b4577ebf",
+  "actions": "5517639aa345ab2e",
   "winner": 1,
-  "round": 10
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5018,
-  "actions": "882c5eca9a2e460c",
-  "winner": 0,
-  "round": 8
+  "actions": "cb803f499a6345bf",
+  "winner": 1,
+  "round": 11
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5019,
-  "actions": "5c9712b8433e8e12",
-  "winner": 1,
+  "actions": "3fa12407a345c737",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5020,
-  "actions": "e1a5c64a11469238",
+  "actions": "c49c2abcad761d04",
   "winner": 1,
-  "round": 8
+  "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5021,
-  "actions": "1eefa0bcd4daed0e",
+  "actions": "18545c0e96999b5b",
   "winner": 0,
   "round": 8
  },
@@ -179,151 +179,151 @@
   "a": "domowiki",
   "b": "pari",
   "seed": 5022,
-  "actions": "a3b0c5d17ab541a7",
-  "winner": 0,
-  "round": 8
+  "actions": "728754fe83ae4955",
+  "winner": 1,
+  "round": 7
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5023,
-  "actions": "7d9b383f06e9d58c",
-  "winner": 1,
-  "round": 8
+  "actions": "08e0abeec5934cb0",
+  "winner": 0,
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5024,
-  "actions": "f79ac56510be0e86",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5025,
-  "actions": "c1345372e372fac1",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5026,
-  "actions": "32bed72b3258f61c",
+  "actions": "205de212494be5bf",
   "winner": 1,
   "round": 10
  },
  {
   "a": "pari",
   "b": "domowiki",
-  "seed": 5027,
-  "actions": "7b265821d91f41fb",
+  "seed": 5025,
+  "actions": "96a22f0e3ee4b7fe",
   "winner": 0,
-  "round": 9
+  "round": 7
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5026,
+  "actions": "96eae2643d34c5b7",
+  "winner": 1,
+  "round": 6
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5027,
+  "actions": "91406ac270f7fdb1",
+  "winner": 0,
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5028,
-  "actions": "80df6bd0958c1f99",
-  "winner": 0,
+  "actions": "9329c5101086b5c8",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5029,
-  "actions": "2ed2a4a1aba411b3",
-  "winner": 0,
+  "actions": "2c19075a1aabd000",
+  "winner": 1,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5030,
-  "actions": "c253f8a1c924a0b8",
-  "winner": 0,
-  "round": 9
+  "actions": "ac89fd237de9ba55",
+  "winner": 1,
+  "round": 11
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5031,
-  "actions": "85ad6420f8ac318f",
-  "winner": 0,
-  "round": 9
+  "actions": "f1e7a2446509ff65",
+  "winner": 1,
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5032,
-  "actions": "2e716146b9e0361f",
+  "actions": "ba820665244abe57",
   "winner": 1,
-  "round": 7
+  "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5033,
-  "actions": "9d5ae4a7923989e1",
-  "winner": 1,
-  "round": 10
+  "actions": "70a71fb55c14b460",
+  "winner": 0,
+  "round": 7
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5034,
-  "actions": "ff96ea621eda7ca3",
+  "actions": "ae4226bafd3432c5",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5035,
+  "actions": "fc8572ac00f23ef8",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5036,
+  "actions": "d20b9c911b85ea99",
   "winner": 0,
   "round": 10
  },
  {
   "a": "pari",
   "b": "domowiki",
-  "seed": 5035,
-  "actions": "710aa061bb98ba5c",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5036,
-  "actions": "ec0b2330b541c163",
-  "winner": 1,
-  "round": 12
- },
- {
-  "a": "pari",
-  "b": "domowiki",
   "seed": 5037,
-  "actions": "48318118bceb2573",
-  "winner": 0,
-  "round": 7
+  "actions": "59c46b51b0e90914",
+  "winner": 1,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5038,
-  "actions": "878cd7925fdc2175",
-  "winner": 1,
-  "round": 8
+  "actions": "137e05ddefa397c8",
+  "winner": 0,
+  "round": 10
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5039,
-  "actions": "6e40a647798ba72f",
+  "actions": "d718369f9fb627a0",
   "winner": 0,
-  "round": 7
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5040,
-  "actions": "5d500d33aa769d8d",
+  "actions": "06e8fc6ed331b3d1",
   "winner": 1,
   "round": 8
  },
@@ -331,55 +331,55 @@
   "a": "pari",
   "b": "domowiki",
   "seed": 5041,
-  "actions": "5871eda77b583806",
+  "actions": "e9799aa31a0fe45a",
   "winner": 0,
-  "round": 9
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5042,
-  "actions": "4877cb65ec593039",
+  "actions": "dbe7d1edb435aaac",
   "winner": 1,
-  "round": 8
+  "round": 6
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5043,
-  "actions": "6779d6b54dabc263",
-  "winner": 0,
+  "actions": "177e93a4816299e7",
+  "winner": 1,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5044,
-  "actions": "dac1d07b3d291fa9",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5045,
-  "actions": "bc121b8bad363aee",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5046,
-  "actions": "e7011a0f834506a4",
+  "actions": "b841327babd54b13",
   "winner": 1,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
+  "seed": 5045,
+  "actions": "1fec07aef81cbed9",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5046,
+  "actions": "465aeebc3db1a9a0",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
   "seed": 5047,
-  "actions": "08b68697c5759949",
+  "actions": "6a58267949ff6d5f",
   "winner": 1,
   "round": 9
  },
@@ -387,175 +387,175 @@
   "a": "domowiki",
   "b": "pari",
   "seed": 5048,
-  "actions": "f39c67e8cf3977ff",
+  "actions": "1682c07b4daa7c9a",
   "winner": 1,
-  "round": 9
+  "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5049,
-  "actions": "17472df614440d29",
-  "winner": 0,
-  "round": 8
+  "actions": "ee3d230a114426d3",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5050,
-  "actions": "33ae9a09a042963b",
-  "winner": 1,
+  "actions": "30f573ea87b7b090",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5051,
-  "actions": "96679967f6ee63cd",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5052,
-  "actions": "ec7b922cf8f85882",
-  "winner": 1,
-  "round": 5
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5053,
-  "actions": "d6d55a034fb6da47",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5054,
-  "actions": "742ddc38d5609ce8",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5055,
-  "actions": "fd28f59739e32b14",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5056,
-  "actions": "37743994356c6c5f",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5057,
-  "actions": "3da6b9ac8077b235",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5058,
-  "actions": "c6b86608b24dbd47",
-  "winner": 0,
-  "round": 8
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5059,
-  "actions": "72fb61b8c48f7652",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5060,
-  "actions": "72d9d66c201dcae5",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5061,
-  "actions": "6c9b96f13867aedf",
-  "winner": 0,
-  "round": 7
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5062,
-  "actions": "aed9d6af60d42c12",
-  "winner": 1,
-  "round": 5
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5063,
-  "actions": "c97a2a6b1e482236",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5064,
-  "actions": "1f72bfc385f880e5",
-  "winner": 1,
-  "round": 11
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5065,
-  "actions": "1643faa32a20a09f",
-  "winner": 0,
-  "round": 5
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5066,
-  "actions": "464dfc8a7a30ebac",
-  "winner": 0,
-  "round": 11
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5067,
-  "actions": "fe8087c1569742cb",
+  "actions": "0ba75b4c92053a7e",
   "winner": 1,
   "round": 10
  },
  {
   "a": "domowiki",
   "b": "pari",
-  "seed": 5068,
-  "actions": "ff7f88b2f3fa7491",
+  "seed": 5052,
+  "actions": "5c95dc6fa17b6337",
+  "winner": 0,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5053,
+  "actions": "5536fe4c6f2186e7",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5054,
+  "actions": "d533b6562e716c4f",
+  "winner": 1,
+  "round": 5
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5055,
+  "actions": "227c5de3c6face44",
+  "winner": 0,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5056,
+  "actions": "c549a70ef8d161bf",
   "winner": 1,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
+  "seed": 5057,
+  "actions": "c73adb7a0feefd7d",
+  "winner": 0,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5058,
+  "actions": "577161eb2fae8862",
+  "winner": 1,
+  "round": 11
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5059,
+  "actions": "11b31cdea5bd78d4",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5060,
+  "actions": "b5bd3244660d9160",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5061,
+  "actions": "b88fd272ea8c5f1e",
+  "winner": 0,
+  "round": 9
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5062,
+  "actions": "ea297f289ff0d406",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5063,
+  "actions": "9b319f5ae14eed99",
+  "winner": 0,
+  "round": 9
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5064,
+  "actions": "2bdcb685777d6e09",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5065,
+  "actions": "e4f30c04f4ec5a00",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5066,
+  "actions": "1e6f247bb20c79da",
+  "winner": 1,
+  "round": 5
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5067,
+  "actions": "3ed5c2f103f4dfc6",
+  "winner": 0,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5068,
+  "actions": "e9cd9e17e46a9bb0",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
   "seed": 5069,
-  "actions": "fb746bf6078374d7",
+  "actions": "024ce769a2c53e8f",
   "winner": 0,
   "round": 9
  },
@@ -563,119 +563,119 @@
   "a": "domowiki",
   "b": "pari",
   "seed": 5070,
-  "actions": "9255be354005b86f",
-  "winner": 1,
+  "actions": "8e61c88a8b05798e",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5071,
-  "actions": "4b48fd30a88431ef",
-  "winner": 1,
-  "round": 9
+  "actions": "340157d944413b77",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5072,
-  "actions": "26f5ba4b79ec4ebc",
-  "winner": 1,
+  "actions": "48360a21acfd7c90",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5073,
-  "actions": "da3be656eb08c3a7",
+  "actions": "3bbb7bb72c298913",
   "winner": 0,
-  "round": 7
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5074,
-  "actions": "4117d6065e23644e",
+  "actions": "a115149b4c19d471",
   "winner": 1,
-  "round": 10
+  "round": 7
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5075,
-  "actions": "c7754dbcbf2bc53c",
-  "winner": 0,
+  "actions": "0e5302399e2a5c07",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5076,
-  "actions": "4d2175b5207ba6bf",
+  "actions": "4af03360afd8ca5c",
   "winner": 0,
-  "round": 11
+  "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5077,
-  "actions": "05f5a944a0bfa9cc",
-  "winner": 1,
+  "actions": "5c40dbf08f91da2d",
+  "winner": 0,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5078,
-  "actions": "545516cb6655f0cd",
+  "actions": "0beb5d6713a7ce90",
   "winner": 1,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5079,
-  "actions": "9bf6e5f7f409fa41",
-  "winner": 1,
-  "round": 9
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5080,
-  "actions": "af789b5dae556d05",
-  "winner": 0,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
-  "seed": 5081,
-  "actions": "25ea1f5f6f1c8ea9",
+  "seed": 5079,
+  "actions": "b7f754a184967140",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5080,
+  "actions": "b5c39f607fadae07",
   "winner": 0,
   "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5081,
+  "actions": "874fd21c1c884573",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5082,
-  "actions": "7ec4f5d38d0678ec",
-  "winner": 1,
+  "actions": "2aee0973401c1d5d",
+  "winner": 0,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5083,
-  "actions": "e4fa92855c7009eb",
-  "winner": 0,
-  "round": 9
+  "actions": "467bc4c8a40b00b8",
+  "winner": 1,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5084,
-  "actions": "d587ca2f08892d49",
+  "actions": "4a984e2cd289a3fc",
   "winner": 1,
   "round": 11
  },
@@ -683,135 +683,135 @@
   "a": "pari",
   "b": "domowiki",
   "seed": 5085,
-  "actions": "81172e3557d06699",
+  "actions": "11ab48972da6ad1b",
   "winner": 0,
-  "round": 8
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5086,
-  "actions": "fddebb942e8efa5e",
+  "actions": "cdc008f69088cfda",
   "winner": 0,
-  "round": 8
+  "round": 9
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5087,
-  "actions": "51229cb2c9c31147",
+  "actions": "798559443d5e370e",
   "winner": 0,
-  "round": 8
+  "round": 11
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5088,
-  "actions": "16fe797a462cabbc",
-  "winner": 0,
+  "actions": "5edc201a184e0af5",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5089,
-  "actions": "c0d25c1f47910559",
+  "actions": "28286b3ee3c4c65b",
   "winner": 0,
-  "round": 5
+  "round": 7
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5090,
-  "actions": "84dc93fe6260f423",
+  "actions": "a0ed279e99bd00d4",
   "winner": 1,
-  "round": 11
+  "round": 7
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5091,
-  "actions": "3c55c34ca27d9aab",
-  "winner": 1,
-  "round": 10
+  "actions": "118c4f8c87639c6b",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5092,
-  "actions": "a8c573338a8a6a0d",
-  "winner": 1,
-  "round": 9
+  "actions": "7a96f043cbf17d7a",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5093,
-  "actions": "311e049a031d3fd1",
+  "actions": "c20ab052460484ee",
   "winner": 0,
-  "round": 6
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5094,
-  "actions": "e9d968c9d65e9e3f",
+  "actions": "8a7e0f0569b68d1e",
   "winner": 1,
-  "round": 9
+  "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
   "seed": 5095,
-  "actions": "f718e573b04b7dcb",
-  "winner": 0,
+  "actions": "6c786591bd535dc4",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "pari",
   "seed": 5096,
-  "actions": "86107f7ee89d105a",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "domowiki",
-  "seed": 5097,
-  "actions": "29d7b76682f4cc4e",
-  "winner": 0,
-  "round": 5
- },
- {
-  "a": "domowiki",
-  "b": "pari",
-  "seed": 5098,
-  "actions": "6a5bdfadf7a755cf",
+  "actions": "2da54ecc4769de47",
   "winner": 0,
   "round": 8
  },
  {
   "a": "pari",
   "b": "domowiki",
-  "seed": 5099,
-  "actions": "57f848fe8f20018a",
+  "seed": 5097,
+  "actions": "54f2a996abe8bfda",
   "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "pari",
+  "seed": 5098,
+  "actions": "504de1164b09e78b",
+  "winner": 0,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "domowiki",
+  "seed": 5099,
+  "actions": "6f513f8bf9647ba4",
+  "winner": 0,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5000,
-  "actions": "261b916a6b7dd683",
-  "winner": 1,
-  "round": 5
+  "actions": "c75755203b6d62fc",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5001,
-  "actions": "098900ca9b564592",
+  "actions": "2f7bb619757718ff",
   "winner": 1,
   "round": 10
  },
@@ -819,95 +819,95 @@
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5002,
-  "actions": "765f98bce90f5bda",
-  "winner": 1,
-  "round": 10
+  "actions": "516d27bfaeec070a",
+  "winner": 0,
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5003,
-  "actions": "2c003cf701581f4d",
-  "winner": 0,
-  "round": 10
+  "actions": "811bf749b42ed49b",
+  "winner": 1,
+  "round": 6
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5004,
-  "actions": "0c9209fed1283686",
+  "actions": "74431db3bcd1fb98",
   "winner": 0,
-  "round": 9
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5005,
-  "actions": "26b7c5003bb2eb40",
-  "winner": 1,
+  "actions": "bc1d81a13a545160",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5006,
-  "actions": "be2d62c9f8fab7f3",
+  "actions": "03a010579be6a21f",
   "winner": 1,
-  "round": 9
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5007,
-  "actions": "19d38b759e42b96c",
-  "winner": 1,
-  "round": 13
+  "actions": "cb6e62d5b55f913d",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5008,
-  "actions": "01fd3a043011a2f2",
-  "winner": 0,
-  "round": 9
+  "actions": "cbf6e7bd95280e64",
+  "winner": 1,
+  "round": 16
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5009,
-  "actions": "6c5963c08925d5c7",
-  "winner": 0,
-  "round": 8
+  "actions": "9ca22a8be950a111",
+  "winner": 1,
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5010,
-  "actions": "12ca2451545aaa28",
+  "actions": "e120501a5c3f52c5",
   "winner": 0,
-  "round": 7
+  "round": 11
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5011,
-  "actions": "ac848e43eba8d22d",
-  "winner": 1,
-  "round": 7
+  "actions": "f3114f04003fa9f2",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5012,
-  "actions": "dc374635162b6a15",
-  "winner": 0,
-  "round": 9
+  "actions": "2930f4a818ffa4fa",
+  "winner": 1,
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5013,
-  "actions": "7e773b6e2388a2a0",
+  "actions": "06e697ab6eac4818",
   "winner": 1,
   "round": 10
  },
@@ -915,7 +915,7 @@
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5014,
-  "actions": "968195763e66f384",
+  "actions": "6d430e5bba9a2c5a",
   "winner": 1,
   "round": 10
  },
@@ -923,15 +923,15 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5015,
-  "actions": "08db8fd78803766f",
+  "actions": "57f6814484ad09af",
   "winner": 1,
-  "round": 11
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5016,
-  "actions": "202b07e083c34778",
+  "actions": "6517d60858ae2912",
   "winner": 1,
   "round": 7
  },
@@ -939,223 +939,223 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5017,
-  "actions": "991153228d0b18bd",
-  "winner": 1,
-  "round": 10
+  "actions": "524ee0a1059d6ecd",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5018,
-  "actions": "a8d3c4fb1257b477",
+  "actions": "eed3a24a26a8f0fd",
   "winner": 0,
-  "round": 8
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5019,
-  "actions": "96908bcc5a1a26b0",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5020,
-  "actions": "b322ba3c869d7283",
-  "winner": 1,
-  "round": 5
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5021,
-  "actions": "1113532af56134d6",
+  "actions": "88f3def214f4ece4",
   "winner": 1,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "aluxes",
-  "seed": 5022,
-  "actions": "551ca9273cc0187c",
+  "seed": 5020,
+  "actions": "e758b6c068d8c0af",
   "winner": 0,
-  "round": 11
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
-  "seed": 5023,
-  "actions": "f942c92895249f7c",
-  "winner": 1,
+  "seed": 5021,
+  "actions": "d75ed152721f5f72",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
-  "seed": 5024,
-  "actions": "5644ce885492612b",
-  "winner": 0,
+  "seed": 5022,
+  "actions": "651490d133b714dd",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5023,
+  "actions": "a36002ac7bc23c5f",
+  "winner": 1,
   "round": 7
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
+  "seed": 5024,
+  "actions": "3f51ae367e8d9bc3",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5025,
-  "actions": "463f123cf470e154",
-  "winner": 1,
+  "actions": "02e584a164c83527",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5026,
-  "actions": "4e25e048c064d565",
+  "actions": "5954cbd6cae77d16",
   "winner": 1,
-  "round": 10
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5027,
-  "actions": "a76cb3f1fbc9b7e9",
-  "winner": 1,
+  "actions": "7b34bdd2a10ebd74",
+  "winner": 0,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5028,
-  "actions": "7d8b794ed194b43c",
-  "winner": 1,
-  "round": 6
+  "actions": "3c40c82ef67df199",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5029,
-  "actions": "12b8310dee225bfc",
+  "actions": "8a781759fcd36a0a",
   "winner": 1,
-  "round": 10
+  "round": 7
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5030,
-  "actions": "d0ca127dc97b8dc8",
+  "actions": "155a3e39060a1d5f",
   "winner": 0,
-  "round": 11
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5031,
-  "actions": "393dd1dff9fc9fe3",
-  "winner": 1,
-  "round": 8
+  "actions": "8c3f501c2133e0d1",
+  "winner": 0,
+  "round": 11
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5032,
-  "actions": "d4a0bc5953757a3d",
-  "winner": 0,
-  "round": 7
+  "actions": "568b9e42803df0d2",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5033,
-  "actions": "469d8a8c10ed38b0",
+  "actions": "77a7d5bdd3029ddb",
   "winner": 1,
-  "round": 8
+  "round": 11
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5034,
-  "actions": "7a1b72c6506a2bbb",
-  "winner": 0,
+  "actions": "09444a6131fa4f32",
+  "winner": 1,
   "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5035,
-  "actions": "0aecb301eae68d67",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5036,
-  "actions": "a15603ff94cccb70",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5037,
-  "actions": "fd1be1ee6049b815",
+  "actions": "7dab875f079c5cf2",
   "winner": 1,
-  "round": 11
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5038,
-  "actions": "0b8bfdc6b4d20377",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5039,
-  "actions": "619bc7c50481c330",
-  "winner": 1,
-  "round": 11
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5040,
-  "actions": "b69e8ae37faa1047",
-  "winner": 0,
-  "round": 11
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5041,
-  "actions": "97c92d4ec4e941ff",
-  "winner": 1,
-  "round": 11
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5042,
-  "actions": "103faf3314624c16",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5043,
-  "actions": "1e7c3cfbb90105b6",
-  "winner": 0,
   "round": 8
  },
  {
   "a": "domowiki",
   "b": "aluxes",
+  "seed": 5036,
+  "actions": "f083b719cd62dab2",
+  "winner": 0,
+  "round": 10
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5037,
+  "actions": "6a3d2b27497507e3",
+  "winner": 1,
+  "round": 12
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
+  "seed": 5038,
+  "actions": "d9530af863f59d60",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5039,
+  "actions": "b7c43317a102cced",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
+  "seed": 5040,
+  "actions": "f3f59a40d33837f0",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5041,
+  "actions": "aad03f38992487c6",
+  "winner": 0,
+  "round": 7
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
+  "seed": 5042,
+  "actions": "6697b3429d95353d",
+  "winner": 0,
+  "round": 11
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5043,
+  "actions": "257dfd2c383f5e8e",
+  "winner": 0,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
   "seed": 5044,
-  "actions": "cbd50713823daa92",
+  "actions": "ec95ab92a0535bf1",
   "winner": 1,
   "round": 8
  },
@@ -1163,39 +1163,39 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5045,
-  "actions": "d8c4cebe1b1bb981",
+  "actions": "1374010f5990f983",
   "winner": 0,
-  "round": 9
+  "round": 7
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5046,
-  "actions": "1b0a5e079c050958",
-  "winner": 0,
+  "actions": "162ed7b78b46fc58",
+  "winner": 1,
   "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5047,
-  "actions": "a9bdf497bb260809",
-  "winner": 1,
-  "round": 9
+  "actions": "6d585e04a06f5953",
+  "winner": 0,
+  "round": 6
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5048,
-  "actions": "5279ba2f6d2c99b5",
+  "actions": "6d4eef34714accd5",
   "winner": 1,
-  "round": 8
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5049,
-  "actions": "c3c625ec0917d25c",
+  "actions": "50b3fb87bcc87773",
   "winner": 1,
   "round": 9
  },
@@ -1203,87 +1203,87 @@
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5050,
-  "actions": "9ee11a5e5d7bfd51",
-  "winner": 0,
-  "round": 8
+  "actions": "0c34912febf126ba",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5051,
-  "actions": "a11ab53f1386ec3f",
-  "winner": 1,
-  "round": 12
+  "actions": "ebee95768a82f041",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5052,
-  "actions": "7538da2f5aef71f0",
-  "winner": 0,
-  "round": 10
+  "actions": "9609bdaa9f8b2af1",
+  "winner": 1,
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5053,
-  "actions": "893570edaec4d80f",
+  "actions": "608d3844330587fa",
   "winner": 0,
-  "round": 11
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5054,
-  "actions": "d7d4a0a4e7743053",
-  "winner": 0,
-  "round": 11
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5055,
-  "actions": "02ca673ca7895241",
-  "winner": 1,
   "round": 7
  },
  {
   "a": "domowiki",
   "b": "aluxes",
-  "seed": 5056,
-  "actions": "86ee156672ac97ec",
+  "seed": 5054,
+  "actions": "fcf49af3f1bbb90c",
   "winner": 0,
-  "round": 10
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
-  "seed": 5057,
-  "actions": "04a944866f2be181",
-  "winner": 0,
-  "round": 8
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5058,
-  "actions": "b7895d97f164c843",
-  "winner": 0,
-  "round": 8
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5059,
-  "actions": "578afe9a19335827",
+  "seed": 5055,
+  "actions": "a706385b68dd3a7a",
   "winner": 1,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
+  "seed": 5056,
+  "actions": "d812217774115245",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5057,
+  "actions": "de02ba009f3ffe5d",
+  "winner": 1,
+  "round": 6
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
+  "seed": 5058,
+  "actions": "fce3df8d52677e2c",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5059,
+  "actions": "4491207733772ae7",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
   "seed": 5060,
-  "actions": "f1b19ef7818b8b18",
+  "actions": "81d494e4959fd436",
   "winner": 0,
   "round": 9
  },
@@ -1291,63 +1291,63 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5061,
-  "actions": "722fb68e3fc0727e",
-  "winner": 0,
-  "round": 5
+  "actions": "8df6c50b876ebe7a",
+  "winner": 1,
+  "round": 8
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5062,
-  "actions": "88a0131741ec24c8",
-  "winner": 0,
-  "round": 11
+  "actions": "ba049fee7d12e91a",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5063,
-  "actions": "c0dfdcb975a9c202",
-  "winner": 1,
+  "actions": "32e01fbd4489d27c",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5064,
-  "actions": "b1a4deba03efda82",
+  "actions": "e86e688511bffb87",
   "winner": 1,
-  "round": 10
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5065,
-  "actions": "aa56cf0357808a91",
-  "winner": 1,
-  "round": 10
+  "actions": "b338b97e85831eb2",
+  "winner": 0,
+  "round": 6
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5066,
-  "actions": "a5416bc140ce9e94",
+  "actions": "a97ced097d060b30",
   "winner": 1,
-  "round": 7
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5067,
-  "actions": "3a98daad43cb762a",
+  "actions": "4edc430c609596b8",
   "winner": 0,
-  "round": 9
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5068,
-  "actions": "8e455808700de500",
+  "actions": "1b75514c6e58d6ee",
   "winner": 0,
   "round": 10
  },
@@ -1355,55 +1355,55 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5069,
-  "actions": "0f227abd845a6e15",
+  "actions": "9ce3e85664b3e3ef",
   "winner": 1,
-  "round": 8
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5070,
-  "actions": "554058de63a56c67",
+  "actions": "909f09832ad78769",
   "winner": 1,
-  "round": 10
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5071,
-  "actions": "8d9d335ef7b6a6ab",
-  "winner": 1,
-  "round": 9
+  "actions": "1e7e0d5f5adea8f9",
+  "winner": 0,
+  "round": 5
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5072,
-  "actions": "7c7e3971d8bb4566",
-  "winner": 1,
-  "round": 9
+  "actions": "1b5e970ec45b5ab7",
+  "winner": 0,
+  "round": 5
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5073,
-  "actions": "ef0fd46ae54b15f5",
-  "winner": 1,
+  "actions": "2e7c19632469c1b1",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5074,
-  "actions": "bb2db60026e5c977",
-  "winner": 0,
-  "round": 10
+  "actions": "5aca4a3b1af36f99",
+  "winner": 1,
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5075,
-  "actions": "9428811942693f72",
+  "actions": "a536c1295b3952b7",
   "winner": 1,
   "round": 10
  },
@@ -1411,39 +1411,39 @@
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5076,
-  "actions": "1ce2083dc6d1171f",
-  "winner": 0,
-  "round": 11
- },
- {
-  "a": "aluxes",
-  "b": "domowiki",
-  "seed": 5077,
-  "actions": "57f2973a0f0a0d1c",
-  "winner": 0,
-  "round": 7
- },
- {
-  "a": "domowiki",
-  "b": "aluxes",
-  "seed": 5078,
-  "actions": "92bbe8c217f73b92",
+  "actions": "6bd424d26fde76e3",
   "winner": 0,
   "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
-  "seed": 5079,
-  "actions": "2e4a778f26e9b0af",
+  "seed": 5077,
+  "actions": "de4426501484a4e0",
   "winner": 0,
   "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
+  "seed": 5078,
+  "actions": "df4ad25c550ac8e5",
+  "winner": 1,
+  "round": 8
+ },
+ {
+  "a": "aluxes",
+  "b": "domowiki",
+  "seed": 5079,
+  "actions": "b9b88f82d7369396",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "domowiki",
+  "b": "aluxes",
   "seed": 5080,
-  "actions": "dec46a1af6b94b0c",
+  "actions": "d32459e4330a3602",
   "winner": 1,
   "round": 9
  },
@@ -1451,31 +1451,31 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5081,
-  "actions": "738ebfea3511b619",
-  "winner": 1,
+  "actions": "65a63b5d2e893cfa",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5082,
-  "actions": "acfc29831bf54a84",
+  "actions": "4f264d6f06542876",
   "winner": 0,
-  "round": 10
+  "round": 12
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5083,
-  "actions": "473bcd3044487fae",
-  "winner": 0,
-  "round": 12
+  "actions": "590afcb9608ac051",
+  "winner": 1,
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5084,
-  "actions": "fccd3d7ce1c3a65b",
+  "actions": "28565058ddf3efe2",
   "winner": 0,
   "round": 9
  },
@@ -1483,31 +1483,31 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5085,
-  "actions": "4a990c065e91dbff",
+  "actions": "00d75828d4096bc7",
   "winner": 0,
-  "round": 10
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5086,
-  "actions": "f9ec6d30cb231bc2",
-  "winner": 1,
+  "actions": "90444e91a9848ec8",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5087,
-  "actions": "ccdad1c08c1f89a5",
-  "winner": 1,
+  "actions": "cd7952c912495fc9",
+  "winner": 0,
   "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5088,
-  "actions": "9761b1e98aa9ae49",
+  "actions": "77837926c0579c85",
   "winner": 0,
   "round": 10
  },
@@ -1515,39 +1515,39 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5089,
-  "actions": "a72d63eeb880fe90",
-  "winner": 0,
-  "round": 13
+  "actions": "baa876f19f565a46",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5090,
-  "actions": "2738947546e05c39",
-  "winner": 1,
-  "round": 8
+  "actions": "0d25a438dc301290",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5091,
-  "actions": "76e5d4aa46a10d3a",
-  "winner": 0,
-  "round": 8
+  "actions": "654141e25f357bb2",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5092,
-  "actions": "f5a24a67584f9969",
-  "winner": 0,
-  "round": 8
+  "actions": "26bc4fcc401a2f8b",
+  "winner": 1,
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5093,
-  "actions": "49ecfa356e084fc9",
+  "actions": "3ee660bf98f46b77",
   "winner": 1,
   "round": 10
  },
@@ -1555,23 +1555,23 @@
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5094,
-  "actions": "127c67cfb8ddb595",
-  "winner": 1,
-  "round": 10
+  "actions": "52f257c3301b289e",
+  "winner": 0,
+  "round": 12
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5095,
-  "actions": "2ed942aa87a982db",
+  "actions": "cae361457a393358",
   "winner": 1,
-  "round": 8
+  "round": 11
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5096,
-  "actions": "5ca35e79cb44c0e6",
+  "actions": "9d0b050eba31206b",
   "winner": 0,
   "round": 9
  },
@@ -1579,55 +1579,55 @@
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5097,
-  "actions": "00da9ac93bbba1da",
+  "actions": "9723194f17d10861",
   "winner": 1,
-  "round": 8
+  "round": 10
  },
  {
   "a": "domowiki",
   "b": "aluxes",
   "seed": 5098,
-  "actions": "c82a92df81cef7af",
-  "winner": 1,
-  "round": 11
+  "actions": "772a754503a5b614",
+  "winner": 0,
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "domowiki",
   "seed": 5099,
-  "actions": "06c4f7b619471997",
+  "actions": "3f2aa9db71a7d298",
   "winner": 1,
-  "round": 9
+  "round": 7
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5000,
-  "actions": "f92e219a43feb4cf",
+  "actions": "a3bdb01af665d183",
   "winner": 1,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5001,
-  "actions": "bee9fc2c7c76255b",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5002,
-  "actions": "622536070220d1ab",
-  "winner": 0,
   "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
+  "seed": 5001,
+  "actions": "8be34c9bf99a2e7e",
+  "winner": 0,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5002,
+  "actions": "76c78015e62ab0e1",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
   "seed": 5003,
-  "actions": "b997a1a72b4c59fa",
+  "actions": "2df9f6136ea5a838",
   "winner": 1,
   "round": 9
  },
@@ -1635,55 +1635,55 @@
   "a": "pari",
   "b": "aluxes",
   "seed": 5004,
-  "actions": "2685148a1be10a9c",
-  "winner": 0,
-  "round": 10
+  "actions": "eb175ffe04f49296",
+  "winner": 1,
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5005,
-  "actions": "fbd5450533d22b1f",
+  "actions": "5ddf43636b56f2df",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5006,
+  "actions": "81a744d4403b0f9c",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5007,
+  "actions": "f22469ef500ce904",
   "winner": 1,
   "round": 9
  },
  {
   "a": "pari",
   "b": "aluxes",
-  "seed": 5006,
-  "actions": "328046c392780120",
-  "winner": 0,
-  "round": 8
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5007,
-  "actions": "bfe7c9eedb6dccbd",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "pari",
-  "b": "aluxes",
   "seed": 5008,
-  "actions": "5aecf6f8cbca6d15",
-  "winner": 1,
-  "round": 11
+  "actions": "6235e7144b2bf4cc",
+  "winner": 0,
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5009,
-  "actions": "de7616aa58a97857",
+  "actions": "41358a834c8ff1d4",
   "winner": 1,
-  "round": 8
+  "round": 5
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5010,
-  "actions": "08be7c0e9ddb02f7",
+  "actions": "1ad1bac3dcc6f8f9",
   "winner": 0,
   "round": 9
  },
@@ -1691,47 +1691,47 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5011,
-  "actions": "2afc6fc6de13ffb2",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5012,
-  "actions": "fdcfb5f47c7c0766",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5013,
-  "actions": "2f30811d2ad43732",
-  "winner": 1,
-  "round": 7
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5014,
-  "actions": "7d1f04a604ed6ebc",
-  "winner": 1,
-  "round": 11
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5015,
-  "actions": "effe3131c253886d",
+  "actions": "6ca7a34ee8d54552",
   "winner": 1,
   "round": 9
  },
  {
   "a": "pari",
   "b": "aluxes",
+  "seed": 5012,
+  "actions": "7b48d875925d1270",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5013,
+  "actions": "f07a5c85705f590a",
+  "winner": 1,
+  "round": 5
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5014,
+  "actions": "e1fad980863f64d4",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5015,
+  "actions": "ccaba197d34e9b3e",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
   "seed": 5016,
-  "actions": "d72f7d68007621fc",
+  "actions": "96d254cd8b5e9d20",
   "winner": 0,
   "round": 7
  },
@@ -1739,143 +1739,143 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5017,
-  "actions": "c68ef7ec554f4de2",
+  "actions": "756160480e0da5a9",
   "winner": 1,
-  "round": 10
+  "round": 5
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5018,
-  "actions": "44a8b5939178612f",
-  "winner": 0,
-  "round": 8
+  "actions": "8d9ffcd61556d1f9",
+  "winner": 1,
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5019,
-  "actions": "b6f69a7a2412dedb",
+  "actions": "06fee994f9dfaa7f",
   "winner": 0,
-  "round": 9
+  "round": 7
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5020,
-  "actions": "007f60ce735897c7",
-  "winner": 0,
+  "actions": "24176739bdef9598",
+  "winner": 1,
   "round": 10
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5021,
-  "actions": "afc16d2eba8eb6ad",
-  "winner": 1,
-  "round": 8
+  "actions": "6405e547d3e34e1c",
+  "winner": 0,
+  "round": 10
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5022,
-  "actions": "01d9797b06dc053a",
+  "actions": "abadd57f2cd1d5de",
   "winner": 1,
-  "round": 9
+  "round": 10
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5023,
-  "actions": "4841c50e48a3c118",
-  "winner": 1,
+  "actions": "923321201c9d0f83",
+  "winner": 0,
   "round": 7
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5024,
-  "actions": "346b2b1ba5d82bec",
+  "actions": "fb88e4906f6ac937",
   "winner": 1,
-  "round": 9
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5025,
-  "actions": "08a2785b0527de8f",
-  "winner": 1,
+  "actions": "6d5ec24d734ec227",
+  "winner": 0,
   "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5026,
-  "actions": "3ff3b6352082d8e4",
-  "winner": 0,
-  "round": 5
+  "actions": "cd3a58afd3654ebe",
+  "winner": 1,
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5027,
-  "actions": "5df8832a3bea82a1",
-  "winner": 1,
-  "round": 10
+  "actions": "b73079a9f16a0dcf",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5028,
-  "actions": "64802005ea430526",
+  "actions": "4a5166f42a417903",
   "winner": 0,
-  "round": 8
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5029,
-  "actions": "a281d166ecb3e38c",
-  "winner": 1,
-  "round": 8
+  "actions": "b58b226891d0799e",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5030,
-  "actions": "74976932f3e58744",
-  "winner": 1,
-  "round": 8
+  "actions": "5960f4b3e7e651d8",
+  "winner": 0,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5031,
-  "actions": "e5e46ed620215f00",
-  "winner": 0,
-  "round": 7
+  "actions": "07ee447d1247e16d",
+  "winner": 1,
+  "round": 6
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5032,
-  "actions": "1a4acc2483ade6a4",
+  "actions": "78dc1e027c7415d5",
   "winner": 0,
-  "round": 8
+  "round": 11
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5033,
-  "actions": "3309aefa66be529f",
-  "winner": 0,
-  "round": 8
+  "actions": "c3f988b1dc5d61a6",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5034,
-  "actions": "5e44acb5e25c2fbe",
+  "actions": "01497900a372cbe7",
   "winner": 1,
   "round": 9
  },
@@ -1883,143 +1883,143 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5035,
-  "actions": "45b6609c089522a0",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5036,
-  "actions": "febcf40611a529aa",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5037,
-  "actions": "eabfa1e5ccb9a0b9",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5038,
-  "actions": "dd2340f6962199ee",
-  "winner": 0,
-  "round": 8
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5039,
-  "actions": "22177e756f04aaa6",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5040,
-  "actions": "a77b8221eca36cec",
-  "winner": 1,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5041,
-  "actions": "fc67cb390c896191",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5042,
-  "actions": "b151072e40bd4e9b",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5043,
-  "actions": "d69d79bee9995a5f",
-  "winner": 0,
-  "round": 10
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5044,
-  "actions": "f5d924f738ea9f96",
-  "winner": 0,
-  "round": 10
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5045,
-  "actions": "1eec1c34dbfd6619",
-  "winner": 1,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5046,
-  "actions": "5498d56302a99c3a",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5047,
-  "actions": "98491643002532bf",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5048,
-  "actions": "3abf0c253da1e92a",
-  "winner": 0,
-  "round": 6
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5049,
-  "actions": "aa614faae5f53f00",
+  "actions": "6604138646d614e2",
   "winner": 1,
   "round": 5
  },
  {
   "a": "pari",
   "b": "aluxes",
-  "seed": 5050,
-  "actions": "7ace9ea12574df3f",
+  "seed": 5036,
+  "actions": "85e1424999717b27",
+  "winner": 0,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5037,
+  "actions": "f37f2e51356318e5",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5038,
+  "actions": "d5ecc4a408f92cd2",
+  "winner": 0,
+  "round": 6
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5039,
+  "actions": "131a0a94f1e2d0ad",
+  "winner": 1,
+  "round": 5
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5040,
+  "actions": "eb8f6ea0e199331d",
+  "winner": 1,
+  "round": 6
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5041,
+  "actions": "f9a45cf9f1660fc8",
+  "winner": 1,
+  "round": 10
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5042,
+  "actions": "c36b0d93ac577a91",
   "winner": 0,
   "round": 10
  },
  {
   "a": "aluxes",
   "b": "pari",
-  "seed": 5051,
-  "actions": "0fe72af2e83dc16a",
+  "seed": 5043,
+  "actions": "521865da37407d03",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5044,
+  "actions": "cd6862ea368a9046",
+  "winner": 0,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5045,
+  "actions": "c5c8d57ae9e8d076",
+  "winner": 0,
+  "round": 6
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5046,
+  "actions": "042b1dac1366a051",
+  "winner": 0,
+  "round": 8
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5047,
+  "actions": "48d1339e1202f8b8",
+  "winner": 0,
+  "round": 6
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5048,
+  "actions": "00392d47f7d433a0",
+  "winner": 0,
+  "round": 5
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5049,
+  "actions": "2848525ba4182a2f",
   "winner": 1,
   "round": 7
  },
  {
   "a": "pari",
   "b": "aluxes",
+  "seed": 5050,
+  "actions": "ce28743051d566c1",
+  "winner": 0,
+  "round": 9
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5051,
+  "actions": "197516d929c04288",
+  "winner": 0,
+  "round": 11
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
   "seed": 5052,
-  "actions": "faa6382c1ade2911",
+  "actions": "44271ee236d33651",
   "winner": 1,
   "round": 8
  },
@@ -2027,47 +2027,47 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5053,
-  "actions": "2a6c5c12e9b409a6",
+  "actions": "6bf9af9982ec536f",
   "winner": 0,
-  "round": 10
+  "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5054,
-  "actions": "658f81d385458585",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5055,
-  "actions": "649407dbdef430af",
-  "winner": 1,
-  "round": 10
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5056,
-  "actions": "9c1341f3dba003ea",
-  "winner": 1,
+  "actions": "36ef7cbd71744700",
+  "winner": 0,
   "round": 9
  },
  {
   "a": "aluxes",
   "b": "pari",
-  "seed": 5057,
-  "actions": "efec6c5d210a6935",
+  "seed": 5055,
+  "actions": "98faad12a818027d",
   "winner": 1,
-  "round": 10
+  "round": 7
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5056,
+  "actions": "23d8824ce6d786e8",
+  "winner": 0,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5057,
+  "actions": "e7d2cb26e5daa166",
+  "winner": 1,
+  "round": 6
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5058,
-  "actions": "fe13baef6f82f23f",
+  "actions": "c9fdf4ef0539a277",
   "winner": 0,
   "round": 9
  },
@@ -2075,15 +2075,15 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5059,
-  "actions": "9faff30f72d8aaa3",
-  "winner": 0,
-  "round": 12
+  "actions": "ed648310952dfbad",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5060,
-  "actions": "f78340db74a414ac",
+  "actions": "a280c15bbf1e29c7",
   "winner": 1,
   "round": 9
  },
@@ -2091,39 +2091,39 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5061,
-  "actions": "c8723dd124001310",
-  "winner": 0,
-  "round": 7
+  "actions": "02f265a9aebe9336",
+  "winner": 1,
+  "round": 10
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5062,
-  "actions": "6bfe5e6c8025af96",
+  "actions": "a13fa86cbc3b4265",
+  "winner": 1,
+  "round": 9
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5063,
+  "actions": "8a364090e18ada16",
+  "winner": 1,
+  "round": 6
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5064,
+  "actions": "9da35dd360e3c5c3",
   "winner": 0,
   "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
-  "seed": 5063,
-  "actions": "c2b7b9e15d3d8dc2",
-  "winner": 0,
-  "round": 8
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5064,
-  "actions": "e0d74515b8d1d14b",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "pari",
   "seed": 5065,
-  "actions": "fc4b9339707f1aa7",
+  "actions": "0b942095dc4a8230",
   "winner": 0,
   "round": 7
  },
@@ -2131,111 +2131,111 @@
   "a": "pari",
   "b": "aluxes",
   "seed": 5066,
-  "actions": "476f71bae48818c4",
+  "actions": "b8cd6eeb611cabcf",
   "winner": 0,
-  "round": 12
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5067,
-  "actions": "5ffa2993e3a7ca78",
-  "winner": 1,
-  "round": 6
+  "actions": "14acc1309819db8f",
+  "winner": 0,
+  "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5068,
-  "actions": "c7601fb0f0d22dc4",
+  "actions": "0183406b256ee0f6",
   "winner": 0,
-  "round": 8
+  "round": 5
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5069,
-  "actions": "720f5999b0d45e64",
+  "actions": "ad8a288fcdeca0af",
   "winner": 1,
-  "round": 9
+  "round": 5
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5070,
-  "actions": "5f56723e37883032",
-  "winner": 0,
-  "round": 10
+  "actions": "8fab9095f0041ed3",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5071,
-  "actions": "c104c7885a8c15db",
-  "winner": 1,
-  "round": 9
+  "actions": "571fc4666ca40643",
+  "winner": 0,
+  "round": 6
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5072,
-  "actions": "fe01148322dd7d85",
+  "actions": "3b17ea1548e95b03",
   "winner": 1,
-  "round": 7
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5073,
-  "actions": "6622d1b095d1b07c",
-  "winner": 1,
-  "round": 11
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5074,
-  "actions": "7d3cfd8f81efa91b",
-  "winner": 1,
-  "round": 12
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5075,
-  "actions": "fb57a6bd84bc0cb3",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5076,
-  "actions": "31942943165872c6",
-  "winner": 0,
   "round": 10
  },
  {
   "a": "aluxes",
   "b": "pari",
-  "seed": 5077,
-  "actions": "d4ae464371e6ac45",
-  "winner": 0,
+  "seed": 5073,
+  "actions": "549f78755d7764b3",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
-  "seed": 5078,
-  "actions": "ab78b19b5e7916bf",
+  "seed": 5074,
+  "actions": "aa0b1e0fd6943360",
   "winner": 1,
-  "round": 8
+  "round": 9
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5075,
+  "actions": "e50a76d5e13a140f",
+  "winner": 1,
+  "round": 5
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5076,
+  "actions": "c14284acf3375dfa",
+  "winner": 1,
+  "round": 11
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5077,
+  "actions": "0e7e8e8b38a06596",
+  "winner": 0,
+  "round": 7
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5078,
+  "actions": "404b0b56a6695026",
+  "winner": 1,
+  "round": 9
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5079,
-  "actions": "3e71c019a480d837",
+  "actions": "4a7eca0b07a10b4c",
   "winner": 1,
   "round": 5
  },
@@ -2243,23 +2243,23 @@
   "a": "pari",
   "b": "aluxes",
   "seed": 5080,
-  "actions": "07f49365b70e98c0",
-  "winner": 0,
-  "round": 8
+  "actions": "914c0aa4844a3be6",
+  "winner": 1,
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5081,
-  "actions": "affcceecca728a9c",
+  "actions": "26b77f6244c1aa7b",
   "winner": 0,
-  "round": 10
+  "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5082,
-  "actions": "3e52cd755496c82d",
+  "actions": "92ada64476224a88",
   "winner": 0,
   "round": 9
  },
@@ -2267,23 +2267,23 @@
   "a": "aluxes",
   "b": "pari",
   "seed": 5083,
-  "actions": "289f378e162ceeeb",
+  "actions": "3911877456bf1e11",
   "winner": 1,
-  "round": 7
+  "round": 9
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5084,
-  "actions": "6af67323706d45fe",
+  "actions": "d00790022936919f",
   "winner": 0,
-  "round": 15
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5085,
-  "actions": "0508ab329d01ebd3",
+  "actions": "d465f996ad5ae5e1",
   "winner": 1,
   "round": 8
  },
@@ -2291,112 +2291,112 @@
   "a": "pari",
   "b": "aluxes",
   "seed": 5086,
-  "actions": "b0bb6257591de954",
+  "actions": "074458397ede9f92",
   "winner": 0,
-  "round": 9
+  "round": 8
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5087,
-  "actions": "116fa26f0362c9b6",
+  "actions": "2a4f98a43a1d1c6e",
+  "winner": 1,
+  "round": 8
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5088,
+  "actions": "ae6dc265a108687b",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5089,
+  "actions": "b33f58527fde318d",
+  "winner": 0,
+  "round": 11
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5090,
+  "actions": "004500b52f7fe752",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5091,
+  "actions": "11787d0c7e16b081",
+  "winner": 1,
+  "round": 7
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5092,
+  "actions": "cc6692cbeeda4bdb",
+  "winner": 1,
+  "round": 11
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5093,
+  "actions": "966fd1d5830908dc",
+  "winner": 0,
+  "round": 7
+ },
+ {
+  "a": "pari",
+  "b": "aluxes",
+  "seed": 5094,
+  "actions": "bf7f3745c1546e6a",
+  "winner": 1,
+  "round": 8
+ },
+ {
+  "a": "aluxes",
+  "b": "pari",
+  "seed": 5095,
+  "actions": "fd63e9405a902520",
   "winner": 1,
   "round": 5
  },
  {
   "a": "pari",
   "b": "aluxes",
-  "seed": 5088,
-  "actions": "854d64aab8304ea0",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5089,
-  "actions": "04803cbaadd609b2",
-  "winner": 1,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5090,
-  "actions": "925f103c355c8896",
-  "winner": 0,
-  "round": 11
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5091,
-  "actions": "16b257a984e0ffc4",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5092,
-  "actions": "4b90ed0594bb1cca",
-  "winner": 1,
-  "round": 8
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5093,
-  "actions": "505df56983f2ce36",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "aluxes",
-  "seed": 5094,
-  "actions": "ac0e42db4b276641",
-  "winner": 1,
-  "round": 9
- },
- {
-  "a": "aluxes",
-  "b": "pari",
-  "seed": 5095,
-  "actions": "d353541f4a781413",
-  "winner": 0,
-  "round": 9
- },
- {
-  "a": "pari",
-  "b": "aluxes",
   "seed": 5096,
-  "actions": "514c248df3e0c15b",
-  "winner": 0,
+  "actions": "2d7b505e214c85f1",
+  "winner": 1,
   "round": 8
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5097,
-  "actions": "cee9a5b8bba05376",
+  "actions": "a82421358b40f4d5",
   "winner": 1,
-  "round": 9
+  "round": 8
  },
  {
   "a": "pari",
   "b": "aluxes",
   "seed": 5098,
-  "actions": "886449d1afeb1a7a",
+  "actions": "bde83c035a804cc0",
   "winner": 1,
-  "round": 8
+  "round": 7
  },
  {
   "a": "aluxes",
   "b": "pari",
   "seed": 5099,
-  "actions": "efc0476be04e46cb",
+  "actions": "7c0958e2da979bda",
   "winner": 0,
-  "round": 6
+  "round": 8
  }
 ]

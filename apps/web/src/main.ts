@@ -5,6 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { count, summary } from './progress';
 import { BASE, altKey, altOf, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { keepPictures } from './offline';
+import { CLASS_ICON, CLASS_TEXT, LEGEND, abilityLines } from './glyphs';
 import { applyBeat, beatCaption, boardMap, buildReplay, resultLine, signed, summarize, type Beat, type Replay, type Summary } from './replay';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
@@ -33,7 +34,7 @@ import {
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, LANES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame,
-  deckSize, heroSide, interestOn, isOpenLane, laneUnit, traitsOf, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
+  deckSize, heroSide, interestOn, isOpenLane, laneUnit, traitsOf, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, unitClass, isTaunt, isUnitCard, TRAITS, unitHealth,
   unitPower, viewFor, visibleEvents,
   type Action, type BoardUnit, type DeckList, type GameEvent, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -552,10 +553,11 @@ function startGame(tutorial = false) {
 /** Set mechanics (Well-Fed, Rain-Fed, …) explain themselves from their set's data; the core keywords are here. */
 const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
-  { name: 'Guardian', test: /\bGuardian\b/, text: 'The tank: enemies hit Guardians first. (Sneaky enemies hit them last.)' },
-  { name: 'Elusive', test: /\bElusive\b/, text: 'The carry: enemies hit it late, after every plain unit and Guardian.' },
-  { name: 'Lure', test: /\bLure\b/, text: 'The decoy: enemies hit it last, but Sneaky enemies must hit it first.' },
-  { name: 'Sneaky', test: /\bSneaky\b/, text: 'The assassin: hits the enemy’s Lures first, then their Elusive units; Guardians last.' },
+  // The classes (0.7): how a unit fights. A card says its class first ("Tank. Taunt.").
+  ...(Object.keys(CLASS_TEXT) as (keyof typeof CLASS_TEXT)[])
+    .map((c) => ({ name: `${CLASS_ICON[c]} ${c}`, test: new RegExp(`\\b${c}\\b`), text: CLASS_TEXT[c] })),
+  { name: 'Taunt', test: /\bTaunt\b/, text: 'Every enemy hits it first while it stands, Assassins included.' },
+  { name: 'Stun', test: /deals no damage in the first/, text: 'A stunned unit deals no damage in the bouts it says; after that it fights again.' },
   { name: 'Fierce', test: /\bFierce\b/, text: 'Worth 2 Candles instead of 1 if it is still standing when its side wins the Clash.' },
   { name: TERMS.keywords.Zoomies, test: /\b(Swift|Zoomies)\b/, text: 'Hits first in every bout: a unit it knocks down never hits back.' },
   { name: 'Tough', test: /\bTough\b/, text: 'Takes that much less damage from every hit.' },
@@ -1292,12 +1294,6 @@ function toggleStory() {
   app.querySelector('.story-button')?.setAttribute('aria-pressed', String(showStory));
 }
 
-/** A card's rules text with its keywords in bold, for the unit tiles on a wide screen. */
-function rulesHtml(text: string): string {
-  let html = esc(text);
-  for (const k of glossary()) html = html.replace(new RegExp(`${k.test.source}:?`, 'g'), '<b>$&</b>');
-  return html.replace(/\n/g, '<br>');
-}
 function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
   const pl = s.players[p];
   const side = heroSide(s, p);
@@ -1335,7 +1331,7 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
         </div>
         ${badges}
       </div>
-      ${renderTraits(s, p)}
+      ${drawnWide ? '' : renderTraits(s, p)}
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
            data-zoom="${(mine ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
       ${canAbility ? '<div class="hero-actions"><button class="primary" data-click="btn:ability">Use ability</button></div>' : ''}
@@ -1359,6 +1355,36 @@ function renderTraits(s: GameState, p: PlayerId): string {
     return `<span class="trait ${t.tier >= 0 ? 'on' : ''}" role="button" data-click="trait:${p}~${esc(t.name)}" title="${esc(title)}">${t.def.icon ?? ''} ${esc(t.name)} <b>${t.count}${next ? `/${next}` : ''}</b></span>`;
   }).join('');
   return `<div class="traits">${chips}</div>`;
+}
+
+/**
+ * What buying a unit would do to its family's trait: "🏠 3/4" (3 different units after it, 4 for the next bonus). Nothing
+ * for a copy of a unit already on the board (it merges: still one unit), or a family with no trait.
+ */
+function traitHint(s: GameState, id: string): string {
+  const card = CARDS[id];
+  if (!card || !isUnitCard(id) || s.players[mySeat].yard.some((u) => u.id === id)) return '';
+  const entry = Object.entries(TRAITS).find(([, t]) => t.family === card.family);
+  if (!entry) return '';
+  const [name, def] = entry;
+  const now = traitsOf(s, mySeat).find((t) => t.name === name)?.count ?? 0;
+  const next = def.tiers.find((x) => x.at > now)?.at;
+  return `${def.icon ?? ''} ${now + 1}${next ? `/${next}` : ''}`.trim();
+}
+
+/**
+ * On a wide screen, a player's traits as a column beside their lanes (TFT's trait tracker): each family with how many
+ * different units count and its breakpoints (2 · 4 · 6), the reached ones lit. Tap one to read its tiers.
+ */
+function renderTraitColumn(s: GameState, p: PlayerId): string {
+  const traits = traitsOf(s, p).sort((a, b) => b.tier - a.tier || b.count - a.count);
+  const rows = traits.map((t) => {
+    const marks = t.def.tiers.map((x, i) => `<i class="${t.count >= x.at ? 'got' : ''} ${i === t.tier ? 'on' : ''}">${x.at}</i>`).join('');
+    const now = t.tier >= 0 ? t.def.tiers[t.tier].text : `At ${t.def.tiers[0].at}: ${t.def.tiers[0].text}`;
+    return `<div class="tcol-trait ${t.tier >= 0 ? 'on' : ''}" role="button" data-click="trait:${p}~${esc(t.name)}" title="${esc(`${t.name}: ${now}`)}">
+      <span class="tcol-name">${t.def.icon ?? ''} ${esc(t.name)}</span><span class="tcol-marks"><b>${t.count}</b>${marks}</span></div>`;
+  }).join('');
+  return `<div class="trait-col" aria-label="${p === mySeat ? 'Your' : 'Their'} traits">${rows || `<small class="tcol-none">No family bonus yet</small>`}</div>`;
 }
 
 /** Copies on the way to a unit's next star, as pips: ●●○ (two of the three that make 2★). */
@@ -1387,7 +1413,6 @@ function counterChips(u: Unit, keywordList: string[]): string[] {
   });
 }
 
-const ROLE = ['Lure', 'Elusive', '', 'Guardian'];
 
 /** A unit on the board; `shown` draws it as a replay of the Clash has it (its numbers then, and whether it fell). */
 function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>, shown?: BoardUnit): string {
@@ -1396,11 +1421,14 @@ function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>, sho
   const health = shown ? Math.max(0, shown.health - shown.damage) : unitHealth(u, s) - u.damage;
   const hurt = shown ? shown.damage > 0 : u.damage > 0;
   const exhausted = shown ? !!shown.exhausted : u.exhausted;
+  // Its class as an icon in the corner; its keywords as chips; each ability as a short line under its name.
+  const klass = unitClass(u);
   const chips = [
-    ROLE[targetRank(u, s)], k.sneaky && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
+    isTaunt(u, s) && 'Taunt', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`, k.fierce && 'Fierce',
     ...counterChips(u, k.all),
     u.toy && `🧿 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
+  const lines = abilityLines(u.id);
   const key = `unit:${u.uid}`;
   const why = shown?.down ? 'It went down in this Clash.' : exhausted ? 'Exhausted: it deals no damage in this Clash.' : 'Ready to fight in the Clash.';
   const cls = [
@@ -1410,11 +1438,12 @@ function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>, sho
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(why)}" title="${esc(cardName(u.id))}: ${esc(why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
+    <div class="uclass" title="${klass}: ${esc(CLASS_TEXT[klass])}">${CLASS_ICON[klass]}</div>
     ${u.stars || (u.copies ?? 1) > 1 ? `<div class="stars" title="${starTitle(s, u)}">${'★'.repeat(u.stars ?? 1)}${copyPips(s, u)}</div>` : ''}
     <div class="ubox">
       <div class="uname">${esc(cardName(u.id))}</div>
-      ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
-      <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
+      ${lines.length ? `<div class="uline">${lines.map((l) => `<span>${esc(l)}</span>`).join('')}</div>` : ''}
+      ${klass === 'Support' ? '' : `<div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>`}
       <div class="hp ${hurt ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     </div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
@@ -1451,7 +1480,7 @@ function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
     }
     return `<div class="lane empty ${locked ? 'locked' : ''} ${hl.has(key) ? 'targetable' : ''}" data-click="${key}" title="${mine ? 'Your' : 'Their'} lane ${i + 1}"><span class="lane-no">${i + 1}</span>${marks}</div>`;
   }).join('');
-  return `<section class="yard lanes ${mine ? 'me' : 'foe'}" style="--n:${LANES}">${foeHand}${lanes}</section>`;
+  return `<section class="yard lanes ${mine ? 'me' : 'foe'} ${drawnWide ? 'with-traits' : ''}" style="--n:${LANES}">${foeHand}${drawnWide ? renderTraitColumn(s, p) : ''}${lanes}</section>`;
 }
 
 /**
@@ -1459,10 +1488,13 @@ function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
  * dark strip, a Charm or a Talisman says so on a light one. Brightness and shape tell them apart, not hue, which the
  * families' frame colours already use.
  */
-function shopTag(id: string): string {
+function shopTag(id: string, hint = ''): string {
   const def = CARDS[id];
-  if (def.type === 'Critter' || def.type === 'Cat')
-    return `<span class="shop-tag unit-tag" aria-hidden="true"><b class="tag-pw">${def.power ?? 0}</b>⚔<b class="tag-hp">${def.health ?? 0}</b>♥</span>`;
+  if (def.type === 'Critter' || def.type === 'Cat') {
+    const klass = unitClass(id);
+    return `${hint ? `<span class="shop-trait" title="Buying it brings this trait to ${esc(hint)}">${esc(hint)}</span>` : ''}`
+      + `<span class="shop-tag unit-tag" aria-hidden="true"><span class="tag-class">${CLASS_ICON[klass]}</span><b class="tag-pw">${def.power ?? 0}</b>⚔<b class="tag-hp">${def.health ?? 0}</b>♥</span>`;
+  }
   const word = TERMS.types[def.type as keyof typeof TERMS.types] ?? def.type;
   const kind = def.type === 'Toy' ? 'talisman-tag' : 'charm-tag';
   return `<span class="shop-tag ${kind}" aria-hidden="true">${def.type === 'Toy' ? '◆' : '✦'} ${esc(word)}</span>`;
@@ -1481,7 +1513,7 @@ function renderShop(s: GameState, playable: Set<number>): string {
       selection?.options.some((a) => 'uid' in a && a.uid === c.uid && a.t !== 'move') && 'selected',
       selection?.uid === c.uid && 'selected',
     ].filter(Boolean).join(' ');
-    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${shopTag(c.id)}</button>`;
+    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${shopTag(c.id, traitHint(s, c.id))}</button>`;
   }).join('');
   return `<section class="hand shop" style="--n:${Math.max(n, 1)};--gaps:${Math.max(1, n - 1)}" aria-label="Your shop">
     ${cards || '<p class="shop-empty">Nothing left in your shop. Roll for a new one, or press Ready.</p>'}
@@ -1587,7 +1619,7 @@ function renderReplayLanes(s: GameState, p: PlayerId): string {
       ? `<div class="lane empty locked"><span class="lane-lock">🔒<small>Lv ${i + 1}</small></span></div>`
       : `<div class="lane empty"><span class="lane-no">${i + 1}</span></div>`;
   }).join('');
-  return `<section class="yard lanes ${p === mySeat ? 'me' : 'foe'}" style="--n:${LANES}">${lanes}</section>`;
+  return `<section class="yard lanes ${p === mySeat ? 'me' : 'foe'} ${drawnWide ? 'with-traits' : ''}" style="--n:${LANES}">${drawnWide ? renderTraitColumn(s, p) : ''}${lanes}</section>`;
 }
 
 /** A unit of the replay as the board draws it: the game's own unit while it has it (its Talisman, its counters). */
@@ -1691,11 +1723,12 @@ function renderRules(): string {
       <p><b>${TERMS.offerings} are money.</b> What you don’t spend is kept, and every ${r?.interestPer ?? 5} saved earn 1 more at the start of the next round (at most ${r?.interestMax ?? 3}). Losing Clashes in a row earns more too: +1 after two, up to +3 after five.</p>
       <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Buy units into your open lanes (your Hero’s <b>Level</b> opens that many, from the left; level up to open more), move them, buy Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
       <p><b>Selling:</b> tap a unit of yours to sell it. You get back what you paid, its merged copies included, less 1 for each star it has. Sell to make room for something better.</p>
-      <p><b>Stars:</b> buy a copy of a Creature you have on the board and it merges into it, even when your lanes are full (the dots on the unit count them). <b>3 copies make 2 stars</b>, twice its printed Power and Health; <b>6 make 3 stars</b>. Fabled never merge.</p>
-      <p><b>Traits:</b> each family, and each role (Guardian, Elusive, Sneaky, Lure), gives your team a bonus with 2, 4 or 6 different units of it on your board. The chips under your plaque show them; tap and hold one to read it.</p>
-      <p><b>In the fight:</b> “Clash start:” happens once before the first bout, “Each bout:” at the start of every bout, “Every second bout:” at bouts 2, 4, 6 and 8.</p>
+      <p><b>Stars:</b> buy a copy of a Creature you have on the board and it merges into it, even when your lanes are full (the dots on the unit count them). <b>3 copies make 2 stars</b>, twice its printed Power and Health; <b>5 make 3 stars</b>. Fabled never merge.</p>
+      <p><b>Classes</b> say how a unit fights (its icon is in the card’s corner): 🛡 <b>Tank</b> and 👊 <b>Bruiser</b> fight at the front; 🏹 <b>Marksman</b>, ✨ <b>Mage</b> and 💠 <b>Support</b> at the back (a Support never attacks: it helps the units next to it); 🗡 <b>Assassin</b> strikes first and goes for the back. A unit with <b>Taunt</b> is hit first by everyone.</p>
+      <p><b>Families</b> are synergies: 2, 4 or 6 different units of one family on your board turn on its bonus. The trait column beside your lanes shows them; tap one to read it.</p>
+      <p><b>In the fight:</b> ${esc(LEGEND)}</p>
       <p><b>Aimed at the enemy:</b> damage and other effects aimed at their units are aimed at a <b>lane</b>, and happen when the Clash begins, to whoever stands there. With nobody there, they fizzle. A face-down Ambush happens only if its lane holds what it needs; otherwise it waits for a later Clash.</p>
-      <p><b>The Clash</b> plays itself: first the aimed effects and Ambushes, then Awakened Heroes strike, then the bouts. In each bout every unit hits one enemy, all at once (Swift units first). Who it hits: <b>Guardians</b> first, then plain units, then <b>Elusive</b> ones, <b>Lures</b> last; <b>Sneaky</b> units go the other way round. Among equals, the one across from it, then the nearest. A unit whose damage reaches its Health goes down. An <b>exhausted</b> unit deals no damage in this Clash, but can still be hit.</p>
+      <p><b>The Clash</b> plays itself: first the aimed effects and Ambushes, then Awakened Heroes strike, then the bouts. In each bout every unit hits one enemy, all at once (Assassins and Swift units first). Who it hits: a unit with <b>Taunt</b> first, then <b>Tanks</b>, then Bruisers and Assassins, then the back; an <b>Assassin</b> goes for the back first, unless a unit taunts. Among equals, the one across from it, then the nearest. A unit whose damage reaches its Health goes down. An <b>exhausted</b> unit deals no damage in this Clash, but can still be hit.</p>
       <p><b>Winning the Clash:</b> when one side has nobody standing, it loses a Candle for each enemy unit still standing (2 for a <b>Fierce</b> one, 1 more if their Hero struck), at most ${r?.clashCandleCap ?? 2}. If both sides still stand after ${r?.boutCap ?? 8} bouts, both lose Candles. Then every unit stands up again: <b>nothing on the board is lost in a Clash</b>.</p>
       <p><b>Your Hero:</b> its ability can be used once a round. When its Awaken condition is met it Awakens for good, and strikes when the Clash begins (unless you used its ability that round).</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). The book button opens the story so far.</p>

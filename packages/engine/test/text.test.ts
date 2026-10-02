@@ -177,10 +177,10 @@ suite('what the log says', () => {
   // "Kikimora is exhausted" came with no cause: an effect aimed at a lane in the Muster now says what it found there.
   it('names the card and the owner when an effect aimed at a lane finds its unit', () => {
     let found = 0;
-    for (const s of games(6, ['domowiki', 'jiaoren', 'pari'])) {
+    for (const s of games(16, ['domowiki', 'jiaoren', 'pari', 'aluxes', 'hui-hai'])) {
       s.log.forEach((e, i) => {
         if (/'s .+ finds .+'s .+ in lane \d\.$/.test(e.text)) found++;
-        if (/ is exhausted: it deals no damage/.test(e.text)) {
+        if (/ is (exhausted|stunned): it deals no damage/.test(e.text)) {
           expect(s.log[i - 1].text).toMatch(/ finds .+ in lane \d\.$|'s Ambush in lane \d: |uses their ability|exhausts|plays /);
         }
       });

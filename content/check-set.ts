@@ -27,7 +27,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 const ACTIONS = BUILT_IN_ACTIONS;
 const TESTS = CONDITION_TESTS;
-const CORE_KEYWORDS = ['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Pounce', 'Elusive', 'Lure'];
+const CORE_KEYWORDS = ['Zoomies', 'Taunt', 'Guardian', 'Sneaky', 'Fierce', 'Pounce', 'Elusive', 'Lure'];
 const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log', 'note', 'on'];
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'];

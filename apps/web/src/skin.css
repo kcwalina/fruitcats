@@ -1566,3 +1566,40 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
   .sum-sides { grid-template-columns: 1fr; }
   .hand.shop.replay-panel { font-size: 12px; }
 }
+
+/* ── 0.7: classes, ability lines and the trait column (main.ts, glyphs.ts) ── */
+/* A unit's class: an icon in its top-left corner (its title says what the class does). */
+.unit .uclass {
+  position: absolute; top: 3px; left: 3px; z-index: 3; display: grid; place-items: center;
+  width: clamp(18px, 20cqw, 30px); height: clamp(18px, 20cqw, 30px); border-radius: 50%;
+  font-size: clamp(11px, 12cqw, 18px); background: rgba(255, 250, 240, 0.94); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.unit .chips { left: calc(clamp(18px, 20cqw, 30px) + 6px); }
+/* Each ability in a few symbols and words ("⟳ heal 1 · sides"), under the unit's name. */
+.unit .uline {
+  display: flex; flex-direction: column; gap: 1px; padding: 1px 4px 3px; text-align: center; background: #fffaf0; color: #3b2513;
+  font: 700 clamp(8px, 7.5cqw, 14px) / 1.2 Nunito, sans-serif;
+}
+.unit .uline span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* On a wide screen: a column of traits before each player's lanes. */
+.board.wide .yard.lanes.with-traits { grid-template-columns: minmax(92px, 12%) repeat(6, minmax(0, 1fr)); }
+.trait-col { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; padding: 4px 2px; }
+.tcol-trait {
+  cursor: pointer; padding: 3px 6px; border-radius: 10px; color: rgba(255, 244, 220, 0.65);
+  background: rgba(255, 244, 220, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 244, 220, 0.18);
+}
+.tcol-trait.on { color: #2a1606; background: linear-gradient(#ffe07a, #f2b33d); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); }
+.tcol-name { display: block; font: 700 12px/1.2 Fredoka, Nunito, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcol-marks { display: flex; align-items: center; gap: 3px; font: 600 11px Nunito, sans-serif; }
+.tcol-marks b { font: 800 14px Fredoka, Nunito, sans-serif; margin-right: 2px; }
+.tcol-marks i { font-style: normal; opacity: 0.55; }
+.tcol-marks i.got { opacity: 1; font-weight: 800; }
+.tcol-marks i.on { text-decoration: underline; }
+.tcol-none { color: rgba(255, 244, 220, 0.45); font: 600 11px Nunito, sans-serif; text-align: center; }
+/* A shop unit's class, and what buying it does for its family's trait ("🏠 3/4"). */
+.unit-tag .tag-class { font-size: 0.95em; margin-right: 0.15em; }
+.shop-trait {
+  position: absolute; left: 50%; top: 4%; transform: translateX(-50%); z-index: 2; padding: 0.1em 0.5em; border-radius: 999px;
+  font: 800 clamp(9px, 12cqw, 15px) Fredoka, Nunito, sans-serif; color: #2a1606; background: linear-gradient(#ffe07a, #f2b33d);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); white-space: nowrap; pointer-events: none;
+}

@@ -39,19 +39,18 @@ cards = [
   }
   hui-hai-of-the-stream = Creature {
     name = 'Hui Hai of the Stream'
-    cost = 1, power = 2, health = 3
+    cost = 2, power = 3, health = 5
     number = 'HH1-D01', rarity = common
     art = 'art/HH1-D01.webp'
-    text = 'Clash start: The enemy across gets -1 Power this round.'
+    text = 'Bruiser.'
     flavor = 'A ripple where there is no fish. A splash where there is no stone.'
   }
   ya-hui-hai = Fabled {
     name = 'Yă Hui Hai', epithet = 'Lady of the Ferns'
-    cost = 3, power = 3, health = 6
+    cost = 4, power = 1, health = 11
     number = 'HH1-D02', rarity = rare
     art = 'art/HH1-D02.webp'
-    keywords = [@Guardian]
-    text = 'Guardian. Clash start: Deal 2 damage to the enemy across.'
+    text = 'Support. Each bout: The units next to Yă Hui Hai heal 2.'
     flavor = 'Small enough to sleep in a fern. Strong enough to move the rock beside it.'
   }
   a-pebble-at-your-feet = Charm {
@@ -65,11 +64,11 @@ cards = [
   }
   hui-hai-in-the-ferns = Creature {
     name = 'Hui Hai in the Ferns'
-    cost = 1, power = 1, health = 4
+    cost = 2, power = 2, health = 6
     number = 'HH1-D04', rarity = common
     art = 'art/HH1-D04.webp'
-    keywords = [@Lure]
-    text = 'Lure.'
+    keywords = [@Taunt]
+    text = 'Tank. Taunt.'
     flavor = 'The fern moved. There was no wind.'
   }
   pebble-thrower = Creature {
@@ -77,26 +76,23 @@ cards = [
     cost = 1, power = 3, health = 2
     number = 'HH1-D05', rarity = common
     art = 'art/HH1-D05.webp'
-    keywords = [@Sneaky]
-    text = 'Sneaky.'
+    text = 'Assassin.'
     flavor = 'No taller than your thumb. Throws harder than you do.'
   }
   hui-hai-at-the-spring = Creature {
     name = 'Hui Hai at the Spring'
-    cost = 2, power = 1, health = 6
+    cost = 1, power = 1, health = 5
     number = 'HH1-D06', rarity = common
     art = 'art/HH1-D06.webp'
-    keywords = [@Guardian]
-    text = 'Guardian.'
+    text = 'Tank. Once per round, after Hui Hai at the Spring survives damage, deal 1 damage to an enemy unit.'
     flavor = 'Muddy the spring, and see what comes back out of it.'
   }
   boulder-pusher = Creature {
     name = 'Boulder-Pusher'
-    cost = 2, power = 5, health = 2
+    cost = 3, power = 6, health = 6
     number = 'HH1-D07', rarity = common
     art = 'art/HH1-D07.webp'
-    keywords = [@Elusive]
-    text = 'Elusive.'
+    text = 'Bruiser.'
     flavor = 'The boulder was on the path in the evening. In the morning it wasn''t.'
   }
   hui-hai-in-the-bamboo = Creature {
@@ -105,46 +101,46 @@ cards = [
     number = 'HH1-D08', rarity = common
     art = 'art/HH1-D08.webp'
     keywords = [@Swift]
-    text = 'Swift.'
+    text = 'Bruiser. Swift.'
     flavor = 'You hear the bamboo knock. You never see who knocked.'
   }
   keeper-of-the-old-forest = Creature {
     name = 'Keeper of the Old Forest'
-    cost = 3, power = 2, health = 7
+    cost = 3, power = 3, health = 8
     number = 'HH1-D09', rarity = common
     art = 'art/HH1-D09.webp'
-    keywords = [@Guardian]
-    text = 'Guardian. Once per round, after Keeper of the Old Forest survives damage, deal 1 damage to an enemy unit.'
+    keywords = [@Taunt]
+    text = 'Tank. Taunt. Once per round, after Keeper of the Old Forest survives damage, deal 1 damage to an enemy unit.'
     flavor = 'The forest is theirs to keep, and they keep it well.'
   }
   gohlou = Creature {
     name = 'Gơhlŏu', epithet = 'the Sweet-Smelling'
-    cost = 2, power = 3, health = 4
+    cost = 3, power = 2, health = 6
     number = 'HH1-D10', rarity = uncommon
     art = 'art/HH1-D10.webp'
-    text = 'Clash start: The units next to Gơhlŏu get +1 Power this round.'
+    text = 'Mage. Every second bout: Deal 2 damage to the enemy across.'
     flavor = 'Something lives in the trees. Nobody has seen it, but it smells wonderful.'
   }
   moss-mender-ya-hui-hai = Creature {
     name = 'Moss-Mender Yă Hui Hai'
-    cost = 3, power = 3, health = 5
+    cost = 2, power = 0, health = 6
     number = 'HH1-D11', rarity = uncommon
     art = 'art/HH1-D11.webp'
-    text = 'Clash start: Your units get +1 Health this round.'
+    text = 'Support. Clash start: The units next to Moss-Mender Yă Hui Hai get +2 Health this round.'
     flavor = 'She tucks moss into every scrape, grumbling the whole time.'
   }
   old-one-of-the-waterfall = Creature {
     name = 'Old One of the Waterfall'
-    cost = 5, power = 6, health = 9
+    cost = 4, power = 4, health = 12
     number = 'HH1-D12', rarity = uncommon
     art = 'art/HH1-D12.webp'
-    keywords = [@Guardian, @Fierce]
-    text = 'Guardian. Fierce. Every second bout: Deal 2 damage to the enemy across.'
+    keywords = [@Fierce]
+    text = 'Tank. Fierce. Once per round, after Old One of the Waterfall survives damage, deal 2 damage to an enemy unit.'
     flavor = 'The waterfall has been loud for a thousand years. Some of that is him.'
   }
   stones-from-nowhere = Charm {
     name = 'Stones from Nowhere'
-    cost = 3
+    cost = 2
     number = 'HH1-D13', rarity = uncommon
     art = 'art/HH1-D13.webp'
     text = 'Deal 1 damage to each enemy unit.'
@@ -163,7 +159,7 @@ cards = [
     cost = 2
     number = 'HH1-D15', rarity = uncommon
     art = 'art/HH1-D15.webp'
-    text = 'Exhaust an enemy unit.'
+    text = 'An enemy unit deals no damage in the first two bouts.'
     flavor = 'The hunter turned around. The path behind him was empty.'
   }
   a-pouch-of-river-pebbles = Talisman {
@@ -176,28 +172,28 @@ cards = [
   }
   grandfather-hui-hai = Fabled {
     name = 'Grandfather Hui Hai', epithet = 'Mover of Rocks'
-    cost = 4, power = 4, health = 9
+    cost = 5, power = 8, health = 12
     number = 'HH1-D17', rarity = rare
     art = 'art/HH1-D17.webp'
-    keywords = [@Guardian]
-    text = 'Guardian. Once per round, after Grandfather Hui Hai survives damage, deal 1 damage to an enemy unit.'
+    keywords = [@Fierce]
+    text = 'Bruiser. Fierce. Clash start: Deal 4 damage to the enemy across.'
     flavor = 'The strongest of them, and the smallest beard in the forest.'
   }
-  the-hidden-village = Fabled {
+  the-hidden-village = Creature {
     name = 'The Hidden Village'
-    cost = 4, power = 4, health = 6
+    cost = 4, power = 3, health = 9
     number = 'HH1-D18', rarity = rare
     art = 'art/HH1-D18.webp'
-    text = 'Every second bout: Deal 2 damage to the enemy across.'
+    text = 'Mage. Every second bout: Deal 2 damage to the enemy across and the ones next to it.'
     flavor = 'A whole village lives in this clearing. You are standing in it.'
   }
   the-rock-that-moved-in-the-night = Fabled {
     name = 'The Rock That Moved in the Night'
-    cost = 5, power = 9, health = 8
+    cost = 5, power = 9, health = 10
     number = 'HH1-D19', rarity = rare
     art = 'art/HH1-D19.webp'
     keywords = [@Fierce]
-    text = 'Fierce. Clash start: Deal 3 damage to the enemy across.'
+    text = 'Bruiser. Fierce.'
     flavor = 'Everyone saw it on the hill. Nobody saw how it got there.'
   }
   small-but-strong = Charm {

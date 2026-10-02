@@ -77,7 +77,7 @@ describe('tiers and the shop', () => {
 });
 
 describe('copies and stars', () => {
-  it('3 copies in one unit make it 2★, 6 make it 3★; a seventh is not taken', () => {
+  it('3 copies in one unit make it 2★, 5 make it 3★; a sixth is not taken', () => {
     const s = game();
     s.players[0].offerings = 50;
     const first = put(s, 0, 'T06-A', 0, { copies: 1 });
@@ -89,17 +89,17 @@ describe('copies and stars', () => {
     expect([first.copies, first.stars ?? 1, unitPower(first)]).toEqual([2, 1, 2]);
     buyCopy();
     expect([first.copies, first.stars, unitPower(first), unitHealth(first)]).toEqual([3, 2, 4, 4]);
-    for (let i = 0; i < 3; i++) buyCopy();
-    expect([first.copies, first.stars, unitPower(first)]).toEqual([6, 3, 6]);
+    for (let i = 0; i < 2; i++) buyCopy();
+    expect([first.copies, first.stars, unitPower(first)]).toEqual([5, 3, 6]);
     s.players[0].shop.push({ uid: 9600, id: 'T06-A' });
     expect(s.players[0].shop.length).toBeGreaterThan(0);
     expect(() => apply(s, { t: 'play', uid: 9600 }, 0)).toThrow(/illegal/);
   });
 
-  it('a deck holds 6 copies of a tier 1 or 2 card, 4 of tier 3, 3 of tier 4, 1 of tier 5', () => {
-    expect(['T06-A', 'T06-C', 'T06-D', 'T06-E', 'T06-F'].map(copyLimit)).toEqual([6, 6, 4, 3, 1]);
-    const deck: DeckList = { name: 'Too many', hero: 'T06-H', cards: { 'T06-A': 7, 'T06-B': 6, 'T06-B2': 6, 'T06-C': 6, 'T06-G': 6, 'T06-D': 4, 'T06-E': 3, 'T06-F': 1 } };
-    expect(deckProblems(deck).some((p) => /At most 6 copies of T06-A/.test(p))).toBe(true);
+  it('a deck holds 5 copies of a tier 1 card, 4 of tier 2, 3 of tier 3, 2 of tier 4, 1 of tier 5', () => {
+    expect(['T06-A', 'T06-C', 'T06-D', 'T06-E', 'T06-F'].map(copyLimit)).toEqual([5, 4, 3, 2, 1]);
+    const deck: DeckList = { name: 'Too many', hero: 'T06-H', cards: { 'T06-A': 6, 'T06-B': 5, 'T06-B2': 5, 'T06-C': 4, 'T06-G': 5, 'T06-D': 3, 'T06-E': 2, 'T06-F': 1 } };
+    expect(deckProblems(deck).some((p) => /At most 5 copies of T06-A/.test(p))).toBe(true);
   });
 });
 
@@ -124,13 +124,14 @@ describe('traits', () => {
     expect(traitsOf(s, 0).find((t) => t.name === 'Test Kin')).toMatchObject({ count: 1, tier: -1 });
   });
 
-  it("a role is a trait too: two Guardians turn on the Guardians' bonus", () => {
+  // The owner (2026-10-02): classes say how a unit fights; they give no bonus. Only families are traits.
+  it('a class is no trait: two Tanks turn on nothing', () => {
     const s = game();
     const b = put(s, 0, 'T06-B', 0);
     const health = unitHealth(b, s);
     put(s, 0, 'T06-B2', 1);
-    const bonus = TRAITS.Guardian.tiers[0].abilities[0].static!.grant!.health!;
-    expect(unitHealth(b, s) - health).toBe(bonus); // Test Kin's bonus, also on now, is Power only
+    expect(Object.values(TRAITS).some((t) => t.role)).toBe(false);
+    expect(unitHealth(b, s)).toBe(health);
   });
 });
 

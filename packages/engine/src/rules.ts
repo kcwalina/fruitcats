@@ -30,7 +30,7 @@ export const RULES: Readonly<Rules> = {
   clashCandleCap: 2,
   overtimeBothLose: true,
   maxRounds: 30,
-  starCopies: [3, 6],
+  starCopies: [3, 5],
 };
 
 /** The rules for a new game: the defaults with any overrides (a playtest trying other numbers). */

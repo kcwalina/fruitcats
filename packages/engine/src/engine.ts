@@ -26,7 +26,7 @@ import {
 import { rulesWith } from './rules';
 import type {
   Ability, AbilityRef, Act, Action, BoardUnit, CardInst, Condition, GameEvent, GameState, Pending, PlayerId, PlayerState, Rules, Step,
-  Target, TargetSel, Unit, UnitFilter,
+  Target, TargetSel, Unit, UnitClass, UnitFilter,
 } from './types';
 
 /**
@@ -37,8 +37,9 @@ import type {
  * 4: the shop instead of a hand (Folkborn 0.5): no mulligan, no draws, Candles are a count.
  * 5: lanes open with the Level, from the left: a unit, a move or an Ambush only in an open lane.
  * 6: Folkborn 0.6: tiers and shop odds by Level, copies (3 for 2 stars, 6 for 3), traits, abilities in the fight.
+ * 7: Folkborn 0.7: classes (front and back, Taunt, Assassins, Supports), the cards redone, 3 stars at 5 copies.
  */
-export const RULES_VERSION = 6;
+export const RULES_VERSION = 7;
 
 export const LIVES = 9;
 export const DECK_SIZE = 50;
@@ -358,19 +359,40 @@ export function unitKeywords(u: Unit, s?: GameState, thisRound = true): Keywords
   return keywordsFrom([...new Set(list)]);
 }
 
-export const isGuardian = (u: Unit, s?: GameState): boolean => unitKeywords(u, s).guardian;
-export const isSneaky = (u: Unit, s?: GameState): boolean => unitKeywords(u, s).sneaky;
+/**
+ * A unit's class: its card's, or for a card made before 0.7, what its keywords made it (Guardian a Tank, Sneaky an
+ * Assassin, Elusive a Marksman; a Lure fought at the back too).
+ */
+export function unitClass(u: Unit | string): UnitClass {
+  const id = typeof u === 'string' ? u : u.id;
+  const printed = CARDS[id]?.class;
+  if (printed) return printed;
+  const k = keywords(id);
+  return k.guardian ? 'Tank' : k.sneaky ? 'Assassin' : k.elusive || k.lure ? 'Marksman' : 'Bruiser';
+}
+
+/** Whether every enemy must hit it first: Taunt (and, on cards made before 0.7, Guardian). */
+export const isTaunt = (u: Unit, s?: GameState): boolean => { const k = unitKeywords(u, s); return k.taunt || k.guardian; };
+/** @deprecated Before 0.7, "Guardian": see isTaunt. */
+export const isGuardian = isTaunt;
+/** Whether it fights as an Assassin: first in each bout, and at the enemy's back. */
+export const isAssassin = (u: Unit, s?: GameState): boolean => unitClass(u) === 'Assassin' || unitKeywords(u, s).sneaky;
+/** @deprecated Before 0.7, "Sneaky": see isAssassin. */
+export const isSneaky = isAssassin;
+/** Whether it strikes in the bout's first strike: Swift units and Assassins. */
+export const isSwift = (u: Unit, s?: GameState): boolean => isAssassin(u, s) || unitKeywords(u, s).zoomies;
+
+/** The back of a side: Marksmen, Mages and Supports, hit after the front. */
+const BACK: readonly UnitClass[] = ['Marksman', 'Mage', 'Support'];
 
 /**
- * Where a unit stands in the enemy's order of attack: Guardians (3) are hit first, then plain units (2), then
- * Elusive ones (1), then Lures (0). Sneaky attackers go the other way round.
+ * Where a unit stands in the enemy's order of attack: Taunt (4) first, for every attacker; then Tanks (3); then
+ * Bruisers and Assassins (2); then the back (1). Assassins go for the back first, unless a unit taunts.
  */
 export function targetRank(u: Unit, s?: GameState): number {
-  const k = unitKeywords(u, s);
-  if (k.guardian) return 3;
-  if (k.lure) return 0;
-  if (k.elusive) return 1;
-  return 2;
+  if (isTaunt(u, s)) return 4;
+  const c = unitClass(u);
+  return c === 'Tank' ? 3 : BACK.includes(c) ? 1 : 2;
 }
 
 export const heroSide = (s: GameState, p: PlayerId) => {
@@ -611,8 +633,9 @@ function withChoice(action: { t: 'play'; uid: number }, c: PlayChoice): Action {
   };
 }
 
-/** Whether a unit is barred from attacking right now (Ovinnik unless you're Well-Fed). */
+/** Whether a unit is barred from attacking right now: a Support never attacks; some cards can't while a condition holds. */
 export function cantAttack(s: GameState, owner: PlayerId, u: Unit): boolean {
+  if (unitClass(u) === 'Support') return true;
   return abilitiesOf(u.id).some((a) => a.static?.cantAttack && (a.static.while === undefined || evaluateCondition(s, owner, a.static.while)));
 }
 
@@ -987,7 +1010,7 @@ function exec(s: GameState, step: Step): void {
     case 'reset': {
       for (const pl of s.players) {
         const all = [...pl.yard, ...(pl.fallen ?? [])].filter((u) => !CARDS[u.id]?.token);
-        for (const u of all) u.damage = 0;
+        for (const u of all) { u.damage = 0; delete u.stunned; }
         pl.yard = all;
         pl.fallen = [];
         sortYard(pl);
@@ -1203,10 +1226,14 @@ function autoTarget(s: GameState, p: PlayerId, ability: Ability, self?: Unit): T
   return { kind: 'unit', uid: u.uid };
 }
 
-/** The unit an attacker in `slot` hits among `enemies`: by rank first (Sneaky from the bottom), then across, then nearest. */
-function pickFrom(s: GameState, enemies: Unit[], slot: number, sneaky: boolean): Unit {
+/**
+ * The unit an attacker in `slot` hits among `enemies`: by rank first (an Assassin from the back, unless a unit
+ * taunts), then the one across, then the nearest, then the leftmost.
+ */
+function pickFrom(s: GameState, enemies: Unit[], slot: number, assassin: boolean): Unit {
   const ranks = enemies.map((u) => targetRank(u, s));
-  const want = sneaky ? Math.min(...ranks) : Math.max(...ranks);
+  const top = Math.max(...ranks);
+  const want = assassin && top < 4 ? Math.min(...ranks) : top;
   const pool = enemies.filter((_, i) => ranks[i] === want);
   return pool.reduce((best, u) => {
     const d = Math.abs(u.slot - slot), bd = Math.abs(best.slot - slot);
@@ -1217,7 +1244,7 @@ function pickFrom(s: GameState, enemies: Unit[], slot: number, sneaky: boolean):
 /** The enemy unit a unit of player p's attacks now, or undefined when none stands. */
 export function attackTarget(s: GameState, p: PlayerId, attacker: Unit): Unit | undefined {
   const enemies = s.players[other(p)].yard;
-  return enemies.length ? pickFrom(s, enemies, attacker.slot, isSneaky(attacker, s)) : undefined;
+  return enemies.length ? pickFrom(s, enemies, attacker.slot, isAssassin(attacker, s)) : undefined;
 }
 
 function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): void {
@@ -1329,7 +1356,8 @@ function strike(s: GameState, swift: boolean): void {
   const hits: { from: Unit; owner: PlayerId; to: Unit; power: number }[] = [];
   for (const owner of [s.yarn, other(s.yarn)]) {
     for (const u of s.players[owner].yard) {
-      if (u.exhausted || cantAttack(s, owner, u) || unitKeywords(u, s).zoomies !== swift) continue;
+      if (u.exhausted || cantAttack(s, owner, u) || isSwift(u, s) !== swift) continue;
+      if (u.stunned && s.clash && s.clash.bout <= u.stunned) continue;
       const to = attackTarget(s, owner, u);
       if (to) hits.push({ from: u, owner, to, power: unitPower(u, s) });
     }
@@ -1519,6 +1547,16 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
       for (const u of units) { u.exhausted = true; log(s, `${cardName(u.id)} is exhausted: it deals no damage this Clash.`, p); emit(s, { t: 'exhaust', uid: u.uid }); }
       return;
     case 'ready': for (const u of units) { u.exhausted = false; emit(s, { t: 'ready', uid: u.uid }); } return;
+    case 'stun': {
+      // Stunned: no damage up to this bout of the Clash (from the Muster, the Clash's first bouts).
+      const until = (s.clash?.bout ?? 0) + Number(value);
+      for (const u of units) {
+        u.stunned = Math.max(u.stunned ?? 0, until);
+        log(s, `${cardName(u.id)} is stunned: it deals no damage until the end of bout ${until}.`, p);
+        emit(s, { t: 'stun', uid: u.uid, until });
+      }
+      return;
+    }
     case 'readyTreats':
     case 'sprout':
       gain(s, p, value as number);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CARDS, DECKS, RARITIES, RULES, addProblem, apply, attackTarget, chooseAction, clockFor, createGame, builtInTwin, deckCardIds, deckChanges,
-  deckProblems, evaluateCondition, keywords, legalActions, mayAct, nextSeat, other, otherFamilies, randomAction, registerSet, unitHealth, unitPower,
+  deckProblems, evaluateCondition, keywords, unitClass, legalActions, mayAct, nextSeat, other, otherFamilies, randomAction, registerSet, unitHealth, unitPower,
   type Action, type DeckList, type GameState, type PlayerId, type Unit,
 } from '../src/index';
 
@@ -29,10 +29,11 @@ describe('card data', () => {
     }
   });
 
-  it('parses keywords from card text', () => {
-    expect(keywords('AL1-D07')).toMatchObject({ guardian: true, tough: 1 });
+  it('reads keywords and classes from the card data', () => {
+    expect(keywords('AL1-D07')).toMatchObject({ taunt: false, tough: 1 });
+    expect(keywords('AL1-D02')).toMatchObject({ taunt: true });
     expect(keywords('PR1-D12')).toMatchObject({ pounce: true });
-    expect(keywords('AL1-D03').guardian).toBe(false); // "If you control a Guardian" is not the keyword
+    expect([unitClass('AL1-D07'), unitClass('PR1-D03'), unitClass('DW1-D01')]).toEqual(['Tank', 'Assassin', 'Support']);
   });
 
   it('gives every card a rarity, and every Hero Cat is Rare or Legendary', () => {
@@ -63,51 +64,55 @@ describe('deckbuilding (rulebook 11.1)', () => {
   const withCards = (cards: Record<string, number>, hero = 'DW1-H01'): DeckList => ({ name: 'Test', hero, cards });
   const domowiki = () => withCards({ ...DECKS['domowiki'].cards });
 
-  // The Domowiki starter has 5 Hearth Crickets (tier 1: up to 6).
+  // The Domowiki starter has 5 Hearth Crickets (tier 1: up to 5).
   const crickets = (deck: DeckList, n: number) => { deck.cards['DW1-D16'] = n; return deck; };
 
   it('needs exactly 50 cards', () => {
     expect(deckProblems(crickets(domowiki(), 4))).toEqual(['Add 1 more card.']);
-    expect(deckProblems(crickets(domowiki(), 6))).toEqual(['Remove 1 card.']);
+    const more = domowiki();
+    more.cards['DW1-D02'] = 1;
+    expect(deckProblems(more)).toEqual(['Remove 1 card.']);
   });
 
-  it("allows one family besides the Hero Cat's", () => {
-    const deck = crickets(domowiki(), 3);
-    deck.cards['PR1-D01'] = 2;
-    expect(deckProblems(deck)).toEqual([]);
-    expect(addProblem(deck, 'AL1-D01')).toMatch(/already uses Pari/);
+  // The owner (2026-10-02): any card may go in any deck; whether a mix is good is the player's call.
+  it('mixes any families: no deck is held to its Hero\'s family', () => {
+    const deck = crickets(domowiki(), 2);
     deck.cards['PR1-D01'] = 1;
     deck.cards['AL1-D01'] = 1;
-    expect(deckProblems(deck)[0]).toMatch(/one other family/);
+    deck.cards['JR1-D06'] = 1;
+    expect(deckProblems(deck)).toEqual([]);
+    deck.cards['JR1-D06'] = 0;
+    expect(addProblem(deck, 'HH1-D05')).toBeNull();
   });
 
-  it('limits copies by tier (6 of a tier 1 card), 1 of each Fabled, 6 Fabled', () => {
-    const deck = crickets(domowiki(), 6);
-    expect(addProblem(deck, 'DW1-D16')).toMatch(/at most 6 copies/);
-    expect(addProblem(deck, 'DW1-D13')).toMatch(/one of a kind/);
-    deck.cards['DW1-D13'] = 2;
+  it('limits copies by tier (5, 4, 3, 2, 1), 1 of each Fabled, 6 Fabled', () => {
+    const deck = domowiki();
+    expect(addProblem(deck, 'DW1-D16', undefined, true)).toMatch(/at most 5 copies/);
+    expect(addProblem(deck, 'DW1-D07', undefined, true)).toMatch(/at most 3 copies/);
+    expect(addProblem(deck, 'DW1-D14', undefined, true)).toMatch(/one of a kind/);
     crickets(deck, 4);
-    expect(deckProblems(deck)).toEqual([expect.stringMatching(/one of a kind/)]);
+    deck.cards['DW1-D07'] = 4;
+    expect(deckProblems(deck)).toEqual([expect.stringMatching(/At most 3 copies/)]);
 
-    const cats = withCards({ 'DW1-D13': 1, 'DW1-D14': 1, 'DW1-D15': 1, 'PR1-D18': 1, 'PR1-D19': 1, 'PR1-D20': 1 });
-    expect(addProblem(cats, 'AL1-D13')).toMatch(/one other family/);
-    expect(addProblem(cats, 'PR1-D18')).toMatch(/one of a kind/);
-    cats.cards['PR1-D18'] = 0;
-    expect(addProblem(cats, 'PR1-D18')).toBeNull();
-    cats.cards['PR1-D18'] = 1;
-    expect(addProblem(cats, 'DW1-D13', undefined, true)).toMatch(/one of a kind/);
-    cats.cards['DW1-D13'] = 2;
+    const cats = withCards({ 'DW1-D14': 1, 'PR1-D19': 1, 'PR1-D20': 1, 'AL1-D14': 1, 'AL1-D15': 1, 'JR1-D19': 1 });
+    expect(addProblem(cats, 'JR1-D17')).toMatch(/at most 6 Fabled/);
+    expect(addProblem(cats, 'PR1-D19')).toMatch(/one of a kind/);
+    cats.cards['PR1-D19'] = 0;
+    expect(addProblem(cats, 'PR1-D19')).toBeNull();
+    cats.cards['PR1-D19'] = 1;
+    cats.cards['JR1-D17'] = 1;
     expect(deckProblems(cats)).toContainEqual(expect.stringMatching(/Too many Fabled \(7 of 6\)/));
   });
 
   it('checks the collection when given one', () => {
     const owned = (id: string) => (id === 'DW1-D07' ? 2 : 6);
     const deck = domowiki();
-    expect(deck.cards['DW1-D07']).toBe(2);
+    deck.cards['DW1-D07'] = 2;
+    deck.cards['DW1-D02'] = 1;
     expect(deckProblems(deck, owned)).toEqual([]);
-    expect(addProblem(deck, 'DW1-D07', owned)).toMatch(/only 2 copies/);
+    expect(addProblem(deck, 'DW1-D07', owned, true)).toMatch(/only 2 copies/);
     deck.cards['DW1-D07'] = 3;
-    crickets(deck, 4);
+    delete deck.cards['DW1-D02'];
     expect(deckProblems(deck, owned)).toEqual([expect.stringMatching(/only 2 copies/)]);
   });
 
@@ -296,12 +301,12 @@ describe('the economy', () => {
     expect(me.yard.find((u) => u.uid === uid)).toMatchObject({ slot: 2, exhausted: false });
   });
 
-  it('Sprout and "gain an Offering" add Offerings; Well-Fed counts what is saved', () => {
+  it('"gain Offerings" adds them; Well-Fed counts what is saved', () => {
     const s = toMuster();
     const me = s.players[0];
-    me.offerings = 6;
-    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D09') }, 0); // Bowl of Kasha: Sprout 2
-    expect(me.offerings).toBe(6 - CARDS['DW1-D09'].cost! + 2);
+    me.offerings = 5;
+    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D09') }, 0); // Bowl of Kasha: gain 3
+    expect(me.offerings).toBe(5 - CARDS['DW1-D09'].cost! + 3);
     expect(evaluateCondition(s, 0, 'Well-Fed')).toBe(false);
     apply(s, { t: 'ability' }, 0); // Dziadziuś: gain an Offering
     expect(me.offerings).toBe(7);
@@ -390,8 +395,8 @@ describe('the Muster', () => {
   it('a Fabled never merges: a second copy is not even legal', () => {
     const s = toMuster();
     s.players[0].offerings = 10;
-    put(s, 0, 'DW1-D13', 0);
-    const uid = give(s, 0, 'DW1-D13');
+    put(s, 0, 'DW1-D14', 0);
+    const uid = give(s, 0, 'DW1-D14');
     expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === uid)).toBe(false);
   });
 
@@ -442,11 +447,11 @@ describe('the Muster', () => {
     const first = clash(s);
     expect(first.some((e) => e.t === 'ambush')).toBe(false);
     expect(s.players[0].ambushes).toHaveLength(1);
-    const mine = put(s, 0, 'DW1-D18', 4);
+    const mine = put(s, 0, 'DW1-D16', 4);
     put(s, 1, 'DW1-D04', 4);
     const second = clash(s);
     expect(second.find((e) => e.t === 'ambush')).toMatchObject({ p: 0, lane: 4, cardId: 'DW1-D11' });
-    expect(hits(second, mine.uid)[0].dealt).toBe(CARDS['DW1-D18'].power! + 2);
+    expect(hits(second, mine.uid)[0].dealt).toBe(CARDS['DW1-D16'].power! + 2);
     expect(s.players[0].ambushes).toHaveLength(0);
   });
 
@@ -465,11 +470,11 @@ describe('the Muster', () => {
 
 describe('the Clash', () => {
   it('a unit hits the enemy across from it; the side left standing wins and the loser loses a Candle per survivor', () => {
-    const s = toMuster();
-    const mine = put(s, 0, 'DW1-D15', 0); // Bannik of the Bathhouse: Sneaky, Fierce, and nothing at Clash start
-    const theirs = put(s, 1, 'DW1-D18', 0);
+    const s = toMuster(['pari', 'domowiki']);
+    const mine = put(s, 0, 'PR1-D07', 0); // Markhor of the Mothers: a Fierce Bruiser, nothing at Clash start
+    const theirs = put(s, 1, 'DW1-D16', 0);
     const events = clash(s);
-    expect(hits(events, mine.uid)[0]).toMatchObject({ uid: theirs.uid, dealt: CARDS['DW1-D15'].power });
+    expect(hits(events, mine.uid)[0]).toMatchObject({ uid: theirs.uid, dealt: CARDS['PR1-D07'].power });
     expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ standing: [1, 0], lost: [0, 2] }); // Fierce: 2
     expect(s.players[1].lives).toBe(7);
   });
@@ -481,33 +486,66 @@ describe('the Clash', () => {
     expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ lost: [0, RULES.clashCandleCap] });
   });
 
-  it('Guardians are hit first, then plain units, then Elusive ones, Lures last', () => {
+  it('a unit with Taunt is hit first, then Tanks, then Bruisers and Assassins, then the back', () => {
     const s = toMuster();
-    const attacker = put(s, 0, 'DW1-D16', 5, { buffHealth: 50 }); // Hearth Cricket, made to last
-    const lure = put(s, 1, 'DW1-D02', 5, { buffHealth: 50 });
-    const elusive = put(s, 1, 'DW1-D07', 4, { buffHealth: 50 });
-    const plain = put(s, 1, 'DW1-D18', 3, { buffHealth: 50 });
-    const guardian = put(s, 1, 'DW1-D04', 0, { buffHealth: 50 });
+    const attacker = put(s, 0, 'DW1-D16', 5, { buffHealth: 50 }); // Hearth Cricket, a Bruiser, made to last
+    const back = put(s, 1, 'DW1-D07', 5, { buffHealth: 50 });     // Kikimora, a Mage
+    const bruiser = put(s, 1, 'DW1-D05', 4, { buffHealth: 50 });  // Ovinnik
+    const tank = put(s, 1, 'AL1-D07', 3, { buffHealth: 50 });     // Alux of the Old Stones: a Tank, no Taunt
+    const taunt = put(s, 1, 'DW1-D04', 0, { buffHealth: 50 });    // Keeper of the Door: a Tank with Taunt
     const order = () => attackTarget(s, 0, attacker)?.uid;
-    expect(order()).toBe(guardian.uid);
-    s.players[1].yard = s.players[1].yard.filter((u) => u !== guardian);
-    expect(order()).toBe(plain.uid);
-    s.players[1].yard = s.players[1].yard.filter((u) => u !== plain);
-    expect(order()).toBe(elusive.uid);
-    s.players[1].yard = s.players[1].yard.filter((u) => u !== elusive);
-    expect(order()).toBe(lure.uid);
+    expect(order()).toBe(taunt.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== taunt);
+    expect(order()).toBe(tank.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== tank);
+    expect(order()).toBe(bruiser.uid);
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== bruiser);
+    expect(order()).toBe(back.uid);
   });
 
-  it('Sneaky units go the other way: Lures first, Guardians last', () => {
+  it('an Assassin goes for the back first, unless a unit taunts', () => {
+    const s = toMuster();
+    const bannik = put(s, 0, 'DW1-D15', 0); // Bannik of the Bathhouse, an Assassin
+    put(s, 1, 'AL1-D07', 0);                // a Tank without Taunt, across from it
+    put(s, 1, 'DW1-D16', 1);                // a Bruiser
+    const mage = put(s, 1, 'DW1-D07', 2);
+    const support = put(s, 1, 'DW1-D01', 3);
+    expect(attackTarget(s, 0, bannik)?.uid).toBe(mage.uid);  // the back, the nearest of it
+    s.players[1].yard = s.players[1].yard.filter((u) => u !== mage);
+    expect(attackTarget(s, 0, bannik)?.uid).toBe(support.uid);
+    const taunt = put(s, 1, 'DW1-D04', 5);
+    expect(attackTarget(s, 0, bannik)?.uid).toBe(taunt.uid);
+  });
+
+  it('an Assassin strikes with the Swift units, first in the bout', () => {
     const s = toMuster();
     const bannik = put(s, 0, 'DW1-D15', 0);
-    put(s, 1, 'DW1-D04', 0);
-    put(s, 1, 'DW1-D18', 1);
-    const elusive = put(s, 1, 'DW1-D07', 2);
-    const lure = put(s, 1, 'DW1-D02', 3);
-    expect(attackTarget(s, 0, bannik)?.uid).toBe(lure.uid);
-    s.players[1].yard = s.players[1].yard.filter((u) => u !== lure);
-    expect(attackTarget(s, 0, bannik)?.uid).toBe(elusive.uid);
+    const foe = put(s, 1, 'DW1-D16', 0);
+    const events = clash(s);
+    expect(hits(events, bannik.uid)[0]).toMatchObject({ uid: foe.uid, swift: true });
+    expect(hits(events, foe.uid)).toHaveLength(0); // it went down before it could strike
+  });
+
+  it('a Support never attacks: it stands at the back and helps', () => {
+    const s = toMuster();
+    const stove = put(s, 0, 'DW1-D01', 1); // Stove Keeper: each bout, heal 1 to the units next to it
+    const snake = put(s, 0, 'DW1-D17', 0);
+    put(s, 1, 'DW1-D16', 0, { buffHealth: 20 });
+    const events = clash(s);
+    expect(hits(events, stove.uid)).toHaveLength(0);
+    expect(events.some((e) => e.t === 'heal' && e.uid === snake.uid && e.src?.uid === stove.uid)).toBe(true);
+  });
+
+  it('a stunned unit deals no damage in the bouts its stun says (Knotted Mane: the first two)', () => {
+    const s = toMuster();
+    s.players[0].offerings = 10;
+    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D20'), target: { kind: 'lane', player: 1, lane: 0 } }, 0);
+    const foe = put(s, 1, 'DW1-D16', 0, { buffHealth: 30 });
+    put(s, 0, 'DW1-D17', 0, { buffHealth: 30 });
+    const events = clash(s);
+    const bouts = events.filter((e) => e.t === 'bout' || (e.t === 'hit' && e.from.kind === 'unit' && e.from.uid === foe.uid)).map((e) => e.t);
+    expect(bouts.slice(0, 4)).toEqual(['bout', 'bout', 'bout', 'hit']); // no hit in bouts 1 and 2; one in bout 3
+    expect(foe.stunned).toBeUndefined();                                  // gone when the Clash ends
   });
 
   it('among equals: the unit across first, then the nearest, then the leftmost', () => {
@@ -525,7 +563,7 @@ describe('the Clash', () => {
   it('Swift units strike first: a unit that goes down to them hits nothing', () => {
     const s = toMuster();
     const swift = put(s, 0, 'DW1-D03', 0); // Mane-Braiding Domowik 2/2, Swift
-    const slow = put(s, 1, 'DW1-D16', 0); // Hearth Cricket 2/1
+    const slow = put(s, 1, 'PR1-D02', 0); // Orange-Peri, 3/2: the Swift unit's 3 is enough
     const events = clash(s);
     expect(hits(events, swift.uid)).toHaveLength(1);
     expect(hits(events, slow.uid)).toHaveLength(0);
@@ -573,14 +611,19 @@ describe('the Clash', () => {
     expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ lost: [0, RULES.clashCandleCap] });
   });
 
-  it('Ovinnik gets +2 Power while you are Well-Fed', () => {
+  it("every second bout: Kikimora's spell happens in bouts 2, 4, 6 and 8", () => {
     const s = toMuster();
-    const ovinnik = put(s, 0, 'DW1-D05', 0);
-    put(s, 1, 'DW1-D04', 0);
-    s.players[0].offerings = 0;
-    expect(hits(clash(s), ovinnik.uid)[0].dealt).toBe(CARDS['DW1-D05'].power);
-    s.players[0].offerings = 7;
-    expect(hits(clash(s), ovinnik.uid)[0].dealt).toBe(CARDS['DW1-D05'].power! + 2);
+    const kiki = put(s, 0, 'DW1-D07', 0, { buffHealth: 60 });
+    put(s, 0, 'DW1-D17', 1, { buffHealth: 60 });
+    put(s, 1, 'DW1-D17', 0, { buffHealth: 60 });
+    const events = clash(s);
+    let bout = 0;
+    const spells: number[] = [];
+    for (const e of events) {
+      if (e.t === 'bout') bout = e.n;
+      if (e.t === 'buff' && e.src?.uid === kiki.uid) spells.push(bout);
+    }
+    expect(spells).toEqual([2, 4, 6, 8]);
   });
 
   it('Rain-Fed units grow +1/+1 each round, up to +3/+3, and keep it', () => {
@@ -592,15 +635,13 @@ describe('the Clash', () => {
     expect([unitPower(clay), unitHealth(clay)]).toEqual([CARDS['AL1-D04'].power! + 3, CARDS['AL1-D04'].health! + 3]);
   });
 
-  it('Company: at Clash start Súči of the Hunt deals 1 to the enemy across, 3 when you control 3 units', () => {
-    for (const [company, dealt] of [[false, 1], [true, 3]] as const) {
-      const s = toMuster(['pari', 'domowiki'], 3);
-      if (company) { put(s, 0, 'PR1-D09', 0); put(s, 0, 'PR1-D09', 1); }
-      const foe = put(s, 1, 'DW1-D04', 4);
-      put(s, 0, 'PR1-D06', 4);
-      const events = clash(s);
-      expect(events.find((e) => e.t === 'damage')).toMatchObject({ uid: foe.uid, amount: dealt });
-    }
+  it('Clash start: Súči of the Hunt deals 2 to the enemy across, before the first bout', () => {
+    const s = toMuster(['pari', 'domowiki'], 3);
+    const foe = put(s, 1, 'DW1-D04', 4);
+    put(s, 0, 'PR1-D06', 4);
+    const events = clash(s);
+    expect(events.findIndex((e) => e.t === 'damage')).toBeLessThan(events.findIndex((e) => e.t === 'bout'));
+    expect(events.find((e) => e.t === 'damage')).toMatchObject({ uid: foe.uid, amount: 2 });
   });
 });
 
@@ -619,7 +660,7 @@ describe('events', () => {
 
   it('a Clash shows the board at its start, at each bout and at its end, and says where each effect came from', () => {
     const s = toMuster(['pari', 'domowiki']);
-    const dvorovoi = put(s, 1, 'DW1-D08', 0);   // Clash start: 2 damage to the enemy across and the ones next to it
+    const dvorovoi = put(s, 1, 'PR1-D06', 0);   // Súči of the Hunt: Clash start, 2 damage to the enemy across
     const swift = put(s, 1, 'DW1-D03', 1);      // Swift
     const dove = put(s, 0, 'PR1-D01', 0);       // Goodbye: a Dove
     const events = clash(s);
@@ -629,9 +670,9 @@ describe('events', () => {
     expect(events[at('bout') + 1].t).toBe('board');
     expect(events[at('clashEnd') - 1].t).toBe('board');
     expect(boards).toHaveLength(events.filter((e) => e.t === 'bout').length + 2);
-    expect(boards[0].units.find((u) => u.uid === dvorovoi.uid)).toMatchObject({ p: 1, slot: 0, id: 'DW1-D08', damage: 0, power: unitPower(dvorovoi, s) });
+    expect(boards[0].units.find((u) => u.uid === dvorovoi.uid)).toMatchObject({ p: 1, slot: 0, id: 'PR1-D06', damage: 0, power: unitPower(dvorovoi, s) });
     expect(boards.at(-1)!.units.find((u) => u.uid === dove.uid)).toMatchObject({ down: true });
-    expect(events.find((e) => e.t === 'damage' && e.uid === dove.uid)).toMatchObject({ src: { p: 1, id: 'DW1-D08', uid: dvorovoi.uid } });
+    expect(events.find((e) => e.t === 'damage' && e.uid === dove.uid)).toMatchObject({ src: { p: 1, id: 'PR1-D06', uid: dvorovoi.uid } });
     expect(events.filter((e) => e.t === 'hit' && e.from.kind === 'unit' && e.from.uid === swift.uid).every((e) => e.t === 'hit' && e.swift)).toBe(true);
     // The fallen Pari still holds its lane until the Clash ends: the Dove comes down in the next one.
     expect(events.find((e) => e.t === 'summon')).toMatchObject({ cardId: 'PR1-K01', slot: 1, src: { p: 0, id: 'PR1-D01', uid: dove.uid } });
@@ -729,9 +770,17 @@ describe('full games', () => {
   });
 });
 
-// Last, since it adds a set to the catalog the tests above share.
-describe('neutral families', () => {
-  it('go in any deck, and are not its one other family', () => {
+// Last, since they add sets to the catalog the tests above share.
+describe('sets added later', () => {
+  it('a card made before 0.7 has no class: its keywords stand in (Guardian a Tank, Sneaky an Assassin)', () => {
+    registerSet({ set: 'OLD', name: 'Old', cards: [
+      { id: 'OLD-1', type: 'Critter', rarity: 'Common', family: 'Old', name: 'Old Guard', cost: 1, power: 1, health: 1, keywords: ['Guardian'], text: 'Guardian.' },
+      { id: 'OLD-2', type: 'Critter', rarity: 'Common', family: 'Old', name: 'Old Sneak', cost: 1, power: 1, health: 1, keywords: ['Sneaky'], text: 'Sneaky.' },
+    ] });
+    expect([unitClass('OLD-1'), unitClass('OLD-2')]).toEqual(['Tank', 'Assassin']);
+  });
+
+  it('a neutral family goes in any deck, and the deck builder lists the others', () => {
     registerSet({
       set: 'TST', name: 'Test', families: { Hedge: { neutral: true } },
       cards: [{ id: 'TST-N01', type: 'Critter', rarity: 'Common', family: 'Hedge', name: 'Hedge Sprite', cost: 1, power: 1, health: 1, text: '' }],
@@ -743,6 +792,6 @@ describe('neutral families', () => {
     expect(deckProblems(deck)).toEqual([]);
     expect(otherFamilies(deck)).toEqual(['Pari']);
     expect(addProblem(deck, 'TST-N01', undefined, true)).toBeNull();
-    expect(addProblem(deck, 'AL1-D01', undefined, true)).toMatch(/already uses Pari/);
+    expect(addProblem(deck, 'AL1-D01', undefined, true)).toBeNull();
   });
 });

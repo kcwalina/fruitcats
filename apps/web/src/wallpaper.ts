@@ -33,7 +33,7 @@ const STAT_ICONS = { paw: 'stat-power', heart: 'stat-heart' } as const;
 const HEART_COLOR = '#D9486C';
 
 /** Keywords printed bold: the core ones and every loaded set's mechanics (Well-Fed, Rain-Fed, …). */
-const keywordPattern = () => new RegExp(`\\b(Swift|Zoomies|Guardian|Sneaky|Fierce|Tough \\d+|Lucky|Ambush|Pounce|${Object.keys(MECHANICS).map((m) => `${m}(?: \\d+)?`).join('|')})\\b`, 'g');
+const keywordPattern = () => new RegExp(`\\b(Swift|Zoomies|Taunt|Tank|Bruiser|Assassin|Marksman|Mage|Support|Guardian|Sneaky|Fierce|Tough \\d+|Lucky|Ambush|Pounce|${Object.keys(MECHANICS).map((m) => `${m}(?: \\d+)?`).join('|')})\\b`, 'g');
 const LABEL = /(?:^|(?<=\n)|(?<=\. ))([A-Z][A-Za-z ,0-9]*?:)/g;
 
 type Style = 'regular' | 'bold' | 'italic';

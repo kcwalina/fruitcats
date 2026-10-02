@@ -12,7 +12,7 @@ export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiC
 export type { TraitOn } from './engine';
 export {
   createGame, apply, applyTrusted, legalActions, mayAct, nextSeat, clockFor, playOptions, playChoices, ambushChoices, targetsFor, musterTargets,
-  findUnit, laneUnit, freeLanes, isOpenLane, openFreeLanes, unitCount, mergeTwin, starsFor, traitsOf, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky,
+  findUnit, laneUnit, freeLanes, isOpenLane, openFreeLanes, unitCount, mergeTwin, starsFor, traitsOf, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky, isTaunt, isAssassin, isSwift, unitClass,
   heroSide, heroAbility, levelCost, interestOn, baseIncome, streakBonus, sellValue, rollCost, other, cardName, describeTarget, random, IllegalAction, evaluateCondition, cantAttack,
   RULES_VERSION, LIVES, DECK_SIZE, LANES, YARD_LIMIT, TRIGGER_CHAIN_LIMIT,
 } from './engine';

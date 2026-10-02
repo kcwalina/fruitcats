@@ -6,9 +6,9 @@
 // can't peek at the next shop, Ambushes or the opponent's new units. What a roll would deal is a guess from its own
 // shuffled deck, as a player's would be.
 
-import { BLANK_CARD, CARDS, PLUGINS, abilityAt, isUnitCard, usesCondition } from './cards';
+import { BLANK_CARD, CARDS, PLUGINS, abilitiesOf, abilityAt, isUnitCard, usesCondition } from './cards';
 import {
-  applyTrusted, heroSide, interestOn, isGuardian, legalActions, nextSeat, other, playOptions,
+  applyTrusted, heroSide, interestOn, isAssassin, isSwift, isTaunt, legalActions, nextSeat, other, playOptions,
   targetRank, traitsOf, unitCount, unitHealth, unitKeywords, unitPower, cantAttack,
 } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
@@ -27,6 +27,8 @@ const W = {
   guardian: 0.8, fierce: 1.2, sneaky: 0.8, grown: 6, star: 1.5, clash: 8,
   /** A copy merged in on the way to the next star; a trait's tier that is on (and a unit towards the next one). */
   copy: 1.4, trait: 2.5, traitStep: 0.6,
+  /** Per tier, for a unit with an ability (its effect isn't in the forecast). */
+  ability: 1.2,
   /** An Offering kept beyond the most interest pays. */
   spare: 0.15,
 };
@@ -46,7 +48,7 @@ function fighters(s: GameState): Fighter[] {
       const k = unitKeywords(u, s);
       out.push({
         owner, slot: u.slot, power: unitPower(u, s), hp: unitHealth(u, s) - u.damage, tough: k.tough, rank: targetRank(u, s),
-        sneaky: k.sneaky, swift: k.zoomies, active: !u.exhausted && !cantAttack(s, owner, u), fierce: k.fierce,
+        sneaky: isAssassin(u, s), swift: isSwift(u, s), active: !u.exhausted && !cantAttack(s, owner, u), fierce: k.fierce,
       });
     }
   }
@@ -55,7 +57,9 @@ function fighters(s: GameState): Fighter[] {
 
 function pick(enemies: Fighter[], slot: number, sneaky: boolean): Fighter | undefined {
   if (!enemies.length) return undefined;
-  const want = sneaky ? Math.min(...enemies.map((e) => e.rank)) : Math.max(...enemies.map((e) => e.rank));
+  // An Assassin goes for the back, unless a unit taunts (rank 4): as the engine's pickFrom.
+  const top = Math.max(...enemies.map((e) => e.rank));
+  const want = sneaky && top < 4 ? Math.min(...enemies.map((e) => e.rank)) : top;
   return enemies.filter((e) => e.rank === want).reduce((best, e) => {
     const d = Math.abs(e.slot - slot), bd = Math.abs(best.slot - slot);
     return d < bd || (d === bd && e.slot < best.slot) ? e : best;
@@ -129,9 +133,12 @@ function unitValue(s: GameState, u: Unit): number {
   const k = unitKeywords(u, s, false);
   const temp = u.buffPower;
   let v = (unitPower(u, s) - temp) * W.power + (unitHealth(u, s) - (u.buffHealth ?? 0)) * W.health;
-  if (isGuardian(u, s)) v += W.guardian;
+  if (isTaunt(u, s)) v += W.guardian;
   if (k.fierce) v += W.fierce;
-  if (k.sneaky) v += W.sneaky;
+  if (isAssassin(u, s)) v += W.sneaky;
+  // What its ability does in the fight isn't in the forecast: a unit with one is worth about its tier more (a Support,
+  // which never attacks, is all ability).
+  if (abilitiesOf(u.id).length) v += W.ability * (CARDS[u.id]?.cost ?? 1);
   if (u.stars) v += (u.stars - 1) * W.star;
   if (u.copies) v += (u.copies - 1) * W.copy;
   return v;

@@ -67,9 +67,9 @@ const STEPS: Balloon[] = [
     doneWhen: (a) => a.t === 'play',
   },
   {
-    id: 'lanes', title: 'Lanes and roles', anchor: '.yard.me', below: true, when: (s) => mustering(s) && s.players[ME].yard.length > 0,
-    text: 'In the Clash each unit hits the enemy <b>across from it</b> first, then the nearest. But roles come first: '
-      + '<b>Guardians</b> are hit before anyone else, <b>Elusive</b> units late, <b>Lures</b> last, and <b>Sneaky</b> units go the other way round.',
+    id: 'lanes', title: 'Lanes and classes', anchor: '.yard.me', below: true, when: (s) => mustering(s) && s.players[ME].yard.length > 0,
+    text: 'In the Clash each unit hits the enemy <b>across from it</b> first, then the nearest. But the classes come first (the icon in a card’s corner): '
+      + '🛡 <b>Tanks</b> are hit before anyone else, then 👊 Bruisers, and the back (🏹 Marksmen, ✨ Mages, 💠 Supports) last. A unit with <b>Taunt</b> is hit first of all.',
   },
   {
     id: 'ready', title: 'Ready!', anchor: '[data-click="btn:ready"]', when: mustering,
@@ -121,14 +121,14 @@ const TIPS: Balloon[] = [
   {
     id: 'traits', title: 'A trait is on', anchor: '.player.me .traits',
     when: (s) => mustering(s) && traitsOf(s, ME).some((t) => t.tier >= 0),
-    text: 'Two different units of one family (or two of one role, like Guardian) turn on a <b>trait</b>: a bonus for your team. '
-      + 'Its chip lights up, and its number says how many more the next bonus needs. Tap a chip to read it.',
+    text: 'Two different units of one family turn on its <b>trait</b>: a bonus for your team, stronger at 4 and 6. '
+      + 'It lights up, and its number says how many more the next bonus needs. Tap it to read it.',
   },
   {
-    id: 'roles', title: 'Their roles', anchor: '.yard.foe',
+    id: 'roles', title: 'Their classes', anchor: '.yard.foe',
     when: (s) => mustering(s) && s.players[FOE].yard.some((u) => targetRank(u, s) !== 2),
-    text: 'Look at their units’ roles: your units must get through their <b>Guardians</b> first, and their <b>Elusive</b> units come late. '
-      + 'A <b>Sneaky</b> unit of yours goes straight for their <b>Lures</b> and carries.',
+    text: 'Look at their units’ classes: your units must get through their 🛡 <b>Tanks</b> first, and their back comes last. '
+      + 'A 🗡 <b>Assassin</b> of yours goes straight for their back, unless one of theirs has <b>Taunt</b>.',
   },
   {
     id: 'grown', title: 'Awakened!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,

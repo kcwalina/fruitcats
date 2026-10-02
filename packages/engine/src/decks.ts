@@ -6,14 +6,14 @@ import { DECK_SIZE, cardName } from './engine';
 
 export const DECK_RULES = {
   size: DECK_SIZE,
-  /** Copies of any one card, except Cats, by its tier (1 to 5): more of the cheap ones, so they can reach 3★. */
-  copiesByTier: [6, 6, 4, 3, 1],
+  /** Copies of any one card, except Cats, by its tier (1 to 5): a core deck's shape (docs/folkborn-0.7-design.md §4). */
+  copiesByTier: [5, 4, 3, 2, 1],
   /** Copies of each Cat: they are one of a kind. */
   catCopies: 1,
   maxCats: 6,
 } as const;
 
-/** The families any deck may use besides its own and its one other: a set marks them `neutral`. */
+/** Families a set marks `neutral` (Wildfolk): they belong to no family's synergy. */
 export function neutralFamilies(): string[] {
   return Object.keys(FAMILIES).filter(isNeutralFamily);
 }
@@ -31,7 +31,10 @@ export function catCount(deck: DeckList): number {
   return Object.entries(deck.cards).reduce((n, [id, qty]) => n + (CARDS[id]?.type === 'Cat' ? qty : 0), 0);
 }
 
-/** The families in the deck besides its Hero Cat's own (neutral ones don't count). A legal deck has at most one. */
+/**
+ * The families in the deck besides its Hero Cat's own (neutral ones don't count). Since 0.7 any mix is legal (the
+ * owner: every card may go in any deck); the deck builder shows them.
+ */
 export function otherFamilies(deck: DeckList): string[] {
   const heroFamily = CARDS[deck.hero]?.family;
   const families = new Set<string>();
@@ -58,10 +61,6 @@ export function deckProblems(deck: DeckList, owned?: (id: string) => number): st
   if (size < DECK_RULES.size) problems.push(`Add ${DECK_RULES.size - size} more ${DECK_RULES.size - size === 1 ? 'card' : 'cards'}.`);
   if (size > DECK_RULES.size) problems.push(`Remove ${size - DECK_RULES.size} ${size - DECK_RULES.size === 1 ? 'card' : 'cards'}.`);
 
-  const others = otherFamilies(deck);
-  if (others.length > 1 && hero) {
-    problems.push(`Besides ${hero.family}, a deck can use one other family, not ${others.length} (${others.join(', ')}).`);
-  }
   const cats = catCount(deck);
   if (cats > DECK_RULES.maxCats) problems.push(`Too many Fabled (${cats} of ${DECK_RULES.maxCats}).`);
 
@@ -90,10 +89,6 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   const name = cardName(id);
   if (card.type === 'Hero Cat') return `${name} is a Hero: Heroes lead a deck, they don't go in it.`;
   if (card.token) return `${name} comes into play from another card: it can't be put in a deck.`;
-  if (card.family !== hero.family && !isNeutralFamily(card.family)) {
-    const other = otherFamilies(deck).find((f) => f !== card.family);
-    if (other) return `Your deck already uses ${other}. Besides ${cardName(deck.hero)}'s ${hero.family}, a deck can have one other family.`;
-  }
   const have = deck.cards[id] ?? 0;
   if (have >= copyLimit(id)) {
     return card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `A deck can have at most ${copies(copyLimit(id))} of ${name}.`;

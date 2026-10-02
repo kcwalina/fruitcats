@@ -49,27 +49,34 @@ attacker lunges at its target, the damage rises from the card it hit, and a unit
 the middle says what is happening; **Pause**, **Step** through it, or **Skip to the end**.
 
 When it is over, the space of your shop shows **who dealt and took what**, who fell in which bout, and a tip or two on
-what decided the fight (no Guardian? their Sneaky unit went for your carry?). **Watch again** if you missed it, then
+what decided the fight (no Tank? their Assassin went for your back?). **Watch again** if you missed it, then
 **Next round**.
 
-- Each unit hits the enemy **across** from it first, then the nearest. But roles come first: **Guardians** are hit
-  first, **Elusive** units late, **Lures** last, and **Sneaky** units go the other way round.
+- Every unit has a **class**, the icon in its corner: 🛡 **Tank** and 👊 **Bruiser** fight at the front, 🏹
+  **Marksman**, ✨ **Mage** and 💠 **Support** at the back (a Support never attacks: it helps the units next to it), and
+  🗡 **Assassin** strikes first and goes for the back.
+- Each unit hits the enemy **across** from it first, then the nearest. But the front comes first: **Tanks** are hit
+  before anyone else (a unit with **Taunt** first of all), the back last. Assassins go the other way, unless a unit
+  taunts.
+- Under a unit's name, a short line says what it does: "⟳ heal 1 · sides" is each bout, heal 1 to the units next to
+  it; "⚡ 2 dmg · across" is 2 damage to the enemy across when the fight begins. Tap the unit for the whole card.
 - When one side has nobody standing, it **loses a Candle** for each enemy unit still standing (at most 2).
 - After the Clash every unit **stands up again**. Nothing on your board is lost: your army grows round after round.
 
 ## A few more things
 
 - Buy **more copies** of a creature you have on the board and they **merge** into it, even when your lanes are full.
-  The dots on a unit count its copies: **3 copies make 2 stars**, twice as strong; **6 make 3 stars**.
-- **Traits** are team bonuses: two or more different units of one family (or of one role, like Guardian) on your
-  board turn one on. The chips under your plaque show them; a lit chip is on, and its number says how many you have
-  and how many the next bonus needs. Tap one to read it.
+  The dots on a unit count its copies: **3 copies make 2 stars**, twice as strong; **5 make 3 stars**.
+- **Traits** are your families' team bonuses: two, four or six different units of one family on your board turn one
+  on. The column beside your lanes shows them, lit when on; tap one to read it. A shop card shows what buying it would
+  bring ("🏠 3/4").
+- **Mix families** as you like when you build a deck: any card goes in any deck.
 - Some units do things **in the fight**: at **Clash start**, **each bout**, **every second bout**, or when they **go
   down** (Goodbye).
 - **Your Hero** never leaves the table. Tap **Use ability** once a round. Later it **Awakens**: stronger, and it
   strikes when the Clash begins.
 - **Stuck?** Tap **Rules** during a game for a short reminder.
-- The words in **bold** on cards (Swift, Guardian, Sneaky, Elusive, Lure and others) are explained in
+- The words in **bold** on cards (the classes, Taunt, Swift and others) are explained in
   [Keywords](rulebook.md#10-keywords).
 
 ## Put the game on your home screen

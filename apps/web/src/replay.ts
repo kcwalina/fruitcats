@@ -2,7 +2,7 @@
 // at the end, every hit and every effect with where it came from), and this turns them into what the screen shows,
 // one beat at a time, then a summary of who did what. Cards move and numbers fly; nothing else is drawn.
 
-import { CARDS, TERMS, cardName, other, type BoardUnit, type EffectSource, type GameEvent, type PlayerId } from '@fruitcats/engine';
+import { CARDS, TERMS, cardName, other, unitClass, type BoardUnit, type EffectSource, type GameEvent, type PlayerId } from '@fruitcats/engine';
 
 /** One change a beat makes to the board. */
 export type Change =
@@ -212,10 +212,9 @@ export function summarize(r: Replay, me: PlayerId): Summary {
   return { units, heroes, hints: hints(r, me, units, targets) };
 }
 
-const role = (id: string): string => {
-  const k = CARDS[id]?.keywords ?? [];
-  return k.includes('Guardian') ? 'Guardian' : k.includes('Lure') ? 'Lure' : k.includes('Elusive') ? 'Elusive' : '';
-};
+/** The front: a unit with Taunt, or a Tank. */
+const front = (id: string): boolean => unitClass(id) === 'Tank' || (CARDS[id]?.keywords ?? []).some((k) => k === 'Taunt' || k === 'Guardian');
+const BACK = ['Marksman', 'Mage', 'Support'];
 
 /** Two or three sentences a player can act on: what broke, and who did the most. */
 function hints(r: Replay, me: PlayerId, units: UnitLine[], targets: Map<number, Set<number>>): string[] {
@@ -226,16 +225,16 @@ function hints(r: Replay, me: PlayerId, units: UnitLine[], targets: Map<number, 
   const best = (list: UnitLine[]) => [...list].sort((a, b) => b.dealt - a.dealt)[0];
   const theirBest = best(theirs), myBest = best(mine);
   if (!mine.length) out.push('You had no units on the board: an empty side loses the Clash at once.');
-  // The front line: Guardians are hit first; when they fall early, the rest of the side follows.
-  const guards = mine.filter((u) => role(u.id) === 'Guardian');
-  if (mine.length && !guards.length && theirs.length) out.push('You had no Guardian to take their first hits: Guardians are hit before everyone else.');
+  // The front line: Tanks are hit first; when they fall early, the rest of the side follows.
+  const guards = mine.filter((u) => front(u.id));
+  if (mine.length && !guards.length && theirs.length) out.push('You had no Tank to take their first hits: Tanks are hit before everyone else.');
   else if (guards.length && guards.every((u) => u.fell !== null && u.fell <= 1) && !won)
-    out.push(`Your ${guards.length > 1 ? 'Guardians' : 'Guardian'} went down in the first bout: a sturdier one, or more of them, would hold longer.`);
-  // Sneaky units go for the back first (with no Guardian, everything is the back: said above).
-  for (const u of guards.length ? theirs : []) {
-    if (!(CARDS[u.id]?.keywords ?? []).includes('Sneaky')) continue;
-    const hit = [...(targets.get(u.uid) ?? [])].map((uid) => units.find((x) => x.uid === uid)).find((x) => x && x.p === me && role(x.id) !== 'Guardian');
-    if (hit) { out.push(`Their Sneaky ${cardName(u.id)} went straight past your front for your ${cardName(hit.id)}. A Lure draws Sneaky units first.`); break; }
+    out.push(`Your ${guards.length > 1 ? 'Tanks' : 'Tank'} went down in the first bout: a sturdier one, or more of them, would hold longer.`);
+  // Assassins go for the back first, unless a unit taunts.
+  for (const u of theirs) {
+    if (unitClass(u.id) !== 'Assassin') continue;
+    const hit = [...(targets.get(u.uid) ?? [])].map((uid) => units.find((x) => x.uid === uid)).find((x) => x && x.p === me && BACK.includes(unitClass(x.id)));
+    if (hit) { out.push(`Their Assassin ${cardName(u.id)} went straight past your front for your ${cardName(hit.id)}. A unit with Taunt draws Assassins first.`); break; }
   }
   const idle = mine.filter((u) => u.exhausted && !u.dealt);
   if (idle.length) out.push(`${idle.map((u) => cardName(u.id)).join(', ')} ${idle.length > 1 ? 'were' : 'was'} exhausted and dealt no damage.`);

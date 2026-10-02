@@ -163,6 +163,7 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
     }
     case 'freeRoll': return n === 1 ? 'get a free roll' : `get ${count(n)} free rolls`;
     case 'exhaust': return `exhaust ${on}`;
+    case 'stun': return `${on} deals no damage in ${n === 1 ? 'the first bout' : `the first ${count(n)} bouts`}`;
     case 'ready': return a.when === 'hello' && a.target === 'self' ? 'enters ready' : `ready ${on}`;
     case 'readyTreats': return n === 1 ? `gain an ${TERMS.offering}` : `gain ${count(n)} ${TERMS.offerings}`;
     case 'sprout': return `Sprout ${n}`;
@@ -280,7 +281,8 @@ function faceText(keywords: string[] | undefined, abilities: Ability[] | undefin
 
 /** A card's rules text (for a Hero Cat, use heroTexts). */
 export function suggestText(card: CardDef): string {
-  return faceText(card.keywords, card.abilities, card);
+  // A unit's class comes first, as a keyword does: "Tank. Taunt."
+  return faceText(card.class ? [card.class, ...(card.keywords ?? [])] : card.keywords, card.abilities, card);
 }
 
 /** A Hero Cat's two faces' texts. */

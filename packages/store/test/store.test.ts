@@ -50,7 +50,8 @@ describe('catalog', () => {
       else expect(single?.price, c.id).toBe(CARDS[c.id].signature ? SIGNATURE_PRICE : CARD_PRICES[c.rarity ?? 'Common']);
     }
     const singles = (set: string) => Object.values(catalog.products).filter((p) => p.kind === 'card' && p.set === set).map((p) => p.id);
-    expect(singles('JR1')).toEqual([]);
+    // The two Fabled outside the core deck (0.7) are sold on their own.
+    expect(singles('JR1')).toEqual(['card:JR1-D17', 'card:JR1-D18']);
     expect(singles('MB1')).toEqual(['card:MB1-H01', 'card:MB1-D01', 'card:MB1-D02', 'card:MB1-D03']);
   });
 
@@ -226,10 +227,10 @@ describe('a deck from a code, with cards you don’t have', () => {
   });
 
   it('lists apart what a Store deck can’t bring: more copies than it holds', () => {
-    const deck = { name: 'x', hero: 'JR1-H01', cards: { 'JR1-D17': 1, 'JR1-D11': 3 } };   // the Jiaoren deck holds 2 of JR1-D11
+    const deck = { name: 'x', hero: 'JR1-H01', cards: { 'JR1-D17': 1, 'JR1-D13': 3 } };   // the Jiaoren deck holds 1 of JR1-D13
     const { lines, unavailable } = cartForDeck(deck, catalog, starterOnly);
-    expect(lines).toEqual([{ product: deckProduct('jiaoren'), qty: 1 }]);
-    expect(unavailable).toEqual([{ card: 'JR1-D11', qty: 1, why: 'in-deck' }]);
+    expect(lines).toEqual([{ product: deckProduct('jiaoren'), qty: 1 }, { product: cardProduct('JR1-D17'), qty: 1 }]);
+    expect(unavailable).toEqual([{ card: 'JR1-D13', qty: 2, why: 'in-deck' }]);
   });
 
   it('lists cards the Store doesn’t sell apart', () => {

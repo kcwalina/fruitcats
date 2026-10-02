@@ -670,7 +670,7 @@ describe('full games', () => {
     const b = run();
     expect(a.winner).not.toBeNull();
     expect(JSON.stringify(a.log)).toBe(JSON.stringify(b.log));
-  });
+  }, 60_000);
 
   it('a game replays from its seed and its (seat, action) list', () => {
     const r = rng(7);

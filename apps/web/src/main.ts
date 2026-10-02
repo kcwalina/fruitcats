@@ -133,6 +133,11 @@ let inspected: { url: string; key?: string; state?: string } | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
 let tutorialGame = false;
 let selection: Selection | null = null;
+/**
+ * The shop card you are reading: a tap shows it (in the side panel on a wide screen) and puts a Buy button in the
+ * bar; only Buy starts placing it. The owner (2026-10-02): "I just want to read the card", not deploy it.
+ */
+let viewing: number | null = null;
 let showRules = false;
 let showSettings = false;
 /** The Story so far drawer (the game's transcript) is out: it slides in beside the board and stays until closed. */
@@ -406,6 +411,7 @@ function act(action: Action) {
     flash = (error as Error).message;
   }
   selection = null;
+  viewing = null;
   runAi();
   noteClash(visibleFrom(from));
   render();
@@ -420,6 +426,7 @@ function actOnline(action: Action) {
   flash = '';
   notice = '';
   selection = null;
+  viewing = null;
   render();
 }
 
@@ -445,6 +452,7 @@ function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { 
   game = msg.view;
   if (!same) { resetLogSounds(game); inspected = null; stopReplay(); }
   selection = null; notice = ''; flash = '';
+  viewing = null;
   if (screen === 'friends') closeFriends();
   screen = 'game';
   showSettings = false;
@@ -782,7 +790,23 @@ function onClick(key: string) {
       case 'ready': return act({ t: 'ready' });
       case 'level': return act({ t: 'levelUp' });
       case 'roll': return act({ t: 'roll' });
-      case 'cancel': selection = null; render(); return;
+      case 'cancel': selection = null; viewing = null; render(); return;
+      case 'buy':
+      case 'facedown': {
+        const uid = viewing;
+        viewing = null;
+        if (uid === null) return;
+        const card = game.players[mySeat].shop.find((c) => c.uid === uid);
+        if (!card) { render(); return; }
+        const plays = legal.filter((a) => a.t === 'play' && a.uid === uid);
+        const ambush = legal.filter((a) => a.t === 'ambush' && a.uid === uid);
+        const name = cardName(card.id);
+        if (raw === 'facedown' && ambush.length) return select(`${name}, face-down`, ambush);
+        if (plays.length) return select(name, plays, ambush.length ? [{ label: 'Set it face-down', options: ambush }] : []);
+        if (ambush.length) return select(`${name}, face-down`, ambush);
+        render();
+        return;
+      }
       case 'ability': return select('your Hero’s ability', legal.filter((a) => a.t === 'ability'));
       case 'alt': {
         const alt = selection?.alts?.[altOf(key)];
@@ -793,17 +817,11 @@ function onClick(key: string) {
     return;
   }
 
+  // A tap on a shop card reads it: Buy (in the bar) places it.
   if (kind === 'hand') {
-    const card = game.players[mySeat].shop.find((c) => c.uid === value)!;
-    const plays = legal.filter((a) => a.t === 'play' && a.uid === value);
-    const ambush = legal.filter((a) => a.t === 'ambush' && a.uid === value);
-    const name = cardName(card.id);
-    const ambushAlt = ambush.length ? [{ label: 'Set it face-down', options: ambush }] : [];
     flash = '';
-    if (plays.length) return select(name, plays, ambushAlt);
-    if (ambush.length) return select(`${name}, face-down`, ambush);
-    flash = whyUnplayable(game, card.id);
-    selection = { label: name, options: [], alts: [], uid: value };
+    selection = null;
+    viewing = value;
     render();
     return;
   }
@@ -1511,9 +1529,10 @@ function renderShop(s: GameState, playable: Set<number>): string {
     const cls = [
       'hand-card', playable.has(c.uid) && 'playable',
       selection?.options.some((a) => 'uid' in a && a.uid === c.uid && a.t !== 'move') && 'selected',
-      selection?.uid === c.uid && 'selected',
+      selection?.uid === c.uid && 'selected', viewing === c.uid && 'selected',
     ].filter(Boolean).join(' ');
-    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${shopTag(c.id, traitHint(s, c.id))}</button>`;
+    // Drawn at once, not decoded later: every redraw makes the images anew, and late ones flash the card backs.
+    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="sync">${shopTag(c.id, traitHint(s, c.id))}</button>`;
   }).join('');
   return `<section class="hand shop" style="--n:${Math.max(n, 1)};--gaps:${Math.max(1, n - 1)}" aria-label="Your shop">
     ${cards || '<p class="shop-empty">Nothing left in your shop. Roll for a new one, or press Ready.</p>'}
@@ -1532,7 +1551,18 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   const onl = ol ? onlineBar(s, !!prompt) : null;
   if (s.winner !== null) text = 'Game over.';
   else if (!prompt) text = onl?.text ?? '<span class="dots">Your opponent is deciding</span>';
-  else if (selection) {
+  else if (viewing !== null && !selection && me.shop.some((c) => c.uid === viewing)) {
+    // Reading a shop card: its price, and Buy if it can be bought now (or why not).
+    const id = me.shop.find((c) => c.uid === viewing)!.id;
+    const cost = CARDS[id].cost ?? 0;
+    const canBuy = legal.some((a) => a.t === 'play' && a.uid === viewing);
+    const canSet = legal.some((a) => a.t === 'ambush' && a.uid === viewing);
+    const why = canBuy || canSet ? '' : whyUnplayable(s, id);
+    text = `<b>${esc(cardName(id))}</b> · ${cost} ${cost === 1 ? TERMS.offering : TERMS.offerings}${why ? `<div class="hint-line">${esc(why)}</div>` : ''}`;
+    buttons = `${canBuy ? `<button class="primary" data-click="btn:buy">Buy <small>(${cost})</small></button>` : ''}
+      ${canSet ? `<button data-click="btn:facedown">Set it face-down</button>` : ''}
+      <button data-click="btn:cancel">Close</button>`;
+  } else if (selection) {
     const p = paramOf(selection.options);
     const lane = selection.options.some((a) => 'target' in a && a.target?.kind === 'lane');
     text = p
@@ -1947,7 +1977,7 @@ document.addEventListener('keydown', (event) => {
     if (showStory && screen === 'game') { toggleStory(); return; }
     if (screen === 'collection' && showcaseEscape({ render })) return;
     if (STORE && screen === 'store' && storeEscape(storeHost)) return;
-    if (selection) { selection = null; render(); }
+    if (selection || viewing !== null) { selection = null; viewing = null; render(); }
   }
 });
 

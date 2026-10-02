@@ -32,7 +32,8 @@ What each part of a card means is in [Card anatomy](card-anatomy.md).
 Each round starts with the **Muster**. You and your opponent build **at the same time, in secret**. You see their
 side as it was when the Muster began.
 
-1. **Tap a creature** you can afford (it glows), then **tap one of your lanes**: the dashed spaces in your row.
+1. **Tap a card** to read it (on a wide screen it shows in the panel on the right), then press **Buy** and **tap one of
+   your lanes**: the dashed spaces in your row. A card you can afford glows.
 2. Your Hero's **Level** is how many of your lanes are open (the grey ones with a lock aren't yet). **Level up** (the
    button by Ready) to open one more.
 3. Lanes full? Tap one of your units to **sell it** and make room: you get back what you paid, less 1. Tapping a unit

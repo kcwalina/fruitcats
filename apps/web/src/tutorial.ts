@@ -63,7 +63,7 @@ const STEPS: Balloon[] = [
   {
     id: 'play', title: 'Buy a creature', anchor: '.hand', also: ['.yard.me'], when: (s) => mustering(s) && canFieldUnit(s),
     skipIf: (s) => s.round >= 4,
-    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces; the grey ones are locked until you level up) to buy it and put it there.',
+    text: 'A card with a bright ring is one you can afford. <b>Tap a creature to read it, press Buy, then tap one of your lanes</b> (the dashed spaces; the grey ones are locked until you level up) to put it there.',
     doneWhen: (a) => a.t === 'play',
   },
   {

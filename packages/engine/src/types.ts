@@ -329,7 +329,10 @@ export type GameEvent = (
   | { t: 'merge'; p: PlayerId; uid: number; stars: number; copies: number }
   | { t: 'clash'; n: number }
   | { t: 'bout'; n: number }
-  | { t: 'hit'; from: Target; uid: number; dealt: number }
+  /** The board as it stands at the start of the Clash, of each bout, and at its end: for a replay of the fight. */
+  | { t: 'board'; units: BoardUnit[] }
+  /** One unit's (or Hero's) hit in a bout; `swift` in the bout's first strike, the Swift units'. */
+  | { t: 'hit'; from: Target; uid: number; dealt: number; swift?: true }
   | { t: 'clashEnd'; standing: [number, number]; lost: [number, number] }
   | { t: 'fizzled'; cardId?: string }
   | { t: 'damage'; uid: number; amount: number; p: PlayerId }
@@ -343,11 +346,36 @@ export type GameEvent = (
   | { t: 'income'; p: PlayerId; gained: number; offerings: number }
   | { t: 'growUp'; p: PlayerId }
   | { t: 'counter'; uid: number; name: string; value: number }
-  | { t: 'summon'; p: PlayerId; uid: number; cardId: string }
+  | { t: 'summon'; p: PlayerId; uid: number; cardId: string; slot: number }
   | { t: 'freeRoll'; p: PlayerId; n: number }
   | { t: 'round'; n: number }
   | { t: 'win'; p: PlayerId | 'draw' }
-) & { secret?: PlayerId };
+) & { secret?: PlayerId; src?: EffectSource };
+
+/** A unit as a replay of the Clash draws it: where it stands, and its numbers at that moment (its auras included). */
+export interface BoardUnit {
+  uid: number;
+  id: string;
+  p: PlayerId;
+  slot: number;
+  power: number;
+  health: number;
+  damage: number;
+  stars?: number;
+  copies?: number;
+  /** Its Talisman's card id. */
+  toy?: string;
+  exhausted?: true;
+  /** It has gone down in this Clash (it stands up again when the Clash ends). */
+  down?: true;
+}
+
+/** What made an effect happen, for the screen: whose it is, the card or trait (by id, or a trait's name), and the unit. */
+export interface EffectSource {
+  p: PlayerId;
+  id: string;
+  uid?: number;
+}
 
 /** The numbers of the rules that playtests tune: docs/rulebook.md, Tunable parameters. */
 export interface Rules {
@@ -413,5 +441,7 @@ export interface GameState {
   clash?: { bout: number; dealt: number; struck: [boolean, boolean] };
   /** Who is acting during the Muster: what they log and emit is secret to them. */
   acting?: PlayerId;
+  /** While an ability runs: its source, which every event it emits carries (`src`). */
+  effect?: EffectSource;
   rules: Rules;
 }

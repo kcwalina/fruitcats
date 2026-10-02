@@ -1521,3 +1521,48 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 }
 @keyframes mc-sweep { 0%, 55% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
 .mc-flavor { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── The Clash, replayed on the board (main.ts, replay.ts) ── */
+/* A unit that went down in the Clash: greyed and sunk until the Clash ends. */
+.unit.down { filter: grayscale(1) brightness(0.6); opacity: 0.55; }
+/* Numbers and words rising from a card: damage red, heals green, buffs gold, weakening violet. */
+.fx-float {
+  position: fixed; z-index: 80; pointer-events: none; white-space: nowrap; transform: translate(-50%, 0);
+  font: 800 clamp(18px, 2.4vw, 30px) Fredoka, Nunito, sans-serif; color: #fff; -webkit-text-stroke: 1px rgba(30, 10, 0, 0.6);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+.fx-float.dmg { color: #ff5a4e; }
+.fx-float.heal { color: #6fe08a; }
+.fx-float.buff { color: #ffd76a; }
+.fx-float.debuff { color: #c99bff; }
+.fx-float.none { color: #e8dcc8; font-size: clamp(14px, 1.8vw, 22px); }
+.replay-bar .replay-now { margin-top: 2px; font-size: 0.92em; color: #ffe7a8; }
+/* Under the board while the Clash plays: what happens, newest last; then who did what. */
+.hand.shop.replay-panel {
+  display: block; overflow-y: auto; overflow-x: hidden; padding: 6px 14px; color: #f4e8d4; font: 500 14px/1.35 Nunito, sans-serif;
+  background: rgba(20, 12, 30, 0.55); border-radius: 14px; margin: 4px 8px;
+}
+/* The summary takes the room it needs, up to about half the screen; the lanes above shrink to make it. */
+.hand.shop.replay-panel.clash-report { height: auto; min-height: var(--card-h); max-height: calc(var(--vh, 1vh) * 46); }
+.replay-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; justify-content: flex-end; min-height: 100%; }
+.replay-lines li { opacity: 0.6; }
+.replay-lines li.now { opacity: 1; font-weight: 700; color: #ffe7a8; }
+.sum-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+.sum-side h4 { margin: 0 0 2px; font: 700 14px Fredoka, Nunito, sans-serif; }
+.sum-side.me h4 { color: #9fe3b0; }
+.sum-side.foe h4 { color: #ffb19a; }
+.sum-side table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.sum-side th:first-child, .sum-side td:first-child { width: 42%; }
+.sum-side th:nth-child(2), .sum-side th:nth-child(3) { width: 16%; }
+.sum-side td:first-child { overflow: hidden; text-overflow: ellipsis; }
+.sum-side th { font-weight: 600; font-size: 11px; color: #cbb89a; text-align: right; padding: 0 4px; white-space: nowrap; }
+.sum-side td { padding: 1px 4px; text-align: right; white-space: nowrap; }
+.sum-side td:first-child { text-align: left; }
+.sum-side td:last-child { color: #cbb89a; font-size: 12px; white-space: normal; line-height: 1.1; }
+.sum-side tr.fell td:first-child { color: #a99a86; text-decoration: line-through rgba(255, 120, 100, 0.6); }
+.sum-hints { list-style: none; margin: 6px 0 0; padding: 6px 10px; border-radius: 10px; background: rgba(255, 215, 106, 0.12); }
+.sum-hints li + li { margin-top: 3px; }
+@media (max-width: 640px) {
+  .sum-sides { grid-template-columns: 1fr; }
+  .hand.shop.replay-panel { font-size: 12px; }
+}

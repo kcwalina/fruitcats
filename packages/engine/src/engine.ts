@@ -25,7 +25,7 @@ import {
 } from './cards';
 import { rulesWith } from './rules';
 import type {
-  Ability, AbilityRef, Act, Action, CardInst, Condition, GameEvent, GameState, Pending, PlayerId, PlayerState, Rules, Step,
+  Ability, AbilityRef, Act, Action, BoardUnit, CardInst, Condition, GameEvent, GameState, Pending, PlayerId, PlayerState, Rules, Step,
   Target, TargetSel, Unit, UnitFilter,
 } from './types';
 
@@ -139,9 +139,29 @@ function log(s: GameState, text: string, player?: PlayerId): void {
   s.log.push(s.acting === undefined ? { round: s.round, player, text } : { round: s.round, player, text, secret: s.acting });
 }
 
-/** Record what happened for the screen. During the Muster it is the acting player's secret until the Clash. */
+/**
+ * Record what happened for the screen. During the Muster it is the acting player's secret until the Clash. While an
+ * ability runs, its events say whose and which card or trait it is (`src`), so a replay can show where they came from.
+ */
 function emit(s: GameState, event: GameEvent): void {
-  (s.events ??= []).push(s.acting === undefined ? event : { ...event, secret: s.acting });
+  const sourced = s.effect && !event.src ? { ...event, src: s.effect } : event;
+  (s.events ??= []).push(s.acting === undefined ? sourced : { ...sourced, secret: s.acting });
+}
+
+/** The board as it stands, both players' units, the fallen too: what a replay of the Clash draws (a `board` event). */
+function boardEvent(s: GameState): GameEvent {
+  const units: BoardUnit[] = [];
+  for (const p of [0, 1] as PlayerId[]) {
+    const pl = s.players[p];
+    for (const [u, down] of [...pl.yard.map((x) => [x, false] as const), ...(pl.fallen ?? []).map((x) => [x, true] as const)]) {
+      units.push({
+        uid: u.uid, id: u.id, p, slot: u.slot, power: unitPower(u, s), health: unitHealth(u, s), damage: u.damage,
+        ...(u.stars ? { stars: u.stars } : {}), ...((u.copies ?? 1) > 1 ? { copies: u.copies } : {}),
+        ...(u.toy ? { toy: u.toy.id } : {}), ...(u.exhausted ? { exhausted: true as const } : {}), ...(down ? { down: true as const } : {}),
+      });
+    }
+  }
+  return { t: 'board', units };
 }
 
 // ── Queries: units ───────────────────────────────────────────────────────────────────────────────
@@ -896,6 +916,7 @@ function exec(s: GameState, step: Step): void {
       s.clash = { bout: 0, dealt: 0, struck: [false, false] };
       log(s, `— Clash —`);
       emit(s, { t: 'clash', n: s.round });
+      emit(s, boardEvent(s));
       for (const [q, pl] of s.players.entries()) {
         const board = pl.yard.map((u) => `${cardName(u.id)}${u.stars ? ` ${'★'.repeat(u.stars)}` : ''} (${unitPower(u, s)}/${unitHealth(u, s) - u.damage}) in ${laneName(u.slot)}`);
         log(s, `${pl.name}: ${board.length ? board.join(', ') : 'no units'}.`, q as PlayerId);
@@ -949,6 +970,7 @@ function exec(s: GameState, step: Step): void {
       s.chain = 0;
       log(s, `Bout ${step.n}.`);
       emit(s, { t: 'bout', n: step.n });
+      emit(s, boardEvent(s));
       s.queue.unshift(
         { t: 'triggers', when: 'boutStart' },
         ...(step.n % 2 === 0 ? [{ t: 'triggers', when: 'everyOtherBout' } as Step] : []),
@@ -1070,8 +1092,20 @@ function exec(s: GameState, step: Step): void {
   }
 }
 
-/** Run a queued ability: find a lane's unit for an effect that waited for the Clash, and pick targets for triggers. */
+/** Run a queued ability, its events marked with where it came from (`src`): see runAbilityStep. */
 function runStep(s: GameState, step: Extract<Step, { t: 'ability' }>): void {
+  const outer = s.effect;
+  s.effect = { p: step.p, id: step.sourceId, ...(step.selfUid !== undefined ? { uid: step.selfUid } : {}) };
+  try {
+    runAbilityStep(s, step);
+  } finally {
+    if (outer) s.effect = outer;
+    else delete s.effect;
+  }
+}
+
+/** Run a queued ability: find a lane's unit for an effect that waited for the Clash, and pick targets for triggers. */
+function runAbilityStep(s: GameState, step: Extract<Step, { t: 'ability' }>): void {
   const ability = abilityAt(step.ref);
   const done = () => { if (step.card) s.players[step.p].compost.push(step.card); };
   if (!ability) return done();
@@ -1305,7 +1339,7 @@ function strike(s: GameState, swift: boolean): void {
     const dealt = dealDamage(s, h.to, h.power);
     s.clash!.dealt += dealt;
     log(s, `${cardName(h.from.id)} hits ${cardName(h.to.id)} for ${dealt}${toughNote(s, h.to, h.power, dealt)}.`, h.owner);
-    emit(s, { t: 'hit', from: { kind: 'unit', uid: h.from.uid }, uid: h.to.uid, dealt });
+    emit(s, { t: 'hit', from: { kind: 'unit', uid: h.from.uid }, uid: h.to.uid, dealt, ...(swift ? { swift: true as const } : {}) });
     if (dealt) hurtUnits.add(h.to);
     if (unitAbilities(s, h.from, 'defeatsInCombat', false, h.owner).length) s.queue.unshift({ t: 'combatWin', uid: h.from.uid, foeUid: h.to.uid });
   }
@@ -1333,6 +1367,7 @@ function clashEnd(s: GameState): void {
     const w = lost[0] ? 1 : 0;
     log(s, `${s.players[w].name} wins the Clash with ${standing[w]} unit(s) standing.`);
   } else log(s, `Nobody wins the Clash.`);
+  emit(s, boardEvent(s));
   emit(s, { t: 'clashEnd', standing, lost });
   for (const q of [0, 1] as PlayerId[]) s.players[q].streak = lost[q] ? (s.players[q].streak ?? 0) + 1 : 0;
   const steps: Step[] = [];
@@ -1518,7 +1553,7 @@ function summon(s: GameState, p: PlayerId, id: string): void {
   pl.yard.push({ uid, id, slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false });
   sortYard(pl);
   log(s, `${pl.name} summons ${cardName(id)} in ${laneName(slot)}.`, p);
-  emit(s, { t: 'summon', p, uid, cardId: id });
+  emit(s, { t: 'summon', p, uid, cardId: id, slot });
 }
 
 /** Two chosen units deal damage equal to their Power to each other, at the same time (Showdown). */

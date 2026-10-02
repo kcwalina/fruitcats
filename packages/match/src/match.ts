@@ -69,6 +69,18 @@ export const RESULT_KEEP_MS = 10 * 60_000;
 /** Emotes: at most one per this long, per player. */
 const EMOTE_EVERY_MS = 1500;
 
+/**
+ * Time to watch the Clash just fought, added to the next Muster's clock: the screen replays it on the board, bout by
+ * bout (about 3.5 s a bout with its effects and the units that go down), and nobody should lose Muster time to it.
+ */
+export function replayMs(s: GameState): number {
+  let i = s.events.length - 1;
+  while (i >= 0 && s.events[i].t !== 'clash') i--;
+  if (i < 0) return 0;
+  const bouts = s.events.slice(i).filter((e) => e.t === 'bout').length;
+  return Math.min(45_000, 3_000 + bouts * 3_500);
+}
+
 type Phase = ClockView['phase'];
 
 export class Match {
@@ -330,9 +342,11 @@ export class Match {
     const prompt = this.state.prompt;
     if (!prompt || this.state.winner !== null) { this.setPhase('none', null, null); return; }
     const muster = prompt.kind === 'muster';
+    let watch = 0;
     if (muster && this.clockRound !== this.state.round) {
       this.clockRound = this.state.round;
       this.musterShops = [structuredClone(this.state.players[0].shop), structuredClone(this.state.players[1].shop)];
+      watch = replayMs(this.state);
     }
     if (this.away[0] !== null || this.away[1] !== null) { this.setPhase('none', muster ? null : prompt.player, null); this.pause(); return; }
     this.overtimeSince = null;
@@ -340,7 +354,7 @@ export class Match {
     if (muster) {
       const ms = this.record.rules.clock.moveMs;
       if (ms === null) this.setPhase('none', null, null);
-      else this.setPhase('move', null, ms, () => this.outOfMuster());
+      else this.setPhase('move', null, ms + watch, () => this.outOfMuster());
       return;
     }
     this.startMove(prompt.player, this.record.rules.clock.moveMs);

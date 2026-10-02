@@ -38,8 +38,9 @@ interface Balloon {
 const ME: PlayerId = 0;
 const FOE: PlayerId = 1;
 
-/** The Muster is waiting on you (not the Clash report). */
-const mustering = (s: GameState) => mayAct(s, ME) && s.prompt?.kind === 'muster' && !document.querySelector('.clash-report');
+/** The Muster is waiting on you (not the last Clash, still on the board). */
+// While the last Clash is on the board (playing, or its summary), the Muster waits.
+const mustering = (s: GameState) => mayAct(s, ME) && s.prompt?.kind === 'muster' && !document.querySelector('.board.replaying');
 const canFieldUnit = (s: GameState) => legalActions(s, ME).some((a) => a.t === 'play' && isUnitCard(s.players[ME].shop.find((c) => c.uid === a.uid)?.id ?? ''));
 
 const STEPS: Balloon[] = [
@@ -77,7 +78,8 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'report', title: 'The Clash', anchor: '.clash-report', when: () => !!document.querySelector('.clash-report'),
-    text: 'Here is what happened, bout by bout. When one side has nobody standing, it loses a <b>Candle</b> for each enemy still standing. '
+    text: 'That was the Clash: here is who dealt and took what, and who fell when. <b>Watch again</b> to see it once more. '
+      + 'When one side has nobody standing, it loses a <b>Candle</b> for each enemy still standing. '
       + 'Then every unit stands up again: <b>nothing on your board is ever lost in a Clash</b>. Your army only grows.',
   },
   {
@@ -87,7 +89,7 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'done', title: 'You’ve got it! 🎉', anchor: '.player.foe .lives', below: true, when: (s) => mustering(s) && s.round >= 3,
-    text: 'That’s the game: build in secret, read the Clash, grow your army. I’ll pop up when something new happens.',
+    text: 'That’s the game: build in secret, watch the Clash, grow your army. I’ll pop up when something new happens.',
   },
 ];
 

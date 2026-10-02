@@ -44,8 +44,13 @@ side as it was when the Muster began.
 
 ## The Clash: the fight plays itself
 
-When you are both Ready, the armies fight, bout after bout. Nobody decides anything: you read what happened in the
-**Clash report**.
+When you are both Ready, the armies fight, bout after bout, on the board. Nobody decides anything: you watch. Each
+attacker lunges at its target, the damage rises from the card it hit, and a unit that goes down turns grey. The bar in
+the middle says what is happening; **Pause**, **Step** through it, or **Skip to the end**.
+
+When it is over, the space of your shop shows **who dealt and took what**, who fell in which bout, and a tip or two on
+what decided the fight (no Guardian? their Sneaky unit went for your carry?). **Watch again** if you missed it, then
+**Next round**.
 
 - Each unit hits the enemy **across** from it first, then the nearest. But roles come first: **Guardians** are hit
   first, **Elusive** units late, **Lures** last, and **Sneaky** units go the other way round.

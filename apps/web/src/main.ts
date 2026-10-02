@@ -5,6 +5,7 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { count, summary } from './progress';
 import { BASE, altKey, altOf, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { keepPictures } from './offline';
+import { applyBeat, beatCaption, boardMap, buildReplay, resultLine, signed, summarize, type Beat, type Replay, type Summary } from './replay';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
@@ -33,8 +34,8 @@ import {
 import {
   CARDS, DECKS, DECK_RULES, LANES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame,
   deckSize, heroSide, interestOn, isOpenLane, laneUnit, traitsOf, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
-  unitPower, viewFor, visibleLog,
-  type Action, type DeckList, type GameState, type LogEntry, type PlayerId, type PlayerView, type Target, type Unit,
+  unitPower, viewFor, visibleEvents,
+  type Action, type BoardUnit, type DeckList, type GameEvent, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -186,34 +187,214 @@ function seen(): GameState | null {
   return ol ? game : viewFor(game, mySeat);
 }
 
-/** The decision in front of you, if any: the Muster until you are Ready. */
+/** The decision in front of you, if any: the Muster until you are Ready (and not while the last Clash is on screen). */
 function humanPrompt() {
-  return game && game.winner === null && mayAct(game, mySeat) ? game.prompt : null;
+  return game && !replay && game.winner === null && mayAct(game, mySeat) ? game.prompt : null;
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────────────────────────
 
 /** A friendly confirmation of the player's own last move (what they just sold). */
 let notice = '';
-/** The last Clash, as its story: shown as a report until you move on. No animation: the Clash is read, not watched. */
-let clashReport: { round: number; lines: LogEntry[] } | null = null;
+// ── The Clash, replayed on the board ─────────────────────────────────────────────────────────────
+//
+// When a Clash has been fought, the board shows it: the units as they stood, then beat by beat (an effect, a strike, the
+// units that go down) with the attackers lunging, the numbers flying and the fallen greyed out. Then a summary of who
+// did what, under the board, until you move on to the next round. Cards move; nothing else is animated.
 
-/** If a Clash was played since the story had `from` lines (those you may read), it becomes the report. */
-function noteClash(from: number) {
-  if (!game) return;
-  const log = visibleLog(game.log, mySeat);
-  const start = log.findIndex((e, i) => i >= from && e.text === '— Clash —');
-  if (start < 0) return;
-  let end = log.findIndex((e, i) => i > start && /^— Round \d+ —$/.test(e.text));
-  if (end < 0) end = log.length;
-  clashReport = { round: log[start].round, lines: log.slice(start, end) };
+interface ReplayRun {
+  r: Replay;
+  /** The section (0: before the fight, then the bouts) and the next beat in it. */
+  section: number;
+  beat: number;
+  /** The board as the replay has it now. */
+  units: Map<number, BoardUnit>;
+  playing: boolean;
+  done: boolean;
+  /** What the last beat was, in words, and the ones before it. */
+  lines: string[];
+  summary?: Summary;
+  timer?: number;
+}
+
+let replay: ReplayRun | null = null;
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)');
+
+/** Events the player may see, from `from` on: online, a view brings only the new ones; in Solo, from the whole game. */
+function visibleFrom(from: number): GameEvent[] {
+  return game ? (ol ? game.events : visibleEvents(game.events, mySeat).slice(from)) : [];
+}
+const eventMark = () => (game && !ol ? visibleEvents(game.events, mySeat).length : 0);
+
+/** If these events hold a Clash, play it on the board. */
+function noteClash(events: GameEvent[]) {
+  const r = buildReplay(events);
+  if (!r) return;
+  stopReplay();
+  replay = { r, section: 0, beat: 0, units: boardMap(r.sections[0].board), playing: true, done: false, lines: [`Round ${r.round}: the Clash begins.`] };
+  replay.timer = window.setTimeout(replayTick, 900);
+}
+
+function stopReplay() {
+  if (replay?.timer) window.clearTimeout(replay.timer);
+  replay = null;
+}
+
+const heroName = (p: PlayerId) => (game ? cardName(game.players[p].hero.id) : '');
+
+function replayTick() {
+  const rp = replay;
+  if (!rp || rp.done || !rp.playing) return;
+  const wait = replayStep(rp);
+  if (!rp.done && rp.playing) rp.timer = window.setTimeout(replayTick, wait);
+}
+
+/** One beat of the replay (or the start of the next bout, or the end): returns how long to show it. */
+function replayStep(rp: ReplayRun): number {
+  const section = rp.r.sections[rp.section];
+  if (rp.beat < section.beats.length) {
+    const beat = section.beats[rp.beat++];
+    const caption = beatCaption(beat, rp.units, heroName);
+    applyBeat(rp.units, beat);
+    if (caption) rp.lines.push(caption);
+    render();
+    beatFx(beat);
+    return beat.kind === 'strike' ? 1250 : beat.kind === 'down' ? 800 : 1050;
+  }
+  if (rp.section + 1 < rp.r.sections.length) {
+    const next = rp.r.sections[++rp.section];
+    rp.beat = 0;
+    rp.units = boardMap(next.board);
+    rp.lines.push(`Bout ${next.bout}.`);
+    render();
+    return 550;
+  }
+  finishReplay(rp);
+  return 0;
+}
+
+function finishReplay(rp: ReplayRun) {
+  if (rp.timer) window.clearTimeout(rp.timer);
+  rp.done = true;
+  rp.playing = false;
+  rp.units = boardMap(rp.r.end);
+  rp.summary = summarize(rp.r, mySeat);
+  render();
+}
+
+function replayClick(what: string) {
+  const rp = replay;
+  if (!rp) return;
+  if (rp.timer) window.clearTimeout(rp.timer);
+  if (what === 'pause') { rp.playing = false; render(); return; }
+  if (what === 'play') { rp.playing = true; render(); replayTick(); return; }
+  if (what === 'step') { rp.playing = false; const wait = replayStep(rp); void wait; if (!rp.done) render(); return; }
+  if (what === 'skip') { finishReplay(rp); return; }
+  if (what === 'again') {
+    Object.assign(rp, { section: 0, beat: 0, units: boardMap(rp.r.sections[0].board), playing: true, done: false, lines: [`Round ${rp.r.round}: the Clash begins.`] });
+    delete rp.summary;
+    render();
+    rp.timer = window.setTimeout(replayTick, 700);
+    return;
+  }
+  if (what === 'close') { stopReplay(); render(); }
+}
+
+// The effects of a beat, on the board just drawn: an attacker lunges at its target, numbers fly up from whoever they
+// touched, the card an effect came from glows. Positions come from the screen, so they work at any size.
+const unitEl = (uid: number) => app.querySelector<HTMLElement>(`.board [data-click="unit:${uid}"]`);
+
+function beatFx(beat: Beat) {
+  const still = REDUCED_MOTION.matches;
+  if (beat.src?.uid !== undefined) glow(unitEl(beat.src.uid));
+  beat.changes.forEach((c, i) => {
+    const delay = beat.kind === 'strike' ? (i % 6) * 60 : i * 120;
+    switch (c.t) {
+      case 'hit': {
+        const to = unitEl(c.to);
+        if ('uid' in c.from) { if (!still) lunge(unitEl(c.from.uid), to, delay); }
+        else glow(app.querySelector<HTMLElement>(`.player [data-click="heroinfo:${c.from.hero}"]`));
+        floatText(to, c.dealt ? `−${c.dealt}` : '0', c.dealt ? 'dmg' : 'none', delay + 200);
+        if (c.dealt && !still) shake(to, delay + 200);
+        break;
+      }
+      case 'damage': floatText(unitEl(c.to), `−${c.amount}`, 'dmg', delay); if (!still) shake(unitEl(c.to), delay); break;
+      case 'heal': floatText(unitEl(c.to), `+${c.amount}`, 'heal', delay); break;
+      case 'buff': {
+        const words = [c.power ? `${signed(c.power)} ⚔` : '', c.health ? `${signed(c.health)} ♥` : ''].filter(Boolean).join(' ');
+        floatText(unitEl(c.to), words, (c.power ?? 0) + (c.health ?? 0) < 0 ? 'debuff' : 'buff', delay);
+        break;
+      }
+      case 'exhaust': floatText(unitEl(c.to), 'zzz', 'none', delay); break;
+      case 'summon': pop(unitEl(c.unit.uid)); break;
+      case 'down': fade(unitEl(c.to)); break;
+      case 'ambush': {
+        const lanes = app.querySelectorAll<HTMLElement>(`.yard.${c.p === mySeat ? 'me' : 'foe'} .lane`);
+        const lane = lanes[c.lane];
+        glow(lane);
+        floatText(lane, `Ambush! ${cardName(c.cardId)}`, 'buff', 0);
+        break;
+      }
+      case 'awaken': glow(app.querySelector<HTMLElement>(`.player [data-click="heroinfo:${c.p}"]`)); break;
+    }
+  });
+}
+
+function animate(el: Element | null, frames: Keyframe[], options: KeyframeAnimationOptions) {
+  if (el && typeof (el as HTMLElement).animate === 'function') (el as HTMLElement).animate(frames, options);
+}
+
+function lunge(from: HTMLElement | null, to: HTMLElement | null, delay: number) {
+  if (!from || !to) return;
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const dx = (b.left + b.width / 2 - (a.left + a.width / 2)) * 0.38, dy = (b.top + b.height / 2 - (a.top + a.height / 2)) * 0.38;
+  animate(from, [{ transform: 'none', zIndex: 5 }, { transform: `translate(${dx}px, ${dy}px) scale(1.06)`, zIndex: 5, offset: 0.45 }, { transform: 'none', zIndex: 5 }],
+    { duration: 520, delay, easing: 'ease-in-out' });
+}
+
+function shake(el: HTMLElement | null, delay: number) {
+  animate(el, [{ transform: 'none' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(-3px)' }, { transform: 'none' }],
+    { duration: 320, delay });
+}
+
+function glow(el: HTMLElement | null) {
+  animate(el, [{ boxShadow: '0 0 0 0 rgba(255, 215, 106, 0)' }, { boxShadow: '0 0 0 4px #ffd76a, 0 0 22px 6px rgba(255, 215, 106, 0.9)', offset: 0.3 },
+    { boxShadow: '0 0 0 0 rgba(255, 215, 106, 0)' }], { duration: 950 });
+}
+
+function pop(el: HTMLElement | null) {
+  animate(el, [{ transform: 'scale(0.5)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 380, easing: 'ease-out' });
+}
+
+function fade(el: HTMLElement | null) {
+  animate(el, [{ filter: 'none', opacity: 1 }, { filter: 'grayscale(1) brightness(0.6)', opacity: 0.55 }], { duration: 450 });
+}
+
+/** A number or a word rising from a card: −3 in red for damage, +2 in green for a heal, a buff in gold. */
+function floatText(el: HTMLElement | null, text: string, kind: 'dmg' | 'heal' | 'buff' | 'debuff' | 'none', delay: number) {
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const span = document.createElement('span');
+  span.className = `fx-float ${kind}`;
+  span.textContent = text;
+  span.style.left = `${r.left + r.width / 2}px`;
+  span.style.top = `${r.top + r.height * 0.35}px`;
+  span.style.opacity = '0';
+  document.body.appendChild(span);
+  const rise = REDUCED_MOTION.matches ? 0 : -42;
+  const done = () => span.remove();
+  if (typeof span.animate === 'function') {
+    span.animate([{ opacity: 0, transform: 'translate(-50%, 0) scale(0.8)' }, { opacity: 1, transform: 'translate(-50%, -10px) scale(1.15)', offset: 0.2 },
+      { opacity: 1, transform: `translate(-50%, ${rise * 0.7}px)`, offset: 0.7 }, { opacity: 0, transform: `translate(-50%, ${rise}px)` }],
+      { duration: 1100, delay, easing: 'ease-out' }).onfinish = done;
+  } else window.setTimeout(done, 1200 + delay);
 }
 
 function act(action: Action) {
   if (!game) return;
   if (ol) { actOnline(action); return; }
   const me = game.players[mySeat];
-  const from = visibleLog(game.log, mySeat).length;
+  const from = eventMark();
   const sold = action.t === 'sell' ? me.yard.find((u) => u.uid === action.uid)?.id : undefined;
   try {
     apply(game, action, mySeat);
@@ -225,7 +406,7 @@ function act(action: Action) {
   }
   selection = null;
   runAi();
-  noteClash(from);
+  noteClash(visibleFrom(from));
   render();
 }
 
@@ -261,7 +442,7 @@ function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { 
   tutorialGame = false;
   storyLines = msg.view.log;
   game = msg.view;
-  if (!same) { resetLogSounds(game); inspected = null; clashReport = null; }
+  if (!same) { resetLogSounds(game); inspected = null; stopReplay(); }
   selection = null; notice = ''; flash = '';
   if (screen === 'friends') closeFriends();
   screen = 'game';
@@ -297,7 +478,8 @@ onLive((msg) => {
     const from = Math.min(msg.logFrom, storyLines.length);
     storyLines = [...storyLines.slice(0, msg.logFrom), ...msg.view.log];
     game = { ...msg.view, log: storyLines };
-    noteClash(from);
+    void from;
+    noteClash(visibleFrom(0));
   }
   if (msg.t === 'hint' && game) {
     hintLine = msg.action ? hintText(game, msg.action) : 'No suggestion right now.';
@@ -321,9 +503,9 @@ function runAi() {
 
 /** For the tutorial: carry on after a balloon closes. */
 function scheduleAi() {
-  const from = game ? visibleLog(game.log, mySeat).length : 0;
+  const from = eventMark();
   runAi();
-  noteClash(from);
+  noteClash(visibleFrom(from));
   render();
 }
 
@@ -336,7 +518,7 @@ function startGame(tutorial = false) {
   const theirDeck = tutorial ? 'pari'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   inspected = null;
-  clashReport = null;
+  stopReplay();
   game = tutorial
     ? createGame({ decks: ['domowiki', 'pari'], names: ['You', 'Opponent'], firstPlayer: mySeat })
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
@@ -565,13 +747,13 @@ function onClick(key: string) {
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
     if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
-    if (raw === 'quit') { stopTutorial(); game = null; clashReport = null; screen = 'home'; homeNote = ''; showStory = false; }
+    if (raw === 'quit') { stopTutorial(); game = null; stopReplay(); screen = 'home'; homeNote = ''; showStory = false; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
   }
 
-  if (kind === 'report') { clashReport = null; render(); return; }
+  if (kind === 'replay') { replayClick(raw); return; }
 
   const prompt = humanPrompt();
   const v = seen();
@@ -655,7 +837,7 @@ function resumeSavedGame(): boolean {
   setOnlineAside();
   game = save.game;
   inspected = null;
-  clashReport = null;
+  stopReplay();
   tutorialGame = false;
   if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
   resetLogSounds(game);
@@ -1058,13 +1240,13 @@ function renderGame(): string {
   const myBar = renderPlayer(v, mySeat, legal);
   return `
   <div class="game">
-    <main class="board ${hl.size ? 'targeting' : ''} ${wide ? 'wide' : ''}">
+    <main class="board ${hl.size ? 'targeting' : ''} ${wide ? 'wide' : ''} ${replay ? 'replaying' : ''}">
       ${wide ? '' : foeBar}
       ${renderLanes(v, theirSeat, hl)}
       ${renderMidbar(v, legal)}
       ${renderLanes(v, mySeat, hl)}
       ${wide ? '' : myBar}
-      ${renderShop(v, playable)}
+      ${replay ? renderReplayPanel() : renderShop(v, playable)}
     </main>
     <aside class="side ${wide ? 'wide' : ''}">
       ${wide ? foeBar : ''}
@@ -1081,8 +1263,7 @@ function renderGame(): string {
       </div>
     </aside>
     ${renderStory(v)}
-    ${clashReport && !(ol && ol.versusUntil > Date.now()) ? renderClashReport(v) : ''}
-    ${ol ? renderOnlineResult(s) : s.winner !== null && !clashReport ? renderGameOver(s) : ''}
+    ${ol ? (replay ? '' : renderOnlineResult(s)) : s.winner !== null && !replay ? renderGameOver(s) : ''}
     ${ol ? renderVersus(s as PlayerView) : ''}
     ${showRules ? renderRules() : ''}
   </div>`;
@@ -1127,6 +1308,8 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
   const next = levelCost(s, p);
   const interest = interestOn(s, pl.offerings) + streakBonus(s, pl.streak ?? 0);
   const deciding = s.winner === null && s.prompt !== null && mayAct(s, p);
+  // While the Clash plays, the Candles it costs are not lost yet.
+  const lives = replay && !replay.done ? pl.lives + replay.r.lost[p] : pl.lives;
   const badges = badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
     .map(([name, m]) => `<span class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</span>`).join('');
 
@@ -1143,7 +1326,7 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
     <div class="stats">
       <div class="who">${esc(ol && mine ? 'You' : pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
-        <div class="lives" title="${pl.lives} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives <= 3 ? 'low' : ''}"><b>${pl.lives}</b></span></div>
+        <div class="lives" title="${lives} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${lives <= 3 ? 'low' : ''}"><b>${lives}</b></span></div>
         <div class="purse" title="${TERMS.offerings}: what you pay with. Saved ones earn interest: +1 for every ${s.rules.interestPer} at the start of each round (at most ${s.rules.interestMax}). Clashes lost in a row earn more.${pl.streak ? ` Lost in a row: ${pl.streak}.` : ''}">
           <b>${pl.offerings}</b> ${TERMS.offerings}${interest ? ` <small>+${interest}</small>` : ''}</div>
         <div class="level" title="Your Hero's Level: how many of your lanes are open, from the left.${next !== null ? ` The next Level costs ${next}.` : ''}">Level <b>${pl.hero.level}</b> <small>${pl.yard.length + (pl.fallen?.length ?? 0)}/${pl.hero.level}</small></div>
@@ -1206,19 +1389,22 @@ function counterChips(u: Unit, keywordList: string[]): string[] {
 
 const ROLE = ['Lure', 'Elusive', '', 'Guardian'];
 
-function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): string {
+/** A unit on the board; `shown` draws it as a replay of the Clash has it (its numbers then, and whether it fell). */
+function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>, shown?: BoardUnit): string {
   const k = unitKeywords(u, s);
-  const power = unitPower(u, s);
-  const health = unitHealth(u, s) - u.damage;
+  const power = shown ? shown.power : unitPower(u, s);
+  const health = shown ? Math.max(0, shown.health - shown.damage) : unitHealth(u, s) - u.damage;
+  const hurt = shown ? shown.damage > 0 : u.damage > 0;
+  const exhausted = shown ? !!shown.exhausted : u.exhausted;
   const chips = [
     ROLE[targetRank(u, s)], k.sneaky && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
     ...counterChips(u, k.all),
     u.toy && `🧿 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
   const key = `unit:${u.uid}`;
-  const why = u.exhausted ? 'Exhausted: it deals no damage in this Clash.' : 'Ready to fight in the Clash.';
+  const why = shown?.down ? 'It went down in this Clash.' : exhausted ? 'Exhausted: it deals no damage in this Clash.' : 'Ready to fight in the Clash.';
   const cls = [
-    'unit', famClass(u.id), u.exhausted && 'exhausted', hl.has(key) && 'targetable', selection?.uid === u.uid && 'selected',
+    'unit', famClass(u.id), exhausted && 'exhausted', shown?.down && 'down', hl.has(key) && 'targetable', selection?.uid === u.uid && 'selected',
   ].filter(Boolean).join(' ');
   return `
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
@@ -1229,10 +1415,10 @@ function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): st
       <div class="uname">${esc(cardName(u.id))}</div>
       ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
       <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
-      <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
+      <div class="hp ${hurt ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     </div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    ${u.exhausted ? '<div class="zzz">zzz</div>' : ''}
+    ${exhausted && !shown?.down ? '<div class="zzz">zzz</div>' : ''}
   </div>`;
 }
 
@@ -1241,6 +1427,7 @@ function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): st
  * can play into; a face-down card marks an Ambush, and a little target an effect of yours aimed at their lane.
  */
 function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
+  if (replay) return renderReplayLanes(s, p);
   const pl = s.players[p];
   const mine = p === mySeat;
   // A teaching game's open shop (the opponent showing it) sits at the start of their lanes.
@@ -1304,6 +1491,7 @@ function renderShop(s: GameState, playable: Set<number>): string {
 const PARAM_WORDS: Record<Param, string> = { slot: 'a lane', lane: 'a lane to set it in', target: 'a target', target2: 'a second target' };
 
 function renderMidbar(s: GameState, legal: Action[]): string {
+  if (replay) return renderReplayBar(s);
   const prompt = humanPrompt();
   const me = s.players[mySeat];
   let text = '';
@@ -1340,31 +1528,72 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   </section>`;
 }
 
+/** The bar between the two rows while the Clash plays: where it is, what just happened, and the controls. */
+function renderReplayBar(s: GameState): string {
+  const rp = replay!;
+  const section = rp.r.sections[rp.section];
+  const where = section.bout ? `Bout ${section.bout}` : 'Before the fight';
+  const text = rp.done
+    ? `<b>${esc(resultLine(rp.r, mySeat))}</b>`
+    : `<b>The Clash</b> · ${where}<div class="replay-now">${esc(rp.lines.at(-1) ?? '')}</div>`;
+  const buttons = rp.done
+    ? `<button data-click="replay:again">Watch again</button>
+       <button class="primary" data-click="replay:close">${s.winner !== null ? 'See the result' : 'Next round'}</button>`
+    : `${rp.playing ? '<button data-click="replay:pause">Pause</button>'
+        : '<button data-click="replay:play">Play</button><button data-click="replay:step">Step</button>'}
+       <button data-click="replay:skip">Skip to the end</button>`;
+  return `<section class="midbar replay-bar">
+    <div class="round"><small>Round</small><b>${rp.r.round}</b></div>
+    <div class="prompt">${text}</div>
+    <div class="buttons">${buttons}</div>
+  </section>`;
+}
+
 /**
- * The Clash, as a report to read: what happened before the fight, then each bout, then who won and what it cost.
- * Nothing moves on the board; the board shows how things stand.
+ * Under the board while the Clash plays: what happens, line by line. When it is over, who did what (damage dealt and
+ * taken, who fell in which bout) and what decided it, in a sentence or two you can act on.
  */
-function renderClashReport(s: GameState): string {
-  const report = clashReport!;
-  const sections: { title: string; lines: LogEntry[] }[] = [{ title: 'Before the fight', lines: [] }];
-  let result: LogEntry[] = [];
-  for (const e of report.lines.slice(1)) {
-    if (/^Bout \d+\.$/.test(e.text)) { sections.push({ title: e.text.replace('.', ''), lines: [] }); continue; }
-    if (/ wins the Clash | still stand: |Nobody wins the Clash|loses a Candle|wins!$/.test(e.text) || result.length) { result = [...result, e]; continue; }
-    sections.at(-1)!.lines.push(e);
+function renderReplayPanel(): string {
+  const rp = replay!;
+  if (!rp.done || !rp.summary) {
+    const lines = rp.lines.slice(-4);
+    return `<section class="hand shop replay-panel" aria-live="polite"><ul class="replay-lines">${lines
+      .map((l, i) => `<li class="${i === lines.length - 1 ? 'now' : ''}">${esc(l)}</li>`).join('')}</ul></section>`;
   }
-  const line = (e: LogEntry) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : ''}">${esc(humanize(e.text))}</li>`;
-  const body = sections.filter((x) => x.lines.length)
-    .map((x) => `<section><h3>${esc(x.title)}</h3><ul>${x.lines.map(line).join('')}</ul></section>`).join('');
-  const over = s.winner !== null;
-  return `<div class="overlay">
-    <div class="clash-report" role="dialog" aria-label="The Clash">
-      <h2>The Clash · round ${report.round}</h2>
-      <div class="cr-body" data-keep-scroll="clash">${body}</div>
-      <ul class="cr-result">${result.map(line).join('')}</ul>
-      <button class="primary" data-click="report:close">${over ? 'See the result' : 'On to the next round'}</button>
-    </div>
-  </div>`;
+  const sum = rp.summary;
+  const side = (p: PlayerId) => {
+    const units = sum.units.filter((u) => u.p === p).sort((a, b) => b.dealt - a.dealt || b.taken - a.taken);
+    const fate = (fell: number | null) => (fell === null ? 'stood' : fell === 0 ? 'fell before bout 1' : `fell in bout ${fell}`);
+    const rows = units.map((u) => `<tr class="${u.fell !== null ? 'fell' : 'stood'}"><td>${esc(cardName(u.id))}</td><td>${u.dealt}</td><td>${u.taken}</td><td>${fate(u.fell)}</td></tr>`).join('');
+    const hero = sum.heroes[p] ? `<tr><td>${esc(heroName(p))} <small>(Hero)</small></td><td>${sum.heroes[p]}</td><td></td><td></td></tr>` : '';
+    return `<div class="sum-side ${p === mySeat ? 'me' : 'foe'}"><h4>${p === mySeat ? 'Your units' : 'Their units'}</h4>
+      <table><thead><tr><th></th><th title="Damage dealt">⚔ dealt</th><th title="Damage taken">♥ taken</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4">No units</td></tr>'}${hero}</tbody></table></div>`;
+  };
+  return `<section class="hand shop replay-panel clash-report" aria-label="The Clash, in numbers">
+    <div class="sum-sides">${side(mySeat)}${side(theirSeat)}</div>
+    ${sum.hints.length ? `<ul class="sum-hints">${sum.hints.map((h) => `<li>💡 ${esc(h)}</li>`).join('')}</ul>` : ''}
+  </section>`;
+}
+
+/** The six lanes as the replay has them: the units as they stood at that moment of the Clash, the fallen greyed. */
+function renderReplayLanes(s: GameState, p: PlayerId): string {
+  const units = [...replay!.units.values()].filter((u) => u.p === p);
+  const lanes = Array.from({ length: LANES }, (_, i) => {
+    const b = units.find((u) => u.slot === i && !u.down) ?? units.find((u) => u.slot === i);
+    const locked = !isOpenLane(s, p, i);
+    if (b) return `<div class="lane ${locked ? 'locked' : ''}">${renderUnit(s, replayUnit(s, b), p, new Set(), b)}</div>`;
+    return locked
+      ? `<div class="lane empty locked"><span class="lane-lock">🔒<small>Lv ${i + 1}</small></span></div>`
+      : `<div class="lane empty"><span class="lane-no">${i + 1}</span></div>`;
+  }).join('');
+  return `<section class="yard lanes ${p === mySeat ? 'me' : 'foe'}" style="--n:${LANES}">${lanes}</section>`;
+}
+
+/** A unit of the replay as the board draws it: the game's own unit while it has it (its Talisman, its counters). */
+function replayUnit(s: GameState, b: BoardUnit): Unit {
+  return s.players[b.p].yard.find((u) => u.uid === b.uid)
+    ?? { uid: b.uid, id: b.id, slot: b.slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false, ...(b.stars ? { stars: b.stars } : {}), ...(b.copies ? { copies: b.copies } : {}) };
 }
 
 let countedGame: GameState | null = null;
@@ -1408,7 +1637,7 @@ function renderSettings(alreadyOpen: boolean): string {
       aria-current="${id === current ? 'page' : 'false'}">${labels[id]}</button>`;
   const body: Record<SettingsSection, () => string> = {
     gameplay: () => `
-      <p class="setting-note">The Clash is a report to read, not an animation: nothing to switch on or off here.</p>
+      <p class="setting-note">The Clash plays on the board, one beat at a time: pause it, step through it, or skip to the summary.</p>
       ${ONLINE && signedIn() ? `<p class="setting-note">${esc(onlineStatus())}</p>` : ''}`,
     sound: () => row('Sound', '', choice('sound', 'on', 'On', soundEnabled()) + choice('sound', 'off', 'Off', !soundEnabled())),
     account: () => (ACCOUNTS ? `<div class="account-panel">${renderAccountPanel()}</div>` : ''),

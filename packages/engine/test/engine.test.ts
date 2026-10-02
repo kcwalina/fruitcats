@@ -617,6 +617,27 @@ describe('events', () => {
     expect(kinds.indexOf('clashEnd')).toBeLessThan(kinds.indexOf('lifeLost'));
   });
 
+  it('a Clash shows the board at its start, at each bout and at its end, and says where each effect came from', () => {
+    const s = toMuster(['pari', 'domowiki']);
+    const dvorovoi = put(s, 1, 'DW1-D08', 0);   // Clash start: 2 damage to the enemy across and the ones next to it
+    const swift = put(s, 1, 'DW1-D03', 1);      // Swift
+    const dove = put(s, 0, 'PR1-D01', 0);       // Goodbye: a Dove
+    const events = clash(s);
+    const at = (t: string) => events.findIndex((e) => e.t === t);
+    const boards = events.filter((e): e is Extract<typeof e, { t: 'board' }> => e.t === 'board');
+    expect(events[at('clash') + 1].t).toBe('board');
+    expect(events[at('bout') + 1].t).toBe('board');
+    expect(events[at('clashEnd') - 1].t).toBe('board');
+    expect(boards).toHaveLength(events.filter((e) => e.t === 'bout').length + 2);
+    expect(boards[0].units.find((u) => u.uid === dvorovoi.uid)).toMatchObject({ p: 1, slot: 0, id: 'DW1-D08', damage: 0, power: unitPower(dvorovoi, s) });
+    expect(boards.at(-1)!.units.find((u) => u.uid === dove.uid)).toMatchObject({ down: true });
+    expect(events.find((e) => e.t === 'damage' && e.uid === dove.uid)).toMatchObject({ src: { p: 1, id: 'DW1-D08', uid: dvorovoi.uid } });
+    expect(events.filter((e) => e.t === 'hit' && e.from.kind === 'unit' && e.from.uid === swift.uid).every((e) => e.t === 'hit' && e.swift)).toBe(true);
+    // The fallen Pari still holds its lane until the Clash ends: the Dove comes down in the next one.
+    expect(events.find((e) => e.t === 'summon')).toMatchObject({ cardId: 'PR1-K01', slot: 1, src: { p: 0, id: 'PR1-D01', uid: dove.uid } });
+    expect(s.effect).toBeUndefined();
+  });
+
   it('what a player does in the Muster is secret to them until the Clash', () => {
     const s = toMuster();
     apply(s, { t: 'roll' }, 0);

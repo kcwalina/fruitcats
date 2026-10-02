@@ -22,7 +22,7 @@ export const HERE_MS = 50_000;
 /** While waiting in line, ask again this often. A place is kept only while it's asked for. */
 export const ENTER_EVERY_MS = 10_000;
 /** Bumped when a message changes shape: an older game is asked to reload before it can play online. */
-export const PROTOCOL = 6;
+export const PROTOCOL = 7;
 
 /**
  * How long a request to play waits for an answer. It's kept on the server from the moment it's sent: it ends when the
@@ -364,6 +364,6 @@ export interface PeerSaveAnswer {
   serve?: boolean;
 }
 
-export { Match, IDLE_MS, RESULT_KEEP_MS, newMatchId, newSeed, plainestMove, rebuild, takeBackPoint } from './match';
+export { Match, IDLE_MS, RESULT_KEEP_MS, newMatchId, newSeed, plainestMove, rebuild, replayMs, takeBackPoint } from './match';
 export type { MatchHost, MatchRecord, Played, SeatRecord } from './match';
 export { PeerHost, peerWire, type PeerHostDeps } from './peer';

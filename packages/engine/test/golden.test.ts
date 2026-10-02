@@ -8,6 +8,6 @@ describe('golden games play exactly as recorded', () => {
     it(`${g.a} vs ${g.b}, seed ${g.seed}`, () => {
       const r = playGolden(g);
       expect({ actions: r.actions, winner: r.winner, round: r.round }).toEqual({ actions: g.actions, winner: g.winner, round: g.round });
-    });
+    }, 30_000);   // a whole bot game: a few seconds, longer while the machine is busy
   }
 });

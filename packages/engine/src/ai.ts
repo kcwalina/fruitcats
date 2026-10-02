@@ -6,10 +6,10 @@
 // can't peek at the next shop, Ambushes or the opponent's new units. What a roll would deal is a guess from its own
 // shuffled deck, as a player's would be.
 
-import { BLANK_CARD, CARDS, PLUGINS, abilitiesOf, isUnitCard, usesCondition } from './cards';
+import { BLANK_CARD, CARDS, PLUGINS, abilityAt, isUnitCard, usesCondition } from './cards';
 import {
   applyTrusted, heroSide, interestOn, isGuardian, legalActions, nextSeat, other, playOptions,
-  targetRank, unitCount, unitHealth, unitKeywords, unitPower, cantAttack,
+  targetRank, traitsOf, unitCount, unitHealth, unitKeywords, unitPower, cantAttack,
 } from './engine';
 import type { Action, GameState, PlayerId, Target, Unit } from './types';
 
@@ -25,9 +25,13 @@ const BLANK = BLANK_CARD; // a vanilla card: no Ambush
 const W = {
   life: 12, freeRoll: 0.6, offering: 0.75, interest: 1.2, level: 1.6, power: 1.5, health: 1.0,
   guardian: 0.8, fierce: 1.2, sneaky: 0.8, grown: 6, star: 1.5, clash: 8,
+  /** A copy merged in on the way to the next star; a trait's tier that is on (and a unit towards the next one). */
+  copy: 1.4, trait: 2.5, traitStep: 0.6,
+  /** An Offering kept beyond the most interest pays. */
+  spare: 0.15,
 };
 /** Rolls the bot makes in one Muster at most: a roll is a guess, and guessing on and on only spends. */
-const MAX_ROLLS = 3;
+const MAX_ROLLS = 6;
 
 // ── The Clash, foretold ──────────────────────────────────────────────────────────────────────────
 // A quick run of the coming Clash on the units as they stand: the same order of attack, Swift first, Tough,
@@ -65,7 +69,7 @@ export function forecastClash(s: GameState): [number, number] {
   // Effects waiting for the Clash: damage and exhaustion on the lanes they aim at.
   for (const owner of [0, 1] as PlayerId[]) {
     for (const x of s.players[owner].pending ?? []) {
-      const ability = 'mechanic' in x.ref ? undefined : abilitiesOf(x.ref.card, x.ref.side)[x.ref.index];
+      const ability = abilityAt(x.ref);
       if (!ability) continue;
       let targets = x.target?.kind === 'lane' ? [byLane(x.target.player, x.target.lane)].filter(Boolean) as Fighter[]
         : typeof ability.target === 'object' && 'each' in ability.target ? fs.filter((f) => f.owner !== owner) : [];
@@ -129,6 +133,7 @@ function unitValue(s: GameState, u: Unit): number {
   if (k.fierce) v += W.fierce;
   if (k.sneaky) v += W.sneaky;
   if (u.stars) v += (u.stars - 1) * W.star;
+  if (u.copies) v += (u.copies - 1) * W.copy;
   return v;
 }
 
@@ -141,10 +146,15 @@ export function evaluate(s: GameState, p: PlayerId): number {
     const pl = s.players[q];
     const sign = q === p ? 1 : -1;
     let v = pl.lives * W.life + (pl.freeRolls ?? 0) * W.freeRoll;
-    v += pl.offerings * W.offering + interestOn(s, pl.offerings) * W.interest;
+    // Offerings past what earns the most interest (and a little to spend) are worth little kept: spend them.
+    const keep = s.rules.interestPer * s.rules.interestMax + 5;
+    v += Math.min(pl.offerings, keep) * W.offering + Math.max(0, pl.offerings - keep) * W.spare + interestOn(s, pl.offerings) * W.interest;
     v += pl.hero.level * W.level;
     for (const u of [...pl.yard, ...(pl.fallen ?? [])]) v += unitValue(s, u);
     if (pl.hero.grown) v += W.grown;
+    // Traits: what they grant shows in the units' stats; this is for what it doesn't (money, heals, Doves) and the pull
+    // towards the next tier.
+    for (const t of traitsOf(s, q)) v += (t.tier + 1) * W.trait + t.count * W.traitStep;
     v -= forecast[q] * W.clash;
     score += sign * v;
   }
@@ -345,8 +355,10 @@ export function chooseAction(s: GameState, options: AiOptions = {}): Action {
   }
   const move = arrange(world, p, actions, readyScore);
   if (move) return move;
-  // Nothing worth buying: a new shop, if a guess at it promises better than keeping the Offerings.
+  // Nothing worth buying: a new shop, if a guess at it promises better than keeping the Offerings, or anyway when
+  // there's more money than interest can use (copies to merge, a better unit to sell for).
   if (actions.some((a) => a.t === 'roll') && rollsThisMuster(s, p) < MAX_ROLLS) {
+    if (me.offerings >= s.rules.interestPer * s.rules.interestMax + 5 + s.rules.rollCost) return { t: 'roll' };
     const score = thenBuy(world, p, { t: 'roll' }, rnd, false);
     if (score > readyScore + 0.5) return { t: 'roll' };
   }

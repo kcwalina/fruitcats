@@ -20,8 +20,8 @@
 
 import TERMS from './terms.json';
 import {
-  AURA_HEROES, AURA_SOURCES, CARDS, MECHANICS, PLUGINS, abilitiesOf, abilityAt, deckCardIds, findAbility, isUnitCard, keywords, keywordsFrom,
-  resolveDeck, setConditionEvaluator, type DeckList, type Keywords, type PluginContext,
+  AURA_HEROES, AURA_SOURCES, CARDS, MECHANICS, PLUGINS, TRAITS, abilitiesOf, abilityAt, deckCardIds, findAbility, isUnitCard, keywords, keywordsFrom,
+  resolveDeck, setConditionEvaluator, tierOf, type DeckList, type Keywords, type PluginContext, type TraitDef,
 } from './cards';
 import { rulesWith } from './rules';
 import type {
@@ -36,8 +36,9 @@ import type {
  * 3: the Muster and the Clash (Folkborn 0.4): Offerings are money, units fight on their own.
  * 4: the shop instead of a hand (Folkborn 0.5): no mulligan, no draws, Candles are a count.
  * 5: lanes open with the Level, from the left: a unit, a move or an Ambush only in an open lane.
+ * 6: Folkborn 0.6: tiers and shop odds by Level, copies (3 for 2 stars, 6 for 3), traits, abilities in the fight.
  */
-export const RULES_VERSION = 5;
+export const RULES_VERSION = 6;
 
 export const LIVES = 9;
 export const DECK_SIZE = 50;
@@ -209,17 +210,73 @@ function aurasInPlay(s: GameState): boolean {
   return false;
 }
 
-/** The lasting effects in play that reach this unit: its own "while…" grants and other cards' auras. */
+// ── Traits ───────────────────────────────────────────────────────────────────────────────────────
+
+/** A trait that is on for a player: which of its tiers, and how many different units count for it. */
+export interface TraitOn { name: string; def: TraitDef; tier: number; count: number }
+
+/**
+ * Every trait a player has a unit for, with how many different units count (a card's copies merged into one unit
+ * count once, tokens not at all, units that went down in this Clash still do) and the tier that is on (-1: none yet).
+ */
+export function traitsOf(s: GameState, p: PlayerId): TraitOn[] {
+  const pl = s.players[p];
+  const ids = new Set<string>();
+  for (const u of pl.yard) ids.add(u.id);
+  for (const u of pl.fallen ?? []) ids.add(u.id);
+  const out: TraitOn[] = [];
+  for (const [name, def] of Object.entries(TRAITS)) {
+    let count = 0;
+    for (const id of ids) {
+      const c = CARDS[id];
+      if (!c || c.token) continue;
+      if (def.family ? c.family === def.family : !!def.role && (c.keywords ?? []).includes(def.role)) count++;
+    }
+    if (!count) continue;
+    let tier = -1;
+    def.tiers.forEach((t, i) => { if (count >= t.at) tier = i; });
+    out.push({ name, def, tier, count });
+  }
+  return out;
+}
+
+/** The traits that are on for a player. */
+const activeTraits = (s: GameState, p: PlayerId): TraitOn[] => traitsOf(s, p).filter((t) => t.tier >= 0);
+
+/** A trait's abilities the player carries (not their units) with this trigger, once each. */
+function playerTraitAbilities(s: GameState, p: PlayerId, when: string): { ref: AbilityRef; name: string }[] {
+  const out: { ref: AbilityRef; name: string }[] = [];
+  for (const t of activeTraits(s, p)) {
+    t.def.tiers[t.tier].abilities.forEach((a, index) => {
+      if (!a.on && a.when === when) out.push({ ref: { trait: t.name, tier: t.tier, index }, name: t.name });
+    });
+  }
+  return out;
+}
+
+/** The lasting effects in play that reach this unit: its own "while…" grants, other cards' auras, its traits. */
 function auraGrant(s: GameState, u: Unit): Grant {
-  if (!aurasInPlay(s)) return NO_GRANT;
-  const g: Grant = { power: 0, health: 0, keywords: [] };
   const found = findUnit(s, u.uid);
+  const cards = aurasInPlay(s);
+  const traits = found ? activeTraits(s, found.owner) : [];
+  if (!cards && !traits.length) return NO_GRANT;
+  const g: Grant = { power: 0, health: 0, keywords: [] };
   if (!found) return g;
   const add = (grant: NonNullable<NonNullable<Ability['static']>['grant']>) => {
     g.power += grant.power ?? 0;
     g.health += grant.health ?? 0;
     g.keywords.push(...(grant.keywords ?? []));
   };
+  for (const t of traits) {
+    for (const a of t.def.tiers[t.tier].abilities) {
+      const st = a.static;
+      if (!st?.grant || typeof st.to !== 'object') continue;
+      if (!matchesUnit(found.owner, u, found.owner, { each: st.to.each, other: st.to.other, filter: st.to.filter })) continue;
+      if (st.while !== undefined && !evaluateCondition(s, found.owner, st.while)) continue;
+      add(st.grant);
+    }
+  }
+  if (!cards) return g;
   for (const q of [0, 1] as PlayerId[]) {
     const sources: { abilities: Ability[]; uid?: number }[] = s.players[q].yard.map((x) => ({ abilities: abilitiesOf(x.id), uid: x.uid }));
     const hero = s.players[q].hero;
@@ -274,8 +331,8 @@ export function unitHealth(u: Unit, s?: GameState): number {
  * `thisRound: false` leaves out this round's buffs (the bot values a unit by what lasts).
  */
 export function unitKeywords(u: Unit, s?: GameState, thisRound = true): Keywords {
-  // Most units: printed keywords only (no Talisman, no buff this round, no aura in play), already cached.
-  if (!u.toy && !(thisRound && u.buffKeywords?.length) && !(s && aurasInPlay(s))) return keywords(u.id);
+  // Most units: printed keywords only (no Talisman, no buff this round, no aura or trait in play), already cached.
+  if (!u.toy && !(thisRound && u.buffKeywords?.length) && !(s && (aurasInPlay(s) || activeTraits(s, 0).length || activeTraits(s, 1).length))) return keywords(u.id);
   const lasting = [...keywords(u.id).all, ...toyGrant(u).keywords];
   const list = [...lasting, ...(thisRound ? u.buffKeywords ?? [] : []), ...(s ? auraGrant(s, u).keywords : [])];
   return keywordsFrom([...new Set(list)]);
@@ -317,7 +374,7 @@ export function streakBonus(s: GameState, streak: number): number {
   return table.length ? table[Math.min(streak, table.length - 1)] ?? 0 : 0;
 }
 
-/** What selling a unit gives back: what was paid for it, less sellLoss for each copy merged into it (a merge is a commitment). */
+/** What selling a unit gives back: what was paid for it, its merged copies included, less sellLoss for each star (a merge is a commitment). */
 export const sellValue = (s: GameState, u: Unit): number => Math.max(0, (u.paid ?? 0) - s.rules.sellLoss * (u.stars ?? 1));
 
 /** What the player's next roll costs: nothing with a free roll to use. */
@@ -384,6 +441,9 @@ function passesFilter(u: Unit, f: UnitFilter | undefined): boolean {
   // Auras aren't counted here, so an aura that picks units by keyword can't depend on itself.
   if (f.keyword && !baseKeywordList(u).includes(f.keyword)) return false;
   if (f.counter && (u.counters?.[f.counter.name] ?? 0) < f.counter.atLeast) return false;
+  if (f.family !== undefined && CARDS[u.id]?.family !== f.family) return false;
+  if (f.card !== undefined && u.id !== f.card) return false;
+  if (f.token !== undefined && !!CARDS[u.id]?.token !== f.token) return false;
   return true;
 }
 
@@ -420,11 +480,15 @@ export function musterTargets(s: GameState, p: PlayerId, sel: TargetSel, exclude
   return result;
 }
 
-/** Every unit an "each…" selector reaches. */
-function eachUnit(s: GameState, p: PlayerId, sel: EachSel, selfUid?: number): Unit[] {
+/** Every unit an "each…" selector reaches (with a `range`, only those within that many lanes of `self`). */
+function eachUnit(s: GameState, p: PlayerId, sel: EachSel, self?: Unit): Unit[] {
   const units: Unit[] = [];
-  for (const owner of [0, 1] as PlayerId[])
-    for (const u of s.players[owner].yard) if (matchesUnit(p, u, owner, sel, selfUid)) units.push(u);
+  for (const owner of [0, 1] as PlayerId[]) {
+    for (const u of s.players[owner].yard) {
+      if (sel.range !== undefined && (!self || Math.abs(u.slot - self.slot) > sel.range)) continue;
+      if (matchesUnit(p, u, owner, sel, self?.uid)) units.push(u);
+    }
+  }
   return units;
 }
 
@@ -449,10 +513,14 @@ function mainAbility(id: string): { ability: Ability; ref: AbilityRef } | null {
   return null;
 }
 
+/** Stars a unit has with this many copies in it (Rules.starCopies: 3 copies make 2★, 6 make 3★). */
+export const starsFor = (s: GameState, copies: number): number => 1 + s.rules.starCopies.filter((n) => copies >= n).length;
+
 /** A unit of the player's that a copy of this card would merge into (never a Fabled: they are one of a kind). */
 export function mergeTwin(s: GameState, p: PlayerId, id: string): Unit | undefined {
   if (CARDS[id]?.type !== 'Critter') return undefined;
-  return s.players[p].yard.find((u) => u.id === id && (u.stars ?? 1) < s.rules.maxStars);
+  const most = s.rules.starCopies[s.rules.starCopies.length - 1];
+  return s.players[p].yard.find((u) => u.id === id && (u.copies ?? 1) < most);
 }
 
 /** One way to play a card: the lane a new unit goes to, and its chosen target(s), if any. */
@@ -604,11 +672,29 @@ function returnToDeck(s: GameState, p: PlayerId, cards: CardInst[]): void {
   shuffle(s, pl.deck);
 }
 
-/** The shop goes back into the deck and a new one is dealt. */
+/**
+ * The shop goes back into the deck and a new one is dealt: each slot's tier by the Hero's Level (Rules.shopOdds), then
+ * the next card of that tier in the shuffled deck; with none left of it, the nearest tier below, then above.
+ */
 function restock(s: GameState, p: PlayerId): void {
   const pl = s.players[p];
   returnToDeck(s, p, pl.shop.splice(0));
-  pl.shop = pl.deck.splice(0, s.rules.shopSize);
+  const odds = s.rules.shopOdds[Math.min(pl.hero.level, s.rules.shopOdds.length - 1)];
+  for (let slot = 0; slot < s.rules.shopSize && pl.deck.length; slot++) {
+    let roll = random(s) * odds.reduce((a, b) => a + b, 0);
+    let tier = 1;
+    for (let t = 0; t < odds.length; t++) {
+      if (roll < odds[t]) { tier = t + 1; break; }
+      roll -= odds[t];
+    }
+    const order = [tier, ...Array.from({ length: tier - 1 }, (_, i) => tier - 1 - i), ...Array.from({ length: 5 - tier }, (_, i) => tier + 1 + i)];
+    let at = -1;
+    for (const t of order) {
+      at = pl.deck.findIndex((c) => tierOf(c.id) === t);
+      if (at >= 0) break;
+    }
+    pl.shop.push(pl.deck.splice(at < 0 ? 0 : at, 1)[0]);
+  }
 }
 
 const laneName = (lane: number): string => `lane ${lane + 1}`;
@@ -757,8 +843,11 @@ function run(s: GameState): void {
   }
 }
 
-/** Every ability a unit has with this trigger: its card's, and its keywords' mechanics' (Rain-Fed, Pearl Tears). */
-function unitAbilities(s: GameState, u: Unit, when: string, inline?: boolean): { ability: Ability; ref: AbilityRef }[] {
+/**
+ * Every ability a unit has with this trigger: its card's, its keywords' mechanics' (Rain-Fed, Pearl Tears), and its
+ * owner's traits' that the unit carries. `owner` is needed for a unit that just went down (no longer on the board).
+ */
+function unitAbilities(s: GameState, u: Unit, when: string, inline: boolean, owner: PlayerId): { ability: Ability; ref: AbilityRef }[] {
   const out: { ability: Ability; ref: AbilityRef }[] = [];
   abilitiesOf(u.id).forEach((ability, index) => {
     if (ability.when === when && !!ability.inline === !!inline) out.push({ ability, ref: { card: u.id, index } });
@@ -766,6 +855,13 @@ function unitAbilities(s: GameState, u: Unit, when: string, inline?: boolean): {
   for (const kw of unitKeywords(u, s).all) {
     (MECHANICS[kw]?.abilities ?? []).forEach((ability, index) => {
       if (ability.when === when && !!ability.inline === !!inline) out.push({ ability, ref: { mechanic: kw, index } });
+    });
+  }
+  for (const t of activeTraits(s, owner)) {
+    t.def.tiers[t.tier].abilities.forEach((ability, index) => {
+      if (!ability.on || ability.when !== when || !!ability.inline !== !!inline) return;
+      if (!matchesUnit(owner, u, owner, { each: 'own', filter: ability.on.filter })) return;
+      out.push({ ability, ref: { trait: t.name, tier: t.tier, index } });
     });
   }
   return out;
@@ -809,8 +905,19 @@ function exec(s: GameState, step: Step): void {
         { t: 'pending', p: first }, { t: 'pending', p: second },
         { t: 'ambushes', p: first }, { t: 'ambushes', p: second },
         { t: 'heroStrike', p: first }, { t: 'heroStrike', p: second },
+        { t: 'triggers', when: 'clashStart' },
         { t: 'bout', n: 1 },
       );
+      break;
+    }
+    case 'triggers': {
+      const steps: Step[] = [];
+      for (const q of [s.yarn, other(s.yarn)]) {
+        for (const u of s.players[q].yard)
+          for (const { ref } of unitAbilities(s, u, step.when, false, q)) steps.push({ t: 'ability', p: q, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
+        for (const { ref, name } of playerTraitAbilities(s, q, step.when)) steps.push({ t: 'ability', p: q, ref, sourceId: name, trigger: true });
+      }
+      s.queue.unshift(...steps);
       break;
     }
     case 'pending': {
@@ -842,7 +949,11 @@ function exec(s: GameState, step: Step): void {
       s.chain = 0;
       log(s, `Bout ${step.n}.`);
       emit(s, { t: 'bout', n: step.n });
-      s.queue.unshift({ t: 'strike', n: step.n, swift: true }, { t: 'strike', n: step.n, swift: false }, { t: 'bout', n: step.n + 1 });
+      s.queue.unshift(
+        { t: 'triggers', when: 'boutStart' },
+        ...(step.n % 2 === 0 ? [{ t: 'triggers', when: 'everyOtherBout' } as Step] : []),
+        { t: 'strike', n: step.n, swift: true }, { t: 'strike', n: step.n, swift: false }, { t: 'bout', n: step.n + 1 },
+      );
       break;
     }
     case 'strike':
@@ -891,15 +1002,17 @@ function exec(s: GameState, step: Step): void {
           u.exhausted = false;
           u.usedOnce = false;
           // Start-of-round abilities that happen as the unit readies (Rain-Fed).
-          for (const { ability } of unitAbilities(s, u, 'roundStart', true)) runAbility(s, q as PlayerId, ability, { self: u });
+          for (const { ability } of unitAbilities(s, u, 'roundStart', true, q as PlayerId)) runAbility(s, q as PlayerId, ability, { self: u });
         }
       }
       const first = s.yarn;
       const second = other(first);
       const steps: Step[] = [];
-      for (const q of [first, second])
+      for (const q of [first, second]) {
         for (const u of s.players[q].yard)
-          for (const { ref } of unitAbilities(s, u, 'roundStart')) steps.push({ t: 'ability', p: q, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
+          for (const { ref } of unitAbilities(s, u, 'roundStart', false, q)) steps.push({ t: 'ability', p: q, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
+        for (const { ref, name } of playerTraitAbilities(s, q, 'roundStart')) steps.push({ t: 'ability', p: q, ref, sourceId: name, trigger: true });
+      }
       steps.push(
         { t: 'income', p: first }, { t: 'income', p: second },
         { t: 'restock', p: first }, { t: 'restock', p: second },
@@ -945,7 +1058,7 @@ function exec(s: GameState, step: Step): void {
     case 'combatWin': {
       const found = findUnit(s, step.uid);
       if (!found || findUnit(s, step.foeUid)) break;
-      for (const { ability } of unitAbilities(s, found.unit, 'defeatsInCombat')) {
+      for (const { ability } of unitAbilities(s, found.unit, 'defeatsInCombat', false, found.owner)) {
         if (ability.oncePerRound) {
           if (found.unit.usedOnce) continue;
           found.unit.usedOnce = true;
@@ -972,8 +1085,10 @@ function runStep(s: GameState, step: Extract<Step, { t: 'ability' }>): void {
   let self: Unit | undefined;
   if (step.selfUid !== undefined) {
     self = findUnit(s, step.selfUid)?.unit;
-    // "…and survives": a unit that went down has no trigger left to run.
-    if (!self && ability.when === 'damagedAndSurvives') return;
+    // A Goodbye's unit has just gone down: it is found among the fallen. A unit that went down has no other trigger
+    // left to run ("…and survives", the Clash's own).
+    if (!self && ability.when === 'goodbye') self = s.players[step.p].fallen?.find((u) => u.uid === step.selfUid);
+    if (!self && ['damagedAndSurvives', 'clashStart', 'boutStart', 'everyOtherBout'].includes(ability.when ?? '')) return;
   }
   if (step.trigger && ability.oncePerRound && self) {
     if (self.usedOnce) return;
@@ -1080,11 +1195,14 @@ function resolvePlay(s: GameState, step: Extract<Step, { t: 'resolvePlay' }>): v
   if (isUnitCard(card.id)) {
     const twin = mergeTwin(s, p, card.id);
     if (twin) {
-      twin.stars = (twin.stars ?? 1) + 1;
+      twin.copies = (twin.copies ?? 1) + 1;
+      const stars = starsFor(s, twin.copies);
+      if (stars > 1) twin.stars = stars;
       twin.paid = (twin.paid ?? 0) + step.paid;
       pl.compost.push(card);
-      log(s, `${cardName(card.id)} joins its twin: ${'★'.repeat(twin.stars)} (${unitPower(twin, s)}/${unitHealth(twin, s)}).`, p);
-      emit(s, { t: 'merge', p, uid: twin.uid, stars: twin.stars });
+      const next = s.rules.starCopies.find((n) => n > twin.copies!);
+      log(s, `${cardName(card.id)} joins its twin: ${twin.copies} copies${stars > 1 ? `, ${'★'.repeat(stars)}` : ''} (${unitPower(twin, s)}/${unitHealth(twin, s)})${next ? `; ${next - twin.copies} more for the next star` : ''}.`, p);
+      emit(s, { t: 'merge', p, uid: twin.uid, stars, copies: twin.copies });
       return;
     }
     const slot = step.slot ?? openFreeLanes(s, p)[0];
@@ -1189,7 +1307,7 @@ function strike(s: GameState, swift: boolean): void {
     log(s, `${cardName(h.from.id)} hits ${cardName(h.to.id)} for ${dealt}${toughNote(s, h.to, h.power, dealt)}.`, h.owner);
     emit(s, { t: 'hit', from: { kind: 'unit', uid: h.from.uid }, uid: h.to.uid, dealt });
     if (dealt) hurtUnits.add(h.to);
-    if (unitAbilities(s, h.from, 'defeatsInCombat').length) s.queue.unshift({ t: 'combatWin', uid: h.from.uid, foeUid: h.to.uid });
+    if (unitAbilities(s, h.from, 'defeatsInCombat', false, h.owner).length) s.queue.unshift({ t: 'combatWin', uid: h.from.uid, foeUid: h.to.uid });
   }
   for (const u of hurtUnits) queueDamaged(s, u);
 }
@@ -1232,13 +1350,13 @@ function dealDamage(s: GameState, u: Unit, amount: number): number {
 
 /** Why a hit dealt less than its Power, for the log: "for 0 (Tough 2)". */
 const toughNote = (s: GameState, u: Unit, amount: number, dealt: number): string =>
-  dealt < amount ? ` (Tough ${unitKeywords(u, s).tough})` : '';
+  amount <= 0 ? ' (no Power)' : dealt < amount ? ` (Tough ${unitKeywords(u, s).tough})` : '';
 
 /** After a unit is dealt damage: its "damaged and survives" abilities, which run once the state is checked. */
 function queueDamaged(s: GameState, u: Unit): void {
   const owner = findUnit(s, u.uid)?.owner;
   if (owner === undefined) return;
-  const steps: Step[] = unitAbilities(s, u, 'damagedAndSurvives')
+  const steps: Step[] = unitAbilities(s, u, 'damagedAndSurvives', false, owner)
     .map(({ ref }) => ({ t: 'ability', p: owner, ref, sourceId: u.id, selfUid: u.uid, trigger: true }));
   if (steps.length) s.queue.unshift(...steps);
 }
@@ -1246,7 +1364,7 @@ function queueDamaged(s: GameState, u: Unit): void {
 /** "When you heal": the healer's units that care (The Roadside Alux). Giving a unit Health counts. */
 function healed(s: GameState, p: PlayerId): void {
   for (const x of s.players[p].yard) {
-    for (const { ability } of unitAbilities(s, x, 'youHeal')) {
+    for (const { ability } of unitAbilities(s, x, 'youHeal', false, p)) {
       if (ability.oncePerRound) {
         if (x.usedOnce) continue;
         x.usedOnce = true;
@@ -1305,7 +1423,7 @@ function runAbility(s: GameState, p: PlayerId, ability: Ability, ctx: AbilityCon
   else if (isUnitSel(sel) || sel === 'attack') {
     const found = ctx.target?.kind === 'unit' ? findUnit(s, ctx.target.uid) : null;
     units = found ? [found.unit] : [];
-  } else if (isEachSel(sel)) units = eachUnit(s, p, sel, ctx.self?.uid);
+  } else if (isEachSel(sel)) units = eachUnit(s, p, sel, ctx.self);
 
   for (const act of acts) doAct(s, p, act, units, ctx);
 }
@@ -1349,7 +1467,8 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
       const c = value as { name: string; add: number; max?: number };
       for (const u of units) {
         const now = u.counters?.[c.name] ?? 0;
-        const next = c.max === undefined ? now + c.add : Math.min(c.max, now + c.add);
+        // A cap stops growth; it never takes away what a unit already has (a lower trait tier, another card's cap).
+        const next = c.max === undefined ? now + c.add : Math.max(now, Math.min(c.max, now + c.add));
         if (next === now) continue;
         u.counters = { ...u.counters, [c.name]: next };
         const template = Object.values(MECHANICS).find((m) => m.counter?.name === c.name)?.counter?.log;
@@ -1427,11 +1546,11 @@ function stateCheck(s: GameState): void {
     pl.yard = pl.yard.filter((u) => !down.includes(u));
     for (const u of down) {
       (pl.fallen ??= []).push(u);
-      // "Units that have gone down in Clashes": only the Clash counts.
-      if (s.phase === 'clash') pl.downed = (pl.downed ?? 0) + 1;
+      // "Units that have gone down in Clashes": only the Clash counts, and only units (a summoned token is not one).
+      if (s.phase === 'clash' && !CARDS[u.id]?.token) pl.downed = (pl.downed ?? 0) + 1;
       log(s, `${cardName(u.id)} goes down.`, owner);
       emit(s, { t: 'down', uid: u.uid, cardId: u.id, owner });
-      for (const { ref } of unitAbilities(s, u, 'goodbye')) triggers.push({ t: 'ability', p: owner, ref, sourceId: u.id, trigger: true });
+      for (const { ref } of unitAbilities(s, u, 'goodbye', false, owner)) triggers.push({ t: 'ability', p: owner, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
     }
   }
   if (triggers.length) s.queue.unshift(...triggers);

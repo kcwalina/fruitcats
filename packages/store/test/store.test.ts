@@ -108,9 +108,10 @@ describe('deck prices: never pay twice', () => {
 
   it('brings every copy you are missing, and none you already have', () => {
     const brings = missingForDeck(jiaoren, starterOnly);
+    const weavers = DECKS['jiaoren'].cards['JR1-D02'];
     expect(brings['JR1-H01']).toBe(1);
-    expect(brings['JR1-D02']).toBe(3);
-    expect(missingForDeck(jiaoren, collectionOf({ 'JR1-D02': 3 }))['JR1-D02']).toBeUndefined();
+    expect(brings['JR1-D02']).toBe(weavers);
+    expect(missingForDeck(jiaoren, collectionOf({ 'JR1-D02': weavers }))['JR1-D02']).toBeUndefined();
   });
 
   it('drops by the share of the cards you already own', () => {
@@ -150,9 +151,10 @@ describe('the cart', () => {
   });
 
   it('never sells more copies than a deck can use', () => {
-    const q = priceCart([{ product: cardProduct('MB1-D02'), qty: 5 }], catalog, collectionOf({ 'MB1-D02': 1 }));
-    expect(q.lines[0].qty).toBe(2);
-    expect(q.lines[0].note).toMatch(/Only 2 copies more|Only 2 more/);
+    const room = maxCopies('MB1-D02') - 1;
+    const q = priceCart([{ product: cardProduct('MB1-D02'), qty: room + 3 }], catalog, collectionOf({ 'MB1-D02': 1 }));
+    expect(q.lines[0].qty).toBe(room);
+    expect(q.lines[0].note).toMatch(new RegExp(`Only ${room} (copies )?more`));
     const cat = priceCart([{ product: cardProduct('MB1-D01'), qty: 3 }], catalog, starterOnly);
     expect(CARDS['MB1-D01'].type).toBe('Cat');
     expect(cat.lines[0].qty).toBe(1);
@@ -169,11 +171,16 @@ describe('the cart', () => {
   });
 
   it('counts decks first, so a single the deck brings is not bought twice', () => {
-    const q = priceCart([{ product: cardProduct('JR1-D02'), qty: 3 }, { product: deckProduct('jiaoren'), qty: 1 }], withCommon, starterOnly);
-    expect(q.lines.map((l) => l.product)).toEqual([cardProduct('JR1-D02'), deckProduct('jiaoren')]);   // the cart's order
+    // The Jiaoren deck holds the one copy a deck may have of JR1-D12 (tier 5), and some of the copies of JR1-D02.
+    const withRare = { ...withCommon, products: { ...withCommon.products, [cardProduct('JR1-D12')]: { id: cardProduct('JR1-D12'), kind: 'card' as const, set: 'JR1', price: 99, card: 'JR1-D12' } } };
+    const cart = [{ product: cardProduct('JR1-D12'), qty: 1 }, { product: cardProduct('JR1-D02'), qty: 6 }, { product: deckProduct('jiaoren'), qty: 1 }];
+    const q = priceCart(cart, withRare, starterOnly);
+    expect(q.lines.map((l) => l.product)).toEqual(cart.map((l) => l.product));   // the cart's order
     expect(q.lines[0].qty).toBe(0);
     expect(q.lines[0].note).toMatch(/deck in your cart/);
-    expect(q.total).toBe(DECK_PRICE);
+    const room = maxCopies('JR1-D02') - DECKS['jiaoren'].cards['JR1-D02'];
+    expect(q.lines[1].qty).toBe(room);
+    expect(q.total).toBe(DECK_PRICE + room * 49);
   });
 
   it('merges repeated lines and sells one of each deck', () => {
@@ -182,7 +189,8 @@ describe('the cart', () => {
     ], withCommon, starterOnly);
     expect(q.lines).toHaveLength(2);
     expect(q.lines[0].qty).toBe(1);
-    expect(q.lines[1].qty).toBe(0);   // the deck already brings its three
+    // One line of two singles, less what the deck already brings.
+    expect(q.lines[1].qty).toBe(Math.min(2, maxCopies('JR1-D02') - DECKS['jiaoren'].cards['JR1-D02']));
   });
 
   it('ignores anything that is not a real line, and drops unknown products with a note', () => {

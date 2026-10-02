@@ -7,6 +7,8 @@ people, animals and places in their stories.
 Status: released (2026-10), a starter deck: every player has it, next to the Domowiki. The data is in
 `content/2026/10/pari/set.json`. Last updated 2026-09-26.
 
+**Folkborn 0.6 (2026-10-01) redid this family's cards for the auto-battler**: tiers, copies, its trait and abilities that happen in the fight ([folkborn-0.6-design.md](folkborn-0.6-design.md)). The names, art and lore below are current; the costs, stats and texts in the tables are the earlier game's. The cards as they are: `content/2026/10/pari/set.json`.
+
 ## The creature
 
 A **pari** (plural pari; English *peri*) is a winged being of Persian folklore. The tales spread across Turkey,

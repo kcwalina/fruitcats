@@ -1,6 +1,6 @@
 # Folkborn — Official Rulebook
 
-**Version 0.5 (playtest draft)** · 2 players · ages 8+ · about 15 minutes per game
+**Version 0.6 (playtest draft)** · 2 players · ages 8+ · about 15 minutes per game
 
 > A card game of folk creatures from around the world.
 
@@ -20,7 +20,9 @@ This rulebook has three parts:
 Version 0.4 (2026-09-30) turned Folkborn from a turn-by-turn card game into a card game whose battles play themselves:
 the **Muster** and the **Clash** replaced alternating actions, attacks, Ambush windows and taking the Lantern;
 Offerings became money you save. Version 0.5 (2026-10-01) replaced the hand with a **shop**: each round, cards are
-dealt face up from your own deck, and you buy what you want, roll for new ones, or sell units to make room.
+dealt face up from your own deck, and you buy what you want, roll for new ones, or sell units to make room. Version
+0.6 (2026-10-01) made the cards for that game: **tiers** that your Level unlocks, **six copies** and stars as in TFT,
+**traits** (team bonuses for families and roles), and abilities that happen **in the fight**.
 
 ---
 
@@ -38,7 +40,11 @@ dealt face up from your own deck, and you buy what you want, roll for new ones, 
 - The loser of the Clash blows out a **Candle** for each enemy still standing. Losing Clashes **in a row** earns extra
   Offerings, so the player who is behind can catch up.
 - After the Clash every unit stands up again. **Nothing on the board is lost in a Clash**: your army only grows.
-- Your Hero's **Level** says how many of your lanes are open, from the left: Level 2 opens lanes 1 and 2. Two copies of a creature **merge** into a stronger one.
+- Your Hero's **Level** says how many of your lanes are open, from the left (Level 2 opens lanes 1 and 2), and how
+  good your shop is: every card has a **tier**, 1 to 5, and the high tiers come with the high Levels.
+- Copies of a creature **merge**: 3 make it 2 stars, 6 make it 3 stars.
+- **Traits:** two, four or six different units of one family (or two or four of one role) on your board give your team
+  a bonus.
 - Blow out the rival's **ninth Candle** and you win.
 
 ---
@@ -100,16 +106,16 @@ Fabled cards and Creatures are both **units**.
 
 ### 3.3 The families (classes)
 
-Each family is a class: your Hero's family decides which cards you can use, how the deck plays,
-and gives it a **signature mechanic** that only that family has.
+Each family is a class: your Hero's family decides which cards you can use and how the deck plays. Each family is
+also a **trait** (section 6.6): two, four or six different units of it on your board give your team its bonus.
 
-| Family | Personality | Plays like | Signature mechanic |
+| Family | Personality | Plays like | Its trait |
 |---|---|---|---|
-| **Domowiki** | Grumpy, loyal, fond of porridge | Feed the house with extra Offerings, then wake the big spirits | **Sprout** & **Well-Fed** — extra Offerings now, payoffs at 7 saved |
-| **Pari** | Light, graceful, never alone | Fly past the guards in a company of three, and slip away as doves | **Company** & **Feather Coat** — bonuses while you control 3 or more units |
+| **Domowiki** | Grumpy, loyal, fond of porridge | Feed the house with extra Offerings, then wake the big spirits | **Hearth** — Offerings every round, payoffs while Well-Fed (7 saved) |
+| **Pari** | Light, graceful, never alone | Fly past the guards in company, and slip away as doves | **Company of Doves** — a Dove for every Pari that goes down |
 | **Aluxes** | Tiny, invisible, mischievous, loyal for seven years | Guard the milpa, call the rain, and let the corn grow tall | **Rain-Fed** — units grow stronger every round |
-| **Jiaoren** | Quiet weavers of the South Sea, grateful to the kind | Every tear is a pearl: when a jiaoren is hurt, you gain an Offering | **Pearl Tears** — hurt units gain Offerings |
-| **Hui Hai** | Tiny, invisible, very strong keepers of the forest and its streams | Stone for stone: hurt a Hui Hai and a pebble comes back from nowhere | **Stone for Stone** — hurt units throw stones |
+| **Jiaoren** | Quiet weavers of the South Sea, grateful to the kind | Every tear is a pearl: when a jiaoren is hurt, you gain an Offering | **Pearl Tears** — hurt units gain Offerings, and heal in the fight |
+| **Hui Hai** | Tiny, invisible, very strong keepers of the forest and its streams | Stone for stone: hurt a Hui Hai and a pebble comes back from nowhere | **Stone for Stone** — big, sturdy units that throw stones back |
 
 A set may also mark a family **neutral** (**Wildfolk**): neutral cards go in any deck.
 
@@ -157,7 +163,19 @@ The game is played in **rounds**. Each round has three parts.
 Your shop is what you may buy this round. Buying a card takes it out of the shop. **Roll** (1 Offering): put your
 whole shop back into your deck, shuffle, and deal 6 new cards; roll as often as you can pay. Some cards give a **free
 roll**: your next roll costs nothing. Because the shop is dealt from your own deck, your deck decides what you can be
-offered: three copies of a creature are your chances of a 3-star unit.
+offered: six copies of a creature are your chances of a 3-star unit.
+
+**Tiers.** Every card has a tier, 1 to 5, which is also its price. For each card of the shop, your Hero's Level picks
+a tier by these odds, and you get the next card of that tier in your deck (with none left of it, the nearest tier
+below, then above):
+
+| Level | Tier 1 | Tier 2 | Tier 3 | Tier 4 | Tier 5 |
+|---|---|---|---|---|---|
+| 2 | 75% | 25% | — | — | — |
+| 3 | 55% | 30% | 15% | — | — |
+| 4 | 35% | 35% | 25% | 5% | — |
+| 5 | 20% | 30% | 33% | 15% | 2% |
+| 6 | 15% | 20% | 30% | 25% | 10% |
 
 ### 6.3 The Muster
 
@@ -172,7 +190,7 @@ screen, or one after the other with the board covered.
 | **Buy a Charm** | Pay its cost and do what it says. |
 | **Set an Ambush** | Pay its cost and put a card with **Ambush** face-down in one of your lanes (section 7). |
 | **Roll** | Pay 1 Offering for a new shop (section 6.2). |
-| **Sell a unit** | It goes back into your deck (its Talisman goes to the Mist), and you get back what you paid for it, **less 1 for each copy** in it: a 1-star loses 1, a 3-star 3. |
+| **Sell a unit** | It goes back into your deck (its Talisman goes to the Mist), and you get back what you paid for it, **less 1 for each star** it has: a 1-star loses 1, a 3-star 3. |
 | **Move a unit** | Free: move it to another lane of yours; a unit already there swaps with it. |
 | **Use your Hero's ability** | Once a round ("Exhaust:" — the Hero turns sideways). |
 | **Level up** | Pay Offerings: **3** from Level 2 to 3, **4** to Level 4, **5** to Level 5, **6** to Level 6. |
@@ -203,11 +221,46 @@ When both players are Ready, the Clash plays itself. Nobody decides anything in 
 
 ### 6.5 Stars
 
-Buying a Creature you already have on the board **merges** it into that unit: it has **2 stars** and **twice** its
-printed Power and Health; a third copy makes **3 stars**, three times. A merge takes no lane and no Level, and the new
-copy goes to the Mist. Fabled cards never merge.
+Buying a Creature you already have on the board **merges** it into that unit, even when your lanes are full (the dots
+on the unit count the copies). **3 copies make it 2 stars**: twice its printed Power and Health. **6 copies make it 3
+stars**: three times. A merge takes no lane and no Level, and the new copy goes to the Mist. Fabled cards never merge.
 
-### 6.6 End
+### 6.6 Traits
+
+A **trait** is a team bonus. Each family is one, and so is each role (Guardian, Elusive, Sneaky, Lure). It counts the
+**different** units of it on your board (copies merged into one unit count once; summoned tokens don't count), and
+turns on with enough of them: 2, 4 or 6 for a family, 2 or 4 for a role. Only the highest tier reached is on, and each
+tier says everything it does. The chips under your plaque show your traits.
+
+<!-- traits: written from the set data by tools; edit the sets, not this table -->
+| Trait | Units | Bonus |
+|---|---|---|
+| **Hearth** *(Domowiki)* | 2 | At the start of each round, gain an Offering. |
+|  | 4 | At the start of each round, gain an Offering. While you're Well-Fed, your Domowiki get +1 Health. |
+|  | 6 | At the start of each round, gain two Offerings. While you're Well-Fed, your units get +1 Power and +1 Health. |
+| **Company of Doves** *(Pari)* | 2 | Your Pari get +1 Power. When one of them goes down, summon a Dove (1/1, Lure). |
+|  | 4 | Your Pari get +1 Power. When one of them goes down, summon a Dove. Your Doves get +1 Power, +1 Health and Swift. |
+|  | 6 | Your units get +3 Power and +2 Health. When a Pari goes down, summon a Dove. Your Doves get +2 Power, +2 Health and Swift. |
+| **Rain-Fed** *(Aluxes)* | 2 | At the start of each round, your Aluxes get +1 Rain-Fed, up to +1. |
+|  | 4 | At the start of each round, your Aluxes get +1 Rain-Fed, up to +2. |
+|  | 6 | At the start of each round, your units get +1 Rain-Fed, up to +3. |
+| **Pearl Tears** *(Jiaoren)* | 2 | Once per round, when one of your Jiaoren survives damage, gain an Offering. |
+|  | 4 | Once per round, when one of your Jiaoren survives damage, gain an Offering. Each bout, your Jiaoren heal 2. |
+|  | 6 | Once per round, when one of your Jiaoren survives damage, gain two Offerings. Each bout, your units heal 3. |
+| **Stone for Stone** *(Hui Hai)* | 2 | Your Hui Hai get +2 Health. |
+|  | 4 | Your Hui Hai get +2 Power and +1 Health. |
+|  | 6 | Your units get +3 Health. Each time one of them survives damage, it deals 2 damage to an enemy unit. |
+| **Guardian** *(role)* | 2 | Your Guardians get +2 Health. |
+|  | 4 | Your Guardians get +4 Health. |
+| **Elusive** *(role)* | 2 | Your Elusive units get +2 Power. |
+|  | 4 | Your Elusive units get +4 Power. |
+| **Sneaky** *(role)* | 2 | Your Sneaky units are Swift. |
+|  | 4 | Your Sneaky units are Swift and get +3 Power. |
+| **Lure** *(role)* | 2 | Your Lures get +3 Health. |
+|  | 4 | Your Lures get +3 Health. When one goes down, your units get +1 Power this round. |
+<!-- /traits -->
+
+### 6.7 End
 
 "This round" effects end, and the Lantern goes to the other player.
 
@@ -273,6 +326,9 @@ the Clash begins (unless it is exhausted for its ability).
 | **Tough X** | Whenever this unit is dealt damage, reduce that damage by X. |
 | **Ambush** | You may set this face-down in one of your lanes (section 7). |
 | **Hello:** | This happens when you buy the card. |
+| **Clash start:** | This happens once, when the Clash begins, before the first bout. |
+| **Each bout:** | This happens at the start of every bout. |
+| **Every second bout:** | This happens at the start of bouts 2, 4, 6 and 8. |
 | **Goodbye:** | This happens each time the unit goes down in a Clash. |
 | **Awaken:** | When this condition is true, flip your Hero to its Awakened side. |
 | **Sprout N** *(Domowiki)* | Gain N Offerings. |
@@ -292,6 +348,8 @@ Other common words:
 - **Gain N Offerings** — add N to your Offerings.
 - **Get a free roll** — your next roll of the shop costs nothing (you keep it until you roll).
 - **Summon** — put a token unit into your lowest empty lane. Tokens are gone when the Clash ends.
+- **The enemy across** — the enemy unit in the lane facing this unit. **The units next to it** — yours, one lane to
+  either side.
 - **This round** — until the End.
 
 ---
@@ -302,7 +360,8 @@ Other common words:
 
 - Exactly **1 Hero** and exactly **50 cards**.
 - Your deck may contain cards from your **Hero's family**, **one other family of your choice**, and neutral (**Wildfolk**) cards.
-- Up to **3 copies** of any card — except **Fabled: 1 copy each, maximum 6 Fabled**.
+- Up to **6 copies** of a tier 1 or 2 card, **4** of tier 3, **3** of tier 4, **1** of tier 5 — and **Fabled: 1 copy
+  each, maximum 6 Fabled**.
 - *New players:* start with a single family. Every family's ready-made deck is built this way.
 - *In the app:* a deck can use only the copies you own. Everyone starts with every card of the starter decks; other
   decks come from the Store. Your opponent plays only the cards they own.
@@ -322,36 +381,40 @@ Other common words:
 
 ## 12. A Sample Round
 
-*Round 3. Ana plays Dziadziuś (Domowiki); Ben plays Aluxito (Aluxes). Ana has 8 Candles, Ben 9. Ben holds the Lantern.*
+*Round 3. Ana plays Dziadziuś (Domowiki); Ben plays Aluxito (Aluxes). Ana has 8 Candles, Ben 9. Ben holds the
+Lantern. Both Heroes are at Level 2.*
 
-*Ana's lanes: Hearth Cricket (2/1) in lane 1, Keeper of the Door (2/6, Guardian) in lane 3. Ben's lanes: Clay Alux
-(3/4 with a rain counter, Rain-Fed) in lane 2, Night Patrol Alux (2/2, Guardian) in lane 3.*
+*Ana's lanes: Hearth Cricket (3/2) in lane 1, Keeper of the Door (2/7, Guardian) in lane 2: two Domowiki, so her
+**Hearth** trait is on. Ben's lanes: Clay Alux in lane 1, Night Patrol Alux (Guardian) in lane 2: two Aluxes, so his
+**Rain-Fed** trait is on.*
 
-**Start.** Everything readies; Clay Alux gets a second rain counter (4/5). Ana gets 5 Offerings and 1 of interest (she
-had saved 5): 11 in all. Ben gets 5: 7 in all. Both get a new shop of 6 cards from their decks.
+**Start.** Ana gets 5 Offerings, 1 of interest (she had saved 5) and 1 from Hearth: 12 in all. Ben had 2
+and gets 5: 7. Rain-Fed grows Ben's units: Clay Alux is 5/7 (3 rain counters), Night Patrol Alux 3/5 (1). Both get a new shop.
 
 **The Muster.** At the same time, in secret:
 
-- Ana's shop has **Kikimora** (5/5, Elusive). She levels Dziadziuś up to Level 3 (3 Offerings) and buys Kikimora into
-  lane 2 (5 Offerings). She keeps 3.
-- Ben's shop has nothing he wants, so he rolls (1 Offering). The new shop has **Knotted Mane**: he buys it aimed at
-  Ana's lane 2 (1 Offering): when the Clash begins, whoever stands there is exhausted. He also buys **A Sweet on the
-  Doorstep** and sets it face-down in lane 2 (1 Offering), and uses Aluxito's ability on Clay Alux: a third rain
-  counter, 5/6. Both say Ready.
+- Ana levels Dziadziuś up to Level 3 (3 Offerings), which opens lane 3. Her Level 3 shop deals tier 1 to 3 cards: it
+  has **Bread-and-Salt Greeter** (tier 3, 3/5) and a second **Hearth Cricket**. She buys the Greeter into lane 3 (3)
+  and the Cricket (1), which merges into the one in lane 1: 2 copies, one more for 2 stars. She keeps 5.
+- Ben rolls (1 Offering). The new shop has **Knotted Mane**: he buys it aimed at Ana's lane 2 (2): when the Clash
+  begins, whoever stands there is exhausted. He buys **A Whistle in the Dark** and sets it face-down in his lane 1 (1),
+  and uses Aluxito's ability on Night Patrol Alux: +1 Rain-Fed, 4/6. He keeps 3. Both say Ready.
 
 **The Clash.**
 
-1. Knotted Mane finds Kikimora in lane 2: she is exhausted, and deals no damage this Clash.
-2. Ben's Ambush in lane 2: A Sweet on the Doorstep gives Clay Alux +2 Power this round (7/6).
-3. **Bout 1.** Every ready unit hits. Ana's Hearth Cricket must hit a Guardian first: Night Patrol Alux (2 damage: down).
-   Keeper of the Door hits Night Patrol Alux too (it was across). Clay Alux has to hit Ana's Guardian, Keeper of the
-   Door, for 7: down. Night Patrol Alux hits Keeper of the Door for 2 as it falls (all hits land at once).
-4. **Bout 2.** Ben has Clay Alux standing; Ana has Hearth Cricket and Kikimora. Hearth Cricket hits Clay Alux for 2.
-   Clay Alux hits Hearth Cricket (plain units come before Elusive ones): down.
-5. **Bout 3.** Kikimora is exhausted and deals nothing; Clay Alux hits her for 7: down. Ana has nobody standing: she
-   loses **1 Candle** (Clay Alux is the one survivor).
+1. Knotted Mane finds Keeper of the Door in lane 2: exhausted, it deals no damage this Clash.
+2. Ben's Ambush in lane 1: A Whistle in the Dark. Hearth Cricket, across from it, deals no damage this Clash.
+3. **Clash start.** Keeper of the Door gives the units next to it +2 Health (an exhausted unit still does what its
+   abilities say), and the Greeter gives all of Ana's units +1 Health: Hearth Cricket 3/5, Keeper 2/8, Greeter 3/8.
+4. **Bout 1.** Everyone hits a Guardian first. The Greeter, Ana's only unit that deals damage, hits Night Patrol Alux
+   for 3. Clay Alux and Night Patrol Alux both hit Keeper of the Door: 9 damage, down.
+5. **Bout 2.** The Greeter hits Night Patrol Alux for 3 more: down. Ana has no Guardian left, so Ben's units hit her
+   plain units, across first, then the nearest, then the leftmost: both hit Hearth Cricket (all hits land at once), 9
+   damage, down.
+6. **Bouts 3 and 4.** The Greeter and Clay Alux trade: 3 to Clay Alux each bout, 5 to the Greeter. After bout 4 the
+   Greeter has taken 10: down. Ana has nobody standing: she loses **1 Candle** (Clay Alux is the one survivor).
 
-Then every unit stands up again, whole. Next round Ana knows: Ben's Clay Alux is big, and Ben likes Ambushes in lane 2.
+Then every unit stands up again, whole. Next round Ana knows: Ben's Clay Alux is big, and Ben likes Ambushes in lane 1.
 
 ---
 
@@ -393,12 +456,12 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **300.5** *End.* "This round" effects end; the Lantern passes to the other player.
 - **300.6** *Round limit.* If the game has not ended by the end of round 30, it ends then. The player with more Candles wins. If both have the same number, the player whose units have the greater total remaining Health wins. If that is equal too, the game is a draw.
 - **300.7** *Losing streak.* A player's streak is the number of Clashes in a row in which they lost a Candle. It earns 0 for a streak of 0 or 1, 1 for 2 or 3, 2 for 4, and 3 for 5 or more.
-- **300.8** *Restock.* A player puts every card in their shop into their deck, shuffles it, and deals the top 6 cards into their shop (fewer if the deck has fewer).
+- **300.8** *Restock.* A player puts every card in their shop into their deck and shuffles it. Then, 6 times (fewer if the deck runs out): pick a tier by the odds for the player's Level (6.2), and move the first card of that tier in the deck into the shop; with none of that tier, the nearest lower tier, then higher.
 
 ### 400. Muster actions
 
 - **400.1** *Buy a card* from your shop: pay its cost; a unit goes into an empty lane of its owner's choosing (if they have room: 200.5), then its Hello triggers; a Talisman attaches to a unit of its owner's without one; a Charm performs its effect then goes to the Mist.
-- **400.2** *Merge:* buying a non-Fabled unit card while controlling a unit with the same name and fewer than 3 stars adds a star to that unit instead, whether or not the player has room (200.5); the card goes to the Mist; no Hello triggers. A unit's printed Power and Health count once per star.
+- **400.2** *Merge:* buying a non-Fabled unit card while controlling a unit with the same name and fewer than 6 copies adds a copy to that unit instead, whether or not the player has room (200.5); the card goes to the Mist; no Hello triggers. A unit with 3 copies has 2 stars, with 6 copies 3 stars. A unit's printed Power and Health count once per star.
 - **400.3** *Aimed effects:* an effect that would choose an enemy unit, or affect each enemy unit, is aimed at a lane of the opponent's (or at all their units) and waits for the Clash (500.1). A triggered ability in a Muster that would affect an enemy unit waits the same way.
   A harmful effect that may choose "a unit" may only be aimed at the opponent's lanes: a player's own units never go down in a Muster.
 - **400.4** *Set an Ambush:* buy a card with Ambush from your shop and put it face-down in one of your open lanes that holds no Ambush.
@@ -414,7 +477,8 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **500.1** Aimed effects resolve, the Lantern holder's first, in the order they were made. A lane target becomes the unit standing in that lane; with none, or if the unit is no longer a legal target, the effect fizzles (a Charm still goes to the Mist).
 - **500.2** Each player's Ambushes, Lantern holder's first: an Ambush aimed at a lane (the enemy lane across from it, or its own lane, or the lane its owner chose for a card that may aim at either) is revealed and resolves if a unit stands in that lane, and otherwise stays face-down. An Ambush that needs no unit always resolves.
 - **500.3** Each Awakened Hero that isn't exhausted and has Power deals that much damage to the enemy unit a unit in lane 1 would hit (600), and takes none. It counts as having struck (500.6).
-- **500.4** Bouts. A bout is: (a) every ready unit with Swift that may attack hits its target (600), all damage dealt at the same time; state check (800); (b) the same for every other ready unit. The bouts end when a side has no unit standing, after 8 bouts, or after a bout that dealt no damage.
+- **500.3a** "Clash start:" abilities of every standing unit, and the players' traits', resolve, the Lantern holder's first.
+- **500.4** Bouts. A bout is: (0) "Each bout:" abilities, then, in bouts 2, 4, 6 and 8, "Every second bout:" abilities, the Lantern holder's first; (a) every ready unit with Swift that may attack hits its target (600), all damage dealt at the same time; state check (800); (b) the same for every other ready unit. The bouts end when a side has no unit standing, after 8 bouts, or after a bout that dealt no damage.
 - **500.5** An exhausted unit, or one that "can't attack", deals no damage in the Clash.
 - **500.6** *Result.* A unit's worth is 1, or 2 if Fierce; a Hero that struck is worth 1, or 2 if Fierce. If one side has units standing and the other none, the side with none loses Candles equal to the standing side's worth, at most 2. If both sides have units standing, each loses Candles equal to the other side's worth, at most 2. Candles are lost Lantern holder first.
 - **500.7** Then every unit that went down stands up again in its lane; every unit's damage is removed; tokens are removed.
@@ -438,15 +502,22 @@ These rules are written to be implemented exactly. Numbered for reference.
 - **800.3** A triggered ability that needs a target and has no chooser (in the Clash, or a Goodbye) picks it: a harmful one the enemy unit its source would hit (600), a helpful one the owner's unit in the lowest lane.
 - **800.4** "Once per round" abilities may be used or may trigger once between consecutive Starts.
 
+### 830. Traits
+
+- **830.1** A trait belongs to a family or to a role keyword (Guardian, Elusive, Sneaky, Lure). For each player, it counts the different card names among their units standing or gone down in this Clash that are of its family, or that print its role; tokens don't count.
+- **830.2** A trait's tiers each have a number; the highest tier whose number the count reaches is on, and no other. Its abilities are the player's: a lasting grant reaches the units it names; a triggered ability is carried by each unit it names, or by the player once when it names none.
+
 ### 850. Signature mechanics
 
 - **850.0 Cards played this round.** A player's *cards played this round* counts every card they bought since the last Start, Ambushes revealed included.
+The families' traits (830, the table in 6.6) use these words; a card may use them too.
+
 - **850.1 Sprout N** *(Domowiki)*. Gain N Offerings.
 - **850.2 Well-Fed** *(Domowiki)*. A player is Well-Fed while they have 7 or more Offerings.
 - **850.3 Company** *(Pari)*. A "Company:" bonus applies if its controller has 3 or more units standing when the effect is checked.
-- **850.4 Feather Coat** *(Pari)*. When a unit with Feather Coat goes down, its owner summons a 1/1 Dove (a Lure). This is a Goodbye.
-- **850.5 Rain-Fed** *(Aluxes)*. In the Start, each unit with Rain-Fed gains a *rain* counter, up to 3. A unit gets +1 Power and +1 Health per rain counter, whether or not it has Rain-Fed.
-- **850.6 Pearl Tears** *(Jiaoren)*. Once per round, when a unit with Pearl Tears is dealt damage and doesn't go down, its owner gains an Offering.
+- **850.4 Dove** *(Pari)*. A 1/1 token with Lure, summoned when a Pari goes down (a Goodbye).
+- **850.5 Rain-Fed** *(Aluxes)*. "+N Rain-Fed" puts N *rain* counters on a unit, up to the most the effect says (never more than 3; an effect with a lower most never removes counters). A unit gets +1 Power and +1 Health per rain counter, and keeps them.
+- **850.6 Pearl Tears** *(Jiaoren)*. Once per round, when one of a player's Jiaoren is dealt damage and doesn't go down, they gain an Offering.
 - **850.7 Stone for Stone** *(Hui Hai)*. Once per round, when a unit with Stone for Stone is dealt damage and doesn't go down, its owner deals 1 damage to an enemy unit (800.3).
 
 ### 900. Tunable parameters
@@ -454,7 +525,7 @@ These rules are written to be implemented exactly. Numbered for reference.
 The following values are deliberately isolated so playtesting can adjust them without rewriting rules
 (packages/engine/src/rules.ts):
 
-| Parameter | v0.4 value |
+| Parameter | v0.6 value |
 |---|---|
 | Candles per player | 9 |
 | Deck size | 50 |
@@ -468,12 +539,13 @@ The following values are deliberately isolated so playtesting can adjust them wi
 | Lanes | 6 |
 | Starting Level / highest Level | 2 / 6 |
 | Level costs (2→3, 3→4, 4→5, 5→6) | 3, 4, 5, 6 |
-| Most stars | 3 |
+| Copies for 2 stars / 3 stars | 3 / 6 |
+| Shop odds by Level | section 6.2 |
 | Bouts in a Clash | at most 8 |
 | Candles lost per Clash | at most 2 |
 | Both lose at the bout limit | yes |
 | Round limit | 30 rounds |
-| Copy limit / Fabled limit | 3 / 6 (1 copy each) |
+| Copy limit by tier (1, 2, 3, 4, 5) / Fabled limit | 6, 6, 4, 3, 1 / 6 (1 copy each) |
 | Rain-Fed maximum | +3/+3 |
 | Well-Fed threshold | 7 Offerings |
 | Company | 3 or more units |
@@ -488,7 +560,7 @@ The following values are deliberately isolated so playtesting can adjust them wi
 
 **Muster:** Buy · Set an Ambush · Roll · Sell · Move · Hero ability · Level up · Ready
 
-**Clash:** aimed effects → Ambushes → Awakened Heroes strike → bouts (Swift first) → loser loses a Candle per survivor (max 2) → everything stands up.
+**Clash:** aimed effects → Ambushes → Awakened Heroes strike → Clash start abilities → bouts (each bout's abilities, then Swift first) → loser loses a Candle per survivor (max 2) → everything stands up.
 
 **Who hits whom:** Guardians → plain → Elusive → Lures (Sneaky: the other way) · then across · then nearest.
 

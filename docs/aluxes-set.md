@@ -6,6 +6,8 @@ starter deck, one every player has, next to the Domowiki and the Pari.
 
 Status: released (2026-11), data in `content/2026/11/aluxes/set.json`. Last updated 2026-09-26.
 
+**Folkborn 0.6 (2026-10-01) redid this family's cards for the auto-battler**: tiers, copies, its trait and abilities that happen in the fight ([folkborn-0.6-design.md](folkborn-0.6-design.md)). The names, art and lore below are current; the costs, stats and texts in the tables are the earlier game's. The cards as they are: `content/2026/11/aluxes/set.json`.
+
 ## The creature
 
 An **alux** (Yucatec Maya; plural *aluxo'ob*, in Spanish *aluxes*) is a knee-high spirit of the Yucatán Peninsula:

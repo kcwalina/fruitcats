@@ -22,7 +22,7 @@ export const HERE_MS = 50_000;
 /** While waiting in line, ask again this often. A place is kept only while it's asked for. */
 export const ENTER_EVERY_MS = 10_000;
 /** Bumped when a message changes shape: an older game is asked to reload before it can play online. */
-export const PROTOCOL = 5;
+export const PROTOCOL = 6;
 
 /**
  * How long a request to play waits for an answer. It's kept on the server from the moment it's sent: it ends when the

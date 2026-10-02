@@ -1,5 +1,5 @@
 // Removal tests: how much a starter deck's win rate drops when one card is taken out of it, each copy
-// replaced by the deck's plain 1-cost 2/1. That is the number that says a card is too strong; the per-card
+// replaced by a plain 1-cost unit. That is the number that says a card is too strong; the per-card
 // screen (stats.ts cardImpact) only picks which cards to test.
 //
 // The change is made in the deck list, never to the card, so nothing about any card changes in any worker
@@ -8,12 +8,16 @@
 import { CARDS, DECKS, type DeckList } from '../lib/engine';
 import type { Contestant, GameRecord, MatchJob } from './match';
 
-/** The deck's plain 1-cost 2/1 of its Hero's family: no keywords, no abilities. */
+/**
+ * The plain unit a removed card's copies become: a 1-cost Creature with no keywords and no abilities, the weakest
+ * of the Hero's family, or of any family when the Hero's has none (Folkborn 0.6 gave every Hui Hai something to do).
+ */
 export function vanillaFor(deck: DeckList): string | undefined {
   const family = CARDS[deck.hero].family;
-  return Object.values(CARDS).find((c) =>
-    c.family === family && c.type === 'Critter' && !c.token && !c.preview &&
-    c.cost === 1 && c.power === 2 && c.health === 1 && !c.keywords?.length && !c.abilities?.length)?.id;
+  const plain = Object.values(CARDS)
+    .filter((c) => c.type === 'Critter' && c.set && !c.token && !c.preview && c.cost === 1 && !c.keywords?.length && !c.abilities?.length)
+    .sort((a, b) => (a.power ?? 0) + (a.health ?? 0) - (b.power ?? 0) - (b.health ?? 0) || a.id.localeCompare(b.id));
+  return (plain.find((c) => c.family === family) ?? plain[0])?.id;
 }
 
 /** The deck with every copy of `id` swapped for its vanilla card, or undefined if it has no vanilla card. */

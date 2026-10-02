@@ -28,13 +28,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ACTIONS = BUILT_IN_ACTIONS;
 const TESTS = CONDITION_TESTS;
 const CORE_KEYWORDS = ['Zoomies', 'Guardian', 'Sneaky', 'Fierce', 'Pounce', 'Elusive', 'Lure'];
-const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log', 'note'];
+const ABILITY_KEYS = ['when', 'if', 'target', 'target2', 'do', 'instead', 'optional', 'optionalTarget', 'oncePerRound', 'pounceOnly', 'inline', 'static', 'log', 'note', 'on'];
 const TYPES = ['Hero Cat', 'Cat', 'Critter', 'Trick', 'Toy'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Legendary'];
 
-// Stat budget (docs/designing-good-deck.md): a plain Critter of cost N has Power + Health = 2N + 1, and
-// keywords and effects are paid for out of it. A report, not a rule: Cats get +2 to +3 on purpose.
-const KEYWORD_PRICE: Record<string, number> = { Guardian: 1, Zoomies: 1, Sneaky: 2, Fierce: 2, Pounce: 0, Elusive: 1, Lure: 1 };
+// Stat budget (docs/folkborn-0.6-design.md): a plain Creature of tier 1 to 5 has Power + Health 5, 7, 9, 12, 15, and
+// keywords and effects are paid for out of it. A report, not a rule: Fabled get +2 to +3 on purpose. Roles are traits
+// (team bonuses), not perks, so they cost nothing.
+const KEYWORD_PRICE: Record<string, number> = { Guardian: 0, Zoomies: 1, Sneaky: 0, Fierce: 2, Pounce: 0, Elusive: 0, Lure: 0 };
+const TIER_BUDGET = [0, 5, 7, 9, 12, 15];
 
 interface Report { errors: string[]; warnings: string[]; notes: string[] }
 
@@ -104,7 +106,7 @@ function checkSet(set: ContentSet, games: number): Report {
     // 5. Budget
     if ((c.type === 'Critter' || c.type === 'Cat') && !c.token && typeof c.cost === 'number') {
       const priced = (c.power ?? 0) + (c.health ?? 0) + (c.keywords ?? []).reduce((n, k) => n + keywordPrice(k), 0);
-      const budget = 2 * c.cost + 1 + (c.type === 'Cat' ? 2 : 0);
+      const budget = TIER_BUDGET[Math.max(1, Math.min(5, c.cost))] + (c.type === 'Cat' ? 2 : 0);
       const effects = (c.abilities ?? []).length;
       const over = priced - budget;
       if (over > (c.type === 'Cat' ? 2 : 1) + effects) r.warnings.push(`${where(c)}: stats and keywords are ${over} over its cost's budget (${priced} vs ${budget}${effects ? `, plus ${effects} effect(s)` : ''}).`);

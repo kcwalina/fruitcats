@@ -22,7 +22,7 @@ cards = [
     frame = gold
     art = 'art/DW1-H01-kitten.webp'
     text = @dziadzius-text
-    constants = [offerings = 8]
+    constants = [offerings = 15]
     flavor = 'The smallest Domowik in the house. Everyone listens to him anyway.'
     back = Awakened {
       name = 'Dziadziuś', epithet = 'Master of the House', power = 4
@@ -33,25 +33,24 @@ cards = [
   }
   stove-keeper = Creature {
     name = 'Stove Keeper'
-    cost = 2, power = 1, health = 2
+    cost = 1, power = 1, health = 3
     number = 'DW1-D01', rarity = common
     art = 'art/DW1-D01.webp'
-    text = 'Hello: Gain an Offering.'
+    text = 'Each bout: The units next to Stove Keeper heal 1.'
     flavor = 'Keeps the embers warm until morning.'
   }
   moving-day-domowik = Creature {
     name = 'Moving-Day Domowik'
-    cost = 1, power = 1, health = 1
+    cost = 1, power = 1, health = 3
     number = 'DW1-D02', rarity = common
     art = 'art/DW1-D02.webp'
     keywords = [@Lure]
-    text = 'Lure. Hello: Sprout {sprout}.'
-    constants = [sprout = 1]
+    text = 'Lure. Goodbye: Gain an Offering.'
     flavor = 'Carry the old fire, and the home comes with you.'
   }
   mane-braiding-domowik = Creature {
     name = 'Mane-Braiding Domowik'
-    cost = 2, power = 2, health = 2
+    cost = 1, power = 2, health = 2
     number = 'DW1-D03', rarity = common
     art = 'art/DW1-D03.webp'
     keywords = [@Swift]
@@ -60,46 +59,45 @@ cards = [
   }
   keeper-of-the-door = Creature {
     name = 'Keeper of the Door'
-    cost = 3, power = 2, health = 6
+    cost = 3, power = 2, health = 7
     number = 'DW1-D04', rarity = common
     art = 'art/DW1-D04.webp'
     keywords = [@Guardian]
-    text = 'Guardian.'
+    text = 'Guardian. Clash start: The units next to Keeper of the Door get +2 Health this round.'
     flavor = 'Nothing crosses the threshold without his nod.'
   }
   ovinnik-of-the-drying-barn = Creature {
     name = 'Ovinnik of the Drying Barn'
-    cost = 2, power = 2, health = 3
+    cost = 2, power = 3, health = 3
     number = 'DW1-D05', rarity = common
     art = 'art/DW1-D05.webp'
-    text = 'Can''t attack unless you''re Well-Fed.'
+    text = 'While you''re Well-Fed, Ovinnik of the Drying Barn gets +2 Power.'
     flavor = 'Keeps the fire that dries the grain. Feed him first, or no one gets bread.'
   }
   bread-and-salt-greeter = Creature {
     name = 'Bread-and-Salt Greeter'
-    cost = 4, power = 3, health = 5
+    cost = 3, power = 3, health = 5
     number = 'DW1-D06', rarity = uncommon
     art = 'art/DW1-D06.webp'
-    text = 'Hello: Your units get +{heal} Health this round.'
-    constants = [heal = 2]
+    text = 'Clash start: Your units get +1 Health this round.'
     flavor = 'Every guest is welcome. Every crumb is counted.'
   }
   kikimora = Creature {
     name = 'Kikimora', epithet = 'the Night Spinner'
-    cost = 5, power = 5, health = 5
+    cost = 4, power = 5, health = 5
     number = 'DW1-D07', rarity = uncommon
     art = 'art/DW1-D07.webp'
     keywords = [@Elusive]
-    text = 'Elusive. Hello: If you''re Well-Fed, get two free rolls.'
+    text = 'Elusive. Clash start: The enemy across gets -3 Power this round.'
     flavor = 'Spins by the stove all night. The yarn tells tomorrow.'
   }
   dvorovoi = Creature {
     name = 'Dvorovoi', epithet = 'Lord of the Yard'
-    cost = 8, power = 6, health = 7
+    cost = 5, power = 7, health = 8
     number = 'DW1-D08', rarity = uncommon
     art = 'art/DW1-D08.webp'
     keywords = [@Guardian, @Fierce]
-    text = 'Guardian. Fierce.'
+    text = 'Guardian. Fierce. Clash start: Deal 2 damage to the enemy across and the ones next to it.'
     flavor = 'The house belongs to his cousin. Everything outside is his.'
   }
   bowl-of-kasha = Charm {
@@ -107,16 +105,15 @@ cards = [
     cost = 2
     number = 'DW1-D09', rarity = uncommon
     art = 'art/DW1-D09.webp'
-    text = 'Sprout 2.'
+    text = 'Sprout 2. Get a free roll.'
     flavor = 'A bowl by the stove, the first spoonful for him.'
   }
   a-domowiks-temper = Charm {
     name = 'A Domowik''s Temper'
-    cost = 4
+    cost = 3
     number = 'DW1-D10', rarity = uncommon
     art = 'art/DW1-D10.webp'
-    text = 'Deal {damage} damage to a unit.'
-    constants = [damage = 5]
+    text = 'Deal 4 damage to an enemy unit.'
     flavor = 'Slam a door in his house and he slams back.'
   }
   saucer-of-milk = Charm {
@@ -125,8 +122,7 @@ cards = [
     number = 'DW1-D11', rarity = uncommon
     art = 'art/DW1-D11.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round. Gain an Offering.'
-    constants = [boost = 2]
+    text = 'Ambush. A unit you control gets +2 Power this round. Gain an Offering.'
     flavor = 'Warm milk in the stable keeps the whole barn happy.'
   }
   old-bast-shoe = Talisman {
@@ -134,62 +130,59 @@ cards = [
     cost = 2
     number = 'DW1-D12', rarity = uncommon
     art = 'art/DW1-D12.webp'
-    text = 'Attached unit gets +{boost} Power and +{extra-health} Health.'
-    constants = [
-      boost = 2
-      extra-health = 2
-    ]
+    text = 'Attached unit gets +2 Power and +2 Health.'
     flavor = 'His ride to every new home.'
   }
   domowik-in-a-cats-shape = Fabled {
     name = 'Domowik in a Cat''s Shape'
-    cost = 3, power = 2, health = 4
+    cost = 3, power = 4, health = 4
     number = 'DW1-D13', rarity = rare
     art = 'art/DW1-D13.webp'
-    text = 'Hello: Sprout {sprout}.'
-    constants = [sprout = 1]
+    keywords = [@Sneaky]
+    text = 'Sneaky. After Domowik in a Cat''s Shape defeats a unit in combat, it gets +2 Power this round.'
     flavor = 'The family cat sleeps in the stove corner. Or does it?'
   }
   babunia = Fabled {
     name = 'Babunia', epithet = 'Lady of the Cellar'
-    cost = 5, power = 4, health = 5
+    cost = 4, power = 4, health = 8
     number = 'DW1-D14', rarity = rare
     art = 'art/DW1-D14.webp'
     keywords = [@Guardian]
-    text = 'Guardian. Hello: Gain an Offering.'
+    text = @dw1-d14-text
     flavor = 'Some say she was the first spirit of the house. He only moved in later.'
   }
   bannik-of-the-bathhouse = Fabled {
     name = 'Bannik of the Bathhouse'
-    cost = 8, power = 8, health = 8
+    cost = 5, power = 8, health = 7
     number = 'DW1-D15', rarity = rare
     art = 'art/DW1-D15.webp'
-    keywords = [@Fierce, @Sneaky]
-    text = 'Fierce. Sneaky.'
+    keywords = [@Sneaky, @Fierce]
+    text = 'Sneaky. Fierce. After Bannik of the Bathhouse defeats a unit in combat, it gets +2 Power this round.'
     flavor = 'Always leave the last steam for him.'
   }
   hearth-cricket = Creature {
     name = 'Hearth Cricket'
-    cost = 1, power = 2, health = 1
+    cost = 1, power = 3, health = 2
     number = 'DW1-D16', rarity = common
     art = 'art/DW1-D16.webp'
+    text = ''
     flavor = 'Sings behind the stove, where the Domowik sleeps.'
   }
   the-house-snake = Creature {
     name = 'The House Snake'
-    cost = 2, power = 1, health = 4
+    cost = 2, power = 1, health = 5
     number = 'DW1-D17', rarity = common
     art = 'art/DW1-D17.webp'
     keywords = [@Guardian]
-    text = 'Guardian.'
+    text = 'Guardian. Once per round, after The House Snake survives damage, gain an Offering.'
     flavor = 'Lives under the doorstep. Harm it, and the family''s luck goes with it.'
   }
   klobuk = Creature {
     name = 'Kłobuk', epithet = 'the Soggy Chick'
-    cost = 3, power = 2, health = 3
+    cost = 2, power = 2, health = 4
     number = 'DW1-D18', rarity = common
     art = 'art/DW1-D18.webp'
-    text = 'Hello: Get a free roll.'
+    text = 'Once per round, after Kłobuk defeats a unit in combat, gain an Offering.'
     flavor = 'Found shivering on the fence in the rain. Take it in, and it brings things home.'
   }
   warm-hand-in-the-night = Charm {
@@ -198,13 +191,12 @@ cards = [
     number = 'DW1-D19', rarity = uncommon
     art = 'art/DW1-D19.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round.'
-    constants = [boost = 2]
+    text = 'Ambush. A unit you control gains Tough 1 this round.'
     flavor = 'A soft, warm, furry hand on your cheek means good luck.'
   }
   knotted-mane = Charm {
     name = 'Knotted Mane'
-    cost = 1
+    cost = 2
     number = 'DW1-D20', rarity = uncommon
     art = 'art/DW1-D20.webp'
     text = 'Exhaust an enemy unit.'
@@ -215,4 +207,7 @@ cards = [
 @@@ dziadzius-text
 Exhaust: Gain an Offering.
 Awaken: You have {offerings} or more Offerings.
+@@@ dw1-d14-text
+Guardian. Each bout: The units next to Babunia heal 1.
+Goodbye: Gain two Offerings.
 @@@

@@ -8,6 +8,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { DECKS } from '@fruitcats/engine';
 import { DECK_PRICE, cardProduct, deckProduct, priceCart, collectionOf, type Quote } from '@fruitcats/store';
 import { fakePaddle } from '../src/fakepaddle';
 import type { PaddleConfig } from '../src/paddle';
@@ -132,7 +133,7 @@ describe('paying', () => {
     expect(await webhook('transaction.completed', paid, 'evt_000000000aaa')).toEqual([200, { ok: true }]);
     const cards = await owned(user);
     expect(cards['JR1-H01']).toBe(1);
-    expect(cards['JR1-D02']).toBe(3);
+    expect(cards['JR1-D02']).toBe(DECKS['jiaoren'].cards['JR1-D02']);
     // The same event again, then Paddle's other event for the same payment.
     expect(await webhook('transaction.completed', paid, 'evt_000000000aaa')).toEqual([200, { ok: true, repeated: true }]);
     expect((await webhook('transaction.paid', paid))[0]).toBe(200);

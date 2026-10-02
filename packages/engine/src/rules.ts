@@ -9,6 +9,16 @@ export const RULES: Readonly<Rules> = {
   // A losing streak, as in TFT: two or three Clashes lost in a row +1, four +2, five or more +3.
   streak: [0, 0, 1, 1, 2, 3],
   shopSize: 6,
+  // Each slot's tier by the Hero's Level, as in TFT: levelling up deals better cards (docs/folkborn-0.6-design.md).
+  shopOdds: [
+    [100, 0, 0, 0, 0],
+    [100, 0, 0, 0, 0],
+    [75, 25, 0, 0, 0],
+    [55, 30, 15, 0, 0],
+    [35, 35, 25, 5, 0],
+    [20, 30, 33, 15, 2],
+    [15, 20, 30, 25, 10],
+  ],
   rollCost: 1,
   sellLoss: 1,
   interestPer: 5,
@@ -20,7 +30,7 @@ export const RULES: Readonly<Rules> = {
   clashCandleCap: 2,
   overtimeBothLose: true,
   maxRounds: 30,
-  maxStars: 3,
+  starCopies: [3, 6],
 };
 
 /** The rules for a new game: the defaults with any overrides (a playtest trying other numbers). */

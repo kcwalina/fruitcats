@@ -2,6 +2,27 @@
 
 Why the rules are the way they are, what we borrowed, and what the playtest engine should try to break first. Companion to [rulebook.md](rulebook.md) and [designing-good-deck.md](designing-good-deck.md).
 
+## Folkborn 0.6: cards made for the auto-battler (2026-10-01)
+
+0.4 and 0.5 changed the game; 0.6 changes the cards to match it. The full proposal, as approved by the owner, is
+[folkborn-0.6-design.md](folkborn-0.6-design.md). In short:
+
+| Decision | Chosen | Why |
+|---|---|---|
+| Tiers | Every card has a tier, 1 to 5, which is its price; the Hero's Level sets the shop's odds per tier (Level 2: 75/25, … Level 6: 15/20/30/25/10) | Levelling up must buy better cards, not only a lane: TFT's level/roll/save choice. |
+| Copies and stars | Up to 6 copies of a tier 1–2 card (4, 3, 1 for tiers 3–5); 3 copies make 2★, 6 make 3★; pips on the unit count them | Two copies for a star made stars cheap and left nothing to build toward. With no bench, a unit with pips is the bench. |
+| Traits | Each family is a trait at 2/4/6 different units; each role (Guardian, Elusive, Sneaky, Lure) at 2/4. Only the highest tier reached is on; copies count once, tokens never | TFT's deck-building pull. The old signature mechanics live on as the families' traits (Hearth, Company of Doves, Rain-Fed, Pearl Tears, Stone for Stone). |
+| In the fight | New triggers: Clash start, Each bout, Every second bout; "the enemy across" and "the units next to it" as targets | Of 69 units, 2 did anything in the fight; 23 only did something when bought. In an auto-battler the fight is where cards should matter. |
+| Hellos | Dropped from the starter families | A Hello is a TCG "battlecry": in a shop game it is bought once and never seen again. |
+| Selling | Back what was paid, its copies included, less 1 per star | Per copy would make a 3★ (6 copies) worth nothing to sell. |
+
+Balance took twenty passes of the gauntlet. What moved most: Domowiki's money, Aluxes'
+growth (Rain-Fed capped per tier), and a hard counter between Pari and Hui Hai (Hui Hai won 70-80%): Grandfather
+Hui Hai now throws 1 damage back when hurt (was 2), with 1 more Health. Heroes
+Awaken later than in 0.5: Dziadziuś at 15 Offerings, Zhu'er at 15 units down, Pebble at 22.
+The last full gate (3000 games): every starter between 47% and 53%; the closest matchup Pari
+against Hui Hai, 30%.
+
 ## Folkborn 0.5: the shop (2026-10-01)
 
 Playing 0.4, the owner found the hand was the wrong half of TFT: it only grew (two draws a round, lost Candles into

@@ -1,13 +1,13 @@
 // Deckbuilding rules (rulebook §11.1): which decks are legal, and why a card can't be added to one.
 // Messages are written for players, since the deck builder shows them as they are.
 
-import { CARDS, DECKS, FAMILIES, isNeutralFamily, type DeckList } from './cards';
+import { CARDS, DECKS, FAMILIES, isNeutralFamily, tierOf, type DeckList } from './cards';
 import { DECK_SIZE, cardName } from './engine';
 
 export const DECK_RULES = {
   size: DECK_SIZE,
-  /** Copies of any one card, except Cats. */
-  copies: 3,
+  /** Copies of any one card, except Cats, by its tier (1 to 5): more of the cheap ones, so they can reach 3★. */
+  copiesByTier: [6, 6, 4, 3, 1],
   /** Copies of each Cat: they are one of a kind. */
   catCopies: 1,
   maxCats: 6,
@@ -20,7 +20,7 @@ export function neutralFamilies(): string[] {
 
 /** How many copies of this card a deck may hold, by the rules (ownership aside). */
 export function copyLimit(id: string): number {
-  return CARDS[id]?.type === 'Cat' ? DECK_RULES.catCopies : DECK_RULES.copies;
+  return CARDS[id]?.type === 'Cat' ? DECK_RULES.catCopies : DECK_RULES.copiesByTier[tierOf(id) - 1];
 }
 
 export function deckSize(deck: DeckList): number {
@@ -73,7 +73,7 @@ export function deckProblems(deck: DeckList, owned?: (id: string) => number): st
     if (card.type === 'Hero Cat') problems.push(`${name} is a Hero: Heroes lead a deck, they don't go in it.`);
     else if (card.token) problems.push(`${name} comes into play from another card: it can't be put in a deck.`);
     else if (qty > copyLimit(id)) {
-      problems.push(card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `At most ${DECK_RULES.copies} copies of ${name}.`);
+      problems.push(card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `At most ${copies(copyLimit(id))} of ${name}.`);
     } else if (owned && qty > owned(id)) problems.push(`You have only ${copies(owned(id))} of ${name}.`);
   }
   return problems;
@@ -96,7 +96,7 @@ export function addProblem(deck: DeckList, id: string, owned?: (id: string) => n
   }
   const have = deck.cards[id] ?? 0;
   if (have >= copyLimit(id)) {
-    return card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `A deck can have at most ${DECK_RULES.copies} copies of ${name}.`;
+    return card.type === 'Cat' ? `${name} is Fabled, and Fabled cards are one of a kind.` : `A deck can have at most ${copies(copyLimit(id))} of ${name}.`;
   }
   if (owned && have >= owned(id)) return owned(id) ? `You have only ${copies(owned(id))} of ${name}.` : `You don't have ${name} yet.`;
   if (card.type === 'Cat' && catCount(deck) >= DECK_RULES.maxCats) return `A deck can have at most ${DECK_RULES.maxCats} Fabled.`;

@@ -100,15 +100,12 @@
       "flavor": "Knee-high and invisible. Every corn stalk in the field is his.",
       "kitten": {
         "name": "Aluxito, Keeper of the Milpa",
-        "text": "Exhaust: A unit you control with Rain-Fed gets +1 Rain-Fed.\nAwaken: You have 7 or fewer Candles.",
+        "text": "Exhaust: A unit you control gets +1 Rain-Fed.\nAwaken: You have 7 or fewer Candles.",
         "abilities": [
           {
             "when": "exhaust",
             "target": {
-              "unit": "own",
-              "filter": {
-                "keyword": "Rain-Fed"
-              }
+              "unit": "own"
             },
             "do": [
               {
@@ -161,14 +158,16 @@
       "name": "Saká-Bearing Alux",
       "cost": 1,
       "power": 1,
-      "health": 2,
-      "text": "Lure. Hello: A unit you control gets +2 Health this round.",
+      "health": 3,
+      "text": "Lure. Clash start: The units next to Saká-Bearing Alux get +2 Health this round.",
       "flavor": "A gourd of sweet corn drink, carried to whoever needs it most.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
           "target": {
-            "unit": "own"
+            "each": "own",
+            "other": true,
+            "range": 1
           },
           "do": [
             {
@@ -189,9 +188,9 @@
       "type": "Critter",
       "family": "Aluxes",
       "name": "Night Patrol Alux",
-      "cost": 2,
+      "cost": 1,
       "power": 2,
-      "health": 2,
+      "health": 4,
       "text": "Guardian.",
       "flavor": "Walks the rows all night. Nothing gets to the corn.",
       "keywords": [
@@ -204,29 +203,11 @@
       "type": "Critter",
       "family": "Aluxes",
       "name": "Corn-Tending Alux",
-      "cost": 2,
+      "cost": 1,
       "power": 2,
-      "health": 2,
-      "text": "Rain-Fed. Hello: If you control a Guardian, get a free roll.",
-      "flavor": "Tends the field while the farmer sleeps. The corn is taller by morning.",
-      "keywords": [
-        "Rain-Fed"
-      ],
-      "abilities": [
-        {
-          "when": "hello",
-          "if": {
-            "yardHas": {
-              "keyword": "Guardian"
-            }
-          },
-          "do": [
-            {
-              "freeRoll": 1
-            }
-          ]
-        }
-      ]
+      "health": 3,
+      "text": "",
+      "flavor": "Tends the field while the farmer sleeps. The corn is taller by morning."
     },
     {
       "id": "AL1-D04",
@@ -236,11 +217,24 @@
       "name": "Clay Alux, Fresh from the J-meen",
       "cost": 2,
       "power": 2,
-      "health": 3,
-      "text": "Rain-Fed.",
+      "health": 4,
+      "text": "At the start of each round, Clay Alux gets +1 Rain-Fed.",
       "flavor": "Shaped from clay by the healer. Seven weeks of prayers, and it stands up.",
-      "keywords": [
-        "Rain-Fed"
+      "abilities": [
+        {
+          "when": "roundStart",
+          "inline": true,
+          "target": "self",
+          "do": [
+            {
+              "counter": {
+                "name": "rain",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
       ]
     },
     {
@@ -249,23 +243,29 @@
       "type": "Critter",
       "family": "Aluxes",
       "name": "Tool-Hiding Alux",
-      "cost": 3,
-      "power": 2,
+      "cost": 2,
+      "power": 3,
       "health": 3,
-      "text": "Hello: Exhaust an enemy unit.",
+      "text": "Sneaky. Clash start: The enemy across gets -2 Power this round.",
       "flavor": "Your machete was right here. Now it isn't.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
           "target": {
-            "unit": "enemy"
+            "each": "enemy",
+            "range": 0
           },
           "do": [
             {
-              "exhaust": true
+              "buff": {
+                "power": -2
+              }
             }
           ]
         }
+      ],
+      "keywords": [
+        "Sneaky"
       ]
     },
     {
@@ -275,12 +275,26 @@
       "family": "Aluxes",
       "name": "Slingshot Alux",
       "cost": 3,
-      "power": 4,
+      "power": 5,
       "health": 3,
-      "text": "Elusive.",
+      "text": "Elusive. Every second bout: Deal 2 damage to the enemy across.",
       "flavor": "Dressed like a farmer, with a slingshot in his sash. Coatis know him.",
       "keywords": [
         "Elusive"
+      ],
+      "abilities": [
+        {
+          "when": "everyOtherBout",
+          "target": {
+            "each": "enemy",
+            "range": 0
+          },
+          "do": [
+            {
+              "damage": 2
+            }
+          ]
+        }
       ]
     },
     {
@@ -289,9 +303,9 @@
       "type": "Critter",
       "family": "Aluxes",
       "name": "Alux of the Old Stones",
-      "cost": 4,
+      "cost": 3,
       "power": 2,
-      "health": 5,
+      "health": 6,
       "text": "Guardian. Tough 1.",
       "flavor": "Lives in the fallen stones of a ruin. Stone doesn't feel a hit.",
       "keywords": [
@@ -305,14 +319,30 @@
       "type": "Critter",
       "family": "Aluxes",
       "name": "Alux of the Ceiba Roots",
-      "cost": 5,
-      "power": 5,
-      "health": 6,
-      "text": "Guardian. Fierce.",
+      "cost": 4,
+      "power": 4,
+      "health": 8,
+      "text": "Guardian. Fierce. At the start of each round, Alux of the Ceiba Roots gets +1 Rain-Fed.",
       "flavor": "The healer set his clay figure under the oldest tree. He grew into it.",
       "keywords": [
         "Guardian",
         "Fierce"
+      ],
+      "abilities": [
+        {
+          "when": "roundStart",
+          "inline": true,
+          "target": "self",
+          "do": [
+            {
+              "counter": {
+                "name": "rain",
+                "add": 1,
+                "max": 3
+              }
+            }
+          ]
+        }
       ]
     },
     {
@@ -347,7 +377,7 @@
       "family": "Aluxes",
       "name": "Honey and Tortillas",
       "cost": 2,
-      "text": "A unit you control gets +3 Health this round. Get a free roll.",
+      "text": "A unit you control gets +1 Rain-Fed. It gets +2 Health this round.",
       "flavor": "Left on the little doorstep at dusk. Gone by morning.",
       "abilities": [
         {
@@ -355,15 +385,18 @@
           "target": {
             "unit": "own"
           },
-          "optionalTarget": true,
           "do": [
             {
-              "buff": {
-                "health": 3
+              "counter": {
+                "name": "rain",
+                "add": 1,
+                "max": 3
               }
             },
             {
-              "freeRoll": 1
+              "buff": {
+                "health": 2
+              }
             }
           ]
         }
@@ -425,20 +458,28 @@
       "family": "Aluxes",
       "name": "The Roadside Alux",
       "cost": 3,
-      "power": 2,
-      "health": 4,
-      "text": "Once per round, when you heal a unit or give it Health, get a free roll.",
+      "power": 3,
+      "health": 5,
+      "text": "At the start of each round, the units next to The Roadside Alux get +1 Rain-Fed.",
       "flavor": "Stops travellers and asks for a little something. Give it, and luck follows you home.",
       "abilities": [
         {
-          "when": "youHeal",
-          "oncePerRound": true,
+          "when": "roundStart",
+          "inline": true,
+          "target": {
+            "each": "own",
+            "other": true,
+            "range": 1
+          },
           "do": [
             {
-              "freeRoll": 1
+              "counter": {
+                "name": "rain",
+                "add": 1,
+                "max": 3
+              }
             }
-          ],
-          "log": "Sakura draws a card."
+          ]
         }
       ]
     },
@@ -449,23 +490,23 @@
       "family": "Aluxes",
       "name": "The Alux of the Sacred Cenote",
       "cost": 4,
-      "power": 3,
-      "health": 5,
-      "text": "Guardian. At the start of each round, your units get +1 Health this round.",
+      "power": 4,
+      "health": 7,
+      "text": "Guardian. Clash start: Your units get +2 Health this round.",
       "flavor": "Guards the deep pool where the rain begins.",
       "keywords": [
         "Guardian"
       ],
       "abilities": [
         {
-          "when": "roundStart",
+          "when": "clashStart",
           "target": {
             "each": "own"
           },
           "do": [
             {
               "buff": {
-                "health": 1
+                "health": 2
               }
             }
           ]
@@ -478,14 +519,25 @@
       "type": "Cat",
       "family": "Aluxes",
       "name": "The Bridge Alux of Cancún",
-      "cost": 6,
-      "power": 6,
-      "health": 7,
-      "text": "Guardian. Tough 1.",
+      "cost": 5,
+      "power": 7,
+      "health": 9,
+      "text": "Guardian. Tough 1. Each bout: The Bridge Alux of Cancún heals 2.",
       "flavor": "The bridge fell three times. Then they built him a house, and it stood.",
       "keywords": [
         "Guardian",
         "Tough 1"
+      ],
+      "abilities": [
+        {
+          "when": "boutStart",
+          "target": "self",
+          "do": [
+            {
+              "heal": 2
+            }
+          ]
+        }
       ]
     },
     {
@@ -495,8 +547,8 @@
       "family": "Aluxes",
       "name": "The Alux's Dog",
       "cost": 1,
-      "power": 2,
-      "health": 1,
+      "power": 3,
+      "health": 3,
       "text": "",
       "flavor": "Where an alux walks, a little dog trots behind."
     },
@@ -506,17 +558,21 @@
       "type": "Critter",
       "family": "Aluxes",
       "name": "Toh, the Cenote Bird",
-      "cost": 3,
-      "power": 2,
+      "cost": 2,
+      "power": 3,
       "health": 3,
-      "text": "Hello: Get a free roll.",
+      "text": "Clash start: Deal 1 damage to the enemy across.",
       "flavor": "Nests in the walls of the cenote and knows everything that goes on there.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
+          "target": {
+            "each": "enemy",
+            "range": 0
+          },
           "do": [
             {
-              "freeRoll": 1
+              "damage": 1
             }
           ]
         }
@@ -556,7 +612,7 @@
       "type": "Trick",
       "family": "Aluxes",
       "name": "Lost in the Monte",
-      "cost": 1,
+      "cost": 2,
       "text": "Exhaust an enemy unit.",
       "flavor": "He walks you in circles until you say please.",
       "abilities": [
@@ -579,27 +635,110 @@
       "name": "Aluxes",
       "hero": "AL1-H01",
       "cards": {
-        "AL1-D01": 3,
-        "AL1-D02": 3,
-        "AL1-D03": 3,
-        "AL1-D04": 3,
+        "AL1-D16": 5,
+        "AL1-D01": 4,
+        "AL1-D03": 5,
+        "AL1-D02": 5,
+        "AL1-D09": 2,
+        "AL1-D18": 2,
+        "AL1-D04": 5,
+        "AL1-D17": 3,
         "AL1-D05": 3,
+        "AL1-D19": 1,
+        "AL1-D10": 2,
+        "AL1-D11": 1,
+        "AL1-D12": 1,
         "AL1-D06": 3,
         "AL1-D07": 3,
-        "AL1-D08": 3,
-        "AL1-D09": 3,
-        "AL1-D10": 3,
-        "AL1-D11": 3,
-        "AL1-D12": 2,
         "AL1-D13": 1,
+        "AL1-D08": 2,
         "AL1-D14": 1,
-        "AL1-D15": 1,
-        "AL1-D16": 3,
-        "AL1-D17": 3,
-        "AL1-D18": 3,
-        "AL1-D19": 3
+        "AL1-D15": 1
       },
       "blurb": "Patient guardians of the cornfield. Wall up, heal with the rain, and let the Rain-Fed corn grow tall."
+    }
+  },
+  "traits": {
+    "Rain-Fed": {
+      "family": "Aluxes",
+      "icon": "🌽",
+      "tiers": [
+        {
+          "at": 2,
+          "text": "At the start of each round, your Aluxes get +1 Rain-Fed, up to +1.",
+          "abilities": [
+            {
+              "when": "roundStart",
+              "inline": true,
+              "on": {
+                "filter": {
+                  "family": "Aluxes"
+                }
+              },
+              "target": "self",
+              "do": [
+                {
+                  "counter": {
+                    "name": "rain",
+                    "add": 1,
+                    "max": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 4,
+          "text": "At the start of each round, your Aluxes get +1 Rain-Fed, up to +2.",
+          "abilities": [
+            {
+              "when": "roundStart",
+              "inline": true,
+              "on": {
+                "filter": {
+                  "family": "Aluxes"
+                }
+              },
+              "target": "self",
+              "do": [
+                {
+                  "counter": {
+                    "name": "rain",
+                    "add": 1,
+                    "max": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 6,
+          "text": "At the start of each round, your units get +1 Rain-Fed, up to +3.",
+          "abilities": [
+            {
+              "when": "roundStart",
+              "inline": true,
+              "on": {
+                "filter": {
+                  "token": false
+                }
+              },
+              "target": "self",
+              "do": [
+                {
+                  "counter": {
+                    "name": "rain",
+                    "add": 1,
+                    "max": 3
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   }
 }

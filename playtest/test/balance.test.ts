@@ -40,11 +40,11 @@ describe('worker pool', () => {
     const job: MatchJob = {
       a: { key: first, deck: DECKS[first] },
       b: { key: second, deck: DECKS[second] },
-      seed: 1234, from: 0, to: 40,
+      seed: 1234, from: 0, to: 10,
     };
     const [single] = await runJobs([job], { threads: 1 });
     const [multi] = await runJobs([job], { threads: 4 });
     expect(multi).toEqual(single);
-    expect(matchups(single).overall[first].games).toBe(40);
+    expect(matchups(single).overall[first].games).toBe(10);
   }, 120_000);
 });

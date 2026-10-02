@@ -10,6 +10,8 @@ in `STORE_SETS` (with HH1 since 2026-09-28; SB1, the Starter Box, was listed too
 2026-09-29). Buying itself is still off everywhere (`BUYING` in `apps/web/src/flags.ts`), so the Store
 shows the deck and its price, and "Add to cart" says "Coming soon". Last updated 2026-09-27.
 
+**Folkborn 0.6 (2026-10-01) redid this family's cards for the auto-battler**: tiers, copies, its trait and abilities that happen in the fight ([folkborn-0.6-design.md](folkborn-0.6-design.md)). The names, art and lore below are current; the costs, stats and texts in the tables are the earlier game's. The cards as they are: `content/2026/12/jiaoren/set.json`.
+
 ## The creature
 
 A **jiaoren** (鮫人, *jiāorén*) lives in the South Sea. The set's `lore` holds the facts; in short:

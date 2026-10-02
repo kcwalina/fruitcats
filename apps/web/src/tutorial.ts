@@ -6,7 +6,7 @@
 //     for you to do something ("play a unit into a lane") and moves on when you have.
 //   • Tips — shown once, the first time something new happens (a lost Candle, a copy to merge, ...).
 
-import { CARDS, isUnitCard, keywords, legalActions, mayAct, targetRank, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
+import { CARDS, isUnitCard, keywords, legalActions, mayAct, targetRank, traitsOf, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 import { count, note } from './progress';
 
 type Text = string | ((s: GameState) => string);
@@ -98,9 +98,9 @@ const TIPS: Balloon[] = [
     text: 'Your open lanes are full. Your Hero’s <b>Level</b> opens lanes from the left: <b>Level up</b> to open one more, at a price in Offerings.',
   },
   {
-    id: 'merge', title: 'Two of a kind', anchor: '.hand',
+    id: 'merge', title: 'Copies merge', anchor: '.hand',
     when: (s) => mustering(s) && s.players[ME].shop.some((c) => CARDS[c.id]?.type === 'Critter' && s.players[ME].yard.some((u) => u.id === c.id)),
-    text: 'Your shop has another copy of a creature on your board. Buy it and they <b>merge</b>, even when your lanes are full: 2 stars, twice as strong. A third copy makes 3 stars.',
+    text: 'Your shop has another copy of a creature on your board. Buy it and it <b>merges</b> into that unit, even when your lanes are full; the dots on the unit count the copies. <b>3 copies make 2 stars</b>, twice as strong; 6 make 3 stars.',
   },
   {
     id: 'sell', title: 'Make room', anchor: '.yard.me',
@@ -115,6 +115,12 @@ const TIPS: Balloon[] = [
   {
     id: 'lostLife', title: 'You lost a Candle', anchor: '.player.me .lives', when: (s) => s.players[ME].lives < 9,
     text: 'Ouch! But losing Clashes in a row earns you extra <b>Offerings</b> at the start of the next rounds: +1 after two, up to +3 after five. Use them to catch up.',
+  },
+  {
+    id: 'traits', title: 'A trait is on', anchor: '.player.me .traits',
+    when: (s) => mustering(s) && traitsOf(s, ME).some((t) => t.tier >= 0),
+    text: 'Two different units of one family (or two of one role, like Guardian) turn on a <b>trait</b>: a bonus for your team. '
+      + 'Its chip lights up, and its number says how many more the next bonus needs. Tap a chip to read it.',
   },
   {
     id: 'roles', title: 'Their roles', anchor: '.yard.foe',

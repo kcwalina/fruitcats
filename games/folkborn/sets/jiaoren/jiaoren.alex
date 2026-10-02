@@ -24,7 +24,7 @@ cards = [
     text = @zhu-er-text
     constants = [
       heal = 2
-      fallen = 10
+      fallen = 15
     ]
     flavor = 'Her name means Little Pearl. She has never cried a tear that wasn''t one.'
     back = Awakened {
@@ -36,18 +36,18 @@ cards = [
   }
   the-spring-guest = Creature {
     name = 'The Spring Guest'
-    cost = 3, power = 2, health = 3
+    cost = 2, power = 2, health = 4
     number = 'JR1-D01', rarity = uncommon
     art = 'art/JR1-D01.webp'
-    text = 'Goodbye: Gain an Offering.'
+    text = 'Goodbye: Your units heal 2.'
     flavor = @the-spring-guest-flavor
   }
   weaver-of-the-sea-hall = Creature {
     name = 'Weaver of the Sea Hall'
-    cost = 3, power = 2, health = 3
+    cost = 2, power = 2, health = 4
     number = 'JR1-D02', rarity = common
     art = 'art/JR1-D02.webp'
-    text = 'Hello: Get a free roll.'
+    text = 'Clash start: The units next to Weaver of the Sea Hall get +2 Health this round.'
     flavor = 'Deep under the South Sea, her loom never stops.'
   }
   dragon-silk = Talisman {
@@ -55,87 +55,85 @@ cards = [
     cost = 3
     number = 'JR1-D03', rarity = uncommon
     art = 'art/JR1-D03.webp'
-    text = 'Attached unit gets +{extra-health} Health and Guardian.'
-    constants = [extra-health = 3]
+    text = 'Attached unit gets +3 Health and Guardian.'
     flavor = 'Woven by the jiaoren. A robe of it goes into the sea and comes out dry.'
   }
   pearl-oyster = Creature {
     name = 'Pearl Oyster'
-    cost = 2, power = 1, health = 2
+    cost = 1, power = 1, health = 3
     number = 'JR1-D04', rarity = common
     art = 'art/JR1-D04.webp'
     keywords = [@Lure]
-    text = 'Lure. Hello: Gain an Offering.'
+    text = 'Lure. Goodbye: Gain an Offering.'
     flavor = 'When the moon is full, the oysters are full. When the moon is dark, they are empty.'
   }
   jiaoren-of-the-tide-pools = Creature {
     name = 'Jiaoren of the Tide Pools'
-    cost = 1, power = 1, health = 2
+    cost = 1, power = 1, health = 4
     number = 'JR1-D05', rarity = common
     art = 'art/JR1-D05.webp'
-    keywords = [@pearl-tears]
-    text = 'Pearl Tears.'
+    text = 'Each bout: Jiaoren of the Tide Pools heals 1.'
     flavor = 'Lives in the water like a fish, and cries like one of us.'
   }
   ice-silkworm = Creature {
     name = 'Ice Silkworm'
-    cost = 1, power = 2, health = 1
+    cost = 1, power = 3, health = 3
     number = 'JR1-D06', rarity = common
     art = 'art/JR1-D06.webp'
+    text = ''
     flavor = @ice-silkworm-flavor
   }
   jiaoren-children-at-play = Creature {
     name = 'Jiaoren Children at Play'
-    cost = 2, power = 2, health = 2
+    cost = 1, power = 3, health = 2
     number = 'JR1-D07', rarity = common
     art = 'art/JR1-D07.webp'
-    keywords = [@Swift]
-    text = 'Swift.'
+    keywords = [@Sneaky]
+    text = 'Sneaky.'
     flavor = 'Racing the fish through the Dragon-Silk Palace.'
   }
   guest-from-the-deep = Creature {
     name = 'Guest from the Deep'
-    cost = 2, power = 1, health = 3
+    cost = 2, power = 2, health = 5
     number = 'JR1-D08', rarity = common
     art = 'art/JR1-D08.webp'
-    keywords = [@Guardian, @pearl-tears]
-    text = 'Guardian. Pearl Tears.'
+    keywords = [@Guardian]
+    text = 'Guardian.'
     flavor = 'The guests from the deep are moved to tears, and weep pearls.'
   }
   keeper-of-the-dragon-silk-palace = Creature {
     name = 'Keeper of the Dragon-Silk Palace'
-    cost = 3, power = 2, health = 4
+    cost = 3, power = 2, health = 7
     number = 'JR1-D09', rarity = common
     art = 'art/JR1-D09.webp'
-    keywords = [@Guardian, @pearl-tears]
-    text = 'Guardian. Pearl Tears.'
+    keywords = [@Guardian]
+    text = 'Guardian. Each bout: The units next to Keeper of the Dragon-Silk Palace heal 1.'
     flavor = 'Some of the silk inside is as white as frost. She lets no one near it.'
   }
   jiaoren-pearl-healer = Creature {
     name = 'Jiaoren Pearl-Healer'
-    cost = 4, power = 3, health = 5
+    cost = 3, power = 3, health = 5
     number = 'JR1-D10', rarity = uncommon
     art = 'art/JR1-D10.webp'
-    text = 'Hello: Your units get +{heal} Health this round.'
-    constants = [heal = 2]
+    text = 'Every second bout: Your units heal 2.'
     flavor = 'A little pearl, ground to powder, for every hurt.'
   }
   muke = Creature {
     name = 'Muke', epithet = 'the Wood Guests'
-    cost = 5, power = 5, health = 5
+    cost = 4, power = 6, health = 5
     number = 'JR1-D11', rarity = uncommon
     art = 'art/JR1-D11.webp'
     keywords = [@Elusive]
-    text = 'Elusive. Hello: Get a free roll.'
+    text = 'Elusive. After Muke defeats a unit in combat, it heals 3.'
     flavor = 'They leave timber under the tree and take a fair price. Nobody ever sees their faces.'
   }
   elder-of-the-south-sea = Creature {
     name = 'Elder of the South Sea'
-    cost = 8, power = 7, health = 7
+    cost = 5, power = 6, health = 9
     number = 'JR1-D12', rarity = uncommon
     art = 'art/JR1-D12.webp'
-    keywords = [@Guardian, @Fierce, @pearl-tears]
-    text = 'Guardian. Fierce. Pearl Tears.'
+    keywords = [@Guardian, @Fierce]
+    text = 'Guardian. Fierce. Each bout: Elder of the South Sea heals 2.'
     flavor = 'The jiaoren live beyond the South Sea. He has seen every wave of it.'
   }
   a-plate-of-pearls = Charm {
@@ -144,22 +142,20 @@ cards = [
     number = 'JR1-D13', rarity = uncommon
     art = 'art/JR1-D13.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round. Gain an Offering.'
-    constants = [boost = 2]
+    text = 'Ambush. A unit you control gets +2 Power this round. Gain an Offering.'
     flavor = 'The thank-you gift of a guest from the sea.'
   }
   the-sea-turns-rough = Charm {
     name = 'The Sea Turns Rough'
-    cost = 4
+    cost = 3
     number = 'JR1-D14', rarity = uncommon
     art = 'art/JR1-D14.webp'
-    text = 'Deal {damage} damage to a unit.'
-    constants = [damage = 5]
+    text = 'Deal 4 damage to an enemy unit.'
     flavor = 'The South Sea is calm, until it isn''t.'
   }
   moonlit-sea = Charm {
     name = 'Moonlit Sea', epithet = 'Pearls with Tears'
-    cost = 1
+    cost = 2
     number = 'JR1-D15', rarity = uncommon
     art = 'art/JR1-D15.webp'
     text = 'Exhaust an enemy unit.'
@@ -170,34 +166,33 @@ cards = [
     cost = 2
     number = 'JR1-D16', rarity = uncommon
     art = 'art/JR1-D16.webp'
-    text = 'Attached unit gets +{extra-health} Health and Pearl Tears.'
-    constants = [extra-health = 2]
+    text = 'Attached unit gets +2 Health and Pearl Tears.'
     flavor = 'The finest jiaoren silk, white as frost.'
   }
   quanxian = Fabled {
     name = 'Quanxian', epithet = 'First of the Springs'
-    cost = 5, power = 4, health = 5
+    cost = 4, power = 4, health = 8
     number = 'JR1-D17', rarity = rare
     art = 'art/JR1-D17.webp'
-    keywords = [@Guardian, @pearl-tears]
-    text = 'Guardian. Pearl Tears. Hello: Gain two Offerings.'
+    keywords = [@Guardian]
+    text = 'Guardian. Each bout: Your units heal 1.'
     flavor = 'The jiaoren are also called the spring guests. She came first.'
   }
   the-muke-poet = Fabled {
     name = 'The Muke Poet'
-    cost = 4, power = 3, health = 4
+    cost = 3, power = 4, health = 4
     number = 'JR1-D18', rarity = rare
     art = 'art/JR1-D18.webp'
-    text = 'Goodbye: Get a free roll.'
+    text = 'Goodbye: Your units get +2 Power this round.'
     flavor = '"The town is all noise and dust. Back to the mountain, to play with the moon."'
   }
   the-oldest-weaver = Fabled {
     name = 'The Oldest Weaver'
-    cost = 8, power = 8, health = 8
+    cost = 5, power = 8, health = 7
     number = 'JR1-D19', rarity = rare
     art = 'art/JR1-D19.webp'
-    keywords = [@Fierce, @pearl-tears]
-    text = 'Fierce. Pearl Tears.'
+    keywords = [@Elusive, @Fierce]
+    text = 'Elusive. Fierce. Clash start: Your units get +1 Power this round.'
     flavor = 'The jiaoren never stop weaving. She hasn''t stopped for a thousand years.'
   }
   tears-of-gratitude = Charm {
@@ -206,8 +201,7 @@ cards = [
     number = 'JR1-D20', rarity = uncommon
     art = 'art/JR1-D20.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round.'
-    constants = [boost = 2]
+    text = 'Ambush. A unit you control gets +3 Health this round.'
     flavor = 'Moved by a kindness, a jiaoren weeps pearls.'
   }
 ]

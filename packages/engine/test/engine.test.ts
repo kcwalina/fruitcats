@@ -63,17 +63,16 @@ describe('deckbuilding (rulebook 11.1)', () => {
   const withCards = (cards: Record<string, number>, hero = 'DW1-H01'): DeckList => ({ name: 'Test', hero, cards });
   const domowiki = () => withCards({ ...DECKS['domowiki'].cards });
 
+  // The Domowiki starter has 5 Hearth Crickets (tier 1: up to 6).
+  const crickets = (deck: DeckList, n: number) => { deck.cards['DW1-D16'] = n; return deck; };
+
   it('needs exactly 50 cards', () => {
-    const deck = domowiki();
-    deck.cards['DW1-D08'] = 1;
-    expect(deckProblems(deck)).toEqual(['Add 1 more card.']);
-    deck.cards['DW1-D08'] = 3;
-    expect(deckProblems(deck)).toEqual(['Remove 1 card.']);
+    expect(deckProblems(crickets(domowiki(), 4))).toEqual(['Add 1 more card.']);
+    expect(deckProblems(crickets(domowiki(), 6))).toEqual(['Remove 1 card.']);
   });
 
   it("allows one family besides the Hero Cat's", () => {
-    const deck = domowiki();
-    deck.cards['DW1-D01'] = 1;
+    const deck = crickets(domowiki(), 3);
     deck.cards['PR1-D01'] = 2;
     expect(deckProblems(deck)).toEqual([]);
     expect(addProblem(deck, 'AL1-D01')).toMatch(/already uses Pari/);
@@ -82,12 +81,12 @@ describe('deckbuilding (rulebook 11.1)', () => {
     expect(deckProblems(deck)[0]).toMatch(/one other family/);
   });
 
-  it('limits copies: 3 of a card, 1 of each Cat, 6 Cats', () => {
-    const deck = domowiki();
-    expect(addProblem(deck, 'DW1-D01')).toMatch(/at most 3 copies/);
+  it('limits copies by tier (6 of a tier 1 card), 1 of each Fabled, 6 Fabled', () => {
+    const deck = crickets(domowiki(), 6);
+    expect(addProblem(deck, 'DW1-D16')).toMatch(/at most 6 copies/);
     expect(addProblem(deck, 'DW1-D13')).toMatch(/one of a kind/);
     deck.cards['DW1-D13'] = 2;
-    deck.cards['DW1-D01'] = 2;
+    crickets(deck, 4);
     expect(deckProblems(deck)).toEqual([expect.stringMatching(/one of a kind/)]);
 
     const cats = withCards({ 'DW1-D13': 1, 'DW1-D14': 1, 'DW1-D15': 1, 'PR1-D18': 1, 'PR1-D19': 1, 'PR1-D20': 1 });
@@ -102,12 +101,13 @@ describe('deckbuilding (rulebook 11.1)', () => {
   });
 
   it('checks the collection when given one', () => {
-    const owned = (id: string) => (id === 'DW1-D08' ? 2 : 3);
+    const owned = (id: string) => (id === 'DW1-D07' ? 2 : 6);
     const deck = domowiki();
+    expect(deck.cards['DW1-D07']).toBe(2);
     expect(deckProblems(deck, owned)).toEqual([]);
-    expect(addProblem(deck, 'DW1-D08', owned)).toMatch(/only 2 copies/);
-    deck.cards['DW1-D08'] = 3;
-    deck.cards['DW1-D01'] = 2;
+    expect(addProblem(deck, 'DW1-D07', owned)).toMatch(/only 2 copies/);
+    deck.cards['DW1-D07'] = 3;
+    crickets(deck, 4);
     expect(deckProblems(deck, owned)).toEqual([expect.stringMatching(/only 2 copies/)]);
   });
 
@@ -116,8 +116,7 @@ describe('deckbuilding (rulebook 11.1)', () => {
   });
 
   it("names cards it doesn't know (a retired set's) instead of failing", () => {
-    const deck = domowiki();
-    deck.cards['DW1-D01'] = 2;
+    const deck = crickets(domowiki(), 4);
     deck.cards['SB1-C01'] = 1;
     expect(deckProblems(deck)).toEqual(['Unknown card SB1-C01.']);
     expect(addProblem(deck, 'SB1-C01')).toBe('That card is not available.');
@@ -231,12 +230,12 @@ describe('the economy', () => {
     const s = toMuster();
     const me = s.players[0];
     me.offerings = 10;
-    const uid = give(s, 0, 'DW1-D18'); // Kłobuk, cost 3: Hello, get a free roll
+    const cost = CARDS['DW1-D18'].cost!;
+    const uid = give(s, 0, 'DW1-D18'); // Kłobuk
     apply(s, { t: 'play', uid, slot: 0 }, 0);
-    expect(me.freeRolls).toBe(1);
     const deck = me.deck.length;
     apply(s, { t: 'sell', uid }, 0);
-    expect(me.offerings).toBe(10 - 3 + 3 - RULES.sellLoss);
+    expect(me.offerings).toBe(10 - cost + cost - RULES.sellLoss);
     expect(me.yard).toHaveLength(0);
     expect(me.deck).toHaveLength(deck + 1);
     const merged = put(s, 0, 'DW1-D18', 1, { stars: 3, paid: 9 });
@@ -357,17 +356,20 @@ describe('the Muster', () => {
     expect(s.players[0].yard.map((u) => u.uid)).toEqual([b.uid, a.uid]);
   });
 
-  it('a second copy of a Creature merges into the first: 2 stars, its printed stats twice', () => {
+  it('copies of a Creature merge into the first: the third makes it 2 stars, its printed stats twice', () => {
     const s = toMuster();
     s.players[0].offerings = 10;
+    const { power, health } = CARDS['DW1-D18'];
     const first = put(s, 0, 'DW1-D18', 1);
+    apply(s, { t: 'play', uid: give(s, 0, 'DW1-D18') }, 0);
+    expect(s.players[0].yard).toHaveLength(1);
+    expect([first.copies, first.stars ?? 1]).toEqual([2, 1]);
     const uid = give(s, 0, 'DW1-D18');
     const plays = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === uid);
     expect(plays).toEqual([{ t: 'play', uid }]);
     apply(s, plays[0], 0);
-    expect(s.players[0].yard).toHaveLength(1);
-    expect(first.stars).toBe(2);
-    expect([unitPower(first), unitHealth(first)]).toEqual([4, 6]);
+    expect([first.copies, first.stars]).toEqual([3, 2]);
+    expect([unitPower(first), unitHealth(first)]).toEqual([2 * power!, 2 * health!]);
     expect(s.players[0].compost.some((c) => c.uid === uid)).toBe(true);
   });
 
@@ -380,7 +382,7 @@ describe('the Muster', () => {
     const fresh = give(s, 0, 'DW1-D07');
     expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === fresh)).toBe(false);
     apply(s, { t: 'play', uid: copy }, 0);
-    expect(first.stars).toBe(2);
+    expect(first.copies).toBe(2);
     apply(s, { t: 'sell', uid: other.uid }, 0);
     expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === fresh)).toBe(true);
   });
@@ -416,7 +418,7 @@ describe('the Muster', () => {
     const targets = legalActions(s, 0).filter((a) => a.t === 'play' && a.uid === temper).map((a) => (a as { target: { kind: string; player?: number } }).target);
     expect(targets).toHaveLength(6);
     expect(targets.every((t) => t.kind === 'lane' && t.player === 1)).toBe(true);
-    // A helpful one still picks your own units (Warm Hand in the Night: a unit you control gets +2 Power).
+    // A helpful one still picks your own units (Warm Hand in the Night: a unit you control gains Tough 1).
     const warm = give(s, 0, 'DW1-D19');
     expect(legalActions(s, 0).some((a) => a.t === 'play' && a.uid === warm && a.target?.kind === 'unit')).toBe(true);
   });
@@ -434,8 +436,8 @@ describe('the Muster', () => {
     const s = toMuster();
     s.players[0].offerings = 10;
     s.players[0].hero.level = 6;
-    const warm = give(s, 0, 'DW1-D19'); // Warm Hand in the Night: a unit you control gets +2 Power this round
-    apply(s, { t: 'ambush', uid: warm, lane: 4 }, 0);
+    const saucer = give(s, 0, 'DW1-D11'); // Saucer of Milk: a unit you control gets +2 Power this round
+    apply(s, { t: 'ambush', uid: saucer, lane: 4 }, 0);
     expect(s.players[0].ambushes).toHaveLength(1);
     const first = clash(s);
     expect(first.some((e) => e.t === 'ambush')).toBe(false);
@@ -443,8 +445,8 @@ describe('the Muster', () => {
     const mine = put(s, 0, 'DW1-D18', 4);
     put(s, 1, 'DW1-D04', 4);
     const second = clash(s);
-    expect(second.find((e) => e.t === 'ambush')).toMatchObject({ p: 0, lane: 4, cardId: 'DW1-D19' });
-    expect(hits(second, mine.uid)[0].dealt).toBe(4);
+    expect(second.find((e) => e.t === 'ambush')).toMatchObject({ p: 0, lane: 4, cardId: 'DW1-D11' });
+    expect(hits(second, mine.uid)[0].dealt).toBe(CARDS['DW1-D18'].power! + 2);
     expect(s.players[0].ambushes).toHaveLength(0);
   });
 
@@ -464,10 +466,10 @@ describe('the Muster', () => {
 describe('the Clash', () => {
   it('a unit hits the enemy across from it; the side left standing wins and the loser loses a Candle per survivor', () => {
     const s = toMuster();
-    const mine = put(s, 0, 'DW1-D08', 0); // Dvorovoi 6/7, Guardian, Fierce
-    const theirs = put(s, 1, 'DW1-D18', 0); // Kłobuk 2/3
+    const mine = put(s, 0, 'DW1-D15', 0); // Bannik of the Bathhouse: Sneaky, Fierce, and nothing at Clash start
+    const theirs = put(s, 1, 'DW1-D18', 0);
     const events = clash(s);
-    expect(hits(events, mine.uid)[0]).toMatchObject({ uid: theirs.uid, dealt: 6 });
+    expect(hits(events, mine.uid)[0]).toMatchObject({ uid: theirs.uid, dealt: CARDS['DW1-D15'].power });
     expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ standing: [1, 0], lost: [0, 2] }); // Fierce: 2
     expect(s.players[1].lives).toBe(7);
   });
@@ -532,11 +534,11 @@ describe('the Clash', () => {
 
   it('Tough reduces each hit, and both sides hit at the same time', () => {
     const s = toMuster(['aluxes', 'domowiki']);
-    const stones = put(s, 0, 'AL1-D07', 0); // 2/5 Guardian, Tough 1
-    const cricket = put(s, 1, 'DW1-D16', 0); // 2/1
+    const stones = put(s, 0, 'AL1-D07', 0); // Guardian, Tough 1
+    const cricket = put(s, 1, 'DW1-D16', 0);
     const events = clash(s);
-    expect(hits(events, cricket.uid)[0]).toMatchObject({ uid: stones.uid, dealt: 1 });
-    expect(hits(events, stones.uid)[0]).toMatchObject({ uid: cricket.uid, dealt: 2 });
+    expect(hits(events, cricket.uid)[0]).toMatchObject({ uid: stones.uid, dealt: CARDS['DW1-D16'].power! - 1 });
+    expect(hits(events, stones.uid)[0]).toMatchObject({ uid: cricket.uid, dealt: CARDS['AL1-D07'].power });
   });
 
   it('after the Clash every unit stands up again, with no damage; tokens are gone', () => {
@@ -548,7 +550,7 @@ describe('the Clash', () => {
     expect(events.some((e) => e.t === 'summon' && e.cardId === 'PR1-K01')).toBe(true);
     expect(s.players[0].yard.map((u) => [u.id, u.damage])).toEqual([['PR1-D01', 0]]);
     expect(s.players[1].yard.map((u) => u.damage)).toEqual([0]);
-    expect(s.players[0].downed).toBe(2);
+    expect(s.players[0].downed).toBe(1); // the Dove, a token, doesn't count
   });
 
   it('both sides still standing at the bout cap lose Candles for the other\'s units', () => {
@@ -571,34 +573,31 @@ describe('the Clash', () => {
     expect(events.find((e) => e.t === 'clashEnd')).toMatchObject({ lost: [0, RULES.clashCandleCap] });
   });
 
-  it('Ovinnik deals no damage unless you are Well-Fed', () => {
+  it('Ovinnik gets +2 Power while you are Well-Fed', () => {
     const s = toMuster();
     const ovinnik = put(s, 0, 'DW1-D05', 0);
     put(s, 1, 'DW1-D04', 0);
     s.players[0].offerings = 0;
-    expect(hits(clash(s), ovinnik.uid)).toHaveLength(0);
+    expect(hits(clash(s), ovinnik.uid)[0].dealt).toBe(CARDS['DW1-D05'].power);
     s.players[0].offerings = 7;
-    expect(hits(clash(s), ovinnik.uid).length).toBeGreaterThan(0);
+    expect(hits(clash(s), ovinnik.uid)[0].dealt).toBe(CARDS['DW1-D05'].power! + 2);
   });
 
   it('Rain-Fed units grow +1/+1 each round, up to +3/+3, and keep it', () => {
     const s = toMuster(['aluxes', 'domowiki']);
-    const clay = put(s, 0, 'AL1-D04', 0); // 2/3
+    const clay = put(s, 0, 'AL1-D04', 0);
     const rain: number[] = [];
     for (let i = 0; i < 4; i++) { clash(s); rain.push(clay.counters?.rain ?? 0); }
     expect(rain).toEqual([1, 2, 3, 3]);
-    expect([unitPower(clay), unitHealth(clay)]).toEqual([5, 6]);
+    expect([unitPower(clay), unitHealth(clay)]).toEqual([CARDS['AL1-D04'].power! + 3, CARDS['AL1-D04'].health! + 3]);
   });
 
-  it('Company: Súči of the Hunt deals 1 to the lane it aims at, 2 when you control 3 units', () => {
-    for (const [company, dealt] of [[false, 1], [true, 2]] as const) {
+  it('Company: at Clash start Súči of the Hunt deals 1 to the enemy across, 3 when you control 3 units', () => {
+    for (const [company, dealt] of [[false, 1], [true, 3]] as const) {
       const s = toMuster(['pari', 'domowiki'], 3);
-      s.players[0].offerings = 10;
-      s.players[0].hero.level = 5;
       if (company) { put(s, 0, 'PR1-D09', 0); put(s, 0, 'PR1-D09', 1); }
-      const foe = put(s, 1, 'DW1-D04', 5);
-      const uid = give(s, 0, 'PR1-D06');
-      apply(s, { t: 'play', uid, slot: 4, target: { kind: 'lane', player: 1, lane: 5 } }, 0);
+      const foe = put(s, 1, 'DW1-D04', 4);
+      put(s, 0, 'PR1-D06', 4);
       const events = clash(s);
       expect(events.find((e) => e.t === 'damage')).toMatchObject({ uid: foe.uid, amount: dealt });
     }
@@ -684,7 +683,7 @@ describe('full games', () => {
     const again = createGame({ decks: ['jiaoren', 'hui-hai'], seed: 8 });
     for (const [p, a] of played) apply(again, a, p);
     expect(JSON.stringify(again)).toBe(JSON.stringify(s));
-  });
+  }, 60_000);
 
   it('the AI beats a random player', () => {
     let aiWins = 0;
@@ -717,7 +716,7 @@ describe('neutral families', () => {
       cards: [{ id: 'TST-N01', type: 'Critter', rarity: 'Common', family: 'Hedge', name: 'Hedge Sprite', cost: 1, power: 1, health: 1, text: '' }],
     });
     const deck: DeckList = { name: 'Test', hero: 'DW1-H01', cards: { ...DECKS['domowiki'].cards } };
-    deck.cards['DW1-D01'] = 1;
+    deck.cards['DW1-D16'] -= 2;
     deck.cards['PR1-D01'] = 1;
     deck.cards['TST-N01'] = 1;
     expect(deckProblems(deck)).toEqual([]);

@@ -1,6 +1,6 @@
 export * from './types';
 export {
-  CARDS, DECKS, FAMILIES, MECHANICS, SETS, PLUGINS, BEHAVIOURS, BLANK_CARD, behaviour, keywords, keywordsFrom, parseKeywords,
+  CARDS, DECKS, FAMILIES, MECHANICS, TRAITS, SETS, PLUGINS, tierOf, BEHAVIOURS, BLANK_CARD, behaviour, keywords, keywordsFrom, parseKeywords,
   isUnitCard, isNeutralFamily, deckCardIds, resolveDeck, registerSet, clearCatalog, abilitiesOf, usesCondition,
   missingPieces, TRIGGERS, BUILT_IN_ACTIONS, CONDITION_TESTS,
 } from './cards';
@@ -8,10 +8,11 @@ export {
   DECK_RULES, neutralFamilies, copyLimit, deckSize, catCount, otherFamilies, deckProblems, addProblem, deckCode, parseDeckCode,
   sameCards, builtInTwin, deckChanges,
 } from './decks';
-export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef } from './cards';
+export type { DeckList, Keywords, Behaviour, SetData, Plugin, PluginContext, AiContext, FamilyDef, MechanicDef, TraitDef } from './cards';
+export type { TraitOn } from './engine';
 export {
   createGame, apply, applyTrusted, legalActions, mayAct, nextSeat, clockFor, playOptions, playChoices, ambushChoices, targetsFor, musterTargets,
-  findUnit, laneUnit, freeLanes, isOpenLane, openFreeLanes, unitCount, mergeTwin, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky,
+  findUnit, laneUnit, freeLanes, isOpenLane, openFreeLanes, unitCount, mergeTwin, starsFor, traitsOf, unitPower, unitHealth, unitKeywords, targetRank, attackTarget, isGuardian, isSneaky,
   heroSide, heroAbility, levelCost, interestOn, baseIncome, streakBonus, sellValue, rollCost, other, cardName, describeTarget, random, IllegalAction, evaluateCondition, cantAttack,
   RULES_VERSION, LIVES, DECK_SIZE, LANES, YARD_LIMIT, TRIGGER_CHAIN_LIMIT,
 } from './engine';

@@ -15,16 +15,18 @@ describe('rules text comes from the data', () => {
     for (const { report } of runChecks()) expect(report.errors.filter((e) => e.includes("doesn't match its data"))).toEqual([]);
   });
   it('writes the house style', () => {
-    expect(suggestText(CARDS['PR1-D12'])).toBe('Ambush. Deal 2 damage to a unit.');
+    expect(suggestText(CARDS['PR1-D12'])).toBe('Ambush. Deal 2 damage to an enemy unit.');
     expect(suggestText(CARDS['PR1-D04'])).toBe('Swift.');
-    expect(suggestText(CARDS['PR1-D06'])).toBe('Hello: Deal 1 damage to a unit. Company: deal 2 instead.');
+    expect(suggestText(CARDS['PR1-D06'])).toBe('Clash start: Deal 1 damage to the enemy across. Company: deal 3 instead.');
     expect(suggestText(CARDS['AL1-D09'])).toBe('Ambush. The enemy unit across from this Ambush deals no damage this Clash.');
-    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Get a free roll.');
-    expect(suggestText(CARDS['DW1-D02'])).toBe('Lure. Hello: Sprout 1.');
-    expect(suggestText(CARDS['DW1-D06'])).toBe('Hello: Your units get +2 Health this round.');
-    expect(suggestText(CARDS['AL1-D04'])).toBe('Rain-Fed.');
-    expect(heroTexts(CARDS['DW1-H01']).kitten).toBe('Exhaust: Gain an Offering.\nAwaken: You have 8 or more Offerings.');
-    expect(heroTexts(CARDS['JR1-H01']).kitten).toContain('Awaken: 10 or more units have gone down in Clashes this game.');
+    expect(suggestText(CARDS['JR1-D18'])).toBe('Goodbye: Your units get +2 Power this round.');
+    expect(suggestText(CARDS['DW1-D02'])).toBe('Lure. Goodbye: Gain an Offering.');
+    expect(suggestText(CARDS['DW1-D06'])).toBe('Clash start: Your units get +1 Health this round.');
+    expect(suggestText(CARDS['DW1-D07'])).toBe('Elusive. Clash start: The enemy across gets -3 Power this round.');
+    expect(suggestText(CARDS['HH1-D18'])).toBe('Every second bout: Deal 2 damage to the enemy across.');
+    expect(suggestText(CARDS['AL1-D04'])).toBe('At the start of each round, Clay Alux gets +1 Rain-Fed.');
+    expect(heroTexts(CARDS['DW1-H01']).kitten).toBe('Exhaust: Gain an Offering.\nAwaken: You have 15 or more Offerings.');
+    expect(heroTexts(CARDS['JR1-H01']).kitten).toContain('Awaken: 15 or more units have gone down in Clashes this game.');
   });
   it('never writes a retired word (Treats, Pounce, Zoomies…) on any card', () => {
     for (const c of Object.values(CARDS)) {

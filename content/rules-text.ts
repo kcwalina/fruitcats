@@ -53,11 +53,24 @@ function filterWords(f: UnitFilter | undefined): { adj: string; tail: string } {
 /** "a" or "an", by sound: an enemy, an exhausted unit, a unit, a 2/2 token ("an 8/8" is spelled out by its number). */
 const article = (word: string) => (/^(8|11|18|[aeio]|u(?!n[aeiou]))/i.test(word) ? 'an' : 'a');
 
+/**
+ * Units within some lanes of the card's own unit, as a noun phrase: "the enemy across", "the enemy across and the
+ * ones next to it", "the units next to Stove Keeper". Null for a selector without a range.
+ */
+function rangeNoun(t: TargetSel, self: string): string | null {
+  if (typeof t !== 'object' || !('each' in t) || t.range === undefined) return null;
+  if (t.each === 'enemy') return t.range === 0 ? 'the enemy across' : `the enemy across and the ones next to it`;
+  if (t.each === 'own') return t.range === 0 ? self : `the units next to ${self}`;
+  return `the units next to ${self}`;
+}
+
 /** A target as a noun phrase: "a unit you control", "an exhausted unit", "each enemy unit". */
 function noun(t: TargetSel | undefined, self: string): string {
   if (t === undefined) return '';
   if (t === 'self') return self;
   if (t === 'attack') return 'the enemy unit across from this Ambush';
+  const near = rangeNoun(t, self);
+  if (near) return near;
   const { adj, tail } = filterWords(t.filter);
   if ('unit' in t) {
     if (t.unit === 'own') return t.other ? `another ${adj}unit you control${tail}` : `${article(adj || 'unit')} ${adj}unit you control${tail}`;
@@ -119,22 +132,34 @@ function actClause(act: Act, on: string, a: Ability, self: string, subjectless: 
   const n = v as number;
   switch (name) {
     case 'damage': return `deal ${n} damage to ${on}`;
-    case 'heal': return `heal ${n} from ${on}`;
+    case 'heal': {
+      // Units heal themselves in the house style: "Stove Keeper heals 1", "your units heal 2", "the units next to her heal 1".
+      const sel = a.target;
+      if (sel === 'self') return `${on} heals ${n}`;
+      if (typeof sel === 'object' && 'each' in sel) return `${sel.range !== undefined ? on : auraSubject(sel).toLowerCase()} heal ${n}`;
+      return `heal ${n} from ${on}`;
+    }
     case 'buff': {
       const b0 = v as { power?: number; health?: number; keywords?: string[] };
       const b = { ...b0, keywords: b0.keywords?.map(kw) };
-      // Every unit of a side, as the subject: "your units get" (not "each unit you control gets").
-      const each = typeof a.target === 'object' && 'each' in a.target && on !== 'it' ? auraSubject(a.target).toLowerCase() : '';
+      // Every unit of a side, as the subject: "your units get" (not "each unit you control gets"); units in a range
+      // by where they stand ("the units next to her get", "the enemy across gets").
+      const sel = a.target;
+      const ranged = typeof sel === 'object' && 'each' in sel && sel.range !== undefined;
+      const each = typeof sel === 'object' && 'each' in sel && on !== 'it' ? (ranged ? on : auraSubject(sel).toLowerCase()) : '';
+      const plural = !!each && !(ranged && typeof sel === 'object' && 'each' in sel && sel.range === 0);
       const subject = subjectless ? '' : `${each || on} `;
-      if (!b.power && !b.health && b.keywords?.length) return `${subject}${each ? 'gain' : 'gains'} ${b.keywords.join(' and ')} this round`;
-      const parts = [b.power && `+${b.power} Power`, b.health && `+${b.health} Health`, ...(b.keywords ?? [])].filter(Boolean);
-      return `${subject}${each ? 'get' : 'gets'} ${parts.join(' and ')} this round`;
+      if (!b.power && !b.health && b.keywords?.length) return `${subject}${plural ? 'gain' : 'gains'} ${b.keywords.join(' and ')} this round`;
+      const signed = (n: number) => (n < 0 ? `-${-n}` : `+${n}`);
+      const parts = [b.power && `${signed(b.power)} Power`, b.health && `${signed(b.health)} Health`, ...(b.keywords ?? [])].filter(Boolean);
+      return `${subject}${plural ? 'get' : 'gets'} ${parts.join(' and ')} this round`;
     }
     case 'counter': {
       const c = v as { name: string; add: number };
       const def = counterDef(c.name);
       if (def?.noun) return `put ${counters(def.noun, c.add)} on ${on}`;
-      return `${on} gets +${c.add} ${mechanicOfCounter(c.name)}`;
+      const many = typeof a.target === 'object' && 'each' in a.target && !(a.target.range === 0);
+      return `${on} ${many ? 'get' : 'gets'} +${c.add} ${mechanicOfCounter(c.name)}`;
     }
     case 'freeRoll': return n === 1 ? 'get a free roll' : `get ${count(n)} free rolls`;
     case 'exhaust': return `exhaust ${on}`;
@@ -164,11 +189,16 @@ function actClauses(acts: Act[], a: Ability, self: string, subjectless: boolean,
   const times: number[] = [];
   for (const act of acts) {
     const last = merged[merged.length - 1];
-    if (last && 'summon' in act && JSON.stringify(last) === JSON.stringify(act) && TOKENS[String(act.summon)]?.brief) times[times.length - 1]++;
+    if (last && 'summon' in act && JSON.stringify(last) === JSON.stringify(act) && TOKENS[String(act.summon)]) times[times.length - 1]++;
     else { merged.push(act); times.push(1); }
   }
   return merged.map((act, i) => {
-    if (times[i] > 1) { const t = TOKENS[String((act as { summon: string }).summon)]; return `summon ${count(times[i])} ${t.name}s`; }
+    if (times[i] > 1) {
+      const t = TOKENS[String((act as { summon: string }).summon)];
+      if (t.brief) return `summon ${count(times[i])} ${t.name}s`;
+      const kws = t.keywords?.length ? ` with ${t.keywords.map(kw).join(' and ')}` : '';
+      return `summon ${count(times[i])} ${t.power}/${t.health} ${t.name}s${kws}`;
+    }
     const needsTarget = !['freeRoll', 'readyTreats', 'sprout', 'summon'].includes(Object.keys(act)[0]);
     const target = mentioned && singular ? 'it' : on;
     const text = actClause(act, target, a, self, subjectless);
@@ -198,7 +228,10 @@ export function abilityText(a: Ability, card: CardDef): string {
     return `${auraSubject(st.to)} ${onlyKeywords ? 'have' : 'get'} ${grants}.${note}`;
   }
 
-  const label = ({ hello: 'Hello: ', goodbye: 'Goodbye: ', exhaust: 'Exhaust: ' } as Record<string, string>)[a.when ?? ''] ?? '';
+  const label = ({
+    hello: 'Hello: ', goodbye: 'Goodbye: ', exhaust: 'Exhaust: ',
+    clashStart: 'Clash start: ', boutStart: 'Each bout: ', everyOtherBout: 'Every second bout: ',
+  } as Record<string, string>)[a.when ?? ''] ?? '';
   const lead =
     a.when === 'roundStart' ? 'At the start of each round, ' :
     a.when === 'damagedAndSurvives' ? `${a.oncePerRound ? 'Once per round, after' : 'After'} ${name} survives damage, ` :    a.when === 'defeatsInCombat' ? `${a.oncePerRound ? 'Once per round, after' : 'After'} ${name} defeats a unit in combat, ` :
@@ -206,7 +239,8 @@ export function abilityText(a: Ability, card: CardDef): string {
 
   // A unit's own bonus under a label mechanic, on arrival: "Company: gets +1 Power this round." (no "Hello:").
   const ownLabelBonus = a.when === 'hello' && a.target === 'self' && isLabel(a.if);
-  let clauses = actClauses(a.do ?? [], a, self, ownLabelBonus);
+  // Once the lead has named the card ("After Schaibar defeats a unit in combat, …"), the rest calls it "it".
+  let clauses = actClauses(a.do ?? [], a, lead.includes(name) ? 'it' : self, ownLabelBonus);
   if (a.optional) clauses = clauses.map((c, i) => (i === 0 ? `you may ${c}` : c));
 
   let body: string;

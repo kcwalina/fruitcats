@@ -64,7 +64,9 @@ export interface CardDef {
 /** When an ability happens. `exhaust` is a Hero's activated ability; `play` a Charm's effect. */
 export type Trigger =
   | 'play' | 'hello' | 'goodbye' | 'roundStart' | 'exhaust'
-  | 'damagedAndSurvives' | 'defeatsInCombat' | 'youHeal';
+  | 'damagedAndSurvives' | 'defeatsInCombat' | 'youHeal'
+  /** In the Clash: once before the first bout, at the start of every bout, at the start of bouts 2, 4, 6, 8. */
+  | 'clashStart' | 'boutStart' | 'everyOtherBout';
 
 /** Which units a filter keeps. */
 export interface UnitFilter {
@@ -73,6 +75,12 @@ export interface UnitFilter {
   noToy?: boolean;
   keyword?: string;
   counter?: { name: string; atLeast: number };
+  /** Units of this family (a trait's). */
+  family?: string;
+  /** Units of this card (a token's, say). */
+  card?: string;
+  /** Tokens only (true), or no tokens (false). */
+  token?: boolean;
 }
 
 /**
@@ -82,7 +90,8 @@ export interface UnitFilter {
 export type TargetSel =
   | 'self' | 'attack'
   | { unit: 'own' | 'enemy' | 'any'; other?: boolean; filter?: UnitFilter }
-  | { each: 'own' | 'enemy' | 'all' | 'allOther'; other?: boolean; filter?: UnitFilter };
+  /** `range`: only units within this many lanes of the ability's own unit (0: the one across from it, or itself). */
+  | { each: 'own' | 'enemy' | 'all' | 'allOther'; other?: boolean; filter?: UnitFilter; range?: number };
 
 /** A condition: a set mechanic's name ("Company", "Well-Fed"), a plugin's, a built-in name, or a test. */
 export type Condition =
@@ -136,12 +145,15 @@ export interface Ability {
   log?: string;
   /** A reminder printed after the ability's text, in brackets. */
   note?: string;
+  /** A trait's ability: which of the player's units carry it (none: the player does, once). */
+  on?: { filter?: UnitFilter };
 }
 
 /** Where an ability lives, so a queued step (plain JSON) can find it again. */
 export type AbilityRef =
   | { card: string; side?: 'kitten' | 'bigCat'; index: number }
-  | { mechanic: string; index: number };
+  | { mechanic: string; index: number }
+  | { trait: string; tier: number; index: number };
 
 /** A physical card: `uid` is unique within a game, `id` names its definition. */
 export interface CardInst {
@@ -158,8 +170,10 @@ export interface Unit {
   /** An exhausted unit deals no damage in the Clash (an enemy's "exhaust" effect). Readied at the Start. */
   exhausted: boolean;
   toy?: CardInst;
-  /** Copies merged into one unit (2 or 3): each star adds the card's printed Power and Health again. */
+  /** Stars (2 or 3), from the copies merged into it: each star adds the card's printed Power and Health again. */
   stars?: number;
+  /** Copies of the card in this unit, itself included (Rules.starCopies says how many make each star). */
+  copies?: number;
   /** "This round" Power, cleared in the End Phase. */
   buffPower: number;
   /** "This round" Health, cleared in the End Phase. */
@@ -170,7 +184,7 @@ export interface Unit {
   usedOnce: boolean;
   /** Mechanics' counters on the unit: { rain: 2 } (Rain-Fed). They stay while the unit stays on the board. */
   counters?: Record<string, number>;
-  /** Offerings paid for it, its merged copies included: what selling it gives back (less sellLoss for each copy). */
+  /** Offerings paid for it, its merged copies included: what selling it gives back (less sellLoss for each star). */
   paid?: number;
 }
 
@@ -246,7 +260,7 @@ export type Action =
   /** Buy a card with Ambush from the shop and set it face-down in one of your lanes. */
   | { t: 'ambush'; uid: number; lane: number; target?: Target }
   | { t: 'move'; uid: number; slot: number }
-  /** Sell a unit you control: it goes back into the deck, and you get back what you paid less sellLoss for each copy merged in. */
+  /** Sell a unit you control: it goes back into the deck, and you get back what you paid less sellLoss for each star. */
   | { t: 'sell'; uid: number }
   /** The shop goes back into the deck and a new one is dealt. */
   | { t: 'roll' }
@@ -284,6 +298,8 @@ export type Step =
   | { t: 'strike'; n: number; swift: boolean }
   | { t: 'clashEnd' }
   | { t: 'reset' }
+  /** The Clash's own triggers: every standing unit's (and each player's traits') abilities with this trigger. */
+  | { t: 'triggers'; when: 'clashStart' | 'boutStart' | 'everyOtherBout' }
   /** After a strike: `uid` hit `foeUid`; if the foe went down, `uid`'s "defeats in combat" abilities happen. */
   | { t: 'combatWin'; uid: number; foeUid: number };
 
@@ -310,7 +326,7 @@ export type GameEvent = (
   | { t: 'move'; p: PlayerId; uid: number; slot: number }
   | { t: 'levelUp'; p: PlayerId; level: number }
   | { t: 'readyUp'; p: PlayerId }
-  | { t: 'merge'; p: PlayerId; uid: number; stars: number }
+  | { t: 'merge'; p: PlayerId; uid: number; stars: number; copies: number }
   | { t: 'clash'; n: number }
   | { t: 'bout'; n: number }
   | { t: 'hit'; from: Target; uid: number; dealt: number }
@@ -343,9 +359,11 @@ export interface Rules {
   streak: number[];
   /** Cards dealt to the shop. */
   shopSize: number;
+  /** The shop's odds of each tier (1 to 5), in percent, by the Hero's Level (shopOdds[3]: at Level 3). */
+  shopOdds: number[][];
   /** What a roll costs. */
   rollCost: number;
-  /** Selling a unit gives back what was paid for it, less this for each copy merged into it. */
+  /** Selling a unit gives back what was paid for it, less this for each star it has. */
   sellLoss: number;
   /** Interest: +1 Offering for every `interestPer` saved, at most `interestMax`. */
   interestPer: number;
@@ -361,8 +379,8 @@ export interface Rules {
   /** At the bout cap, each side loses Candles for the other's standing units (otherwise nobody does). */
   overtimeBothLose: boolean;
   maxRounds: number;
-  /** Merged copies: at most this many stars. */
-  maxStars: number;
+  /** Copies in one unit that make it 2★ and 3★. */
+  starCopies: number[];
 }
 
 export interface GameState {

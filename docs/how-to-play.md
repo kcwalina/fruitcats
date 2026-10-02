@@ -17,7 +17,8 @@ After the tutorial, tap **Solo** to play the computer.
 ## Your shop and your money
 
 - At the bottom is your **shop**: 6 cards dealt from your own deck. **Press and hold** one to read it. The number in
-  the top-left corner is its **price**.
+  the top-left corner is its **price**, and also its **tier** (1 to 5). The higher your Hero's Level, the more of the
+  high tiers your shop deals.
 - You pay with **Offerings**: your money, shown on your plaque. You start with 3 and get more at the start of every
   round. What you don't spend is **kept**, and every 5 you save earn 1 more next round. Lose Clashes in a row and you
   get a little more, to catch up.
@@ -53,8 +54,13 @@ When you are both Ready, the armies fight, bout after bout. Nobody decides anyth
 
 ## A few more things
 
-- Buy a **second copy** of a creature you have on the board and it **merges**: 2 stars, twice as strong. It merges
-  even when your lanes are full.
+- Buy **more copies** of a creature you have on the board and they **merge** into it, even when your lanes are full.
+  The dots on a unit count its copies: **3 copies make 2 stars**, twice as strong; **6 make 3 stars**.
+- **Traits** are team bonuses: two or more different units of one family (or of one role, like Guardian) on your
+  board turn one on. The chips under your plaque show them; a lit chip is on, and its number says how many you have
+  and how many the next bonus needs. Tap one to read it.
+- Some units do things **in the fight**: at **Clash start**, **each bout**, **every second bout**, or when they **go
+  down** (Goodbye).
 - **Your Hero** never leaves the table. Tap **Use ability** once a round. Later it **Awakens**: stronger, and it
   strikes when the Clash begins.
 - **Stuck?** Tap **Rules** during a game for a short reminder.

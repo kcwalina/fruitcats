@@ -5,7 +5,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { registerSet } from '@fruitcats/engine';
+import { DECKS, registerSet } from '@fruitcats/engine';
 import { DECK_PRICE, cardProduct, deckProduct, type Quote } from '@fruitcats/store';
 
 const ALICE = 'a'.repeat(32);   // a tester
@@ -84,7 +84,7 @@ describe('test checkout', () => {
     const [, store] = await call(ALICE, 'GET', '/v1/store') as [number, { owned: Record<string, number>; orders: unknown[] }];
     expect(store.orders).toHaveLength(1);
     expect(store.owned['JR1-H01']).toBe(1);
-    expect(store.owned['JR1-D02']).toBe(3);
+    expect(store.owned['JR1-D02']).toBe(DECKS['jiaoren'].cards['JR1-D02']);
   });
 
   it('then has nothing more to sell of that deck', async () => {

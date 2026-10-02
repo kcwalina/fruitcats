@@ -23,7 +23,7 @@ cards = [
     frame = gold
     art = 'art/PR1-H01-kitten.webp'
     text = @parijan-text
-    constants = [units = 3]
+    constants = [units = 5]
     flavor = 'Persians called the pari ''those who are better than we''.'
     back = Awakened {
       name = 'Parijan', epithet = 'Wings over Qāf', power = 2
@@ -33,28 +33,24 @@ cards = [
   }
   dove-shaped-pari = Creature {
     name = 'Dove-Shaped Pari'
-    cost = 1, power = 1, health = 1
+    cost = 1, power = 1, health = 3
     number = 'PR1-D01', rarity = common
     art = 'art/PR1-D01.webp'
-    keywords = [@feather-coat, @Lure]
-    text = 'Feather Coat. Lure.'
+    keywords = [@Lure]
+    text = 'Lure. Goodbye: Summon a 1/1 Dove with Lure.'
     flavor = 'A pari can put on a coat of feathers and fly off as a dove.'
   }
   orange-peri = Creature {
     name = 'Orange-Peri'
-    cost = 1, power = 3, health = 1
+    cost = 1, power = 3, health = 2
     number = 'PR1-D02', rarity = common
     art = 'art/PR1-D02.webp'
-    text = 'Hello: Unless you''ve played {others} other cards this round, deal {damage} damage to Orange-Peri.'
-    constants = [
-      others = 2
-      damage = 1
-    ]
+    text = ''
     flavor = 'She steps out of an orange and asks for water. Only the third is given some in time.'
   }
   murghatipi = Creature {
     name = 'Murghatipi', epithet = 'the Bird Fairy'
-    cost = 1, power = 2, health = 1
+    cost = 1, power = 2, health = 2
     number = 'PR1-D03', rarity = common
     art = 'art/PR1-D03.webp'
     keywords = [@Sneaky]
@@ -72,65 +68,62 @@ cards = [
   }
   gale-bringer-of-the-high-lakes = Creature {
     name = 'Gale-Bringer of the High Lakes'
-    cost = 3, power = 3, health = 2
+    cost = 3, power = 4, health = 3
     number = 'PR1-D05', rarity = common
     art = 'art/PR1-D05.webp'
-    keywords = [@Swift, @Sneaky]
-    text = 'Swift. Sneaky.'
+    keywords = [@Sneaky]
+    text = 'Sneaky. After Gale-Bringer of the High Lakes defeats a unit in combat, it gets +2 Power this round.'
     flavor = 'Unseen pari bathe in the high mountain lakes, and bring the gales and the rain.'
   }
   suci-of-the-hunt = Creature {
     name = 'Súči of the Hunt'
-    cost = 3, power = 3, health = 3
+    cost = 3, power = 3, health = 4
     number = 'PR1-D06', rarity = common
     art = 'art/PR1-D06.webp'
-    text = 'Hello: Deal {damage} damage to a unit. Company: deal {company-damage} instead.'
-    constants = [
-      damage = 1
-      company-damage = 2
-    ]
+    text = 'Clash start: Deal 1 damage to the enemy across. Company: deal 3 instead.'
     flavor = 'The Kalasha''s mountain fairies help the hunters they like.'
   }
   markhor-of-the-mothers = Creature {
     name = 'Markhor of the Mothers'
-    cost = 4, power = 4, health = 3
+    cost = 4, power = 6, health = 4
     number = 'PR1-D07', rarity = uncommon
     art = 'art/PR1-D07.webp'
-    keywords = [@Fierce, @Elusive]
-    text = 'Fierce. Elusive.'
+    keywords = [@Elusive, @Fierce]
+    text = 'Elusive. Fierce.'
     flavor = @markhor-of-the-mothers-flavor
   }
   pari-on-a-wonder-camel = Creature {
     name = 'Pari on a Wonder-Camel'
-    cost = 5, power = 4, health = 4
+    cost = 4, power = 5, health = 5
     number = 'PR1-D08', rarity = uncommon
     art = 'art/PR1-D08.webp'
-    keywords = [@Swift, @Sneaky]
-    text = 'Swift. Sneaky.'
+    keywords = [@Sneaky]
+    text = 'Sneaky. Every second bout: Your units get +1 Power this round.'
     flavor = 'Old Persian paintings show pari riding camels made of many creatures.'
   }
   ibex-kid = Creature {
     name = 'Ibex Kid'
-    cost = 1, power = 2, health = 1
+    cost = 1, power = 2, health = 3
     number = 'PR1-D09', rarity = common
     art = 'art/PR1-D09.webp'
+    text = ''
     flavor = 'The mountain pari keep the ibex as their herds.'
   }
   lookout-on-mount-qaf = Creature {
     name = 'Lookout on Mount Qāf'
-    cost = 3, power = 1, health = 4
+    cost = 3, power = 2, health = 6
     number = 'PR1-D10', rarity = common
     art = 'art/PR1-D10.webp'
     keywords = [@Guardian]
-    text = 'Guardian.'
+    text = 'Guardian. Clash start: The units next to Lookout on Mount Qāf get +1 Power this round.'
     flavor = 'Mount Qāf, all emerald, rings the world. Its green glow tints the sky.'
   }
   khangi = Creature {
     name = 'Khangi', epithet = 'the Helpful One'
-    cost = 3, power = 2, health = 3
+    cost = 2, power = 2, health = 4
     number = 'PR1-D11', rarity = common
     art = 'art/PR1-D11.webp'
-    text = 'Hello: Get a free roll.'
+    text = 'Clash start: The units next to Khangi get +1 Power this round.'
     flavor = 'House fairies help pick the fruit. Families set food aside for them.'
   }
   falling-star = Charm {
@@ -139,8 +132,7 @@ cards = [
     number = 'PR1-D12', rarity = uncommon
     art = 'art/PR1-D12.webp'
     keywords = [@Ambush]
-    text = 'Ambush. Deal {damage} damage to a unit.'
-    constants = [damage = 2]
+    text = 'Ambush. Deal 2 damage to an enemy unit.'
     flavor = 'The oldest Persian books call the pari shooting stars.'
   }
   mountain-gale = Charm {
@@ -148,11 +140,7 @@ cards = [
     cost = 3
     number = 'PR1-D13', rarity = uncommon
     art = 'art/PR1-D13.webp'
-    text = 'Deal {damage} damage to a unit. Company: deal {company-damage} instead.'
-    constants = [
-      damage = 3
-      company-damage = 5
-    ]
+    text = 'Deal 3 damage to an enemy unit. Company: deal 5 instead.'
     flavor = 'When the pari ride the wind, the whole valley bends.'
   }
   choicest-odours = Charm {
@@ -169,13 +157,12 @@ cards = [
     number = 'PR1-D15', rarity = uncommon
     art = 'art/PR1-D15.webp'
     keywords = [@Ambush]
-    text = 'Ambush. A unit you control gets +{boost} Power this round.'
-    constants = [boost = 2]
+    text = 'Ambush. A unit you control gets +2 Power this round.'
     flavor = 'In Chitral, people and fairies once marched out together to the same tune.'
   }
   carried-off-asleep = Charm {
     name = 'Carried Off Asleep'
-    cost = 1
+    cost = 2
     number = 'PR1-D16', rarity = uncommon
     art = 'art/PR1-D16.webp'
     text = 'Exhaust an enemy unit.'
@@ -183,38 +170,36 @@ cards = [
   }
   pari-banus-pocket-tent = Talisman {
     name = 'Pari Banu''s Pocket Tent'
-    cost = 1
+    cost = 2
     number = 'PR1-D17', rarity = uncommon
     art = 'art/PR1-D17.webp'
-    text = 'Attached unit gets +{extra-health} Health.'
-    constants = [extra-health = 3]
+    text = 'Attached unit gets +4 Health.'
     flavor = 'It folds small enough to hold in one hand, and opens big enough to shelter an army.'
   }
   manar-al-sana = Fabled {
     name = 'Manar al-Sana', epithet = 'the Bird-Maiden'
-    cost = 3, power = 3, health = 3
+    cost = 3, power = 3, health = 4
     number = 'PR1-D18', rarity = rare
     art = 'art/PR1-D18.webp'
-    keywords = [@Swift, @feather-coat]
-    text = 'Swift. Feather Coat.'
+    keywords = [@Swift]
+    text = 'Swift. Goodbye: Summon two 1/1 Doves with Lure.'
     flavor = 'Hassan hid her feather robe by the pool. The day she found it, she flew home.'
   }
   asman-pari = Fabled {
     name = 'Asman Pari', epithet = 'Queen of Qāf'
-    cost = 4, power = 3, health = 4
+    cost = 4, power = 4, health = 6
     number = 'PR1-D19', rarity = rare
     art = 'art/PR1-D19.webp'
-    text = 'Hello: Deal {damage} damage to each enemy unit.'
-    constants = [damage = 1]
+    text = 'Clash start: Deal 1 damage to each enemy unit.'
     flavor = 'Asman means ''sky''. She ruled the pari of Mount Qāf.'
   }
   schaibar = Fabled {
     name = 'Schaibar', epithet = 'Pari Banu''s Brother'
-    cost = 5, power = 5, health = 5
+    cost = 5, power = 7, health = 8
     number = 'PR1-D20', rarity = rare
     art = 'art/PR1-D20.webp'
-    keywords = [@Fierce]
-    text = 'Fierce. Once per round, after Schaibar defeats a unit in combat, he gets +2 Power this round.'
+    keywords = [@Guardian, @Fierce]
+    text = 'Guardian. Fierce. After Schaibar defeats a unit in combat, it gets +2 Power this round.'
     flavor = @schaibar-flavor
   }
   dove = TokenCreature {

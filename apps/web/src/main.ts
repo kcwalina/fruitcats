@@ -32,7 +32,7 @@ import {
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, LANES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame,
-  deckSize, heroSide, interestOn, isOpenLane, laneUnit, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
+  deckSize, heroSide, interestOn, isOpenLane, laneUnit, traitsOf, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
   unitPower, viewFor, visibleLog,
   type Action, type DeckList, type GameState, type LogEntry, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
@@ -380,6 +380,9 @@ const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
   { name: 'Free roll', test: /\bfree rolls?\b/, text: 'Your next roll of the shop costs nothing: a new shop, dealt from your deck.' },
   { name: TERMS.keywords.Pounce, test: /\b(Ambush|Pounce)\b/, text: 'Set it face-down in one of your lanes: it happens when the Clash begins, if its lane holds what it needs (otherwise it waits). It can also be played like any card.' },
   { name: 'Hello', test: /\bHello\b/, text: 'Happens when you buy the card.' },
+  { name: 'Clash start', test: /\bClash start\b/, text: 'Happens once, when the Clash begins, before the first bout. The enemy across is the one in the lane facing this unit; the units next to it are yours, one lane to either side.' },
+  { name: 'Each bout', test: /\bEach bout\b/, text: 'Happens at the start of every bout of the Clash.' },
+  { name: 'Every second bout', test: /\bEvery second bout\b/, text: 'Happens at the start of bouts 2, 4, 6 and 8.' },
   { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens each time this unit goes down in a Clash.' },
   { name: 'Awaken', test: /\b(Awaken|Grow Up)\b/, text: 'Once this is true, your Hero Awakens for good: a stronger ability, and it strikes when the Clash begins (unless you used its ability).' },
   // "Exhaust:" is the price of a Hero's ability; "Exhaust an enemy unit" is an effect. One line covers both.
@@ -473,6 +476,11 @@ function onClick(key: string) {
 
   // Tapping a Hero Cat's ability line opens the card with its keywords explained: a playtester
   // couldn't find out what the opponent's ability did (the portrait's long press wasn't discovered).
+  // A trait's chip: every tier of it (a phone has no hover for the chip's title).
+  if (kind === 'trait' && game) {
+    openTrait(game, Number(raw[0]) as PlayerId, raw.slice(2));
+    return;
+  }
   if (kind === 'heroinfo' && game) {
     const p = value as PlayerId;
     openZoom((p === mySeat ? yourCardUrl : cardUrl)(heroKey(game, p)), heroKey(game, p));
@@ -1144,6 +1152,7 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
         </div>
         ${badges}
       </div>
+      ${renderTraits(s, p)}
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
            data-zoom="${(mine ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
       ${canAbility ? '<div class="hero-actions"><button class="primary" data-click="btn:ability">Use ability</button></div>' : ''}
@@ -1152,6 +1161,37 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
       : ACCOUNTS ? `<div class="player-face">${boardFace(mine ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
 }
+
+/**
+ * A player's traits, as small chips under their plaque: the trait's icon and how many different units count for it
+ * against the next tier ("🛡 2/4"); lit when a tier is on. The tier's text is the chip's title.
+ */
+function renderTraits(s: GameState, p: PlayerId): string {
+  const traits = traitsOf(s, p).sort((a, b) => b.tier - a.tier || b.count - a.count);
+  if (!traits.length) return '';
+  const chips = traits.map((t) => {
+    const next = t.def.tiers.find((x) => x.at > t.count)?.at;
+    const now = t.tier >= 0 ? t.def.tiers[t.tier].text : `At ${t.def.tiers[0].at}: ${t.def.tiers[0].text}`;
+    const title = `${t.name}: ${t.count} unit${t.count === 1 ? '' : 's'}. ${now}${next && t.tier >= 0 ? ` At ${next}: ${t.def.tiers[t.tier + 1].text}` : ''}`;
+    return `<span class="trait ${t.tier >= 0 ? 'on' : ''}" role="button" data-click="trait:${p}~${esc(t.name)}" title="${esc(title)}">${t.def.icon ?? ''} ${esc(t.name)} <b>${t.count}${next ? `/${next}` : ''}</b></span>`;
+  }).join('');
+  return `<div class="traits">${chips}</div>`;
+}
+
+/** Copies on the way to a unit's next star, as pips: ●●○ (two of the three that make 2★). */
+function copyPips(s: GameState, u: Unit): string {
+  const copies = u.copies ?? 1;
+  const next = s.rules.starCopies.find((n) => n > copies);
+  if (!next) return '';
+  const from = [1, ...s.rules.starCopies].filter((n) => n <= copies).pop()!;
+  return `<span class="pips">${'●'.repeat(copies - from + 1)}${'○'.repeat(next - copies)}</span>`;
+}
+
+const starTitle = (s: GameState, u: Unit): string => {
+  const copies = u.copies ?? 1;
+  const next = s.rules.starCopies.find((n) => n > copies);
+  return `${copies} ${copies === 1 ? 'copy' : 'copies'} merged${next ? `: ${next - copies} more for the next star` : ''}`;
+};
 
 /** A unit's mechanic chips: each keyword that keeps a counter, with its icon and how far it has grown (🌽+1). */
 function counterChips(u: Unit, keywordList: string[]): string[] {
@@ -1184,7 +1224,7 @@ function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): st
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(why)}" title="${esc(cardName(u.id))}: ${esc(why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
-    ${u.stars ? `<div class="stars" title="${u.stars} copies merged">${'★'.repeat(u.stars)}</div>` : ''}
+    ${u.stars || (u.copies ?? 1) > 1 ? `<div class="stars" title="${starTitle(s, u)}">${'★'.repeat(u.stars ?? 1)}${copyPips(s, u)}</div>` : ''}
     <div class="ubox">
       <div class="uname">${esc(cardName(u.id))}</div>
       ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
@@ -1418,11 +1458,13 @@ function renderRules(): string {
       <h2>Quick rules</h2>
       <p><b>Goal:</b> blow out all 9 of the rival Hero’s Candles.</p>
       <p><b>Each round:</b> the <b>Muster</b>, then the <b>Clash</b>. At the start of each round you get a new <b>shop</b>: ${r?.shopSize ?? 6} cards dealt from your own deck. From round 2 you also get your income in ${TERMS.offerings}.</p>
-      <p><b>The shop:</b> buy what you want at its price. What you don’t buy goes back into your deck. <b>Roll</b> (${r?.rollCost ?? 1} ${TERMS.offering}) for a new shop.</p>
+      <p><b>The shop:</b> buy what you want at its price. What you don’t buy goes back into your deck. <b>Roll</b> (${r?.rollCost ?? 1} ${TERMS.offering}) for a new shop. A card’s price is its <b>tier</b>, 1 to 5: the higher your Hero’s Level, the more often the shop deals the high tiers.</p>
       <p><b>${TERMS.offerings} are money.</b> What you don’t spend is kept, and every ${r?.interestPer ?? 5} saved earn 1 more at the start of the next round (at most ${r?.interestMax ?? 3}). Losing Clashes in a row earns more too: +1 after two, up to +3 after five.</p>
       <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Buy units into your open lanes (your Hero’s <b>Level</b> opens that many, from the left; level up to open more), move them, buy Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
-      <p><b>Selling:</b> tap a unit of yours to sell it. You get back what you paid, less 1 for each copy merged into it. Sell to make room for something better.</p>
-      <p><b>Stars:</b> buy a second copy of a Creature you have on the board and it merges, even when your lanes are full: 2 stars, twice its printed Power and Health; a third copy makes 3. Fabled never merge.</p>
+      <p><b>Selling:</b> tap a unit of yours to sell it. You get back what you paid, its merged copies included, less 1 for each star it has. Sell to make room for something better.</p>
+      <p><b>Stars:</b> buy a copy of a Creature you have on the board and it merges into it, even when your lanes are full (the dots on the unit count them). <b>3 copies make 2 stars</b>, twice its printed Power and Health; <b>6 make 3 stars</b>. Fabled never merge.</p>
+      <p><b>Traits:</b> each family, and each role (Guardian, Elusive, Sneaky, Lure), gives your team a bonus with 2, 4 or 6 different units of it on your board. The chips under your plaque show them; tap and hold one to read it.</p>
+      <p><b>In the fight:</b> “Clash start:” happens once before the first bout, “Each bout:” at the start of every bout, “Every second bout:” at bouts 2, 4, 6 and 8.</p>
       <p><b>Aimed at the enemy:</b> damage and other effects aimed at their units are aimed at a <b>lane</b>, and happen when the Clash begins, to whoever stands there. With nobody there, they fizzle. A face-down Ambush happens only if its lane holds what it needs; otherwise it waits for a later Clash.</p>
       <p><b>The Clash</b> plays itself: first the aimed effects and Ambushes, then Awakened Heroes strike, then the bouts. In each bout every unit hits one enemy, all at once (Swift units first). Who it hits: <b>Guardians</b> first, then plain units, then <b>Elusive</b> ones, <b>Lures</b> last; <b>Sneaky</b> units go the other way round. Among equals, the one across from it, then the nearest. A unit whose damage reaches its Health goes down. An <b>exhausted</b> unit deals no damage in this Clash, but can still be hit.</p>
       <p><b>Winning the Clash:</b> when one side has nobody standing, it loses a Candle for each enemy unit still standing (2 for a <b>Fierce</b> one, 1 more if their Hero struck), at most ${r?.clashCandleCap ?? 2}. If both sides still stand after ${r?.boutCap ?? 8} bouts, both lose Candles. Then every unit stands up again: <b>nothing on the board is lost in a Clash</b>.</p>
@@ -1525,6 +1567,23 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   overlay.addEventListener('click', closeZoom);
   document.body.appendChild(overlay);
   tutorialCardZoomed();
+}
+
+/** A trait, tapped: how many units count for it, and what each of its tiers does, the one that's on lit. */
+function openTrait(s: GameState, p: PlayerId, name: string) {
+  const t = traitsOf(s, p).find((x) => x.name === name);
+  if (!t) return;
+  closeZoom();
+  const rows = t.def.tiers.map((x, i) =>
+    `<div class="${i === t.tier ? 'on' : ''}"><dt>${x.at} units${i === t.tier ? ' · on' : ''}</dt><dd>${esc(x.text)}</dd></div>`).join('');
+  const whose = p === mySeat ? 'You have' : 'They have';
+  const overlay = document.createElement('div');
+  overlay.id = 'zoom-overlay';
+  overlay.innerHTML = `<div class="zoom-info trait-info"><p class="zoom-state">${t.def.icon ?? ''} <b>${esc(t.name)}</b>: ${whose} ${t.count}`
+    + ` (different units count; copies merged into one count once).</p><dl class="zoom-keys trait-tiers">${rows}</dl></div>`
+    + '<span class="zoom-hint">Tap anywhere to close</span>';
+  overlay.addEventListener('click', closeZoom);
+  document.body.appendChild(overlay);
 }
 
 function closeZoom() {

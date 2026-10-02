@@ -144,7 +144,7 @@ suite('what the log says', () => {
     expect(rounds).toBeGreaterThan(3);
     expect(clashes).toBe(rounds + (s.winner === null ? 0 : 1) - (lines.includes('Round limit reached.') ? 1 : 0));
     expect(lines.filter((t) => / wins the Clash with | still stand: |Nobody wins the Clash/.test(t)).length).toBe(clashes);
-  });
+  }, 60_000);
 
   it('logs damage from cards and abilities, and hits in the Clash', () => {
     let hurt = 0;

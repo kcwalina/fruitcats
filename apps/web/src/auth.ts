@@ -22,7 +22,8 @@ export interface Session {
   userId: string;
   displayName: string;
   email: string;
-  /** Entra's refresh token: keeps this device signed in. */
+  /** Entra's refresh token: keeps this device signed in. Empty for a sign-in picked up from another Via Mochi site
+   *  (`signInFromOtherSite`), which is renewed from that shared sign-in instead. */
   refreshToken: string;
   /** Our Via Mochi token and when it expires (ms since epoch). */
   token: string;
@@ -84,7 +85,64 @@ function saveSession(s: Session | null) {
   } catch { /* private mode: signed in until the page closes */ }
 }
 
-export function signOut() { saveSession(null); }
+export function signOut() {
+  // Out of the sign-in shared with the other Via Mochi sites too, or the next start would pick it straight back up.
+  if (SHARED && session()) void request(`${ID_SERVICE}/sso/signout`, { method: 'POST', credentials: 'include' }, true).catch(() => {});
+  try { localStorage.removeItem(SHARED_KEY); } catch { /* private mode */ }
+  saveSession(null);
+}
+
+// ── Signed in on one Via Mochi site, signed in on all ───────────────────────────────────────────
+//
+// viamochi-id keeps one sign-in per browser in its own cookie (its Sso.cs), shared by every Via Mochi site: the game,
+// the ViaMochi TV portal and watch sites. id.viamochi.com is the same site as the game's own address, so the game
+// talks to it with that cookie directly (credentials: 'include'). Only there: the dev server, the azurestaticapps.net
+// address and the iPhone Home Screen app (its own cookie jar) simply don't share.
+
+const SHARED = /(^|\.)viamochi\.com$/.test(globalThis.location?.hostname ?? '') && ID_SERVICE === 'https://id.viamochi.com';
+/** The account whose sign-in this device has shared (once: signing out on another site isn't undone by the next start). */
+const SHARED_KEY = 'viamochi-shared';
+
+/** Share this device's sign-in with the other Via Mochi sites. Quiet: sharing is a convenience, never in the way. */
+export async function shareSignIn(): Promise<void> {
+  const s = session();
+  if (!SHARED || !s) return;
+  try { if (localStorage.getItem(SHARED_KEY) === s.userId) return; } catch { /* private mode */ }
+  const t = await token();
+  if (!t) return;
+  try {
+    const r = await request(`${ID_SERVICE}/sso/session`, { method: 'POST', credentials: 'include', headers: { Authorization: `Bearer ${t}` } }, true);
+    if (r.ok) localStorage.setItem(SHARED_KEY, s.userId);
+  } catch { /* next start */ }
+}
+
+/** Nobody is signed in here: are they signed in on another Via Mochi site? Then this device is too. True if so. */
+export async function signInFromOtherSite(): Promise<boolean> {
+  if (!SHARED || session()) return false;
+  const ours = await sharedToken().catch(() => null);
+  if (!ours || ours === 'signed_out' || session()) return false;
+  saveSession(fromShared(ours, Date.now()));
+  try { localStorage.setItem(SHARED_KEY, ours.user.id); } catch { /* private mode */ }
+  return true;
+}
+
+/** A token from the shared sign-in, or 'signed_out' when there's none. Throws when the service can't be reached. */
+async function sharedToken(): Promise<Record<string, any> | 'signed_out'> {
+  const r = await request(`${ID_SERVICE}/sso/token`, { method: 'POST', credentials: 'include' }, true);
+  if (r.status === 401) return 'signed_out';
+  if (!r.ok) throw await failed(r, 'Via Mochi isn’t answering right now. Please try again in a minute.');
+  return r.json();
+}
+
+function fromShared(ours: Record<string, any>, signedInAt: number): Session {
+  const pending = session()?.termsPending;
+  return {
+    userId: ours.user.id, displayName: ours.user.displayName ?? '', email: ours.user.email ?? '',
+    refreshToken: '', token: ours.access_token, expires: Date.now() + ours.expires_in * 1000, signedInAt,
+    avatar: ours.user.avatar, terms: ours.user.terms ?? null, birthYear: ours.user.birthYear ?? session()?.birthYear ?? null,
+    ...(pending && pending !== ours.user.terms ? { termsPending: pending } : {}),
+  };
+}
 
 /**
  * A refresh already under way. Sync, the Store and the Terms all ask for a token when the game starts; they share one
@@ -122,6 +180,7 @@ function refusedRefresh(e: AuthError) {
 }
 
 async function refresh(s: Session): Promise<string | null> {
+  if (!s.refreshToken) return refreshShared(s);
   // Refused a moment ago: don't ask Entra again yet (the caller carries on signed in, without a fresh token).
   if (s.refused && Date.now() - s.refused.last < REFUSED_RETRY_MS) return null;
   try {
@@ -136,6 +195,19 @@ async function refresh(s: Session): Promise<string | null> {
     // back. Entra rejecting the refresh token counts against the sign-in, but only a long run of them ends it.
     if (e instanceof AuthError && (e.code === 'invalid_grant' || e.code === 'expired')) refusedRefresh(e);
     return null;
+  }
+}
+
+/** A sign-in picked up from another site lasts as long as the shared one: signed out there, signed out here. */
+async function refreshShared(s: Session): Promise<string | null> {
+  try {
+    const ours = await sharedToken();
+    if (ours === 'signed_out' || ours.user.id !== s.userId) { saveSession(null); return null; }
+    const next = fromShared(ours, s.signedInAt);
+    saveSession(next);
+    return next.token;
+  } catch {
+    return null;   // offline, or the service is down: still signed in once it's back
   }
 }
 
@@ -268,6 +340,12 @@ export async function resend(p: Pending): Promise<Pending> {
  * (code 'code_resent').
  */
 export async function submitCode(p: Pending, code: string): Promise<Session> {
+  const s = await checkCode(p, code);
+  void shareSignIn();
+  return s;
+}
+
+async function checkCode(p: Pending, code: string): Promise<Session> {
   if (!p.entra && p.flow === 'signIn') {
     p.entra = await usingCode(p, () => entraPost('oauth2/v2.0/token', { continuation_token: p.continuationToken, grant_type: 'oob', oob: code, scope: SCOPE }));
   } else if (!p.entra) {

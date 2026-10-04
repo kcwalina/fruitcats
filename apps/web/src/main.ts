@@ -15,7 +15,7 @@ import { openStore, openStoreForDeck, renderStore, storeClick, storeCodeEnter, s
 import { refreshStore, storeAccess } from './shop';
 import { soloFoeDecks } from '@fruitcats/store';
 import { startSync, syncNow } from './sync';
-import { saveAgreedTerms } from './auth';
+import { saveAgreedTerms, session, shareSignIn, signInFromOtherSite } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, renderContactPanel, pickingPawtrait, accountInput, accountOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderHomeAccount, signedIn, warmOwner, warmPawtraits,
@@ -2003,7 +2003,11 @@ if (ONLINE) onGameFound(() => {
 });
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
-if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
+if (ACCOUNTS) {
+  const signedIn = () => { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); void shareSignIn(); };
+  // Nobody signed in here, but signed in on another Via Mochi site (the TV portal...): then here too.
+  if (session()) signedIn(); else void signInFromOtherSite().then((yes) => { if (yes) { render(); signedIn(); } });
+}
 // An invite link for playtesters (?invite=CODE): open the account window, and the code is used after their email.
 if (ACCOUNTS && takeInviteFromLink()) openAccount({ render }, 'You’re invited! Type your email to create your account.');
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.

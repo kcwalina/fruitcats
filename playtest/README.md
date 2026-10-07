@@ -45,8 +45,8 @@ exactly that, for the few cards most likely to be too strong:
    every copy replaced by the deck's plain 1-cost 2/1 (Hearth Cricket, Ibex Kid, the Alux's Dog, Ice Silkworm,
    Pebble-Thrower), and plays it against the other starters, `removalGamesPerPair` (800) games a pairing, times
    `--scale`. The games use the starters' own seeds and seats, so each is compared with the same game with the
-   card and some of the luck cancels. The ± in the report is two standard errors: about 2 points at scale 1, 1.2
-   at the nightly's scale 3. The swap is
+   card and some of the luck cancels. The ± in the report is two standard errors: about 2 points at scale 1 (the
+   nightly's since 2026-10-06; 1.2 at scale 3). The swap is
    made in the deck list, never to the card, so no card changes in any worker.
 3. It **warns** when a card is worth more than `cardWorth` (10 points) to its deck. For scale: the strongest
    cards measured so far are Elder of the South Sea (6–8), Quanxian (5–6.5) and The House Snake (6), strong cards

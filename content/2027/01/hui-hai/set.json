@@ -535,12 +535,12 @@
           },
           "do": [
             {
-              "damage": 2
+              "damage": 1
             }
           ]
         }
       ],
-      "text": "Mage. Every second bout: Deal 2 damage to the enemy across and the ones next to it.",
+      "text": "Mage. Every second bout: Deal 1 damage to the enemy across and the ones next to it.",
       "class": "Mage"
     },
     {

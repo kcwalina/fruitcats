@@ -195,7 +195,7 @@
       "type": "Critter",
       "name": "Murghatipi, the Bird Fairy",
       "cost": 1,
-      "power": 3,
+      "power": 2,
       "health": 2,
       "text": "Assassin.",
       "flavor": "In the mountains of Chitral, one of the fairies' names means 'bird fairy'.",

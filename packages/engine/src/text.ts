@@ -7,12 +7,12 @@
 //
 // Units are named by their lane: Y1…Y6 in your lanes, T1…T6 in theirs; cards in the shop are S1…Sn.
 
-import { CARDS, MECHANICS } from './cards';
+import { CARDS, MECHANICS, isUnitCard, keywords } from './cards';
 import {
   LANES, cardName, heroSide, interestOn, laneUnit, legalActions, levelCost, nextSeat, other, rollCost, sellValue, streakBonus, isTaunt, unitClass,
   unitHealth, unitKeywords, unitPower,
 } from './engine';
-import type { Action, GameState, PlayerId, Target, Unit } from './types';
+import type { Ability, Action, GameState, PlayerId, Target, Unit } from './types';
 import { RULES } from './rules';
 import { viewFor, type PlayerView } from './view';
 import TERMS from './terms.json';
@@ -29,7 +29,7 @@ Two players, 50-card decks, each led by a Hero. Win by blowing out the opponent'
 - Traits: each family is a trait. With 2, 4 or 6 different units of a family on your board, its team bonus turns on; the highest tier reached is the one that counts. Copies merged into one unit count once.
 - Units act in the fight: "Clash start:" happens once before the first bout, "Each bout:" at the start of every bout, "Every second bout:" at bouts 2, 4, 6 and 8.
 - Effects aimed at the enemy (damage, exhaust) are aimed at one of their lanes and happen when the Clash begins, to whoever stands there then. With nobody there, they fizzle.
-- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the bouts: in each bout every unit hits one enemy unit, Assassins and Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a unit with Taunt first; then Tanks; then Bruisers and Assassins; then the back (Marksmen, Mages, Supports). An Assassin goes for the back first, unless a unit taunts. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
+- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the units' "Clash start:" abilities, then the bouts: in each bout every unit hits one enemy unit, Assassins and Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a unit with Taunt first; then Tanks; then Bruisers and Assassins; then the back (Marksmen, Mages, Supports). An Assassin goes for the back first, unless a unit taunts. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
 - The Clash ends when one side has no units standing (or after ${'{bouts}'} bouts, or when nobody can deal damage). The loser blows out 1 Candle per enemy unit still standing (2 for Fierce ones, +1 for a Hero that struck), at most ${'{cap}'}. If both sides still stand at the end, each loses Candles for the other's units.
 - After the Clash every unit stands up again with no damage: nothing on the board is lost in a Clash. Damage never carries over to the next round.
 - Hero: its "Exhaust:" ability can be used once a round. When its Awaken condition is true it flips to its Awakened side for good; an Awakened Hero that isn't exhausted strikes in the Clash.`;
@@ -127,6 +127,15 @@ function cardLine(id: string, label: string): string {
   return `  ${label} ${cardName(id)} (cost ${c.cost ?? 0}, ${TERMS.types[c.type as keyof typeof TERMS.types] ?? c.type}${stats})${c.text ? ` — ${c.text}` : ''}`;
 }
 
+/** Why a shop card isn't among the choices: the LLM kept trying to buy such cards by their S number. */
+function whyNot(s: GameState, seat: PlayerId, id: string): string {
+  const me = s.players[seat];
+  const c = CARDS[id];
+  if ((c.cost ?? 0) > me.offerings) return `costs ${c.cost}, you have ${me.offerings}`;
+  if (isUnitCard(id)) return 'no free lane and no copy to merge into: level up or sell first';
+  return 'nothing it can be played on';
+}
+
 function heroLine(s: GameState, p: PlayerId): string {
   const hero = s.players[p].hero;
   const side = heroSide(s, p);
@@ -173,7 +182,8 @@ export function describe(s: GameState, seat: PlayerId, recent = 12): string {
   side(seat, 'YOU');
   if (me.pending?.length) lines.push(`  Waiting for the Clash: ${me.pending.map((x) => `${cardName(x.sourceId)}${x.target ? ` → ${targetName(v, seat, x.target)}` : ''}`).join('; ')}`);
   lines.push(`  Your shop${me.freeRolls ? ` (free rolls: ${me.freeRolls})` : ''}:`);
-  me.shop.forEach((c, i) => lines.push(cardLine(c.id, `S${i + 1}`)));
+  const buyable = new Set(legalActions(s, seat).flatMap((a) => (a.t === 'play' || a.t === 'ambush' ? [a.uid] : [])));
+  me.shop.forEach((c, i) => lines.push(cardLine(c.id, `S${i + 1}`) + (buyable.has(c.uid) ? '' : ` [can't buy now: ${whyNot(s, seat, c.id)}]`)));
   const log = v.log.slice(-recent).map((e) => `  ${secondPerson(e.text, me.name, foe.name)}`);
   if (log.length) lines.push('', 'RECENTLY:', ...log);
   return lines.join('\n');
@@ -200,6 +210,20 @@ function label(s: GameState, seat: PlayerId, a: Action, o: ChoiceOptions = {}): 
   return o.detail ? detailed(s, seat, a, text) : text;
 }
 
+/** A note when the target already has as many counters as the effect gives at most: the gain would be lost. */
+function atMost(s: GameState, abilities: Ability[] | undefined, t: Target | undefined): string {
+  if (t?.kind !== 'unit') return '';
+  const u = s.players.flatMap((p) => p.yard).find((x) => x.uid === t.uid);
+  for (const act of (abilities ?? []).flatMap((ab) => ab.do ?? [])) {
+    const c = (act as { counter?: { name: string; max?: number } }).counter;
+    if (u && c?.max !== undefined && (u.counters?.[c.name] ?? 0) >= c.max) {
+      const name = Object.entries(MECHANICS).find(([, m]) => m.counter?.name === c.name)?.[0] ?? c.name;
+      return ` (already at ${name} +${c.max}, the most: it gains nothing)`;
+    }
+  }
+  return '';
+}
+
 function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
   const me = s.players[seat];
   const card = (uid: number) => me.shop.find((c) => c.uid === uid);
@@ -209,7 +233,8 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
     case 'play': {
       const c = card(a.uid)!;
       const twin = a.slot === undefined && (CARDS[c.id].type === 'Critter') && me.yard.some((u) => u.id === c.id);
-      return `Buy ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${twin ? ' — merges into your copy' : lane(a.slot)}${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}`;
+      const now = keywords(c.id).pounce ? ' and play it now, not as an Ambush,' : '';
+      return `Buy ${cardName(c.id)}${now} (cost ${CARDS[c.id].cost ?? 0})${twin ? ' — merges into your copy' : lane(a.slot)}${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}${atMost(s, CARDS[c.id].abilities, a.target)}`;
     }
     case 'ambush': { const c = card(a.uid)!; return `Buy ${cardName(c.id)} and set it face-down as an Ambush in lane Y${a.lane + 1} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}`; }
     case 'move': {
@@ -227,7 +252,7 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
     }
     case 'ability': {
       const text = heroSide(s, seat).text.split('\n').find((l) => /Exhaust/.test(l)) ?? '';
-      return `Use your Hero's ability (${text.trim()})${on(a.target)}`;
+      return `Use your Hero's ability (${text.trim()})${on(a.target)}${atMost(s, heroSide(s, seat).abilities, a.target)}`;
     }
     case 'levelUp': return `Level up your Hero (cost ${levelCost(s, seat)})`;
     case 'ready': return 'Ready: done for this Muster';
@@ -263,7 +288,8 @@ export function parseChoice(s: GameState, reply: string, seat?: PlayerId): { act
   // Prefer an explicit "answer: …" or "choice: …" line when a reply reasons out loud first.
   const tagged = /(?:answer|choice|final)\s*[:=]\s*([^\n]*)/i.exec(reply)?.[1];
   const text = tagged ?? reply;
-  const m = /\d+/.exec(text);
+  // A number glued to a letter is a lane or a shop card (Y1, S3), not a choice.
+  const m = /(?<![A-Za-z])\d+/.exec(text);
   if (!m) return { error: `Answer with a number from 1 to ${c.options.length}.` };
   const choice = c.options.find((o) => o.n === Number(m[0]));
   return choice ? { action: choice.action } : { error: `There is no choice ${m[0]}; answer with a number from 1 to ${c.options.length}.` };

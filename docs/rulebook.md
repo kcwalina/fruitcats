@@ -341,7 +341,7 @@ the Clash begins (unless it is exhausted for its ability).
 | **Well-Fed** *(Domowiki)* | This bonus is on while you have 7 or more Offerings saved. |
 | **Company:** *(Pari)* | This bonus is on while you control 3 or more units. |
 | **Feather Coat** *(Pari)* | Goodbye: Summon a 1/1 Dove. |
-| **Rain-Fed** *(Aluxes)* | At the start of each round, this unit gets +1 Power and +1 Health, up to +3/+3. |
+| **Rain-Fed** *(Aluxes)* | Each Rain-Fed is +1 Power and +1 Health that the unit keeps while it stays on the board, up to +3/+3. |
 | **Pearl Tears** *(Jiaoren)* | Once per round, when this unit is damaged and survives, gain an Offering. |
 | **Stone for Stone** *(Hui Hai)* | Once per round, when this unit is damaged and survives, deal 1 damage to an enemy unit. |
 

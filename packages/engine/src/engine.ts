@@ -555,7 +555,7 @@ function mainAbility(id: string): { ability: Ability; ref: AbilityRef } | null {
   return null;
 }
 
-/** Stars a unit has with this many copies in it (Rules.starCopies: 3 copies make 2★, 6 make 3★). */
+/** Stars a unit has with this many copies in it (Rules.starCopies: 3 copies make 2★, 5 make 3★). */
 export const starsFor = (s: GameState, copies: number): number => 1 + s.rules.starCopies.filter((n) => copies >= n).length;
 
 /** A unit of the player's that a copy of this card would merge into (never a Fabled: they are one of a kind). */
@@ -1157,7 +1157,7 @@ function runAbilityStep(s: GameState, step: Extract<Step, { t: 'ability' }>): vo
   const target = laneToUnit(s, step.target);
   const target2 = laneToUnit(s, step.target2);
   if ((step.target && !target) || (step.target2 && !target2)) {
-    log(s, `${cardName(step.sourceId)} finds nobody in ${describeTarget(s, step.target)} and fizzles.`, step.p);
+    log(s, `${s.players[step.p].name}'s ${cardName(step.sourceId)} finds nobody in ${describeTarget(s, step.target)} and fizzles.`, step.p);
     emit(s, { t: 'fizzled', cardId: step.sourceId });
     return done();
   }
@@ -1361,7 +1361,7 @@ function strike(s: GameState, swift: boolean): void {
   for (const h of hits) {
     const dealt = dealDamage(s, h.to, h.power);
     s.clash!.dealt += dealt;
-    log(s, `${cardName(h.from.id)} hits ${cardName(h.to.id)} for ${dealt}${toughNote(s, h.to, h.power, dealt)}.`, h.owner);
+    log(s, `${whose(s, h.from, h.owner)} hits ${whose(s, h.to, other(h.owner))} for ${dealt}${toughNote(s, h.to, h.power, dealt)}.`, h.owner);
     emit(s, { t: 'hit', from: { kind: 'unit', uid: h.from.uid }, uid: h.to.uid, dealt, ...(swift ? { swift: true as const } : {}) });
     if (dealt) hurtUnits.add(h.to);
     if (unitAbilities(s, h.from, 'defeatsInCombat', false, h.owner).length) s.queue.unshift({ t: 'combatWin', uid: h.from.uid, foeUid: h.to.uid });
@@ -1549,7 +1549,7 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
     case 'exhaust':
     case 'cancelAttack':
       // An exhausted unit deals no damage in this Clash.
-      for (const u of units) { u.exhausted = true; log(s, `${cardName(u.id)} is exhausted: it deals no damage this Clash.`, p); emit(s, { t: 'exhaust', uid: u.uid }); }
+      for (const u of units) { u.exhausted = true; log(s, `${whose(s, u)} is exhausted: it deals no damage this Clash.`, p); emit(s, { t: 'exhaust', uid: u.uid }); }
       return;
     case 'ready': for (const u of units) { u.exhausted = false; emit(s, { t: 'ready', uid: u.uid }); } return;
     case 'stun': {
@@ -1579,10 +1579,21 @@ function doAct(s: GameState, p: PlayerId, act: Act, units: Unit[], ctx: AbilityC
   throw new Error(`Unknown card action '${name}': is the plugin for its set registered?`);
 }
 
+/**
+ * A unit's name in the log, with its owner's when the other side has a unit of the same card (Aluxes against Aluxes):
+ * "Bot's Night Patrol Alux hits LLM's Night Patrol Alux".
+ */
+function whose(s: GameState, u: Unit, owner = findUnit(s, u.uid)?.owner): string {
+  if (owner === undefined) return cardName(u.id);
+  const foe = s.players[other(owner)];
+  const same = (x: Unit) => x.id === u.id;
+  return foe.yard.some(same) || (foe.fallen ?? []).some(same) ? `${s.players[owner].name}'s ${cardName(u.id)}` : cardName(u.id);
+}
+
 /** Damage from a card or ability (not the Clash's hits, which `strike` reports). */
 function hurt(s: GameState, p: PlayerId, u: Unit, amount: number): void {
   const dealt = dealDamage(s, u, amount);
-  log(s, `${cardName(u.id)} takes ${dealt}${toughNote(s, u, amount, dealt)}.`, p);
+  log(s, `${whose(s, u)} takes ${dealt}${toughNote(s, u, amount, dealt)}.`, p);
   emit(s, { t: 'damage', uid: u.uid, amount: dealt, p });
   if (dealt) queueDamaged(s, u);
 }
@@ -1626,7 +1637,7 @@ function stateCheck(s: GameState): void {
       (pl.fallen ??= []).push(u);
       // "Units that have gone down in Clashes": only the Clash counts, and only units (a summoned token is not one).
       if (s.phase === 'clash' && !CARDS[u.id]?.token) pl.downed = (pl.downed ?? 0) + 1;
-      log(s, `${cardName(u.id)} goes down.`, owner);
+      log(s, `${whose(s, u, owner)} goes down.`, owner);
       emit(s, { t: 'down', uid: u.uid, cardId: u.id, owner });
       for (const { ref } of unitAbilities(s, u, 'goodbye', false, owner)) triggers.push({ t: 'ability', p: owner, ref, sourceId: u.id, selfUid: u.uid, trigger: true });
     }

@@ -187,4 +187,49 @@ suite('what the log says', () => {
     }
     expect(found).toBeGreaterThan(0);
   }, 60_000);
+
+  // Aluxes against Aluxes: "Night Patrol Alux is exhausted", then "Night Patrol Alux hits Night Patrol Alux" read as an
+  // exhausted unit hitting. When both sides have the card, the log says whose unit it is.
+  it('names the owner when both sides have a unit of the same card, and whose effect fizzled', () => {
+    let owned = 0;
+    for (const s of games(4, ['aluxes', 'aluxes'])) {
+      for (const e of s.log) {
+        const m = /^(.+?) hits (.+?) for \d/.exec(e.text);
+        if (m && /^Player \d's /.test(m[1])) owned++;
+        if (m) expect(m[1] === m[2] && !/^Player \d's /.test(m[1])).toBe(false);
+        if (/ finds nobody in /.test(e.text)) expect(e.text).toMatch(/^Player \d's /);
+      }
+    }
+    expect(owned).toBeGreaterThan(0);
+  }, 60_000);
+
+  // The LLM answered "S1" (a shop card) and got choice 1 (a swap), eight times in a round.
+  it('reads a number glued to a letter as a lane or shop card, not as the choice', () => {
+    const s = createGame({ decks: ['aluxes', 'pari'], seed: 3 });
+    const p = nextSeat(s)!;
+    const c = listChoices(s, {}, p);
+    expect(c.options.length).toBeGreaterThanOrEqual(3);
+    expect(parseChoice(s, 'Buy S1 into Y2: choice 3', p)).toEqual({ action: c.options[2].action });
+  });
+
+  it("marks the shop cards that can't be bought now, and why", () => {
+    const s = createGame({ decks: ['aluxes', 'pari'], seed: 3 });
+    const p = nextSeat(s)!;
+    s.players[p].offerings = 0;
+    const shop = describe(s, p).split('\n').filter((l) => /^ {2}S\d /.test(l));
+    expect(shop.length).toBeGreaterThan(0);
+    for (const line of shop) expect(line).toMatch(/\[can't buy now: costs \d+, you have 0\]$/);
+  });
+
+  it('says when a Rain-Fed gain would be lost, and when an Ambush card is played now', () => {
+    const s = createGame({ decks: ['aluxes', 'pari'], seed: 3 });
+    const p = s.players.findIndex((x) => x.hero.id === 'AL1-H01') as PlayerId;
+    s.players[p].yard.push({ uid: 7001, id: 'AL1-D04', slot: 0, damage: 0, exhausted: false, buffPower: 0, usedOnce: false, counters: { rain: 3 } });
+    s.players[p].shop.push({ uid: 7002, id: 'AL1-D18' });
+    s.players[p].offerings = 5;
+    const labels = listChoices(s, {}, p).options.map((o) => o.label);
+    expect(labels.filter((l) => /^Use your Hero's ability/.test(l))).toEqual([expect.stringMatching(/already at Rain-Fed \+3, the most: it gains nothing\)$/)]);
+    expect(labels.some((l) => /^Buy A Sweet on the Doorstep and play it now, not as an Ambush, \(cost 1\)/.test(l))).toBe(true);
+    expect(labels.some((l) => /^Buy A Sweet on the Doorstep and set it face-down as an Ambush/.test(l))).toBe(true);
+  });
 });

@@ -22,7 +22,7 @@
     "Rain-Fed": {
       "family": "Aluxes",
       "kind": "keyword",
-      "reminder": "At the start of each round this unit gets +1 Power and +1 Health, up to +3/+3.",
+      "reminder": "Each Rain-Fed is +1 Power and +1 Health that the unit keeps while it stays on the board, up to +3/+3.",
       "counter": {
         "name": "rain",
         "power": 1,

@@ -184,7 +184,7 @@ cards = [
     cost = 4, power = 3, health = 9
     number = 'HH1-D18', rarity = rare
     art = 'art/HH1-D18.webp'
-    text = 'Mage. Every second bout: Deal 2 damage to the enemy across and the ones next to it.'
+    text = 'Mage. Every second bout: Deal 1 damage to the enemy across and the ones next to it.'
     flavor = 'A whole village lives in this clearing. You are standing in it.'
   }
   the-rock-that-moved-in-the-night = Fabled {

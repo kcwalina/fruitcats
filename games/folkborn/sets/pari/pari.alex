@@ -49,7 +49,7 @@ cards = [
   }
   murghatipi = Creature {
     name = 'Murghatipi', epithet = 'the Bird Fairy'
-    cost = 1, power = 3, health = 2
+    cost = 1, power = 2, health = 2
     number = 'PR1-D03', rarity = common
     art = 'art/PR1-D03.webp'
     text = 'Assassin.'

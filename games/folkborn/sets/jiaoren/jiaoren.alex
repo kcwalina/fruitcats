@@ -185,7 +185,7 @@ cards = [
   }
   the-oldest-weaver = Fabled {
     name = 'The Oldest Weaver'
-    cost = 5, power = 4, health = 12
+    cost = 5, power = 4, health = 8
     number = 'JR1-D19', rarity = rare
     art = 'art/JR1-D19.webp'
     text = 'Mage. Every second bout: Enemy units get -2 Power this round.'

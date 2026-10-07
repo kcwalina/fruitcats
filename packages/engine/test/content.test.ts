@@ -23,7 +23,7 @@ describe('rules text comes from the data', () => {
     expect(suggestText(CARDS['DW1-D02'])).toBe('Bruiser. Goodbye: Gain an Offering.');
     expect(suggestText(CARDS['DW1-D06'])).toBe('Support. Clash start: The units next to Bread-and-Salt Greeter gain Tough 1 this round.');
     expect(suggestText(CARDS['DW1-D07'])).toBe('Mage. Every second bout: The enemy across and the ones next to it get -2 Power this round.');
-    expect(suggestText(CARDS['HH1-D18'])).toBe('Mage. Every second bout: Deal 2 damage to the enemy across and the ones next to it.');
+    expect(suggestText(CARDS['HH1-D18'])).toBe('Mage. Every second bout: Deal 1 damage to the enemy across and the ones next to it.');
     expect(suggestText(CARDS['AL1-D04'])).toBe('Bruiser. At the start of each round, Clay Alux gets +1 Rain-Fed.');
     expect(suggestText(CARDS['DW1-D04'])).toBe('Tank. Taunt.');
     expect(suggestText(CARDS['DW1-D20'])).toBe('An enemy unit deals no damage in the first two bouts.');

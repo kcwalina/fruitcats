@@ -261,6 +261,8 @@ export interface PlayerState {
   downed?: number;
   /** Cards this player has played this round: Orange-Peri's count. */
   playedThisRound?: number;
+  /** The traits' "once per round" abilities this player has used since the last Start Phase. */
+  usedTraits?: string[];
   /** Candles this player gave up at the start, as a handicap (GameOptions.lives). */
   handicap?: number;
   /** What the opponent sees of this player during the Muster: the player as they stood when it began. */

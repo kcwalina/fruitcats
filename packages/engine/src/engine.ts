@@ -1043,6 +1043,7 @@ function exec(s: GameState, step: Step): void {
       for (const [q, pl] of s.players.entries()) {
         pl.hero.exhausted = false;
         pl.playedThisRound = 0;
+        delete pl.usedTraits;
         for (const u of pl.yard) {
           u.exhausted = false;
           u.usedOnce = false;
@@ -1105,7 +1106,7 @@ function exec(s: GameState, step: Step): void {
       const found = findUnit(s, step.uid);
       if (!found || findUnit(s, step.foeUid)) break;
       for (const { ability, ref } of unitAbilities(s, found.unit, 'defeatsInCombat', false, found.owner)) {
-        if (ability.oncePerRound && !useOnce(found.unit, ref)) continue;
+        if (ability.oncePerRound && !useOnce(s, found.owner, found.unit, ref)) continue;
         runAbility(s, found.owner, ability, { self: found.unit });
       }
       break;
@@ -1145,7 +1146,7 @@ function runAbilityStep(s: GameState, step: Extract<Step, { t: 'ability' }>): vo
     if (!self && ability.when === 'goodbye') self = s.players[step.p].fallen?.find((u) => u.uid === step.selfUid);
     if (!self && ['damagedAndSurvives', 'clashStart', 'boutStart', 'everyOtherBout'].includes(ability.when ?? '')) return;
   }
-  if (step.trigger && ability.oncePerRound && self && !useOnce(self, step.ref)) return;
+  if (step.trigger && ability.oncePerRound && self && !useOnce(s, step.p, self, step.ref)) return;
   // A trigger in the Muster that would touch the enemy's units waits for the Clash, like every effect aimed at them:
   // the enemy's board is theirs to build in secret until then.
   if (s.phase === 'muster' && step.trigger && touchesEnemy(ability)) {
@@ -1420,11 +1421,19 @@ function queueDamaged(s: GameState, u: Unit): void {
 }
 
 /**
- * Whether a unit's "once per round" ability may still run this round, marking it used. Each ability counts on its own
- * (rule 800.4): Pearl Oyster's own Offering and the Pearl Tears trait's are two.
+ * Whether a "once per round" ability may still run this round, marking it used. Each ability counts on its own
+ * (rule 800.4): Pearl Oyster's own Offering and the Pearl Tears trait's are two. A unit's own abilities count per
+ * unit; a trait's count per player, as its text says ("when one of your Jiaoren survives damage", rule 850.6).
  */
-function useOnce(u: Unit, ref: AbilityRef): boolean {
-  const key = 'mechanic' in ref ? `m:${ref.mechanic}:${ref.index}` : 'trait' in ref ? `t:${ref.trait}:${ref.index}` : `c:${ref.card}:${ref.side ?? ''}:${ref.index}`;
+function useOnce(s: GameState, p: PlayerId, u: Unit, ref: AbilityRef): boolean {
+  if ('trait' in ref) {
+    const key = `${ref.trait}:${ref.index}`;
+    const used = (s.players[p].usedTraits ??= []);
+    if (used.includes(key)) return false;
+    used.push(key);
+    return true;
+  }
+  const key = 'mechanic' in ref ? `m:${ref.mechanic}:${ref.index}` : `c:${ref.card}:${ref.side ?? ''}:${ref.index}`;
   const used = (u.usedAbilities ??= []);
   if (used.includes(key)) return false;
   used.push(key);
@@ -1436,7 +1445,7 @@ function useOnce(u: Unit, ref: AbilityRef): boolean {
 function healed(s: GameState, p: PlayerId): void {
   for (const x of s.players[p].yard) {
     for (const { ability, ref } of unitAbilities(s, x, 'youHeal', false, p)) {
-      if (ability.oncePerRound && !useOnce(x, ref)) continue;
+      if (ability.oncePerRound && !useOnce(s, p, x, ref)) continue;
       runAbility(s, p, ability, { self: x });
     }
   }

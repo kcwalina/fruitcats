@@ -162,6 +162,19 @@ describe("the Clash's own triggers", () => {
     expect(gains).toEqual([expect.stringMatching(/gains 1 /), expect.stringMatching(/gains 2 /)]);
   });
 
+  it("a trait's \"once per round\" happens once for its player, however many of their units it watches (Pearl Tears, rule 850.6)", () => {
+    const s = createGame({ decks: ['jiaoren', 'hui-hai'], seed: 1, firstPlayer: 0 });
+    put(s, 0, 'JR1-D05', 0);
+    put(s, 0, 'JR1-D10', 1);
+    put(s, 1, 'HH1-D05', 0);
+    put(s, 1, 'HH1-D05', 1);
+    const from = s.log.length;
+    clash(s);
+    const lines = s.log.slice(from).map((e) => e.text);
+    expect(lines.filter((t) => /hits (Jiaoren of the Tide Pools|Jiaoren Pearl-Healer) for [1-9]/.test(t)).length).toBeGreaterThanOrEqual(2);
+    expect(lines.filter((t) => /^Player 1 gains /.test(t))).toEqual([expect.stringMatching(/gains 1 /)]);
+  });
+
   it('Each bout: happens at the start of every bout', () => {
     const s = game();
     put(s, 0, 'T06-D', 0, { damage: 5 });

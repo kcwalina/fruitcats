@@ -814,7 +814,7 @@ text fonts/Nunito-Italic.ttf 26 #FF7A6A5C 361@17408,53824 288@18816,53824 242@19
 rect 2688 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 2752 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/power.png 3584 60416 2176 2176 #FF16305A
-text fonts/Nunito-Black.ttf 40 #FF16305A 751@6272,62410
+text fonts/Nunito-Black.ttf 40 #FF16305A 750@6272,62410
 rect 39168 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 39232 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/heart.png 40064 60416 2176 2176 #FFD9486C
@@ -855,7 +855,7 @@ text fonts/Nunito-Italic.ttf 26 #FF7A6A5C 361@17408,53824 288@18816,53824 242@19
 rect 2688 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 2752 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/power.png 3584 60416 2176 2176 #FF16305A
-text fonts/Nunito-Black.ttf 40 #FF16305A 751@6272,62410
+text fonts/Nunito-Black.ttf 40 #FF16305A 750@6272,62410
 rect 39168 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 39232 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/heart.png 40064 60416 2176 2176 #FFD9486C
@@ -896,7 +896,7 @@ text fonts/Nunito-Italic.ttf 26 #FF7A6A5C 361@17408,53824 288@18816,53824 242@19
 rect 2688 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 2752 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/power.png 3584 60416 2176 2176 #FF16305A
-text fonts/Nunito-Black.ttf 40 #FF16305A 751@6272,62410
+text fonts/Nunito-Black.ttf 40 #FF16305A 750@6272,62410
 rect 39168 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 39232 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/heart.png 40064 60416 2176 2176 #FFD9486C
@@ -937,7 +937,7 @@ text fonts/Nunito-Italic.ttf 26 #FF7A6A5C 361@17408,53824 288@18816,53824 242@19
 rect 2688 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 2752 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/power.png 3584 60416 2176 2176 #FF16305A
-text fonts/Nunito-Black.ttf 40 #FF16305A 751@6272,62410
+text fonts/Nunito-Black.ttf 40 #FF16305A 750@6272,62410
 rect 39168 59520 6144 3968 radius 1984 1984 #FFE3ECF8 smooth
 stroke 39232 59584 6016 3840 radius 1920 1920 width 128 #FF2E5C9E
 tinted art/icons/heart.png 40064 60416 2176 2176 #FFD9486C

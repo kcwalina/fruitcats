@@ -193,6 +193,8 @@ export interface Unit {
   buffKeywords?: string[];
   /** A "once per round" ability has been used since the last Start Phase. */
   usedOnce: boolean;
+  /** Which of its "once per round" abilities have been used since the last Start Phase, each counted on its own. */
+  usedAbilities?: string[];
   /** Mechanics' counters on the unit: { rain: 2 } (Rain-Fed). They stay while the unit stays on the board. */
   counters?: Record<string, number>;
   /** Offerings paid for it, its merged copies included: what selling it gives back (less sellLoss for each star). */

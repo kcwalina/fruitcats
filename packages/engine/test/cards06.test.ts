@@ -31,6 +31,10 @@ registerSet({
     unit('T06-E', 4, 1, 20, { abilities: [{ when: 'everyOtherBout', target: { each: 'own' }, do: [{ buff: { power: 1 } }] }] }),
     unit('T06-F', 5, 1, 1),
     unit('T06-G', 1, 0, 1, { abilities: [{ when: 'goodbye', do: [{ summon: 'T06-K' }] }] }),
+    unit('T06-P', 1, 0, 30, { abilities: [
+      { when: 'damagedAndSurvives', oncePerRound: true, do: [{ readyTreats: 1 }] },
+      { when: 'damagedAndSurvives', oncePerRound: true, do: [{ readyTreats: 2 }] },
+    ] }),
   ],
   tokens: [unit('T06-K', 0, 0, 1)],
   decks: {
@@ -146,6 +150,16 @@ describe("the Clash's own triggers", () => {
     expect(damage).toEqual([expect.objectContaining({ uid: across.uid, amount: 2 })]);
     expect(events.findIndex((e) => e.t === 'damage')).toBeLessThan(events.findIndex((e) => e.t === 'bout'));
     expect(damage.some((e) => 'uid' in e && e.uid === aside.uid)).toBe(false);
+  });
+
+  it('two "once per round" abilities of one unit each happen once (Pearl Oyster and Pearl Tears gave 1 Offering, not 2)', () => {
+    const s = game();
+    put(s, 0, 'T06-A', 0);
+    put(s, 1, 'T06-P', 0);
+    const from = s.log.length;
+    clash(s);
+    const gains = s.log.slice(from).map((e) => e.text).filter((t) => /^Player 2 gains \d/.test(t));
+    expect(gains).toEqual([expect.stringMatching(/gains 1 /), expect.stringMatching(/gains 2 /)]);
   });
 
   it('Each bout: happens at the start of every bout', () => {

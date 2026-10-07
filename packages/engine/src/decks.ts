@@ -1,7 +1,7 @@
 // Deckbuilding rules (rulebook §11.1): which decks are legal, and why a card can't be added to one.
 // Messages are written for players, since the deck builder shows them as they are.
 
-import { CARDS, DECKS, FAMILIES, isNeutralFamily, tierOf, type DeckList } from './cards';
+import { BLANK_CARD, CARDS, DECKS, FAMILIES, isNeutralFamily, tierOf, type DeckList } from './cards';
 import { DECK_SIZE, cardName } from './engine';
 
 export const DECK_RULES = {
@@ -67,7 +67,7 @@ export function deckProblems(deck: DeckList, owned?: (id: string) => number): st
   for (const [id, qty] of Object.entries(deck.cards)) {
     if (qty <= 0) continue;
     const card = CARDS[id];
-    if (!card) { problems.push(`Unknown card ${id}.`); continue; }
+    if (!card || id === BLANK_CARD) { problems.push(`Unknown card ${id}.`); continue; }
     const name = cardName(id);
     if (card.type === 'Hero Cat') problems.push(`${name} is a Hero: Heroes lead a deck, they don't go in it.`);
     else if (card.token) problems.push(`${name} comes into play from another card: it can't be put in a deck.`);
@@ -85,7 +85,7 @@ export function deckProblems(deck: DeckList, owned?: (id: string) => number): st
 export function addProblem(deck: DeckList, id: string, owned?: (id: string) => number, ignoreSize = false): string | null {
   const card = CARDS[id];
   const hero = CARDS[deck.hero];
-  if (!card || !hero) return 'That card is not available.';
+  if (!card || !hero || id === BLANK_CARD) return 'That card is not available.';
   const name = cardName(id);
   if (card.type === 'Hero Cat') return `${name} is a Hero: Heroes lead a deck, they don't go in it.`;
   if (card.token) return `${name} comes into play from another card: it can't be put in a deck.`;

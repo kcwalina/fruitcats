@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS, DECKS, RARITIES, RULES, addProblem, apply, attackTarget, chooseAction, clockFor, createGame, builtInTwin, deckCardIds, deckChanges,
+  BLANK_CARD, CARDS, DECKS, RARITIES, RULES, addProblem, apply, attackTarget, chooseAction, clockFor, createGame, builtInTwin, deckCardIds, deckChanges,
   deckProblems, evaluateCondition, keywords, unitClass, legalActions, mayAct, nextSeat, other, otherFamilies, randomAction, registerSet, unitHealth, unitPower,
   type Action, type DeckList, type GameState, type PlayerId, type Unit,
 } from '../src/index';
@@ -114,6 +114,13 @@ describe('deckbuilding (rulebook 11.1)', () => {
     deck.cards['DW1-D07'] = 3;
     delete deck.cards['DW1-D02'];
     expect(deckProblems(deck, owned)).toEqual([expect.stringMatching(/only 2 copies/)]);
+  });
+
+  it("keeps out the bot's stand-in for unseen cards", () => {
+    const deck = crickets(domowiki(), 4);
+    deck.cards[BLANK_CARD] = 1;
+    expect(deckProblems(deck)).toEqual([`Unknown card ${BLANK_CARD}.`]);
+    expect(addProblem(crickets(domowiki(), 4), BLANK_CARD)).toBe('That card is not available.');
   });
 
   it('keeps Hero Cats out of the deck', () => {

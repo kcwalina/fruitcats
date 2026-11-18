@@ -6,7 +6,7 @@
 //     for you to do something ("play a unit into a lane") and moves on when you have.
 //   • Tips — shown once, the first time something new happens (a lost Candle, a copy to merge, ...).
 
-import { CARDS, isUnitCard, keywords, legalActions, mayAct, targetRank, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
+import { CARDS, isUnitCard, keywords, legalActions, mayAct, targetRank, traitsOf, type Action, type GameState, type PlayerId } from '@fruitcats/engine';
 import { count, note } from './progress';
 
 type Text = string | ((s: GameState) => string);
@@ -38,8 +38,9 @@ interface Balloon {
 const ME: PlayerId = 0;
 const FOE: PlayerId = 1;
 
-/** The Muster is waiting on you (not the Clash report). */
-const mustering = (s: GameState) => mayAct(s, ME) && s.prompt?.kind === 'muster' && !document.querySelector('.clash-report');
+/** The Muster is waiting on you (not the last Clash, still on the board). */
+// While the last Clash is on the board (playing, or its summary), the Muster waits.
+const mustering = (s: GameState) => mayAct(s, ME) && s.prompt?.kind === 'muster' && !document.querySelector('.board.replaying');
 const canFieldUnit = (s: GameState) => legalActions(s, ME).some((a) => a.t === 'play' && isUnitCard(s.players[ME].shop.find((c) => c.uid === a.uid)?.id ?? ''));
 
 const STEPS: Balloon[] = [
@@ -62,13 +63,13 @@ const STEPS: Balloon[] = [
   {
     id: 'play', title: 'Buy a creature', anchor: '.hand', also: ['.yard.me'], when: (s) => mustering(s) && canFieldUnit(s),
     skipIf: (s) => s.round >= 4,
-    text: 'A card with a bright ring is one you can afford. <b>Tap a creature, then tap one of your lanes</b> (the dashed spaces) to buy it and put it there.',
+    text: 'A card with a bright ring is one you can afford. <b>Tap a creature to read it, press Buy, then tap one of your lanes</b> (the dashed spaces; the grey ones are locked until you level up) to put it there.',
     doneWhen: (a) => a.t === 'play',
   },
   {
-    id: 'lanes', title: 'Lanes and roles', anchor: '.yard.me', below: true, when: (s) => mustering(s) && s.players[ME].yard.length > 0,
-    text: 'In the Clash each unit hits the enemy <b>across from it</b> first, then the nearest. But roles come first: '
-      + '<b>Guardians</b> are hit before anyone else, <b>Elusive</b> units late, <b>Lures</b> last, and <b>Sneaky</b> units go the other way round.',
+    id: 'lanes', title: 'Lanes and classes', anchor: '.yard.me', below: true, when: (s) => mustering(s) && s.players[ME].yard.length > 0,
+    text: 'In the Clash each unit hits the enemy <b>across from it</b> first, then the nearest. But the classes come first (the icon in a card’s corner): '
+      + '🛡 <b>Tanks</b> are hit before anyone else, then 👊 Bruisers, and the back (🏹 Marksmen, ✨ Mages, 💠 Supports) last. A unit with <b>Taunt</b> is hit first of all.',
   },
   {
     id: 'ready', title: 'Ready!', anchor: '[data-click="btn:ready"]', when: mustering,
@@ -77,7 +78,8 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'report', title: 'The Clash', anchor: '.clash-report', when: () => !!document.querySelector('.clash-report'),
-    text: 'Here is what happened, bout by bout. When one side has nobody standing, it loses a <b>Candle</b> for each enemy still standing. '
+    text: 'That was the Clash: here is who dealt and took what, and who fell when. <b>Watch again</b> to see it once more. '
+      + 'When one side has nobody standing, it loses a <b>Candle</b> for each enemy still standing. '
       + 'Then every unit stands up again: <b>nothing on your board is ever lost in a Clash</b>. Your army only grows.',
   },
   {
@@ -87,7 +89,7 @@ const STEPS: Balloon[] = [
   },
   {
     id: 'done', title: 'You’ve got it! 🎉', anchor: '.player.foe .lives', below: true, when: (s) => mustering(s) && s.round >= 3,
-    text: 'That’s the game: build in secret, read the Clash, grow your army. I’ll pop up when something new happens.',
+    text: 'That’s the game: build in secret, watch the Clash, grow your army. I’ll pop up when something new happens.',
   },
 ];
 
@@ -95,12 +97,12 @@ const TIPS: Balloon[] = [
   {
     id: 'level', title: 'Level up', anchor: '[data-click="btn:level"]',
     when: (s) => mustering(s) && legalActions(s, ME).some((a) => a.t === 'levelUp') && s.players[ME].yard.length >= s.players[ME].hero.level,
-    text: 'Your lanes are full for your Hero’s <b>Level</b>. <b>Level up</b> for one more lane, at a price in Offerings.',
+    text: 'Your open lanes are full. Your Hero’s <b>Level</b> opens lanes from the left: <b>Level up</b> to open one more, at a price in Offerings.',
   },
   {
-    id: 'merge', title: 'Two of a kind', anchor: '.hand',
+    id: 'merge', title: 'Copies merge', anchor: '.hand',
     when: (s) => mustering(s) && s.players[ME].shop.some((c) => CARDS[c.id]?.type === 'Critter' && s.players[ME].yard.some((u) => u.id === c.id)),
-    text: 'Your shop has another copy of a creature on your board. Buy it and they <b>merge</b>, even when your lanes are full: 2 stars, twice as strong. A third copy makes 3 stars.',
+    text: 'Your shop has another copy of a creature on your board. Buy it and it <b>merges</b> into that unit, even when your lanes are full; the dots on the unit count the copies. <b>3 copies make 2 stars</b>, twice as strong; 6 make 3 stars.',
   },
   {
     id: 'sell', title: 'Make room', anchor: '.yard.me',
@@ -117,10 +119,16 @@ const TIPS: Balloon[] = [
     text: 'Ouch! But losing Clashes in a row earns you extra <b>Offerings</b> at the start of the next rounds: +1 after two, up to +3 after five. Use them to catch up.',
   },
   {
-    id: 'roles', title: 'Their roles', anchor: '.yard.foe',
+    id: 'traits', title: 'A trait is on', anchor: '.player.me .traits',
+    when: (s) => mustering(s) && traitsOf(s, ME).some((t) => t.tier >= 0),
+    text: 'Two different units of one family turn on its <b>trait</b>: a bonus for your team, stronger at 4 and 6. '
+      + 'It lights up, and its number says how many more the next bonus needs. Tap it to read it.',
+  },
+  {
+    id: 'roles', title: 'Their classes', anchor: '.yard.foe',
     when: (s) => mustering(s) && s.players[FOE].yard.some((u) => targetRank(u, s) !== 2),
-    text: 'Look at their units’ roles: your units must get through their <b>Guardians</b> first, and their <b>Elusive</b> units come late. '
-      + 'A <b>Sneaky</b> unit of yours goes straight for their <b>Lures</b> and carries.',
+    text: 'Look at their units’ classes: your units must get through their 🛡 <b>Tanks</b> first, and their back comes last. '
+      + 'A 🗡 <b>Assassin</b> of yours goes straight for their back, unless one of theirs has <b>Taunt</b>.',
   },
   {
     id: 'grown', title: 'Awakened!', anchor: '.player.me .hero', when: (s) => s.players[ME].hero.grown,

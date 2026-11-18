@@ -31,7 +31,7 @@ cards = [
     number = 'MB1-D01', rarity = rare
     art = 'art/MB1-D01.webp'
     keywords = [@Guardian]
-    text = 'Guardian. Hello: Heal 2 from each unit you control.'
+    text = 'Guardian. Hello: Your units heal 2.'
     flavor = 'She knows every flower in her garden, and every child it belongs to.'
   }
   golden-flower-soul = Creature {
@@ -57,7 +57,7 @@ Exhaust: Heal 2 from a unit you control.
 Awaken: You have 7 or more Offerings.
 @@@ silver-bud-back-text
 Your units get +1 Health.
-Exhaust: Heal 2 from each unit you control.
+Exhaust: Your units heal 2.
 @@@ tending-the-roots-flavor
 When a child's soul wanders, the Then singer climbs to the sky garden and tends its flower.
 @@@

@@ -67,6 +67,7 @@ constants = [
 
 keywords = [
   Swift = Keyword {}
+  Taunt = Keyword {}
   Guardian = Keyword {}
   Sneaky = Keyword {}
   Fierce = Keyword {}

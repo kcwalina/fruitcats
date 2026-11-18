@@ -45,6 +45,7 @@ export function viewFor(s: GameState, seat: PlayerId): PlayerView {
   v.events = visibleEvents(v.events ?? [], seat);
   v.log = visibleLog(v.log, seat);
   delete v.acting;
+  delete v.effect;
   if (s.prompt?.kind === 'muster' && s.winner === null) {
     // The opponent as they stood when the Muster began; nothing they do until the Clash shows.
     const mine = s.muster!.open[seat];

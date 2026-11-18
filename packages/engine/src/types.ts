@@ -19,8 +19,17 @@ export interface HeroSide {
   growUp?: { if: Condition };
 }
 
+/**
+ * How a unit fights (Folkborn 0.7): who hits it, whom it hits, and when. Front: Tank (hit first), then Bruiser and
+ * Assassin; back: Marksman, Mage, Support. Assassins strike first and go for the back; Supports don't attack.
+ */
+export type UnitClass = 'Tank' | 'Bruiser' | 'Assassin' | 'Marksman' | 'Mage' | 'Support';
+export const UNIT_CLASSES: readonly UnitClass[] = ['Tank', 'Bruiser', 'Assassin', 'Marksman', 'Mage', 'Support'];
+
 export interface CardDef {
   id: string;
+  /** A unit's class (0.7). Cards made before it have none: their keywords stand in (Guardian a Tank, …). */
+  class?: UnitClass;
   /** Tokens have no rarity: they're summoned, never collected. */
   rarity?: Rarity;
   type: CardType;
@@ -64,7 +73,9 @@ export interface CardDef {
 /** When an ability happens. `exhaust` is a Hero's activated ability; `play` a Charm's effect. */
 export type Trigger =
   | 'play' | 'hello' | 'goodbye' | 'roundStart' | 'exhaust'
-  | 'damagedAndSurvives' | 'defeatsInCombat' | 'youHeal';
+  | 'damagedAndSurvives' | 'defeatsInCombat' | 'youHeal'
+  /** In the Clash: once before the first bout, at the start of every bout, at the start of bouts 2, 4, 6, 8. */
+  | 'clashStart' | 'boutStart' | 'everyOtherBout';
 
 /** Which units a filter keeps. */
 export interface UnitFilter {
@@ -73,6 +84,12 @@ export interface UnitFilter {
   noToy?: boolean;
   keyword?: string;
   counter?: { name: string; atLeast: number };
+  /** Units of this family (a trait's). */
+  family?: string;
+  /** Units of this card (a token's, say). */
+  card?: string;
+  /** Tokens only (true), or no tokens (false). */
+  token?: boolean;
 }
 
 /**
@@ -82,7 +99,8 @@ export interface UnitFilter {
 export type TargetSel =
   | 'self' | 'attack'
   | { unit: 'own' | 'enemy' | 'any'; other?: boolean; filter?: UnitFilter }
-  | { each: 'own' | 'enemy' | 'all' | 'allOther'; other?: boolean; filter?: UnitFilter };
+  /** `range`: only units within this many lanes of the ability's own unit (0: the one across from it, or itself). */
+  | { each: 'own' | 'enemy' | 'all' | 'allOther'; other?: boolean; filter?: UnitFilter; range?: number };
 
 /** A condition: a set mechanic's name ("Company", "Well-Fed"), a plugin's, a built-in name, or a test. */
 export type Condition =
@@ -136,12 +154,15 @@ export interface Ability {
   log?: string;
   /** A reminder printed after the ability's text, in brackets. */
   note?: string;
+  /** A trait's ability: which of the player's units carry it (none: the player does, once). */
+  on?: { filter?: UnitFilter };
 }
 
 /** Where an ability lives, so a queued step (plain JSON) can find it again. */
 export type AbilityRef =
   | { card: string; side?: 'kitten' | 'bigCat'; index: number }
-  | { mechanic: string; index: number };
+  | { mechanic: string; index: number }
+  | { trait: string; tier: number; index: number };
 
 /** A physical card: `uid` is unique within a game, `id` names its definition. */
 export interface CardInst {
@@ -157,9 +178,13 @@ export interface Unit {
   damage: number;
   /** An exhausted unit deals no damage in the Clash (an enemy's "exhaust" effect). Readied at the Start. */
   exhausted: boolean;
+  /** Stunned: it deals no damage up to this bout of the Clash (Knotted Mane: bouts 1 and 2). Gone when the Clash ends. */
+  stunned?: number;
   toy?: CardInst;
-  /** Copies merged into one unit (2 or 3): each star adds the card's printed Power and Health again. */
+  /** Stars (2 or 3), from the copies merged into it: each star adds the card's printed Power and Health again. */
   stars?: number;
+  /** Copies of the card in this unit, itself included (Rules.starCopies says how many make each star). */
+  copies?: number;
   /** "This round" Power, cleared in the End Phase. */
   buffPower: number;
   /** "This round" Health, cleared in the End Phase. */
@@ -168,9 +193,11 @@ export interface Unit {
   buffKeywords?: string[];
   /** A "once per round" ability has been used since the last Start Phase. */
   usedOnce: boolean;
+  /** Which of its "once per round" abilities have been used since the last Start Phase, each counted on its own. */
+  usedAbilities?: string[];
   /** Mechanics' counters on the unit: { rain: 2 } (Rain-Fed). They stay while the unit stays on the board. */
   counters?: Record<string, number>;
-  /** Offerings paid for it, its merged copies included: what selling it gives back (less sellLoss for each copy). */
+  /** Offerings paid for it, its merged copies included: what selling it gives back (less sellLoss for each star). */
   paid?: number;
 }
 
@@ -234,6 +261,8 @@ export interface PlayerState {
   downed?: number;
   /** Cards this player has played this round: Orange-Peri's count. */
   playedThisRound?: number;
+  /** The traits' "once per round" abilities this player has used since the last Start Phase. */
+  usedTraits?: string[];
   /** Candles this player gave up at the start, as a handicap (GameOptions.lives). */
   handicap?: number;
   /** What the opponent sees of this player during the Muster: the player as they stood when it began. */
@@ -246,7 +275,7 @@ export type Action =
   /** Buy a card with Ambush from the shop and set it face-down in one of your lanes. */
   | { t: 'ambush'; uid: number; lane: number; target?: Target }
   | { t: 'move'; uid: number; slot: number }
-  /** Sell a unit you control: it goes back into the deck, and you get back what you paid less sellLoss for each copy merged in. */
+  /** Sell a unit you control: it goes back into the deck, and you get back what you paid less sellLoss for each star. */
   | { t: 'sell'; uid: number }
   /** The shop goes back into the deck and a new one is dealt. */
   | { t: 'roll' }
@@ -284,6 +313,8 @@ export type Step =
   | { t: 'strike'; n: number; swift: boolean }
   | { t: 'clashEnd' }
   | { t: 'reset' }
+  /** The Clash's own triggers: every standing unit's (and each player's traits') abilities with this trigger. */
+  | { t: 'triggers'; when: 'clashStart' | 'boutStart' | 'everyOtherBout' }
   /** After a strike: `uid` hit `foeUid`; if the foe went down, `uid`'s "defeats in combat" abilities happen. */
   | { t: 'combatWin'; uid: number; foeUid: number };
 
@@ -310,16 +341,21 @@ export type GameEvent = (
   | { t: 'move'; p: PlayerId; uid: number; slot: number }
   | { t: 'levelUp'; p: PlayerId; level: number }
   | { t: 'readyUp'; p: PlayerId }
-  | { t: 'merge'; p: PlayerId; uid: number; stars: number }
+  | { t: 'merge'; p: PlayerId; uid: number; stars: number; copies: number }
   | { t: 'clash'; n: number }
   | { t: 'bout'; n: number }
-  | { t: 'hit'; from: Target; uid: number; dealt: number }
+  /** The board as it stands at the start of the Clash, of each bout, and at its end: for a replay of the fight. */
+  | { t: 'board'; units: BoardUnit[] }
+  /** One unit's (or Hero's) hit in a bout; `swift` in the bout's first strike, the Swift units'. */
+  | { t: 'hit'; from: Target; uid: number; dealt: number; swift?: true }
   | { t: 'clashEnd'; standing: [number, number]; lost: [number, number] }
   | { t: 'fizzled'; cardId?: string }
   | { t: 'damage'; uid: number; amount: number; p: PlayerId }
   | { t: 'heal'; uid: number; amount: number }
   | { t: 'buff'; uid: number; power?: number; health?: number; sneaky?: boolean; guardian?: boolean }
   | { t: 'exhaust'; uid: number }
+  /** Stunned: it deals no damage up to bout `until`. */
+  | { t: 'stun'; uid: number; until: number }
   | { t: 'ready'; uid: number }
   | { t: 'toy'; uid: number; cardId: string }
   | { t: 'down'; uid: number; cardId: string; owner: PlayerId }
@@ -327,11 +363,36 @@ export type GameEvent = (
   | { t: 'income'; p: PlayerId; gained: number; offerings: number }
   | { t: 'growUp'; p: PlayerId }
   | { t: 'counter'; uid: number; name: string; value: number }
-  | { t: 'summon'; p: PlayerId; uid: number; cardId: string }
+  | { t: 'summon'; p: PlayerId; uid: number; cardId: string; slot: number }
   | { t: 'freeRoll'; p: PlayerId; n: number }
   | { t: 'round'; n: number }
   | { t: 'win'; p: PlayerId | 'draw' }
-) & { secret?: PlayerId };
+) & { secret?: PlayerId; src?: EffectSource };
+
+/** A unit as a replay of the Clash draws it: where it stands, and its numbers at that moment (its auras included). */
+export interface BoardUnit {
+  uid: number;
+  id: string;
+  p: PlayerId;
+  slot: number;
+  power: number;
+  health: number;
+  damage: number;
+  stars?: number;
+  copies?: number;
+  /** Its Talisman's card id. */
+  toy?: string;
+  exhausted?: true;
+  /** It has gone down in this Clash (it stands up again when the Clash ends). */
+  down?: true;
+}
+
+/** What made an effect happen, for the screen: whose it is, the card or trait (by id, or a trait's name), and the unit. */
+export interface EffectSource {
+  p: PlayerId;
+  id: string;
+  uid?: number;
+}
 
 /** The numbers of the rules that playtests tune: docs/rulebook.md, Tunable parameters. */
 export interface Rules {
@@ -343,9 +404,11 @@ export interface Rules {
   streak: number[];
   /** Cards dealt to the shop. */
   shopSize: number;
+  /** The shop's odds of each tier (1 to 5), in percent, by the Hero's Level (shopOdds[3]: at Level 3). */
+  shopOdds: number[][];
   /** What a roll costs. */
   rollCost: number;
-  /** Selling a unit gives back what was paid for it, less this for each copy merged into it. */
+  /** Selling a unit gives back what was paid for it, less this for each star it has. */
   sellLoss: number;
   /** Interest: +1 Offering for every `interestPer` saved, at most `interestMax`. */
   interestPer: number;
@@ -361,8 +424,8 @@ export interface Rules {
   /** At the bout cap, each side loses Candles for the other's standing units (otherwise nobody does). */
   overtimeBothLose: boolean;
   maxRounds: number;
-  /** Merged copies: at most this many stars. */
-  maxStars: number;
+  /** Copies in one unit that make it 2★ and 3★. */
+  starCopies: number[];
 }
 
 export interface GameState {
@@ -395,5 +458,7 @@ export interface GameState {
   clash?: { bout: number; dealt: number; struck: [boolean, boolean] };
   /** Who is acting during the Muster: what they log and emit is secret to them. */
   acting?: PlayerId;
+  /** While an ability runs: its source, which every event it emits carries (`src`). */
+  effect?: EffectSource;
   rules: Rules;
 }

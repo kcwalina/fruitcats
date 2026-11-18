@@ -2,6 +2,55 @@
 
 Why the rules are the way they are, what we borrowed, and what the playtest engine should try to break first. Companion to [rulebook.md](rulebook.md) and [designing-good-deck.md](designing-good-deck.md).
 
+## Folkborn 0.7: the cards designed again, with classes (2026-10-02)
+
+The owner's playtest of 0.6: you couldn't tell what cards do (the abilities hid behind a long press, and a hundred
+of them look alike), the trait chips went unnoticed, and you couldn't tell why a Clash was lost. The last was fixed
+first: the Clash plays on the board, bout by bout, and ends with a summary. Then the cards: "everything is wrong about
+the cards except maybe the art". The design, settled with the owner, is [folkborn-0.7-design.md](folkborn-0.7-design.md).
+
+| Decision | Chosen | Why |
+|---|---|---|
+| Classes | Tank, Bruiser, Assassin, Marksman, Mage, Support (the owner's names): front, back, and how a unit fights | One word says how a unit fights, so you learn six classes rather than a hundred cards. They give no bonus (the owner). |
+| Taunt | A card keyword, not the class's: some Tanks taunt, others have more Health or Tough | The trade-off between Tank cards, and the answer to Assassins (they go for the back unless a unit taunts). |
+| Elusive, Lure, Sneaky, Guardian | Gone | The classes say it: the back replaces Elusive, Taunt replaces Lure, Assassin replaces Sneaky, Tank replaces Guardian. |
+| Synergies | Families only (2, 4, 6) | The owner: synergies come from cards of the same family; a card from another family must be good on its own. |
+| Mixing | Any card in any deck (the deck rule "one other family" went) | The rules and the engine allow every mix, future sets included; whether a mix is good is the player's call. |
+| Core decks | 12 units at 5/4/3/2/1 copies, 6 Charms, 3 Talismans; 3★ at 5 copies | A TCG product: a family's core deck plays out of the box; physical copies, so the cards can be printed and played on a table. |
+| Reading a unit | Its class as an icon; each ability as a line ("⟳ heal 1 · sides"); a trait column beside the lanes; shop cards show their class and what they add to a trait | The owner's first point: on the board you only saw Power and Health. |
+
+Each unit's text now starts with its class ("Tank. Taunt."), so the printed cards show it with no change to their
+layout. A Support never attacks; an Assassin strikes first and goes for the back; a Mage's spell is its ability.
+
+Balance took eleven passes. What moved most: Aluxes started weak (its growth comes late, so its units got more
+punch and its trait grows faster), a cheap Assassin is worth a lot (five copies of a 4-Power one that strikes first
+put Hui Hai at 78%), and a deck that heals out-lasts one that chips (Jiaoren against Hui Hai). Three decks
+settled into a loop (Pari beats Jiaoren's back row, Jiaoren out-heals Hui Hai, Hui Hai's Health walls off Pari); the
+last passes narrowed it. The last full gate (3000 games): every starter between 47% and 53%; the closest pairings 31%.
+The bot seems never to buy a Support whose ability is only healing (its forecast of a fight doesn't count heals):
+worth a look before trusting the gate on Supports.
+
+## Folkborn 0.6: cards made for the auto-battler (2026-10-01)
+
+0.4 and 0.5 changed the game; 0.6 changes the cards to match it. The full proposal, as approved by the owner, is
+[folkborn-0.6-design.md](folkborn-0.6-design.md). In short:
+
+| Decision | Chosen | Why |
+|---|---|---|
+| Tiers | Every card has a tier, 1 to 5, which is its price; the Hero's Level sets the shop's odds per tier (Level 2: 75/25, … Level 6: 15/20/30/25/10) | Levelling up must buy better cards, not only a lane: TFT's level/roll/save choice. |
+| Copies and stars | Up to 6 copies of a tier 1–2 card (4, 3, 1 for tiers 3–5); 3 copies make 2★, 6 make 3★; pips on the unit count them | Two copies for a star made stars cheap and left nothing to build toward. With no bench, a unit with pips is the bench. |
+| Traits | Each family is a trait at 2/4/6 different units; each role (Guardian, Elusive, Sneaky, Lure) at 2/4. Only the highest tier reached is on; copies count once, tokens never | TFT's deck-building pull. The old signature mechanics live on as the families' traits (Hearth, Company of Doves, Rain-Fed, Pearl Tears, Stone for Stone). |
+| In the fight | New triggers: Clash start, Each bout, Every second bout; "the enemy across" and "the units next to it" as targets | Of 69 units, 2 did anything in the fight; 23 only did something when bought. In an auto-battler the fight is where cards should matter. |
+| Hellos | Dropped from the starter families | A Hello is a TCG "battlecry": in a shop game it is bought once and never seen again. |
+| Selling | Back what was paid, its copies included, less 1 per star | Per copy would make a 3★ (6 copies) worth nothing to sell. |
+
+Balance took twenty passes of the gauntlet. What moved most: Domowiki's money, Aluxes'
+growth (Rain-Fed capped per tier), and a hard counter between Pari and Hui Hai (Hui Hai won 70-80%): Grandfather
+Hui Hai now throws 1 damage back when hurt (was 2), with 1 more Health. Heroes
+Awaken later than in 0.5: Dziadziuś at 15 Offerings, Zhu'er at 15 units down, Pebble at 22.
+The last full gate (3000 games): every starter between 47% and 53%; the closest matchup Pari
+against Hui Hai, 30%.
+
 ## Folkborn 0.5: the shop (2026-10-01)
 
 Playing 0.4, the owner found the hand was the wrong half of TFT: it only grew (two draws a round, lost Candles into

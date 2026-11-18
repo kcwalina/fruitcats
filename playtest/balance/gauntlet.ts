@@ -157,7 +157,7 @@ export async function runBalance(o: BalanceOptions): Promise<RunSummary> {
   if (shape.firstPlayer < flo || shape.firstPlayer > fhi) problems.push({ level: 'warn', text: `Whoever holds the Lantern first wins ${pct(shape.firstPlayer)} of games.` });
 
   for (const r of removals.filter((r) => r.worth > cfg.warn.cardWorth)) {
-    problems.push({ level: 'warn', text: `${cardName(r.card)}: ${DECKS[r.deck].name} wins ${pts(r.worth)} points more often with it than with a plain 2/1 in its place (${pct(r.withCard)} against ${pct(r.without)}), more than any one card should carry.` });
+    problems.push({ level: 'warn', text: `${cardName(r.card)}: ${DECKS[r.deck].name} wins ${pts(r.worth)} points more often with it than with a plain 1-cost unit in its place (${pct(r.withCard)} against ${pct(r.without)}), more than any one card should carry.` });
   }
   // A card no starter holds can't be taken out of one: the screen alone speaks for it.
   const inStarters = new Set(Object.values(DECKS).flatMap((d) => Object.keys(d.cards)));
@@ -221,7 +221,7 @@ function markdown(
   lines.push('| Deck | Awakened | Awakened in round | Hero Level at the end |', '|---|---|---|---|');
   for (const k of keys) lines.push(`| ${DECKS[k].name} | ${pct(shape.grewUp[k] ?? 0)} | ${(shape.grewUpRound[k] ?? 0).toFixed(1)} | ${(shape.levelEnd[k] ?? 0).toFixed(1)} |`);
   if (removals.length) {
-    lines.push('', '## Card strength', '', `Each card taken out of its starter deck (every copy a plain 1-cost 2/1), against the other starters in the same games. Warns above ${(100 * worthWarn).toFixed(0)} points.`, '');
+    lines.push('', '## Card strength', '', `Each card taken out of its starter deck (every copy a plain 1-cost unit), against the other starters in the same games. Warns above ${(100 * worthWarn).toFixed(0)} points.`, '');
     lines.push('| Card | Deck | Games | With it | Without it | Worth to its deck |', '|---|---|---|---|---|---|');
     for (const r of removals) lines.push(`| ${cardName(r.card)} | ${DECKS[r.deck].name} | ${r.games} | ${pct(r.withCard)} | ${pct(r.without)} | ${pts(r.worth)} ± ${(200 * r.error).toFixed(1)} |`);
   }

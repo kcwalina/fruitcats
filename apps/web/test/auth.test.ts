@@ -301,3 +301,62 @@ describe('staying signed in', () => {
     expect(auth.session()?.refused).toBeUndefined();
   });
 });
+
+describe('signed in on every Via Mochi site', () => {
+  const SHARED = { access_token: 'shared', expires_in: 3600, user: { id: 'u1', displayName: 'Kim', email: 'kim@example.com', terms: null } };
+  beforeEach(() => {
+    vi.stubGlobal('location', { port: '5173', hostname: 'fruitcats.viamochi.com', origin: 'https://fruitcats.viamochi.com', search: '' });
+  });
+
+  it('picks up a sign-in made on another site, with the shared cookie', async () => {
+    route = (path) => (path === 'sso/token' ? ok(SHARED) : undefined);
+    const auth = await load();
+    expect(await settle(auth.signInFromOtherSite())).toBe(true);
+    expect(auth.session()).toMatchObject({ userId: 'u1', email: 'kim@example.com', token: 'shared', refreshToken: '' });
+    expect(calls[0].init.credentials).toBe('include');
+  });
+
+  it('stays signed out when nobody is signed in elsewhere', async () => {
+    route = (path) => (path === 'sso/token' ? fail(401) : undefined);
+    const auth = await load();
+    expect(await settle(auth.signInFromOtherSite())).toBe(false);
+    expect(auth.session()).toBeNull();
+  });
+
+  it('a picked-up sign-in is renewed from the shared one, and ends with it', async () => {
+    let signedInThere = true;
+    route = (path) => (path === 'sso/token' ? (signedInThere ? ok(SHARED) : fail(401)) : undefined);
+    const auth = await load();
+    await settle(auth.signInFromOtherSite());
+    localStorage.setItem('viamochi-session', JSON.stringify({ ...auth.session(), expires: Date.now() }));
+    expect(await settle(auth.token())).toBe('shared');
+    expect(count('sso/token')).toBe(2);
+    localStorage.setItem('viamochi-session', JSON.stringify({ ...auth.session(), expires: Date.now() }));
+    signedInThere = false;
+    expect(await settle(auth.token())).toBeNull();
+    expect(auth.session()).toBeNull();
+  });
+
+  it('shares a sign-in made here once, and signing out here ends it everywhere', async () => {
+    route = signInRoutes({ 'sso/session': () => ok({ shared: true }), 'sso/signout': () => ok({ signedOut: true }) });
+    const auth = await load();
+    const p = await settle(auth.startSignIn('kim@example.com')) as Awaited<ReturnType<Auth['startSignIn']>>;
+    await settle(auth.submitCode(p, '12345678'));
+    await settle(auth.shareSignIn());
+    await settle(auth.shareSignIn());
+    expect(count('sso/session')).toBe(1);
+    expect(calls.find((c) => c.path === 'sso/session')!.init.credentials).toBe('include');
+    auth.signOut();
+    await settle(Promise.resolve());
+    expect(count('sso/signout')).toBe(1);
+  });
+});
+
+describe('away from viamochi.com', () => {
+  it('never asks for a shared sign-in (the dev server, other addresses)', async () => {
+    route = () => undefined;
+    const auth = await load();
+    expect(await settle(auth.signInFromOtherSite())).toBe(false);
+    expect(calls).toEqual([]);
+  });
+});

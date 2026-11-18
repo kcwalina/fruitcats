@@ -30,7 +30,7 @@ describe('saved decks with cards of a set that is gone', () => {
     expect(mixed.cards['SB1-C01']).toBeUndefined();
     expect(mixed.cards['DW1-D01']).toBe(1);
     expect(mixed.from!.cards).toEqual({ 'DW1-D01': 3 });
-    expect(problems(mixed)).toEqual(['Add 2 more cards.']);
+    expect(problems(mixed)).toEqual([`Add ${domowiki['DW1-D01'] - 1} more cards.`]);   // its own copies of DW1-D01 down to 1
   });
 
   it('falls back to a ready-made deck when the chosen one was a gone set\'s', async () => {

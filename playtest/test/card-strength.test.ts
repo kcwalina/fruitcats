@@ -26,11 +26,11 @@ describe('card screen', () => {
 });
 
 describe('removal tests', () => {
-  it('every starter deck has a plain 2/1 to put in a removed card\'s place', () => {
+  it('every starter deck has a plain 1-cost unit to put in a removed card\'s place', () => {
     for (const d of Object.values(DECKS)) {
       const v = vanillaFor(d)!;
       expect(v).toBeDefined();
-      expect([CARDS[v].cost, CARDS[v].power, CARDS[v].health]).toEqual([1, 2, 1]);
+      expect([CARDS[v].type, CARDS[v].cost, CARDS[v].keywords ?? [], CARDS[v].abilities ?? []]).toEqual(['Critter', 1, [], []]);
     }
   });
 
@@ -51,15 +51,15 @@ describe('removal tests', () => {
     const keys = Object.keys(DECKS);
     const base: MatchJob[] = keys.flatMap((a, i) => keys.slice(i + 1).map((b) => ({ a: { key: a, deck: DECKS[a] }, b: { key: b, deck: DECKS[b] }, seed: seedFrom(`t:${a}:${b}`), from: 0, to: 6 })));
     const deck = keys[0];
-    const t = removalTest(Object.keys(DECKS[deck].cards).find((c) => c !== vanillaFor(DECKS[deck]))!, base, 4)!;
+    const t = removalTest(Object.keys(DECKS[deck].cards).find((c) => c !== vanillaFor(DECKS[deck]))!, base, 2)!;
     expect(t.jobs).toHaveLength(keys.length - 1);
-    expect(t.jobs.every((j) => j.to - j.from === 4)).toBe(true);
+    expect(t.jobs.every((j) => j.to - j.from === 2)).toBe(true);
     // Stand-in for "removed": the unchanged deck under the removal key.
     const same = t.jobs.map((j) => ({ ...j, a: j.a.key === t.key ? { key: t.key, deck: DECKS[deck] } : j.a, b: j.b.key === t.key ? { key: t.key, deck: DECKS[deck] } : j.b }));
     const [baseRecords, sameRecords] = await Promise.all([runJobs(t.base, { threads: 1 }), runJobs(same, { threads: 1 })]);
     const r = removalResult(t, baseRecords, sameRecords);
-    expect(r.games).toBe(4 * (keys.length - 1));
+    expect(r.games).toBe(2 * (keys.length - 1));
     expect(r.worth).toBe(0);
     expect(r.error).toBe(0);
-  }, 60_000);
+  }, 120_000);
 });

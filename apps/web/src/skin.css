@@ -640,6 +640,28 @@ button.tile-delete, button.delete-deck { color: #9c3a26; }
 .yard.foe .lane .lane-no { bottom: 4px; }
 .yard.me .lane .lane-no { top: 4px; }
 .board.targeting .lane.empty:not(.targetable)::before { opacity: 0.45; }
+/* A lane the Hero's Level hasn't opened: grey, solid, with a lock and the Level that opens it. */
+.lane.empty.locked::before { border: 2px solid rgba(0, 0, 0, 0.35); background: rgba(0, 0, 0, 0.38); }
+.lane.empty.locked:not(.targetable)::before { opacity: 1; }
+.lane .lane-lock {
+  position: absolute; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
+  font-size: clamp(14px, 3.2vh, 22px); opacity: 0.55; filter: grayscale(1);
+}
+.lane .lane-lock small { font: 700 11px Fredoka, Nunito, sans-serif; color: rgba(255, 244, 220, 0.85); }
+/* Traits under a player's plaque: dim until a tier is on, then lit. Tapped, a chip opens its tiers (openTrait). */
+.traits { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.trait {
+  cursor: pointer; padding: 1px 7px; border-radius: 999px; font: 600 11.5px Nunito, sans-serif; white-space: nowrap;
+  color: rgba(255, 244, 220, 0.6); background: rgba(255, 244, 220, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 244, 220, 0.18);
+}
+.trait b { font-family: Fredoka, Nunito, sans-serif; }
+.trait.on { color: #2a1606; background: linear-gradient(#ffe07a, #f2b33d); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+.unit .stars .pips { margin-left: 3px; letter-spacing: 0; font-size: 0.85em; color: #fff4dc; }
+@media (max-width: 640px) { .trait { font-size: 10px; padding: 0 5px; } }
+/* A trait's tiers, opened from its chip: no card beside them, so the whole height is theirs; the tier that's on is lit. */
+#zoom-overlay .trait-info { max-height: calc(var(--vh, 1vh) * 100 - 32px - var(--zoom-hint-h)); }
+.trait-tiers .on { margin-inline: -8px; padding-inline: 8px; border-radius: 10px; background: rgba(242, 179, 61, 0.28); }
+.trait-tiers .on dt { color: #2f8a46; }
 .ambush-mark {
   position: absolute; top: 2px; right: 2px; z-index: 4; width: clamp(16px, 2.2vw, 24px); aspect-ratio: 0.72;
   background: var(--img-cardback) center / cover; border: 2px solid #fff4dc; border-radius: 4px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
@@ -1499,3 +1521,85 @@ body.game-screen .story-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(
 }
 @keyframes mc-sweep { 0%, 55% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
 .mc-flavor { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── The Clash, replayed on the board (main.ts, replay.ts) ── */
+/* A unit that went down in the Clash: greyed and sunk until the Clash ends. */
+.unit.down { filter: grayscale(1) brightness(0.6); opacity: 0.55; }
+/* Numbers and words rising from a card: damage red, heals green, buffs gold, weakening violet. */
+.fx-float {
+  position: fixed; z-index: 80; pointer-events: none; white-space: nowrap; transform: translate(-50%, 0);
+  font: 800 clamp(18px, 2.4vw, 30px) Fredoka, Nunito, sans-serif; color: #fff; -webkit-text-stroke: 1px rgba(30, 10, 0, 0.6);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+.fx-float.dmg { color: #ff5a4e; }
+.fx-float.heal { color: #6fe08a; }
+.fx-float.buff { color: #ffd76a; }
+.fx-float.debuff { color: #c99bff; }
+.fx-float.none { color: #e8dcc8; font-size: clamp(14px, 1.8vw, 22px); }
+.replay-bar .replay-now { margin-top: 2px; font-size: 0.92em; color: #ffe7a8; }
+/* Under the board while the Clash plays: what happens, newest last; then who did what. */
+.hand.shop.replay-panel {
+  display: block; overflow-y: auto; overflow-x: hidden; padding: 6px 14px; color: #f4e8d4; font: 500 14px/1.35 Nunito, sans-serif;
+  background: rgba(20, 12, 30, 0.55); border-radius: 14px; margin: 4px 8px;
+}
+/* The summary takes the room it needs, up to about half the screen; the lanes above shrink to make it. */
+.hand.shop.replay-panel.clash-report { height: auto; min-height: var(--card-h); max-height: calc(var(--vh, 1vh) * 46); }
+.replay-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; justify-content: flex-end; min-height: 100%; }
+.replay-lines li { opacity: 0.6; }
+.replay-lines li.now { opacity: 1; font-weight: 700; color: #ffe7a8; }
+.sum-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+.sum-side h4 { margin: 0 0 2px; font: 700 14px Fredoka, Nunito, sans-serif; }
+.sum-side.me h4 { color: #9fe3b0; }
+.sum-side.foe h4 { color: #ffb19a; }
+.sum-side table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.sum-side th:first-child, .sum-side td:first-child { width: 42%; }
+.sum-side th:nth-child(2), .sum-side th:nth-child(3) { width: 16%; }
+.sum-side td:first-child { overflow: hidden; text-overflow: ellipsis; }
+.sum-side th { font-weight: 600; font-size: 11px; color: #cbb89a; text-align: right; padding: 0 4px; white-space: nowrap; }
+.sum-side td { padding: 1px 4px; text-align: right; white-space: nowrap; }
+.sum-side td:first-child { text-align: left; }
+.sum-side td:last-child { color: #cbb89a; font-size: 12px; white-space: normal; line-height: 1.1; }
+.sum-side tr.fell td:first-child { color: #a99a86; text-decoration: line-through rgba(255, 120, 100, 0.6); }
+.sum-hints { list-style: none; margin: 6px 0 0; padding: 6px 10px; border-radius: 10px; background: rgba(255, 215, 106, 0.12); }
+.sum-hints li + li { margin-top: 3px; }
+@media (max-width: 640px) {
+  .sum-sides { grid-template-columns: 1fr; }
+  .hand.shop.replay-panel { font-size: 12px; }
+}
+
+/* ── 0.7: classes, ability lines and the trait column (main.ts, glyphs.ts) ── */
+/* A unit's class: an icon in its top-left corner (its title says what the class does). */
+.unit .uclass {
+  position: absolute; top: 3px; left: 3px; z-index: 3; display: grid; place-items: center;
+  width: clamp(18px, 20cqw, 30px); height: clamp(18px, 20cqw, 30px); border-radius: 50%;
+  font-size: clamp(11px, 12cqw, 18px); background: rgba(255, 250, 240, 0.94); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.unit .chips { left: calc(clamp(18px, 20cqw, 30px) + 6px); }
+/* Each ability in a few symbols and words ("⟳ heal 1 · sides"), under the unit's name. */
+.unit .uline {
+  display: flex; flex-direction: column; gap: 1px; padding: 1px 4px 3px; text-align: center; background: #fffaf0; color: #3b2513;
+  font: 700 clamp(8px, 7.5cqw, 14px) / 1.2 Nunito, sans-serif;
+}
+.unit .uline span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* On a wide screen: a column of traits before each player's lanes. */
+.board.wide .yard.lanes.with-traits { grid-template-columns: minmax(92px, 12%) repeat(6, minmax(0, 1fr)); }
+.trait-col { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; padding: 4px 2px; }
+.tcol-trait {
+  cursor: pointer; padding: 3px 6px; border-radius: 10px; color: rgba(255, 244, 220, 0.65);
+  background: rgba(255, 244, 220, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 244, 220, 0.18);
+}
+.tcol-trait.on { color: #2a1606; background: linear-gradient(#ffe07a, #f2b33d); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); }
+.tcol-name { display: block; font: 700 12px/1.2 Fredoka, Nunito, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcol-marks { display: flex; align-items: center; gap: 3px; font: 600 11px Nunito, sans-serif; }
+.tcol-marks b { font: 800 14px Fredoka, Nunito, sans-serif; margin-right: 2px; }
+.tcol-marks i { font-style: normal; opacity: 0.55; }
+.tcol-marks i.got { opacity: 1; font-weight: 800; }
+.tcol-marks i.on { text-decoration: underline; }
+.tcol-none { color: rgba(255, 244, 220, 0.45); font: 600 11px Nunito, sans-serif; text-align: center; }
+/* A shop unit's class, and what buying it does for its family's trait ("🏠 3/4"). */
+.unit-tag .tag-class { font-size: 0.95em; margin-right: 0.15em; }
+.shop-trait {
+  position: absolute; left: 50%; top: 4%; transform: translateX(-50%); z-index: 2; padding: 0.1em 0.5em; border-radius: 999px;
+  font: 800 clamp(9px, 12cqw, 15px) Fredoka, Nunito, sans-serif; color: #2a1606; background: linear-gradient(#ffe07a, #f2b33d);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45); white-space: nowrap; pointer-events: none;
+}

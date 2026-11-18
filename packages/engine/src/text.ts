@@ -7,12 +7,12 @@
 //
 // Units are named by their lane: Y1…Y6 in your lanes, T1…T6 in theirs; cards in the shop are S1…Sn.
 
-import { CARDS, MECHANICS } from './cards';
+import { CARDS, MECHANICS, isUnitCard, keywords } from './cards';
 import {
-  LANES, cardName, heroSide, interestOn, laneUnit, legalActions, levelCost, nextSeat, other, rollCost, sellValue, streakBonus, targetRank,
+  LANES, cardName, heroSide, interestOn, laneUnit, legalActions, levelCost, nextSeat, other, rollCost, sellValue, streakBonus, isTaunt, unitClass,
   unitHealth, unitKeywords, unitPower,
 } from './engine';
-import type { Action, GameState, PlayerId, Target, Unit } from './types';
+import type { Ability, Action, GameState, PlayerId, Target, Unit } from './types';
 import { RULES } from './rules';
 import { viewFor, type PlayerView } from './view';
 import TERMS from './terms.json';
@@ -21,18 +21,21 @@ import TERMS from './terms.json';
 const CORE_RULES = `FOLKBORN: RULES IN BRIEF
 Two players, 50-card decks, each led by a Hero. Win by blowing out the opponent's ninth and last Candle.
 - A round: Start (units and Hero ready again, income; round 1 has no income), a new shop, then the Muster, then the Clash.
-- The shop: ${'{shop}'} cards dealt face up from your own deck at every Start. Buy what you want at its cost; what you don't buy goes back into your deck, which is shuffled. Roll (${'{roll}'} Offering) to put the shop back and get ${'{shop}'} new cards.
+- The shop: ${'{shop}'} cards dealt face up from your own deck at every Start. Buy what you want at its cost; what you don't buy goes back into your deck, which is shuffled. Roll (${'{roll}'} Offering) to put the shop back and get ${'{shop}'} new cards. Every card has a tier, 1 to 5, which is its cost; your Hero's Level decides which tiers the shop deals (Level 2: mostly tier 1, some tier 2; Level 6: all tiers, tier 4 and 5 included).
 - Offerings are money. You start with ${'{start}'}. At each Start you get income (it grows with the rounds), plus interest: +1 for every 5 Offerings you have saved (at most +3), plus a losing streak: +1 after 2 or 3 Clashes lost in a row, +2 after 4, +3 after 5 or more. What you don't spend is kept.
-- The Muster: both players build at the same time, in secret, each until they choose Ready. You may: buy a unit into one of your 6 lanes (you may have as many units as your Hero's Level, 2 at first); buy a Talisman for a unit of yours; buy a Charm; buy a card with Ambush and set it face-down in one of your lanes; move your units between lanes (free); sell a unit (you get back what you paid, less 1 for each copy in it; its card goes back into your deck); roll the shop; use your Hero's ability once; level up your Hero by paying Offerings (each Level is room for one more unit; there are always 6 lanes). You see the opponent's board as it was when the Muster began.
-- Buying a copy of a Creature you already have merges it into that unit, even when your lanes are full: 2 stars, then 3, each star adding its printed Power and Health again. Fabled never merge.
+- The Muster: both players build at the same time, in secret, each until they choose Ready. You may: buy a unit into one of your open lanes (your Hero's Level opens that many of your 6 lanes, from the left: lanes 1-2 at first); buy a Talisman for a unit of yours; buy a Charm; buy a card with Ambush and set it face-down in one of your lanes; move your units between lanes (free); sell a unit (you get back what you paid, less 1 for each star it has; its card goes back into your deck); roll the shop; use your Hero's ability once; level up your Hero by paying Offerings (each Level is room for one more unit; there are always 6 lanes). You see the opponent's board as it was when the Muster began.
+- Buying a copy of a Creature you already have merges it into that unit, even when your lanes are full. 3 copies in one unit make it 2 stars (twice its printed Power and Health), 5 copies make 3 stars (three times). Fabled never merge. A deck may hold 5 copies of a tier 1 card, 4 of tier 2, 3 of tier 3, 2 of tier 4, 1 of tier 5, of any families.
+- Classes: every unit has one, the first word of its text. Tank and Bruiser fight at the front; Marksman, Mage and Support at the back; a Support never attacks (its ability helps); an Assassin strikes first in every bout and goes for the enemy's back.
+- Traits: each family is a trait. With 2, 4 or 6 different units of a family on your board, its team bonus turns on; the highest tier reached is the one that counts. Copies merged into one unit count once.
+- Units act in the fight: "Clash start:" happens once before the first bout, "Each bout:" at the start of every bout, "Every second bout:" at bouts 2, 4, 6 and 8.
 - Effects aimed at the enemy (damage, exhaust) are aimed at one of their lanes and happen when the Clash begins, to whoever stands there then. With nobody there, they fizzle.
-- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the bouts: in each bout every unit hits one enemy unit, Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a Guardian first; otherwise plain units; then Elusive units; Lures last. Sneaky units go the other way: Lures first, Guardians last. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
+- The Clash plays itself. Ambushes are revealed when their lane holds what they need (otherwise they stay face-down for later). Order: first the effects aimed at lanes, then Ambushes, then an Awakened Hero that didn't use its ability strikes once (before any unit hits), then the units' "Clash start:" abilities, then the bouts: in each bout every unit hits one enemy unit, Assassins and Swift units first, all at the same time; a unit whose damage reaches its Health goes down. Who a unit hits: a unit with Taunt first; then Tanks; then Bruisers and Assassins; then the back (Marksmen, Mages, Supports). An Assassin goes for the back first, unless a unit taunts. Among equals, the enemy across from it, otherwise the nearest (leftmost on a tie). An exhausted unit deals no damage in this Clash, but can still be hit; it is ready again next round.
 - The Clash ends when one side has no units standing (or after ${'{bouts}'} bouts, or when nobody can deal damage). The loser blows out 1 Candle per enemy unit still standing (2 for Fierce ones, +1 for a Hero that struck), at most ${'{cap}'}. If both sides still stand at the end, each loses Candles for the other's units.
 - After the Clash every unit stands up again with no damage: nothing on the board is lost in a Clash. Damage never carries over to the next round.
 - Hero: its "Exhaust:" ability can be used once a round. When its Awaken condition is true it flips to its Awakened side for good; an Awakened Hero that isn't exhausted strikes in the Clash.`;
 
 /** Keywords of the core rules; the mechanics each set brings are listed after them. */
-const CORE_KEYWORDS = `Swift: hits first in every bout. Guardian: enemies hit Guardians first (Sneaky ones last). Elusive: enemies hit it late (after plain units). Lure: enemies hit it last, but Sneaky enemies must hit it first. Sneaky: hits the enemy's Lures, then Elusive units, first. Fierce: worth 2 Candles if it is standing when its side wins a Clash. Tough X: takes X less each time it is dealt damage. Ambush: may be set face-down in a lane, to happen in the Clash; it can also be played normally. Hello: happens when the unit is played. Goodbye: happens each time it goes down.`;
+const CORE_KEYWORDS = `Swift: hits first in every bout. Taunt: every enemy hits it first while it stands, Assassins included. Fierce: worth 2 Candles if it is standing when its side wins a Clash. Tough X: takes X less each time it is dealt damage. Ambush: may be set face-down in a lane, to happen in the Clash; it can also be played normally. Hello: happens when the unit is played. Goodbye: happens each time it goes down.`;
 
 /**
  * The rules a text player needs: the core rules, then every mechanic the loaded sets define, with the reminder text
@@ -55,9 +58,10 @@ export const STRATEGY_PRIMER = `BASIC STRATEGY
 - Your board is your army for the whole game: units are never lost in a Clash. Build it up every round.
 - Spend, but save when it pays: every 5 Offerings saved earn 1 more at the next Start (up to 3). A Level costs Offerings but lets you field one more unit.
 - Fill your lanes: an empty board loses the Clash. Then level up when your lanes are full and you have units to add.
-- Put a Guardian where the enemy's strong units are; Guardians soak the first hits. Keep your best damage dealer Elusive or behind Guardians.
-- Sneaky units hit Lures and Elusive units first: against Sneaky enemies, a Lure protects your carry.
-- Merge copies of the same Creature: a 2-star unit is twice as strong. A copy merges even when your lanes are full.
+- Tanks soak the first hits: field one or two. Your damage dealers at the back (Marksmen, Mages) are hit last.
+- Assassins go for the back: against them, a unit with Taunt protects your back. Supports help the units next to them: put them beside your best units.
+- Merge copies of the same Creature: 3 copies make a 2-star unit, twice as strong. A copy merges even when your lanes are full.
+- Build toward traits: different units of one family (2, 4, 6) or role (2, 4) turn on team bonuses. A higher Level deals more high-tier cards.
 - Moving is free, but only where your units stand when you are Ready matters. Decide where each unit goes, move it once, and get on with buying cards.
 - Aim damage Charms at the lane where the enemy's key unit stood last round; they hit whoever stands there when the Clash begins.
 - Roll when the shop has nothing for you and you can spare the Offering; with lanes full, sell your weakest unit to make room for a better one.`;
@@ -105,12 +109,10 @@ function counterTags(u: Unit): string[] {
     `${Object.entries(MECHANICS).find(([, m]) => m.counter?.name === name)?.[0] ?? name} +${n}`);
 }
 
-const ROLE = ['Lure', 'Elusive', '', 'Guardian'];
-
 function unitLine(u: Unit, label: string, s?: GameState): string {
   const k = unitKeywords(u, s);
   const tags = [
-    ROLE[targetRank(u, s)], k.sneaky && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
+    unitClass(u), isTaunt(u, s) && 'Taunt', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
     u.stars && `${u.stars} stars`, ...counterTags(u), u.buffPower ? `+${u.buffPower} Power this round` : '',
     u.toy && `with ${cardName(u.toy.id)}`, u.exhausted && 'exhausted: deals no damage this Clash',
   ].filter(Boolean);
@@ -123,6 +125,15 @@ function cardLine(id: string, label: string): string {
   const c = CARDS[id];
   const stats = c.power !== undefined ? ` ${c.power}/${c.health}` : '';
   return `  ${label} ${cardName(id)} (cost ${c.cost ?? 0}, ${TERMS.types[c.type as keyof typeof TERMS.types] ?? c.type}${stats})${c.text ? ` — ${c.text}` : ''}`;
+}
+
+/** Why a shop card isn't among the choices: the LLM kept trying to buy such cards by their S number. */
+function whyNot(s: GameState, seat: PlayerId, id: string): string {
+  const me = s.players[seat];
+  const c = CARDS[id];
+  if ((c.cost ?? 0) > me.offerings) return `costs ${c.cost}, you have ${me.offerings}`;
+  if (isUnitCard(id)) return 'no free lane and no copy to merge into: level up or sell first';
+  return 'nothing it can be played on';
 }
 
 function heroLine(s: GameState, p: PlayerId): string {
@@ -171,7 +182,8 @@ export function describe(s: GameState, seat: PlayerId, recent = 12): string {
   side(seat, 'YOU');
   if (me.pending?.length) lines.push(`  Waiting for the Clash: ${me.pending.map((x) => `${cardName(x.sourceId)}${x.target ? ` → ${targetName(v, seat, x.target)}` : ''}`).join('; ')}`);
   lines.push(`  Your shop${me.freeRolls ? ` (free rolls: ${me.freeRolls})` : ''}:`);
-  me.shop.forEach((c, i) => lines.push(cardLine(c.id, `S${i + 1}`)));
+  const buyable = new Set(legalActions(s, seat).flatMap((a) => (a.t === 'play' || a.t === 'ambush' ? [a.uid] : [])));
+  me.shop.forEach((c, i) => lines.push(cardLine(c.id, `S${i + 1}`) + (buyable.has(c.uid) ? '' : ` [can't buy now: ${whyNot(s, seat, c.id)}]`)));
   const log = v.log.slice(-recent).map((e) => `  ${secondPerson(e.text, me.name, foe.name)}`);
   if (log.length) lines.push('', 'RECENTLY:', ...log);
   return lines.join('\n');
@@ -198,6 +210,20 @@ function label(s: GameState, seat: PlayerId, a: Action, o: ChoiceOptions = {}): 
   return o.detail ? detailed(s, seat, a, text) : text;
 }
 
+/** A note when the target already has as many counters as the effect gives at most: the gain would be lost. */
+function atMost(s: GameState, abilities: Ability[] | undefined, t: Target | undefined): string {
+  if (t?.kind !== 'unit') return '';
+  const u = s.players.flatMap((p) => p.yard).find((x) => x.uid === t.uid);
+  for (const act of (abilities ?? []).flatMap((ab) => ab.do ?? [])) {
+    const c = (act as { counter?: { name: string; max?: number } }).counter;
+    if (u && c?.max !== undefined && (u.counters?.[c.name] ?? 0) >= c.max) {
+      const name = Object.entries(MECHANICS).find(([, m]) => m.counter?.name === c.name)?.[0] ?? c.name;
+      return ` (already at ${name} +${c.max}, the most: it gains nothing)`;
+    }
+  }
+  return '';
+}
+
 function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
   const me = s.players[seat];
   const card = (uid: number) => me.shop.find((c) => c.uid === uid);
@@ -207,7 +233,8 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
     case 'play': {
       const c = card(a.uid)!;
       const twin = a.slot === undefined && (CARDS[c.id].type === 'Critter') && me.yard.some((u) => u.id === c.id);
-      return `Buy ${cardName(c.id)} (cost ${CARDS[c.id].cost ?? 0})${twin ? ' — merges into your copy' : lane(a.slot)}${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}`;
+      const now = keywords(c.id).pounce ? ' and play it now, not as an Ambush,' : '';
+      return `Buy ${cardName(c.id)}${now} (cost ${CARDS[c.id].cost ?? 0})${twin ? ' — merges into your copy' : lane(a.slot)}${on(a.target)}${a.target2 ? ` and ${targetName(s, seat, a.target2)}` : ''}${atMost(s, CARDS[c.id].abilities, a.target)}`;
     }
     case 'ambush': { const c = card(a.uid)!; return `Buy ${cardName(c.id)} and set it face-down as an Ambush in lane Y${a.lane + 1} (cost ${CARDS[c.id].cost ?? 0})${on(a.target)}`; }
     case 'move': {
@@ -225,7 +252,7 @@ function plainLabel(s: GameState, seat: PlayerId, a: Action): string {
     }
     case 'ability': {
       const text = heroSide(s, seat).text.split('\n').find((l) => /Exhaust/.test(l)) ?? '';
-      return `Use your Hero's ability (${text.trim()})${on(a.target)}`;
+      return `Use your Hero's ability (${text.trim()})${on(a.target)}${atMost(s, heroSide(s, seat).abilities, a.target)}`;
     }
     case 'levelUp': return `Level up your Hero (cost ${levelCost(s, seat)})`;
     case 'ready': return 'Ready: done for this Muster';
@@ -261,7 +288,8 @@ export function parseChoice(s: GameState, reply: string, seat?: PlayerId): { act
   // Prefer an explicit "answer: …" or "choice: …" line when a reply reasons out loud first.
   const tagged = /(?:answer|choice|final)\s*[:=]\s*([^\n]*)/i.exec(reply)?.[1];
   const text = tagged ?? reply;
-  const m = /\d+/.exec(text);
+  // A number glued to a letter is a lane or a shop card (Y1, S3), not a choice.
+  const m = /(?<![A-Za-z])\d+/.exec(text);
   if (!m) return { error: `Answer with a number from 1 to ${c.options.length}.` };
   const choice = c.options.find((o) => o.n === Number(m[0]));
   return choice ? { action: choice.action } : { error: `There is no choice ${m[0]}; answer with a number from 1 to ${c.options.length}.` };

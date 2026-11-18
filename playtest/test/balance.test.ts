@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARDS, DECKS, deckProblems, deckSize } from '../lib/engine';
+import { BLANK_CARD, CARDS, DECKS, deckProblems, deckSize } from '../lib/engine';
 import { runJobs } from '../lib/pool';
 import { mulberry } from '../lib/rng';
 import { cardPool, families, mutateDeck, playableHeroes, randomDeck } from '../balance/decks';
@@ -32,6 +32,11 @@ describe('generated decks', () => {
     expect(pool.some((id) => CARDS[id].family === fb)).toBe(true);
     expect(pool.some((id) => CARDS[id].family === fc)).toBe(false);
   });
+
+  it("never deals the bot's stand-in for unseen cards (it put 4 \"Unknown card\" in a deck that beat the starters 70%)", () => {
+    expect(families()).not.toContain(CARDS[BLANK_CARD].family);
+    for (const hero of playableHeroes()) expect(cardPool(hero)).not.toContain(BLANK_CARD);
+  });
 });
 
 describe('worker pool', () => {
@@ -40,11 +45,11 @@ describe('worker pool', () => {
     const job: MatchJob = {
       a: { key: first, deck: DECKS[first] },
       b: { key: second, deck: DECKS[second] },
-      seed: 1234, from: 0, to: 40,
+      seed: 1234, from: 0, to: 10,
     };
     const [single] = await runJobs([job], { threads: 1 });
     const [multi] = await runJobs([job], { threads: 4 });
     expect(multi).toEqual(single);
-    expect(matchups(single).overall[first].games).toBe(40);
+    expect(matchups(single).overall[first].games).toBe(10);
   }, 120_000);
 });

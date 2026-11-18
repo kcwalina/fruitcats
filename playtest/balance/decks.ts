@@ -2,7 +2,7 @@
 // with a handful of cards swapped (closer to what players actually build). Both are checked with the same
 // `deckProblems` the deck builder uses, so every generated deck is one a player could make.
 
-import { BEHAVIOURS, CARDS, DECKS, DECK_RULES, catCount, copyLimit, deckProblems, deckSize, isNeutralFamily, type DeckList } from '../lib/engine';
+import { BEHAVIOURS, BLANK_CARD, CARDS, DECKS, DECK_RULES, catCount, copyLimit, deckProblems, deckSize, isNeutralFamily, type DeckList } from '../lib/engine';
 import { pick, pickWeighted, type Rng } from '../lib/rng';
 
 /** Hero Cats that can be played: their Exhaust abilities and Grow Up are implemented (not previews). */
@@ -15,7 +15,7 @@ export function playableHeroes(): string[] {
 /** Families that have cards to build with, besides the neutral ones. */
 export function families(): string[] {
   const set = new Set<string>();
-  for (const c of Object.values(CARDS)) if (c.type !== 'Hero Cat' && !c.preview && !c.token && !isNeutralFamily(c.family)) set.add(c.family);
+  for (const c of Object.values(CARDS)) if (c.type !== 'Hero Cat' && c.id !== BLANK_CARD && !c.preview && !c.token && !isNeutralFamily(c.family)) set.add(c.family);
   return [...set].sort();
 }
 
@@ -23,7 +23,7 @@ export function families(): string[] {
 export function cardPool(hero: string, partner?: string): string[] {
   const allowed = new Set([CARDS[hero].family, ...(partner ? [partner] : [])]);
   return Object.values(CARDS)
-    .filter((c) => c.type !== 'Hero Cat' && !c.preview && !c.token && (allowed.has(c.family) || isNeutralFamily(c.family)))
+    .filter((c) => c.type !== 'Hero Cat' && c.id !== BLANK_CARD && !c.preview && !c.token && (allowed.has(c.family) || isNeutralFamily(c.family)))
     .map((c) => c.id);
 }
 

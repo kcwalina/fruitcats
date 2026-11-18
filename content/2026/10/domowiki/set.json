@@ -87,7 +87,7 @@
       "flavor": "The smallest Domowik in the house. Everyone listens to him anyway.",
       "kitten": {
         "name": "Dziadziuś, Heart of the House",
-        "text": "Exhaust: Gain an Offering.\nAwaken: You have 8 or more Offerings.",
+        "text": "Exhaust: Gain an Offering.\nAwaken: You have 15 or more Offerings.",
         "abilities": [
           {
             "when": "exhaust",
@@ -101,7 +101,7 @@
         "growUp": {
           "if": {
             "treats": {
-              "atLeast": 8
+              "atLeast": 15
             }
           }
         }
@@ -132,21 +132,27 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Stove Keeper",
-      "cost": 2,
-      "power": 1,
-      "health": 2,
-      "text": "Hello: Gain an Offering.",
+      "cost": 1,
+      "power": 0,
+      "health": 5,
+      "text": "Support. Each bout: The units next to Stove Keeper heal 1.",
       "flavor": "Keeps the embers warm until morning.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "boutStart",
+          "target": {
+            "each": "own",
+            "other": true,
+            "range": 1
+          },
           "do": [
             {
-              "readyTreats": 1
+              "heal": 1
             }
           ]
         }
-      ]
+      ],
+      "class": "Support"
     },
     {
       "id": "DW1-D02",
@@ -155,23 +161,21 @@
       "type": "Critter",
       "name": "Moving-Day Domowik",
       "cost": 1,
-      "power": 1,
-      "health": 1,
-      "text": "Lure. Hello: Sprout 1.",
+      "power": 2,
+      "health": 3,
+      "text": "Bruiser. Goodbye: Gain an Offering.",
       "flavor": "Carry the old fire, and the home comes with you.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "goodbye",
           "do": [
             {
-              "sprout": 1
+              "readyTreats": 1
             }
           ]
         }
       ],
-      "keywords": [
-        "Lure"
-      ]
+      "class": "Bruiser"
     },
     {
       "id": "DW1-D03",
@@ -180,13 +184,14 @@
       "type": "Critter",
       "name": "Mane-Braiding Domowik",
       "cost": 2,
-      "power": 2,
-      "health": 2,
-      "text": "Swift.",
+      "power": 3,
+      "health": 4,
+      "text": "Bruiser. Swift.",
       "flavor": "The horse he favours wakes with braids in its mane.",
       "keywords": [
         "Zoomies"
-      ]
+      ],
+      "class": "Bruiser"
     },
     {
       "id": "DW1-D04",
@@ -194,14 +199,15 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Keeper of the Door",
-      "cost": 3,
+      "cost": 2,
       "power": 2,
       "health": 6,
-      "text": "Guardian.",
+      "text": "Tank. Taunt.",
       "flavor": "Nothing crosses the threshold without his nod.",
       "keywords": [
-        "Guardian"
-      ]
+        "Taunt"
+      ],
+      "class": "Tank"
     },
     {
       "id": "DW1-D05",
@@ -209,21 +215,25 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Ovinnik of the Drying Barn",
-      "cost": 2,
-      "power": 2,
-      "health": 3,
-      "text": "Can't attack unless you're Well-Fed.",
+      "cost": 3,
+      "power": 5,
+      "health": 6,
+      "text": "Bruiser. After Ovinnik of the Drying Barn defeats a unit in combat, it gets +2 Power this round.",
       "flavor": "Keeps the fire that dries the grain. Feed him first, or no one gets bread.",
       "abilities": [
         {
-          "static": {
-            "cantAttack": true,
-            "while": {
-              "not": "Well-Fed"
+          "when": "defeatsInCombat",
+          "target": "self",
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
             }
-          }
+          ]
         }
-      ]
+      ],
+      "class": "Bruiser"
     },
     {
       "id": "DW1-D06",
@@ -231,26 +241,31 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Bread-and-Salt Greeter",
-      "cost": 4,
-      "power": 3,
-      "health": 5,
-      "text": "Hello: Your units get +2 Health this round.",
+      "cost": 3,
+      "power": 1,
+      "health": 7,
+      "text": "Support. Clash start: The units next to Bread-and-Salt Greeter gain Tough 1 this round.",
       "flavor": "Every guest is welcome. Every crumb is counted.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
           "target": {
-            "each": "own"
+            "each": "own",
+            "other": true,
+            "range": 1
           },
           "do": [
             {
               "buff": {
-                "health": 2
+                "keywords": [
+                  "Tough 1"
+                ]
               }
             }
           ]
         }
-      ]
+      ],
+      "class": "Support"
     },
     {
       "id": "DW1-D07",
@@ -258,25 +273,28 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Kikimora, the Night Spinner",
-      "cost": 5,
-      "power": 5,
+      "cost": 3,
+      "power": 3,
       "health": 5,
-      "text": "Elusive. Hello: If you're Well-Fed, get two free rolls.",
+      "text": "Mage. Every second bout: The enemy across and the ones next to it get -2 Power this round.",
       "flavor": "Spins by the stove all night. The yarn tells tomorrow.",
       "abilities": [
         {
-          "when": "hello",
-          "if": "Well-Fed",
+          "when": "everyOtherBout",
+          "target": {
+            "each": "enemy",
+            "range": 1
+          },
           "do": [
             {
-              "freeRoll": 2
+              "buff": {
+                "power": -2
+              }
             }
           ]
         }
       ],
-      "keywords": [
-        "Elusive"
-      ]
+      "class": "Mage"
     },
     {
       "id": "DW1-D08",
@@ -284,15 +302,15 @@
       "family": "Domowiki",
       "type": "Critter",
       "name": "Dvorovoi, Lord of the Yard",
-      "cost": 8,
-      "power": 6,
-      "health": 7,
-      "text": "Guardian. Fierce.",
+      "cost": 4,
+      "power": 4,
+      "health": 11,
+      "text": "Tank. Taunt.",
       "flavor": "The house belongs to his cousin. Everything outside is his.",
       "keywords": [
-        "Guardian",
-        "Fierce"
-      ]
+        "Taunt"
+      ],
+      "class": "Tank"
     },
     {
       "id": "DW1-D09",
@@ -301,14 +319,14 @@
       "type": "Trick",
       "name": "Bowl of Kasha",
       "cost": 2,
-      "text": "Sprout 2.",
+      "text": "Gain three Offerings.",
       "flavor": "A bowl by the stove, the first spoonful for him.",
       "abilities": [
         {
           "when": "play",
           "do": [
             {
-              "sprout": 2
+              "readyTreats": 3
             }
           ]
         }
@@ -320,18 +338,18 @@
       "family": "Domowiki",
       "type": "Trick",
       "name": "A Domowik's Temper",
-      "cost": 4,
-      "text": "Deal 5 damage to a unit.",
+      "cost": 2,
+      "text": "Deal 3 damage to an enemy unit.",
       "flavor": "Slam a door in his house and he slams back.",
       "abilities": [
         {
           "when": "play",
           "target": {
-            "unit": "any"
+            "unit": "enemy"
           },
           "do": [
             {
-              "damage": 5
+              "damage": 3
             }
           ]
         }
@@ -344,7 +362,7 @@
       "type": "Trick",
       "name": "Saucer of Milk",
       "cost": 1,
-      "text": "Ambush. A unit you control gets +2 Power this round. Gain an Offering.",
+      "text": "Ambush. A unit you control gets +2 Power this round.",
       "flavor": "Warm milk in the stable keeps the whole barn happy.",
       "keywords": [
         "Pounce"
@@ -360,9 +378,6 @@
               "buff": {
                 "power": 2
               }
-            },
-            {
-              "readyTreats": 1
             }
           ]
         }
@@ -393,23 +408,14 @@
       "id": "DW1-D13",
       "rarity": "Rare",
       "family": "Domowiki",
-      "type": "Cat",
+      "type": "Critter",
       "name": "Domowik in a Cat's Shape",
       "cost": 3,
-      "power": 2,
+      "power": 5,
       "health": 4,
-      "text": "Hello: Sprout 1.",
+      "text": "Assassin.",
       "flavor": "The family cat sleeps in the stove corner. Or does it?",
-      "abilities": [
-        {
-          "when": "hello",
-          "do": [
-            {
-              "sprout": 1
-            }
-          ]
-        }
-      ]
+      "class": "Assassin"
     },
     {
       "id": "DW1-D14",
@@ -418,39 +424,50 @@
       "type": "Cat",
       "name": "Babunia, Lady of the Cellar",
       "cost": 5,
-      "power": 4,
-      "health": 5,
-      "text": "Guardian. Hello: Gain an Offering.",
+      "power": 2,
+      "health": 12,
+      "text": "Support. Each bout: Your units heal 1.",
       "flavor": "Some say she was the first spirit of the house. He only moved in later.",
-      "keywords": [
-        "Guardian"
-      ],
       "abilities": [
         {
-          "when": "hello",
+          "when": "boutStart",
+          "target": {
+            "each": "own"
+          },
           "do": [
             {
-              "readyTreats": 1
+              "heal": 1
             }
           ]
         }
-      ]
+      ],
+      "class": "Support"
     },
     {
       "id": "DW1-D15",
       "rarity": "Rare",
       "family": "Domowiki",
-      "type": "Cat",
+      "type": "Critter",
       "name": "Bannik of the Bathhouse",
-      "cost": 8,
-      "power": 8,
-      "health": 8,
-      "text": "Fierce. Sneaky.",
+      "cost": 4,
+      "power": 7,
+      "health": 6,
+      "text": "Assassin. After Bannik of the Bathhouse defeats a unit in combat, it gets +2 Power this round.",
       "flavor": "Always leave the last steam for him.",
-      "keywords": [
-        "Fierce",
-        "Sneaky"
-      ]
+      "abilities": [
+        {
+          "when": "defeatsInCombat",
+          "target": "self",
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ],
+      "class": "Assassin"
     },
     {
       "id": "DW1-D16",
@@ -459,10 +476,11 @@
       "family": "Domowiki",
       "name": "Hearth Cricket",
       "cost": 1,
-      "power": 2,
-      "health": 1,
-      "text": "",
-      "flavor": "Sings behind the stove, where the Domowik sleeps."
+      "power": 3,
+      "health": 4,
+      "text": "Bruiser.",
+      "flavor": "Sings behind the stove, where the Domowik sleeps.",
+      "class": "Bruiser"
     },
     {
       "id": "DW1-D17",
@@ -470,14 +488,15 @@
       "type": "Critter",
       "family": "Domowiki",
       "name": "The House Snake",
-      "cost": 2,
+      "cost": 1,
       "power": 1,
-      "health": 4,
-      "text": "Guardian.",
+      "health": 5,
+      "text": "Tank. Taunt.",
       "flavor": "Lives under the doorstep. Harm it, and the family's luck goes with it.",
       "keywords": [
-        "Guardian"
-      ]
+        "Taunt"
+      ],
+      "class": "Tank"
     },
     {
       "id": "DW1-D18",
@@ -485,21 +504,22 @@
       "type": "Critter",
       "family": "Domowiki",
       "name": "Kłobuk, the Soggy Chick",
-      "cost": 3,
-      "power": 2,
-      "health": 3,
-      "text": "Hello: Get a free roll.",
+      "cost": 2,
+      "power": 0,
+      "health": 5,
+      "text": "Support. Clash start: Gain an Offering.",
       "flavor": "Found shivering on the fence in the rain. Take it in, and it brings things home.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
           "do": [
             {
-              "freeRoll": 1
+              "readyTreats": 1
             }
           ]
         }
-      ]
+      ],
+      "class": "Support"
     },
     {
       "id": "DW1-D19",
@@ -508,7 +528,7 @@
       "family": "Domowiki",
       "name": "Warm Hand in the Night",
       "cost": 1,
-      "text": "Ambush. A unit you control gets +2 Power this round.",
+      "text": "Ambush. A unit you control gains Tough 2 this round.",
       "flavor": "A soft, warm, furry hand on your cheek means good luck.",
       "keywords": [
         "Pounce"
@@ -522,7 +542,9 @@
           "do": [
             {
               "buff": {
-                "power": 2
+                "keywords": [
+                  "Tough 2"
+                ]
               }
             }
           ]
@@ -535,8 +557,8 @@
       "type": "Trick",
       "family": "Domowiki",
       "name": "Knotted Mane",
-      "cost": 1,
-      "text": "Exhaust an enemy unit.",
+      "cost": 2,
+      "text": "An enemy unit deals no damage in the first two bouts.",
       "flavor": "Anger the Domowik and wake up with tangled hair.",
       "abilities": [
         {
@@ -546,7 +568,7 @@
           },
           "do": [
             {
-              "exhaust": true
+              "stun": 2
             }
           ]
         }
@@ -558,28 +580,99 @@
       "name": "Domowiki",
       "hero": "DW1-H01",
       "cards": {
-        "DW1-D01": 3,
-        "DW1-D02": 3,
-        "DW1-D03": 3,
-        "DW1-D04": 3,
+        "DW1-D16": 5,
+        "DW1-D01": 5,
+        "DW1-D17": 5,
+        "DW1-D04": 4,
+        "DW1-D03": 4,
+        "DW1-D18": 4,
         "DW1-D05": 3,
         "DW1-D06": 3,
         "DW1-D07": 3,
         "DW1-D08": 2,
-        "DW1-D09": 3,
-        "DW1-D10": 2,
-        "DW1-D11": 3,
-        "DW1-D12": 2,
-        "DW1-D13": 1,
+        "DW1-D15": 2,
         "DW1-D14": 1,
-        "DW1-D15": 1,
-        "DW1-D16": 3,
-        "DW1-D17": 3,
-        "DW1-D18": 3,
-        "DW1-D19": 3,
-        "DW1-D20": 2
+        "DW1-D10": 2,
+        "DW1-D20": 2,
+        "DW1-D09": 1,
+        "DW1-D19": 1,
+        "DW1-D12": 3
       },
       "blurb": "Feed the house spirits, then wake the giants. Gather extra Offerings; at 7 or more, the Domowiki are Well-Fed."
+    }
+  },
+  "traits": {
+    "Hearth": {
+      "family": "Domowiki",
+      "icon": "🏠",
+      "tiers": [
+        {
+          "at": 2,
+          "text": "At the start of each round, gain an Offering.",
+          "abilities": [
+            {
+              "when": "roundStart",
+              "do": [
+                {
+                  "readyTreats": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 4,
+          "text": "At the start of each round, gain an Offering. Your Domowiki get +2 Health.",
+          "abilities": [
+            {
+              "when": "roundStart",
+              "do": [
+                {
+                  "readyTreats": 1
+                }
+              ]
+            },
+            {
+              "static": {
+                "grant": {
+                  "health": 2
+                },
+                "to": {
+                  "each": "own",
+                  "filter": {
+                    "family": "Domowiki"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "at": 6,
+          "text": "At the start of each round, gain two Offerings. Your units get +1 Power and +2 Health.",
+          "abilities": [
+            {
+              "when": "roundStart",
+              "do": [
+                {
+                  "readyTreats": 2
+                }
+              ]
+            },
+            {
+              "static": {
+                "grant": {
+                  "power": 1,
+                  "health": 2
+                },
+                "to": {
+                  "each": "own"
+                }
+              }
+            }
+          ]
+        }
+      ]
     }
   }
 }

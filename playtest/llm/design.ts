@@ -30,7 +30,7 @@ export const RULES = ((): string => {
   const hero = TYPE['Hero Cat'], fabled = TYPE.Cat, neutral = neutralFamilies();
   return `DECKBUILDING RULES: exactly ${DECK_RULES.size} cards plus a ${hero} (the ${hero} is not one of the ${DECK_RULES.size}). ` +
     `Cards from the ${hero}'s family${neutral.length ? ` and ${neutral.join(' and ')} cards` : ''}, plus at most ONE other family. ` +
-    `At most ${DECK_RULES.copies} copies of a card; ${fabled} cards are one of a kind (1 copy) and at most ${DECK_RULES.maxCats} per deck.`;
+    `At most ${DECK_RULES.copiesByTier.join(', ')} copies of a card of tier 1 to 5; ${fabled} cards are one of a kind (1 copy) and at most ${DECK_RULES.maxCats} per deck.`;
 })();
 
 export const deckText = (d: DeckList): string => `${d.name} (${cardName(d.hero)}, ${d.hero}): ${Object.entries(d.cards).map(([id, q]) => `${q} ${id}`).join(', ')}`;

@@ -5,6 +5,8 @@ import { playLogSounds, resetLogSounds, soundEnabled, toggleSound } from './soun
 import { count, summary } from './progress';
 import { BASE, altKey, altOf, artUrl, backButton, cardUrl, esc, famClass, familyName, settingsButton } from './ui';
 import { keepPictures } from './offline';
+import { CLASS_ICON, CLASS_TEXT, LEGEND, abilityLines } from './glyphs';
+import { applyBeat, beatCaption, boardMap, buildReplay, resultLine, signed, summarize, type Beat, type Replay, type Summary } from './replay';
 import { badgeMechanics, deckBlurb, familyInfo, mechanicGlossary } from './sets';
 import { yourCardUrl } from './rarity';
 import { deckClick, deckInput, openDeckBuilder, renderDeckBuilder, type BuilderHost } from './deckbuilder';
@@ -13,7 +15,7 @@ import { openStore, openStoreForDeck, renderStore, storeClick, storeCodeEnter, s
 import { refreshStore, storeAccess } from './shop';
 import { soloFoeDecks } from '@fruitcats/store';
 import { startSync, syncNow } from './sync';
-import { saveAgreedTerms } from './auth';
+import { saveAgreedTerms, session, shareSignIn, signInFromOtherSite } from './auth';
 import {
   accountClick, accountEnter, askForTermsIfNeeded, takeInviteFromLink, renderContactPanel, pickingPawtrait, accountInput, accountOpen, closeAccount, closeAccountPanel, openAccount, renderAccount,
   boardFace, renderAccountPanel, renderHomeAccount, signedIn, warmOwner, warmPawtraits,
@@ -32,9 +34,9 @@ import {
 } from './tutorial';
 import {
   CARDS, DECKS, DECK_RULES, LANES, MECHANICS, SETS, TERMS, abilitiesOf, evaluateCondition, unitKeywords, apply, cardName, chooseAction, createGame,
-  deckSize, heroSide, interestOn, laneUnit, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, targetRank, unitHealth,
-  unitPower, viewFor, visibleLog,
-  type Action, type DeckList, type GameState, type LogEntry, type PlayerId, type PlayerView, type Target, type Unit,
+  deckSize, heroSide, interestOn, isOpenLane, laneUnit, traitsOf, legalActions, levelCost, mayAct, other, rollCost, sellValue, streakBonus, unitClass, isTaunt, isUnitCard, TRAITS, unitHealth,
+  unitPower, viewFor, visibleEvents,
+  type Action, type BoardUnit, type DeckList, type GameEvent, type GameState, type PlayerId, type PlayerView, type Target, type Unit,
 } from '@fruitcats/engine';
 // ── Assets ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -131,6 +133,11 @@ let inspected: { url: string; key?: string; state?: string } | null = null;
 /** The tutorial isn't saved: its balloons can't pick up halfway through. */
 let tutorialGame = false;
 let selection: Selection | null = null;
+/**
+ * The shop card you are reading: a tap shows it (in the side panel on a wide screen) and puts a Buy button in the
+ * bar; only Buy starts placing it. The owner (2026-10-02): "I just want to read the card", not deploy it.
+ */
+let viewing: number | null = null;
 let showRules = false;
 let showSettings = false;
 /** The Story so far drawer (the game's transcript) is out: it slides in beside the board and stays until closed. */
@@ -186,34 +193,214 @@ function seen(): GameState | null {
   return ol ? game : viewFor(game, mySeat);
 }
 
-/** The decision in front of you, if any: the Muster until you are Ready. */
+/** The decision in front of you, if any: the Muster until you are Ready (and not while the last Clash is on screen). */
 function humanPrompt() {
-  return game && game.winner === null && mayAct(game, mySeat) ? game.prompt : null;
+  return game && !replay && game.winner === null && mayAct(game, mySeat) ? game.prompt : null;
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────────────────────────
 
 /** A friendly confirmation of the player's own last move (what they just sold). */
 let notice = '';
-/** The last Clash, as its story: shown as a report until you move on. No animation: the Clash is read, not watched. */
-let clashReport: { round: number; lines: LogEntry[] } | null = null;
+// ── The Clash, replayed on the board ─────────────────────────────────────────────────────────────
+//
+// When a Clash has been fought, the board shows it: the units as they stood, then beat by beat (an effect, a strike, the
+// units that go down) with the attackers lunging, the numbers flying and the fallen greyed out. Then a summary of who
+// did what, under the board, until you move on to the next round. Cards move; nothing else is animated.
 
-/** If a Clash was played since the story had `from` lines (those you may read), it becomes the report. */
-function noteClash(from: number) {
-  if (!game) return;
-  const log = visibleLog(game.log, mySeat);
-  const start = log.findIndex((e, i) => i >= from && e.text === '— Clash —');
-  if (start < 0) return;
-  let end = log.findIndex((e, i) => i > start && /^— Round \d+ —$/.test(e.text));
-  if (end < 0) end = log.length;
-  clashReport = { round: log[start].round, lines: log.slice(start, end) };
+interface ReplayRun {
+  r: Replay;
+  /** The section (0: before the fight, then the bouts) and the next beat in it. */
+  section: number;
+  beat: number;
+  /** The board as the replay has it now. */
+  units: Map<number, BoardUnit>;
+  playing: boolean;
+  done: boolean;
+  /** What the last beat was, in words, and the ones before it. */
+  lines: string[];
+  summary?: Summary;
+  timer?: number;
+}
+
+let replay: ReplayRun | null = null;
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)');
+
+/** Events the player may see, from `from` on: online, a view brings only the new ones; in Solo, from the whole game. */
+function visibleFrom(from: number): GameEvent[] {
+  return game ? (ol ? game.events : visibleEvents(game.events, mySeat).slice(from)) : [];
+}
+const eventMark = () => (game && !ol ? visibleEvents(game.events, mySeat).length : 0);
+
+/** If these events hold a Clash, play it on the board. */
+function noteClash(events: GameEvent[]) {
+  const r = buildReplay(events);
+  if (!r) return;
+  stopReplay();
+  replay = { r, section: 0, beat: 0, units: boardMap(r.sections[0].board), playing: true, done: false, lines: [`Round ${r.round}: the Clash begins.`] };
+  replay.timer = window.setTimeout(replayTick, 900);
+}
+
+function stopReplay() {
+  if (replay?.timer) window.clearTimeout(replay.timer);
+  replay = null;
+}
+
+const heroName = (p: PlayerId) => (game ? cardName(game.players[p].hero.id) : '');
+
+function replayTick() {
+  const rp = replay;
+  if (!rp || rp.done || !rp.playing) return;
+  const wait = replayStep(rp);
+  if (!rp.done && rp.playing) rp.timer = window.setTimeout(replayTick, wait);
+}
+
+/** One beat of the replay (or the start of the next bout, or the end): returns how long to show it. */
+function replayStep(rp: ReplayRun): number {
+  const section = rp.r.sections[rp.section];
+  if (rp.beat < section.beats.length) {
+    const beat = section.beats[rp.beat++];
+    const caption = beatCaption(beat, rp.units, heroName);
+    applyBeat(rp.units, beat);
+    if (caption) rp.lines.push(caption);
+    render();
+    beatFx(beat);
+    return beat.kind === 'strike' ? 1250 : beat.kind === 'down' ? 800 : 1050;
+  }
+  if (rp.section + 1 < rp.r.sections.length) {
+    const next = rp.r.sections[++rp.section];
+    rp.beat = 0;
+    rp.units = boardMap(next.board);
+    rp.lines.push(`Bout ${next.bout}.`);
+    render();
+    return 550;
+  }
+  finishReplay(rp);
+  return 0;
+}
+
+function finishReplay(rp: ReplayRun) {
+  if (rp.timer) window.clearTimeout(rp.timer);
+  rp.done = true;
+  rp.playing = false;
+  rp.units = boardMap(rp.r.end);
+  rp.summary = summarize(rp.r, mySeat);
+  render();
+}
+
+function replayClick(what: string) {
+  const rp = replay;
+  if (!rp) return;
+  if (rp.timer) window.clearTimeout(rp.timer);
+  if (what === 'pause') { rp.playing = false; render(); return; }
+  if (what === 'play') { rp.playing = true; render(); replayTick(); return; }
+  if (what === 'step') { rp.playing = false; const wait = replayStep(rp); void wait; if (!rp.done) render(); return; }
+  if (what === 'skip') { finishReplay(rp); return; }
+  if (what === 'again') {
+    Object.assign(rp, { section: 0, beat: 0, units: boardMap(rp.r.sections[0].board), playing: true, done: false, lines: [`Round ${rp.r.round}: the Clash begins.`] });
+    delete rp.summary;
+    render();
+    rp.timer = window.setTimeout(replayTick, 700);
+    return;
+  }
+  if (what === 'close') { stopReplay(); render(); }
+}
+
+// The effects of a beat, on the board just drawn: an attacker lunges at its target, numbers fly up from whoever they
+// touched, the card an effect came from glows. Positions come from the screen, so they work at any size.
+const unitEl = (uid: number) => app.querySelector<HTMLElement>(`.board [data-click="unit:${uid}"]`);
+
+function beatFx(beat: Beat) {
+  const still = REDUCED_MOTION.matches;
+  if (beat.src?.uid !== undefined) glow(unitEl(beat.src.uid));
+  beat.changes.forEach((c, i) => {
+    const delay = beat.kind === 'strike' ? (i % 6) * 60 : i * 120;
+    switch (c.t) {
+      case 'hit': {
+        const to = unitEl(c.to);
+        if ('uid' in c.from) { if (!still) lunge(unitEl(c.from.uid), to, delay); }
+        else glow(app.querySelector<HTMLElement>(`.player [data-click="heroinfo:${c.from.hero}"]`));
+        floatText(to, c.dealt ? `−${c.dealt}` : '0', c.dealt ? 'dmg' : 'none', delay + 200);
+        if (c.dealt && !still) shake(to, delay + 200);
+        break;
+      }
+      case 'damage': floatText(unitEl(c.to), `−${c.amount}`, 'dmg', delay); if (!still) shake(unitEl(c.to), delay); break;
+      case 'heal': floatText(unitEl(c.to), `+${c.amount}`, 'heal', delay); break;
+      case 'buff': {
+        const words = [c.power ? `${signed(c.power)} ⚔` : '', c.health ? `${signed(c.health)} ♥` : ''].filter(Boolean).join(' ');
+        floatText(unitEl(c.to), words, (c.power ?? 0) + (c.health ?? 0) < 0 ? 'debuff' : 'buff', delay);
+        break;
+      }
+      case 'exhaust': floatText(unitEl(c.to), 'zzz', 'none', delay); break;
+      case 'summon': pop(unitEl(c.unit.uid)); break;
+      case 'down': fade(unitEl(c.to)); break;
+      case 'ambush': {
+        const lanes = app.querySelectorAll<HTMLElement>(`.yard.${c.p === mySeat ? 'me' : 'foe'} .lane`);
+        const lane = lanes[c.lane];
+        glow(lane);
+        floatText(lane, `Ambush! ${cardName(c.cardId)}`, 'buff', 0);
+        break;
+      }
+      case 'awaken': glow(app.querySelector<HTMLElement>(`.player [data-click="heroinfo:${c.p}"]`)); break;
+    }
+  });
+}
+
+function animate(el: Element | null, frames: Keyframe[], options: KeyframeAnimationOptions) {
+  if (el && typeof (el as HTMLElement).animate === 'function') (el as HTMLElement).animate(frames, options);
+}
+
+function lunge(from: HTMLElement | null, to: HTMLElement | null, delay: number) {
+  if (!from || !to) return;
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const dx = (b.left + b.width / 2 - (a.left + a.width / 2)) * 0.38, dy = (b.top + b.height / 2 - (a.top + a.height / 2)) * 0.38;
+  animate(from, [{ transform: 'none', zIndex: 5 }, { transform: `translate(${dx}px, ${dy}px) scale(1.06)`, zIndex: 5, offset: 0.45 }, { transform: 'none', zIndex: 5 }],
+    { duration: 520, delay, easing: 'ease-in-out' });
+}
+
+function shake(el: HTMLElement | null, delay: number) {
+  animate(el, [{ transform: 'none' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(-3px)' }, { transform: 'none' }],
+    { duration: 320, delay });
+}
+
+function glow(el: HTMLElement | null) {
+  animate(el, [{ boxShadow: '0 0 0 0 rgba(255, 215, 106, 0)' }, { boxShadow: '0 0 0 4px #ffd76a, 0 0 22px 6px rgba(255, 215, 106, 0.9)', offset: 0.3 },
+    { boxShadow: '0 0 0 0 rgba(255, 215, 106, 0)' }], { duration: 950 });
+}
+
+function pop(el: HTMLElement | null) {
+  animate(el, [{ transform: 'scale(0.5)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 380, easing: 'ease-out' });
+}
+
+function fade(el: HTMLElement | null) {
+  animate(el, [{ filter: 'none', opacity: 1 }, { filter: 'grayscale(1) brightness(0.6)', opacity: 0.55 }], { duration: 450 });
+}
+
+/** A number or a word rising from a card: −3 in red for damage, +2 in green for a heal, a buff in gold. */
+function floatText(el: HTMLElement | null, text: string, kind: 'dmg' | 'heal' | 'buff' | 'debuff' | 'none', delay: number) {
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const span = document.createElement('span');
+  span.className = `fx-float ${kind}`;
+  span.textContent = text;
+  span.style.left = `${r.left + r.width / 2}px`;
+  span.style.top = `${r.top + r.height * 0.35}px`;
+  span.style.opacity = '0';
+  document.body.appendChild(span);
+  const rise = REDUCED_MOTION.matches ? 0 : -42;
+  const done = () => span.remove();
+  if (typeof span.animate === 'function') {
+    span.animate([{ opacity: 0, transform: 'translate(-50%, 0) scale(0.8)' }, { opacity: 1, transform: 'translate(-50%, -10px) scale(1.15)', offset: 0.2 },
+      { opacity: 1, transform: `translate(-50%, ${rise * 0.7}px)`, offset: 0.7 }, { opacity: 0, transform: `translate(-50%, ${rise}px)` }],
+      { duration: 1100, delay, easing: 'ease-out' }).onfinish = done;
+  } else window.setTimeout(done, 1200 + delay);
 }
 
 function act(action: Action) {
   if (!game) return;
   if (ol) { actOnline(action); return; }
   const me = game.players[mySeat];
-  const from = visibleLog(game.log, mySeat).length;
+  const from = eventMark();
   const sold = action.t === 'sell' ? me.yard.find((u) => u.uid === action.uid)?.id : undefined;
   try {
     apply(game, action, mySeat);
@@ -224,8 +411,9 @@ function act(action: Action) {
     flash = (error as Error).message;
   }
   selection = null;
+  viewing = null;
   runAi();
-  noteClash(from);
+  noteClash(visibleFrom(from));
   render();
 }
 
@@ -238,6 +426,7 @@ function actOnline(action: Action) {
   flash = '';
   notice = '';
   selection = null;
+  viewing = null;
   render();
 }
 
@@ -261,8 +450,9 @@ function openOnline(msg: Extract<Parameters<Parameters<typeof onLive>[0]>[0], { 
   tutorialGame = false;
   storyLines = msg.view.log;
   game = msg.view;
-  if (!same) { resetLogSounds(game); inspected = null; clashReport = null; }
+  if (!same) { resetLogSounds(game); inspected = null; stopReplay(); }
   selection = null; notice = ''; flash = '';
+  viewing = null;
   if (screen === 'friends') closeFriends();
   screen = 'game';
   showSettings = false;
@@ -297,7 +487,8 @@ onLive((msg) => {
     const from = Math.min(msg.logFrom, storyLines.length);
     storyLines = [...storyLines.slice(0, msg.logFrom), ...msg.view.log];
     game = { ...msg.view, log: storyLines };
-    noteClash(from);
+    void from;
+    noteClash(visibleFrom(0));
   }
   if (msg.t === 'hint' && game) {
     hintLine = msg.action ? hintText(game, msg.action) : 'No suggestion right now.';
@@ -321,9 +512,9 @@ function runAi() {
 
 /** For the tutorial: carry on after a balloon closes. */
 function scheduleAi() {
-  const from = game ? visibleLog(game.log, mySeat).length : 0;
+  const from = eventMark();
   runAi();
-  noteClash(from);
+  noteClash(visibleFrom(from));
   render();
 }
 
@@ -336,7 +527,7 @@ function startGame(tutorial = false) {
   const theirDeck = tutorial ? 'pari'
     : devFoe && others.includes(devFoe) ? devFoe : others[Math.floor(Math.random() * others.length)];
   inspected = null;
-  clashReport = null;
+  stopReplay();
   game = tutorial
     ? createGame({ decks: ['domowiki', 'pari'], names: ['You', 'Opponent'], firstPlayer: mySeat })
     : createGame({ decks: [mine, theirDeck], names: ['You', 'Opponent'], seed: devSeed });
@@ -370,16 +561,20 @@ function startGame(tutorial = false) {
 /** Set mechanics (Well-Fed, Rain-Fed, …) explain themselves from their set's data; the core keywords are here. */
 const glossary = () => [...mechanicGlossary(), ...CORE_GLOSSARY];
 const CORE_GLOSSARY: { name: string; test: RegExp; text: string }[] = [
-  { name: 'Guardian', test: /\bGuardian\b/, text: 'The tank: enemies hit Guardians first. (Sneaky enemies hit them last.)' },
-  { name: 'Elusive', test: /\bElusive\b/, text: 'The carry: enemies hit it late, after every plain unit and Guardian.' },
-  { name: 'Lure', test: /\bLure\b/, text: 'The decoy: enemies hit it last, but Sneaky enemies must hit it first.' },
-  { name: 'Sneaky', test: /\bSneaky\b/, text: 'The assassin: hits the enemy’s Lures first, then their Elusive units; Guardians last.' },
+  // The classes (0.7): how a unit fights. A card says its class first ("Tank. Taunt.").
+  ...(Object.keys(CLASS_TEXT) as (keyof typeof CLASS_TEXT)[])
+    .map((c) => ({ name: `${CLASS_ICON[c]} ${c}`, test: new RegExp(`\\b${c}\\b`), text: CLASS_TEXT[c] })),
+  { name: 'Taunt', test: /\bTaunt\b/, text: 'Every enemy hits it first while it stands, Assassins included.' },
+  { name: 'Stun', test: /deals no damage in the first/, text: 'A stunned unit deals no damage in the bouts it says; after that it fights again.' },
   { name: 'Fierce', test: /\bFierce\b/, text: 'Worth 2 Candles instead of 1 if it is still standing when its side wins the Clash.' },
   { name: TERMS.keywords.Zoomies, test: /\b(Swift|Zoomies)\b/, text: 'Hits first in every bout: a unit it knocks down never hits back.' },
   { name: 'Tough', test: /\bTough\b/, text: 'Takes that much less damage from every hit.' },
   { name: 'Free roll', test: /\bfree rolls?\b/, text: 'Your next roll of the shop costs nothing: a new shop, dealt from your deck.' },
   { name: TERMS.keywords.Pounce, test: /\b(Ambush|Pounce)\b/, text: 'Set it face-down in one of your lanes: it happens when the Clash begins, if its lane holds what it needs (otherwise it waits). It can also be played like any card.' },
   { name: 'Hello', test: /\bHello\b/, text: 'Happens when you buy the card.' },
+  { name: 'Clash start', test: /\bClash start\b/, text: 'Happens once, when the Clash begins, before the first bout. The enemy across is the one in the lane facing this unit; the units next to it are yours, one lane to either side.' },
+  { name: 'Each bout', test: /\bEach bout\b/, text: 'Happens at the start of every bout of the Clash.' },
+  { name: 'Every second bout', test: /\bEvery second bout\b/, text: 'Happens at the start of bouts 2, 4, 6 and 8.' },
   { name: 'Goodbye', test: /\bGoodbye\b/, text: 'Happens each time this unit goes down in a Clash.' },
   { name: 'Awaken', test: /\b(Awaken|Grow Up)\b/, text: 'Once this is true, your Hero Awakens for good: a stronger ability, and it strikes when the Clash begins (unless you used its ability).' },
   // "Exhaust:" is the price of a Hero's ability; "Exhaust an enemy unit" is an effect. One line covers both.
@@ -473,6 +668,11 @@ function onClick(key: string) {
 
   // Tapping a Hero Cat's ability line opens the card with its keywords explained: a playtester
   // couldn't find out what the opponent's ability did (the portrait's long press wasn't discovered).
+  // A trait's chip: every tier of it (a phone has no hover for the chip's title).
+  if (kind === 'trait' && game) {
+    openTrait(game, Number(raw[0]) as PlayerId, raw.slice(2));
+    return;
+  }
   if (kind === 'heroinfo' && game) {
     const p = value as PlayerId;
     openZoom((p === mySeat ? yourCardUrl : cardUrl)(heroKey(game, p)), heroKey(game, p));
@@ -557,13 +757,13 @@ function onClick(key: string) {
     if (raw === 'settab') { settingsSection = key.split(':')[2] as SettingsSection; if (ACCOUNTS) closeAccountPanel(); }
     if (raw === 'settingsback') settingsSection = null;
     if (raw === 'back') { if (screen === 'friends') closeFriends(); screen = 'home'; homeNote = ''; }
-    if (raw === 'quit') { stopTutorial(); game = null; clashReport = null; screen = 'home'; homeNote = ''; showStory = false; }
+    if (raw === 'quit') { stopTutorial(); game = null; stopReplay(); screen = 'home'; homeNote = ''; showStory = false; }
     if (raw === 'again') { startGame(); return; }
     render();
     return;
   }
 
-  if (kind === 'report') { clashReport = null; render(); return; }
+  if (kind === 'replay') { replayClick(raw); return; }
 
   const prompt = humanPrompt();
   const v = seen();
@@ -590,7 +790,23 @@ function onClick(key: string) {
       case 'ready': return act({ t: 'ready' });
       case 'level': return act({ t: 'levelUp' });
       case 'roll': return act({ t: 'roll' });
-      case 'cancel': selection = null; render(); return;
+      case 'cancel': selection = null; viewing = null; render(); return;
+      case 'buy':
+      case 'facedown': {
+        const uid = viewing;
+        viewing = null;
+        if (uid === null) return;
+        const card = game.players[mySeat].shop.find((c) => c.uid === uid);
+        if (!card) { render(); return; }
+        const plays = legal.filter((a) => a.t === 'play' && a.uid === uid);
+        const ambush = legal.filter((a) => a.t === 'ambush' && a.uid === uid);
+        const name = cardName(card.id);
+        if (raw === 'facedown' && ambush.length) return select(`${name}, face-down`, ambush);
+        if (plays.length) return select(name, plays, ambush.length ? [{ label: 'Set it face-down', options: ambush }] : []);
+        if (ambush.length) return select(`${name}, face-down`, ambush);
+        render();
+        return;
+      }
       case 'ability': return select('your Hero’s ability', legal.filter((a) => a.t === 'ability'));
       case 'alt': {
         const alt = selection?.alts?.[altOf(key)];
@@ -601,17 +817,11 @@ function onClick(key: string) {
     return;
   }
 
+  // A tap on a shop card reads it: Buy (in the bar) places it.
   if (kind === 'hand') {
-    const card = game.players[mySeat].shop.find((c) => c.uid === value)!;
-    const plays = legal.filter((a) => a.t === 'play' && a.uid === value);
-    const ambush = legal.filter((a) => a.t === 'ambush' && a.uid === value);
-    const name = cardName(card.id);
-    const ambushAlt = ambush.length ? [{ label: 'Set it face-down', options: ambush }] : [];
     flash = '';
-    if (plays.length) return select(name, plays, ambushAlt);
-    if (ambush.length) return select(`${name}, face-down`, ambush);
-    flash = whyUnplayable(game, card.id);
-    selection = { label: name, options: [], alts: [], uid: value };
+    selection = null;
+    viewing = value;
     render();
     return;
   }
@@ -647,7 +857,7 @@ function resumeSavedGame(): boolean {
   setOnlineAside();
   game = save.game;
   inspected = null;
-  clashReport = null;
+  stopReplay();
   tutorialGame = false;
   if (save.difficulty in DIFFICULTY) difficulty = save.difficulty as Difficulty;
   resetLogSounds(game);
@@ -1050,13 +1260,13 @@ function renderGame(): string {
   const myBar = renderPlayer(v, mySeat, legal);
   return `
   <div class="game">
-    <main class="board ${hl.size ? 'targeting' : ''} ${wide ? 'wide' : ''}">
+    <main class="board ${hl.size ? 'targeting' : ''} ${wide ? 'wide' : ''} ${replay ? 'replaying' : ''}">
       ${wide ? '' : foeBar}
       ${renderLanes(v, theirSeat, hl)}
       ${renderMidbar(v, legal)}
       ${renderLanes(v, mySeat, hl)}
       ${wide ? '' : myBar}
-      ${renderShop(v, playable)}
+      ${replay ? renderReplayPanel() : renderShop(v, playable)}
     </main>
     <aside class="side ${wide ? 'wide' : ''}">
       ${wide ? foeBar : ''}
@@ -1073,8 +1283,7 @@ function renderGame(): string {
       </div>
     </aside>
     ${renderStory(v)}
-    ${clashReport && !(ol && ol.versusUntil > Date.now()) ? renderClashReport(v) : ''}
-    ${ol ? renderOnlineResult(s) : s.winner !== null && !clashReport ? renderGameOver(s) : ''}
+    ${ol ? (replay ? '' : renderOnlineResult(s)) : s.winner !== null && !replay ? renderGameOver(s) : ''}
     ${ol ? renderVersus(s as PlayerView) : ''}
     ${showRules ? renderRules() : ''}
   </div>`;
@@ -1103,12 +1312,6 @@ function toggleStory() {
   app.querySelector('.story-button')?.setAttribute('aria-pressed', String(showStory));
 }
 
-/** A card's rules text with its keywords in bold, for the unit tiles on a wide screen. */
-function rulesHtml(text: string): string {
-  let html = esc(text);
-  for (const k of glossary()) html = html.replace(new RegExp(`${k.test.source}:?`, 'g'), '<b>$&</b>');
-  return html.replace(/\n/g, '<br>');
-}
 function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
   const pl = s.players[p];
   const side = heroSide(s, p);
@@ -1119,6 +1322,8 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
   const next = levelCost(s, p);
   const interest = interestOn(s, pl.offerings) + streakBonus(s, pl.streak ?? 0);
   const deciding = s.winner === null && s.prompt !== null && mayAct(s, p);
+  // While the Clash plays, the Candles it costs are not lost yet.
+  const lives = replay && !replay.done ? pl.lives + replay.r.lost[p] : pl.lives;
   const badges = badgeMechanics(CARDS[pl.hero.id].family).filter(([name]) => evaluateCondition(s, p, name))
     .map(([name, m]) => `<span class="lush-badge" title="${esc(m.badge.title ?? name)}">${m.badge.icon ?? ''} ${esc(name)}</span>`).join('');
 
@@ -1135,15 +1340,16 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
     <div class="stats">
       <div class="who">${esc(ol && mine ? 'You' : pl.name)} <span class="deck">${esc(pl.deckName)}</span></div>
       <div class="stat-row">
-        <div class="lives" title="${pl.lives} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${pl.lives <= 3 ? 'low' : ''}"><b>${pl.lives}</b></span></div>
+        <div class="lives" title="${lives} of ${9 - (pl.handicap ?? 0)} Candles left${pl.handicap ? ` (a handicap of ${pl.handicap})` : ''}"><span class="life-heart ${lives <= 3 ? 'low' : ''}"><b>${lives}</b></span></div>
         <div class="purse" title="${TERMS.offerings}: what you pay with. Saved ones earn interest: +1 for every ${s.rules.interestPer} at the start of each round (at most ${s.rules.interestMax}). Clashes lost in a row earn more.${pl.streak ? ` Lost in a row: ${pl.streak}.` : ''}">
           <b>${pl.offerings}</b> ${TERMS.offerings}${interest ? ` <small>+${interest}</small>` : ''}</div>
-        <div class="level" title="Your Hero's Level: how many units you may field.${next !== null ? ` The next Level costs ${next}.` : ''}">Level <b>${pl.hero.level}</b> <small>${pl.yard.length + (pl.fallen?.length ?? 0)}/${pl.hero.level}</small></div>
+        <div class="level" title="Your Hero's Level: how many of your lanes are open, from the left.${next !== null ? ` The next Level costs ${next}.` : ''}">Level <b>${pl.hero.level}</b> <small>${pl.yard.length + (pl.fallen?.length ?? 0)}/${pl.hero.level}</small></div>
         <div class="counters">
           <span title="Cards in deck">📚 ${pl.deck.length}</span>
         </div>
         ${badges}
       </div>
+      ${drawnWide ? '' : renderTraits(s, p)}
       <div class="ability" title="${esc(side.text)}" data-click="heroinfo:${p}"
            data-zoom="${(mine ? yourCardUrl : cardUrl)(heroKey(s, p))}" data-zoom-card="${heroKey(s, p)}">${esc(side.text).replace(/(Exhaust[^:]*:|Awaken:)/g, '<b>$1</b>').replace(/\n/g, '<br>')}</div>
       ${canAbility ? '<div class="hero-actions"><button class="primary" data-click="btn:ability">Use ability</button></div>' : ''}
@@ -1152,6 +1358,67 @@ function renderPlayer(s: GameState, p: PlayerId, legal: Action[] = []): string {
       : ACCOUNTS ? `<div class="player-face">${boardFace(mine ? 'you' : 'computer', CARDS[pl.hero.id].family)}</div>` : ''}
   </section>`;
 }
+
+/**
+ * A player's traits, as small chips under their plaque: the trait's icon and how many different units count for it
+ * against the next tier ("🛡 2/4"); lit when a tier is on. The tier's text is the chip's title.
+ */
+function renderTraits(s: GameState, p: PlayerId): string {
+  const traits = traitsOf(s, p).sort((a, b) => b.tier - a.tier || b.count - a.count);
+  if (!traits.length) return '';
+  const chips = traits.map((t) => {
+    const next = t.def.tiers.find((x) => x.at > t.count)?.at;
+    const now = t.tier >= 0 ? t.def.tiers[t.tier].text : `At ${t.def.tiers[0].at}: ${t.def.tiers[0].text}`;
+    const title = `${t.name}: ${t.count} unit${t.count === 1 ? '' : 's'}. ${now}${next && t.tier >= 0 ? ` At ${next}: ${t.def.tiers[t.tier + 1].text}` : ''}`;
+    return `<span class="trait ${t.tier >= 0 ? 'on' : ''}" role="button" data-click="trait:${p}~${esc(t.name)}" title="${esc(title)}">${t.def.icon ?? ''} ${esc(t.name)} <b>${t.count}${next ? `/${next}` : ''}</b></span>`;
+  }).join('');
+  return `<div class="traits">${chips}</div>`;
+}
+
+/**
+ * What buying a unit would do to its family's trait: "🏠 3/4" (3 different units after it, 4 for the next bonus). Nothing
+ * for a copy of a unit already on the board (it merges: still one unit), or a family with no trait.
+ */
+function traitHint(s: GameState, id: string): string {
+  const card = CARDS[id];
+  if (!card || !isUnitCard(id) || s.players[mySeat].yard.some((u) => u.id === id)) return '';
+  const entry = Object.entries(TRAITS).find(([, t]) => t.family === card.family);
+  if (!entry) return '';
+  const [name, def] = entry;
+  const now = traitsOf(s, mySeat).find((t) => t.name === name)?.count ?? 0;
+  const next = def.tiers.find((x) => x.at > now)?.at;
+  return `${def.icon ?? ''} ${now + 1}${next ? `/${next}` : ''}`.trim();
+}
+
+/**
+ * On a wide screen, a player's traits as a column beside their lanes (TFT's trait tracker): each family with how many
+ * different units count and its breakpoints (2 · 4 · 6), the reached ones lit. Tap one to read its tiers.
+ */
+function renderTraitColumn(s: GameState, p: PlayerId): string {
+  const traits = traitsOf(s, p).sort((a, b) => b.tier - a.tier || b.count - a.count);
+  const rows = traits.map((t) => {
+    const marks = t.def.tiers.map((x, i) => `<i class="${t.count >= x.at ? 'got' : ''} ${i === t.tier ? 'on' : ''}">${x.at}</i>`).join('');
+    const now = t.tier >= 0 ? t.def.tiers[t.tier].text : `At ${t.def.tiers[0].at}: ${t.def.tiers[0].text}`;
+    return `<div class="tcol-trait ${t.tier >= 0 ? 'on' : ''}" role="button" data-click="trait:${p}~${esc(t.name)}" title="${esc(`${t.name}: ${now}`)}">
+      <span class="tcol-name">${t.def.icon ?? ''} ${esc(t.name)}</span><span class="tcol-marks"><b>${t.count}</b>${marks}</span></div>`;
+  }).join('');
+  return `<div class="trait-col" aria-label="${p === mySeat ? 'Your' : 'Their'} traits">${rows || `<small class="tcol-none">No family bonus yet</small>`}</div>`;
+}
+
+/** Copies on the way to a unit's next star, as pips: ●●○ (two of the three that make 2★). */
+function copyPips(s: GameState, u: Unit): string {
+  const copies = u.copies ?? 1;
+  const next = s.rules.starCopies.find((n) => n > copies);
+  if (!next) return '';
+  const from = [1, ...s.rules.starCopies].filter((n) => n <= copies).pop()!;
+  return `<span class="pips">${'●'.repeat(copies - from + 1)}${'○'.repeat(next - copies)}</span>`;
+}
+
+const starTitle = (s: GameState, u: Unit): string => {
+  const copies = u.copies ?? 1;
+  const next = s.rules.starCopies.find((n) => n > copies);
+  return `${copies} ${copies === 1 ? 'copy' : 'copies'} merged${next ? `: ${next - copies} more for the next star` : ''}`;
+};
 
 /** A unit's mechanic chips: each keyword that keeps a counter, with its icon and how far it has grown (🌽+1). */
 function counterChips(u: Unit, keywordList: string[]): string[] {
@@ -1164,35 +1431,41 @@ function counterChips(u: Unit, keywordList: string[]): string[] {
   });
 }
 
-const ROLE = ['Lure', 'Elusive', '', 'Guardian'];
 
-function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): string {
+/** A unit on the board; `shown` draws it as a replay of the Clash has it (its numbers then, and whether it fell). */
+function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>, shown?: BoardUnit): string {
   const k = unitKeywords(u, s);
-  const power = unitPower(u, s);
-  const health = unitHealth(u, s) - u.damage;
+  const power = shown ? shown.power : unitPower(u, s);
+  const health = shown ? Math.max(0, shown.health - shown.damage) : unitHealth(u, s) - u.damage;
+  const hurt = shown ? shown.damage > 0 : u.damage > 0;
+  const exhausted = shown ? !!shown.exhausted : u.exhausted;
+  // Its class as an icon in the corner; its keywords as chips; each ability as a short line under its name.
+  const klass = unitClass(u);
   const chips = [
-    ROLE[targetRank(u, s)], k.sneaky && 'Sneaky', k.fierce && 'Fierce', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`,
+    isTaunt(u, s) && 'Taunt', k.zoomies && 'Swift', k.tough && `Tough ${k.tough}`, k.fierce && 'Fierce',
     ...counterChips(u, k.all),
     u.toy && `🧿 ${cardName(u.toy.id)}`,
   ].filter(Boolean);
+  const lines = abilityLines(u.id);
   const key = `unit:${u.uid}`;
-  const why = u.exhausted ? 'Exhausted: it deals no damage in this Clash.' : 'Ready to fight in the Clash.';
+  const why = shown?.down ? 'It went down in this Clash.' : exhausted ? 'Exhausted: it deals no damage in this Clash.' : 'Ready to fight in the Clash.';
   const cls = [
-    'unit', famClass(u.id), u.exhausted && 'exhausted', hl.has(key) && 'targetable', selection?.uid === u.uid && 'selected',
+    'unit', famClass(u.id), exhausted && 'exhausted', shown?.down && 'down', hl.has(key) && 'targetable', selection?.uid === u.uid && 'selected',
   ].filter(Boolean).join(' ');
   return `
   <div class="${cls}" data-click="${key}" data-zoom="${(owner === mySeat ? yourCardUrl : cardUrl)(u.id)}" data-zoom-card="${u.id}"
        data-zoom-state="${esc(why)}" title="${esc(cardName(u.id))}: ${esc(why)}">
     <div class="art" style="background-image:url(${artUrl(u.id)})"></div>
-    ${u.stars ? `<div class="stars" title="${u.stars} copies merged">${'★'.repeat(u.stars)}</div>` : ''}
+    <div class="uclass" title="${klass}: ${esc(CLASS_TEXT[klass])}">${CLASS_ICON[klass]}</div>
+    ${u.stars || (u.copies ?? 1) > 1 ? `<div class="stars" title="${starTitle(s, u)}">${'★'.repeat(u.stars ?? 1)}${copyPips(s, u)}</div>` : ''}
     <div class="ubox">
       <div class="uname">${esc(cardName(u.id))}</div>
-      ${CARDS[u.id]?.text ? `<div class="utext">${rulesHtml(CARDS[u.id].text!)}</div>` : ''}
-      <div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>
-      <div class="hp ${u.damage ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
+      ${lines.length ? `<div class="uline">${lines.map((l) => `<span>${esc(l)}</span>`).join('')}</div>` : ''}
+      ${klass === 'Support' ? '' : `<div class="pow ${power > (CARDS[u.id].power ?? 0) ? 'buffed' : ''} ${power > 9 ? 'two-digit' : ''}">${power}</div>`}
+      <div class="hp ${hurt ? 'hurt' : health > (CARDS[u.id].health ?? 0) ? 'buffed' : ''} ${health > 9 ? 'two-digit' : ''}">${health}</div>
     </div>
     ${chips.length ? `<div class="chips">${chips.map((c) => `<span>${esc(String(c))}</span>`).join('')}</div>` : ''}
-    ${u.exhausted ? '<div class="zzz">zzz</div>' : ''}
+    ${exhausted && !shown?.down ? '<div class="zzz">zzz</div>' : ''}
   </div>`;
 }
 
@@ -1201,6 +1474,7 @@ function renderUnit(s: GameState, u: Unit, owner: PlayerId, hl: Set<string>): st
  * can play into; a face-down card marks an Ambush, and a little target an effect of yours aimed at their lane.
  */
 function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
+  if (replay) return renderReplayLanes(s, p);
   const pl = s.players[p];
   const mine = p === mySeat;
   // A teaching game's open shop (the opponent showing it) sits at the start of their lanes.
@@ -1215,11 +1489,16 @@ function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
       ambush ? `<span class="ambush-mark" title="${mine ? `Your Ambush: ${esc(cardName(ambush.card.id))}` : 'A face-down Ambush'}">${mine ? '' : '?'}</span>` : '',
       ...aimed(i).map((n) => `<span class="aim-mark" title="${esc(n)} is aimed here: it happens when the Clash begins">🎯</span>`),
     ].join('');
-    if (u) return `<div class="lane">${renderUnit(s, u, p, hl)}${marks}</div>`;
+    const locked = !isOpenLane(s, p, i);
+    if (u) return `<div class="lane ${locked ? 'locked' : ''}">${renderUnit(s, u, p, hl)}${marks}</div>`;
     const key = `lane:${p}:${i}`;
-    return `<div class="lane empty ${hl.has(key) ? 'targetable' : ''}" data-click="${key}" title="${mine ? 'Your' : 'Their'} lane ${i + 1}"><span class="lane-no">${i + 1}</span>${marks}</div>`;
+    // A locked lane opens at Level i + 1. Their locked lanes can still be aimed at (their Level may have grown since).
+    if (locked && !hl.has(key)) {
+      return `<div class="lane empty locked" title="${mine ? 'Your' : 'Their'} lane ${i + 1}: locked until Level ${i + 1}"><span class="lane-lock">🔒<small>Lv ${i + 1}</small></span>${marks}</div>`;
+    }
+    return `<div class="lane empty ${locked ? 'locked' : ''} ${hl.has(key) ? 'targetable' : ''}" data-click="${key}" title="${mine ? 'Your' : 'Their'} lane ${i + 1}"><span class="lane-no">${i + 1}</span>${marks}</div>`;
   }).join('');
-  return `<section class="yard lanes ${mine ? 'me' : 'foe'}" style="--n:${LANES}">${foeHand}${lanes}</section>`;
+  return `<section class="yard lanes ${mine ? 'me' : 'foe'} ${drawnWide ? 'with-traits' : ''}" style="--n:${LANES}">${foeHand}${drawnWide ? renderTraitColumn(s, p) : ''}${lanes}</section>`;
 }
 
 /**
@@ -1227,10 +1506,13 @@ function renderLanes(s: GameState, p: PlayerId, hl: Set<string>): string {
  * dark strip, a Charm or a Talisman says so on a light one. Brightness and shape tell them apart, not hue, which the
  * families' frame colours already use.
  */
-function shopTag(id: string): string {
+function shopTag(id: string, hint = ''): string {
   const def = CARDS[id];
-  if (def.type === 'Critter' || def.type === 'Cat')
-    return `<span class="shop-tag unit-tag" aria-hidden="true"><b class="tag-pw">${def.power ?? 0}</b>⚔<b class="tag-hp">${def.health ?? 0}</b>♥</span>`;
+  if (def.type === 'Critter' || def.type === 'Cat') {
+    const klass = unitClass(id);
+    return `${hint ? `<span class="shop-trait" title="Buying it brings this trait to ${esc(hint)}">${esc(hint)}</span>` : ''}`
+      + `<span class="shop-tag unit-tag" aria-hidden="true"><span class="tag-class">${CLASS_ICON[klass]}</span><b class="tag-pw">${def.power ?? 0}</b>⚔<b class="tag-hp">${def.health ?? 0}</b>♥</span>`;
+  }
   const word = TERMS.types[def.type as keyof typeof TERMS.types] ?? def.type;
   const kind = def.type === 'Toy' ? 'talisman-tag' : 'charm-tag';
   return `<span class="shop-tag ${kind}" aria-hidden="true">${def.type === 'Toy' ? '◆' : '✦'} ${esc(word)}</span>`;
@@ -1247,9 +1529,10 @@ function renderShop(s: GameState, playable: Set<number>): string {
     const cls = [
       'hand-card', playable.has(c.uid) && 'playable',
       selection?.options.some((a) => 'uid' in a && a.uid === c.uid && a.t !== 'move') && 'selected',
-      selection?.uid === c.uid && 'selected',
+      selection?.uid === c.uid && 'selected', viewing === c.uid && 'selected',
     ].filter(Boolean).join(' ');
-    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="async">${shopTag(c.id)}</button>`;
+    // Drawn at once, not decoded later: every redraw makes the images anew, and late ones flash the card backs.
+    return `<button class="${cls}" data-click="hand:${c.uid}" data-zoom="${yourCardUrl(c.id)}" data-zoom-card="${c.id}"><img src="${yourCardUrl(c.id)}" alt="${esc(CARDS[c.id].name)}" decoding="sync">${shopTag(c.id, traitHint(s, c.id))}</button>`;
   }).join('');
   return `<section class="hand shop" style="--n:${Math.max(n, 1)};--gaps:${Math.max(1, n - 1)}" aria-label="Your shop">
     ${cards || '<p class="shop-empty">Nothing left in your shop. Roll for a new one, or press Ready.</p>'}
@@ -1259,6 +1542,7 @@ function renderShop(s: GameState, playable: Set<number>): string {
 const PARAM_WORDS: Record<Param, string> = { slot: 'a lane', lane: 'a lane to set it in', target: 'a target', target2: 'a second target' };
 
 function renderMidbar(s: GameState, legal: Action[]): string {
+  if (replay) return renderReplayBar(s);
   const prompt = humanPrompt();
   const me = s.players[mySeat];
   let text = '';
@@ -1267,7 +1551,18 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   const onl = ol ? onlineBar(s, !!prompt) : null;
   if (s.winner !== null) text = 'Game over.';
   else if (!prompt) text = onl?.text ?? '<span class="dots">Your opponent is deciding</span>';
-  else if (selection) {
+  else if (viewing !== null && !selection && me.shop.some((c) => c.uid === viewing)) {
+    // Reading a shop card: its price, and Buy if it can be bought now (or why not).
+    const id = me.shop.find((c) => c.uid === viewing)!.id;
+    const cost = CARDS[id].cost ?? 0;
+    const canBuy = legal.some((a) => a.t === 'play' && a.uid === viewing);
+    const canSet = legal.some((a) => a.t === 'ambush' && a.uid === viewing);
+    const why = canBuy || canSet ? '' : whyUnplayable(s, id);
+    text = `<b>${esc(cardName(id))}</b> · ${cost} ${cost === 1 ? TERMS.offering : TERMS.offerings}${why ? `<div class="hint-line">${esc(why)}</div>` : ''}`;
+    buttons = `${canBuy ? `<button class="primary" data-click="btn:buy">Buy <small>(${cost})</small></button>` : ''}
+      ${canSet ? `<button data-click="btn:facedown">Set it face-down</button>` : ''}
+      <button data-click="btn:cancel">Close</button>`;
+  } else if (selection) {
     const p = paramOf(selection.options);
     const lane = selection.options.some((a) => 'target' in a && a.target?.kind === 'lane');
     text = p
@@ -1295,31 +1590,72 @@ function renderMidbar(s: GameState, legal: Action[]): string {
   </section>`;
 }
 
+/** The bar between the two rows while the Clash plays: where it is, what just happened, and the controls. */
+function renderReplayBar(s: GameState): string {
+  const rp = replay!;
+  const section = rp.r.sections[rp.section];
+  const where = section.bout ? `Bout ${section.bout}` : 'Before the fight';
+  const text = rp.done
+    ? `<b>${esc(resultLine(rp.r, mySeat))}</b>`
+    : `<b>The Clash</b> · ${where}<div class="replay-now">${esc(rp.lines.at(-1) ?? '')}</div>`;
+  const buttons = rp.done
+    ? `<button data-click="replay:again">Watch again</button>
+       <button class="primary" data-click="replay:close">${s.winner !== null ? 'See the result' : 'Next round'}</button>`
+    : `${rp.playing ? '<button data-click="replay:pause">Pause</button>'
+        : '<button data-click="replay:play">Play</button><button data-click="replay:step">Step</button>'}
+       <button data-click="replay:skip">Skip to the end</button>`;
+  return `<section class="midbar replay-bar">
+    <div class="round"><small>Round</small><b>${rp.r.round}</b></div>
+    <div class="prompt">${text}</div>
+    <div class="buttons">${buttons}</div>
+  </section>`;
+}
+
 /**
- * The Clash, as a report to read: what happened before the fight, then each bout, then who won and what it cost.
- * Nothing moves on the board; the board shows how things stand.
+ * Under the board while the Clash plays: what happens, line by line. When it is over, who did what (damage dealt and
+ * taken, who fell in which bout) and what decided it, in a sentence or two you can act on.
  */
-function renderClashReport(s: GameState): string {
-  const report = clashReport!;
-  const sections: { title: string; lines: LogEntry[] }[] = [{ title: 'Before the fight', lines: [] }];
-  let result: LogEntry[] = [];
-  for (const e of report.lines.slice(1)) {
-    if (/^Bout \d+\.$/.test(e.text)) { sections.push({ title: e.text.replace('.', ''), lines: [] }); continue; }
-    if (/ wins the Clash | still stand: |Nobody wins the Clash|loses a Candle|wins!$/.test(e.text) || result.length) { result = [...result, e]; continue; }
-    sections.at(-1)!.lines.push(e);
+function renderReplayPanel(): string {
+  const rp = replay!;
+  if (!rp.done || !rp.summary) {
+    const lines = rp.lines.slice(-4);
+    return `<section class="hand shop replay-panel" aria-live="polite"><ul class="replay-lines">${lines
+      .map((l, i) => `<li class="${i === lines.length - 1 ? 'now' : ''}">${esc(l)}</li>`).join('')}</ul></section>`;
   }
-  const line = (e: LogEntry) => `<li class="${e.player === mySeat ? 'me' : e.player === theirSeat ? 'foe' : ''}">${esc(humanize(e.text))}</li>`;
-  const body = sections.filter((x) => x.lines.length)
-    .map((x) => `<section><h3>${esc(x.title)}</h3><ul>${x.lines.map(line).join('')}</ul></section>`).join('');
-  const over = s.winner !== null;
-  return `<div class="overlay">
-    <div class="clash-report" role="dialog" aria-label="The Clash">
-      <h2>The Clash · round ${report.round}</h2>
-      <div class="cr-body" data-keep-scroll="clash">${body}</div>
-      <ul class="cr-result">${result.map(line).join('')}</ul>
-      <button class="primary" data-click="report:close">${over ? 'See the result' : 'On to the next round'}</button>
-    </div>
-  </div>`;
+  const sum = rp.summary;
+  const side = (p: PlayerId) => {
+    const units = sum.units.filter((u) => u.p === p).sort((a, b) => b.dealt - a.dealt || b.taken - a.taken);
+    const fate = (fell: number | null) => (fell === null ? 'stood' : fell === 0 ? 'fell before bout 1' : `fell in bout ${fell}`);
+    const rows = units.map((u) => `<tr class="${u.fell !== null ? 'fell' : 'stood'}"><td>${esc(cardName(u.id))}</td><td>${u.dealt}</td><td>${u.taken}</td><td>${fate(u.fell)}</td></tr>`).join('');
+    const hero = sum.heroes[p] ? `<tr><td>${esc(heroName(p))} <small>(Hero)</small></td><td>${sum.heroes[p]}</td><td></td><td></td></tr>` : '';
+    return `<div class="sum-side ${p === mySeat ? 'me' : 'foe'}"><h4>${p === mySeat ? 'Your units' : 'Their units'}</h4>
+      <table><thead><tr><th></th><th title="Damage dealt">⚔ dealt</th><th title="Damage taken">♥ taken</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4">No units</td></tr>'}${hero}</tbody></table></div>`;
+  };
+  return `<section class="hand shop replay-panel clash-report" aria-label="The Clash, in numbers">
+    <div class="sum-sides">${side(mySeat)}${side(theirSeat)}</div>
+    ${sum.hints.length ? `<ul class="sum-hints">${sum.hints.map((h) => `<li>💡 ${esc(h)}</li>`).join('')}</ul>` : ''}
+  </section>`;
+}
+
+/** The six lanes as the replay has them: the units as they stood at that moment of the Clash, the fallen greyed. */
+function renderReplayLanes(s: GameState, p: PlayerId): string {
+  const units = [...replay!.units.values()].filter((u) => u.p === p);
+  const lanes = Array.from({ length: LANES }, (_, i) => {
+    const b = units.find((u) => u.slot === i && !u.down) ?? units.find((u) => u.slot === i);
+    const locked = !isOpenLane(s, p, i);
+    if (b) return `<div class="lane ${locked ? 'locked' : ''}">${renderUnit(s, replayUnit(s, b), p, new Set(), b)}</div>`;
+    return locked
+      ? `<div class="lane empty locked"><span class="lane-lock">🔒<small>Lv ${i + 1}</small></span></div>`
+      : `<div class="lane empty"><span class="lane-no">${i + 1}</span></div>`;
+  }).join('');
+  return `<section class="yard lanes ${p === mySeat ? 'me' : 'foe'} ${drawnWide ? 'with-traits' : ''}" style="--n:${LANES}">${drawnWide ? renderTraitColumn(s, p) : ''}${lanes}</section>`;
+}
+
+/** A unit of the replay as the board draws it: the game's own unit while it has it (its Talisman, its counters). */
+function replayUnit(s: GameState, b: BoardUnit): Unit {
+  return s.players[b.p].yard.find((u) => u.uid === b.uid)
+    ?? { uid: b.uid, id: b.id, slot: b.slot, damage: 0, exhausted: false, buffPower: 0, usedOnce: false, ...(b.stars ? { stars: b.stars } : {}), ...(b.copies ? { copies: b.copies } : {}) };
 }
 
 let countedGame: GameState | null = null;
@@ -1363,7 +1699,7 @@ function renderSettings(alreadyOpen: boolean): string {
       aria-current="${id === current ? 'page' : 'false'}">${labels[id]}</button>`;
   const body: Record<SettingsSection, () => string> = {
     gameplay: () => `
-      <p class="setting-note">The Clash is a report to read, not an animation: nothing to switch on or off here.</p>
+      <p class="setting-note">The Clash plays on the board, one beat at a time: pause it, step through it, or skip to the summary.</p>
       ${ONLINE && signedIn() ? `<p class="setting-note">${esc(onlineStatus())}</p>` : ''}`,
     sound: () => row('Sound', '', choice('sound', 'on', 'On', soundEnabled()) + choice('sound', 'off', 'Off', !soundEnabled())),
     account: () => (ACCOUNTS ? `<div class="account-panel">${renderAccountPanel()}</div>` : ''),
@@ -1413,13 +1749,16 @@ function renderRules(): string {
       <h2>Quick rules</h2>
       <p><b>Goal:</b> blow out all 9 of the rival Hero’s Candles.</p>
       <p><b>Each round:</b> the <b>Muster</b>, then the <b>Clash</b>. At the start of each round you get a new <b>shop</b>: ${r?.shopSize ?? 6} cards dealt from your own deck. From round 2 you also get your income in ${TERMS.offerings}.</p>
-      <p><b>The shop:</b> buy what you want at its price. What you don’t buy goes back into your deck. <b>Roll</b> (${r?.rollCost ?? 1} ${TERMS.offering}) for a new shop.</p>
+      <p><b>The shop:</b> buy what you want at its price. What you don’t buy goes back into your deck. <b>Roll</b> (${r?.rollCost ?? 1} ${TERMS.offering}) for a new shop. A card’s price is its <b>tier</b>, 1 to 5: the higher your Hero’s Level, the more often the shop deals the high tiers.</p>
       <p><b>${TERMS.offerings} are money.</b> What you don’t spend is kept, and every ${r?.interestPer ?? 5} saved earn 1 more at the start of the next round (at most ${r?.interestMax ?? 3}). Losing Clashes in a row earns more too: +1 after two, up to +3 after five.</p>
-      <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Buy units into your six lanes (as many as your Hero’s <b>Level</b>; level up for more), move them, buy Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
-      <p><b>Selling:</b> tap a unit of yours to sell it. You get back what you paid, less 1 for each copy merged into it. Sell to make room for something better.</p>
-      <p><b>Stars:</b> buy a second copy of a Creature you have on the board and it merges, even when your lanes are full: 2 stars, twice its printed Power and Health; a third copy makes 3. Fabled never merge.</p>
+      <p><b>The Muster:</b> you and your opponent build at the same time, in secret, until you both press Ready. Buy units into your open lanes (your Hero’s <b>Level</b> opens that many, from the left; level up to open more), move them, buy Charms and Talismans, set an <b>Ambush</b> face-down in a lane, use your Hero’s ability. You see their board as it was when the Muster began.</p>
+      <p><b>Selling:</b> tap a unit of yours to sell it. You get back what you paid, its merged copies included, less 1 for each star it has. Sell to make room for something better.</p>
+      <p><b>Stars:</b> buy a copy of a Creature you have on the board and it merges into it, even when your lanes are full (the dots on the unit count them). <b>3 copies make 2 stars</b>, twice its printed Power and Health; <b>5 make 3 stars</b>. Fabled never merge.</p>
+      <p><b>Classes</b> say how a unit fights (its icon is in the card’s corner): 🛡 <b>Tank</b> and 👊 <b>Bruiser</b> fight at the front; 🏹 <b>Marksman</b>, ✨ <b>Mage</b> and 💠 <b>Support</b> at the back (a Support never attacks: it helps the units next to it); 🗡 <b>Assassin</b> strikes first and goes for the back. A unit with <b>Taunt</b> is hit first by everyone.</p>
+      <p><b>Families</b> are synergies: 2, 4 or 6 different units of one family on your board turn on its bonus. The trait column beside your lanes shows them; tap one to read it.</p>
+      <p><b>In the fight:</b> ${esc(LEGEND)}</p>
       <p><b>Aimed at the enemy:</b> damage and other effects aimed at their units are aimed at a <b>lane</b>, and happen when the Clash begins, to whoever stands there. With nobody there, they fizzle. A face-down Ambush happens only if its lane holds what it needs; otherwise it waits for a later Clash.</p>
-      <p><b>The Clash</b> plays itself: first the aimed effects and Ambushes, then Awakened Heroes strike, then the bouts. In each bout every unit hits one enemy, all at once (Swift units first). Who it hits: <b>Guardians</b> first, then plain units, then <b>Elusive</b> ones, <b>Lures</b> last; <b>Sneaky</b> units go the other way round. Among equals, the one across from it, then the nearest. A unit whose damage reaches its Health goes down. An <b>exhausted</b> unit deals no damage in this Clash, but can still be hit.</p>
+      <p><b>The Clash</b> plays itself: first the aimed effects and Ambushes, then Awakened Heroes strike, then the units’ <b>Clash start</b> abilities, then the bouts. In each bout every unit hits one enemy, all at once (Assassins and Swift units first). Who it hits: a unit with <b>Taunt</b> first, then <b>Tanks</b>, then Bruisers and Assassins, then the back; an <b>Assassin</b> goes for the back first, unless a unit taunts. Among equals, the one across from it, then the nearest. A unit whose damage reaches its Health goes down. An <b>exhausted</b> unit deals no damage in this Clash, but can still be hit.</p>
       <p><b>Winning the Clash:</b> when one side has nobody standing, it loses a Candle for each enemy unit still standing (2 for a <b>Fierce</b> one, 1 more if their Hero struck), at most ${r?.clashCandleCap ?? 2}. If both sides still stand after ${r?.boutCap ?? 8} bouts, both lose Candles. Then every unit stands up again: <b>nothing on the board is lost in a Clash</b>.</p>
       <p><b>Your Hero:</b> its ability can be used once a round. When its Awaken condition is met it Awakens for good, and strikes when the Clash begins (unless you used its ability that round).</p>
       <p><b>Reading a card:</b> press and hold any card to see it full size (or right-click it). The book button opens the story so far.</p>
@@ -1522,6 +1861,23 @@ function openZoom(url: string, cardKey?: string, state?: string) {
   tutorialCardZoomed();
 }
 
+/** A trait, tapped: how many units count for it, and what each of its tiers does, the one that's on lit. */
+function openTrait(s: GameState, p: PlayerId, name: string) {
+  const t = traitsOf(s, p).find((x) => x.name === name);
+  if (!t) return;
+  closeZoom();
+  const rows = t.def.tiers.map((x, i) =>
+    `<div class="${i === t.tier ? 'on' : ''}"><dt>${x.at} units${i === t.tier ? ' · on' : ''}</dt><dd>${esc(x.text)}</dd></div>`).join('');
+  const whose = p === mySeat ? 'You have' : 'They have';
+  const overlay = document.createElement('div');
+  overlay.id = 'zoom-overlay';
+  overlay.innerHTML = `<div class="zoom-info trait-info"><p class="zoom-state">${t.def.icon ?? ''} <b>${esc(t.name)}</b>: ${whose} ${t.count}`
+    + ` (different units count; copies merged into one count once).</p><dl class="zoom-keys trait-tiers">${rows}</dl></div>`
+    + '<span class="zoom-hint">Tap anywhere to close</span>';
+  overlay.addEventListener('click', closeZoom);
+  document.body.appendChild(overlay);
+}
+
 function closeZoom() {
   const overlay = document.getElementById('zoom-overlay');
   if (!overlay) return;
@@ -1621,7 +1977,7 @@ document.addEventListener('keydown', (event) => {
     if (showStory && screen === 'game') { toggleStory(); return; }
     if (screen === 'collection' && showcaseEscape({ render })) return;
     if (STORE && screen === 'store' && storeEscape(storeHost)) return;
-    if (selection) { selection = null; render(); }
+    if (selection || viewing !== null) { selection = null; viewing = null; render(); }
   }
 });
 
@@ -1647,7 +2003,11 @@ if (ONLINE) onGameFound(() => {
 });
 render();
 // Signed in on this device: bring the decks and Showcase up to date with the account.
-if (ACCOUNTS) { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); }
+if (ACCOUNTS) {
+  const signedIn = () => { startSync({ render }); void askForTermsIfNeeded({ render }); void saveAgreedTerms(); void shareSignIn(); };
+  // Nobody signed in here, but signed in on another Via Mochi site (the TV portal...): then here too.
+  if (session()) signedIn(); else void signInFromOtherSite().then((yes) => { if (yes) { render(); signedIn(); } });
+}
 // An invite link for playtesters (?invite=CODE): open the account window, and the code is used after their email.
 if (ACCOUNTS && takeInviteFromLink()) openAccount({ render }, 'You’re invited! Type your email to create your account.');
 // Whether the Store is open to this account, and what it bought: Home's Store tile and the deck builder use both.

@@ -1,7 +1,7 @@
 {
   "set": "PR1",
   "name": "Pari",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "status": "released",
   "released": "2026-10",
   "starter": true,
@@ -103,7 +103,7 @@
       "flavor": "Persians called the pari 'those who are better than we'.",
       "kitten": {
         "name": "Parijan, the Littlest Pari",
-        "text": "Exhaust: A unit you control gets +1 Power and Sneaky this round.\nAwaken: You control 3 or more units.",
+        "text": "Exhaust: A unit you control gets +1 Power and Swift this round.\nAwaken: You control 5 or more units.",
         "abilities": [
           {
             "when": "exhaust",
@@ -115,7 +115,7 @@
                 "buff": {
                   "power": 1,
                   "keywords": [
-                    "Sneaky"
+                    "Zoomies"
                   ]
                 }
               }
@@ -125,7 +125,7 @@
         "growUp": {
           "if": {
             "controlUnits": {
-              "atLeast": 3
+              "atLeast": 5
             }
           }
         }
@@ -159,14 +159,21 @@
       "type": "Critter",
       "name": "Dove-Shaped Pari",
       "cost": 1,
-      "power": 1,
-      "health": 1,
-      "text": "Feather Coat. Lure.",
+      "power": 2,
+      "health": 3,
+      "text": "Marksman. Goodbye: Summon a 1/1 Dove.",
       "flavor": "A pari can put on a coat of feathers and fly off as a dove.",
-      "keywords": [
-        "Feather Coat",
-        "Lure"
-      ]
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "summon": "PR1-K01"
+            }
+          ]
+        }
+      ],
+      "class": "Marksman"
     },
     {
       "id": "PR1-D02",
@@ -176,27 +183,10 @@
       "name": "Orange-Peri",
       "cost": 1,
       "power": 3,
-      "health": 1,
-      "text": "Hello: Unless you've played 2 other cards this round, deal 1 damage to Orange-Peri.",
+      "health": 2,
+      "text": "Marksman.",
       "flavor": "She steps out of an orange and asks for water. Only the third is given some in time.",
-      "abilities": [
-        {
-          "when": "hello",
-          "if": {
-            "not": {
-              "playedThisRound": {
-                "atLeast": 3
-              }
-            }
-          },
-          "target": "self",
-          "do": [
-            {
-              "damage": 1
-            }
-          ]
-        }
-      ]
+      "class": "Marksman"
     },
     {
       "id": "PR1-D03",
@@ -206,12 +196,10 @@
       "name": "Murghatipi, the Bird Fairy",
       "cost": 1,
       "power": 2,
-      "health": 1,
-      "text": "Sneaky.",
+      "health": 2,
+      "text": "Assassin.",
       "flavor": "In the mountains of Chitral, one of the fairies' names means 'bird fairy'.",
-      "keywords": [
-        "Sneaky"
-      ]
+      "class": "Assassin"
     },
     {
       "id": "PR1-D04",
@@ -221,12 +209,13 @@
       "name": "Pari at the Pool",
       "cost": 2,
       "power": 3,
-      "health": 3,
-      "text": "Swift.",
+      "health": 4,
+      "text": "Marksman. Swift.",
       "flavor": "People who met a pari usually found her bathing. Her sisters were never far.",
       "keywords": [
         "Zoomies"
-      ]
+      ],
+      "class": "Marksman"
     },
     {
       "id": "PR1-D05",
@@ -235,14 +224,24 @@
       "type": "Critter",
       "name": "Gale-Bringer of the High Lakes",
       "cost": 3,
-      "power": 3,
-      "health": 2,
-      "text": "Swift. Sneaky.",
+      "power": 6,
+      "health": 4,
+      "text": "Assassin. After Gale-Bringer of the High Lakes defeats a unit in combat, it gets +2 Power this round.",
       "flavor": "Unseen pari bathe in the high mountain lakes, and bring the gales and the rain.",
-      "keywords": [
-        "Zoomies",
-        "Sneaky"
-      ]
+      "abilities": [
+        {
+          "when": "defeatsInCombat",
+          "target": "self",
+          "do": [
+            {
+              "buff": {
+                "power": 2
+              }
+            }
+          ]
+        }
+      ],
+      "class": "Assassin"
     },
     {
       "id": "PR1-D06",
@@ -252,30 +251,24 @@
       "name": "Súči of the Hunt",
       "cost": 3,
       "power": 3,
-      "health": 3,
-      "text": "Hello: Deal 1 damage to a unit. Company: deal 2 instead.",
+      "health": 5,
+      "text": "Marksman. Clash start: Deal 2 damage to the enemy across.",
       "flavor": "The Kalasha's mountain fairies help the hunters they like.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
           "target": {
-            "unit": "any"
+            "each": "enemy",
+            "range": 0
           },
           "do": [
             {
-              "damage": 1
+              "damage": 2
             }
-          ],
-          "instead": {
-            "if": "Company",
-            "do": [
-              {
-                "damage": 2
-              }
-            ]
-          }
+          ]
         }
-      ]
+      ],
+      "class": "Marksman"
     },
     {
       "id": "PR1-D07",
@@ -284,14 +277,14 @@
       "type": "Critter",
       "name": "Markhor of the Mothers",
       "cost": 4,
-      "power": 4,
-      "health": 3,
-      "text": "Fierce. Elusive.",
+      "power": 6,
+      "health": 8,
+      "text": "Bruiser. Fierce.",
       "flavor": "The fairies own the wild goats. Hunters ask: 'Mother, adopt me, and give me one of your goats.'",
       "keywords": [
-        "Fierce",
-        "Elusive"
-      ]
+        "Fierce"
+      ],
+      "class": "Bruiser"
     },
     {
       "id": "PR1-D08",
@@ -299,15 +292,29 @@
       "family": "Pari",
       "type": "Critter",
       "name": "Pari on a Wonder-Camel",
-      "cost": 5,
+      "cost": 3,
       "power": 4,
-      "health": 4,
-      "text": "Swift. Sneaky.",
+      "health": 6,
+      "text": "Bruiser. Every second bout: The units next to Pari on a Wonder-Camel get +1 Power this round.",
       "flavor": "Old Persian paintings show pari riding camels made of many creatures.",
-      "keywords": [
-        "Zoomies",
-        "Sneaky"
-      ]
+      "abilities": [
+        {
+          "when": "everyOtherBout",
+          "target": {
+            "each": "own",
+            "other": true,
+            "range": 1
+          },
+          "do": [
+            {
+              "buff": {
+                "power": 1
+              }
+            }
+          ]
+        }
+      ],
+      "class": "Bruiser"
     },
     {
       "id": "PR1-D09",
@@ -317,9 +324,10 @@
       "name": "Ibex Kid",
       "cost": 1,
       "power": 2,
-      "health": 1,
-      "text": "",
-      "flavor": "The mountain pari keep the ibex as their herds."
+      "health": 4,
+      "text": "Bruiser.",
+      "flavor": "The mountain pari keep the ibex as their herds.",
+      "class": "Bruiser"
     },
     {
       "id": "PR1-D10",
@@ -327,14 +335,15 @@
       "family": "Pari",
       "type": "Critter",
       "name": "Lookout on Mount Qāf",
-      "cost": 3,
-      "power": 1,
-      "health": 4,
-      "text": "Guardian.",
+      "cost": 2,
+      "power": 2,
+      "health": 7,
+      "text": "Tank. Taunt.",
       "flavor": "Mount Qāf, all emerald, rings the world. Its green glow tints the sky.",
       "keywords": [
-        "Guardian"
-      ]
+        "Taunt"
+      ],
+      "class": "Tank"
     },
     {
       "id": "PR1-D11",
@@ -342,21 +351,29 @@
       "family": "Pari",
       "type": "Critter",
       "name": "Khangi, the Helpful One",
-      "cost": 3,
-      "power": 2,
-      "health": 3,
-      "text": "Hello: Get a free roll.",
+      "cost": 2,
+      "power": 0,
+      "health": 5,
+      "text": "Support. Clash start: The units next to Khangi get +1 Power this round.",
       "flavor": "House fairies help pick the fruit. Families set food aside for them.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "clashStart",
+          "target": {
+            "each": "own",
+            "other": true,
+            "range": 1
+          },
           "do": [
             {
-              "freeRoll": 1
+              "buff": {
+                "power": 1
+              }
             }
           ]
         }
-      ]
+      ],
+      "class": "Support"
     },
     {
       "id": "PR1-D12",
@@ -365,7 +382,7 @@
       "type": "Trick",
       "name": "Falling Star",
       "cost": 1,
-      "text": "Ambush. Deal 2 damage to a unit.",
+      "text": "Ambush. Deal 2 damage to an enemy unit.",
       "flavor": "The oldest Persian books call the pari shooting stars.",
       "keywords": [
         "Pounce"
@@ -374,7 +391,7 @@
         {
           "when": "play",
           "target": {
-            "unit": "any"
+            "unit": "enemy"
           },
           "do": [
             {
@@ -391,27 +408,19 @@
       "type": "Trick",
       "name": "Mountain Gale",
       "cost": 3,
-      "text": "Deal 3 damage to a unit. Company: deal 5 instead.",
+      "text": "Deal 1 damage to each enemy unit.",
       "flavor": "When the pari ride the wind, the whole valley bends.",
       "abilities": [
         {
           "when": "play",
           "target": {
-            "unit": "any"
+            "each": "enemy"
           },
           "do": [
             {
-              "damage": 3
+              "damage": 1
             }
-          ],
-          "instead": {
-            "if": "Company",
-            "do": [
-              {
-                "damage": 5
-              }
-            ]
-          }
+          ]
         }
       ]
     },
@@ -475,8 +484,8 @@
       "family": "Pari",
       "type": "Trick",
       "name": "Carried Off Asleep",
-      "cost": 1,
-      "text": "Exhaust an enemy unit.",
+      "cost": 2,
+      "text": "An enemy unit deals no damage in the first two bouts.",
       "flavor": "The pari carried sleeping Zin away, and had her home before morning.",
       "abilities": [
         {
@@ -486,7 +495,7 @@
           },
           "do": [
             {
-              "exhaust": true
+              "stun": 2
             }
           ]
         }
@@ -498,14 +507,14 @@
       "family": "Pari",
       "type": "Toy",
       "name": "Pari Banu's Pocket Tent",
-      "cost": 1,
-      "text": "Attached unit gets +3 Health.",
+      "cost": 2,
+      "text": "Attached unit gets +4 Health.",
       "flavor": "It folds small enough to hold in one hand, and opens big enough to shelter an army.",
       "abilities": [
         {
           "static": {
             "grant": {
-              "health": 3
+              "health": 4
             },
             "to": "attached"
           }
@@ -516,18 +525,28 @@
       "id": "PR1-D18",
       "rarity": "Rare",
       "family": "Pari",
-      "type": "Cat",
+      "type": "Critter",
       "name": "Manar al-Sana, the Bird-Maiden",
-      "cost": 3,
-      "power": 3,
-      "health": 3,
-      "text": "Swift. Feather Coat.",
+      "cost": 4,
+      "power": 7,
+      "health": 5,
+      "text": "Assassin. Goodbye: Summon two 1/1 Doves.",
       "flavor": "Hassan hid her feather robe by the pool. The day she found it, she flew home.",
-      "keywords": [
-        "Zoomies",
-        "Feather Coat"
+      "pronoun": "her",
+      "abilities": [
+        {
+          "when": "goodbye",
+          "do": [
+            {
+              "summon": "PR1-K01"
+            },
+            {
+              "summon": "PR1-K01"
+            }
+          ]
+        }
       ],
-      "pronoun": "her"
+      "class": "Assassin"
     },
     {
       "id": "PR1-D19",
@@ -535,25 +554,26 @@
       "family": "Pari",
       "type": "Cat",
       "name": "Asman Pari, Queen of Qāf",
-      "cost": 4,
-      "power": 3,
-      "health": 4,
-      "text": "Hello: Deal 1 damage to each enemy unit.",
+      "cost": 5,
+      "power": 4,
+      "health": 12,
+      "text": "Mage. Every second bout: Deal 2 damage to each enemy unit.",
       "flavor": "Asman means 'sky'. She ruled the pari of Mount Qāf.",
       "abilities": [
         {
-          "when": "hello",
+          "when": "everyOtherBout",
           "target": {
             "each": "enemy"
           },
           "do": [
             {
-              "damage": 1
+              "damage": 2
             }
           ]
         }
       ],
-      "pronoun": "her"
+      "pronoun": "her",
+      "class": "Mage"
     },
     {
       "id": "PR1-D20",
@@ -561,30 +581,17 @@
       "family": "Pari",
       "type": "Cat",
       "name": "Schaibar, Pari Banu's Brother",
-      "cost": 5,
+      "cost": 4,
       "power": 5,
-      "health": 5,
-      "text": "Fierce. Once per round, after Schaibar defeats a unit in combat, he gets +2 Power this round.",
+      "health": 12,
+      "text": "Tank. Taunt. Fierce.",
       "flavor": "A foot and a half tall, with a beard thirty feet long and a bar of iron on his shoulder.",
       "keywords": [
+        "Taunt",
         "Fierce"
       ],
-      "abilities": [
-        {
-          "when": "defeatsInCombat",
-          "oncePerRound": true,
-          "target": "self",
-          "do": [
-            {
-              "buff": {
-                "power": 2
-              }
-            }
-          ],
-          "log": "Schaibar grows stronger after his victory."
-        }
-      ],
-      "pronoun": "he"
+      "pronoun": "he",
+      "class": "Tank"
     }
   ],
   "tokens": [
@@ -595,11 +602,9 @@
       "family": "Pari",
       "power": 1,
       "health": 1,
-      "text": "Lure.",
+      "text": "Bruiser.",
       "flavor": "Somewhere under those feathers, a pari.",
-      "keywords": [
-        "Lure"
-      ]
+      "class": "Bruiser"
     }
   ],
   "decks": {
@@ -607,28 +612,169 @@
       "name": "Pari",
       "hero": "PR1-H01",
       "cards": {
-        "PR1-D01": 3,
-        "PR1-D02": 3,
-        "PR1-D03": 3,
-        "PR1-D04": 3,
-        "PR1-D05": 3,
+        "PR1-D03": 5,
+        "PR1-D09": 5,
+        "PR1-D01": 5,
+        "PR1-D04": 4,
+        "PR1-D11": 4,
+        "PR1-D10": 4,
         "PR1-D06": 3,
-        "PR1-D07": 3,
-        "PR1-D08": 2,
-        "PR1-D09": 3,
-        "PR1-D10": 3,
-        "PR1-D11": 3,
-        "PR1-D12": 3,
-        "PR1-D13": 2,
-        "PR1-D14": 2,
-        "PR1-D15": 3,
-        "PR1-D16": 2,
-        "PR1-D17": 3,
-        "PR1-D18": 1,
+        "PR1-D05": 3,
+        "PR1-D08": 3,
+        "PR1-D18": 2,
+        "PR1-D07": 2,
         "PR1-D19": 1,
-        "PR1-D20": 1
+        "PR1-D12": 2,
+        "PR1-D16": 2,
+        "PR1-D14": 1,
+        "PR1-D13": 1,
+        "PR1-D17": 3
       },
       "blurb": "Winged and never alone. Fly past the guards; with 3 or more in the Yard, the pari are in Company."
+    }
+  },
+  "traits": {
+    "Company of Doves": {
+      "family": "Pari",
+      "icon": "🕊",
+      "tiers": [
+        {
+          "at": 2,
+          "text": "Your Pari get +1 Power. When one of them goes down, summon a Dove (1/1).",
+          "abilities": [
+            {
+              "when": "goodbye",
+              "on": {
+                "filter": {
+                  "family": "Pari",
+                  "token": false
+                }
+              },
+              "do": [
+                {
+                  "summon": "PR1-K01"
+                }
+              ]
+            },
+            {
+              "static": {
+                "grant": {
+                  "power": 1
+                },
+                "to": {
+                  "each": "own",
+                  "filter": {
+                    "family": "Pari",
+                    "token": false
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "at": 4,
+          "text": "Your Pari get +1 Power. When one of them goes down, summon a Dove. Your Doves get +1 Power, +1 Health and Swift.",
+          "abilities": [
+            {
+              "when": "goodbye",
+              "on": {
+                "filter": {
+                  "family": "Pari",
+                  "token": false
+                }
+              },
+              "do": [
+                {
+                  "summon": "PR1-K01"
+                }
+              ]
+            },
+            {
+              "static": {
+                "grant": {
+                  "power": 1,
+                  "health": 1,
+                  "keywords": [
+                    "Zoomies"
+                  ]
+                },
+                "to": {
+                  "each": "own",
+                  "filter": {
+                    "card": "PR1-K01"
+                  }
+                }
+              }
+            },
+            {
+              "static": {
+                "grant": {
+                  "power": 1
+                },
+                "to": {
+                  "each": "own",
+                  "filter": {
+                    "family": "Pari",
+                    "token": false
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "at": 6,
+          "text": "Your units get +3 Power and +2 Health. When a Pari goes down, summon a Dove. Your Doves get +2 Power, +2 Health and Swift.",
+          "abilities": [
+            {
+              "when": "goodbye",
+              "on": {
+                "filter": {
+                  "family": "Pari",
+                  "token": false
+                }
+              },
+              "do": [
+                {
+                  "summon": "PR1-K01"
+                }
+              ]
+            },
+            {
+              "static": {
+                "grant": {
+                  "power": 2,
+                  "health": 2,
+                  "keywords": [
+                    "Zoomies"
+                  ]
+                },
+                "to": {
+                  "each": "own",
+                  "filter": {
+                    "card": "PR1-K01"
+                  }
+                }
+              }
+            },
+            {
+              "static": {
+                "grant": {
+                  "power": 3,
+                  "health": 2
+                },
+                "to": {
+                  "each": "own",
+                  "filter": {
+                    "token": false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     }
   }
 }

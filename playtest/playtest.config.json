@@ -86,8 +86,9 @@
     "nightlyBuildMaxUsd": 0.5
   },
   "nightly": {
+    "about": "balanceScale 1: since 0.7 the games are longer, and at 3 the gauntlet (258,000 games) took 5.7 of the 6 hours, leaving 10 LLM games a night (2026-10-06). At 1 it takes about 2 hours.",
     "provider": "pc2024",
-    "balanceScale": 3,
+    "balanceScale": 1,
     "hours": 6,
     "parallel": 8,
     "personas": [

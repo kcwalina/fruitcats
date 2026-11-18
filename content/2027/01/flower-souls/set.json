@@ -89,7 +89,7 @@
             ]
           }
         ],
-        "text": "Your units get +1 Health.\nExhaust: Heal 2 from each unit you control."
+        "text": "Your units get +1 Health.\nExhaust: Your units heal 2."
       },
       "frame": "gold"
     },
@@ -119,7 +119,7 @@
           ]
         }
       ],
-      "text": "Guardian. Hello: Heal 2 from each unit you control."
+      "text": "Guardian. Hello: Your units heal 2."
     },
     {
       "id": "MB1-D02",

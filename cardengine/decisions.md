@@ -1309,6 +1309,30 @@ Goes, deprecated until the files using them are rewritten: routine bodies, state
 bindings, `if` statements, `+=`, and program mode. Written out on paper, with every Folkborn and Hello TCG handler and
 every library rule step 3 needs, in `docs/tcg/library-rules-on-paper.md`, for the owner's review before the code.
 
+### The engine is written in Alan (owner, 2026-10-01)
+
+Supersedes "The engine is one WebAssembly module, written in Rust" (2026-09-29). Folkborn's TypeScript engine
+(`packages/engine`) and the core (`cardengine/engine`) are two engines only because the web app and the tools need
+different languages. They become one engine, written in Alan (`C:\git\alan`), which generates TypeScript and C# from
+it (and Rust, so WebAssembly, where a host wants it). The design is `C:\git\alan\design\unified_engine.md`.
+
+- **Everything moves to Alan:** Alex, the loader, the runtime, the bots and the card renderer. No part stays Rust or
+  WebAssembly long term.
+- **The runtime from here on is written in Alan.** Runtime step 3 (`docs/tcg/runtime-design.md`) is not written in
+  Rust. Rules as data (above) carries over unchanged: what stays code is the core's effects, the formula evaluator
+  and the scheduler.
+- **Behaviour is identical in every generated language.** A difference is a bug in Alan, fixed there and kept as a
+  test. This replaces the one-module guarantee: every host ran the same `.wasm`; now the generated code is tested to
+  agree, piece by piece against the Rust core (the Alex lexer already is, on every `.alex` file).
+- **Randomness** comes from a game-quality (not cryptographic) generator in Alan's core libraries, not xoshiro256**.
+- **fruitcats may use the generated TypeScript and C# directly.** This amends "Folkborn depends on the platform only
+  through the `kardix` command and the core's `.wasm`" (`cardengine/README.md`, "Dependencies"). The other half of the
+  rule stands: nothing in `cardengine/` refers to Folkborn.
+
+Until the Alan engine replaces it, the Rust core keeps serving what it serves today: the build, `check-set`,
+`publish-pack` (the live site's card images), Studio, the `kardix` command and conformance. Decided in the Alan
+compiler's session and relayed here by it.
+
 ## Open
 
 - Port Folkborn first (lean: yes), then a Hearthstone-like as the second game.

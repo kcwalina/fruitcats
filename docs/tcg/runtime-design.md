@@ -13,7 +13,7 @@ It covers:
 
 ## What the runtime is
 
-The runtime is part of the core, `kardix.wasm`, written in Rust. It is pure: no files, no clock, no network. It takes
+The runtime is part of the core, `kardix.wasm`. Steps 1 and 2 are written in Rust; from step 3 on it is written in Alan, as the whole engine will be (`cardengine/decisions.md`, "The engine is written in Alan", 2026-10-01). It is pure: no files, no clock, no network. It takes
 a loaded game (the project the loader already builds), the players' decks and a seed, and then:
 
 - says which player must act and what they may do (the legal actions);

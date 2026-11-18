@@ -8,7 +8,7 @@ language, the runtime and the games' files change.
 
 It covers:
 - the four ideas (effects, formulas, choices, effect types defined from others);
-- the core's own effects, the only behaviour written in Rust;
+- the core's own effects, the only behaviour written in the engine's language (Rust today, Alan from step 3 on);
 - Folkborn's rules files and Hello TCG's, rewritten as data;
 - the library rules the runtime's step 3 needs (`docs/tcg/runtime-design.md`), rewritten as data;
 - what changes in Alex, and questions for the owner.

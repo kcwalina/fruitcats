@@ -52,7 +52,7 @@ renderer. Every host runs that same file: the browser (Studio, the game table, t
   back to the host. That is what makes it portable, deterministic (the same seed and actions give
   the same game on every host, which replays and online play need) and a sandbox (an online server
   runs games other people wrote).
-- **Written in Rust** (`cardengine/engine/`), because it compiles to small WebAssembly with no
+- **Written in Alan, from 2026-10-01** (`cardengine/decisions.md`, "The engine is written in Alan"): one engine for the platform and Folkborn, generated as TypeScript and C# and tested to behave identically in each. The Rust core below serves until it is replaced. What follows is the earlier choice. **Written in Rust** (`cardengine/engine/`), because it compiles to small WebAssembly with no
   runtime inside it. .NET's WebAssembly carries its runtime (about 2 MB before any of our code) and
   interprets IL by default; that ruled C# out for the core, not the language itself. The choice is
   not binding: hosts only see a `.wasm` file and its byte interface (`cardengine/engine/src/abi.rs`),
@@ -113,7 +113,7 @@ Each layer depends only on the ones below it.
 | L1 Game loader | loads a project, links it, checks it enough to run safely | the core |
 | L0 Alex | parse, bind, types, diagnostics, byte-exact round trip | the core (C# Alex kept identical for mochi) |
 
-"The core" is the one WebAssembly module above, written in Rust.
+"The core" is the one WebAssembly module above, written in Rust today and to be written in Alan (2026-10-01).
 
 What each layer promises:
 
@@ -154,7 +154,7 @@ the same thing: **routines in Alex on the core's hooks** (decided by the owner, 
 is [runtime-design.md](runtime-design.md)). A library rule such as `GuardiansFirst` is a routine in
 `combat.alex`, attached to the `filter legal-actions` hook, that reads the values the game listed
 (`rule.keyword`). The engine knows only the core: objects, zones, players, the operations, the
-scheduler, the hooks, and how to run routines. No game rule is written in Rust.
+scheduler, the hooks, and how to run routines. No game rule is written in the engine's own language.
 
 - **The libraries cover almost every game.** The broad survey (`cardengine/survey/broad/summary.md`)
   found that 83% of 156 games fit with library additions only, and 4% need a small core change

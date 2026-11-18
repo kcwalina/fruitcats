@@ -41,7 +41,7 @@ discussed by editing them instead of re-pasting them into chat.
   wiring that attaches them to cards, `@citron-fox.on-enter = zest-damage`), removed with the
   Starter Box on 2026-09-29 (decisions.md); the folk sets' cards are in `games/folkborn/sets/`.
   Code points at data; data never points at code.
-- `engine/`: the core, the one WebAssembly module every host runs (Rust, no dependencies). It holds
+- `engine/`: the core, the one WebAssembly module every host runs (Rust, no dependencies), until the engine written in Alan replaces it (decisions.md, 2026-10-01). It holds
   Alex's parser and binder and the game loader; the runtime, the bots and the card renderer join it.
   See its README.
 - `conformance/`: parses and binds every `.alex` file with the C# Alex and with the core, and
@@ -60,8 +60,9 @@ Folkborn from its Alex rules, so it must be movable as a folder today:
   `content/`, `playtest/`, `games/` or `art/`, and no Folkborn numbers, names or conventions in
   the tools. A game is always an input (`kardix cards --project games/folkborn`), never something
   built in.
-- **Folkborn depends on the platform, only through its public surface:** the `kardix` command, and
-  later the core's `.wasm` and its documented interface. It never reaches into the platform's
+- **Folkborn depends on the platform, only through its public surface:** the `kardix` command, the
+  core's `.wasm` and its documented interface, and (since 2026-10-01) the TypeScript and C# the Alan
+  engine generates. It never reaches into the platform's
   source.
 - **The one outside dependency is mochi's C# Alex** (`mochi.agents/alex`), and only the conformance
   tool uses it, to check that the core's Alex matches it. `kardix` reads games only through the core.
